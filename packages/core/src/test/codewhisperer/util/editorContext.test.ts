@@ -9,9 +9,15 @@ import * as EditorContext from '../../../codewhisperer/util/editorContext'
 import { createMockTextEditor, createMockClientRequest, resetCodeWhispererGlobalVariables } from '../testUtil'
 import globals from '../../../shared/extensionGlobals'
 import { GenerateCompletionsRequest } from '../../../codewhisperer/client/codewhispereruserclient'
+import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
+import { tryRegister } from '../../testUtil'
 
 describe('editorContext', function () {
     let telemetryEnabledDefault: boolean
+
+    before(async function () {
+        tryRegister(refreshStatusBar)
+    })
 
     beforeEach(async function () {
         await resetCodeWhispererGlobalVariables()

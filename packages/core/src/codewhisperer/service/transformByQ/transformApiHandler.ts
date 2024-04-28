@@ -32,7 +32,7 @@ import { sleep } from '../../../shared/utilities/timeoutUtils'
 import AdmZip from 'adm-zip'
 import globals from '../../../shared/extensionGlobals'
 import { CredentialSourceId, telemetry } from '../../../shared/telemetry/telemetry'
-import { codeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
+import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import request from '../../../common/request'
@@ -101,7 +101,7 @@ export async function uploadArtifactToS3(
         }).response
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'UploadZip',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformUploadId: resp.uploadId,
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
             codeTransformTotalByteSize: (await fs.promises.stat(fileName)).size,
@@ -113,7 +113,7 @@ export async function uploadArtifactToS3(
         getLogger().error(`CodeTransformation: UploadZip error = ${errorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'UploadZip',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e.requestId ?? '',
             result: MetadataResult.Fail,
@@ -167,7 +167,7 @@ export async function stopJob(jobId: string) {
             if (response !== undefined) {
                 telemetry.codeTransform_logApiLatency.emit({
                     codeTransformApiNames: 'StopTransformation',
-                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                     codeTransformJobId: jobId,
                     codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
                     codeTransformRequestId: response.$response.requestId,
@@ -183,7 +183,7 @@ export async function stopJob(jobId: string) {
             getLogger().error(`CodeTransformation: StopTransformation error = ${errorMessage}`)
             telemetry.codeTransform_logApiError.emit({
                 codeTransformApiNames: 'StopTransformation',
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformJobId: jobId,
                 codeTransformApiErrorMessage: errorMessage,
                 codeTransformRequestId: e.requestId ?? '',
@@ -214,7 +214,7 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
         }
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'CreateUploadUrl',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
             codeTransformUploadId: response.uploadId,
             codeTransformRequestId: response.$response.requestId,
@@ -225,7 +225,7 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
         getLogger().error(`CodeTransformation: CreateUploadUrl error: = ${errorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'CreateUploadUrl',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e.requestId ?? '',
             result: MetadataResult.Fail,
@@ -346,7 +346,7 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
                 zip.addLocalFile(file, path.dirname(paddedPath))
             }
             telemetry.codeTransform_dependenciesCopied.emit({
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 result: MetadataResult.Pass,
             })
         } else {
@@ -374,7 +374,7 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
         }
     } catch (e: any) {
         telemetry.codeTransform_logGeneralError.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformApiErrorMessage: 'Failed to zip project',
             result: MetadataResult.Fail,
             reason: 'ZipCreationFailed',
@@ -392,7 +392,7 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
 
     // Later, consider adding field for number of source lines of code
     telemetry.codeTransform_jobCreateZipEndTime.emit({
-        codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+        codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
         codeTransformTotalByteSize: zipSize,
         codeTransformRunTimeLatency: calculateTotalLatency(zipStartTime),
         result: exceedsLimit ? MetadataResult.Fail : MetadataResult.Pass,
@@ -431,7 +431,7 @@ export async function startJob(uploadId: string) {
         }
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'StartTransformation',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
             codeTransformJobId: response.transformationJobId,
             codeTransformRequestId: response.$response.requestId,
@@ -443,7 +443,7 @@ export async function startJob(uploadId: string) {
         getLogger().error(`CodeTransformation: StartTransformation error = ${errorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'StartTransformation',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e.requestId ?? '',
             result: MetadataResult.Fail,
@@ -469,7 +469,7 @@ export async function getTransformationPlan(jobId: string) {
         }
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'GetTransformationPlan',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformJobId: jobId,
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
             codeTransformRequestId: response.$response.requestId,
@@ -496,7 +496,7 @@ export async function getTransformationPlan(jobId: string) {
         getLogger().error(`CodeTransformation: GetTransformationPlan error = ${errorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'GetTransformationPlan',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformJobId: jobId,
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e.requestId ?? '',
@@ -522,7 +522,7 @@ export async function getTransformationSteps(jobId: string, handleThrottleFlag: 
         }
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'GetTransformationPlan',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformJobId: jobId,
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
             codeTransformRequestId: response.$response.requestId,
@@ -534,7 +534,7 @@ export async function getTransformationSteps(jobId: string, handleThrottleFlag: 
         getLogger().error(`CodeTransformation: GetTransformationPlan error = ${errorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'GetTransformationPlan',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformJobId: jobId,
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e.requestId ?? '',
@@ -557,7 +557,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             })
             telemetry.codeTransform_logApiLatency.emit({
                 codeTransformApiNames: 'GetTransformation',
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformJobId: jobId,
                 codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
                 codeTransformRequestId: response.$response.requestId,
@@ -574,7 +574,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             // emit metric when job status changes
             if (status !== transformByQState.getPolledJobStatus()) {
                 telemetry.codeTransform_jobStatusChanged.emit({
-                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                     codeTransformJobId: jobId,
                     codeTransformStatus: status,
                     result: MetadataResult.Pass,
@@ -582,7 +582,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 })
             }
             transformByQState.setPolledJobStatus(status)
-            await vscode.commands.executeCommand('aws.amazonq.refresh')
+
             const errorMessage = response.transformationJob.reason
             if (errorMessage !== undefined) {
                 transformByQState.setJobFailureErrorChatMessage(errorMessage)
@@ -621,7 +621,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             getLogger().error(`CodeTransformation: GetTransformation error = ${errorMessage}`)
             telemetry.codeTransform_logApiError.emit({
                 codeTransformApiNames: 'GetTransformation',
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformJobId: jobId,
                 codeTransformApiErrorMessage: errorMessage,
                 codeTransformRequestId: e.requestId ?? '',

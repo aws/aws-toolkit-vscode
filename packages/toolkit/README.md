@@ -1,28 +1,5 @@
 The AWS Toolkit lets you interact with AWS directly from VS Code. Ready to install? See [Getting Started](#getting-started).
 
-## [Amazon Q (preview)](https://aws.amazon.com/q/)
-
-Amazon Q is your conversational assistant for building, maintaining, and transforming applications. Amazon Q can do the following from the IDE:
-
--   Answer questions about AWS
--   Answer questions about general programming concepts
--   Explain what a line of code or code function does
--   Write unit tests and code
--   Debug and fix code
--   Refactor code
-
-![Amazon Q](https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhispererChat.gif)
-
-## [Amazon CodeWhisperer](https://aws.amazon.com/codewhisperer/)
-
-An AI powered productivity tool for the IDE.
-
--   **Real-time code suggestions** - automatic code recommendations in 15+ languages, now including infrastructure as code (CloudFormation, AWS CDK, and Terraform)
--   **Optimized for use with AWS services** - code suggestions are optimized for AWS APIs including Amazon Elastic Compute Cloud (Amazon EC2), AWS Lambda, and Amazon Simple Storage Service (Amazon S3)
--   **Built-in security scans** - Scan your code to detect hard-to-find vulnerabilities and get code suggestions to remediate them immediately
-
-![CodeWhisperer](https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif)
-
 ## [Application Composer](https://aws.amazon.com/application-composer/)
 
 AWS Application Composer maintains a real-time visual representation of your application architecture in sync with your IaC. Changes to the architecture—such as adding new resources or changing service configuration—are reflected in the IaC artifacts, and vice versa.
@@ -84,8 +61,7 @@ For a full list of features, visit [our documentation](https://docs.aws.amazon.c
 1. Open the AWS Toolkit extension
 2. Add AWS credentials
     1. **AWS resources** - connect using IAM credentials or IAM Identity Center (formerly SSO)
-    2. **CodeWhisperer** - connect using AWS Builder ID or IAM Identity Center (formerly SSO)
-    3. **CodeCatalyst** - connect using AWS Builder ID
+    2. **CodeCatalyst** - connect using AWS Builder ID or IAM Identity Center
 
 ![getting-started](https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/getting-started.gif)
 

@@ -30,6 +30,12 @@ export const autoSuggestionConfig = {
     deactivated: 'Deactivated',
 }
 
+export const autoScansConfig = {
+    settingId: 'codewhisperer_autoScansActivation',
+    activated: 'Activated',
+    deactivated: 'Deactivated',
+}
+
 /**
  * EditorCon context
  */
@@ -54,12 +60,12 @@ export const supplementalContextTimeoutInMs = 50
  */
 export const labelLength = 20
 
-export const completionDetail = 'CodeWhisperer'
+export const completionDetail = 'Amazon Q'
 
 /**
  * CodeWhisperer in configuration
  */
-export const codewhisperer = 'CodeWhisperer'
+export const codewhisperer = 'Amazon Q'
 
 // use vscode languageId here / Supported languages
 export const platformLanguageIds = [
@@ -99,20 +105,13 @@ export type PlatformLanguageId = (typeof platformLanguageIds)[number]
 /**
  * Prompt
  */
-export const pendingResponse = 'Waiting for CodeWhisperer...'
+export const pendingResponse = 'Waiting for Amazon Q...'
 
-export const runningSecurityScan = 'Scanning active file and its dependencies...'
+export const runningSecurityScan = 'Scanning project for security issues...'
 
-export const noSuggestions = 'No suggestions from CodeWhisperer'
+export const noSuggestions = 'No suggestions from Amazon Q'
 
-export const licenseFilter = 'CodeWhisperer suggestions were filtered due to reference setting'
-
-/**
- * Beta landing page file
- */
-export const welcomeCodeWhispererReadmeFileSource = 'resources/markdown/WelcomeToCodeWhisperer.md'
-
-export const welcomeCodeWhispererCloud9Readme = 'resources/markdown/WelcomeToCodeWhispererCloud9.md'
+export const licenseFilter = 'Amazon Q suggestions were filtered due to reference setting'
 
 /**
  * Key bindings JSON file path
@@ -137,6 +136,8 @@ export const unsupportedLanguagesKey = 'CODEWHISPERER_UNSUPPORTED_LANGUAGES_KEY'
 
 export const autoTriggerEnabledKey = 'CODEWHISPERER_AUTO_TRIGGER_ENABLED'
 
+export const autoScansEnabledKey = 'CODEWHISPERER_AUTO_SCANS_ENABLED'
+
 export const serviceActiveKey = 'CODEWHISPERER_SERVICE_ACTIVE'
 
 export const persistedCustomizationsKey = 'CODEWHISPERER_PERSISTED_CUSTOMIZATIONS'
@@ -149,13 +150,13 @@ export const inlinehintWipKey = 'aws.codewhisperer.tutorial.workInProgress'
 
 export type AnnotationChangeSource = 'codewhisperer' | 'selection' | 'editor' | 'content'
 
-export const learnMoreUriGeneral = 'https://aws.amazon.com/codewhisperer/'
+export const learnMoreUriGeneral = 'https://aws.amazon.com/q/developer/'
 
-export const learnMoreUri = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisperer.html'
+export const learnMoreUri = 'https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/q-in-IDE-setup.html'
 
-export const customLearnMoreUri = 'https://docs.aws.amazon.com/codewhisperer/latest/userguide/customizations.html'
+export const customLearnMoreUri = 'https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/customizations.html'
 
-export const securityScanLearnMoreUri = 'https://docs.aws.amazon.com/codewhisperer/latest/userguide/security-scans.html'
+export const securityScanLearnMoreUri = 'https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security-scans.html'
 
 export const identityPoolID = 'us-east-1:70717e99-906f-4add-908c-bd9074a2f5b9'
 
@@ -187,8 +188,8 @@ export const referenceLogText = (
 ) =>
     `with code ${code} provided with reference under ${license} from repository ${repository}. Added to ${filePath} ${lineInfo}.`
 
-export const referenceLogPromptText = `Don\'t want suggestions that include code with references? Uncheck this option in 
-    <a href="#" onclick="openSettings();return false;">CodeWhisperer Settings</a>`
+export const referenceLogPromptText = `Don\'t want suggestions that include code with references? Uncheck this option in
+    <a href="#" onclick="openSettings();return false;">Amazon Q: Settings</a>`
 
 export const referenceLogPromptTextEnterpriseSSO =
     'Your organization controls whether suggestions include code with references. To update these settings, please contact your admin.'
@@ -211,13 +212,23 @@ export const codeScanTerraformPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 2
 
 export const codeScanJavascriptPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
 
+export const fileScanPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
+
+export const fileScanUploadIntent = 'AUTOMATIC_FILE_SECURITY_SCAN'
+
+export const projectScanPayloadSizeLimitBytes = 5 * Math.pow(2, 30) // 5 GB
+
+export const projectScanUploadIntent = 'FULL_PROJECT_SECURITY_SCAN'
+
 export const codeScanTruncDirPrefix = 'codewhisperer_scan'
 
 export const codeScanZipExt = '.zip'
 
 export const contextTruncationTimeoutSeconds = 10
 
-export const codeScanJobTimeoutSeconds = 50
+export const codeScanJobTimeoutSeconds = 60 * 10 //10 minutes
+
+export const codeFileScanJobTimeoutSeconds = 60 //1 minute
 
 export const projectSizeCalculateTimeoutSeconds = 10
 
@@ -227,29 +238,64 @@ export const artifactTypeSource = 'SourceCode'
 
 export const codeScanFindingsSchema = 'codescan/findings/1.0'
 
+export const autoScanDebounceDelaySeconds = 2
+
+export const codewhispererDiagnosticSourceLabel = 'Amazon Q '
+
+// use vscode languageId here / Supported languages
+export const securityScanLanguageIds = [
+    'java',
+    'python',
+    'javascript',
+    'typescript',
+    'csharp',
+    'go',
+    'ruby',
+    'golang', // Cloud9 reports Go files with this language-id
+    'json',
+    'yaml',
+    'tf',
+    'hcl',
+    'terraform',
+    'terragrunt',
+    'packer',
+    'plaintext',
+    'jsonc',
+] as const
+
+export type SecurityScanLanguageId = (typeof securityScanLanguageIds)[number]
+
 // wait time for editor to update editor.selection.active (in milliseconds)
 export const vsCodeCursorUpdateDelay = 10
 
 export const reloadWindow = 'Reload Now'
 
 export const reloadWindowPrompt =
-    'Inline suggestion settings changed. The current window needs to be reloaded for CodeWhisperer to use these changes.'
+    'Inline suggestion settings changed. The current window needs to be reloaded for Amazon Q to use these changes.'
 
 export const ssoConfigAlertMessage = `This setting is controlled by your organization\’s admin and has been reset to the value they\’ve specified.`
 
 export const ssoConfigAlertMessageShareData = `This setting doesn\’t apply, since you are in Professional tier`
 
-export const settingsLearnMore = 'Learn More about CodeWhisperer Settings'
+export const settingsLearnMore = 'Learn More about Amazon Q Settings'
 
 export const freeTierLimitReached = 'You have reached the monthly fair use limit of code recommendations.'
 
 export const freeTierLimitReachedCodeScan = 'You have reached the monthly quota of code scans.'
 
+export const fileScansLimitReached = 'You have reached the monthly quota of auto-scans.'
+
+export const projectScansLimitReached = 'You have reached the monthly quota of project scans.'
+
 export const throttlingLearnMore = `Learn More`
 
 export const throttlingMessage = `Maximum recommendation count reached for this month`
 
-export const connectionChangeMessage = `Keep using CodeWhisperer with `
+export const fileScansThrottlingMessage = `Maximum auto-scans count reached for this month`
+
+export const projectScansThrottlingMessage = `Maximum project scan count reached for this month`
+
+export const connectionChangeMessage = `Keep using Amazon Q with `
 
 // TODO: align this text with service side
 export const invalidCustomizationMessage = `You are not authorized to access`
@@ -267,7 +313,7 @@ export const userGroupKey = 'CODEWHISPERER_USER_GROUP'
 
 export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
 
-export const newCustomizationMessage = 'You have access to new CodeWhisperer customizations.'
+export const newCustomizationMessage = 'You have access to new Amazon Q customizations.'
 
 export const newCustomizationsAvailableKey = 'aws.amazonq.codewhisperer.newCustomizations'
 
@@ -319,6 +365,10 @@ export const validStatesForCheckingDownloadUrl = [
     'STOPPED',
     'REJECTED',
 ]
+
+export const codewhispererSettingsImportedKey = 'aws.amazonq.codewhispererSettingsImported'
+export const amazonQDismissedKey = 'aws.toolkit.amazonq.dismissed'
+export const amazonQInstallDismissedKey = 'aws.toolkit.amazonqInstall.dismissed'
 
 export const amazonQFeedbackKey = 'Amazon Q'
 
@@ -503,9 +553,7 @@ export enum UserGroup {
 
 export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'
 
-export const supplemetalContextFetchingTimeoutMsg = 'codewhisperer supplemental context fetching timeout'
-
-export const codeFixAppliedSuccessMessage = 'Code fix was applied. Run a security scan to validate the fix.'
+export const supplemetalContextFetchingTimeoutMsg = 'Amazon Q supplemental context fetching timeout'
 
 export const codeFixAppliedFailedMessage = 'Failed to apply suggested code fix.'
 
@@ -521,6 +569,7 @@ export const utgConfig = {
     maxSegmentSize: 10200,
 }
 
-export const transformTreeNode = 'qTreeNode'
-
-export const maxHumanInTheLoopAttempts = 3
+export enum CodeAnalysisScope {
+    FILE = 'FILE',
+    PROJECT = 'PROJECT',
+}

@@ -6,7 +6,6 @@
 import { Timestamp } from 'aws-sdk/clients/apigateway'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { EditorContextCommandType } from '../../commands/registerCommands'
-import { OnboardingPageInteractionType } from '../../../amazonq/onboardingPage/model'
 import { AuthFollowUpType } from '../../../amazonq/auth/model'
 
 class UiMessage {
@@ -191,26 +190,6 @@ export class EditorContextCommandMessage extends UiMessage {
     }
 }
 
-export interface OnboardingPageInteractionMessageProps {
-    readonly message: string
-    readonly triggerID: string
-    readonly interactionType: OnboardingPageInteractionType
-}
-
-export class OnboardingPageInteractionMessage extends UiMessage {
-    readonly message: string
-    readonly triggerID: string
-    readonly interactionType: OnboardingPageInteractionType
-    override type = 'editorContextCommandMessage'
-
-    constructor(props: OnboardingPageInteractionMessageProps) {
-        super(undefined)
-        this.message = props.message
-        this.triggerID = props.triggerID
-        this.interactionType = props.interactionType
-    }
-}
-
 export interface QuickActionMessageProps {
     readonly message: string
     readonly triggerID: string
@@ -240,10 +219,6 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendEditorContextCommandMessage(message: EditorContextCommandMessage) {
-        this.appsToWebViewMessagePublisher.publish(message)
-    }
-
-    public sendOnboardingPageInteractionMessage(message: OnboardingPageInteractionMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 

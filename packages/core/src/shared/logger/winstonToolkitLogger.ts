@@ -10,9 +10,9 @@ import { Logger, LogLevel, compareLogLevel } from './logger'
 import { OutputChannelTransport } from './outputChannelTransport'
 import { isSourceMappingAvailable } from '../vscode/env'
 import { formatError, ToolkitError, UnknownError } from '../errors'
-import { isWeb } from '../../common/webUtils'
 import { SharedFileTransport } from './sharedFileTransport'
 import { ConsoleLogTransport } from './consoleLogTransport'
+import { isWeb } from '../extensionGlobals'
 
 // Need to limit how many logs are actually tracked
 // LRU cache would work well, currently it just dumps the least recently added log

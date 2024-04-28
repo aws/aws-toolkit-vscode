@@ -4,10 +4,11 @@
  */
 
 import * as vscode from 'vscode'
-import { Logger, showLogOutputChannel } from '.'
+import { Logger } from '.'
 import { telemetry } from '../telemetry/telemetry'
 import { Commands } from '../vscode/commands2'
 import { getLogger } from './logger'
+import globals from '../extensionGlobals'
 
 function revealLines(editor: vscode.TextEditor, start: number, end: number): void {
     const startPos = editor.document.lineAt(start).range.start
@@ -24,18 +25,42 @@ function clearSelection(editor: vscode.TextEditor): void {
 }
 
 export class Logging {
-    public static readonly declared = {
-        // Calls openLogUri().
-        viewLogs: Commands.from(this).declareOpenLogUri('aws.viewLogs'),
-        // Calls openLogId().
-        viewLogsAtMessage: Commands.from(this).declareOpenLogId('aws.viewLogsAtMessage'),
+    public readonly viewLogs
+    public readonly viewLogsAtMessage
+
+    static #instance: Logging
+
+    public static get instance() {
+        if (!this.#instance) {
+            throw new Error('Logging class used without calling Logging.init().')
+        }
+        return this.#instance
     }
 
-    public constructor(private readonly logUri: vscode.Uri | undefined, private readonly logger: Logger) {}
+    /**
+     * @param logUri (optional) Log file path, only used for "developer mode" (`aws.dev.logfile` setting).
+     * @param logger
+     * @param contextPrefix Decided the command name based on the extension context.
+     */
+    public static init(logUri: vscode.Uri | undefined, logger: Logger, contextPrefix: string) {
+        this.#instance = new Logging(logUri, logger, contextPrefix)
+    }
+
+    /**
+     * @see {@link init}
+     */
+    constructor(
+        private readonly logUri: vscode.Uri | undefined,
+        private readonly logger: Logger,
+        contextPrefix: string
+    ) {
+        this.viewLogs = Commands.register(`aws.${contextPrefix}.viewLogs`, () => this.openLogUri())
+        this.viewLogsAtMessage = Commands.register(`aws.${contextPrefix}.viewLogsAtMessage`, id => this.openLogId(id))
+    }
 
     public async openLogUri(): Promise<vscode.TextEditor | undefined> {
         if (!this.logUri) {
-            showLogOutputChannel()
+            globals.logOutputChannel.show(true)
             return undefined
         }
         telemetry.toolkit_viewLogs.emit({ result: 'Succeeded' })
@@ -44,7 +69,7 @@ export class Logging {
 
     public async openLogId(logId: number) {
         if (!this.logUri) {
-            showLogOutputChannel()
+            globals.logOutputChannel.show(true)
             return
         }
         const msg = this.logger.getLogById(logId, this.logUri)

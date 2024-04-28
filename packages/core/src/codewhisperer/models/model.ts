@@ -6,6 +6,7 @@ import * as vscode from 'vscode'
 import { ToolkitError } from '../../shared/errors'
 import { getIcon } from '../../shared/icons'
 import {
+    CodewhispererCodeScanScope,
     CodewhispererCompletionType,
     CodewhispererLanguage,
     CodewhispererTriggerType,
@@ -13,7 +14,7 @@ import {
 } from '../../shared/telemetry/telemetry'
 import { References } from '../client/codewhisperer'
 import globals from '../../shared/extensionGlobals'
-import { autoTriggerEnabledKey } from './constants'
+import { autoScansEnabledKey, autoTriggerEnabledKey } from './constants'
 import { get, set } from '../util/commonUtil'
 import { ChatControllerEventEmitters } from '../../amazonqGumby/chat/controller/controller'
 import { TransformationSteps } from '../client/codewhispereruserclient'
@@ -111,6 +112,54 @@ export class CodeSuggestionsState {
     }
 }
 
+export class CodeScansState {
+    #context: vscode.Memento
+    /** The initial state if scan state was not defined */
+    #fallback: boolean
+    #onDidChangeState = new vscode.EventEmitter<boolean>()
+    /** Set a callback for when state of code scans changes */
+    onDidChangeState = this.#onDidChangeState.event
+
+    private exceedsMonthlyQuota = false
+
+    static #instance: CodeScansState
+    static get instance() {
+        return (this.#instance ??= new this())
+    }
+
+    protected constructor(context: vscode.Memento = globals.context.globalState, fallback: boolean = true) {
+        this.#context = context
+        this.#fallback = fallback
+    }
+
+    async toggleScans() {
+        const autoScansEnabled = this.isScansEnabled()
+        const toSet: boolean = !autoScansEnabled
+        await set(autoScansEnabledKey, toSet, this.#context)
+        this.#onDidChangeState.fire(toSet)
+        return toSet
+    }
+
+    async setScansEnabled(isEnabled: boolean) {
+        if (this.isScansEnabled() !== isEnabled) {
+            await this.toggleScans()
+        }
+    }
+
+    isScansEnabled(): boolean {
+        const isEnabled = get(autoScansEnabledKey, this.#context)
+        return isEnabled !== undefined ? isEnabled : this.#fallback
+    }
+
+    setMonthlyQuotaExceeded() {
+        this.exceedsMonthlyQuota = true
+    }
+
+    isMonthlyQuotaExceeded() {
+        return this.exceedsMonthlyQuota
+    }
+}
+
 export interface AcceptedSuggestionEntry {
     readonly time: Date
     readonly fileUrl: vscode.Uri
@@ -202,7 +251,7 @@ export class CodeScanState {
     public getIconForButton() {
         switch (this.codeScanState) {
             case CodeScanStatus.NotStarted:
-                return getIcon('vscode-debug-alt-small')
+                return getIcon('vscode-debug-all')
             case CodeScanStatus.Running:
                 return getIcon('vscode-stop-circle')
             case CodeScanStatus.Cancelling:
@@ -618,6 +667,7 @@ export interface CodeScanTelemetryEntry {
     codewhispererCodeScanTotalIssues: number
     codewhispererCodeScanIssuesWithFixes: number
     credentialStartUrl: string | undefined
+    codewhispererCodeScanScope: CodewhispererCodeScanScope
 }
 
 export interface RecommendationDescription {

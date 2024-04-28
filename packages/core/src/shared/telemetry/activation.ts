@@ -12,10 +12,13 @@ import * as vscode from 'vscode'
 import { AwsContext } from '../awsContext'
 import { DefaultTelemetryService } from './telemetryService'
 import { getLogger } from '../logger'
-import { getComputeRegion, getIdeProperties, isCloud9 } from '../extensionUtilities'
-import { openSettings, Settings } from '../settings'
-import { TelemetryConfig } from './util'
+import { getComputeRegion, isAmazonQ, isCloud9, productName } from '../extensionUtilities'
+import { openSettingsId, Settings } from '../settings'
+import { TelemetryConfig, setupTelemetryId } from './util'
 import { isAutomation, isReleaseVersion } from '../vscode/env'
+import { AWSProduct } from './clienttelemetry'
+import { DefaultTelemetryClient } from './telemetryClient'
+import { Commands } from '../vscode/commands2'
 
 export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'Settings')
 export const noticeResponseOk = localize('AWS.telemetry.notificationOk', 'OK')
@@ -33,26 +36,42 @@ const CURRENT_TELEMETRY_NOTICE_VERSION = 2 // eslint-disable-line @typescript-es
 /**
  * Sets up the Metrics system and initializes globals.telemetry
  */
-export async function activate(extensionContext: vscode.ExtensionContext, awsContext: AwsContext, settings: Settings) {
+export async function activate(
+    extensionContext: vscode.ExtensionContext,
+    awsContext: AwsContext,
+    settings: Settings,
+    productName: AWSProduct
+) {
     const config = new TelemetryConfig(settings)
+    await config.initAmazonQSetting() // TODO: Remove after a few releases.
+
+    DefaultTelemetryClient.productName = productName
     globals.telemetry = await DefaultTelemetryService.create(extensionContext, awsContext, getComputeRegion())
 
     try {
         globals.telemetry.telemetryEnabled = config.isEnabled()
 
         extensionContext.subscriptions.push(
-            config.onDidChange(event => {
+            (isAmazonQ() ? config.amazonQConfig : config.toolkitConfig).onDidChange(event => {
                 if (event.key === 'telemetry') {
                     globals.telemetry.telemetryEnabled = config.isEnabled()
                 }
             })
         )
 
+        if (isAmazonQ()) {
+            extensionContext.subscriptions.push(
+                Commands.register('aws.amazonq.setupTelemetryId', async () => {
+                    await setupTelemetryId(extensionContext)
+                })
+            )
+        }
+
         // Prompt user about telemetry if they haven't been
         if (!isCloud9() && !hasUserSeenTelemetryNotice(extensionContext)) {
             showTelemetryNotice(extensionContext)
         }
-
+        await setupTelemetryId(extensionContext)
         await globals.telemetry.start()
     } catch (e) {
         // Only throw in a production build because:
@@ -87,8 +106,8 @@ function showTelemetryNotice(extensionContext: vscode.ExtensionContext) {
 
     const telemetryNoticeText: string = localize(
         'AWS.telemetry.notificationMessage',
-        '{0} Toolkit collects anonymous usage metrics to help drive toolkit improvements. This can be changed in the settings.',
-        getIdeProperties().company
+        '{0} collects anonymous usage metrics to improve the product. You can opt-out in settings.',
+        productName()
     )
 
     // Don't wait for a response
@@ -114,7 +133,7 @@ export async function handleTelemetryNoticeResponse(
         // noticeResponseOk is a no-op
 
         if (response === noticeResponseViewSettings) {
-            await openSettings('aws.telemetry')
+            await openSettingsId(isAmazonQ() ? 'amazonQ.telemetry' : 'aws.telemetry')
         }
     } catch (err) {
         getLogger().error('Error while handling response from telemetry notice: %O', err as Error)

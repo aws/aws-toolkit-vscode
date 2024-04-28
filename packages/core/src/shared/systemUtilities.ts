@@ -15,8 +15,7 @@ import { GitExtension } from './extensions/git'
 import { isCloud9 } from './extensionUtilities'
 import { Settings } from './settings'
 import { PermissionsError, PermissionsTriplet, isFileNotFoundError, isNoPermissionsError } from './errors'
-import { isWeb } from '../common/webUtils'
-import globals from './extensionGlobals'
+import globals, { isWeb } from './extensionGlobals'
 
 export function createPermissionsErrorHandler(
     uri: vscode.Uri,

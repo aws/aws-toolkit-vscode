@@ -11,14 +11,14 @@
 import vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import globals, { initialize } from './shared/extensionGlobals'
+import globals, { initialize, isWeb } from './shared/extensionGlobals'
 import { join } from 'path'
 import { Commands } from './shared/vscode/commands2'
 import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
-import { getIdeProperties, aboutToolkit, isCloud9 } from './shared/extensionUtilities'
-import { telemetry } from './shared/telemetry/telemetry'
+import { getIdeProperties, aboutExtension, isCloud9 } from './shared/extensionUtilities'
+import { logAndShowError, logAndShowWebviewError } from './shared/utilities/logAndShowUtils'
+import { AuthStatus, telemetry } from './shared/telemetry/telemetry'
 import { openUrl } from './shared/utilities/vsCodeUtils'
-import { activate as activateCodeWhisperer, shutdown as codewhispererShutdown } from './codewhisperer/activation'
 import { activateViewsShared } from './awsexplorer/activationShared'
 
 import { activate as activateLogger } from './shared/logger/activation'
@@ -32,13 +32,8 @@ import { LoginManager } from './auth/deprecated/loginManager'
 import { CredentialsStore } from './auth/credentials/store'
 import { initializeAwsCredentialsStatusBarItem } from './auth/ui/statusBarItem'
 import { RegionProvider, getEndpointsFromFetcher } from './shared/regions/regionProvider'
-import { ChildProcess } from './shared/utilities/childProcess'
-import { isWeb } from './common/webUtils'
+import { getMachineId } from './shared/vscode/env'
 import { registerErrorHandler as registerCommandErrorHandler } from './shared/vscode/commands2'
-import { ToolkitError, isUserCancelledError, resolveErrorMessageToDisplay } from './shared/errors'
-import { getLogger } from './shared/logger'
-import { showMessageWithUrl } from './shared/utilities/messages'
-import { Logging } from './shared/logger/commands'
 import { registerWebviewErrorHandler } from './webviews/server'
 import { showQuickStartWebview } from './shared/extensionStartup'
 import { ExtContext } from './shared/extensions'
@@ -47,6 +42,10 @@ import { UriHandler } from './shared/vscode/uriHandler'
 import { disableAwsSdkWarning } from './shared/awsClientBuilder'
 import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
 import { ResourceFetcher } from './shared/resourcefetcher/resourcefetcher'
+import { ExtStartUpSources, getAuthFormIdsFromConnection } from './shared/telemetry/util'
+import { ExtensionUse } from './auth/utils'
+import { Auth } from './auth'
+import { AuthFormId } from './auth/ui/vue/authForms/types'
 
 // In web mode everything must be in a single file, so things like the endpoints file will not be available.
 // The following imports the endpoints file, which causes webpack to bundle it in the final output file
@@ -60,26 +59,34 @@ let localize: nls.LocalizeFunc
  * Activation/setup code that is shared by the regular (nodejs) extension AND web mode extension.
  * Most setup code should live here, unless there is a reason not to.
  */
-export async function activateShared(context: vscode.ExtensionContext): Promise<ExtContext> {
+export async function activateShared(
+    context: vscode.ExtensionContext,
+    contextPrefix: string,
+    isWeb: boolean
+): Promise<ExtContext> {
     localize = nls.loadMessageBundle()
 
     // some "initialize" functions
+    initialize(context, isWeb)
     await initializeComputeRegion()
-    initialize(context)
+
+    globals.contextPrefix = '' //todo: disconnect supplied argument
 
     registerCommandErrorHandler((info, error) => {
         const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
-        void logAndShowError(error, info.id, defaultMessage)
+        void logAndShowError(localize, error, info.id, defaultMessage)
     })
 
     registerWebviewErrorHandler((error: unknown, webviewId: string, command: string) => {
-        logAndShowWebviewError(error, webviewId, command)
+        logAndShowWebviewError(localize, error, webviewId, command)
     })
 
     // Setup the logger
     const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit', { log: true })
-    await activateLogger(context, toolkitOutputChannel)
+    const toolkitLogChannel = vscode.window.createOutputChannel('AWS Toolkit Logs', { log: true })
+    await activateLogger(context, contextPrefix, toolkitOutputChannel, toolkitLogChannel)
     globals.outputChannel = toolkitOutputChannel
+    globals.logOutputChannel = toolkitLogChannel
 
     if (isCloud9()) {
         vscode.window.withProgress = wrapWithProgressForCloud9(globals.outputChannel)
@@ -108,17 +115,33 @@ export async function activateShared(context: vscode.ExtensionContext): Promise<
     globals.regionProvider = RegionProvider.fromEndpointsProvider(makeEndpointsProvider())
 
     // telemetry
-    await activateTelemetry(context, globals.awsContext, Settings.instance)
-
-    // auth
-    await initializeAuth(context, globals.awsContext, globals.loginManager)
-    await initializeAwsCredentialsStatusBarItem(globals.awsContext, context)
+    await activateTelemetry(context, globals.awsContext, Settings.instance, 'AWS Toolkit For VS Code')
 
     // Create this now, but don't call vscode.window.registerUriHandler() until after all
     // Toolkit services have a chance to register their path handlers. #4105
     globals.uriHandler = new UriHandler()
 
-    registerCommands(context)
+    // Generic extension commands
+    registerCommands(context, contextPrefix)
+
+    // Toolkit specific commands
+    context.subscriptions.push(
+        // No-op command used for decoration-only codelenses.
+        vscode.commands.registerCommand('aws.doNothingCommand', () => {}),
+        // "Show AWS Commands..."
+        Commands.register('aws.listCommands', () =>
+            vscode.commands.executeCommand('workbench.action.quickOpen', `> ${getIdeProperties().company}:`)
+        ),
+        // register URLs in extension menu
+        Commands.register(`aws.toolkit.help`, async () => {
+            void openUrl(vscode.Uri.parse(documentationUrl))
+            telemetry.aws_help.emit()
+        })
+    )
+
+    // auth
+    await initializeAuth(context, globals.loginManager, contextPrefix, globals.uriHandler)
+    await initializeAwsCredentialsStatusBarItem(globals.awsContext, context)
 
     const extContext: ExtContext = {
         extensionContext: context,
@@ -133,104 +156,31 @@ export async function activateShared(context: vscode.ExtensionContext): Promise<
 
     await activateViewsShared(extContext.extensionContext)
 
-    await activateCodeWhisperer(extContext)
-
     return extContext
 }
 
 /** Deactivation code that is shared between nodejs and web implementations */
 export async function deactivateShared() {
     await globals.telemetry.shutdown()
-    await codewhispererShutdown()
 }
 /**
  * Registers generic commands used by both web and node versions of the toolkit.
  */
-export function registerCommands(extensionContext: vscode.ExtensionContext) {
+export function registerCommands(extensionContext: vscode.ExtensionContext, contextPrefix: string) {
     extensionContext.subscriptions.push(
-        // No-op command used for decoration-only codelenses.
-        vscode.commands.registerCommand('aws.doNothingCommand', () => {}),
-        // "Show AWS Commands..."
-        Commands.register('aws.listCommands', () =>
-            vscode.commands.executeCommand('workbench.action.quickOpen', `> ${getIdeProperties().company}:`)
-        ),
         // register URLs in extension menu
-        Commands.register('aws.help', async () => {
-            void openUrl(vscode.Uri.parse(documentationUrl))
-            telemetry.aws_help.emit()
-        }),
-        Commands.register('aws.github', async () => {
+        Commands.register(`aws.${contextPrefix}.github`, async () => {
             void openUrl(vscode.Uri.parse(githubUrl))
             telemetry.aws_showExtensionSource.emit()
         }),
-        Commands.register('aws.createIssueOnGitHub', async () => {
+        Commands.register(`aws.${contextPrefix}.createIssueOnGitHub`, async () => {
             void openUrl(vscode.Uri.parse(githubCreateIssueUrl))
             telemetry.aws_reportPluginIssue.emit()
         }),
-        Commands.register('aws.aboutToolkit', async () => {
-            await aboutToolkit()
+        Commands.register(`aws.${contextPrefix}.aboutExtension`, async () => {
+            await aboutExtension()
         })
     )
-}
-
-async function getMachineId(): Promise<string> {
-    if (isWeb()) {
-        return 'browser'
-    }
-    const proc = new ChildProcess('hostname', [], { collect: true, logging: 'no' })
-    return (await proc.run()).stdout.trim() ?? 'unknown-host'
-}
-
-/**
- * Logs the error. Then determines what kind of error message should be shown, if
- * at all.
- *
- * @param error The error itself
- * @param topic The prefix of the error message
- * @param defaultMessage The message to show if once cannot be resolved from the given error
- *
- * SIDE NOTE:
- * This is only being used for errors from commands and webview, there's plenty of other places
- * (explorer, nodes, ...) where it could be used. It needs to be apart of some sort of `core`
- * module that is guaranteed to initialize prior to every other Toolkit component.
- * Logging and telemetry would fit well within this core module.
- */
-async function logAndShowError(error: unknown, topic: string, defaultMessage: string) {
-    if (isUserCancelledError(error)) {
-        getLogger().verbose(`${topic}: user cancelled`)
-        return
-    }
-    const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
-    const logId = getLogger().error(`${topic}: %s`, error)
-    const message = resolveErrorMessageToDisplay(error, defaultMessage)
-
-    if (error instanceof ToolkitError && error.documentationUri) {
-        await showMessageWithUrl(message, error.documentationUri, 'View Documentation', 'error')
-    } else {
-        await vscode.window.showErrorMessage(message, logsItem).then(async resp => {
-            if (resp === logsItem) {
-                await Logging.declared.viewLogsAtMessage.execute(logId)
-            }
-        })
-    }
-}
-
-/**
- * Show a webview related error to the user + button that links to the logged error
- *
- * @param err The error that was thrown in the backend
- * @param webviewId Arbitrary value that identifies which webview had the error
- * @param command The high level command/function that was run which triggered the error
- */
-function logAndShowWebviewError(err: unknown, webviewId: string, command: string) {
-    // HACK: The following implementation is a hack, influenced by the implementation of handleError().
-    // The userFacingError message will be seen in the UI, and the detailedError message will provide the
-    // detailed information in the logs.
-    const detailedError = ToolkitError.chain(err, `Webview backend command failed: "${command}()"`)
-    const userFacingError = ToolkitError.chain(detailedError, 'Webview error')
-    logAndShowError(userFacingError, `webviewId="${webviewId}"`, 'Webview error').catch(e => {
-        getLogger().error('logAndShowError failed: %s', (e as Error).message)
-    })
 }
 
 /**
@@ -238,7 +188,7 @@ function logAndShowWebviewError(err: unknown, webviewId: string, command: string
  *
  * https://docs.aws.amazon.com/general/latest/gr/rande.html
  */
-function makeEndpointsProvider() {
+export function makeEndpointsProvider() {
     let localManifestFetcher: ResourceFetcher
     let remoteManifestFetcher: ResourceFetcher
     if (isWeb()) {
@@ -287,4 +237,39 @@ function wrapWithProgressForCloud9(channel: vscode.OutputChannel): (typeof vscod
             return task(newProgress, token)
         })
     }
+}
+
+export async function emitUserState() {
+    await telemetry.auth_userState.run(async () => {
+        telemetry.record({ passive: true })
+
+        const firstUse = ExtensionUse.instance.isFirstUse()
+        const wasUpdated = ExtensionUse.instance.wasUpdated()
+
+        if (firstUse) {
+            telemetry.record({ source: ExtStartUpSources.firstStartUp })
+        } else if (wasUpdated) {
+            telemetry.record({ source: ExtStartUpSources.update })
+        } else {
+            telemetry.record({ source: ExtStartUpSources.reload })
+        }
+
+        let authStatus: AuthStatus = 'notConnected'
+        const enabledConnections: Set<AuthFormId> = new Set()
+        if (Auth.instance.hasConnections) {
+            authStatus = 'expired'
+            ;(await Auth.instance.listConnections()).forEach(conn => {
+                const state = Auth.instance.getConnectionState(conn)
+                if (state === 'valid') {
+                    authStatus = 'connected'
+                }
+
+                getAuthFormIdsFromConnection(conn).forEach(id => enabledConnections.add(id))
+            })
+        }
+        telemetry.record({
+            authStatus,
+            authEnabledConnections: [...enabledConnections].join(','),
+        })
+    })
 }

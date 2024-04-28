@@ -301,6 +301,32 @@
             "name": "codewhispererUserInputDetails",
             "type": "string",
             "description": "A JSON serialized string of user input details."
+        },
+        {
+            "name": "action",
+            "type": "string",
+            "description": "Name of an action that was taken, displayed, etc."
+        },
+        {
+            "name": "authStatus",
+            "type": "string",
+            "allowedValues": ["connected", "notConnected", "expired"],
+            "description": "Status of the an auth connection."
+        },
+        {
+            "name": "authEnabledFeatures",
+            "type": "string",
+            "description": "Comma-delimited list of features for which auth is enabled."
+        },
+        {
+            "name": "authEnabledConnections",
+            "type": "string",
+            "description": "Comma-delimited list of enabled auths."
+        },
+        {
+            "name": "region",
+            "type": "string",
+            "description": "An AWS region."
         }
     ],
     "metrics": [
@@ -1077,6 +1103,133 @@
                 }
             ],
             "passive": true
+        },
+        {
+            "name": "auth_userState",
+            "description": "The state of the user's authentication.",
+            "metadata": [
+                {
+                    "type": "source",
+                    "required": true
+                },
+                {
+                    "type": "authStatus",
+                    "required": true
+                },
+                {
+                    "type": "authEnabledConnections",
+                    "required": true
+                }
+            ],
+            "passive": true
+        },
+        {
+            "name": "auth_signInPageOpened",
+            "description": "When the Amazon Q sign in page is opened and focused.",
+            "metadata": [],
+            "passive": true
+        },
+        {
+            "name": "auth_signInPageClosed",
+            "description": "When the Amazon Q sign in page is closed.",
+            "metadata": [],
+            "passive": true
+        },
+        {
+            "name": "toolkit_invokeAction",
+            "description": "A user invoked an action. Source represents the notification that produced the action",
+            "metadata": [
+                {
+                    "type": "result",
+                    "required": true
+                },
+                {
+                    "type": "id",
+                    "required": true
+                },
+                {
+                    "type": "source",
+                    "required": true
+                },
+                {
+                    "type": "component",
+                    "required": true
+                },
+                {
+                    "type": "action",
+                    "required": true
+                },
+                {
+                    "type": "reason",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "aws_loginWithBrowser",
+            "description": "Called when a connection requires login using the browser",
+            "metadata": [
+                {
+                    "type": "credentialSourceId",
+                    "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "credentialType",
+                    "required": false
+                },
+                {
+                    "type": "isReAuth",
+                    "required": false
+                },
+                {
+                    "type": "source"
+                },
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "auth_addConnection",
+            "description": "Captures the result of adding a new connection in the 'Add New Connection' workflow",
+            "metadata": [
+                {
+                    "type": "credentialSourceId",
+                    "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "region",
+                    "required": false
+                },
+                {
+                    "type": "isReAuth",
+                    "required": false
+                },
+                {
+                    "type": "authEnabledFeatures",
+                    "required": false
+                },
+                {
+                    "type": "reason",
+                    "required": false
+                },
+                {
+                    "type": "result",
+                    "required": true
+                },
+                {
+                    "type": "source",
+                    "required": true
+                }
+            ]
         }
     ]
 }

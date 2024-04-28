@@ -16,14 +16,11 @@ import { isValidResponse } from '../shared/wizards/wizard'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { formatError, ToolkitError } from '../shared/errors'
 import { asString } from './providers/credentials'
-import { getResourceFromTreeNode } from '../shared/treeview/utils'
-import { Instance } from '../shared/utilities/typeConstructors'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { createCommonButtons, createExitButton, createHelpButton, createRefreshButton } from '../shared/ui/buttons'
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
-import { authHelpUrl } from '../shared/constants'
 import { getDependentAuths } from './secondaryAuth'
 import { DevSettings } from '../shared/settings'
 import { createRegionPrompter } from '../shared/ui/common/region'
@@ -34,24 +31,40 @@ import {
     Connection,
     SsoConnection,
     createBuilderIdProfile,
-    createSsoProfile,
     defaultSsoRegion,
     isAnySsoConnection,
     isIdcSsoConnection,
     isBuilderIdConnection,
     isIamConnection,
     isValidCodeCatalystConnection,
+    createSsoProfile,
 } from './connection'
-import { Commands, placeholder, vscodeComponent } from '../shared/vscode/commands2'
+import { Commands, placeholder, RegisteredCommand, vscodeComponent } from '../shared/vscode/commands2'
 import { Auth } from './auth'
 import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
-import { openUrl } from '../shared/utilities/vsCodeUtils'
-import { AuthSource } from './ui/vue/show'
 import { getLogger } from '../shared/logger'
 import { isValidCodeWhispererCoreConnection } from '../codewhisperer/util/authUtil'
+import { authHelpUrl } from '../shared/constants'
+import { getResourceFromTreeNode } from '../shared/treeview/utils'
+import { Instance } from '../shared/utilities/typeConstructors'
+import { openUrl } from '../shared/utilities/vsCodeUtils'
+import { extensionVersion } from '../shared/vscode/env'
+import { ExtStartUpSources } from '../shared/telemetry'
+import { CommonAuthWebview } from '../login/webview/vue/backend'
+import { AuthSource } from '../login/webview/util'
 
 // TODO: Look to do some refactoring to handle circular dependency later and move this to ./commands.ts
-export const showConnectionsPageCommand = 'aws.auth.manageConnections'
+let showConnectionsPageCommand: string | undefined
+function setShowConnectPageCommand(val: string) {
+    showConnectionsPageCommand = val
+}
+
+export function getShowConnectPageCommand() {
+    if (!showConnectionsPageCommand) {
+        throw new Error('showConnectionsPageCommand is not set')
+    }
+    return showConnectionsPageCommand
+}
 
 // iam-only excludes Builder ID and IAM Identity Center from the list of valid connections
 // TODO: Understand if "iam" should include these from the list at all
@@ -64,7 +77,7 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'iam-only' 
     if (resp === 'addNewConnection') {
         // TODO: Cannot call function directly due to circular dependency. Refactor to fix this.
         const source: AuthSource = 'addConnectionQuickPick' // enforcing type sanity check
-        await vscode.commands.executeCommand(showConnectionsPageCommand, placeholder, source)
+        await vscode.commands.executeCommand(getShowConnectPageCommand(), placeholder, source)
         return undefined
     }
 
@@ -85,22 +98,6 @@ export async function promptAndUseConnection(...[auth, type]: Parameters<typeof 
         await auth.useConnection(resp)
     })
 }
-
-const switchConnections = Commands.register('aws.auth.switchConnections', (auth: Auth | TreeNode | unknown) => {
-    telemetry.ui_click.emit({ elementId: 'devtools_connectToAws' })
-
-    if (!(auth instanceof Auth)) {
-        try {
-            auth = getResourceFromTreeNode(auth, Instance(Auth))
-        } catch {
-            // Fall back in case this command is called from something in package.json.
-            // If so, then the value of auth will be unusable.
-            auth = Auth.instance
-        }
-    }
-
-    return promptAndUseConnection(auth as Auth)
-})
 
 export async function signout(auth: Auth, conn: Connection | undefined = auth.activeConnection) {
     if (conn?.type === 'sso') {
@@ -235,59 +232,6 @@ export async function showRegionPrompter(
 
     return region
 }
-
-Commands.register('aws.auth.help', async () => {
-    await openUrl(vscode.Uri.parse(authHelpUrl))
-    telemetry.aws_help.emit()
-})
-
-Commands.register('aws.auth.signout', () => {
-    telemetry.ui_click.emit({ elementId: 'devtools_signout' })
-    return signout(Auth.instance)
-})
-
-export const addConnection = Commands.register(
-    { id: 'aws.auth.addConnection', telemetryThrottleMs: false },
-    async () => {
-        const c9IamItem = createIamItem()
-        c9IamItem.detail =
-            'Activates working with resources in the Explorer. Requires an access key ID and secret access key.'
-        const items = isCloud9()
-            ? [createSsoItem(), c9IamItem]
-            : [createBuilderIdItem(), createSsoItem(), createIamItem()]
-
-        const resp = await showQuickPick(items, {
-            title: localize('aws.auth.addConnection.title', 'Add a Connection to {0}', getIdeProperties().company),
-            placeholder: localize('aws.auth.addConnection.placeholder', 'Select a connection option'),
-            buttons: createCommonButtons() as vscode.QuickInputButton[],
-        })
-        if (!isValidResponse(resp)) {
-            telemetry.ui_click.emit({ elementId: 'connection_optionescapecancel' })
-            throw new CancellationError('user')
-        }
-
-        switch (resp) {
-            case 'iam':
-                return await globals.awsContextCommands.onCommandCreateCredentialsProfile()
-            case 'sso': {
-                const startUrlPrompter = await createStartUrlPrompter('IAM Identity Center')
-                const startUrl = await startUrlPrompter.prompt()
-                if (!isValidResponse(startUrl)) {
-                    throw new CancellationError('user')
-                }
-                telemetry.ui_click.emit({ elementId: 'connection_startUrl' })
-
-                const region = await showRegionPrompter()
-
-                const conn = await Auth.instance.createConnection(createSsoProfile(startUrl, region.id))
-                return Auth.instance.useConnection(conn)
-            }
-            case 'builderId': {
-                return createBuilderIdConnection(Auth.instance)
-            }
-        }
-    }
-)
 
 export async function tryAddCredentials(
     profileName: SectionName,
@@ -474,7 +418,7 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
                               hidden = true
                               sub.dispose()
                           })
-                          const newConn = await reauthCommand.execute(auth, conn)
+                          const newConn = await authCommands().reauth.execute(auth, conn)
                           if (hidden && newConn && auth.getConnectionState(newConn) === 'valid') {
                               await auth.useConnection(newConn)
                           } else {
@@ -511,44 +455,6 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
     }
 }
 
-export const reauthCommand = Commands.register('_aws.auth.reauthenticate', async (auth: Auth, conn: Connection) => {
-    try {
-        return await auth.reauthenticate(conn)
-    } catch (err) {
-        throw ToolkitError.chain(err, 'Unable to authenticate connection')
-    }
-})
-
-// Used to decouple from the `Commands` implementation
-Commands.register('_aws.auth.autoConnect', () => Auth.instance.tryAutoConnect())
-
-export const useIamCredentials = Commands.register('_aws.auth.useIamCredentials', (auth: Auth) => {
-    telemetry.ui_click.emit({ elementId: 'explorer_IAMselect_VSCode' })
-
-    return promptAndUseConnection(auth, 'iam')
-})
-
-// Legacy commands
-export const login = Commands.register('aws.login', async () => {
-    const auth = Auth.instance
-    const connections = await auth.listConnections()
-    if (connections.length === 0) {
-        const source: AuthSource = vscodeComponent
-        return vscode.commands.executeCommand(showConnectionsPageCommand, placeholder, source)
-    } else {
-        return switchConnections.execute(auth)
-    }
-})
-Commands.register('aws.logout', () => signout(Auth.instance))
-Commands.register('aws.credentials.edit', () => globals.awsContextCommands.onCommandEditCredentials())
-Commands.register('aws.credentials.profile.create', async () => {
-    try {
-        await globals.awsContextCommands.onCommandCreateCredentialsProfile()
-    } finally {
-        telemetry.aws_createCredentials.emit()
-    }
-})
-
 function mapEventType<T, U = void>(event: vscode.Event<T>, fn?: (val: T) => U): vscode.Event<U> {
     const emitter = new vscode.EventEmitter<U>()
     event(val => (fn ? emitter.fire(fn(val)) : emitter.fire(undefined as U)))
@@ -565,21 +471,21 @@ export class AuthNode implements TreeNode<Auth> {
     public getTreeItem() {
         // Calling this here is robust but `TreeShim` must be instantiated lazily to stop side-effects
         // TODO: this is a race!
-        this.resource.tryAutoConnect().catch(e => {
-            getLogger().error('tryAutoConnect failed: %s', (e as Error).message)
-        })
-
-        if (!this.resource.hasConnections) {
-            const item = new vscode.TreeItem(`Connect to ${getIdeProperties().company} to Get Started...`)
-            const source: AuthSource = 'authNode'
-            item.command = {
-                title: 'Add Connection',
-                command: showConnectionsPageCommand,
-                arguments: [placeholder, source],
-            }
-
-            return item
-        }
+        this.resource
+            .tryAutoConnect()
+            .then(() => {
+                CommonAuthWebview.authSource = ExtensionUse.instance.isFirstUse()
+                    ? ExtStartUpSources.firstStartUp
+                    : ExtStartUpSources.reload
+                void vscode.commands.executeCommand(
+                    'setContext',
+                    'aws.explorer.showAuthView',
+                    !this.resource.hasConnections
+                )
+            })
+            .catch(e => {
+                getLogger().error('tryAutoConnect failed: %s', (e as Error).message)
+            })
 
         const conn = this.resource.activeConnection
         const itemLabel =
@@ -596,10 +502,10 @@ export class AuthNode implements TreeNode<Auth> {
                 this.setDescription(item, 'authenticating...')
             } else {
                 this.setDescription(item, 'expired or invalid, click to authenticate')
-                item.command = reauthCommand.build(this.resource, conn).asCommand({ title: 'Reauthenticate' })
+                item.command = authCommands().reauth.build(this.resource, conn).asCommand({ title: 'Reauthenticate' })
             }
         } else {
-            item.command = switchConnections.build(this.resource).asCommand({ title: 'Login' })
+            item.command = authCommands().switchConnections.build(this.resource).asCommand({ title: 'Login' })
             item.iconPath = conn !== undefined ? getConnectionIcon(conn) : undefined
         }
 
@@ -708,11 +614,17 @@ async function findBuilderIdConnections(
  */
 export class ExtensionUse {
     public readonly isExtensionFirstUseKey = 'isExtensionFirstUse'
+    public readonly lastExtensionVersionKey = 'lastExtensionVersion'
 
     // The result of if is first use for the remainder of the extension session.
     // This will reset on next startup.
     private isFirstUseCurrentSession: boolean | undefined
 
+    private wasExtensionUpdated: boolean | undefined
+
+    /**
+     * Check if this is the first use/session of the extension.
+     */
     isFirstUse(
         state: vscode.Memento = globals.context.globalState,
         hasExistingConnections = () => Auth.instance.hasConnections
@@ -734,16 +646,189 @@ export class ExtensionUse {
         }
 
         // Update state, so next time it is not first use
-        state.update(this.isExtensionFirstUseKey, false).then(undefined, e => {
-            getLogger().error('Memento.update failed: %s', (e as Error).message)
-        })
+        this.updateMemento(state, this.isExtensionFirstUseKey, false)
 
         return this.isFirstUseCurrentSession
+    }
+
+    /**
+     * Checks if the extension has been updated since the last time it was used.
+     * If this is the first used version of the extension, it returns true.
+     * If the extension has been downgraded, it returns true.
+     *
+     * Caveat: This may return true even if an update hadn't occurred IF
+     * this function hasn't been called.
+     */
+    wasUpdated(state: vscode.Memento = globals.context.globalState) {
+        if (this.wasExtensionUpdated !== undefined) {
+            return this.wasExtensionUpdated
+        }
+        const currentVersion = extensionVersion
+
+        this.wasExtensionUpdated = currentVersion !== state.get(this.lastExtensionVersionKey)
+        this.updateMemento(state, this.lastExtensionVersionKey, currentVersion)
+
+        return this.wasExtensionUpdated
+    }
+
+    private updateMemento(memento: vscode.Memento, key: string, val: any) {
+        memento.update(key, val).then(undefined, e => {
+            getLogger().error('Memento.update failed: %s', (e as Error).message)
+        })
     }
 
     static #instance: ExtensionUse
 
     static get instance(): ExtensionUse {
         return (this.#instance ??= new ExtensionUse())
+    }
+}
+
+/**
+ * @deprecated
+ * Remove in favor of AuthFormId
+ * Simple readable ID for telemetry reporting
+ */
+export type AuthSimpleId =
+    | 'sharedCredentials'
+    | 'builderIdCodeWhisperer'
+    | 'builderIdCodeCatalyst'
+    | 'identityCenterCodeWhisperer'
+    | 'identityCenterCodeCatalyst'
+    | 'identityCenterExplorer'
+
+type AuthCommands = {
+    switchConnections: RegisteredCommand<(auth: Auth | TreeNode | unknown) => Promise<void>>
+    help: RegisteredCommand<() => Promise<void>>
+    signout: RegisteredCommand<() => Promise<void>>
+    addConnection: RegisteredCommand<() => Promise<void>>
+    reauth: RegisteredCommand<(auth: Auth, conn: Connection) => Promise<Connection>>
+    autoConnect: RegisteredCommand<() => Promise<void>>
+    useIamCredentials: RegisteredCommand<(auth: Auth) => Promise<void>>
+    logout: RegisteredCommand<() => Promise<void>>
+    profileEdit: RegisteredCommand<() => Promise<void>>
+    profileCreate: RegisteredCommand<() => Promise<void>>
+    login: RegisteredCommand<() => Promise<void>>
+}
+let commands: AuthCommands
+
+export function authCommands() {
+    if (!commands) {
+        throw new Error('Auth Commands not initialized before accessing.')
+    }
+    return commands
+}
+
+export function initAuthCommands(prefix: string) {
+    setShowConnectPageCommand(`aws.${prefix}.auth.manageConnections`)
+    const switchConnections = Commands.register(
+        `aws.${prefix}.auth.switchConnections`,
+        (auth: Auth | TreeNode | unknown) => {
+            telemetry.ui_click.emit({ elementId: 'devtools_connectToAws' })
+
+            if (!(auth instanceof Auth)) {
+                try {
+                    auth = getResourceFromTreeNode(auth, Instance(Auth))
+                } catch {
+                    // Fall back in case this command is called from something in package.json.
+                    // If so, then the value of auth will be unusable.
+                    auth = Auth.instance
+                }
+            }
+
+            return promptAndUseConnection(auth as Auth)
+        }
+    )
+    commands = {
+        switchConnections,
+        help: Commands.register(`aws.${prefix}.auth.help`, async () => {
+            await openUrl(vscode.Uri.parse(authHelpUrl))
+            telemetry.aws_help.emit()
+        }),
+
+        signout: Commands.register(`aws.${prefix}.auth.signout`, () => {
+            telemetry.ui_click.emit({ elementId: 'devtools_signout' })
+            return signout(Auth.instance)
+        }),
+        addConnection: Commands.register(
+            { id: `aws.${prefix}.auth.addConnection`, telemetryThrottleMs: false },
+            async () => {
+                const c9IamItem = createIamItem()
+                c9IamItem.detail =
+                    'Activates working with resources in the Explorer. Requires an access key ID and secret access key.'
+                const items = isCloud9()
+                    ? [createSsoItem(), c9IamItem]
+                    : [createBuilderIdItem(), createSsoItem(), createIamItem()]
+
+                const resp = await showQuickPick(items, {
+                    title: localize(
+                        'aws.auth.addConnection.title',
+                        'Add a Connection to {0}',
+                        getIdeProperties().company
+                    ),
+                    placeholder: localize('aws.auth.addConnection.placeholder', 'Select a connection option'),
+                    buttons: createCommonButtons() as vscode.QuickInputButton[],
+                })
+                if (!isValidResponse(resp)) {
+                    telemetry.ui_click.emit({ elementId: 'connection_optionescapecancel' })
+                    throw new CancellationError('user')
+                }
+
+                switch (resp) {
+                    case 'iam':
+                        return await globals.awsContextCommands.onCommandCreateCredentialsProfile()
+                    case 'sso': {
+                        const startUrlPrompter = await createStartUrlPrompter('IAM Identity Center')
+                        const startUrl = await startUrlPrompter.prompt()
+                        if (!isValidResponse(startUrl)) {
+                            throw new CancellationError('user')
+                        }
+                        telemetry.ui_click.emit({ elementId: 'connection_startUrl' })
+
+                        const region = await showRegionPrompter()
+
+                        const conn = await Auth.instance.createConnection(createSsoProfile(startUrl, region.id))
+                        return Auth.instance.useConnection(conn)
+                    }
+                    case 'builderId': {
+                        return createBuilderIdConnection(Auth.instance)
+                    }
+                }
+            }
+        ),
+        reauth: Commands.register(`_aws.${prefix}.auth.reauthenticate`, async (auth: Auth, conn: Connection) => {
+            try {
+                return await auth.reauthenticate(conn)
+            } catch (err) {
+                throw ToolkitError.chain(err, 'Unable to authenticate connection')
+            }
+        }),
+        autoConnect: Commands.register(`_aws.${prefix}.auth.autoConnect`, () => Auth.instance.tryAutoConnect()),
+        useIamCredentials: Commands.register(`_aws.${prefix}.auth.useIamCredentials`, (auth: Auth) => {
+            telemetry.ui_click.emit({ elementId: 'explorer_IAMselect_VSCode' })
+
+            return promptAndUseConnection(auth, 'iam')
+        }),
+        logout: Commands.register(`aws.${prefix}.logout`, () => signout(Auth.instance)),
+        profileEdit: Commands.register(`aws.${prefix}.credentials.edit`, () =>
+            globals.awsContextCommands.onCommandEditCredentials()
+        ),
+        profileCreate: Commands.register(`aws.${prefix}.credentials.profile.create`, async () => {
+            try {
+                await globals.awsContextCommands.onCommandCreateCredentialsProfile()
+            } finally {
+                telemetry.aws_createCredentials.emit()
+            }
+        }),
+        login: Commands.register(`aws.${prefix}.login`, async () => {
+            const auth = Auth.instance
+            const connections = await auth.listConnections()
+            if (connections.length === 0) {
+                const source: AuthSource = vscodeComponent
+                return vscode.commands.executeCommand(getShowConnectPageCommand(), placeholder, source)
+            } else {
+                return switchConnections.execute(auth)
+            }
+        }),
     }
 }

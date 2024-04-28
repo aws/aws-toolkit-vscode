@@ -55,7 +55,7 @@ export function getCompletionItem(
         completionItem.documentation.appendMarkdown(CodeWhispererConstants.suggestionDetailReferenceText(licenses))
     }
     completionItem.command = {
-        command: 'aws.codeWhisperer.accept',
+        command: 'aws.amazonq.accept',
         title: 'On acceptance',
         arguments: [
             range,
