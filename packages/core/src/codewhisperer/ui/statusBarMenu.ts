@@ -71,7 +71,7 @@ function getAmazonQCodeWhispererNodes() {
 
         // Security scans
         createSeparator('Security Scans'),
-        createAutoScans(autoScansEnabled),
+        ...(AuthUtil.instance.isBuilderIdInUse() ? [] : [createAutoScans(autoScansEnabled)]),
         createSecurityScan(),
 
         // Amazon Q + others

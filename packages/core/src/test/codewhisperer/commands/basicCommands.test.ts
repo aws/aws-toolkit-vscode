@@ -41,6 +41,7 @@ import {
     createReconnect,
     createSecurityScan,
     createSelectCustomization,
+    createSeparator,
     createSettingsNode,
     createSignIn,
     createSignout,
@@ -387,6 +388,31 @@ describe('CodeWhisperer-basicCommands', function () {
                 e.dispose() // skip needing to select an item to continue
             })
 
+            await listCodeWhispererCommands.execute()
+        })
+
+        it('should not show auto-scans if using builder id', async function () {
+            sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
+            sinon.stub(AuthUtil.instance, 'isBuilderIdInUse').returns(true)
+
+            getTestWindow().onDidShowQuickPick(async e => {
+                e.assertItems([
+                    createSeparator('Inline Suggestions'),
+                    createAutoSuggestions(false),
+                    createOpenReferenceLog(),
+                    createGettingStarted(),
+                    createSeparator('Security Scans'),
+                    createSecurityScan(),
+                    createSeparator('Other Features'),
+                    switchToAmazonQNode(),
+                    createSeparator('Connect / Help'),
+                    ...genericItems(),
+                    createSeparator(),
+                    createSettingsNode(),
+                    createSignout(),
+                ])
+                e.dispose() // skip needing to select an item to continue
+            })
             await listCodeWhispererCommands.execute()
         })
     })
