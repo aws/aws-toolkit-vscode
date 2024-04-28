@@ -223,7 +223,7 @@ open class CodeWhispererIntegrationTestBase(val projectRule: CodeInsightTestFixt
         assertThat(response.responseContext.codeScanTotalIssues).isEqualTo(0)
         assertThat(response.responseContext.codeScanJobId).isNull()
         val exceptionCaptor = argumentCaptor<Exception>()
-        verify(scanManager, atLeastOnce()).handleException(any(), exceptionCaptor.capture())
+        verify(scanManager, atLeastOnce()).handleException(any(), exceptionCaptor.capture(), CodeWhispererConstants.CodeAnalysisScope.PROJECT)
         val e = exceptionCaptor.lastValue
         assertThat(e is CodeWhispererCodeScanException).isTrue
         assertThat(e.message).isEqualTo(message)

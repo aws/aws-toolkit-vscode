@@ -42,7 +42,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.runIfIdcConnectionOrTelemetryEnabled
 import software.aws.toolkits.jetbrains.utils.applyPatch
 import software.aws.toolkits.jetbrains.utils.notifyError
-import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
 import java.awt.Dimension
@@ -117,7 +116,7 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
         """.trimIndent()
 
         // add a link sections
-        val explainButton = "<a href=\"amazonq://issue/explain-${issue.title}\" style=\"font-size: 110%\">${message(
+        val explainButton = "<a href=\"amazonq://issue/explain-${issue.title}\" style=\"font-size: 120%\">${message(
             "codewhisperer.codescan.explain_button_label"
         )}</a>"
         val linksSection = """
@@ -401,9 +400,6 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
                 }
                 document.replaceString(document.getLineStartOffset(0), document.getLineEndOffset(document.lineCount - 1), updatedContent)
                 PsiDocumentManager.getInstance(issue.project).commitDocument(document)
-                notifyInfo(
-                    message("codewhisperer.codescan.fix_applied_success"),
-                )
                 CodeWhispererTelemetryService.getInstance().sendCodeScanIssueApplyFixEvent(issue, Result.Succeeded)
                 hidePopup()
                 CodeWhispererCodeScanManager.getInstance(issue.project).updateScanNodesForIssuesOutOfTextRange(issue)

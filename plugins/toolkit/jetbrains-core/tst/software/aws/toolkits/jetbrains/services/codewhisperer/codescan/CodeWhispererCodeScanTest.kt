@@ -17,6 +17,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
@@ -79,7 +80,7 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsigh
         // Mock CodeWhispererClient needs to be setup before initializing CodeWhispererCodeScanSession
         codeScanSessionContext = CodeScanSessionContext(project, sessionConfigSpy, CodeWhispererConstants.CodeAnalysisScope.PROJECT)
         codeScanSessionSpy = spy(CodeWhispererCodeScanSession(codeScanSessionContext))
-        doNothing().`when`(codeScanSessionSpy).uploadArtifactToS3(any(), any(), any())
+        doNothing().`when`(codeScanSessionSpy).uploadArtifactToS3(any(), any(), any(), any(), isNull(), any())
 
         mockClient.stub {
             onGeneric { createUploadUrl(any()) }.thenReturn(fakeCreateUploadUrlResponse)
@@ -103,7 +104,10 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsigh
         inOrder.verify(codeScanSessionSpy).createUploadUrl(eq(fileMd5), eq("artifactType"), any())
         inOrder.verify(codeScanSessionSpy).uploadArtifactToS3(
             eq(fakeCreateUploadUrlResponse.uploadUrl()),
+            eq(fakeCreateUploadUrlResponse.uploadId()),
             eq(file),
+            eq(fileMd5),
+            eq(null),
             any()
         )
     }

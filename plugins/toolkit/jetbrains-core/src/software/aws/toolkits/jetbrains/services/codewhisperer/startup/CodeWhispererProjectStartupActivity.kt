@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.startup
 
 import com.intellij.codeInsight.lookup.LookupManagerListener
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupActivity
 import kotlinx.coroutines.delay
@@ -13,7 +12,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager
-import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.listeners.CodeWhispererCodeScanDocumentListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isUserBuilderId
@@ -71,8 +69,8 @@ class CodeWhispererProjectStartupActivity : StartupActivity.DumbAware {
         if (isUserBuilderId(project)) {
             actionManager.setAutoCodeScan(project, false)
         } else {
-            EditorFactory.getInstance().eventMulticaster.addDocumentListener(CodeWhispererCodeScanDocumentListener(project), project)
             val scanManager = CodeWhispererCodeScanManager.getInstance(project)
+            scanManager.setEditorListeners()
             scanManager.debouncedRunCodeScan(CodeWhispererConstants.CodeAnalysisScope.FILE)
         }
         runOnce = true

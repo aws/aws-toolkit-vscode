@@ -15,7 +15,9 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.util.TimeoutUtil.sleep
 import com.intellij.util.io.HttpRequests
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.time.withTimeout
+import kotlinx.coroutines.withContext
 import org.apache.commons.codec.digest.DigestUtils
 import software.amazon.awssdk.services.codewhisperer.model.ArtifactType
 import software.amazon.awssdk.services.codewhisperer.model.CodeScanFindingsSchema
@@ -97,27 +99,30 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
                 sessionContext.sessionConfig.createPayload()
             }
 
-            LOG.debug {
-                "Total size of source payload in KB: ${payloadContext.srcPayloadSize * 1.0 / TOTAL_BYTES_IN_KB} \n" +
-                    "Total size of build payload in KB: ${(payloadContext.buildPayloadSize ?: 0) * 1.0 / TOTAL_BYTES_IN_KB} \n" +
-                    "Total size of source zip file in KB: ${payloadContext.srcZipFileSize * 1.0 / TOTAL_BYTES_IN_KB} \n" +
-                    "Total number of lines scanned: ${payloadContext.totalLines} \n" +
-                    "Total number of files included in payload: ${payloadContext.totalFiles} \n" +
-                    "Total time taken for creating payload: ${payloadContext.totalTimeInMilliseconds * 1.0 / TOTAL_MILLIS_IN_SECOND} seconds\n" +
-                    "Payload context language: ${payloadContext.language}"
+            if (shouldLogForProjectScope()) {
+                LOG.debug {
+                    "Total size of source payload in KB: ${payloadContext.srcPayloadSize * 1.0 / TOTAL_BYTES_IN_KB} \n" +
+                        "Total size of build payload in KB: ${(payloadContext.buildPayloadSize ?: 0) * 1.0 / TOTAL_BYTES_IN_KB} \n" +
+                        "Total size of source zip file in KB: ${payloadContext.srcZipFileSize * 1.0 / TOTAL_BYTES_IN_KB} \n" +
+                        "Total number of lines scanned: ${payloadContext.totalLines} \n" +
+                        "Total number of files included in payload: ${payloadContext.totalFiles} \n" +
+                        "Total time taken for creating payload: ${payloadContext.totalTimeInMilliseconds * 1.0 / TOTAL_MILLIS_IN_SECOND} seconds\n" +
+                        "Payload context language: ${payloadContext.language}"
+                }
             }
             codeScanResponseContext = codeScanResponseContext.copy(payloadContext = payloadContext)
 
             // 2 & 3. CreateUploadURL and upload the context.
             currentCoroutineContext.ensureActive()
-            LOG.debug { "Uploading source zip located at ${sourceZip.path} to s3" }
             val artifactsUploadStartTime = now()
             val codeScanName = UUID.randomUUID().toString()
             val sourceZipUploadResponse = createUploadUrlAndUpload(sourceZip, "SourceCode", codeScanName)
-            LOG.debug {
-                "Successfully uploaded source zip to s3: " +
-                    "Upload id: ${sourceZipUploadResponse.uploadId()} " +
-                    "Request id: ${sourceZipUploadResponse.responseMetadata().requestId()}"
+            if (shouldLogForProjectScope()) {
+                LOG.debug {
+                    "Successfully uploaded source zip to s3: " +
+                        "Upload id: ${sourceZipUploadResponse.uploadId()} " +
+                        "Request id: ${sourceZipUploadResponse.responseMetadata().requestId()}"
+                }
             }
             urlResponse[ArtifactType.SOURCE_CODE] = sourceZipUploadResponse
             currentCoroutineContext.ensureActive()
@@ -128,19 +133,22 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
 
             // 4. Call createCodeScan to start a code scan
             currentCoroutineContext.ensureActive()
-            LOG.debug { "Requesting security scan for the uploaded artifacts, language: ${payloadContext.language}" }
             val serviceInvocationStartTime = now()
             val createCodeScanResponse = createCodeScan(payloadContext.language.toString(), codeScanName)
-            LOG.debug {
-                "Successfully created security scan with " +
-                    "status: ${createCodeScanResponse.status()} " +
-                    "for request id: ${createCodeScanResponse.responseMetadata().requestId()}"
+            if (shouldLogForProjectScope()) {
+                LOG.debug {
+                    "Successfully created security scan with " +
+                        "status: ${createCodeScanResponse.status()} " +
+                        "for request id: ${createCodeScanResponse.responseMetadata().requestId()}"
+                }
             }
             var codeScanStatus = createCodeScanResponse.status()
             if (codeScanStatus == CodeScanStatus.FAILED) {
-                LOG.debug {
-                    "CodeWhisperer service error occurred. Something went wrong when creating a security scan: $createCodeScanResponse " +
-                        "Status: ${createCodeScanResponse.status()} for request id: ${createCodeScanResponse.responseMetadata().requestId()}"
+                if (shouldLogForProjectScope()) {
+                    LOG.debug {
+                        "CodeWhisperer service error occurred. Something went wrong when creating a security scan: $createCodeScanResponse " +
+                            "Status: ${createCodeScanResponse.status()} for request id: ${createCodeScanResponse.responseMetadata().requestId()}"
+                    }
                 }
                 codeScanFailed()
             }
@@ -154,18 +162,24 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
             ) {
                 currentCoroutineContext.ensureActive()
                 val elapsedTime = (now() - startTime) * 1.0 / TOTAL_MILLIS_IN_SECOND
-                LOG.debug { "Waiting for security scan to complete. Elapsed time: $elapsedTime sec." }
+                if (shouldLogForProjectScope()) {
+                    LOG.debug { "Waiting for security scan to complete. Elapsed time: $elapsedTime sec." }
+                }
                 val getCodeScanResponse = getCodeScan(jobId)
                 codeScanStatus = getCodeScanResponse.status()
-                LOG.debug {
-                    "Get security scan status: ${getCodeScanResponse.status()}, " +
-                        "request id: ${getCodeScanResponse.responseMetadata().requestId()}"
+                if (shouldLogForProjectScope()) {
+                    LOG.debug {
+                        "Get security scan status: ${getCodeScanResponse.status()}, " +
+                            "request id: ${getCodeScanResponse.responseMetadata().requestId()}"
+                    }
                 }
                 sleepThread()
                 if (codeScanStatus == CodeScanStatus.FAILED) {
-                    LOG.debug {
-                        "CodeWhisperer service error occurred. Something went wrong fetching results for security scan: $getCodeScanResponse " +
-                            "Status: ${getCodeScanResponse.status()} for request id: ${getCodeScanResponse.responseMetadata().requestId()}"
+                    if (shouldLogForProjectScope()) {
+                        LOG.debug {
+                            "CodeWhisperer service error occurred. Something went wrong fetching results for security scan: $getCodeScanResponse " +
+                                "Status: ${getCodeScanResponse.status()} for request id: ${getCodeScanResponse.responseMetadata().requestId()}"
+                        }
                     }
                     codeScanFailed()
                 }
@@ -175,12 +189,7 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
 
             // 6. Return the results from the ListCodeScan API.
             currentCoroutineContext.ensureActive()
-            LOG.debug { "Fetching results for the completed security scan" }
             var listCodeScanFindingsResponse = listCodeScanFindings(jobId)
-            LOG.debug {
-                "Successfully fetched results for security scan with " +
-                    "request id: ${listCodeScanFindingsResponse.responseMetadata().requestId()}"
-            }
             val serviceInvocationDuration = now() - serviceInvocationStartTime
             codeScanResponseContext = codeScanResponseContext.copy(
                 serviceInvocationContext = codeScanResponseContext.serviceInvocationContext.copy(serviceInvocationDuration = serviceInvocationDuration)
@@ -188,13 +197,17 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
 
             val documents = mutableListOf<String>()
             documents.add(listCodeScanFindingsResponse.codeScanFindings())
-            while (listCodeScanFindingsResponse.nextToken() != null) {
-                documents.add(listCodeScanFindingsResponse.codeScanFindings())
-                listCodeScanFindingsResponse = listCodeScanFindings(jobId)
+            // coroutineContext helps to actively cancel the bigger projects quickly
+            withContext(coroutineContext) {
+                while (listCodeScanFindingsResponse.nextToken() != null && coroutineContext.isActive) {
+                    documents.add(listCodeScanFindingsResponse.codeScanFindings())
+                    listCodeScanFindingsResponse = listCodeScanFindings(jobId)
+                }
             }
-            LOG.debug { "Successfully fetched results for the security scan." }
-            LOG.debug { "Code scan findings: ${listCodeScanFindingsResponse.codeScanFindings()}" }
-            LOG.debug { "Rendering response to display security scan results." }
+
+            if (shouldLogForProjectScope()) {
+                LOG.debug { "Rendering response to display security scan results." }
+            }
             currentCoroutineContext.ensureActive()
             issues = mapToCodeScanIssues(documents)
             codeScanResponseContext = codeScanResponseContext.copy(codeScanTotalIssues = issues.count())
@@ -232,14 +245,17 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
      */
     fun createUploadUrlAndUpload(zipFile: File, artifactType: String, codeScanName: String): CreateUploadUrlResponse = try {
         val fileMd5: String = Base64.getEncoder().encodeToString(DigestUtils.md5(FileInputStream(zipFile)))
-        LOG.debug { "Fetching presigned URL for uploading $artifactType." }
         val createUploadUrlResponse = createUploadUrl(fileMd5, artifactType, codeScanName)
-        LOG.debug { "Successfully fetched presigned URL for uploading $artifactType." }
         val url = createUploadUrlResponse.uploadUrl()
-        LOG.debug { "Uploading $artifactType using the presigned URL." }
+        if (shouldLogForProjectScope()) {
+            LOG.debug { "Uploading $artifactType using the presigned URL." }
+        }
         uploadArtifactToS3(
             url,
+            createUploadUrlResponse.uploadId(),
             zipFile,
+            fileMd5,
+            createUploadUrlResponse.kmsKeyArn(),
             createUploadUrlResponse.requestHeaders()
         )
         createUploadUrlResponse
@@ -263,10 +279,21 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
     }
 
     @Throws(IOException::class)
-    fun uploadArtifactToS3(url: String, fileToUpload: File, requestHeaders: Map<String, String>?) {
+    fun uploadArtifactToS3(url: String, uploadId: String, fileToUpload: File, md5: String, kmsArn: String?, requestHeaders: Map<String, String>?) {
+        val uploadIdJson = """{"uploadId":"$uploadId"}"""
         HttpRequests.put(url, "application/zip").userAgent(AwsClientManager.getUserAgent()).tuner {
-            requestHeaders?.forEach { entry ->
-                it.setRequestProperty(entry.key, entry.value)
+            if (requestHeaders.isNullOrEmpty()) {
+                it.setRequestProperty(CONTENT_MD5, md5)
+                it.setRequestProperty(CONTENT_TYPE, APPLICATION_ZIP)
+                it.setRequestProperty(SERVER_SIDE_ENCRYPTION, AWS_KMS)
+                if (kmsArn?.isNotEmpty() == true) {
+                    it.setRequestProperty(SERVER_SIDE_ENCRYPTION_AWS_KMS_KEY_ID, kmsArn)
+                }
+                it.setRequestProperty(SERVER_SIDE_ENCRYPTION_CONTEXT, Base64.getEncoder().encodeToString(uploadIdJson.toByteArray()))
+            } else {
+                requestHeaders.forEach { entry ->
+                    it.setRequestProperty(entry.key, entry.value)
+                }
             }
         }.connect {
             val connection = it.connection as HttpURLConnection
@@ -325,7 +352,9 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
             val value: List<CodeScanRecommendation> = MAPPER.readValue(it)
             value
         }.flatten()
-        LOG.debug { "Total code scan issues returned from service: ${scanRecommendations.size}" }
+        if (shouldLogForProjectScope()) {
+            LOG.debug { "Total code scan issues returned from service: ${scanRecommendations.size}" }
+        }
         return scanRecommendations.mapNotNull {
             val file = try {
                 LocalFileSystem.getInstance().findFileByIoFile(
@@ -375,6 +404,8 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
     fun sleepThread() {
         sleep(CODE_SCAN_POLLING_INTERVAL_IN_SECONDS * TOTAL_MILLIS_IN_SECOND)
     }
+
+    private fun shouldLogForProjectScope(): Boolean = sessionContext.codeAnalysisScope == CodeWhispererConstants.CodeAnalysisScope.PROJECT
 
     companion object {
         private val LOG = getLogger<CodeWhispererCodeScanSession>()
