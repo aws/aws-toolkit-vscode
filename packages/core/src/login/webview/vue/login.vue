@@ -155,7 +155,7 @@
                 <div class="code-catalyst-login" v-if="app === 'TOOLKIT'">
                     <div style="margin-bottom: 4px"></div>
                     <div class="subHeader">
-                        Using AWS Builder ID?
+                        Using CodeCatalyst with AWS Builder ID?
                         <a href="#" @click="handleCodeCatalystSignin()">Skip to sign-in</a>
                     </div>
                 </div>
