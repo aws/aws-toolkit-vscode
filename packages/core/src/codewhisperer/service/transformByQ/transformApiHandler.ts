@@ -394,7 +394,7 @@ export function getTransformationIcon(name: string) {
     let iconPath = ''
     switch (name) {
         case 'linesOfCode':
-            iconPath = 'transform-clock'
+            iconPath = 'transform-variables'
             break
         case 'plannedDependencyChanges':
             iconPath = 'transform-dependencies'
