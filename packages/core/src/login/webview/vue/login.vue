@@ -151,7 +151,7 @@
                 </svg>
             </button>
             <div class="auth-container-section">
-                <div class="header">Sign in with AWS IAM Identity Center:</div>
+                <div class="header bottomMargin">Sign in with AWS IAM Identity Center:</div>
                 <div class="code-catalyst-login" v-if="app === 'TOOLKIT'">
                     <div style="margin-bottom: 4px"></div>
                     <div class="h4">
@@ -567,7 +567,6 @@ export default defineComponent({
 
 .h4 {
     font-size: 10px;
-    margin-bottom: 8px;
 }
 .continue-button {
     background-color: var(--vscode-button-background);

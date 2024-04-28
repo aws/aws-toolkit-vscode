@@ -105,7 +105,7 @@ export default defineComponent({
 }
 
 .hovering {
-    border: 1px solid #0e639c;
+    border: 2px solid #0e639c;
     user-select: none;
 }
 
