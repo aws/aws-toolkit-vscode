@@ -156,19 +156,10 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
             telemetry.record({ source: ExtStartUpSources.reload })
         }
 
-        const authKinds: AuthUtils.AuthSimpleId[] = []
-        if (await AuthUtils.hasBuilderId('codewhisperer')) {
-            authKinds.push('builderIdCodeWhisperer')
-        }
-        if (await AuthUtils.hasSso('codewhisperer')) {
-            authKinds.push('identityCenterCodeWhisperer')
-        }
-
-        const authStatus = await getAuthStatus()
-
+        const { authStatus, authEnabledConnections } = await getAuthStatus()
         telemetry.record({
             authStatus,
-            authEnabledConnections: authKinds.join(','),
+            authEnabledConnections,
         })
     })
 }

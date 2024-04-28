@@ -684,19 +684,6 @@ export class ExtensionUse {
     }
 }
 
-/**
- * @deprecated
- * Remove in favor of AuthFormId
- * Simple readable ID for telemetry reporting
- */
-export type AuthSimpleId =
-    | 'sharedCredentials'
-    | 'builderIdCodeWhisperer'
-    | 'builderIdCodeCatalyst'
-    | 'identityCenterCodeWhisperer'
-    | 'identityCenterCodeCatalyst'
-    | 'identityCenterExplorer'
-
 type AuthCommands = {
     switchConnections: RegisteredCommand<(auth: Auth | TreeNode | unknown) => Promise<void>>
     help: RegisteredCommand<() => Promise<void>>

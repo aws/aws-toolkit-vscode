@@ -272,7 +272,11 @@ export type ExtStartUpSource = (typeof ExtStartUpSources)[keyof typeof ExtStartU
 /**
  * Returns readable auth Ids for a connection, which are used by telemetry.
  */
-export function getAuthFormIdsFromConnection(conn: Connection): AuthFormId[] {
+export function getAuthFormIdsFromConnection(conn?: Connection): AuthFormId[] {
+    if (!conn) {
+        return []
+    }
+
     const authIds: AuthFormId[] = []
     let connType: 'builderId' | 'identityCenter'
 
