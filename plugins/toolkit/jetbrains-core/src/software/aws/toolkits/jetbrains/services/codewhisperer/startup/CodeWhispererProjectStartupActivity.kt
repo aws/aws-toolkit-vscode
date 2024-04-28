@@ -40,7 +40,21 @@ class CodeWhispererProjectStartupActivity : StartupActivity.DumbAware {
     override fun runActivity(project: Project) {
         if (!isQConnected(project)) return
 
-        // ---- Everything below will be triggered only when CW is enabled, everything above will be triggered once per project ----
+        // ---- Everything below will be triggered only when CW is enabled ----
+
+        val actionManager = CodeWhispererExplorerActionManager.getInstance()
+        val scanManager = CodeWhispererCodeScanManager.getInstance(project)
+        actionManager.setMonthlyQuotaForCodeScansExceeded(false)
+        //  Run Proactive Code File Scan and disabling Auto File Scan for Builder ID Users.
+        if (isUserBuilderId(project)) {
+            actionManager.setAutoCodeScan(project, false)
+        } else {
+            // Setting up listeners for Auto File Code Scan triggers.
+            scanManager.setEditorListeners()
+            scanManager.debouncedRunCodeScan(CodeWhispererConstants.CodeAnalysisScope.FILE)
+        }
+
+        // ---- Everything below will be triggered once after startup ----
 
         if (runOnce) return
 
@@ -63,16 +77,6 @@ class CodeWhispererProjectStartupActivity : StartupActivity.DumbAware {
         project.messageBus.connect().subscribe(LookupManagerListener.TOPIC, CodeWhispererIntelliSenseAutoTriggerListener)
         project.messageBus.connect().subscribe(CODEWHISPERER_USER_ACTION_PERFORMED, CodeWhispererImportAdderListener)
 
-        //  Run Proactive Code File Scan and disabling Auto File Scan for Builder Id Users.
-        val actionManager = CodeWhispererExplorerActionManager.getInstance()
-        actionManager.setMonthlyQuotaForCodeScansExceeded(false)
-        if (isUserBuilderId(project)) {
-            actionManager.setAutoCodeScan(project, false)
-        } else {
-            val scanManager = CodeWhispererCodeScanManager.getInstance(project)
-            scanManager.setEditorListeners()
-            scanManager.debouncedRunCodeScan(CodeWhispererConstants.CodeAnalysisScope.FILE)
-        }
         runOnce = true
     }
 
