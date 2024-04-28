@@ -131,6 +131,9 @@ export async function startSecurityScan(
         codeScanTelemetryEntry.codewhispererCodeScanBuildPayloadBytes = zipMetadata.buildPayloadSizeInBytes
         codeScanTelemetryEntry.codewhispererCodeScanSrcZipFileBytes = zipMetadata.zipFileSizeInBytes
         codeScanTelemetryEntry.codewhispererCodeScanLines = zipMetadata.lines
+        if (zipMetadata.language) {
+            codeScanTelemetryEntry.codewhispererLanguage = zipMetadata.language
+        }
 
         /**
          * Step 2: Get presigned Url, upload and clean up
