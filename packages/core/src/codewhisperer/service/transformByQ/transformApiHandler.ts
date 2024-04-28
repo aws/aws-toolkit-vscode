@@ -125,34 +125,35 @@ export async function uploadArtifactToS3(
 
 export async function resumeTransformationJob(jobId: string, userActionStatus: TransformationUserActionStatus) {
     try {
+        const apiStartTime = Date.now()
         const response = await codeWhisperer.codeWhispererClient.codeModernizerResumeTransformation({
             transformationJobId: jobId,
             userActionStatus, // can be "COMPLETED" or "REJECTED"
         })
         if (response) {
-            // telemetry.codeTransform_logApiLatency.emit({
-            //     codeTransformApiNames: 'StopTransformation',
-            //     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-            //     codeTransformJobId: jobId,
-            //     codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-            //     codeTransformRequestId: response.$response.requestId,
-            //     result: MetadataResult.Pass,
-            // })
+            telemetry.codeTransform_logApiLatency.emit({
+                codeTransformApiNames: 'ResumeTransformation',
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                codeTransformJobId: jobId,
+                codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
+                codeTransformRequestId: response.$response.requestId,
+                result: MetadataResult.Pass,
+            })
             // always store request ID, but it will only show up in a notification if an error occurs
             return response.transformationStatus
         }
     } catch (e: any) {
         const errorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: ResumeTransformation error = ${errorMessage}`)
-        // telemetry.codeTransform_logApiError.emit({
-        //     codeTransformApiNames: 'StopTransformation',
-        //     codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
-        //     codeTransformJobId: jobId,
-        //     codeTransformApiErrorMessage: errorMessage,
-        //     codeTransformRequestId: e.requestId ?? '',
-        //     result: MetadataResult.Fail,
-        //     reason: 'StopTransformationFailed',
-        // })
+        telemetry.codeTransform_logApiError.emit({
+            codeTransformApiNames: 'ResumeTransformation',
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformJobId: jobId,
+            codeTransformApiErrorMessage: errorMessage,
+            codeTransformRequestId: e.requestId ?? '',
+            result: MetadataResult.Fail,
+            reason: 'ResumeTransformationFailed',
+        })
         throw new Error('Resume transformation job failed')
     }
 }
@@ -699,7 +700,7 @@ export async function downloadResultArchive({
         getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'ExportResultArchive',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformJobId: transformByQState.getJobId(),
             codeTransformApiErrorMessage: downloadErrorMessage,
             codeTransformRequestId: e.requestId ?? '',
