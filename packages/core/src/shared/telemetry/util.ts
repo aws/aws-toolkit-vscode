@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { env, Memento, version } from 'vscode'
 import { getLogger } from '../logger'
-import { fromExtensionManifest, migrateSetting } from '../settings'
+import { fromExtensionManifest, migrateSetting, Settings } from '../settings'
 import { shared } from '../utilities/functionUtils'
 import { isInDevEnv, extensionVersion, isAutomation } from '../vscode/env'
 import { addTypeName } from '../utilities/typeConstructors'
@@ -15,10 +15,23 @@ import { mapMetadata } from './telemetryLogger'
 import { Result } from './telemetry.gen'
 import { MetricDatum } from './clienttelemetry'
 import { isValidationExemptMetric } from './exemptMetrics'
-import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
+import { isAmazonQ, isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { isExtensionInstalled, VSCODE_EXTENSION_ID } from '../utilities'
 import { randomUUID } from '../../common/crypto'
 import { activateExtension } from '../utilities/vsCodeUtils'
+import { ClassToInterfaceType } from '../utilities/tsUtils'
+import {
+    Connection,
+    hasScopes,
+    isBuilderIdConnection,
+    isIamConnection,
+    isIdcSsoConnection,
+    isValidCodeCatalystConnection,
+    scopesSsoAccountAccess,
+} from '../../auth/connection'
+import { AuthFormId } from '../../auth/ui/vue/authForms/types'
+import { isValidAmazonQConnection } from '../../codewhisperer/util/authUtil'
+
 const legacySettingsTelemetryValueDisable = 'Disable'
 const legacySettingsTelemetryValueEnable = 'Enable'
 
@@ -26,25 +39,42 @@ const TelemetryFlag = addTypeName('boolean', convertLegacy)
 const telemetryClientIdGlobalStatekey = 'telemetryClientId'
 const telemetryClientIdEnvKey = '__TELEMETRY_CLIENT_ID'
 
-export class TelemetryConfig extends fromExtensionManifest('aws', {
-    telemetry: TelemetryFlag,
-    'amazonQ.telemetry': TelemetryFlag,
-}) {
-    private readonly amazonQSettingMigratedKey = 'aws.amazonq.telemetry.migrated'
+export class TelemetryConfig {
+    private readonly amazonQSettingMigratedKey = 'amazonq.telemetry.migrated'
+    private readonly _toolkitConfig
+    private readonly _amazonQConfig
+
+    public get toolkitConfig() {
+        return this._toolkitConfig
+    }
+
+    public get amazonQConfig() {
+        return this._amazonQConfig
+    }
+
+    constructor(settings?: ClassToInterfaceType<Settings>) {
+        class ToolkitConfig extends fromExtensionManifest('aws', {
+            telemetry: TelemetryFlag,
+        }) {}
+
+        class AmazonQConfig extends fromExtensionManifest('amazonQ', {
+            telemetry: TelemetryFlag,
+        }) {}
+
+        this._toolkitConfig = new ToolkitConfig(settings)
+        this._amazonQConfig = new AmazonQConfig(settings)
+    }
 
     public isEnabled(): boolean {
-        if (globals.context.extension.id === VSCODE_EXTENSION_ID.amazonq) {
-            return this.get(`amazonQ.telemetry`, true)
-        }
-        return this.get(`telemetry`, true)
+        return (isAmazonQ() ? this.amazonQConfig : this.toolkitConfig).get(`telemetry`, true)
     }
 
     public async initAmazonQSetting() {
         if (globals.context.globalState.get<boolean>(this.amazonQSettingMigratedKey)) {
             return
         }
-        // aws.telemetry isn't deprecated, we are just initializing aws.amazonQ.telemetry with its value
-        await migrateSetting({ key: 'aws.telemetry', type: Boolean }, { key: 'aws.amazonQ.telemetry' })
+        // aws.telemetry isn't deprecated, we are just initializing amazonQ.telemetry with its value
+        await migrateSetting({ key: 'aws.telemetry', type: Boolean }, { key: 'amazonQ.telemetry' })
         await globals.context.globalState.update(this.amazonQSettingMigratedKey, true)
     }
 }
@@ -98,10 +128,9 @@ export async function getUserAgent(
     opt?: { includePlatform?: boolean; includeClientId?: boolean },
     globalState = globals.context.globalState
 ): Promise<string> {
-    const pairs =
-        globals.context.extension.id === VSCODE_EXTENSION_ID.amazonq
-            ? [`AmazonQ-For-VSCode/${extensionVersion}`]
-            : [`AWS-Toolkit-For-VSCode/${extensionVersion}`]
+    const pairs = isAmazonQ()
+        ? [`AmazonQ-For-VSCode/${extensionVersion}`]
+        : [`AWS-Toolkit-For-VSCode/${extensionVersion}`]
 
     if (opt?.includePlatform) {
         pairs.push(platformPair())
@@ -204,7 +233,7 @@ export async function setupTelemetryId(extensionContext: vscode.ExtensionContext
                             await vscode.commands.executeCommand('aws.amazonq.setupTelemetryId')
                         })
                     }
-                } else if (extensionContext.extension.id === VSCODE_EXTENSION_ID.amazonq) {
+                } else if (isAmazonQ()) {
                     getLogger().debug(`telemetry: Set telemetry client id to ${storedClientId}`)
                     await globals.context.globalState.update(telemetryClientIdGlobalStatekey, storedClientId)
                 } else {
@@ -239,3 +268,33 @@ export const ExtStartUpSources = {
 } as const
 
 export type ExtStartUpSource = (typeof ExtStartUpSources)[keyof typeof ExtStartUpSources]
+
+/**
+ * Returns readable auth Ids for a connection, which are used by telemetry.
+ */
+export function getAuthFormIdsFromConnection(conn: Connection): AuthFormId[] {
+    const authIds: AuthFormId[] = []
+    let connType: 'builderId' | 'identityCenter'
+
+    if (isIamConnection(conn)) {
+        return ['credentials']
+    } else if (isBuilderIdConnection(conn)) {
+        connType = 'builderId'
+    } else if (isIdcSsoConnection(conn)) {
+        connType = 'identityCenter'
+        if (hasScopes(conn, scopesSsoAccountAccess)) {
+            authIds.push('identityCenterExplorer')
+        }
+    } else {
+        return ['unknown']
+    }
+
+    if (isValidCodeCatalystConnection(conn)) {
+        authIds.push(`${connType}CodeCatalyst`)
+    }
+    if (isValidAmazonQConnection(conn)) {
+        authIds.push(`${connType}CodeWhisperer`)
+    }
+
+    return authIds
+}

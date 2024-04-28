@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import { getTabSizeSetting } from '../shared/utilities/editorUtilities'
 import { KeyStrokeHandler } from './service/keyStrokeHandler'
 import * as EditorContext from './util/editorContext'
@@ -66,8 +67,14 @@ import { updateUserProxyUrl } from './client/agent'
 import { Container } from './service/serviceContainer'
 import { debounceStartSecurityScan } from './commands/startSecurityScan'
 import { securityScanLanguageContext } from './util/securityScanLanguageContext'
+import { registerWebviewErrorHandler } from '../webviews/server'
+import { logAndShowWebviewError } from '../shared/utilities/logAndShowUtils'
+import { openSettings } from '../shared/settings'
+
+let localize: nls.LocalizeFunc
 
 export async function activate(context: ExtContext): Promise<void> {
+    localize = nls.loadMessageBundle()
     const codewhispererSettings = CodeWhispererSettings.instance
 
     // Import old CodeWhisperer settings into Amazon Q
@@ -98,6 +105,13 @@ export async function activate(context: ExtContext): Promise<void> {
     activateSecurityScan()
 
     /**
+     * Register the webview error handler for Amazon Q
+     */
+    registerWebviewErrorHandler((error: unknown, webviewId: string, command: string) => {
+        logAndShowWebviewError(localize, error, webviewId, command)
+    })
+
+    /**
      * Service control
      */
     const client = new codewhispererClient.DefaultCodeWhispererClient()
@@ -119,9 +133,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 EditorContext.updateTabSize(getTabSizeSetting())
             }
 
-            if (
-                configurationChangeEvent.affectsConfiguration('aws.amazonQ.showInlineCodeSuggestionsWithCodeReferences')
-            ) {
+            if (configurationChangeEvent.affectsConfiguration('amazonQ.showInlineCodeSuggestionsWithCodeReferences')) {
                 ReferenceLogViewProvider.instance.update()
                 if (auth.isEnterpriseSsoInUse()) {
                     await vscode.window
@@ -137,7 +149,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 }
             }
 
-            if (configurationChangeEvent.affectsConfiguration('aws.amazonQ.shareContentWithAWS')) {
+            if (configurationChangeEvent.affectsConfiguration('amazonQ.shareContentWithAWS')) {
                 if (auth.isEnterpriseSsoInUse()) {
                     await vscode.window
                         .showInformationMessage(
@@ -176,10 +188,10 @@ export async function activate(context: ExtContext): Promise<void> {
             if (id === 'codewhisperer') {
                 await vscode.commands.executeCommand(
                     'workbench.action.openSettings',
-                    `@id:aws.amazonQ.includeSuggestionsWithCodeReferences`
+                    `@id:amazonQ.showInlineCodeSuggestionsWithCodeReferences`
                 )
             } else {
-                await vscode.commands.executeCommand('workbench.action.openSettings', `aws.amazonQ`)
+                await openSettings('amazonQ')
             }
         }),
         Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean = false) => {

@@ -2,7 +2,7 @@
     "name": "amazon-q-vscode",
     "displayName": "Standalone Test",
     "description": "",
-    "version": "0.18.0-SNAPSHOT",
+    "version": "0.20.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -60,36 +60,12 @@
                 }
             },
             "properties": {
-                "aws.logLevel": {
-                    "type": "string",
-                    "default": "debug",
-                    "enum": [
-                        "error",
-                        "warn",
-                        "info",
-                        "verbose",
-                        "debug"
-                    ],
-                    "enumDescriptions": [
-                        "Errors Only",
-                        "Errors and Warnings",
-                        "Errors, Warnings, and Info",
-                        "Errors, Warnings, Info, and Verbose",
-                        "Errors, Warnings, Info, Verbose, and Debug"
-                    ],
-                    "markdownDescription": "%AWS.configuration.description.logLevel%",
-                    "cloud9": {
-                        "cn": {
-                            "markdownDescription": "%AWS.configuration.description.logLevel.cn%"
-                        }
-                    }
-                },
-                "aws.amazonQ.telemetry": {
+                "amazonQ.telemetry": {
                     "type": "boolean",
                     "default": true,
                     "markdownDescription": "%AWS.configuration.description.amazonq.telemetry%"
                 },
-                "aws.amazonQ.suppressPrompts": {
+                "amazonQ.suppressPrompts": {
                     "type": "object",
                     "description": "%AWS.configuration.description.suppressPrompts%",
                     "default": {},
@@ -113,17 +89,17 @@
                     },
                     "additionalProperties": false
                 },
-                "aws.amazonQ.showInlineCodeSuggestionsWithCodeReferences": {
+                "amazonQ.showInlineCodeSuggestionsWithCodeReferences": {
                     "type": "boolean",
                     "markdownDescription": "%AWS.configuration.description.amazonq%",
                     "default": true
                 },
-                "aws.amazonQ.importRecommendationForInlineCodeSuggestions": {
+                "amazonQ.importRecommendationForInlineCodeSuggestions": {
                     "type": "boolean",
                     "description": "%AWS.configuration.description.amazonq.importRecommendation%",
                     "default": true
                 },
-                "aws.amazonQ.shareContentWithAWS": {
+                "amazonQ.shareContentWithAWS": {
                     "type": "boolean",
                     "markdownDescription": "%AWS.configuration.description.amazonq.shareContentWithAWS%",
                     "default": true,

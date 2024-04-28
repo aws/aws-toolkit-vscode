@@ -637,10 +637,10 @@ export class ToolkitPromptSettings extends Settings.define(
     }
 }
 
-export const amazonQPrompts = settingsProps['aws.amazonQ.suppressPrompts'].properties
+export const amazonQPrompts = settingsProps['amazonQ.suppressPrompts'].properties
 type amazonQPromptName = keyof typeof amazonQPrompts
 export class AmazonQPromptSettings extends Settings.define(
-    'aws.amazonQ.suppressPrompts',
+    'amazonQ.suppressPrompts',
     toRecord(keys(amazonQPrompts), () => Boolean)
 ) {
     public async isPromptEnabled(promptName: amazonQPromptName): Promise<boolean> {
@@ -894,11 +894,16 @@ export async function migrateSetting<T, U = T>(
     await migrateForScope(vscode.ConfigurationTarget.Global)
 }
 
+/** Opens the settings UI filtered by the given prefix. */
+export async function openSettings(prefix: string): Promise<void> {
+    await vscode.commands.executeCommand('workbench.action.openSettings', prefix)
+}
+
 /**
  * Opens the settings UI at the specified key.
  *
  * This only works for keys that are considered "top-level", e.g. keys of {@link settingsProps}.
  */
-export async function openSettings<K extends keyof SettingsProps>(key: K): Promise<void> {
+export async function openSettingsId<K extends keyof SettingsProps>(key: K): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.openSettings', `@id:${key}`)
 }

@@ -12,14 +12,13 @@ import * as vscode from 'vscode'
 import { AwsContext } from '../awsContext'
 import { DefaultTelemetryService } from './telemetryService'
 import { getLogger } from '../logger'
-import { getComputeRegion, getIdeProperties, isCloud9 } from '../extensionUtilities'
-import { openSettings, Settings } from '../settings'
+import { getComputeRegion, isAmazonQ, isCloud9, productName } from '../extensionUtilities'
+import { openSettingsId, Settings } from '../settings'
 import { TelemetryConfig, setupTelemetryId } from './util'
 import { isAutomation, isReleaseVersion } from '../vscode/env'
 import { AWSProduct } from './clienttelemetry'
 import { DefaultTelemetryClient } from './telemetryClient'
 import { Commands } from '../vscode/commands2'
-import { VSCODE_EXTENSION_ID } from '../utilities'
 
 export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'Settings')
 export const noticeResponseOk = localize('AWS.telemetry.notificationOk', 'OK')
@@ -53,20 +52,14 @@ export async function activate(
         globals.telemetry.telemetryEnabled = config.isEnabled()
 
         extensionContext.subscriptions.push(
-            config.onDidChange(event => {
-                if (globals.context.extension.id === VSCODE_EXTENSION_ID.amazonq) {
-                    if (event.key === 'amazonQ.telemetry') {
-                        globals.telemetry.telemetryEnabled = config.isEnabled()
-                    }
-                    return
-                }
+            (isAmazonQ() ? config.amazonQConfig : config.toolkitConfig).onDidChange(event => {
                 if (event.key === 'telemetry') {
                     globals.telemetry.telemetryEnabled = config.isEnabled()
                 }
             })
         )
 
-        if (extensionContext.extension.id === VSCODE_EXTENSION_ID.amazonq) {
+        if (isAmazonQ()) {
             extensionContext.subscriptions.push(
                 Commands.register('aws.amazonq.setupTelemetryId', async () => {
                     await setupTelemetryId(extensionContext)
@@ -113,8 +106,8 @@ function showTelemetryNotice(extensionContext: vscode.ExtensionContext) {
 
     const telemetryNoticeText: string = localize(
         'AWS.telemetry.notificationMessage',
-        'AWS IDE Extensions collects anonymous usage metrics to improve the product. You can opt-out in settings.',
-        getIdeProperties().company
+        '{0} collects anonymous usage metrics to improve the product. You can opt-out in settings.',
+        productName()
     )
 
     // Don't wait for a response
@@ -140,7 +133,7 @@ export async function handleTelemetryNoticeResponse(
         // noticeResponseOk is a no-op
 
         if (response === noticeResponseViewSettings) {
-            await openSettings('aws.telemetry')
+            await openSettingsId(isAmazonQ() ? 'amazonQ.telemetry' : 'aws.telemetry')
         }
     } catch (err) {
         getLogger().error('Error while handling response from telemetry notice: %O', err as Error)

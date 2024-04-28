@@ -319,6 +319,11 @@
             "description": "Comma-delimited list of features for which auth is enabled."
         },
         {
+            "name": "authEnabledConnections",
+            "type": "string",
+            "description": "Comma-delimited list of enabled auths."
+        },
+        {
             "name": "region",
             "type": "string",
             "description": "An AWS region."
@@ -1112,7 +1117,7 @@
                     "required": true
                 },
                 {
-                    "type": "enabledAuthConnections",
+                    "type": "authEnabledConnections",
                     "required": true
                 }
             ],

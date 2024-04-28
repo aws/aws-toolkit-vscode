@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { AggregatedCodeScanIssue, CodeScansState } from '../models/model'
+import { AggregatedCodeScanIssue, CodeScanIssue, CodeScansState } from '../models/model'
 export abstract class SecurityIssueProvider {
     private _issues: AggregatedCodeScanIssue[] = []
     public get issues() {
@@ -63,5 +63,17 @@ export abstract class SecurityIssueProvider {
         const originLines = range.end.line - range.start.line + 1
         const changedLines = text.split('\n').length
         return changedLines - originLines
+    }
+
+    public removeIssue(uri: vscode.Uri, issue: CodeScanIssue) {
+        this._issues = this._issues.map(group => {
+            if (group.filePath !== uri.fsPath) {
+                return group
+            }
+            return {
+                ...group,
+                issues: group.issues.filter(i => i.findingId !== issue.findingId),
+            }
+        })
     }
 }

@@ -1,6 +1,6 @@
 <template>
     <div
-        class="item-container"
+        class="item-container-base"
         :class="{ selected: isSelected, hovering: isHovering }"
         @click="toggleSelection"
         @mouseover="isHovering = true"
@@ -95,23 +95,21 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.item-container {
+.item-container-base {
     padding: 5px;
     display: flex;
-}
-
-.item-container {
-    border: 1px solid #625f5f;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #625f5f;
+    user-select: none;
 }
 
 .hovering {
-    border: 2px solid #0e639c;
-    user-select: none;
+    border-color: #0e639c;
 }
 
 .selected {
-    border: 1px solid #3675f4;
-    user-select: none;
+    border-color: #3675f4;
 }
 
 .title {

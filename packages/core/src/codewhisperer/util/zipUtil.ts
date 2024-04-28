@@ -11,6 +11,9 @@ import * as CodeWhispererConstants from '../models/constants'
 import { ToolkitError } from '../../shared/errors'
 import { fsCommon } from '../../srcShared/fs'
 import { collectFiles } from '../../amazonqFeatureDev/util/files'
+import { getLoggerForScope } from '../service/securityScanHandler'
+import { runtimeLanguageContext } from './runtimeLanguageContext'
+import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
 
 export interface ZipMetadata {
     rootDir: string
@@ -20,6 +23,7 @@ export interface ZipMetadata {
     buildPayloadSizeInBytes: number
     zipFileSizeInBytes: number
     lines: number
+    language: CodewhispererLanguage | undefined
 }
 
 export const ZipConstants = {
@@ -37,6 +41,7 @@ export class ZipUtil {
     protected _zipDir: string = ''
     protected _totalLines: number = 0
     protected _fetchedDirs: Set<string> = new Set<string>()
+    protected _language: CodewhispererLanguage | undefined
 
     constructor() {}
 
@@ -118,6 +123,7 @@ export class ZipUtil {
         }
 
         const files = await collectFiles([projectPath], [workspaceFolder])
+        const languageCount = new Map<CodewhispererLanguage, number>()
         for (const file of files) {
             const isFileOpenAndDirty = this.isFileOpenAndDirty(file.fileUri)
             const fileContent = isFileOpenAndDirty ? await this.getTextContent(file.fileUri) : file.fileContent
@@ -136,6 +142,13 @@ export class ZipUtil {
                 this._pickedSourceFiles.add(file.fileUri.fsPath)
                 this._totalSize += fileSize
                 this._totalLines += fileContent.split(ZipConstants.newlineRegex).length
+
+                const language = runtimeLanguageContext.getLanguageFromFileExtension(
+                    path.extname(file.fileUri.fsPath).slice(1)
+                )
+                if (language) {
+                    languageCount.set(language, (languageCount.get(language) || 0) + 1)
+                }
             }
 
             if (isFileOpenAndDirty) {
@@ -145,6 +158,10 @@ export class ZipUtil {
             }
         }
 
+        if (languageCount.size === 0) {
+            throw new ToolkitError('Project does not contain valid files to scan')
+        }
+        this._language = [...languageCount.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0]
         const zipFilePath = this.getZipDirPath() + CodeWhispererConstants.codeScanZipExt
         zip.writeZip(zipFilePath)
         return zipFilePath
@@ -182,7 +199,7 @@ export class ZipUtil {
                 throw new ToolkitError(`Unknown code analysis scope: ${scope}`)
             }
 
-            getLogger().debug(`Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
+            getLoggerForScope(scope).debug(`Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
             const zipFileSize = (await fsCommon.stat(zipFilePath)).size
             return {
                 rootDir: zipDirPath,
@@ -192,6 +209,7 @@ export class ZipUtil {
                 zipFileSizeInBytes: zipFileSize,
                 buildPayloadSizeInBytes: this._totalBuildSize,
                 lines: this._totalLines,
+                language: this._language,
             }
         } catch (error) {
             getLogger().error('Zip error caused by:', error)
@@ -199,10 +217,11 @@ export class ZipUtil {
         }
     }
 
-    public async removeTmpFiles(zipMetadata: ZipMetadata) {
-        getLogger().verbose(`Cleaning up temporary files...`)
+    public async removeTmpFiles(zipMetadata: ZipMetadata, scope: CodeWhispererConstants.CodeAnalysisScope) {
+        const logger = getLoggerForScope(scope)
+        logger.verbose(`Cleaning up temporary files...`)
         await fsCommon.delete(zipMetadata.zipFilePath)
         await fsCommon.delete(zipMetadata.rootDir)
-        getLogger().verbose(`Complete cleaning up temporary files.`)
+        logger.verbose(`Complete cleaning up temporary files.`)
     }
 }

@@ -12,7 +12,7 @@ const description = {
     shareContentWithAWS: Boolean,
 }
 
-export class CodeWhispererSettings extends fromExtensionManifest('aws.amazonQ', description) {
+export class CodeWhispererSettings extends fromExtensionManifest('amazonQ', description) {
     public async importSettings() {
         if (globals.context.globalState.get<boolean>(codewhispererSettingsImportedKey)) {
             return
@@ -20,15 +20,15 @@ export class CodeWhispererSettings extends fromExtensionManifest('aws.amazonQ', 
 
         await migrateSetting(
             { key: 'aws.codeWhisperer.includeSuggestionsWithCodeReferences', type: Boolean },
-            { key: 'aws.amazonQ.showInlineCodeSuggestionsWithCodeReferences' }
+            { key: 'amazonQ.showInlineCodeSuggestionsWithCodeReferences' }
         )
         await migrateSetting(
             { key: 'aws.codeWhisperer.importRecommendation', type: Boolean },
-            { key: 'aws.amazonQ.importRecommendationForInlineCodeSuggestions' }
+            { key: 'amazonQ.importRecommendationForInlineCodeSuggestions' }
         )
         await migrateSetting(
             { key: 'aws.codeWhisperer.shareCodeWhispererContentWithAWS', type: Boolean },
-            { key: 'aws.amazonQ.shareContentWithAWS' }
+            { key: 'amazonQ.shareContentWithAWS' }
         )
 
         await globals.context.globalState.update(codewhispererSettingsImportedKey, true)

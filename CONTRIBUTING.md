@@ -315,9 +315,14 @@ The `aws.dev.forceDevMode` setting enables or disables Toolkit "dev mode". Witho
 
 ### Logging
 
--   Use the `aws.dev.logfile` setting to set the logfile path to a fixed location, so you can easily
-    follow and filter the logfile using shell tools like `tail` and `grep`. For example in
-    settings.json,
+-   Use `getLogger()` to log debugging messages, warnings, etc.
+    -   Example: `getLogger().error('topic: widget failed: %O', { foo: 'bar', baz: 42 })`
+-   Log messages are written to the extension Output channel, which you can view in vscode by visiting the "Output" panel and selecting `AWS Toolkit Logs` or `Amazon Q Logs`.
+-   While viewing the Output channel (`AWS Toolkit Logs` or `Amazon Q Logs`) in vscode:
+    -   Click the "gear" icon to [select a log level](https://github.com/aws/aws-toolkit-vscode/pull/4859) ("Debug", "Info", "Error", …).
+    -   Click the "..." icon to open the log file.
+-   Use the `aws.dev.logfile` setting to set the logfile path to a fixed location, so you can follow
+    and filter logs using shell tools like `tail` and `grep`. For example in settings.json,
     ```
     "aws.dev.logfile": "~/awstoolkit.log",
     ```
@@ -328,7 +333,6 @@ The `aws.dev.forceDevMode` setting enables or disables Toolkit "dev mode". Witho
 -   Use the `AWS (Developer): Watch Logs` command to watch and filter Toolkit logs (including
     telemetry) in VSCode.
     -   Only available if you enabled "dev mode" (`aws.dev.forceDevMode` setting, see above).
-    -   Sets `aws.logLevel` to "debug".
     -   Enter text in the Debug Console filter box to show only log messages with that text. <br/>
         <img src="./docs/images/debug-console-filter.png" alt="VSCode Debug Console" width="320"/>
 
