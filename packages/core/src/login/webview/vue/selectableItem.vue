@@ -23,7 +23,7 @@
                 />
             </svg>
             <svg
-                v-if="itemTitle == 'Workforce' || itemTitle == 'Use Professional License'"
+                v-if="itemTitle == 'Workforce' || itemTitle == 'Use with Pro license'"
                 width="16"
                 height="16"
                 viewBox="0 0 16 16"
@@ -55,7 +55,7 @@
         </div>
         <div class="text">
             <div class="title">{{ itemTitle }}</div>
-            <div class="p">{{ itemText }}</div>
+            <div class="p" v-if="itemText">{{ itemText }}</div>
         </div>
     </div>
 </template>
@@ -96,12 +96,13 @@ export default defineComponent({
 
 <style scoped>
 .item-container-base {
-    padding: 5px;
     display: flex;
     border-width: 1px;
     border-style: solid;
     border-color: #625f5f;
     user-select: none;
+    /* Some items do not have itemText, so we need a consistent height for all items */
+    height: 50px;
 }
 
 .hovering {
@@ -121,6 +122,7 @@ export default defineComponent({
     display: flex;
     flex-direction: column;
     font-size: 12px;
+    justify-content: center;
 }
 
 .text.vscode-dark {
