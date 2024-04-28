@@ -36,19 +36,18 @@ export function initSecurityScanRender(
     }
     securityRecommendationList.forEach(securityRecommendation => {
         updateSecurityDiagnosticCollection(securityRecommendation)
+        updateSecurityIssueHoverAndCodeActions(securityRecommendation)
     })
     securityScanRender.initialized = true
-    updateSecurityIssueHoverAndCodeActions(securityRecommendationList, editor)
     securityScanRender.lastUpdated = codeScanStartTime
 }
 
-function updateSecurityIssueHoverAndCodeActions(
-    securityRecommendationList: AggregatedCodeScanIssue[],
-    editor: vscode.TextEditor
-) {
+function updateSecurityIssueHoverAndCodeActions(securityRecommendation: AggregatedCodeScanIssue) {
     const updatedSecurityRecommendationList = [
-        ...SecurityIssueHoverProvider.instance.issues.filter(group => group.filePath !== editor.document.uri.fsPath),
-        ...securityRecommendationList,
+        ...SecurityIssueHoverProvider.instance.issues.filter(
+            group => group.filePath !== securityRecommendation.filePath
+        ),
+        securityRecommendation,
     ]
     SecurityIssueHoverProvider.instance.issues = updatedSecurityRecommendationList
     SecurityIssueCodeActionProvider.instance.issues = updatedSecurityRecommendationList
