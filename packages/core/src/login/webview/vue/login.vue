@@ -492,7 +492,7 @@ export default defineComponent({
             // If Amazon Q has no connections while Toolkit has connections
             // Auto connect Q using toolkit connection.
             if (connections.length === 0 && sharedConnections && sharedConnections.length > 0) {
-                const conn = await client.findConnection(sharedConnections)
+                const conn = await client.findUsableConnection(sharedConnections)
                 if (conn) {
                     await client.useConnection(conn.id, true)
                 }

@@ -146,7 +146,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         })
     }
 
-    findConnection(connections: AwsConnection[]): AwsConnection | undefined {
+    findUsableConnection(connections: AwsConnection[]): AwsConnection | undefined {
         return undefined
     }
 
