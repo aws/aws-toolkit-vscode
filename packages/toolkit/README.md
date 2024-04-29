@@ -1,5 +1,9 @@
 The AWS Toolkit lets you interact with AWS directly from VS Code. Ready to install? See [Getting Started](#getting-started).
 
+## Amazon Q and CodeWhisperer
+
+Amazon CodeWhisperer is now part of Amazon Q. [Try the Amazon Q extension](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.amazon-q-vscode).
+
 ## [Application Composer](https://aws.amazon.com/application-composer/)
 
 AWS Application Composer maintains a real-time visual representation of your application architecture in sync with your IaC. Changes to the architecture—such as adding new resources or changing service configuration—are reflected in the IaC artifacts, and vice versa.
@@ -10,13 +14,11 @@ AWS Application Composer maintains a real-time visual representation of your app
 
 ![Application Composer](https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/appComposer.gif)
 
-## [**Amazon CodeCatalyst**](https://codecatalyst.aws/explore)
+## [Amazon CodeCatalyst](https://codecatalyst.aws/explore)
 
 Unified software development service to quickly build and deliver applications on AWS.
 
 **Dev Environments** - launch VS Code in a cloud development environment, available on-demand in the cloud and automatically created with branch code and consistent project settings, providing faster setup, development, and testing
-
-![CodeCatalyst](https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/CC_dev_env.gif)
 
 ## View, modify, and deploy AWS resources
 
@@ -59,12 +61,12 @@ For a full list of features, visit [our documentation](https://docs.aws.amazon.c
 ## Getting Started
 
 1. Open the AWS Toolkit extension
-2. Add AWS credentials
-    1. **AWS resources** - connect using IAM credentials or IAM Identity Center (formerly SSO)
-    2. **CodeCatalyst** - connect using AWS Builder ID or IAM Identity Center
+2. Sign in with your AWS credentials
 
-![getting-started](https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/getting-started.gif)
+![getting-started](https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/auth-Toolkit.gif)
 
 ## Troubleshooting
 
 Submit bug reports and feature requests [on our Github repository](https://github.com/aws/aws-toolkit-vscode/issues/new/choose).
+
+Looking for Amazon Q or CodeWhisperer? [Try the Amazon Q extension](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.amazon-q-vscode).
