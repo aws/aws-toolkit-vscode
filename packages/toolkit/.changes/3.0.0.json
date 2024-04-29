@@ -1,0 +1,22 @@
+{
+	"date": "2024-04-29",
+	"version": "3.0.0",
+	"entries": [
+		{
+			"type": "Breaking Change",
+			"description": "Remove Amazon Q and CodeWhisperer features. They are now a part of the [Amazon Q extension](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.amazon-q-vscode)."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeCatalyst: User can create a dev environment inside a dev environment"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeCatalyst: Fix extension activation in new dev environments"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeCatalyst: Fix heartbeat activity registration"
+		}
+	]
+}
