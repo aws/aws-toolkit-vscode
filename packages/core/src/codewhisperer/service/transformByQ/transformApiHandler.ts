@@ -18,7 +18,7 @@ import {
     ZipManifest,
 } from '../../models/model'
 import { getLogger } from '../../../shared/logger'
-import { CreateUploadUrlResponse } from '../../client/codewhispereruserclient'
+import { CreateUploadUrlResponse, ProgressUpdates } from '../../client/codewhispereruserclient'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import AdmZip from 'adm-zip'
 import globals from '../../../shared/extensionGlobals'
@@ -202,7 +202,7 @@ export async function uploadPayload(payloadFileName: string) {
  * re-downloading dependencies if the source is not accessible. Removing these
  * files can prevent Maven from attempting to download dependencies again.
  */
-const MavenExcludedExtensions = ['.repositories', '.sha1']
+const mavenExcludedExtensions = ['.repositories', '.sha1']
 
 /**
  * Determines if the specified file path corresponds to a Maven metadata file
@@ -213,7 +213,7 @@ const MavenExcludedExtensions = ['.repositories', '.sha1']
  * @returns {boolean} Returns true if the path ends with an extension associated with Maven metadata files; otherwise, false.
  */
 function isExcludedDependencyFile(path: string): boolean {
-    return MavenExcludedExtensions.some(extension => path.endsWith(extension))
+    return mavenExcludedExtensions.some(extension => path.endsWith(extension))
 }
 
 /**
@@ -385,12 +385,135 @@ export function getImageAsBase64(filePath: string) {
     return `data:image/svg+xml;base64,${fileContents}`
 }
 
+/*
+ * Given the icon name from core/resources/icons/aws/amazonq, get the appropriate icon according to the user's theme.
+ * ex. getIcon('transform-file') returns the 'transform-file-light.svg' icon if user has a light theme enabled,
+ * otherwise 'transform-file-dark.svg' is returned.
+ */
+export function getTransformationIcon(name: string) {
+    let iconPath = ''
+    switch (name) {
+        case 'linesOfCode':
+            iconPath = 'transform-variables'
+            break
+        case 'plannedDependencyChanges':
+            iconPath = 'transform-dependencies'
+            break
+        case 'plannedDeprecatedApiChanges':
+            iconPath = 'transform-step-into'
+            break
+        case 'plannedFileChanges':
+            iconPath = 'transform-file'
+            break
+        case 'upArrow':
+            iconPath = 'transform-arrow'
+            break
+        case 'transformLogo':
+            return getImageAsBase64(globals.context.asAbsolutePath('resources/icons/aws/amazonq/transform-logo.svg'))
+        default:
+            iconPath = 'transform-default'
+            break
+    }
+    const themeColor = vscode.window.activeColorTheme.kind
+    if (themeColor === vscode.ColorThemeKind.Light || themeColor === vscode.ColorThemeKind.HighContrastLight) {
+        iconPath += '-light.svg'
+    } else {
+        iconPath += '-dark.svg'
+    }
+    return getImageAsBase64(globals.context.asAbsolutePath(path.join('resources/icons/aws/amazonq', iconPath)))
+}
+
+export function getFormattedString(s: string) {
+    switch (s) {
+        case 'linesOfCode':
+            return CodeWhispererConstants.linesOfCodeMessage
+        case 'plannedDependencyChanges':
+            return CodeWhispererConstants.dependenciesToBeReplacedMessage
+        case 'plannedDeprecatedApiChanges':
+            return CodeWhispererConstants.deprecatedCodeToBeReplacedMessage
+        case 'plannedFileChanges':
+            return CodeWhispererConstants.filesToBeChangedMessage
+        case 'dependencyName':
+            return CodeWhispererConstants.dependencyNameColumn
+        case 'action':
+            return CodeWhispererConstants.actionColumn
+        case 'currentVersion':
+            return CodeWhispererConstants.currentVersionColumn
+        case 'targetVersion':
+            return CodeWhispererConstants.targetVersionColumn
+        case 'relativePath':
+            return CodeWhispererConstants.relativePathColumn
+        case 'apiFullyQualifiedName':
+            return CodeWhispererConstants.apiNameColumn
+        case 'numChangedFiles':
+            return CodeWhispererConstants.numChangedFilesColumn
+        default:
+            return s
+    }
+}
+
+export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [key: string]: string }) {
+    const tableObj = tableMapping[stepId]
+    if (!tableObj) {
+        // no table present for this step
+        return plan
+    }
+    const table = JSON.parse(tableObj)
+    plan += `\n\n\n${table.name}\n|`
+    const columns = table.columnNames
+    columns.forEach((columnName: string) => {
+        plan += ` ${getFormattedString(columnName)} |`
+    })
+    plan += '\n|'
+    columns.forEach((_: any) => {
+        plan += '-----|'
+    })
+    table.rows.forEach((row: any) => {
+        plan += '\n|'
+        columns.forEach((columnName: string) => {
+            if (columnName === 'relativePath') {
+                plan += ` [${row[columnName]}](${row[columnName]}) |` // add MD link only for files
+            } else {
+                plan += ` ${row[columnName]} |`
+            }
+        })
+    })
+    plan += '\n\n'
+    return plan
+}
+
+export function getTableMapping(stepZeroProgressUpdates: ProgressUpdates) {
+    const map: { [key: string]: string } = {}
+    stepZeroProgressUpdates.forEach(update => {
+        // description should never be undefined since even if no data we show an empty table
+        // but just in case, empty string allows us to skip this table without errors when rendering
+        map[update.name] = update.description ?? ''
+    })
+    return map
+}
+
+export function getJobStatisticsHtml(jobStatistics: any) {
+    let htmlString = ''
+    if (jobStatistics.length === 0) {
+        return htmlString
+    }
+    htmlString += `<div style="flex: 1; margin-left: 20px; border: 1px solid #424750; border-radius: 8px; padding: 10px;">`
+    jobStatistics.forEach((stat: { name: string; value: string }) => {
+        htmlString += `<p style="margin-bottom: 4px"><img src="${getTransformationIcon(
+            stat.name
+        )}" style="vertical-align: middle;"> ${getFormattedString(stat.name)}: ${stat.value}</p>`
+    })
+    htmlString += `</div>`
+    return htmlString
+}
+
 export async function getTransformationPlan(jobId: string) {
+    let response = undefined
     try {
-        const apiStartTime = Date.now()
-        const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
+        response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
         })
+        const apiStartTime = Date.now()
         if (response.$response.requestId) {
             transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
         }
@@ -402,21 +525,37 @@ export async function getTransformationPlan(jobId: string) {
             codeTransformRequestId: response.$response.requestId,
             result: MetadataResult.Pass,
         })
-        const logoAbsolutePath = globals.context.asAbsolutePath(
-            path.join('resources', 'icons', 'aws', 'amazonq', 'transform-landing-page-icon.svg')
-        )
-        const logoBase64 = getImageAsBase64(logoAbsolutePath)
-        let plan = `![Amazon Q Code Transformation](${logoBase64}) \n # Code Transformation Plan by Amazon Q \n\n`
-        plan += CodeWhispererConstants.planIntroductionMessage.replace(
-            'JAVA_VERSION_HERE',
-            transformByQState.getSourceJDKVersion()!
-        )
-        plan += `\n\nExpected total transformation steps: ${response.transformationPlan.transformationSteps.length}\n\n`
-        plan += CodeWhispererConstants.planDisclaimerMessage
-        for (const step of response.transformationPlan.transformationSteps) {
-            plan += `**${step.name}**\n\n- ${step.description}\n\n\n`
+
+        const stepZeroProgressUpdates = response.transformationPlan.transformationSteps[0].progressUpdates
+
+        if (!stepZeroProgressUpdates || stepZeroProgressUpdates.length === 0) {
+            // means backend API response wrong and table data is missing
+            throw new Error('No progress updates found in step 0')
         }
 
+        // gets a mapping between the ID ('name' field) of each progressUpdate (substep) and the associated table
+        const tableMapping = getTableMapping(stepZeroProgressUpdates)
+
+        const jobStatistics = JSON.parse(tableMapping['0']).rows // ID of '0' reserved for job statistics table
+
+        // get logo directly since we only use one logo regardless of color theme
+        const logoIcon = getTransformationIcon('transformLogo')
+
+        const arrowIcon = getTransformationIcon('upArrow')
+
+        let plan = `<style>table {border: 1px solid #424750;}</style>\n\n<a id="top"></a><br><p style="font-size: 24px; color: white;"><img src="${logoIcon}" style="margin-right: 15px; vertical-align: middle;"></img><b>${CodeWhispererConstants.planTitle}</b></p><br>`
+        plan += `<div style="display: flex;"><div style="flex: 1; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p>${
+            CodeWhispererConstants.planIntroductionMessage
+        }</p></div>${getJobStatisticsHtml(jobStatistics)}</div>`
+        plan += `<div style="margin-top: 32px; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p style="font-size: 18px; color: white; margin-bottom: 4px;"><b>${CodeWhispererConstants.planHeaderMessage}</b></p><i>${CodeWhispererConstants.planDisclaimerMessage} <a href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html">Read more.</a></i><br><br>`
+        response.transformationPlan.transformationSteps.slice(1).forEach(step => {
+            plan += `<div style="border: 1px solid #424750; border-radius: 8px; padding: 20px;"><div style="display:flex; justify-content:space-between; align-items:center;"><p style="font-size: 16px; color: white; margin-bottom: 4px;">${step.name}</p><a href="#top">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle"></a></div><p>${step.description}</p>`
+            plan = addTableMarkdown(plan, step.id, tableMapping)
+            plan += `</div><br>`
+        })
+        plan += `</div><br>`
+        plan += `<p style="font-size: 18px; margin-bottom: 4px;"><b>Appendix</b><br><a href="#top" style="float: right; font-size: 14px;">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle;"></a></p><br>`
+        plan = addTableMarkdown(plan, '-1', tableMapping) // ID of '-1' reserved for appendix table
         return plan
     } catch (e: any) {
         const errorMessage = (e as Error).message
@@ -430,7 +569,13 @@ export async function getTransformationPlan(jobId: string) {
             result: MetadataResult.Fail,
             reason: 'GetTransformationPlanFailed',
         })
-        throw new Error('Get plan failed')
+
+        /* Means API call failed
+         * If response is defined, means a display/parsing error occurred, so continue transformation
+         */
+        if (response === undefined) {
+            throw new Error('Get plan API call failed')
+        }
     }
 }
 
@@ -452,7 +597,7 @@ export async function getTransformationSteps(jobId: string) {
             codeTransformRequestId: response.$response.requestId,
             result: MetadataResult.Pass,
         })
-        return response.transformationPlan.transformationSteps
+        return response.transformationPlan.transformationSteps.slice(1) // skip step 0 (contains supplemental info)
     } catch (e: any) {
         const errorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: GetTransformationPlan error = ${errorMessage}`)

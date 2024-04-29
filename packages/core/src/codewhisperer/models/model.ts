@@ -309,6 +309,7 @@ export class ZipManifest {
     dependenciesRoot: string | undefined = 'dependencies/'
     buildLogs: string = 'build-logs.txt'
     version: string = '1.0'
+    transformCapabilities: string[] = ['EXPLAINABILITY_V1']
 }
 
 export enum DropdownStep {

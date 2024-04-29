@@ -413,8 +413,6 @@ export const failedToStartJobTooManyJobsNotification =
 export const failedToUploadProjectChatMessage =
     "Sorry, I couldn't upload your project. Please try starting the transformation again."
 
-export const noOngoingJobMessage = 'No job is in-progress at the moment'
-
 export const failedToUploadProjectNotification =
     "Amazon Q couldn't upload your project. Please try starting the transformation again."
 
@@ -516,7 +514,7 @@ export const projectPromptChatMessage =
     'I can upgrade your JAVA_VERSION_HERE. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Transform.'
 
 export const windowsJavaHomeHelpChatMessage =
-    'To find the JDK path, run the following command in a new IDE terminal: `cd "C:\\Program Files\\Java" && dir`. If you see your JDK version, run `cd <version>` and then `cd` to show the path.'
+    'To find the JDK path, run the following commands in a new IDE terminal: `cd "C:/Program Files/Java"` and then `dir`. If you see your JDK version, run `cd <version>` and then `cd` to show the path.'
 
 export const nonWindowsJava8HomeHelpChatMessage =
     'To find the JDK path, run the following command in a new IDE terminal:  `/usr/libexec/java_home -v 1.8`'
@@ -534,10 +532,37 @@ export const JDK8VersionNumber = '52'
 
 export const JDK11VersionNumber = '55'
 
-export const planIntroductionMessage =
-    'We reviewed your Java JAVA_VERSION_HERE application and generated a transformation plan. Any code changes made to your application will be done in the sandbox so as to not interfere with your working repository. Once the transformation job is done, we will share the new code which you can review before acccepting the code changes. In the meantime, you can work on your codebase and invoke Q Chat to answer questions about your codebase.'
+export const planTitle = 'Code Transformation plan by Amazon Q'
 
-export const planDisclaimerMessage = '**Proposed transformation changes**\n\n'
+export const planIntroductionMessage =
+    'Amazon Q reviewed your code and generated a transformation plan. Amazon Q will suggest code changes according to the plan, and you can review the updated code before accepting changes to your files.'
+
+export const planHeaderMessage = 'Planned transformation changes'
+
+export const planDisclaimerMessage =
+    'Amazon Q will use the proposed changes as guidance during the transformation. The final code updates might differ from this plan.'
+
+export const linesOfCodeMessage = 'Lines of code in your application'
+
+export const dependenciesToBeReplacedMessage = 'Dependencies to be replaced'
+
+export const deprecatedCodeToBeReplacedMessage = 'Deprecated code instances to be replaced'
+
+export const filesToBeChangedMessage = 'Files to be changed'
+
+export const dependencyNameColumn = 'Dependency'
+
+export const actionColumn = 'Action'
+
+export const currentVersionColumn = 'Current version'
+
+export const targetVersionColumn = 'Target version'
+
+export const relativePathColumn = 'File'
+
+export const apiNameColumn = 'Deprecated code'
+
+export const numChangedFilesColumn = 'Files to be changed'
 
 // end of QCT Strings
 
