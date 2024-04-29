@@ -4,9 +4,41 @@
 <idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude" require-restart="true">
     <id>amazon.q</id>
     <name>Amazon Q</name>
-    <description>
-        Amazon Q is an interactive, generative AI-powered assistant that gives you expert guidance when building, troubleshooting, and transforming applications on AWS.
-    </description>
+    <description><![CDATA[
+    <p>Amazon Q is your generative AI-powered assistant across the software development lifecycle.</p>
+    <h3>Inline code suggestions</h3>
+    <p>Code faster with inline code suggestions as you type.</p>
+    <img src="https://raw.githubusercontent.com/aws/aws-toolkit-jetbrains/main/marketplaceGifs/JB-inline.gif"></img>
+<p><a href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/q-language-ide-support.html">15+ languages supported including Java, Python, TypeScript, Rust, Terraform, AWS Cloudformation, and more</a></p>
+    <h3>Chat</h3>
+    <p>Generate code, refactor existing code, explain code, and get answers to questions about software development.</p>
+    <img src="https://raw.githubusercontent.com/aws/aws-toolkit-jetbrains/main/marketplaceGifs/JB-chat.gif"></img>
+
+    <h3>Security scans</h3>
+    <p>Analyze and fix security vulnerabilities in your project.</p>
+<p><a href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security-scans.html">10 languages supported including Java, Python, Javascript, Golang, and more</a></p>
+
+    <h3>Agent for software development</h3>
+    <p>Let Amazon Q plan and implement new functionality across multiple files in your workspace. Type “/” in chat to open the quick actions menu and choose the “/dev” action.</p>
+
+    <h3>Agent for code transformation</h3>
+    <p>Upgrade your Java applications in minutes, not weeks. Type “/” in chat to open the quick actions menu and choose the “/transform” action.</p>
+    <p><a href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#prerequisites">Currently supports upgrading Java 8 or 11 Maven projects to Java 17</a></p>
+    <img src="https://raw.githubusercontent.com/aws/aws-toolkit-jetbrains/main/marketplaceGifs/JB-transform.png"></img>
+
+    <h3>Code reference log</h3>
+    <p>Attribute code from Amazon Q that is similar to training data. When code suggestions similar to training data are accepted, they will be added to the code reference log.</p>
+
+    <h3>Getting Started</h3>
+    <p><b>Free Tier</b> - create or log in with an AWS Builder ID (no AWS account needed!).<br>
+    <b>Pro Tier</b> - if your organization is on the Amazon Q Developer Pro tier, log in with single sign-on.
+    </p>
+    <img src="https://raw.githubusercontent.com/aws/aws-toolkit-jetbrains/main/marketplaceGifs/JB-auth-Q.gif"></img>
+
+     <h3>Troubleshooting & feedback</h3>
+     <p><a href="https://github.com/aws/aws-toolkit-jetbrains/issues/new?labels=bug&template=bug_report.md">File a bug</a> or <a href="https://github.com/aws/aws-toolkit-jetbrains/issues/new?labels=feature-request&template=feature_request.md">submit a feature request</a> on our Github repository.</p>
+
+]]></description>
     <version>1.0</version>
     <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://github.com/aws/aws-toolkit-jetbrains">AWS</vendor>
     <idea-version since-build="232" />

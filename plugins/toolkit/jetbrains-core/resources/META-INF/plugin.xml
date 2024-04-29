@@ -12,46 +12,8 @@
     </xi:include>
 
     <description><![CDATA[
-<h3><a href="https://aws.amazon.com/q">Amazon Q (preview)</a></h3>
-<p>Amazon Q is an interactive, generative AI-powered assistant that gives you expert guidance when building, troubleshooting, and transforming applications on AWS.</p>
-
-<p>Amazon Q can help you with the following:</p>
-<ul>
-    <li>
-        Answer questions about AWS
-    </li>
-    <li>
-        Answer questions about general programming concepts
-    </li>
-    <li>
-        Explain what a line of code or code function does
-    </li>
-    <li>
-        Write unit tests and code
-    </li>
-    <li>
-        Debug and fix code
-    </li>
-    <li>
-        Refactor code
-    </li>
-</ul>
-<img src="https://raw.githubusercontent.com/aws/aws-toolkit-jetbrains/main/marketplaceGifs/amazonQ.gif"></img>
-
-<h3><a href="https://aws.amazon.com/codewhisperer/">Amazon CodeWhisperer</a></h3>
-<p>An AI powered productivity tool for the IDE.</p>
-
-<ul>
-    <li>
-        <b>Real-time code suggestions</b> - automatic code recommendations in 15+ languages, now including infrastructure as code (CloudFormation, AWS CDK, and Terraform)
-    </li>
-    <li>
-        <b>Optimized for use with AWS services</b> - code suggestions are optimized for AWS APIs including Amazon Elastic Compute Cloud (Amazon EC2), AWS Lambda, and Amazon Simple Storage Service (Amazon S3)
-    </li>
-    <li>
-        <b>Built-in security scans</b> - Scan your code to detect hard-to-find vulnerabilities and get code suggestions to remediate them immediately
-    </li>
-</ul>
+<h3><a href="https://aws.amazon.com/q">Amazon Q and CodeWhisperer</a></h3>
+<p>CodeWhisperer is now part of Amazon Q. <a href="https://plugins.jetbrains.com/plugin/24267-amazon-q/">Try the Amazon Q extension.</a></p>
 
 <h3><a href="https://codecatalyst.aws/explore">Amazon CodeCatalyst</a></h3>
 <p>Unified software development service to quickly build and deliver applications on AWS.</p>
@@ -88,6 +50,9 @@
         See the <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/">user guide</a> for a full list of services and features supported
     </li>
 </ul>
+
+<h3>Getting started</h3>
+<img src="https://raw.githubusercontent.com/aws/aws-toolkit-jetbrains/main/marketplaceGifs/JB-auth-Toolkit.gif"></img>
 
 <h3>About</h3>
 <p>
