@@ -5,4 +5,4 @@
 
 export { activate } from './activation'
 export { telemetry, AuthStatus } from './telemetry'
-export { ExtStartUpSources, getAuthFormIdsFromConnection } from './util'
+export { ExtStartUpSources } from './util'

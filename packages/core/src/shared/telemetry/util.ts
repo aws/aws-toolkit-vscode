@@ -20,17 +20,6 @@ import { isExtensionInstalled, VSCODE_EXTENSION_ID } from '../utilities'
 import { randomUUID } from '../../common/crypto'
 import { activateExtension } from '../utilities/vsCodeUtils'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
-import {
-    Connection,
-    hasScopes,
-    isBuilderIdConnection,
-    isIamConnection,
-    isIdcSsoConnection,
-    isValidCodeCatalystConnection,
-    scopesSsoAccountAccess,
-} from '../../auth/connection'
-import { AuthFormId } from '../../auth/ui/vue/authForms/types'
-import { isValidAmazonQConnection } from '../../codewhisperer/util/authUtil'
 
 const legacySettingsTelemetryValueDisable = 'Disable'
 const legacySettingsTelemetryValueEnable = 'Enable'
@@ -268,37 +257,3 @@ export const ExtStartUpSources = {
 } as const
 
 export type ExtStartUpSource = (typeof ExtStartUpSources)[keyof typeof ExtStartUpSources]
-
-/**
- * Returns readable auth Ids for a connection, which are used by telemetry.
- */
-export function getAuthFormIdsFromConnection(conn?: Connection): AuthFormId[] {
-    if (!conn) {
-        return []
-    }
-
-    const authIds: AuthFormId[] = []
-    let connType: 'builderId' | 'identityCenter'
-
-    if (isIamConnection(conn)) {
-        return ['credentials']
-    } else if (isBuilderIdConnection(conn)) {
-        connType = 'builderId'
-    } else if (isIdcSsoConnection(conn)) {
-        connType = 'identityCenter'
-        if (hasScopes(conn, scopesSsoAccountAccess)) {
-            authIds.push('identityCenterExplorer')
-        }
-    } else {
-        return ['unknown']
-    }
-
-    if (isValidCodeCatalystConnection(conn)) {
-        authIds.push(`${connType}CodeCatalyst`)
-    }
-    if (isValidAmazonQConnection(conn)) {
-        authIds.push(`${connType}CodeWhisperer`)
-    }
-
-    return authIds
-}

@@ -38,16 +38,19 @@ import {
     isIamConnection,
     isValidCodeCatalystConnection,
     createSsoProfile,
+    hasScopes,
+    scopesSsoAccountAccess,
 } from './connection'
 import { Commands, placeholder, RegisteredCommand, vscodeComponent } from '../shared/vscode/commands2'
 import { Auth } from './auth'
 import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
 import { getLogger } from '../shared/logger'
-import { isValidCodeWhispererCoreConnection } from '../codewhisperer/util/authUtil'
+import { isValidAmazonQConnection, isValidCodeWhispererCoreConnection } from '../codewhisperer/util/authUtil'
 import { authHelpUrl } from '../shared/constants'
 import { getResourceFromTreeNode } from '../shared/treeview/utils'
 import { Instance } from '../shared/utilities/typeConstructors'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
+import { AuthFormId } from './ui/vue/authForms/types'
 import { extensionVersion } from '../shared/vscode/env'
 import { ExtStartUpSources } from '../shared/telemetry'
 import { CommonAuthWebview } from '../login/webview/vue/backend'
@@ -818,4 +821,38 @@ export function initAuthCommands(prefix: string) {
             }
         }),
     }
+}
+
+/**
+ * Returns readable auth Ids for a connection, which are used by telemetry.
+ */
+export function getAuthFormIdsFromConnection(conn?: Connection): AuthFormId[] {
+    if (!conn) {
+        return []
+    }
+
+    const authIds: AuthFormId[] = []
+    let connType: 'builderId' | 'identityCenter'
+
+    if (isIamConnection(conn)) {
+        return ['credentials']
+    } else if (isBuilderIdConnection(conn)) {
+        connType = 'builderId'
+    } else if (isIdcSsoConnection(conn)) {
+        connType = 'identityCenter'
+        if (hasScopes(conn, scopesSsoAccountAccess)) {
+            authIds.push('identityCenterExplorer')
+        }
+    } else {
+        return ['unknown']
+    }
+
+    if (isValidCodeCatalystConnection(conn)) {
+        authIds.push(`${connType}CodeCatalyst`)
+    }
+    if (isValidAmazonQConnection(conn)) {
+        authIds.push(`${connType}CodeWhisperer`)
+    }
+
+    return authIds
 }
