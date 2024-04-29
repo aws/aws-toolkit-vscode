@@ -8,6 +8,7 @@ phases:
     pre_build:
         commands:
             - aws codeartifact login --tool npm --domain "$TOOLKITS_CODEARTIFACT_DOMAIN" --domain-owner "$TOOLKITS_ACCOUNT_ID" --repository "$TOOLKITS_CODEARTIFACT_REPO"
+            - test -n "${TARGET_EXTENSION}"
 
     install:
         runtime-versions:
@@ -16,22 +17,24 @@ phases:
     build:
         commands:
             - |
+                echo "TARGET_EXTENSION=${TARGET_EXTENSION}"
                 echo "Removing SNAPSHOT from version string"
                 git config --global user.name "aws-toolkit-automation"
                 git config --global user.email "<>"
-                VERSION=$(node -e "console.log(require('./packages/toolkit/package.json').version);" | (IFS="-"; read -r version unused && echo "$version"))
+                VERSION=$(node -e "console.log(require('./packages/${TARGET_EXTENSION}/package.json').version);" | (IFS="-"; read -r version unused && echo "$version"))
                 DATE=$(date)
-                npm version --no-git-tag-version "$VERSION" -w packages/toolkit
+                npm version --no-git-tag-version "$VERSION" -w packages/${TARGET_EXTENSION}
                 # Call npm ci because 'createRelease' uses ts-node
                 npm ci
             - |
-                npm run createRelease
+                npm run createRelease -w packages/${TARGET_EXTENSION}
             - |
-                git add packages/toolkit/package.json
+                git add packages/${TARGET_EXTENSION}/package.json
                 git add package-lock.json
                 git commit -m "Release $VERSION"
                 echo "tagging commit"
-                git tag -a "v$VERSION" -m "version $VERSION $DATE"
+                # e.g. amazonq/v1.0.0
+                git tag -a "${TARGET_EXTENSION}/v${VERSION}" -m "${TARGET_EXTENSION} version $VERSION $DATE"
                 # cleanup
                 git clean -fxd
                 git reset HEAD --hard

@@ -2,10 +2,10 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { AuthUtil, getChatAuthState } from '../../../codewhisperer/util/authUtil'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
 export async function loginToIdC() {
-    const authState = await getChatAuthState()
+    const authState = await AuthUtil.instance.getChatAuthState()
     if (process.env['AWS_TOOLKIT_AUTOMATION'] === 'local') {
         if (authState.amazonQ !== 'connected') {
             throw new Error('You will need to login manually before running tests.')

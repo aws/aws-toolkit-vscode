@@ -9,7 +9,7 @@ import { Auth } from '../../auth/auth'
 import { CredentialsProviderManager } from '../../auth/providers/credentialsProviderManager'
 import { SsoClient } from '../../auth/sso/clients'
 import { builderIdStartUrl, SsoToken } from '../../auth/sso/model'
-import { SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
+import { DeviceFlowAuthorization, SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
 import { FakeMemento } from '../fakeExtensionContext'
 import { captureEvent, EventCapturer } from '../testUtil'
 import { stub } from '../utilities/stubber'
@@ -59,7 +59,7 @@ export async function createSharedCredentialsProvider(name: string, ini: string)
 function createTestTokenProvider() {
     let token: SsoToken | undefined
     let counter = 0
-    const provider = stub(SsoAccessTokenProvider)
+    const provider = stub(DeviceFlowAuthorization)
     provider.getToken.callsFake(async () => token)
     provider.createToken.callsFake(
         async () => (token = { accessToken: String(++counter), expiresAt: new Date(Date.now() + 1000000) })

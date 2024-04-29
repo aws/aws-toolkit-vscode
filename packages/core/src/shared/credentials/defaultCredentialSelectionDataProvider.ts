@@ -26,6 +26,7 @@ import { credentialHelpUrl } from '../constants'
 import { createHelpButton } from '../ui/buttons'
 import { recentlyUsed } from '../localizedText'
 import { messages } from '../utilities/messages'
+import { authCommands } from '../../auth/utils'
 
 interface ProfileEntry {
     profileName: string
@@ -253,7 +254,7 @@ export async function credentialProfileSelector(
         ]
         const item = await dataProvider.pickCredentialProfile(input, actions, state)
         if (item.label === actions[0].label) {
-            await vscode.commands.executeCommand('aws.credentials.edit')
+            await authCommands().profileEdit.execute()
         } else {
             state.credentialProfile = item
         }

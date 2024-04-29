@@ -28,6 +28,25 @@ export class CdkRootNode implements TreeNode {
     public readonly resource = this
     private readonly onDidChangeChildrenEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeChildren = this.onDidChangeChildrenEmitter.event
+    private readonly _refreshCdkExplorer
+
+    constructor() {
+        Commands.register('aws.cdk.viewDocs', () => {
+            void openUrl(vscode.Uri.parse(cdkDocumentationUrl))
+            telemetry.aws_help.emit({ name: 'cdk' })
+        })
+        this._refreshCdkExplorer = (provider?: ResourceTreeDataProvider) =>
+            Commands.register('aws.cdk.refresh', () => {
+                this.refresh()
+                if (provider) {
+                    provider.refresh()
+                }
+            })
+    }
+
+    public get refreshCdkExplorer() {
+        return this._refreshCdkExplorer
+    }
 
     public getChildren() {
         return getAppNodes()
@@ -44,18 +63,10 @@ export class CdkRootNode implements TreeNode {
 
         return item
     }
+
+    static #instance: CdkRootNode
+
+    static get instance(): CdkRootNode {
+        return (this.#instance ??= new CdkRootNode())
+    }
 }
-
-export const cdkNode = new CdkRootNode()
-export const refreshCdkExplorer = (provider?: ResourceTreeDataProvider) =>
-    Commands.register('aws.cdk.refresh', () => {
-        cdkNode.refresh()
-        if (provider) {
-            provider.refresh()
-        }
-    })
-
-Commands.register('aws.cdk.viewDocs', () => {
-    void openUrl(vscode.Uri.parse(cdkDocumentationUrl))
-    telemetry.aws_help.emit({ name: 'cdk' })
-})

@@ -1,0 +1,1608 @@
+{
+    "version": "2.0",
+    "metadata": {
+        "apiVersion": "2019-06-10",
+        "endpointPrefix": "oidc",
+        "jsonVersion": "1.1",
+        "protocol": "rest-json",
+        "serviceAbbreviation": "SSO OIDC",
+        "serviceFullName": "AWS SSO OIDC",
+        "serviceId": "SSO OIDC",
+        "signatureVersion": "v4",
+        "signingName": "awsssooidc",
+        "uid": "sso-oidc-2019-06-10"
+    },
+    "operations": {
+        "AssociateTokenWithDevice": {
+            "name": "AssociateTokenWithDevice",
+            "http": {
+                "method": "POST",
+                "requestUri": "/device_authorization/associate_token"
+            },
+            "input": { "shape": "AssociateTokenWithDeviceRequest" },
+            "output": { "shape": "AssociateTokenWithDeviceResponse" },
+            "errors": [
+                { "shape": "AccessDeniedException" },
+                { "shape": "InvalidRequestException" },
+                { "shape": "InvalidGrantException" },
+                { "shape": "InvalidClientException" },
+                { "shape": "InvalidScopeException" },
+                { "shape": "UnauthorizedClientException" },
+                { "shape": "SlowDownException" },
+                { "shape": "InternalServerException" }
+            ],
+            "internalonly": true
+        },
+        "Authorize": {
+            "name": "Authorize",
+            "http": {
+                "method": "GET",
+                "requestUri": "/authorize",
+                "responseCode": 302
+            },
+            "input": { "shape": "AuthorizeRequest" },
+            "output": { "shape": "AuthorizeResponse" },
+            "errors": [
+                { "shape": "InvalidRequestRedirectException" },
+                { "shape": "UnauthorizedClientRedirectException" },
+                { "shape": "AccessDeniedRedirectException" },
+                { "shape": "UnsupportedResponseTypeRedirectException" },
+                { "shape": "InvalidScopeRedirectException" },
+                { "shape": "ServerErrorRedirectException" },
+                { "shape": "TemporarilyUnavailableRedirectException" },
+                { "shape": "InvalidClientException" },
+                { "shape": "UnauthorizedClientException" },
+                { "shape": "InvalidRedirectUriException" },
+                { "shape": "InvalidRequestException" },
+                { "shape": "InternalServerException" },
+                { "shape": "SlowDownException" },
+                { "shape": "SlowDownRedirectException" }
+            ],
+            "internalonly": true
+        },
+        "BackfillConfidentialClient": {
+            "name": "BackfillConfidentialClient",
+            "http": {
+                "method": "POST",
+                "requestUri": "/client/confidential/backfill"
+            },
+            "input": { "shape": "BackfillConfidentialClientRequest" },
+            "output": { "shape": "BackfillConfidentialClientResponse" },
+            "errors": [
+                { "shape": "InvalidRequestException" },
+                { "shape": "AccessDeniedException" },
+                { "shape": "EntityNotFoundException" },
+                { "shape": "ConcurrentModificationException" },
+                { "shape": "InternalServerException" }
+            ],
+            "internalonly": true
+        },
+        "CancelDeviceAuthorization": {
+            "name": "CancelDeviceAuthorization",
+            "http": {
+                "method": "POST",
+                "requestUri": "/device_authorization/cancel"
+            },
+            "input": { "shape": "CancelDeviceAuthorizationRequest" },
+            "output": { "shape": "CancelDeviceAuthorizationResponse" },
+            "errors": [
+                { "shape": "InvalidRequestException" },
+                { "shape": "InvalidClientException" },
+                { "shape": "InvalidGrantException" },
+                { "shape": "UnauthorizedClientException" },
+                { "shape": "SlowDownException" },
+                { "shape": "InternalServerException" }
+            ],
+            "internalonly": true
+        },
+        "CreateToken": {
+            "name": "CreateToken",
+            "http": {
+                "method": "POST",
+                "requestUri": "/token"
+            },
+            "input": { "shape": "CreateTokenRequest" },
+            "output": { "shape": "CreateTokenResponse" },
+            "errors": [
+                { "shape": "InvalidRequestException" },
+                { "shape": "InvalidClientException" },
+                { "shape": "InvalidGrantException" },
+                { "shape": "UnauthorizedClientException" },
+                { "shape": "UnsupportedGrantTypeException" },
+                { "shape": "InvalidScopeException" },
+                { "shape": "AuthorizationPendingException" },
+                { "shape": "SlowDownException" },
+                { "shape": "AccessDeniedException" },
+                { "shape": "ExpiredTokenException" },
+                { "shape": "InternalServerException" },
+                { "shape": "InvalidRequestRegionException" }
+            ]
+        },
+        "CreateTokenForSTS": {
+            "name": "CreateTokenForSTS",
+            "http": {
+                "method": "POST",
+                "requestUri": "/token?target=sts"
+            },
+            "input": { "shape": "CreateTokenForSTSRequest" },
+            "output": { "shape": "CreateTokenForSTSResponse" },
+            "errors": [
+                { "shape": "InvalidRequestException" },
+                { "shape": "AccessDeniedException" },
+                { "shape": "SlowDownException" },
+                { "shape": "InternalServerException" }
+            ],
+            "internalonly": true
+        },
+        "CreateTokenWithIAM": {
+            "name": "CreateTokenWithIAM",
+            "http": {
+                "method": "POST",
+                "requestUri": "/token?aws_iam=t"
+            },
+            "input": { "shape": "CreateTokenWithIAMRequest" },
+            "output": { "shape": "CreateTokenWithIAMResponse" },
+            "errors": [
+                { "shape": "InvalidRequestException" },
+                { "shape": "InvalidClientException" },
+                { "shape": "InvalidGrantException" },
+                { "shape": "UnauthorizedClientException" },
+                { "shape": "UnsupportedGrantTypeException" },
+                { "shape": "InvalidScopeException" },
+                { "shape": "AuthorizationPendingException" },
+                { "shape": "SlowDownException" },
+                { "shape": "AccessDeniedException" },
+                { "shape": "ExpiredTokenException" },
+                { "shape": "InternalServerException" },
+                { "shape": "InvalidRequestRegionException" }
+            ]
+        },
+        "DeleteConfidentialClient": {
+            "name": "DeleteConfidentialClient",
+            "http": {
+                "method": "POST",
+                "requestUri": "/client/confidential/delete"
+            },
+            "input": { "shape": "DeleteConfidentialClientRequest" },
+            "output": { "shape": "DeleteConfidentialClientResponse" },
+            "errors": [
+                { "shape": "InvalidRequestException" },
+                { "shape": "EntityNotFoundException" },
+                { "shape": "InternalServerException" }
+            ],
+            "internalonly": true
+        },
+        "GetConfidentialClient": {
+            "name": "GetConfidentialClient",
+            "http": {
+                "method": "POST",
+                "requestUri": "/client/confidential/get"
+            },
+            "input": { "shape": "GetConfidentialClientRequest" },
+            "output": { "shape": "GetConfidentialClientResponse" },
+            "errors": [
+                { "shape": "InvalidRequestException" },
+                { "shape": "EntityNotFoundException" },
+                { "shape": "InternalServerException" }
+            ],
+            "internalonly": true
+        },
+        "GetConfidentialClientByExternalId": {
+            "name": "GetConfidentialClientByExternalId",
+            "http": {
+                "method": "POST",
+                "requestUri": "/client/confidential/get_by_external"
+            },
+            "input": { "shape": "GetConfidentialClientByExternalIdRequest" },
+            "output": { "shape": "GetConfidentialClientByExternalIdResponse" },
+            "errors": [
+                { "shape": "InvalidRequestException" },
+                { "shape": "EntityNotFoundException" },
+                { "shape": "InternalServerException" }
+            ],
+            "internalonly": true
+        },
+        "GlobalRevokeToken": {
+            "name": "GlobalRevokeToken",
+            "http": {
+                "method": "POST",
+                "requestUri": "/global-revoke"
+            },
+            "input": { "shape": "GlobalRevokeTokenRequest" },
+            "output": { "shape": "GlobalRevokeTokenResponse" },
+            "errors": [
+                { "shape": "InvalidRequestException" },
+                { "shape": "InvalidClientException" },
+                { "shape": "UnauthorizedClientException" },
+                { "shape": "InvalidGrantException" },
+                { "shape": "UnsupportedTokenTypeException" },
+                { "shape": "InternalServerException" },
+                { "shape": "SlowDownException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "internalonly": true
+        },
+        "IntrospectToken": {
+            "name": "IntrospectToken",
+            "http": {
+                "method": "POST",
+                "requestUri": "/introspect"
+            },
+            "input": { "shape": "IntrospectTokenRequest" },
+            "output": { "shape": "IntrospectTokenResponse" },
+            "errors": [
+                { "shape": "InvalidRequestException" },
+                { "shape": "AccessDeniedException" },
+                { "shape": "InternalServerException" },
+                { "shape": "InvalidGrantException" },
+                { "shape": "InvalidRequestRedirectException" },
+                { "shape": "InvalidRequestRegionException" },
+                { "shape": "SlowDownException" },
+                { "shape": "InvalidClientException" }
+            ],
+            "internalonly": true
+        },
+        "ListConsentDetails": {
+            "name": "ListConsentDetails",
+            "http": {
+                "method": "GET",
+                "requestUri": "/consent_details"
+            },
+            "input": { "shape": "ListConsentDetailsRequest" },
+            "output": { "shape": "ListConsentDetailsResponse" },
+            "errors": [
+                { "shape": "AccessDeniedException" },
+                { "shape": "InvalidRequestException" },
+                { "shape": "InvalidGrantException" },
+                { "shape": "InvalidClientException" },
+                { "shape": "SlowDownException" },
+                { "shape": "InternalServerException" },
+                { "shape": "InvalidScopeException" }
+            ],
+            "internalonly": true
+        },
+        "ListConsentDetailsForUser": {
+            "name": "ListConsentDetailsForUser",
+            "http": {
+                "method": "POST",
+                "requestUri": "/consent_details"
+            },
+            "input": { "shape": "ListConsentDetailsForUserRequest" },
+            "output": { "shape": "ListConsentDetailsForUserResponse" },
+            "errors": [
+                { "shape": "AccessDeniedException" },
+                { "shape": "InvalidRequestException" },
+                { "shape": "InvalidGrantException" },
+                { "shape": "InvalidClientException" },
+                { "shape": "SlowDownException" },
+                { "shape": "InternalServerException" },
+                { "shape": "InvalidScopeException" }
+            ],
+            "internalonly": true
+        },
+        "PostAuthenticationResult": {
+            "name": "PostAuthenticationResult",
+            "http": {
+                "method": "POST",
+                "requestUri": "/authentication_result"
+            },
+            "input": { "shape": "PostAuthenticationResultRequest" },
+            "output": { "shape": "PostAuthenticationResultResponse" },
+            "errors": [
+                { "shape": "InternalServerException" },
+                { "shape": "InvalidRequestException" },
+                { "shape": "InvalidGrantException" },
+                { "shape": "SlowDownException" }
+            ],
+            "internalonly": true
+        },
+        "PreRegisterClient": {
+            "name": "PreRegisterClient",
+            "http": {
+                "method": "POST",
+                "requestUri": "/client/pre_register"
+            },
+            "input": { "shape": "PreRegisterClientRequest" },
+            "output": { "shape": "PreRegisterClientResponse" },
+            "errors": [
+                { "shape": "InvalidRequestException" },
+                { "shape": "InvalidClientMetadataException" },
+                { "shape": "ConflictException" },
+                { "shape": "InvalidGrantException" },
+                { "shape": "InvalidScopeException" },
+                { "shape": "InternalServerException" },
+                { "shape": "AccessDeniedException" },
+                { "shape": "SlowDownException" }
+            ]
+        },
+        "RegisterClient": {
+            "name": "RegisterClient",
+            "http": {
+                "method": "POST",
+                "requestUri": "/client/register"
+            },
+            "input": { "shape": "RegisterClientRequest" },
+            "output": { "shape": "RegisterClientResponse" },
+            "errors": [
+                { "shape": "InvalidRequestException" },
+                { "shape": "InvalidScopeException" },
+                { "shape": "InvalidClientMetadataException" },
+                { "shape": "InternalServerException" },
+                { "shape": "InvalidSoftwareStatementException" },
+                { "shape": "AccessDeniedException" },
+                { "shape": "UnsupportedGrantTypeException" },
+                { "shape": "InvalidRedirectUriException" }
+            ]
+        },
+        "RegisterConfidentialClient": {
+            "name": "RegisterConfidentialClient",
+            "http": {
+                "method": "POST",
+                "requestUri": "/client/confidential/register"
+            },
+            "input": { "shape": "RegisterConfidentialClientRequest" },
+            "output": { "shape": "RegisterConfidentialClientResponse" },
+            "errors": [
+                { "shape": "InvalidRequestException" },
+                { "shape": "IdempotencyConflictException" },
+                { "shape": "ConflictException" },
+                { "shape": "InternalServerException" },
+                { "shape": "UnsupportedGrantTypeException" }
+            ],
+            "internalonly": true
+        },
+        "ResolveStartLocation": {
+            "name": "ResolveStartLocation",
+            "http": {
+                "method": "GET",
+                "requestUri": "/start",
+                "responseCode": 302
+            },
+            "input": { "shape": "ResolveStartLocationRequest" },
+            "output": { "shape": "ResolveStartLocationResponse" },
+            "errors": [
+                { "shape": "InvalidRequestException" },
+                { "shape": "InternalServerException" },
+                { "shape": "SlowDownException" }
+            ],
+            "internalonly": true
+        },
+        "RestoreBackfilledConfidentialClient": {
+            "name": "RestoreBackfilledConfidentialClient",
+            "http": {
+                "method": "POST",
+                "requestUri": "/client/confidential/restore_backfilled"
+            },
+            "input": { "shape": "RestoreBackfilledConfidentialClientRequest" },
+            "output": { "shape": "RestoreBackfilledConfidentialClientResponse" },
+            "errors": [
+                { "shape": "InvalidRequestException" },
+                { "shape": "AccessDeniedException" },
+                { "shape": "EntityNotFoundException" },
+                { "shape": "ConcurrentModificationException" },
+                { "shape": "InternalServerException" }
+            ],
+            "internalonly": true
+        },
+        "RevokeToken": {
+            "name": "RevokeToken",
+            "http": {
+                "method": "POST",
+                "requestUri": "/revoke"
+            },
+            "input": { "shape": "RevokeTokenRequest" },
+            "output": { "shape": "RevokeTokenResponse" },
+            "errors": [
+                { "shape": "InvalidRequestException" },
+                { "shape": "InvalidClientException" },
+                { "shape": "UnauthorizedClientException" },
+                { "shape": "InvalidGrantException" },
+                { "shape": "UnsupportedTokenTypeException" },
+                { "shape": "InternalServerException" },
+                { "shape": "SlowDownException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "internalonly": true
+        },
+        "StartDeviceAuthorization": {
+            "name": "StartDeviceAuthorization",
+            "http": {
+                "method": "POST",
+                "requestUri": "/device_authorization"
+            },
+            "input": { "shape": "StartDeviceAuthorizationRequest" },
+            "output": { "shape": "StartDeviceAuthorizationResponse" },
+            "errors": [
+                { "shape": "InvalidRequestException" },
+                { "shape": "InvalidClientException" },
+                { "shape": "UnauthorizedClientException" },
+                { "shape": "SlowDownException" },
+                { "shape": "InternalServerException" }
+            ]
+        },
+        "UpdateConfidentialClient": {
+            "name": "UpdateConfidentialClient",
+            "http": {
+                "method": "POST",
+                "requestUri": "/client/confidential/update"
+            },
+            "input": { "shape": "UpdateConfidentialClientRequest" },
+            "output": { "shape": "UpdateConfidentialClientResponse" },
+            "errors": [
+                { "shape": "InvalidRequestException" },
+                { "shape": "EntityNotFoundException" },
+                { "shape": "ConcurrentModificationException" },
+                { "shape": "InternalServerException" },
+                { "shape": "UnsupportedGrantTypeException" }
+            ],
+            "internalonly": true
+        },
+        "UpdateConfidentialClientForMigration": {
+            "name": "UpdateConfidentialClientForMigration",
+            "http": {
+                "method": "POST",
+                "requestUri": "/migration/client/confidential/update"
+            },
+            "input": { "shape": "UpdateConfidentialClientForMigrationRequest" },
+            "output": { "shape": "UpdateConfidentialClientForMigrationResponse" },
+            "errors": [
+                { "shape": "InvalidRequestException" },
+                { "shape": "EntityNotFoundException" },
+                { "shape": "ConcurrentModificationException" },
+                { "shape": "InternalServerException" }
+            ],
+            "internalonly": true
+        },
+        "ValidateUserCode": {
+            "name": "ValidateUserCode",
+            "http": {
+                "method": "GET",
+                "requestUri": "/device_verification"
+            },
+            "input": { "shape": "ValidateUserCodeRequest" },
+            "output": { "shape": "ValidateUserCodeResponse" },
+            "errors": [
+                { "shape": "InvalidRequestException" },
+                { "shape": "InvalidGrantException" },
+                { "shape": "SlowDownException" },
+                { "shape": "InternalServerException" }
+            ],
+            "internalonly": true
+        }
+    },
+    "shapes": {
+        "AcceptLanguageHeader": { "type": "string" },
+        "AccessDeniedException": {
+            "type": "structure",
+            "members": {
+                "error": { "shape": "Error" },
+                "error_description": { "shape": "ErrorDescription" }
+            },
+            "error": { "httpStatusCode": 400 },
+            "exception": true
+        },
+        "AccessDeniedRedirectException": {
+            "type": "structure",
+            "members": {
+                "location": {
+                    "shape": "Location",
+                    "location": "header",
+                    "locationName": "Location"
+                }
+            },
+            "error": { "httpStatusCode": 302 },
+            "exception": true
+        },
+        "AccessToken": {
+            "type": "string",
+            "sensitive": true
+        },
+        "AccountIdType": { "type": "string" },
+        "Active": { "type": "boolean" },
+        "Actor": {
+            "type": "structure",
+            "members": {
+                "sub": { "shape": "ArnType" }
+            }
+        },
+        "ActorPolicy": {
+            "type": "structure",
+            "members": {},
+            "document": true
+        },
+        "AdditionalFields": {
+            "type": "list",
+            "member": { "shape": "FieldName" }
+        },
+        "AppSessionId": { "type": "string" },
+        "ApplicationName": { "type": "string" },
+        "ArnType": { "type": "string" },
+        "Assertion": {
+            "type": "string",
+            "sensitive": true
+        },
+        "AssertionProvider": {
+            "type": "structure",
+            "members": {
+                "id": { "shape": "AssertionProviderId" },
+                "audienceRestrictions": { "shape": "AssertionProviderAudienceRestrictions" }
+            }
+        },
+        "AssertionProviderAudienceRestrictions": {
+            "type": "list",
+            "member": { "shape": "ArnType" }
+        },
+        "AssertionProviderId": { "type": "string" },
+        "AssertionProviders": {
+            "type": "list",
+            "member": { "shape": "AssertionProvider" }
+        },
+        "AssociateTokenWithDeviceRequest": {
+            "type": "structure",
+            "members": {
+                "deviceContext": { "shape": "DeviceContext" },
+                "authorizationResumptionContext": { "shape": "AuthorizationResumptionContext" },
+                "userSessionId": { "shape": "UserSessionId" }
+            }
+        },
+        "AssociateTokenWithDeviceResponse": {
+            "type": "structure",
+            "members": {
+                "location": { "shape": "URI" }
+            }
+        },
+        "AssociatedAppSessionIds": {
+            "type": "list",
+            "member": { "shape": "AppSessionId" }
+        },
+        "Audience": { "type": "string" },
+        "Audiences": {
+            "type": "list",
+            "member": { "shape": "Audience" }
+        },
+        "AuthCode": { "type": "string" },
+        "AuthOrchestrationId": { "type": "string" },
+        "AuthenticationConfiguration": {
+            "type": "structure",
+            "members": {
+                "actorPolicy": { "shape": "ActorPolicy" }
+            }
+        },
+        "AuthorizationDetail": {
+            "type": "structure",
+            "members": {},
+            "document": true
+        },
+        "AuthorizationDetails": {
+            "type": "list",
+            "member": { "shape": "AuthorizationDetail" }
+        },
+        "AuthorizationPendingException": {
+            "type": "structure",
+            "members": {
+                "error": { "shape": "Error" },
+                "error_description": { "shape": "ErrorDescription" }
+            },
+            "error": { "httpStatusCode": 400 },
+            "exception": true
+        },
+        "AuthorizationResumptionContext": { "type": "string" },
+        "AuthorizeRequest": {
+            "type": "structure",
+            "members": {
+                "clientId": {
+                    "shape": "ClientId",
+                    "location": "querystring",
+                    "locationName": "client_id"
+                },
+                "state": {
+                    "shape": "State",
+                    "location": "querystring",
+                    "locationName": "state"
+                },
+                "responseType": {
+                    "shape": "ResponseType",
+                    "location": "querystring",
+                    "locationName": "response_type"
+                },
+                "redirectUri": {
+                    "shape": "URI",
+                    "location": "querystring",
+                    "locationName": "redirect_uri"
+                },
+                "scopes": {
+                    "shape": "Scopes",
+                    "location": "querystring",
+                    "locationName": "scope"
+                },
+                "authorizationResumptionContext": {
+                    "shape": "AuthorizationResumptionContext",
+                    "location": "querystring",
+                    "locationName": "authorization_resumption_context"
+                },
+                "codeChallenge": {
+                    "shape": "CodeChallenge",
+                    "location": "querystring",
+                    "locationName": "code_challenge"
+                },
+                "codeChallengeMethod": {
+                    "shape": "CodeChallengeMethod",
+                    "location": "querystring",
+                    "locationName": "code_challenge_method"
+                }
+            }
+        },
+        "AuthorizeResponse": {
+            "type": "structure",
+            "members": {
+                "location": {
+                    "shape": "Location",
+                    "location": "header",
+                    "locationName": "Location"
+                }
+            }
+        },
+        "AuthorizedTarget": { "type": "string" },
+        "AuthorizedTargets": {
+            "type": "list",
+            "member": { "shape": "AuthorizedTarget" }
+        },
+        "AwsIdentityStore": { "type": "string" },
+        "AwsInstanceAccountId": { "type": "string" },
+        "BackfillConfidentialClientRequest": {
+            "type": "structure",
+            "members": {
+                "clientId": { "shape": "ClientId" }
+            }
+        },
+        "BackfillConfidentialClientResponse": {
+            "type": "structure",
+            "members": {
+                "clientId": { "shape": "ClientId" },
+                "backfillVersion": { "shape": "BackfillVersion" }
+            }
+        },
+        "BackfillVersion": { "type": "integer" },
+        "CancelDeviceAuthorizationRequest": {
+            "type": "structure",
+            "members": {
+                "deviceContext": { "shape": "DeviceContext" }
+            }
+        },
+        "CancelDeviceAuthorizationResponse": {
+            "type": "structure",
+            "members": {}
+        },
+        "ClientId": { "type": "string" },
+        "ClientInfoStatus": { "type": "string" },
+        "ClientInformation": {
+            "type": "structure",
+            "members": {
+                "clientId": { "shape": "ClientId" },
+                "tenantId": { "shape": "TenantId" },
+                "externalId": { "shape": "ExternalId" },
+                "templateArn": { "shape": "ArnType" },
+                "templateContext": { "shape": "TemplateContextMap" },
+                "entitledResourceId": { "shape": "EntitledResourceId" },
+                "entitledResourceContainerId": { "shape": "EntitledResourceContainerId" },
+                "status": { "shape": "ClientInfoStatus" },
+                "initiateLoginUri": { "shape": "URI" },
+                "oAuthConfiguration": { "shape": "OAuthConfiguration" }
+            }
+        },
+        "ClientName": { "type": "string" },
+        "ClientSecret": {
+            "type": "string",
+            "sensitive": true
+        },
+        "ClientStateToken": {
+            "type": "string",
+            "max": 100,
+            "min": 1
+        },
+        "ClientType": { "type": "string" },
+        "CodeChallenge": {
+            "type": "string",
+            "sensitive": true
+        },
+        "CodeChallengeMethod": { "type": "string" },
+        "CodeVerifier": {
+            "type": "string",
+            "sensitive": true
+        },
+        "ConcurrentModificationException": {
+            "type": "structure",
+            "members": {
+                "error": { "shape": "Error" },
+                "error_description": { "shape": "ErrorDescription" }
+            },
+            "error": { "httpStatusCode": 409 },
+            "exception": true
+        },
+        "ConflictException": {
+            "type": "structure",
+            "members": {
+                "error": { "shape": "Error" },
+                "error_description": { "shape": "ErrorDescription" }
+            },
+            "error": { "httpStatusCode": 400 },
+            "exception": true
+        },
+        "ConsentDetail": {
+            "type": "structure",
+            "members": {
+                "applicationName": { "shape": "ApplicationName" },
+                "descriptions": { "shape": "Descriptions" }
+            }
+        },
+        "ConsentDetails": {
+            "type": "list",
+            "member": { "shape": "ConsentDetail" }
+        },
+        "ContentLanguageHeader": { "type": "string" },
+        "CreateTokenForSTSRequest": {
+            "type": "structure",
+            "required": ["sessionToken", "accountId", "roleName"],
+            "members": {
+                "sessionToken": { "shape": "SessionTokenType" },
+                "accountId": { "shape": "AccountIdType" },
+                "roleName": { "shape": "RoleNameType" }
+            }
+        },
+        "CreateTokenForSTSResponse": {
+            "type": "structure",
+            "members": {
+                "token": { "shape": "IdToken" }
+            }
+        },
+        "CreateTokenRequest": {
+            "type": "structure",
+            "required": ["clientId", "grantType"],
+            "members": {
+                "clientId": { "shape": "ClientId" },
+                "clientSecret": { "shape": "ClientSecret" },
+                "grantType": { "shape": "GrantType" },
+                "deviceCode": { "shape": "DeviceCode" },
+                "code": { "shape": "AuthCode" },
+                "refreshToken": { "shape": "RefreshToken" },
+                "assertion": { "shape": "Assertion" },
+                "scope": { "shape": "Scopes" },
+                "redirectUri": { "shape": "URI" },
+                "platformSessionExpiryRequired": { "shape": "PlatformSessionExpiryRequired" },
+                "subjectToken": { "shape": "SubjectToken" },
+                "subjectTokenType": { "shape": "TokenTypeURI" },
+                "requestedTokenType": { "shape": "TokenTypeURI" },
+                "headers": { "shape": "Headers" },
+                "codeVerifier": { "shape": "CodeVerifier" }
+            }
+        },
+        "CreateTokenResponse": {
+            "type": "structure",
+            "members": {
+                "accessToken": { "shape": "AccessToken" },
+                "tokenType": { "shape": "TokenType" },
+                "expiresIn": { "shape": "ExpirationInSeconds" },
+                "refreshToken": { "shape": "RefreshToken" },
+                "idToken": { "shape": "IdToken" },
+                "issuedTokenType": { "shape": "TokenTypeURI" },
+                "aws_sso_app_session_id": { "shape": "AppSessionId" },
+                "originSessionId": { "shape": "OriginSessionId" }
+            }
+        },
+        "CreateTokenWithIAMRequest": {
+            "type": "structure",
+            "required": ["clientId", "grantType"],
+            "members": {
+                "clientId": { "shape": "ClientId" },
+                "grantType": { "shape": "GrantType" },
+                "code": { "shape": "AuthCode" },
+                "refreshToken": { "shape": "RefreshToken" },
+                "assertion": { "shape": "Assertion" },
+                "scope": { "shape": "Scopes" },
+                "redirectUri": { "shape": "URI" },
+                "platformSessionExpiryRequired": { "shape": "PlatformSessionExpiryRequired" },
+                "subjectToken": { "shape": "SubjectToken" },
+                "subjectTokenType": { "shape": "TokenTypeURI" },
+                "requestedTokenType": { "shape": "TokenTypeURI" },
+                "headers": { "shape": "Headers" },
+                "codeVerifier": { "shape": "CodeVerifier" }
+            }
+        },
+        "CreateTokenWithIAMResponse": {
+            "type": "structure",
+            "members": {
+                "accessToken": { "shape": "AccessToken" },
+                "tokenType": { "shape": "TokenType" },
+                "expiresIn": { "shape": "ExpirationInSeconds" },
+                "refreshToken": { "shape": "RefreshToken" },
+                "idToken": { "shape": "IdToken" },
+                "issuedTokenType": { "shape": "TokenTypeURI" },
+                "aws_sso_app_session_id": { "shape": "AppSessionId" },
+                "originSessionId": { "shape": "OriginSessionId" },
+                "scope": { "shape": "Scopes" }
+            }
+        },
+        "DeleteConfidentialClientRequest": {
+            "type": "structure",
+            "members": {
+                "clientId": { "shape": "ClientId" },
+                "tenantId": { "shape": "TenantId" }
+            }
+        },
+        "DeleteConfidentialClientResponse": {
+            "type": "structure",
+            "members": {}
+        },
+        "Description": {
+            "type": "structure",
+            "members": {
+                "shortDescription": { "shape": "ShortDescription" },
+                "longDescription": { "shape": "LongDescription" },
+                "resourceType": { "shape": "ResourceType" },
+                "detailedTitle": { "shape": "DetailedTitle" }
+            }
+        },
+        "Descriptions": {
+            "type": "list",
+            "member": { "shape": "Description" }
+        },
+        "DetailedTitle": { "type": "string" },
+        "DeviceCode": { "type": "string" },
+        "DeviceContext": {
+            "type": "structure",
+            "members": {
+                "clientId": { "shape": "ClientId" },
+                "clientType": { "shape": "StringType" },
+                "deviceContextId": { "shape": "StringType" }
+            }
+        },
+        "EntitledResourceContainerId": { "type": "string" },
+        "EntitledResourceId": { "type": "string" },
+        "EntityNotFoundException": {
+            "type": "structure",
+            "members": {
+                "error": { "shape": "Error" },
+                "error_description": { "shape": "ErrorDescription" }
+            },
+            "error": { "httpStatusCode": 400 },
+            "exception": true
+        },
+        "Error": { "type": "string" },
+        "ErrorDescription": { "type": "string" },
+        "ExpirationInSeconds": { "type": "integer" },
+        "ExpiredTokenException": {
+            "type": "structure",
+            "members": {
+                "error": { "shape": "Error" },
+                "error_description": { "shape": "ErrorDescription" }
+            },
+            "error": { "httpStatusCode": 400 },
+            "exception": true
+        },
+        "ExpirySinceEpochInSeconds": { "type": "long" },
+        "ExternalId": { "type": "string" },
+        "FieldName": {
+            "type": "string",
+            "max": 100,
+            "min": 1
+        },
+        "GetConfidentialClientByExternalIdRequest": {
+            "type": "structure",
+            "members": {
+                "externalId": { "shape": "ExternalId" },
+                "tenantId": { "shape": "TenantId" },
+                "additionalFields": { "shape": "AdditionalFields" }
+            }
+        },
+        "GetConfidentialClientByExternalIdResponse": {
+            "type": "structure",
+            "members": {
+                "clientInformation": { "shape": "ClientInformation" },
+                "clientStateToken": { "shape": "ClientStateToken" }
+            }
+        },
+        "GetConfidentialClientRequest": {
+            "type": "structure",
+            "members": {
+                "clientId": { "shape": "ClientId" },
+                "tenantId": { "shape": "TenantId" }
+            }
+        },
+        "GetConfidentialClientResponse": {
+            "type": "structure",
+            "members": {
+                "clientInformation": { "shape": "ClientInformation" },
+                "clientStateToken": { "shape": "ClientStateToken" }
+            }
+        },
+        "GlobalRevokeTokenRequest": {
+            "type": "structure",
+            "members": {
+                "client_id": { "shape": "ClientId" },
+                "client_secret": { "shape": "ClientSecret" },
+                "token": { "shape": "Token" },
+                "token_type_hint": { "shape": "TokenTypeHint" },
+                "headers": { "shape": "Headers" }
+            }
+        },
+        "GlobalRevokeTokenResponse": {
+            "type": "structure",
+            "members": {
+                "associatedAppSessionsIds": { "shape": "AssociatedAppSessionIds" },
+                "originSessionId": { "shape": "OriginSessionId" }
+            }
+        },
+        "GrantConfiguration": {
+            "type": "structure",
+            "members": {
+                "grantType": { "shape": "GrantType" },
+                "grantOptions": { "shape": "GrantOptions" }
+            }
+        },
+        "GrantConfigurations": {
+            "type": "list",
+            "member": { "shape": "GrantConfiguration" }
+        },
+        "GrantOptions": {
+            "type": "structure",
+            "members": {
+                "redirectUris": { "shape": "RedirectUris" },
+                "assertionProviders": {
+                    "shape": "AssertionProviders",
+                    "deprecated": true,
+                    "deprecatedMessage": "Will be replaced by trustedTokenIssuers"
+                },
+                "trustedTokenIssuers": { "shape": "TrustedTokenIssuers" }
+            }
+        },
+        "GrantType": { "type": "string" },
+        "GrantTypes": {
+            "type": "list",
+            "member": { "shape": "GrantType" }
+        },
+        "HasConsentDetails": { "type": "boolean" },
+        "HeaderString": { "type": "string" },
+        "Headers": {
+            "type": "map",
+            "key": { "shape": "HeadersKeyType" },
+            "value": { "shape": "HeadersKeyValue" }
+        },
+        "HeadersKeyType": {
+            "type": "string",
+            "max": 256,
+            "min": 1,
+            "pattern": "^[\\x00-\\x7F]*"
+        },
+        "HeadersKeyValue": {
+            "type": "string",
+            "max": 4096,
+            "min": 1,
+            "pattern": "^[\\x00-\\x7F]*"
+        },
+        "IdToken": {
+            "type": "string",
+            "sensitive": true
+        },
+        "IdempotencyConflictException": {
+            "type": "structure",
+            "members": {
+                "error": { "shape": "Error" },
+                "error_description": { "shape": "ErrorDescription" }
+            },
+            "error": { "httpStatusCode": 400 },
+            "exception": true
+        },
+        "IdentifierType": { "type": "string" },
+        "InternalServerException": {
+            "type": "structure",
+            "members": {
+                "error": { "shape": "Error" },
+                "error_description": { "shape": "ErrorDescription" }
+            },
+            "error": { "httpStatusCode": 500 },
+            "exception": true,
+            "fault": true
+        },
+        "IntervalInSeconds": { "type": "integer" },
+        "IntrospectTokenRequest": {
+            "type": "structure",
+            "members": {
+                "token": { "shape": "Token" },
+                "tokenTypeHint": { "shape": "TokenTypeHint" },
+                "audiences": { "shape": "Audiences" }
+            }
+        },
+        "IntrospectTokenResponse": {
+            "type": "structure",
+            "members": {
+                "active": { "shape": "Active" },
+                "sub": { "shape": "Subject" },
+                "exp": { "shape": "ExpirySinceEpochInSeconds" },
+                "authorizationDetails": { "shape": "AuthorizationDetails" },
+                "aws_identityStore": { "shape": "AwsIdentityStore" },
+                "aws_identityStoreArn": { "shape": "ArnType" },
+                "aws_instanceArn": { "shape": "ArnType" },
+                "aws_instanceAccountId": { "shape": "AwsInstanceAccountId" },
+                "iss": { "shape": "Issuer" },
+                "jti": { "shape": "JwtId" },
+                "aud": { "shape": "Audiences" },
+                "scp": { "shape": "Scopes" },
+                "act": { "shape": "Actor" },
+                "token_type": { "shape": "TokenType" }
+            }
+        },
+        "InvalidClientException": {
+            "type": "structure",
+            "members": {
+                "error": { "shape": "Error" },
+                "error_description": { "shape": "ErrorDescription" }
+            },
+            "error": { "httpStatusCode": 401 },
+            "exception": true
+        },
+        "InvalidClientMetadataException": {
+            "type": "structure",
+            "members": {
+                "error": { "shape": "Error" },
+                "error_description": { "shape": "ErrorDescription" }
+            },
+            "error": { "httpStatusCode": 400 },
+            "exception": true
+        },
+        "InvalidGrantException": {
+            "type": "structure",
+            "members": {
+                "error": { "shape": "Error" },
+                "error_description": { "shape": "ErrorDescription" }
+            },
+            "error": { "httpStatusCode": 400 },
+            "exception": true
+        },
+        "InvalidRedirectUriException": {
+            "type": "structure",
+            "members": {
+                "error": { "shape": "Error" },
+                "error_description": { "shape": "ErrorDescription" }
+            },
+            "error": { "httpStatusCode": 400 },
+            "exception": true
+        },
+        "InvalidRequestException": {
+            "type": "structure",
+            "members": {
+                "error": { "shape": "Error" },
+                "error_description": { "shape": "ErrorDescription" }
+            },
+            "error": { "httpStatusCode": 400 },
+            "exception": true
+        },
+        "InvalidRequestRedirectException": {
+            "type": "structure",
+            "members": {
+                "location": {
+                    "shape": "Location",
+                    "location": "header",
+                    "locationName": "Location"
+                }
+            },
+            "error": { "httpStatusCode": 302 },
+            "exception": true
+        },
+        "InvalidRequestRegionException": {
+            "type": "structure",
+            "members": {
+                "error": { "shape": "Error" },
+                "error_description": { "shape": "ErrorDescription" },
+                "endpoint": { "shape": "Location" },
+                "region": { "shape": "Region" }
+            },
+            "error": { "httpStatusCode": 400 },
+            "exception": true
+        },
+        "InvalidScopeException": {
+            "type": "structure",
+            "members": {
+                "error": { "shape": "Error" },
+                "error_description": { "shape": "ErrorDescription" }
+            },
+            "error": { "httpStatusCode": 400 },
+            "exception": true
+        },
+        "InvalidScopeRedirectException": {
+            "type": "structure",
+            "members": {
+                "location": {
+                    "shape": "Location",
+                    "location": "header",
+                    "locationName": "Location"
+                }
+            },
+            "error": { "httpStatusCode": 302 },
+            "exception": true
+        },
+        "InvalidSoftwareStatementException": {
+            "type": "structure",
+            "members": {
+                "error": { "shape": "Error" },
+                "error_description": { "shape": "ErrorDescription" }
+            },
+            "error": { "httpStatusCode": 400 },
+            "exception": true
+        },
+        "Issuer": { "type": "string" },
+        "JwtId": { "type": "string" },
+        "ListConsentDetailsForUserRequest": {
+            "type": "structure",
+            "members": {
+                "deviceContextId": { "shape": "StringType" },
+                "authorizationResumptionContext": { "shape": "AuthorizationResumptionContext" },
+                "userSessionId": { "shape": "UserSessionId" },
+                "clientId": { "shape": "ClientId" },
+                "nextToken": { "shape": "NextToken" },
+                "maxResults": { "shape": "MaxResults" }
+            }
+        },
+        "ListConsentDetailsForUserResponse": {
+            "type": "structure",
+            "members": {
+                "consentDetails": { "shape": "ConsentDetails" },
+                "clientName": { "shape": "ClientName" },
+                "nextToken": { "shape": "NextToken" }
+            }
+        },
+        "ListConsentDetailsRequest": {
+            "type": "structure",
+            "members": {
+                "deviceContextId": {
+                    "shape": "StringType",
+                    "location": "querystring",
+                    "locationName": "device_context_id"
+                },
+                "authorizationResumptionContext": { "shape": "AuthorizationResumptionContext" },
+                "clientId": {
+                    "shape": "ClientId",
+                    "location": "querystring",
+                    "locationName": "client_id"
+                },
+                "acceptLanguage": {
+                    "shape": "AcceptLanguageHeader",
+                    "location": "header",
+                    "locationName": "Accept-Language"
+                },
+                "nextToken": {
+                    "shape": "NextToken",
+                    "location": "querystring",
+                    "locationName": "next_token"
+                },
+                "maxResults": {
+                    "shape": "MaxResults",
+                    "location": "querystring",
+                    "locationName": "max_results"
+                }
+            }
+        },
+        "ListConsentDetailsResponse": {
+            "type": "structure",
+            "members": {
+                "consentDetails": { "shape": "ConsentDetails" },
+                "contentLanguage": {
+                    "shape": "ContentLanguageHeader",
+                    "location": "header",
+                    "locationName": "Content-Language"
+                },
+                "nextToken": { "shape": "NextToken" },
+                "clientName": { "shape": "ClientName" }
+            }
+        },
+        "Location": { "type": "string" },
+        "LongDescription": { "type": "string" },
+        "LongTimeStampType": { "type": "long" },
+        "MaxResults": { "type": "integer" },
+        "NextToken": { "type": "string" },
+        "OAuthConfiguration": {
+            "type": "structure",
+            "members": {
+                "scopes": { "shape": "Scopes" },
+                "targetRestrictedScopes": { "shape": "TargetRestrictedScopes" },
+                "enabledGrants": { "shape": "GrantConfigurations" },
+                "authenticationConfiguration": { "shape": "AuthenticationConfiguration" }
+            }
+        },
+        "OriginSessionId": { "type": "string" },
+        "PlatformSessionExpiryRequired": { "type": "boolean" },
+        "PostAuthenticationResultRequest": {
+            "type": "structure",
+            "members": {
+                "orchestrator_id": { "shape": "AuthOrchestrationId" },
+                "backingSessionHeader": {
+                    "shape": "HeaderString",
+                    "location": "header",
+                    "locationName": "x-amz-sso-bearer-token"
+                },
+                "deprecatedBackingSessionHeader": {
+                    "shape": "HeaderString",
+                    "location": "header",
+                    "locationName": "x-amz-sso_bearer_token"
+                }
+            }
+        },
+        "PostAuthenticationResultResponse": {
+            "type": "structure",
+            "members": {
+                "location": { "shape": "URI" }
+            }
+        },
+        "PreRegisterClientRequest": {
+            "type": "structure",
+            "members": {
+                "softwareId": { "shape": "SoftwareId" },
+                "accessToken": { "shape": "AccessToken" },
+                "clientType": { "shape": "ClientType" },
+                "clientName": { "shape": "ClientName" },
+                "scopes": { "shape": "Scopes" }
+            }
+        },
+        "PreRegisterClientResponse": {
+            "type": "structure",
+            "members": {
+                "softwareStatement": { "shape": "SoftwareStatement" }
+            }
+        },
+        "RedirectUris": {
+            "type": "list",
+            "member": { "shape": "URI" }
+        },
+        "RefreshToken": {
+            "type": "string",
+            "sensitive": true
+        },
+        "Region": { "type": "string" },
+        "RegisterClientRequest": {
+            "type": "structure",
+            "members": {
+                "clientName": { "shape": "ClientName" },
+                "clientType": { "shape": "ClientType" },
+                "scopes": { "shape": "Scopes" },
+                "softwareStatement": { "shape": "SoftwareStatement" },
+                "redirectUris": { "shape": "RedirectUris" },
+                "grantTypes": { "shape": "GrantTypes" },
+                "entitledApplicationArn": { "shape": "ArnType" },
+                "issuerUrl": { "shape": "URI" }
+            }
+        },
+        "RegisterClientResponse": {
+            "type": "structure",
+            "members": {
+                "clientId": { "shape": "ClientId" },
+                "clientSecret": { "shape": "ClientSecret" },
+                "clientIdIssuedAt": { "shape": "LongTimeStampType" },
+                "clientSecretExpiresAt": { "shape": "LongTimeStampType" },
+                "authorizationEndpoint": { "shape": "URI" },
+                "tokenEndpoint": { "shape": "URI" }
+            }
+        },
+        "RegisterConfidentialClientRequest": {
+            "type": "structure",
+            "members": {
+                "idempotentKey": { "shape": "IdentifierType" },
+                "templateArn": { "shape": "ArnType" },
+                "templateContext": { "shape": "TemplateContextMap" },
+                "initiateLoginUri": { "shape": "URI" },
+                "entitledResourceId": { "shape": "EntitledResourceId" },
+                "entitledResourceContainerId": { "shape": "EntitledResourceContainerId" },
+                "externalId": { "shape": "ExternalId" },
+                "status": { "shape": "ClientInfoStatus" },
+                "tenantId": { "shape": "TenantId" },
+                "enabledGrants": { "shape": "GrantConfigurations" },
+                "scopes": { "shape": "Scopes" },
+                "targetRestrictedScopes": { "shape": "TargetRestrictedScopes" },
+                "authenticationConfiguration": { "shape": "AuthenticationConfiguration" },
+                "preventOAuthConfigurationBackFill": { "shape": "preventOAuthConfigurationBackFill" }
+            }
+        },
+        "RegisterConfidentialClientResponse": {
+            "type": "structure",
+            "members": {
+                "clientId": { "shape": "ClientId" },
+                "clientInformation": { "shape": "ClientInformation" }
+            }
+        },
+        "ResolveStartLocationRequest": {
+            "type": "structure",
+            "members": {
+                "clientId": {
+                    "shape": "ClientId",
+                    "location": "querystring",
+                    "locationName": "client_id"
+                }
+            }
+        },
+        "ResolveStartLocationResponse": {
+            "type": "structure",
+            "members": {
+                "location": {
+                    "shape": "Location",
+                    "location": "header",
+                    "locationName": "Location"
+                }
+            }
+        },
+        "ResourceType": { "type": "string" },
+        "ResponseType": { "type": "string" },
+        "RestoreBackfilledConfidentialClientRequest": {
+            "type": "structure",
+            "members": {
+                "clientId": { "shape": "ClientId" }
+            }
+        },
+        "RestoreBackfilledConfidentialClientResponse": {
+            "type": "structure",
+            "members": {
+                "clientId": { "shape": "ClientId" },
+                "backfillVersion": { "shape": "BackfillVersion" }
+            }
+        },
+        "RevokeTokenRequest": {
+            "type": "structure",
+            "members": {
+                "client_id": { "shape": "ClientId" },
+                "client_secret": { "shape": "ClientSecret" },
+                "token": { "shape": "Token" },
+                "token_type_hint": { "shape": "TokenTypeHint" },
+                "headers": { "shape": "Headers" }
+            }
+        },
+        "RevokeTokenResponse": {
+            "type": "structure",
+            "members": {}
+        },
+        "RoleNameType": { "type": "string" },
+        "Scope": { "type": "string" },
+        "Scopes": {
+            "type": "list",
+            "member": { "shape": "Scope" }
+        },
+        "ServerErrorRedirectException": {
+            "type": "structure",
+            "members": {
+                "location": {
+                    "shape": "Location",
+                    "location": "header",
+                    "locationName": "Location"
+                }
+            },
+            "error": { "httpStatusCode": 302 },
+            "exception": true
+        },
+        "SessionTokenType": {
+            "type": "string",
+            "sensitive": true
+        },
+        "ShortDescription": { "type": "string" },
+        "SlowDownException": {
+            "type": "structure",
+            "members": {
+                "error": { "shape": "Error" },
+                "error_description": { "shape": "ErrorDescription" }
+            },
+            "error": { "httpStatusCode": 400 },
+            "exception": true
+        },
+        "SlowDownRedirectException": {
+            "type": "structure",
+            "members": {
+                "location": {
+                    "shape": "Location",
+                    "location": "header",
+                    "locationName": "Location"
+                }
+            },
+            "error": { "httpStatusCode": 302 },
+            "exception": true
+        },
+        "SoftwareId": { "type": "string" },
+        "SoftwareStatement": { "type": "string" },
+        "StartDeviceAuthorizationRequest": {
+            "type": "structure",
+            "members": {
+                "clientId": { "shape": "ClientId" },
+                "clientSecret": { "shape": "ClientSecret" },
+                "startUrl": { "shape": "URI" }
+            }
+        },
+        "StartDeviceAuthorizationResponse": {
+            "type": "structure",
+            "members": {
+                "deviceCode": { "shape": "DeviceCode" },
+                "userCode": { "shape": "UserCode" },
+                "verificationUri": { "shape": "URI" },
+                "verificationUriComplete": { "shape": "URI" },
+                "expiresIn": { "shape": "ExpirationInSeconds" },
+                "interval": { "shape": "IntervalInSeconds" }
+            }
+        },
+        "State": { "type": "string" },
+        "StringType": { "type": "string" },
+        "Subject": { "type": "string" },
+        "SubjectToken": {
+            "type": "string",
+            "sensitive": true
+        },
+        "TargetRestrictedScope": {
+            "type": "structure",
+            "members": {
+                "scope": { "shape": "Scope" },
+                "authorizedTargets": { "shape": "AuthorizedTargets" }
+            }
+        },
+        "TargetRestrictedScopes": {
+            "type": "list",
+            "member": { "shape": "TargetRestrictedScope" }
+        },
+        "TemplateContextKeyValueType": { "type": "string" },
+        "TemplateContextMap": {
+            "type": "map",
+            "key": { "shape": "TemplateContextKeyValueType" },
+            "value": { "shape": "TemplateContextKeyValueType" }
+        },
+        "TemporarilyUnavailableRedirectException": {
+            "type": "structure",
+            "members": {
+                "location": {
+                    "shape": "Location",
+                    "location": "header",
+                    "locationName": "Location"
+                }
+            },
+            "error": { "httpStatusCode": 302 },
+            "exception": true
+        },
+        "TenantId": { "type": "string" },
+        "Token": {
+            "type": "string",
+            "sensitive": true
+        },
+        "TokenType": { "type": "string" },
+        "TokenTypeHint": { "type": "string" },
+        "TokenTypeURI": { "type": "string" },
+        "TrustedTokenIssuer": {
+            "type": "structure",
+            "members": {
+                "id": { "shape": "TrustedTokenIssuerId" },
+                "audienceRestrictions": { "shape": "TrustedTokenIssuerAudienceRestrictions" }
+            }
+        },
+        "TrustedTokenIssuerAudienceRestriction": {
+            "type": "string",
+            "max": 512,
+            "min": 1,
+            "pattern": "^[A-Za-z0-9._~()\\/%$'&=!*:@#\\[\\],;+?-]+$"
+        },
+        "TrustedTokenIssuerAudienceRestrictions": {
+            "type": "list",
+            "member": { "shape": "TrustedTokenIssuerAudienceRestriction" }
+        },
+        "TrustedTokenIssuerId": {
+            "type": "string",
+            "max": 36,
+            "min": 36,
+            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+        },
+        "TrustedTokenIssuers": {
+            "type": "list",
+            "member": { "shape": "TrustedTokenIssuer" }
+        },
+        "URI": { "type": "string" },
+        "UnauthorizedClientException": {
+            "type": "structure",
+            "members": {
+                "error": { "shape": "Error" },
+                "error_description": { "shape": "ErrorDescription" }
+            },
+            "error": { "httpStatusCode": 400 },
+            "exception": true
+        },
+        "UnauthorizedClientRedirectException": {
+            "type": "structure",
+            "members": {
+                "location": {
+                    "shape": "Location",
+                    "location": "header",
+                    "locationName": "Location"
+                }
+            },
+            "error": { "httpStatusCode": 302 },
+            "exception": true
+        },
+        "UnsupportedGrantTypeException": {
+            "type": "structure",
+            "members": {
+                "error": { "shape": "Error" },
+                "error_description": { "shape": "ErrorDescription" }
+            },
+            "error": { "httpStatusCode": 400 },
+            "exception": true
+        },
+        "UnsupportedResponseTypeRedirectException": {
+            "type": "structure",
+            "members": {
+                "location": {
+                    "shape": "Location",
+                    "location": "header",
+                    "locationName": "Location"
+                }
+            },
+            "error": { "httpStatusCode": 302 },
+            "exception": true
+        },
+        "UnsupportedTokenTypeException": {
+            "type": "structure",
+            "members": {
+                "error": { "shape": "Error" },
+                "error_description": { "shape": "ErrorDescription" }
+            },
+            "error": { "httpStatusCode": 400 },
+            "exception": true
+        },
+        "UpdateConfidentialClientForMigrationRequest": {
+            "type": "structure",
+            "members": {
+                "clientId": { "shape": "ClientId" },
+                "tenantId": { "shape": "TenantId" },
+                "entitledResourceId": { "shape": "EntitledResourceId" },
+                "entitledResourceContainerId": { "shape": "EntitledResourceContainerId" },
+                "externalId": { "shape": "ExternalId" },
+                "initiateLoginUri": { "shape": "URI" },
+                "status": { "shape": "ClientInfoStatus" },
+                "enabledGrants": { "shape": "GrantConfigurations" },
+                "scopes": { "shape": "Scopes" },
+                "authenticationConfiguration": { "shape": "AuthenticationConfiguration" }
+            }
+        },
+        "UpdateConfidentialClientForMigrationResponse": {
+            "type": "structure",
+            "members": {
+                "clientInformation": { "shape": "ClientInformation" }
+            }
+        },
+        "UpdateConfidentialClientRequest": {
+            "type": "structure",
+            "members": {
+                "clientId": { "shape": "ClientId" },
+                "tenantId": { "shape": "TenantId" },
+                "initiateLoginUri": { "shape": "URI" },
+                "status": { "shape": "ClientInfoStatus" },
+                "enabledGrants": { "shape": "GrantConfigurations" },
+                "scopes": { "shape": "Scopes" },
+                "targetRestrictedScopes": { "shape": "TargetRestrictedScopes" },
+                "authenticationConfiguration": { "shape": "AuthenticationConfiguration" },
+                "clientStateToken": { "shape": "ClientStateToken" }
+            }
+        },
+        "UpdateConfidentialClientResponse": {
+            "type": "structure",
+            "members": {}
+        },
+        "UserCode": { "type": "string" },
+        "UserSessionId": { "type": "string" },
+        "ValidateUserCodeRequest": {
+            "type": "structure",
+            "members": {
+                "userCode": {
+                    "shape": "UserCode",
+                    "location": "querystring",
+                    "locationName": "user_code"
+                }
+            }
+        },
+        "ValidateUserCodeResponse": {
+            "type": "structure",
+            "members": {
+                "location": { "shape": "URI" },
+                "deviceContext": { "shape": "DeviceContext" },
+                "hasConsentDetails": { "shape": "HasConsentDetails" }
+            }
+        },
+        "preventOAuthConfigurationBackFill": { "type": "boolean" }
+    }
+}

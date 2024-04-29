@@ -14,7 +14,7 @@ import { TransformByQReviewStatus, transformByQState } from '../../models/model'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../../shared/utilities/download'
 import { getLogger } from '../../../shared/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import { codeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
+import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import * as CodeWhispererConstants from '../../models/constants'
@@ -344,7 +344,7 @@ export class ProposedTransformationExplorer {
                 getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
                 telemetry.codeTransform_logApiError.emit({
                     codeTransformApiNames: 'ExportResultArchive',
-                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                     codeTransformJobId: transformByQState.getJobId(),
                     codeTransformApiErrorMessage: downloadErrorMessage,
                     codeTransformRequestId: e.requestId ?? '',
@@ -356,7 +356,7 @@ export class ProposedTransformationExplorer {
                 // This metric is emitted when user clicks Download Proposed Changes button
                 telemetry.codeTransform_vcsViewerClicked.emit({
                     codeTransformVCSViewerSrcComponents: 'toastNotification',
-                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                     codeTransformJobId: transformByQState.getJobId(),
                     result: downloadErrorMessage ? MetadataResult.Fail : MetadataResult.Pass,
                     reason: downloadErrorMessage,
@@ -391,7 +391,7 @@ export class ProposedTransformationExplorer {
 
                 // This metric is only emitted when placed before showInformationMessage
                 telemetry.codeTransform_vcsDiffViewerVisible.emit({
-                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                     codeTransformJobId: transformByQState.getJobId(),
                     result: MetadataResult.Pass,
                 })
@@ -413,7 +413,7 @@ export class ProposedTransformationExplorer {
                 void vscode.window.showErrorMessage(CodeWhispererConstants.errorDeserializingDiffNotification)
             } finally {
                 telemetry.codeTransform_jobArtifactDownloadAndDeserializeTime.emit({
-                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                     codeTransformJobId: transformByQState.getJobId(),
                     codeTransformRunTimeLatency: calculateTotalLatency(deserializeArchiveStartTime),
                     codeTransformTotalByteSize: exportResultsArchiveSize,
@@ -434,7 +434,7 @@ export class ProposedTransformationExplorer {
             })
             await reset()
             telemetry.codeTransform_vcsViewerSubmitted.emit({
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),
                 codeTransformStatus: transformByQState.getStatus(),
                 result: MetadataResult.Pass,
@@ -448,7 +448,7 @@ export class ProposedTransformationExplorer {
             telemetry.codeTransform_vcsViewerCanceled.emit({
                 // eslint-disable-next-line id-length
                 codeTransformPatchViewerCancelSrcComponents: 'cancelButton',
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),
                 codeTransformStatus: transformByQState.getStatus(),
                 result: MetadataResult.Pass,
