@@ -3,18 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { ExtensionContext, window } from 'vscode'
 import { AmazonQChatViewProvider } from './webview/webView'
 import { init as cwChatAppInit } from '../codewhispererChat/app'
 import { init as featureDevChatAppInit } from '../amazonqFeatureDev/app'
 import { init as gumbyChatAppInit } from '../amazonqGumby/app'
 import { AmazonQAppInitContext, DefaultAmazonQAppInitContext } from './apps/initContext'
-import { Commands, VsCodeCommandArg, placeholder } from '../shared/vscode/commands2'
-import { MessagePublisher } from './messages/messagePublisher'
-import { welcome } from './onboardingPage'
-import { learnMoreAmazonQCommand, switchToAmazonQCommand } from './explorer/amazonQChildrenNodes'
 import { activateBadge } from './util/viewBadgeHandler'
-import { telemetry } from '../shared/telemetry/telemetry'
+import { amazonQHelpUrl } from '../shared/constants'
+import { focusAmazonQChatWalkthrough, openAmazonQWalkthrough } from './onboardingPage/walkthrough'
+import { listCodeWhispererCommandsWalkthrough } from '../codewhisperer/ui/statusBarMenu'
+import { Commands } from '../shared/vscode/commands2'
 import { focusAmazonQPanel, focusAmazonQPanelKeybinding } from '../codewhispererChat/commands/registerCommands'
 import { TryChatCodeLensProvider, tryChatCodeLensCommand } from '../codewhispererChat/editor/codelens'
 
@@ -30,8 +30,6 @@ export async function activate(context: ExtensionContext) {
         appInitContext.onDidChangeAmazonQVisibility
     )
 
-    const cwcWebViewToAppsPublisher = appInitContext.getWebViewToAppsMessagePublishers().get('cwc')!
-
     await TryChatCodeLensProvider.register()
 
     context.subscriptions.push(
@@ -40,14 +38,17 @@ export async function activate(context: ExtensionContext) {
                 retainContextWhenHidden: true,
             },
         }),
+        focusAmazonQChatWalkthrough.register(),
+        openAmazonQWalkthrough.register(),
+        listCodeWhispererCommandsWalkthrough.register(),
         focusAmazonQPanel.register(),
         focusAmazonQPanelKeybinding.register(),
         tryChatCodeLensCommand.register()
     )
 
-    amazonQWelcomeCommand.register(context, cwcWebViewToAppsPublisher)
-    learnMoreAmazonQCommand.register()
-    switchToAmazonQCommand.register()
+    Commands.register('aws.amazonq.learnMore', () => {
+        void vscode.env.openExternal(vscode.Uri.parse(amazonQHelpUrl))
+    })
 
     await activateBadge()
 }
@@ -57,14 +58,3 @@ function registerApps(appInitContext: AmazonQAppInitContext) {
     featureDevChatAppInit(appInitContext)
     gumbyChatAppInit(appInitContext)
 }
-
-export const amazonQWelcomeCommand = Commands.declare(
-    { id: 'aws.amazonq.welcome', compositeKey: { 1: 'source' } },
-    (context: ExtensionContext, publisher: MessagePublisher<any>) => (_: VsCodeCommandArg, source: string) => {
-        telemetry.ui_click.run(() => {
-            void focusAmazonQPanel.execute(placeholder, 'welcome')
-            welcome(context, publisher)
-            telemetry.record({ elementId: 'toolkit_openedWelcomeToAmazonQPage', source })
-        })
-    }
-)

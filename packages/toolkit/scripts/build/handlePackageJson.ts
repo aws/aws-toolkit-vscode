@@ -37,6 +37,14 @@ function main() {
         fs.copyFileSync(packageJsonFile, backupJsonFile)
         const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
         const coreLibPackageJson = JSON.parse(fs.readFileSync(coreLibPackageJsonFile, { encoding: 'utf-8' }))
+        const coreSettings = coreLibPackageJson.contributes.configuration.properties
+
+        // Remove Amazon Q extension settings stored in core
+        Object.keys(coreSettings).forEach(key => {
+            if (key.startsWith('amazonQ')) {
+                delete coreSettings[key]
+            }
+        })
 
         packageJson.contributes = {
             ...coreLibPackageJson.contributes,

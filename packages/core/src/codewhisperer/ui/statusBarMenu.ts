@@ -8,7 +8,6 @@ import {
     createOpenReferenceLog,
     createSecurityScan,
     createLearnMore,
-    createSignIn,
     createFreeTierLimitMet,
     createSelectCustomization,
     createReconnect,
@@ -19,34 +18,37 @@ import {
     createFeedbackNode,
     createGitHubNode,
     createDocumentationNode,
+    createAutoScans,
+    createSignIn,
+    switchToAmazonQNode,
 } from './codeWhispererNodes'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import { AuthUtil } from '../util/authUtil'
 import { DataQuickPickItem, createQuickPick } from '../../shared/ui/pickerPrompter'
-import { CodeSuggestionsState, vsCodeState } from '../models/model'
+import { CodeScansState, CodeSuggestionsState, vsCodeState } from '../models/model'
 import { Commands } from '../../shared/vscode/commands2'
 import { createExitButton } from '../../shared/ui/buttons'
-import { isWeb } from '../../common/webUtils'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { once } from '../../shared/utilities/functionUtils'
 import { getLogger } from '../../shared/logger'
 
 function getAmazonQCodeWhispererNodes() {
     const autoTriggerEnabled = CodeSuggestionsState.instance.isSuggestionsEnabled()
+    const autoScansEnabled = CodeScansState.instance.isScansEnabled()
     if (AuthUtil.instance.isConnectionExpired()) {
-        return [createReconnect('item'), createLearnMore()]
+        return [createReconnect(), createLearnMore()]
     }
 
     if (!AuthUtil.instance.isConnected()) {
-        return [createSignIn('item'), createLearnMore()]
+        return [createSignIn(), createLearnMore()]
     }
 
     if (vsCodeState.isFreeTierLimitReached) {
         if (hasVendedIamCredentials()) {
-            return [createFreeTierLimitMet('item'), createOpenReferenceLog()]
+            return [createFreeTierLimitMet(), createOpenReferenceLog()]
         }
         return [
-            createFreeTierLimitMet('item'),
+            createFreeTierLimitMet(),
             createOpenReferenceLog(),
             createSeparator('Other Features'),
             createSecurityScan(),
@@ -55,12 +57,6 @@ function getAmazonQCodeWhispererNodes() {
 
     if (hasVendedIamCredentials()) {
         return [createAutoSuggestions(autoTriggerEnabled), createOpenReferenceLog()]
-    }
-
-    // TODO: Remove when web is supported for amazonq
-    let amazonq
-    if (!isWeb()) {
-        amazonq = require('../../amazonq/explorer/amazonQChildrenNodes')
     }
 
     return [
@@ -73,10 +69,14 @@ function getAmazonQCodeWhispererNodes() {
         createOpenReferenceLog(),
         createGettingStarted(), // "Learn" node : opens Learn CodeWhisperer page
 
+        // Security scans
+        createSeparator('Security Scans'),
+        ...(AuthUtil.instance.isBuilderIdInUse() ? [] : [createAutoScans(autoScansEnabled)]),
+        createSecurityScan(),
+
         // Amazon Q + others
         createSeparator('Other Features'),
-        ...(amazonq ? [amazonq.switchToAmazonQNode('item')] : []),
-        createSecurityScan(),
+        switchToAmazonQNode(),
     ]
 }
 
@@ -99,10 +99,10 @@ export function getQuickPickItems(): DataQuickPickItem<string>[] {
     return children
 }
 
-export const listCodeWhispererCommandsId = 'aws.codewhisperer.listCommands'
+export const listCodeWhispererCommandsId = 'aws.amazonq.listCommands'
 export const listCodeWhispererCommands = Commands.declare({ id: listCodeWhispererCommandsId }, () => () => {
     once(() => telemetry.ui_click.emit({ elementId: 'cw_statusBarMenu' }))()
-    Commands.tryExecute('aws.codewhisperer.refreshAnnotation', true)
+    Commands.tryExecute('aws.amazonq.refreshAnnotation', true)
         .then()
         .catch(e => {
             getLogger().debug(
@@ -110,8 +110,19 @@ export const listCodeWhispererCommands = Commands.declare({ id: listCodeWhispere
             )
         })
     return createQuickPick(getQuickPickItems(), {
-        title: 'Amazon Q (Preview) + CodeWhisperer',
+        title: 'Amazon Q',
         buttons: [createExitButton()],
         ignoreFocusOut: false,
     }).prompt()
 })
+
+/**
+ * Does what {@link listCodeWhispererCommands} does, must only be used by the walkthrough for telemetry
+ * purposes.
+ */
+export const listCodeWhispererCommandsWalkthrough = Commands.declare(
+    `_aws.amazonq.walkthrough.listCommands`,
+    () => async () => {
+        await listCodeWhispererCommands.execute()
+    }
+)

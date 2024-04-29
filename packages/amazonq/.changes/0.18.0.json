@@ -1,0 +1,18 @@
+{
+	"date": "2024-04-27",
+	"version": "0.18.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Amazon Q: Security scans can now run on all files in the project"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q: Security scans can now run automatically when file changes are made"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q: Send security issue to chat for explanation and fix"
+		}
+	]
+}

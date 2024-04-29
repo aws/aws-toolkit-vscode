@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from './extensionGlobals'
+import globals, { isWeb } from './extensionGlobals'
 
 import type * as packageJson from '../../package.json'
 import * as fs from 'fs'
@@ -12,7 +12,6 @@ import { Uri, ThemeIcon, ThemeColor } from 'vscode'
 import { isCloud9 } from './extensionUtilities'
 import { memoize } from './utilities/functionUtils'
 import { getLogger } from './logger/logger'
-import { isWeb } from '../common/webUtils'
 
 // Animation:
 // https://code.visualstudio.com/api/references/icons-in-labels#animation
