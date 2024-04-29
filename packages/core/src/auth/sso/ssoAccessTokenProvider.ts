@@ -29,7 +29,7 @@ import {
     isNetworkError,
 } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
-import { AwsRefreshCredentials, telemetry } from '../../shared/telemetry/telemetry'
+import { AwsLoginWithBrowser, AwsRefreshCredentials, Metric, telemetry } from '../../shared/telemetry/telemetry'
 import { indent } from '../../shared/utilities/textUtilities'
 import { AuthSSOServer } from './server'
 import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
@@ -84,6 +84,16 @@ const refreshGrantType = 'refresh_token'
  *         - RefreshToken (optional)
  */
 export abstract class SsoAccessTokenProvider {
+    /**
+     * Source to pass to aws_loginWithBrowser metric. Due to the complexity of how auth can be called,
+     * there is no other easy way to pass this in without signficant refactors.
+     */
+    private static _authSource: string = 'unknown'
+
+    public static set authSource(val: string) {
+        SsoAccessTokenProvider._authSource = val
+    }
+
     public constructor(
         protected readonly profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
         protected readonly cache = getCache(),
@@ -195,15 +205,28 @@ export abstract class SsoAccessTokenProvider {
      * Wraps the given function with telemetry related to the browser login.
      */
     protected withBrowserLoginTelemetry<T extends (...args: any[]) => any>(func: T): ReturnType<T> {
-        if (telemetry.spans.some(s => s.name === 'aws_loginWithBrowser')) {
-            // During certain flows, eg reauthentication, we are already running within a span (run())
-            // so we don't need to create a new one.
+        const run = (span: Metric<AwsLoginWithBrowser>) => {
+            span.record({
+                credentialStartUrl: this.profile.startUrl,
+                source: SsoAccessTokenProvider._authSource,
+            })
+
+            // Reset source in case there is a case where browser login was called but we forgot to set the source.
+            // We don't want to attribute the wrong source.
+            SsoAccessTokenProvider.authSource = 'unknown'
+
             return func()
         }
 
+        // During certain flows, eg reauthentication, we are already running within a span (run())
+        // so we don't need to create a new one.
+        const span = telemetry.spans.find(s => s.name === 'aws_loginWithBrowser')
+        if (span !== undefined) {
+            return run(span as unknown as Metric<AwsLoginWithBrowser>)
+        }
+
         return telemetry.aws_loginWithBrowser.run(span => {
-            span.record({ credentialStartUrl: this.profile.startUrl })
-            return func()
+            return run(span)
         })
     }
 
