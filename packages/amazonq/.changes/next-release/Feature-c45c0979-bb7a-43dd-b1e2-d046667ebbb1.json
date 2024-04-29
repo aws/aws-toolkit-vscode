@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Security Scan: Scans can now run automatically when file changes are made"
+}
