@@ -5,7 +5,7 @@
 
 import { TextEditor, Selection, TextDocument, Range } from 'vscode'
 
-import { Extent, Java, Python, Tsx, TypeScript, Location } from '@aws/fully-qualified-names'
+import { Extent, Java, Python, TypeScript, Location } from '@aws/fully-qualified-names'
 import { FocusAreaContext, FullyQualifiedName } from './model'
 
 const focusAreaCharLimit = 9_000
@@ -235,7 +235,10 @@ export class FocusAreaContextExtractor {
             case 'javascript':
             case 'javascriptreact':
             case 'typescriptreact':
-                names = await Tsx.findNamesWithInExtent(fileText, extent)
+                // Disable Tsx.findNamesWithInExtent because promise Tsx.findNamesWithInExtent
+                // may not resolve and can cause chat to hang
+                //names = await Tsx.findNamesWithInExtent(fileText, extent)
+                names = undefined
                 break
             case 'python':
                 names = await Python.findNamesWithInExtent(fileText, extent)
