@@ -48,4 +48,8 @@
 
     <depends>aws.toolkit.core</depends>
     <xi:include href="/META-INF/module-amazonq.xml" />
+
+    <xi:include href="/META-INF/change-notes.xml" xpointer="xpointer(/idea-plugin/*)">
+        <xi:fallback/>
+    </xi:include>
 </idea-plugin>

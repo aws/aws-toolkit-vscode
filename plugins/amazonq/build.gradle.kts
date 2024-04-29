@@ -1,12 +1,25 @@
 // Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+import software.aws.toolkits.gradle.changelog.tasks.GeneratePluginChangeLog
 import software.aws.toolkits.gradle.intellij.IdeFlavor
 import software.aws.toolkits.gradle.intellij.IdeVersions
 
 plugins {
     id("toolkit-publishing-conventions")
     id("toolkit-patch-plugin-xml-conventions")
+}
+
+val changelog = tasks.register<GeneratePluginChangeLog>("pluginChangeLog") {
+    includeUnreleased.set(true)
+    changeLogFile.set(project.file("$buildDir/changelog/change-notes.xml"))
+}
+
+tasks.jar {
+    dependsOn(changelog)
+    from(changelog) {
+        into("META-INF")
+    }
 }
 
 intellij {
