@@ -104,7 +104,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
     public async canAutoConnect(): Promise<boolean> {
         if (isSsoProfile(this.profile)) {
-            const tokenProvider = new SsoAccessTokenProvider({
+            const tokenProvider = SsoAccessTokenProvider.create({
                 region: this.profile[SharedCredentialsKeys.SSO_REGION]!,
                 startUrl: this.profile[SharedCredentialsKeys.SSO_START_URL]!,
             })
@@ -353,7 +353,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         }
 
         const region = ssoProfile.ssoRegion
-        const tokenProvider = new SsoAccessTokenProvider({ ...ssoProfile, region })
+        const tokenProvider = SsoAccessTokenProvider.create({ ...ssoProfile, region })
         const client = SsoClient.create(region, tokenProvider)
 
         return async () => {

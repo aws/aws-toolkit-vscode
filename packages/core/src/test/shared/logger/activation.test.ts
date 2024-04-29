@@ -18,7 +18,7 @@ describe('makeLogger', function () {
     before(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
         const logPath = vscode.Uri.joinPath(vscode.Uri.file(tempFolder), 'log.txt')
-        testLogger = makeLogger({ staticLogLevel: 'debug', logPaths: [logPath] })
+        testLogger = makeLogger({ logLevel: 'debug', logPaths: [logPath] })
     })
 
     after(async function () {

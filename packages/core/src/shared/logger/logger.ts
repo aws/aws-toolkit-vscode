@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Uri } from 'vscode'
+import * as vscode from 'vscode'
 import globals from '../extensionGlobals'
 
 const toolkitLoggers: {
@@ -26,7 +26,7 @@ export interface Logger {
     setLogLevel(logLevel: LogLevel): void
     /** Returns true if the given log level is being logged.  */
     logLevelEnabled(logLevel: LogLevel): boolean
-    getLogById(logID: number, file: Uri): string | undefined
+    getLogById(logID: number, file: vscode.Uri): string | undefined
     /** HACK: Enables logging to vscode Debug Console. */
     enableDebugConsole(): void
 }
@@ -47,6 +47,27 @@ const logLevels = new Map<LogLevel, number>([
 ])
 
 export type LogLevel = 'error' | 'warn' | 'info' | 'verbose' | 'debug'
+
+export function fromVscodeLogLevel(logLevel: vscode.LogLevel): LogLevel {
+    if (!vscode.LogLevel) {
+        // vscode version <= 1.73
+        return 'info'
+    }
+
+    switch (logLevel) {
+        case vscode.LogLevel.Trace:
+        case vscode.LogLevel.Debug:
+            return 'debug'
+        case vscode.LogLevel.Info:
+            return 'info'
+        case vscode.LogLevel.Warning:
+            return 'warn'
+        case vscode.LogLevel.Error:
+        case vscode.LogLevel.Off:
+        default:
+            return 'error'
+    }
+}
 
 /**
  * Compares log levels.
@@ -96,7 +117,7 @@ export class NullLogger implements Logger {
     public error(message: string | Error, ...meta: any[]): number {
         return 0
     }
-    public getLogById(logID: number, file: Uri): string | undefined {
+    public getLogById(logID: number, file: vscode.Uri): string | undefined {
         return undefined
     }
     public enableDebugConsole(): void {}
@@ -131,7 +152,7 @@ export class ConsoleLogger implements Logger {
         console.error(message, ...meta)
         return 0
     }
-    public getLogById(logID: number, file: Uri): string | undefined {
+    public getLogById(logID: number, file: vscode.Uri): string | undefined {
         return undefined
     }
     public enableDebugConsole(): void {}

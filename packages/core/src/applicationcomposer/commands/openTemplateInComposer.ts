@@ -6,14 +6,14 @@
 import { Commands } from '../../shared/vscode/commands2'
 import { ApplicationComposerManager } from '../webviewManager'
 import vscode from 'vscode'
-import { AuthUtil, getChatAuthState } from '../../codewhisperer/util/authUtil'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
 
 export const openTemplateInComposerCommand = Commands.declare(
     'aws.openInApplicationComposer',
     (manager: ApplicationComposerManager) => async (arg?: vscode.TextEditor | vscode.Uri) => {
-        const authState = await getChatAuthState(AuthUtil.instance)
+        const authState = await AuthUtil.instance.getChatAuthState()
 
         let result: vscode.WebviewPanel | undefined
         await telemetry.appcomposer_openTemplate.run(async span => {

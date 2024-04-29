@@ -102,7 +102,7 @@ class SamLaunchRequestError extends ToolkitError.named('SamLaunchRequestError') 
 
         const viewLogsButton = {
             label: localize('AWS.generic.message.viewLogs', 'View Logs...'),
-            onClick: () => Logging.declared.viewLogsAtMessage.execute(logId),
+            onClick: () => Logging.instance.viewLogsAtMessage.execute(logId),
         }
 
         const buttonsWithLogs = [viewLogsButton, ...this.buttons]
