@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.core.credentials
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFileManager
-import org.slf4j.LoggerFactory
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.profiles.Profile
@@ -18,7 +17,6 @@ import software.amazon.awssdk.services.ssooidc.model.SsoOidcException
 import software.amazon.awssdk.services.sts.StsClient
 import software.aws.toolkits.core.credentials.validatedSsoIdentifierFromUrl
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants
@@ -30,15 +28,13 @@ import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CredentialSourceId
 import java.io.IOException
 
-private val LOG = LoggerFactory.getLogger("LoginUtils")
-
 sealed interface Login {
     val id: CredentialSourceId
 
     data class BuilderId(
         val scopes: List<String>,
         val onPendingToken: (InteractiveBearerTokenProvider) -> Unit,
-        val onError: (String) -> Unit
+        val onError: (Exception) -> Unit
     ) : Login {
         override val id: CredentialSourceId = CredentialSourceId.AwsId
 
@@ -53,7 +49,7 @@ sealed interface Login {
         val region: AwsRegion,
         val scopes: List<String>,
         val onPendingToken: (InteractiveBearerTokenProvider) -> Unit,
-        val onError: (String) -> Unit
+        val onError: (Exception, AuthProfile) -> Unit
     ) : Login {
         override val id: CredentialSourceId = CredentialSourceId.IamIdentityCenter
         private val configFilesFacade = DefaultConfigFilesFacade()
@@ -156,7 +152,7 @@ fun authAndUpdateConfig(
     profile: UserConfigSsoSessionProfile,
     configFilesFacade: ConfigFilesFacade,
     onPendingToken: (InteractiveBearerTokenProvider) -> Unit,
-    onError: (String) -> Unit
+    onError: (Exception, AuthProfile) -> Unit
 ): AwsBearerTokenConnection? {
     val requestedScopes = profile.scopes
     val allScopes = requestedScopes.toMutableSet()
@@ -181,10 +177,7 @@ fun authAndUpdateConfig(
             reauthConnectionIfNeeded(project, connection, onPendingToken)
         }
     } catch (e: Exception) {
-        val message = ssoErrorMessageFromException(e)
-
-        onError(message)
-        LOG.error(e) { "Failed to authenticate: message: $message; profile: $profile" }
+        onError(e, profile)
         return null
     }
 

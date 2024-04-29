@@ -62,11 +62,15 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNo
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceActionNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceLocationNode
+import software.aws.toolkits.jetbrains.core.explorer.webview.ToolkitWebviewPanel
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel
 import software.aws.toolkits.jetbrains.core.gettingstarted.rolePopupFromConnection
+import software.aws.toolkits.jetbrains.core.gettingstarted.shouldShowNonWebviewUI
+import software.aws.toolkits.jetbrains.core.webview.BrowserState
 import software.aws.toolkits.jetbrains.services.dynamic.explorer.DynamicResourceResourceTypeNode
 import software.aws.toolkits.jetbrains.ui.CenteredInfoPanel
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.FeatureId
 import software.aws.toolkits.telemetry.UiTelemetry
 import java.awt.Component
 import java.awt.GridBagConstraints
@@ -203,7 +207,12 @@ class ExplorerToolWindow(private val project: Project) :
                             CenteredInfoPanel().apply {
                                 addLine(message("gettingstarted.explorer.new.setup.info"))
                                 addDefaultActionButton(message("gettingstarted.explorer.new.setup")) {
-                                    GettingStartedPanel.openPanel(project)
+                                    if (shouldShowNonWebviewUI()) {
+                                        GettingStartedPanel.openPanel(project)
+                                    } else {
+                                        ToolkitWebviewPanel.getInstance(project).browser?.prepareBrowser(BrowserState(FeatureId.AwsExplorer, true))
+                                        showWebview(project)
+                                    }
                                 }
                             }
                         )

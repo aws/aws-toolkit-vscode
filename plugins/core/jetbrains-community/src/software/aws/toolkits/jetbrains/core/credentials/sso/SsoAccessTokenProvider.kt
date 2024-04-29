@@ -273,7 +273,7 @@ class SsoAccessTokenProvider(
             } catch (e: ProcessCanceledException) {
                 future.cancel(true)
                 _authorization.set(null)
-                throw ProcessCanceledException(IllegalStateException("Login canceled by user"))
+                throw ProcessCanceledException(IllegalStateException(message("credentials.pending.user_cancel.message")))
             }
         }
     }

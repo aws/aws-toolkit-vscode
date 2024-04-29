@@ -37,6 +37,7 @@ a {
     border-radius: 3px;
     border-width: 0;
     font-weight: bold;
+    margin-bottom: 100px;
 }
 
 .continue-button {
@@ -96,5 +97,9 @@ button:not([disabled]), .item-container {
     cursor: pointer;
 }
 
+.centered-with-max-width {
+    max-width: 300px;
+    margin: 0 auto;
+}
 
 

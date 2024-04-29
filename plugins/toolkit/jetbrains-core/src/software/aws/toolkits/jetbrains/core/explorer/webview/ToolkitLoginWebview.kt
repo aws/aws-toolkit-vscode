@@ -38,6 +38,7 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.core.credentials.AuthProfile
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.Login
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
@@ -168,7 +169,8 @@ class ToolkitWebviewBrowser(val project: Project, private val parentDisposable: 
         when (command) {
             // TODO: handler functions could live in parent class
             "prepareUi" -> {
-                this.prepareBrowser(BrowserState(FeatureId.AwsExplorer))
+                val cancellable = isTookitConnected(project)
+                this.prepareBrowser(BrowserState(FeatureId.AwsExplorer, browserCancellable = cancellable))
             }
 
             "selectConnection" -> {
@@ -313,26 +315,25 @@ class ToolkitWebviewBrowser(val project: Project, private val parentDisposable: 
     }
 
     override fun loginIdC(url: String, region: AwsRegion, scopes: List<String>) {
-        val onError: (String) -> Unit = { _ ->
+        val onIdCError: (Exception, AuthProfile) -> Unit = { e, profile ->
             // TODO: telemetry
         }
 
-        val login = Login.IdC(url, region, scopes, onPendingToken, onError)
+        val login = Login.IdC(url, region, scopes, onPendingToken, onIdCError)
 
         loginWithBackgroundContext {
             val connection = login.loginIdc(project)
             if (connection != null && scopes.contains(IDENTITY_CENTER_ROLE_ACCESS_SCOPE)) {
                 val tokenProvider = connection.getConnectionSettings().tokenProvider
 
-                val rolePopup = IdcRolePopup(
-                    project,
-                    region.id,
-                    validatedSsoIdentifierFromUrl(url),
-                    tokenProvider,
-                    IdcRolePopupState(), // TODO: is it correct <<?
-                )
-
                 runInEdt {
+                    val rolePopup = IdcRolePopup(
+                        project,
+                        region.id,
+                        validatedSsoIdentifierFromUrl(url),
+                        tokenProvider,
+                        IdcRolePopupState(), // TODO: is it correct <<?
+                    )
                     rolePopup.show()
                 }
             }

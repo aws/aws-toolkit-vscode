@@ -62,8 +62,8 @@ fun rolePopupFromConnection(
                     scopes = scopes
                 )
 
-                authAndUpdateConfig(project, profile, configFilesFacade, {}) {
-                    Messages.showErrorDialog(project, it, message("gettingstarted.explorer.iam.add"))
+                authAndUpdateConfig(project, profile, configFilesFacade, {}) { e, _ ->
+                    Messages.showErrorDialog(project, e.message, message("gettingstarted.explorer.iam.add"))
                 } ?: return@runInEdt
             } else {
                 reauthConnectionIfNeeded(project, connection)

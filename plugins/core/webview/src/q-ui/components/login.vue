@@ -3,8 +3,8 @@
 
 <!-- This Vue File is the login webview of AWS Toolkit and Amazon Q.-->
 <template>
-    <div v-bind:class="[disabled ? 'disabled-form' : '']" class="auth-container">
-        <button v-if="stage !== 'START' || cancellable" class="back-button" @click="handleBackButtonClick" tabindex="-1">
+    <div v-bind:class="[disabled ? 'disabled-form' : '']" class="auth-container centered-with-max-width">
+        <button v-if="(stage !== 'START' || cancellable) && stage !== 'AUTHENTICATING'" class="back-button" @click="handleBackButtonClick" tabindex="-1">
             <svg width="24" height="24" viewBox="0 -3 13 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path
                     d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
@@ -110,8 +110,4 @@ export default defineComponent({
 </script>
 
 <style>
-.auth-container {
-    margin-left: 20px;
-    margin-right: 20px;
-}
 </style>

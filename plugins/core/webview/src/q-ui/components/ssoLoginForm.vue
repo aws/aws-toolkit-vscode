@@ -145,7 +145,7 @@ export default defineComponent({
         }
     },
     mounted() {
-        document.getElementById("ssoProfile")?.focus()
+        document.getElementById("startUrl")?.focus()
     }
 })
 </script>

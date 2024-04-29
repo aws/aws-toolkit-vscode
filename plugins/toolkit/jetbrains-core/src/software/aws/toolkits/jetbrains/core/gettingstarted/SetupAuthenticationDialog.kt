@@ -303,8 +303,8 @@ class SetupAuthenticationDialog(
                     scopes = scopes
                 )
 
-                val connection = authAndUpdateConfig(project, profile, configFilesFacade, {}) {
-                    Messages.showErrorDialog(project, it, title)
+                val connection = authAndUpdateConfig(project, profile, configFilesFacade, {}) { e, _ ->
+                    Messages.showErrorDialog(project, e.message, title)
                     AuthTelemetry.addConnection(
                         project,
                         source = getSourceOfEntry(sourceOfEntry, isFirstInstance, connectionInitiatedFromExplorer, connectionInitiatedFromQChatPanel),

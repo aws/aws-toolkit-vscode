@@ -108,7 +108,7 @@ fun loginSso(
     region: String,
     requestedScopes: List<String>,
     onPendingToken: (InteractiveBearerTokenProvider) -> Unit = {},
-    onError: (String) -> Unit = {}
+    onError: (Exception) -> Unit = {}
 ): AwsBearerTokenConnection? {
     fun createAndAuthNewConnection(profile: AuthProfile): AwsBearerTokenConnection? {
         val authManager = ToolkitAuthManager.getInstance()
@@ -117,9 +117,7 @@ fun loginSso(
                 reauthConnectionIfNeeded(project, transientConnection, onPendingToken)
             }
         } catch (e: Exception) {
-            val message = ssoErrorMessageFromException(e)
-
-            onError(message)
+            onError(e)
             null
         }
 

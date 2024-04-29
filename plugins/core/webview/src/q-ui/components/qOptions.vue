@@ -39,7 +39,7 @@
         ></SelectableItem>
         <button
             class="login-flow-button continue-button font-amazon"
-            :disabled="selectedLoginOption === 0"
+            :disabled="selectedLoginOption === LoginIdentifier.NONE"
             v-on:click="handleContinueClick()"
             tabindex="-1"
         >
@@ -61,6 +61,9 @@ export default defineComponent({
         app: String
     },
     computed: {
+        LoginIdentifier() {
+            return LoginIdentifier
+        },
         stage(): Stage {
             return this.$store.state.stage
         },

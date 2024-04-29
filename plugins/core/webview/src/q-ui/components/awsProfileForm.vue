@@ -2,26 +2,28 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <template>
-    <div class="title no-bold font-amazon">Profile Name</div>
-    <div class="hint font-amazon">The identifier for these credentials</div>
-    <input class="iamInput font-amazon" type="text" id="profileName" name="profileName" v-model="profileName"/>
+    <div class="font-amazon" @keydown.enter="handleContinueClick">
+        <div class="title no-bold">Profile Name</div>
+        <div class="hint">The identifier for these credentials</div>
+        <input class="iamInput font-amazon" type="text" id="profileName" name="profileName" v-model="profileName"/>
 
-    <br/><br/>
-    <div class="title no-bold font-amazon">Access Key</div>
-    <input class="iamInput font-amazon" type="text" id="accessKey" name="accessKey" v-model="accessKey"/>
+        <br/><br/>
+        <div class="title no-bold">Access Key</div>
+        <input class="iamInput font-amazon" type="text" id="accessKey" name="accessKey" v-model="accessKey"/>
 
-    <br/><br/>
-    <div class="title no-bold font-amazon">Secret Key</div>
-    <input class="iamInput font-amazon" type="text" id="secretKey" name="secretKey" v-model="secretKey"/>
+        <br/><br/>
+        <div class="title no-bold">Secret Key</div>
+        <input class="iamInput font-amazon" type="text" id="secretKey" name="secretKey" v-model="secretKey"/>
 
-    <br/><br/>
-    <button
-        class="login-flow-button continue-button"
-        :disabled="profileName.length <= 0 || accessKey.length <= 0 || secretKey.length <= 0"
-        v-on:click="handleContinueClick()"
-    >
-        Continue
-    </button>
+        <br/><br/>
+        <button
+            class="login-flow-button continue-button"
+            :disabled="profileName.length <= 0 || accessKey.length <= 0 || secretKey.length <= 0"
+            v-on:click="handleContinueClick()"
+        >
+            Continue
+        </button>
+    </div>
 </template>
 
 <script lang="ts">
@@ -41,6 +43,9 @@ export default defineComponent({
         async handleContinueClick() {
             this.$emit('login',  new LongLivedIAM(this.profileName, this.accessKey, this.secretKey))
         },
+    },
+    mounted() {
+        document.getElementById("profileName")?.focus()
     }
 })
 </script>

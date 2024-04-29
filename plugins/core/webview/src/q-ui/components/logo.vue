@@ -31,7 +31,7 @@ export default defineComponent({
 </script>
 
 <template>
-    <div class="bottom-small-gap" :class="logoPosition">
+    <div class="bottom-small-gap centered-with-max-width" :class="logoPosition">
         <!-- Icon -->
 
         <svg

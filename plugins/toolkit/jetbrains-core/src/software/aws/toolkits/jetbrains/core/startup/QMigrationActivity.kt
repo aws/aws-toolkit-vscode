@@ -23,6 +23,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.Q_MARKETPLACE_URI
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
@@ -54,13 +55,12 @@ class QMigrationActivity : StartupActivity.DumbAware {
         } else {
             // show opt-in/install notification
             notifyInfo(
-                // TODO: change text
                 title = message("aws.q.migration.new_users.notify.title"),
                 content = message("aws.q.migration.new_users.notify.message"),
                 project = project,
                 notificationActions = listOf(
                     NotificationAction.createSimple(message("aws.q.migration.action.read_more.text")) {
-                        // TODO: open url
+                        BrowserUtil.browse(URI(Q_MARKETPLACE_URI))
                     },
                     NotificationAction.createSimpleExpiring(message("aws.q.migration.action.install.text")) {
                         installQPlugin(project, autoInstall = false)
@@ -91,7 +91,6 @@ class QMigrationActivity : StartupActivity.DumbAware {
                                 title = message("aws.q.migration.existing_users.notify.title"),
                                 content = message("aws.q.migration.existing_users.notify.message"),
                                 project = project,
-                                // TODO: change text
                                 notificationActions = listOf(
                                     NotificationAction.createSimple(message("aws.q.migration.action.read_more.text")) {
                                         BrowserUtil.browse(URI(CodeWhispererConstants.Q_MARKETPLACE_URI))
