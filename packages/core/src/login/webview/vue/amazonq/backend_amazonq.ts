@@ -14,14 +14,13 @@ import { AuthUtil, amazonQScopes } from '../../../../codewhisperer/util/authUtil
 import { CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../../codewhisperer/util/getStartUrl'
-import { activateExtension, isExtensionInstalled } from '../../../../shared/utilities/vsCodeUtils'
-import { VSCODE_EXTENSION_ID } from '../../../../shared/extensions'
 import { getLogger } from '../../../../shared/logger'
 import { Auth } from '../../../../auth'
 import { ToolkitError } from '../../../../shared/errors'
 import { debounce } from 'lodash'
 import { AuthError, AuthFlowState, userCancelled } from '../types'
 import { builderIdStartUrl } from '../../../../auth/sso/model'
+import { getToolkitApi } from '../../../../codewhisperer/commands/basicCommands'
 
 export class AmazonQLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.amazonq.AmazonCommonAuth'
@@ -36,15 +35,13 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     }
 
     async fetchConnections(): Promise<AwsConnection[] | undefined> {
-        if (!isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
+        const toolkitApi = getToolkitApi()
+        if (!toolkitApi) {
             return undefined
         }
-        await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
-        const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
-        const importedApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
         const connections: AwsConnection[] = []
-        if (importedApi && 'listConnections' in importedApi) {
-            return await importedApi?.listConnections()
+        if ('listConnections' in toolkitApi) {
+            return await toolkitApi?.listConnections()
         }
         return connections
     }
@@ -62,15 +59,10 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         return this.ssoSetup(
             'useConnection',
             async () => {
-                if (!isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
-                    return
-                }
+                const toolkitApi = getToolkitApi()
                 try {
-                    await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
-                    const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
-                    const importedApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
-                    if (importedApi && 'listConnections' in importedApi) {
-                        const connections: AwsConnection[] = await importedApi?.listConnections()
+                    if (toolkitApi && 'listConnections' in toolkitApi) {
+                        const connections: AwsConnection[] = await toolkitApi?.listConnections()
                         for (const conn of connections) {
                             if (conn.id === connectionId) {
                                 if (!auto) {

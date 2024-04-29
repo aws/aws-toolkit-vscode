@@ -18,7 +18,7 @@ import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { AuthUtil } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { getLogger } from '../../shared/logger'
-import { isExtensionActive, isExtensionInstalled, openUrl } from '../../shared/utilities/vsCodeUtils'
+import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import {
     getPersistedCustomizations,
     notifyNewCustomizations,
@@ -32,7 +32,7 @@ import { CodeWhispererSource } from './types'
 import { FeatureConfigProvider } from '../service/featureConfigProvider'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { Auth, AwsConnection } from '../../auth'
-import { once } from '../../shared/utilities/functionUtils'
+import { memoize, once } from '../../shared/utilities/functionUtils'
 import { isTextEditor } from '../../shared/utilities/editorUtilities'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import { removeDiagnostic } from '../service/diagnosticsProvider'
@@ -383,41 +383,70 @@ export const signoutCodeWhisperer = Commands.declare(
     }
 )
 
-let _toolkitApi: any = undefined
-
-const registerToolkitApiCallbackOnce = once(async () => {
-    getLogger().info(`toolkitApi: Registering callbacks of toolkit api`)
+export const registerToolkitApiCallbacksOnce = once(() => {
+    getLogger().info('toolkitApi: Registering callbacks')
     const auth = Auth.instance
 
+    // When changing connection state in Q, also change connection state in Toolkit.
     auth.onDidChangeConnectionState(async e => {
-        // when changing connection state in Q, also change connection state in toolkit
-        if (_toolkitApi && 'setConnection' in _toolkitApi) {
-            const id = e.id
-            const conn = await auth.getConnection({ id })
-            if (conn && conn.type === 'sso') {
-                getLogger().info(`toolkitApi: set connection ${id}`)
-                await _toolkitApi.setConnection({
-                    type: conn.type,
-                    ssoRegion: conn.ssoRegion,
-                    scopes: conn.scopes,
-                    startUrl: conn.startUrl,
-                    state: e.state,
-                    id: id,
-                    label: conn.label,
-                } as AwsConnection)
-            }
+        const toolkitApi = getToolkitApi()
+        if (!toolkitApi || !('setConnection' in toolkitApi)) {
+            return
         }
-    })
-    // when deleting connection in Q, also delete same connection in toolkit
-    auth.onDidDeleteConnection(async id => {
-        if (_toolkitApi && 'deleteConnection' in _toolkitApi) {
-            getLogger().info(`toolkitApi: delete connection ${id}`)
-            await _toolkitApi.deleteConnection(id)
+        const id = e.id
+        const conn = await auth.getConnection({ id })
+        if (conn && conn.type === 'sso') {
+            getLogger().info(`toolkitApi: set connection ${id}`)
+            await _toolkitApi.setConnection({
+                type: conn.type,
+                ssoRegion: conn.ssoRegion,
+                scopes: conn.scopes,
+                startUrl: conn.startUrl,
+                state: e.state,
+                id: id,
+                label: conn.label,
+            } as AwsConnection)
         }
     })
 
+    // When deleting connection in Q, also delete same connection in Toolkit.
+    auth.onDidDeleteConnection(async id => {
+        const toolkitApi = getToolkitApi()
+        if (!toolkitApi || !('deleteConnection' in toolkitApi)) {
+            return
+        }
+        getLogger().info(`toolkitApi: delete connection ${id}`)
+        await _toolkitApi.deleteConnection(id)
+    })
+})
+
+const logOnce = memoize(msg => {
+    getLogger().info(msg)
+})
+
+let _toolkitApi: any = undefined
+
+// TODO: move this into packages/amazonq/
+export function getToolkitApi(): any | undefined {
+    if (_toolkitApi) {
+        return _toolkitApi
+    }
+    const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
+
+    if (!toolkitExt) {
+        logOnce('toolkitApi: skipped registering Toolkit callback, Toolkit not installed')
+        return undefined
+    } else if (!toolkitExt.isActive) {
+        // void activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
+        logOnce('toolkitApi: skipped registering Toolkit callback, Toolkit not active')
+        return undefined
+    }
+
+    _toolkitApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
+    getLogger().info(`toolkitApi: registering Toolkit callback (Toolkit active=${toolkitExt.isActive})...`)
+
     // when toolkit connection changes
-    if (_toolkitApi && 'onDidChangeConnection' in _toolkitApi) {
+    if ('onDidChangeConnection' in _toolkitApi) {
         _toolkitApi.onDidChangeConnection(
             async (connection: AwsConnection) => {
                 getLogger().info(`toolkitApi: connection change callback ${connection.id}`)
@@ -430,27 +459,6 @@ const registerToolkitApiCallbackOnce = once(async () => {
             }
         )
     }
-})
-export const registerToolkitApiCallback = Commands.declare(
-    { id: 'aws.amazonq.refreshConnectionCallback' },
-    () => async (toolkitApi?: any) => {
-        // While the Q/CW exposes an API for the Toolkit to register callbacks on auth changes,
-        // we need to do it manually here because the Toolkit would have been unable to call
-        // this API if the Q/CW extension started afterwards (and this code block is running).
-        if (isExtensionInstalled(VSCODE_EXTENSION_ID.awstoolkit)) {
-            getLogger().info(`Trying to register toolkit callback. Toolkit is installed, 
-                        toolkit activated = ${isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)}`)
-            if (toolkitApi) {
-                // when this command is executed by AWS Toolkit activation
-                _toolkitApi = toolkitApi.getApi(VSCODE_EXTENSION_ID.amazonq)
-            } else if (isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
-                // when this command is executed by Amazon Q activation
-                const toolkitExt = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)
-                _toolkitApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
-            }
-            if (_toolkitApi) {
-                await registerToolkitApiCallbackOnce()
-            }
-        }
-    }
-)
+
+    return _toolkitApi
+}
