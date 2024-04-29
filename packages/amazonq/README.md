@@ -1,5 +1,3 @@
-Amazon Q is your generative AI-powered assistant across the software development lifecycle.
-
 ## Inline code suggestions
 
 Code faster with inline code suggestions as you type.
