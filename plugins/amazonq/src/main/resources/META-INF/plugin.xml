@@ -11,7 +11,7 @@
     <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://github.com/aws/aws-toolkit-jetbrains">AWS</vendor>
     <idea-version since-build="232" />
     <depends>com.intellij.modules.platform</depends>
-
+    <depends optional="true">org.jetbrains.idea.maven</depends>
     <resource-bundle>software.aws.toolkits.resources.MessagesBundle</resource-bundle>
 
     <depends>aws.toolkit.core</depends>
