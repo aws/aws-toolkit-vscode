@@ -435,6 +435,10 @@ class CodeWhispererCodeScanManager(val project: Project) {
         ?: error(message("codewhisperer.codescan.problems_window_not_found"))
 
     private fun reset() = runInEdt {
+        // clear the codeScanTreeNodeRoot
+        synchronized(codeScanTreeNodeRoot) {
+            codeScanTreeNodeRoot.removeAllChildren()
+        }
         // Remove previous document listeners before starting a new scan.
         fileNodeLookup.clear()
         // Erase all range highlighter before cleaning up.
@@ -454,25 +458,11 @@ class CodeWhispererCodeScanManager(val project: Project) {
             val editorFactory = EditorFactory.getInstance()
             editorFactory.eventMulticaster.addDocumentListener(documentListener, project)
             editorFactory.addEditorFactoryListener(fileListener, project)
+            EditorFactory.getInstance().eventMulticaster.addEditorMouseMotionListener(
+                editorMouseListener,
+                codeScanIssuesContent
+            )
         }
-    }
-
-    private fun addListeners() {
-        fileNodeLookup.keys.forEach { file ->
-            runInEdt {
-                val document = FileDocumentManager.getInstance().getDocument(file)
-                if (document == null) {
-                    LOG.error { message("codewhisperer.codescan.file_not_found", file.path) }
-                    return@runInEdt
-                }
-                document.addDocumentListener(documentListener, codeScanIssuesContent)
-            }
-        }
-        EditorFactory.getInstance().eventMulticaster.removeEditorMouseMotionListener(editorMouseListener)
-        EditorFactory.getInstance().eventMulticaster.addEditorMouseMotionListener(
-            editorMouseListener,
-            codeScanIssuesContent
-        )
     }
 
     private fun beforeCodeScan() {
@@ -518,7 +508,17 @@ class CodeWhispererCodeScanManager(val project: Project) {
     private fun createCodeScanIssuesTree(codeScanIssues: List<CodeWhispererCodeScanIssue>): DefaultMutableTreeNode {
         LOG.debug { "Rendering response from the scan API" }
 
-        codeScanTreeNodeRoot.removeAllChildren()
+        synchronized(codeScanTreeNodeRoot) {
+            codeScanTreeNodeRoot.removeAllChildren()
+        }
+        // clear file node lookup and scan node lookup
+        synchronized(fileNodeLookup) {
+            fileNodeLookup.clear()
+        }
+        synchronized(scanNodesLookup) {
+            scanNodesLookup.clear()
+        }
+
         codeScanIssues.forEach { issue ->
             val fileNode = synchronized(fileNodeLookup) {
                 fileNodeLookup.getOrPut(issue.file) {
@@ -536,8 +536,6 @@ class CodeWhispererCodeScanManager(val project: Project) {
                 mutableListOf()
             }.add(scanNode)
         }
-        // Add document and editor listeners to the documents having scan issues.
-        addListeners()
         return codeScanTreeNodeRoot
     }
 
@@ -559,10 +557,14 @@ class CodeWhispererCodeScanManager(val project: Project) {
             }
         }
         // Remove the old scan nodes from the file node.
-        fileNode.removeAllChildren()
+        synchronized(fileNode) {
+            fileNode.removeAllChildren()
+        }
         // Remove the entry for the file from the scan nodes lookup.
-        if (scanNodesLookup.containsKey(file)) {
-            scanNodesLookup.remove(file)
+        synchronized(scanNodesLookup) {
+            if (scanNodesLookup.containsKey(file)) {
+                scanNodesLookup.remove(file)
+            }
         }
 
         // Add new issues to the file node.
@@ -579,8 +581,6 @@ class CodeWhispererCodeScanManager(val project: Project) {
             fileNodeLookup.remove(file)
         }
 
-        // Add document and editor listeners to the documents having scan issues.
-        addListeners()
         return codeScanTreeNodeRoot
     }
 
@@ -606,7 +606,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
                 codeScanIssuesContent.displayName =
                     message("codewhisperer.codescan.scan_display_with_issues", totalIssuesCount, INACTIVE_TEXT_COLOR)
             }
-            codeScanResultsPanel.updateAndDisplayScanResults(codeScanTreeModel, scannedFiles, isProjectTruncated)
+            codeScanResultsPanel.updateAndDisplayScanResults(codeScanTreeModel, scannedFiles, isProjectTruncated, scope)
         }
     }
 
