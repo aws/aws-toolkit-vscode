@@ -29,9 +29,11 @@ import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROL
 import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES
 import software.aws.toolkits.jetbrains.core.explorer.showWebview
 import software.aws.toolkits.jetbrains.core.explorer.webview.ToolkitWebviewPanel
+import software.aws.toolkits.jetbrains.core.gettingstarted.editor.getAuthStatus
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.getConnectionCount
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.getEnabledConnections
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.getSourceOfEntry
+import software.aws.toolkits.jetbrains.core.gettingstarted.editor.getStartupState
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.core.webview.BrowserState
 import software.aws.toolkits.jetbrains.services.caws.CawsEndpoints.CAWS_DOCS
@@ -435,6 +437,16 @@ fun requestCredentialsForExplorer(
         )
     }
     return isAuthSuccessful
+}
+
+fun emitUserState(project: Project) {
+    AuthTelemetry.userState(
+        project,
+        source = getStartupState().toString(),
+        authEnabledConnections = getEnabledConnections(project),
+        authStatus = getAuthStatus(project),
+        passive = true
+    )
 }
 
 const val CODEWHISPERER_AUTH_LEARN_MORE_LINK = "https://docs.aws.amazon.com/codewhisperer/latest/userguide/codewhisperer-auth.html"

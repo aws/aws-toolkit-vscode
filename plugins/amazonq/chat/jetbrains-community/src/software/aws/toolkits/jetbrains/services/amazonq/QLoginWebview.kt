@@ -40,6 +40,7 @@ import software.aws.toolkits.jetbrains.services.amazonq.util.createBrowser
 import software.aws.toolkits.jetbrains.utils.isQConnected
 import software.aws.toolkits.jetbrains.utils.isQExpired
 import software.aws.toolkits.telemetry.FeatureId
+import software.aws.toolkits.telemetry.WebviewTelemetry
 import java.awt.event.ActionListener
 import java.util.function.Function
 import javax.swing.JButton
@@ -113,6 +114,10 @@ class QWebviewBrowser(val project: Project, private val parentDisposable: Dispos
         when (command) {
             "prepareUi" -> {
                 this.prepareBrowser(BrowserState(FeatureId.Q, false))
+                WebviewTelemetry.amazonqSignInOpened(
+                    project,
+                    reAuth = isQExpired(project)
+                )
             }
 
             "selectConnection" -> {

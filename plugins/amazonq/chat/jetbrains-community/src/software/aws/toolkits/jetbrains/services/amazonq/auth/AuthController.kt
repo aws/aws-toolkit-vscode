@@ -37,12 +37,12 @@ class AuthController {
 
     private fun getAuthNeededState(
         amazonqConnectionState: ActiveConnection,
-        codeWhispereConnectionState: ActiveConnection,
+        codeWhispererConnectionState: ActiveConnection,
         onlyIamIdcConnection: Boolean = false
     ): AuthNeededState? =
         when (amazonqConnectionState) {
             ActiveConnection.NotConnected -> {
-                if (codeWhispereConnectionState == ActiveConnection.NotConnected) {
+                if (codeWhispererConnectionState == ActiveConnection.NotConnected) {
                     AuthNeededState(
                         message = message("q.connection.disconnected"),
                         authType = AuthFollowUpType.FullAuth,
