@@ -10,7 +10,8 @@ import software.aws.toolkits.jetbrains.services.cwc.editor.context.ActiveFileCon
 enum class TriggerType {
     Click,
     ContextMenu,
-    Hotkeys
+    Hotkeys,
+    CodeScanButton
 }
 
 data class ChatRequestData(

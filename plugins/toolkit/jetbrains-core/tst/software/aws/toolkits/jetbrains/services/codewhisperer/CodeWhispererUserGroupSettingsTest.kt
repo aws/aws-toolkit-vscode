@@ -10,6 +10,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.verify
+import software.aws.toolkits.jetbrains.AwsPlugin
 import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererExpThresholdGroup
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroup
@@ -116,7 +117,7 @@ class CodeWhispererUserGroupSettingsTest {
         assertThat(settingsField).isNotNull
 
         // if version differs, will re-assign the group
-        val oldVersionStoreInAwsXml = AwsToolkit.PLUGIN_VERSION
+        val oldVersionStoreInAwsXml = AwsToolkit.PLUGINS_INFO.getValue(AwsPlugin.TOOLKIT).version
 
         settingsField?.let {
             // set up CodeWhispererUserGroupSettings.settings field
@@ -154,20 +155,20 @@ class CodeWhispererUserGroupSettingsTest {
         sut.getUserGroup()
 
         verify(sut).determineUserGroup()
-        assertThat(sut.getVersion()).isEqualTo(AwsToolkit.PLUGIN_VERSION)
+        assertThat(sut.getVersion()).isEqualTo(AwsToolkit.PLUGINS_INFO.getValue(AwsPlugin.TOOLKIT).version)
     }
 
     @Test
     fun loadState() {
         // version must use AwsToolkit.PLUGIN_VERSION, otherwise group will be assigned
         val state = CodeWhispererUserGroupStates(
-            version = AwsToolkit.PLUGIN_VERSION,
+            version = AwsToolkit.PLUGINS_INFO.getValue(AwsPlugin.TOOLKIT).version,
             settings = mapOf(USER_GROUP_KEY to CodeWhispererUserGroup.CrossFile.name)
         )
 
         sut.loadState(state)
 
         assertThat(sut.getUserGroup()).isEqualTo(CodeWhispererUserGroup.CrossFile)
-        assertThat(sut.getVersion()).isEqualTo(AwsToolkit.PLUGIN_VERSION)
+        assertThat(sut.getVersion()).isEqualTo(AwsToolkit.PLUGINS_INFO.getValue(AwsPlugin.TOOLKIT).version)
     }
 }

@@ -4,6 +4,9 @@
 package software.aws.toolkits.jetbrains.core.credentials.sso
 
 import com.intellij.openapi.components.service
+import com.intellij.openapi.progress.EmptyProgressIndicator
+import com.intellij.openapi.progress.ProcessCanceledException
+import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.registry.Registry
 import software.amazon.awssdk.auth.token.credentials.SdkTokenProvider
@@ -27,6 +30,15 @@ import software.aws.toolkits.telemetry.Result
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.atomic.AtomicReference
+
+sealed interface PendingAuthorization {
+    val progressIndicator: ProgressIndicator
+
+    data class DAGAuthorization(val authorization: Authorization, override val progressIndicator: ProgressIndicator) : PendingAuthorization
+    data class PKCEAuthorization(val future: CompletableFuture<*>, override val progressIndicator: ProgressIndicator) : PendingAuthorization
+}
 
 /**
  * Takes care of creating/refreshing the SSO access token required to fetch SSO-based credentials.
@@ -39,6 +51,10 @@ class SsoAccessTokenProvider(
     private val scopes: List<String> = emptyList(),
     private val clock: Clock = Clock.systemUTC()
 ) : SdkTokenProvider {
+    private val _authorization = AtomicReference<PendingAuthorization?>()
+    val authorization: PendingAuthorization?
+        get() = _authorization.get()
+
     private val isNewAuthPkce: Boolean
         get() = Registry.`is`("aws.dev.pkceAuth", false)
 
@@ -87,7 +103,7 @@ class SsoAccessTokenProvider(
         }
 
         val token = if (isNewAuthPkce) {
-            ToolkitOAuthService.getInstance().authorize(registerPkceClient()).get()
+            pollForPkceToken()
         } else {
             pollForDAGToken()
         }
@@ -107,7 +123,7 @@ class SsoAccessTokenProvider(
         val registerResponse = client.registerClient {
             it.clientType(PUBLIC_CLIENT_REGISTRATION_TYPE)
             it.scopes(scopes)
-            it.clientName("AWS Toolkit for JetBrains")
+            it.clientName("AWS IDE Plugins for JetBrains")
         }
 
         val registeredClient = DeviceAuthorizationClientRegistration(
@@ -141,10 +157,10 @@ class SsoAccessTokenProvider(
         }
 
         val registeredClient = PKCEClientRegistration(
-            registerResponse.clientId(),
-            registerResponse.clientSecret(),
-            Instant.ofEpochSecond(registerResponse.clientSecretExpiresAt()),
-            scopes,
+            clientId = registerResponse.clientId(),
+            clientSecret = registerResponse.clientSecret(),
+            expiresAt = Instant.ofEpochSecond(registerResponse.clientSecretExpiresAt()),
+            scopes = scopes,
             issuerUrl = ssoUrl,
             region = ssoRegion,
             clientType = PUBLIC_CLIENT_REGISTRATION_TYPE,
@@ -181,24 +197,34 @@ class SsoAccessTokenProvider(
             createTime.plusSeconds(authorizationResponse.expiresIn().toLong()),
             authorizationResponse.interval()?.toLong()
                 ?: DEFAULT_INTERVAL_SECS,
-            createTime
+            createTime,
         )
     }
+
+    private fun progressIndicator() =
+        ProgressManager.getInstance().progressIndicator ?: EmptyProgressIndicator()
 
     @Deprecated("Device authorization grant flow is deprecated")
     private fun pollForDAGToken(): AccessToken {
         val onPendingToken = service<SsoLoginCallbackProvider>().getProvider(ssoUrl)
-        val progressIndicator = ProgressManager.getInstance().progressIndicator
+        val progressIndicator = progressIndicator()
         val registration = registerDAGClient()
         val authorization = authorizeDAGClient(registration)
 
-        progressIndicator?.text2 = message("aws.sso.signing.device.waiting", authorization.userCode)
+        progressIndicator.text2 = message("aws.sso.signing.device.waiting", authorization.userCode)
+        _authorization.set(PendingAuthorization.DAGAuthorization(authorization, progressIndicator))
+
         onPendingToken.tokenPending(authorization)
 
         var backOffTime = Duration.ofSeconds(authorization.pollInterval)
 
         while (true) {
             try {
+                if (_authorization.get() == null || progressIndicator.isCanceled()) {
+                    _authorization.set(null)
+                    throw ProcessCanceledException(IllegalStateException("Login canceled by user"))
+                }
+
                 val tokenResponse = client.createToken {
                     it.clientId(registration.clientId)
                     it.clientSecret(registration.clientSecret)
@@ -207,18 +233,48 @@ class SsoAccessTokenProvider(
                 }
 
                 onPendingToken.tokenRetrieved()
+                _authorization.set(null)
 
                 return tokenResponse.toDAGAccessToken(authorization.createdAt)
             } catch (e: SlowDownException) {
                 backOffTime = backOffTime.plusSeconds(SLOW_DOWN_DELAY_SECS)
             } catch (e: AuthorizationPendingException) {
                 // Do nothing, keep polling
+            } catch (e: ProcessCanceledException) {
+                // Don't want to notify this in tokenRetrievalFailure
+                throw e
             } catch (e: Exception) {
                 onPendingToken.tokenRetrievalFailure(e)
                 throw e
             }
 
-            sleepWithCancellation(backOffTime, progressIndicator)
+            try {
+                sleepWithCancellation(backOffTime, progressIndicator)
+            } catch (e: ProcessCanceledException) {
+                _authorization.set(null)
+                throw ProcessCanceledException(IllegalStateException("Login canceled by user"))
+            }
+        }
+    }
+
+    private fun pollForPkceToken(): AccessToken {
+        val future = ToolkitOAuthService.getInstance().authorize(registerPkceClient())
+        val progressIndicator = progressIndicator()
+        _authorization.set(PendingAuthorization.PKCEAuthorization(future, progressIndicator))
+
+        while (true) {
+            if (future.isDone) {
+                _authorization.set(null)
+                return future.get()
+            }
+
+            try {
+                sleepWithCancellation(Duration.ofMillis(100), progressIndicator)
+            } catch (e: ProcessCanceledException) {
+                future.cancel(true)
+                _authorization.set(null)
+                throw ProcessCanceledException(IllegalStateException(message("credentials.pending.user_cancel.message")))
+            }
         }
     }
 

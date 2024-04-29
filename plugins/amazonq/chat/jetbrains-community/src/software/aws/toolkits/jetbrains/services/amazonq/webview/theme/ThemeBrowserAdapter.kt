@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.amazonq.webview.theme
 
+import kotlinx.coroutines.CompletableDeferred
 import org.cef.browser.CefBrowser
 import java.awt.Color
 import java.awt.Font
@@ -14,7 +15,12 @@ const val DARK_MODE_CLASS = "vscode-dark"
  * Takes a [AmazonQTheme] instance and uses it to update CSS variables in the Webview UI.
  */
 class ThemeBrowserAdapter {
-    fun updateThemeInBrowser(browser: CefBrowser, theme: AmazonQTheme) {
+    fun updateLoginThemeInBrowser(browser: CefBrowser, theme: AmazonQTheme) {
+        browser.executeJavaScript("window.changeTheme(${theme.darkMode})", browser.url, 0)
+    }
+
+    suspend fun updateThemeInBrowser(browser: CefBrowser, theme: AmazonQTheme, uiReady: CompletableDeferred<Boolean>) {
+        uiReady.await()
         val codeToUpdateTheme = buildJsCodeToUpdateTheme(theme)
         browser.executeJavaScript(codeToUpdateTheme, browser.url, 0)
     }

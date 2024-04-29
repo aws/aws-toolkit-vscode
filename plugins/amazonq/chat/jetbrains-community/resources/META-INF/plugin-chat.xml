@@ -2,7 +2,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <idea-plugin>
     <extensionPoints>
-        <extensionPoint qualifiedName="aws.toolkit.amazonq.appFactory" interface="software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppFactory" dynamic="true" />
+        <extensionPoint qualifiedName="amazon.q.appFactory" interface="software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppFactory" dynamic="true" />
     </extensionPoints>
 
     <projectListeners>
@@ -11,44 +11,27 @@
     </projectListeners>
 
     <extensions defaultExtensionNs="com.intellij">
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.MeetQSettings"/>
-
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindow" />
-
         <!--Q Getting Started page -->
         <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.amazonq.gettingstarted.QGettingStartedEditorProvider"/>
 
         <toolWindow id="amazon.q.window" anchor="right"
                     factoryClass="software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindowFactory" icon="AwsIcons.Logos.AWS_Q" />
+
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.services.amazonq.startup.AmazonQStartupActivity"/>
     </extensions>
 
-    <extensions defaultExtensionNs="aws.toolkit.amazonq">
+    <extensions defaultExtensionNs="amazon.q">
         <appFactory implementation="software.aws.toolkits.jetbrains.services.cwc.AppFactory" />
         <appFactory implementation="software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FeatureDevAppFactory" />
     </extensions>
 
     <actions>
-        <group id="aws.toolkit.q.idc.signed.in">
-            <action
-                id="q.openchat"
-                class="software.aws.toolkits.jetbrains.services.amazonq.QOpenPanelAction"/>
-            <action
-                id="q.migrate"
-                class="software.aws.toolkits.jetbrains.services.amazonq.QMigrationNotificationAction"/>
-        </group>
+        <!-- TODO: q.openchat will eventually be in amazonq, aws.toolkit.q.sign.in will eventually be in core. -->
+        <action id="q.openchat" class="software.aws.toolkits.jetbrains.services.amazonq.QOpenPanelAction"/>
 
         <group id="aws.toolkit.q.sign.in">
             <action id="q.sign.in" class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.SignInToQAction"/>
-            <action id="q.learn.more" class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.QLearnMoreAction"/>
-        </group>
-
-        <group id="aws.toolkit.q.enable">
-            <action class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.EnableQAction"/>
-            <reference id="q.learn.more"/>
-        </group>
-
-        <group id="aws.toolkit.q.expired">
-            <action class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.ReauthenticateWithQ"/>
+            <reference ref="q.learn.more"/>
         </group>
 
         <group

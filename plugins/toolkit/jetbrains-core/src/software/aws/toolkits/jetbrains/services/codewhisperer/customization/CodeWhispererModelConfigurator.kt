@@ -13,7 +13,6 @@ import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.util.concurrency.annotations.RequiresBackgroundThread
 import com.intellij.util.xmlb.annotations.MapAnnotation
@@ -21,7 +20,6 @@ import com.intellij.util.xmlb.annotations.Property
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererRuntimeException
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.calculateIfIamIdentityCenterConnection
@@ -30,6 +28,8 @@ import software.aws.toolkits.jetbrains.utils.notifyWarn
 import software.aws.toolkits.resources.message
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicBoolean
+
+typealias CodeWhispererModelConfigurator = migration.software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
 
 private fun notifyInvalidSelectedCustomization(project: Project) {
     notifyWarn(
@@ -51,44 +51,11 @@ private fun notifyNewCustomization(project: Project) {
         content = message("codewhisperer.notification.custom.new_customization"),
         project = project,
         notificationActions = listOf(
-            NotificationAction.create(message("codewhisperer.notification.custom.simple.button.select_customization")) { _, notification ->
+            NotificationAction.createSimpleExpiring(message("codewhisperer.notification.custom.simple.button.select_customization")) {
                 CodeWhispererModelConfigurator.getInstance().showConfigDialog(project)
-                notification.expire()
             }
         )
     )
-}
-
-// A component responsible managing client's codewhisperer model configuration (currently customization feature only support enterprise tier users)
-interface CodeWhispererModelConfigurator {
-    fun showConfigDialog(project: Project)
-
-    fun listCustomizations(project: Project, passive: Boolean = false): List<CustomizationUiItem>?
-
-    fun activeCustomization(project: Project): CodeWhispererCustomization?
-
-    fun switchCustomization(project: Project, newCustomization: CodeWhispererCustomization?)
-
-    /**
-     * This method is only used for invalidate a stale customization which was previously active but was removed, it will remove all usage of this customization
-     * but not limited to the specific connection.
-     */
-    fun invalidateCustomization(arn: String)
-
-    /**
-     * This method will be invoked on IDE instantiation, it will check if there is customization associated with given connection and
-     * indicate if user is allowlisted or not
-     */
-    fun shouldDisplayCustomNode(project: Project, forceUpdate: Boolean = false): Boolean
-
-    /**
-     * Query if there is customization for given connection
-     */
-    fun getNewUpdate(connectionId: String): Collection<CustomizationUiItem>?
-
-    companion object {
-        fun getInstance(): CodeWhispererModelConfigurator = service()
-    }
 }
 
 @Service(Service.Level.APP)
@@ -229,9 +196,7 @@ class DefaultCodeWhispererModelConfigurator : CodeWhispererModelConfigurator, Pe
 
                 null -> run {
                     ApplicationManager.getApplication().executeOnPooledThread {
-                        // will update devTool tree
                         listCustomizations(project, passive = true)
-                        project.refreshCwQTree()
                     }
 
                     false
@@ -240,11 +205,7 @@ class DefaultCodeWhispererModelConfigurator : CodeWhispererModelConfigurator, Pe
                 false -> run {
                     if (forceUpdate) {
                         ApplicationManager.getApplication().executeOnPooledThread {
-                            // will update devTool tree
-                            val updatedValue = listCustomizations(project, passive = true) != null
-                            if (updatedValue != cachedValue) {
-                                project.refreshCwQTree()
-                            }
+                            listCustomizations(project, passive = true)
                         }
                     }
 

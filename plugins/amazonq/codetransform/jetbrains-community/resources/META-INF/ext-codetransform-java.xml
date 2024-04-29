@@ -23,7 +23,7 @@
         <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.codemodernizer.summary.CodeModernizerSummaryEditorProvider"/>
     </extensions>
 
-    <extensions defaultExtensionNs="aws.toolkit.amazonq">
+    <extensions defaultExtensionNs="amazon.q">
         <appFactory implementation="software.aws.toolkits.jetbrains.services.codemodernizer.CodeTransformChatAppFactory" />
     </extensions>
 

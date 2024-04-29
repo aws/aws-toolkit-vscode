@@ -140,7 +140,8 @@ data class CodeScanTelemetryEvent(
     val duration: Double,
     val result: Result,
     val totalProjectSizeInBytes: Double?,
-    val connection: ToolkitConnection?
+    val connection: ToolkitConnection?,
+    val codeAnalysisScope: CodeWhispererConstants.CodeAnalysisScope
 )
 
 data class CodeScanServiceInvocationContext(

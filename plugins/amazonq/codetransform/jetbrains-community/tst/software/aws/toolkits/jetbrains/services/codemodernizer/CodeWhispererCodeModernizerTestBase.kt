@@ -67,7 +67,6 @@ import java.time.Instant
 open class CodeWhispererCodeModernizerTestBase(
     @Rule @JvmField
     val projectRule: CodeInsightTestFixtureRule = JavaCodeInsightTestFixtureRule(),
-
 ) {
     @Rule
     @JvmField
@@ -101,94 +100,101 @@ open class CodeWhispererCodeModernizerTestBase(
     internal val validZipManifestPath = "manifest.json"
     internal val validZipPatchFilePath = "patch/diff.patch"
     internal val validZipManifestVersion = 1.0F
-    internal val validManifest = CodeModernizerManifest(
-        validZipManifestVersion,
-        validZipPatchDirPath,
-        validZipArtifactsPath,
-        validZipSummaryPath,
-    )
-    internal val validTransformationSummary = TransformationSummary(
-        """
-        # This is a title
-        With some text
-        [and a link](https://www.amazon.com/)
-
-        1. Some bullets
-        2. Some more bullets
-
-        `some code`
-
-        """.trimIndent()
-    )
-
-    internal val exampleCreateUploadUrlResponse = CreateUploadUrlResponse.builder()
-        .uploadUrl("https://smth.com")
-        .uploadId("1234")
-        .kmsKeyArn("0000000000000000000000000000000000:key/1234abcd")
-        .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to testRequestId)))
-        .sdkHttpResponse(SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(testSessionId))).build())
-        .build() as CreateUploadUrlResponse
-
-    internal val exampleStartCodeMigrationResponse = StartTransformationResponse.builder()
-        .transformationJobId(jobId.id)
-        .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to testRequestId)))
-        .sdkHttpResponse(SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(testSessionId))).build())
-        .build() as StartTransformationResponse
-
-    internal val exampleGetCodeMigrationPlanResponse = GetTransformationPlanResponse
-        .builder()
-        .transformationPlan(
-            TransformationPlan.builder()
-                .transformationSteps(
-                    listOf(
-                        TransformationStep.builder()
-                            .description("first step description")
-                            .name("first step name")
-                            .id("Id#1")
-                            .build(),
-                        TransformationStep.builder()
-                            .description("This is the second step we are doing")
-                            .name("second step name")
-                            .id("Id#2")
-                            .build(),
-                    ),
-                ).build(),
+    internal val validManifest =
+        CodeModernizerManifest(
+            validZipManifestVersion,
+            validZipPatchDirPath,
+            validZipArtifactsPath,
+            validZipSummaryPath,
         )
-        .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to testRequestId)))
-        .sdkHttpResponse(SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(testSessionId))).build())
-        .build() as GetTransformationPlanResponse
+    internal val validTransformationSummary =
+        TransformationSummary(
+            """
+            # This is a title
+            With some text
+            [and a link](https://www.amazon.com/)
 
-    internal val exampleStopTransformationResponse = StopTransformationResponse.builder()
-        .transformationStatus(TransformationStatus.STOPPED).build() as StopTransformationResponse
+            1. Some bullets
+            2. Some more bullets
 
-    internal val exampleGetCodeMigrationResponse = GetTransformationResponse.builder()
-        .transformationJob(
-            TransformationJob.builder()
-                .jobId(jobId.id)
-                .creationTime(Instant.now())
-                .startExecutionTime(Instant.now())
-                .endExecutionTime(null)
-                .status(TransformationStatus.ACCEPTED)
-                .transformationSpec(
-                    TransformationSpec.builder()
-                        .transformationType(TransformationType.LANGUAGE_UPGRADE)
-                        .source(
-                            TransformationProjectState.builder()
-                                .language(TransformationLanguage.JAVA_11)
-                                .build(),
-                        )
-                        .target(
-                            TransformationProjectState.builder()
-                                .language(TransformationLanguage.JAVA_17)
-                                .build(),
-                        )
-                        .build(),
-                )
-                .build(),
+            `some code`
+
+            """.trimIndent(),
         )
-        .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to testRequestId)))
-        .sdkHttpResponse(SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(testSessionId))).build())
-        .build() as GetTransformationResponse
+
+    internal val exampleCreateUploadUrlResponse =
+        CreateUploadUrlResponse.builder()
+            .uploadUrl("https://smth.com")
+            .uploadId("1234")
+            .kmsKeyArn("0000000000000000000000000000000000:key/1234abcd")
+            .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to testRequestId)))
+            .sdkHttpResponse(SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(testSessionId))).build())
+            .build() as CreateUploadUrlResponse
+
+    internal val exampleStartCodeMigrationResponse =
+        StartTransformationResponse.builder()
+            .transformationJobId(jobId.id)
+            .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to testRequestId)))
+            .sdkHttpResponse(SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(testSessionId))).build())
+            .build() as StartTransformationResponse
+
+    internal val exampleGetCodeMigrationPlanResponse =
+        GetTransformationPlanResponse
+            .builder()
+            .transformationPlan(
+                TransformationPlan.builder()
+                    .transformationSteps(
+                        listOf(
+                            TransformationStep.builder()
+                                .description("first step description")
+                                .name("first step name")
+                                .id("Id#1")
+                                .build(),
+                            TransformationStep.builder()
+                                .description("This is the second step we are doing")
+                                .name("second step name")
+                                .id("Id#2")
+                                .build(),
+                        ),
+                    ).build(),
+            )
+            .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to testRequestId)))
+            .sdkHttpResponse(SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(testSessionId))).build())
+            .build() as GetTransformationPlanResponse
+
+    internal val exampleStopTransformationResponse =
+        StopTransformationResponse.builder()
+            .transformationStatus(TransformationStatus.STOPPED).build() as StopTransformationResponse
+
+    internal val exampleGetCodeMigrationResponse =
+        GetTransformationResponse.builder()
+            .transformationJob(
+                TransformationJob.builder()
+                    .jobId(jobId.id)
+                    .creationTime(Instant.now())
+                    .startExecutionTime(Instant.now())
+                    .endExecutionTime(null)
+                    .status(TransformationStatus.ACCEPTED)
+                    .transformationSpec(
+                        TransformationSpec.builder()
+                            .transformationType(TransformationType.LANGUAGE_UPGRADE)
+                            .source(
+                                TransformationProjectState.builder()
+                                    .language(TransformationLanguage.JAVA_11)
+                                    .build(),
+                            )
+                            .target(
+                                TransformationProjectState.builder()
+                                    .language(TransformationLanguage.JAVA_17)
+                                    .build(),
+                            )
+                            .build(),
+                    )
+                    .build(),
+            )
+            .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to testRequestId)))
+            .sdkHttpResponse(SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(testSessionId))).build())
+            .build() as GetTransformationResponse
 
     internal val exampleExportResultArchiveResponse = mutableListOf(byteArrayOf(100))
 
@@ -197,21 +203,22 @@ open class CodeWhispererCodeModernizerTestBase(
             response.transformationJob(this.transformationJob().copy { it.status(status) })
                 .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(ResponseMetadata.AWS_REQUEST_ID to testRequestId)))
                 .sdkHttpResponse(
-                    SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(testSessionId))).build()
+                    SdkHttpResponse.builder().headers(mapOf(CodeWhispererService.KET_SESSION_ID to listOf(testSessionId))).build(),
                 )
         }
 
-    val happyPathMigrationResponses = listOf(
-        exampleGetCodeMigrationResponse,
-        exampleGetCodeMigrationResponse.replace(TransformationStatus.STARTED),
-        exampleGetCodeMigrationResponse.replace(TransformationStatus.PREPARING),
-        exampleGetCodeMigrationResponse.replace(TransformationStatus.PREPARED),
-        exampleGetCodeMigrationResponse.replace(TransformationStatus.PLANNING),
-        exampleGetCodeMigrationResponse.replace(TransformationStatus.PLANNED),
-        exampleGetCodeMigrationResponse.replace(TransformationStatus.TRANSFORMING),
-        exampleGetCodeMigrationResponse.replace(TransformationStatus.TRANSFORMED),
-        exampleGetCodeMigrationResponse.replace(TransformationStatus.COMPLETED),
-    )
+    val happyPathMigrationResponses =
+        listOf(
+            exampleGetCodeMigrationResponse,
+            exampleGetCodeMigrationResponse.replace(TransformationStatus.STARTED),
+            exampleGetCodeMigrationResponse.replace(TransformationStatus.PREPARING),
+            exampleGetCodeMigrationResponse.replace(TransformationStatus.PREPARED),
+            exampleGetCodeMigrationResponse.replace(TransformationStatus.PLANNING),
+            exampleGetCodeMigrationResponse.replace(TransformationStatus.PLANNED),
+            exampleGetCodeMigrationResponse.replace(TransformationStatus.TRANSFORMING),
+            exampleGetCodeMigrationResponse.replace(TransformationStatus.TRANSFORMED),
+            exampleGetCodeMigrationResponse.replace(TransformationStatus.COMPLETED),
+        )
 
     @Before
     open fun setup() {
@@ -219,18 +226,22 @@ open class CodeWhispererCodeModernizerTestBase(
         toolkitConnectionManager = spy(ToolkitConnectionManager.getInstance(project))
 
         val accessToken = DeviceAuthorizationGrantToken(aString(), aString(), aString(), aString(), Instant.MAX, Instant.now())
-        val provider = mock<BearerTokenProvider> {
-            doReturn(accessToken).whenever(it).refresh()
-        }
-        val mockBearerProvider = mock<ToolkitBearerTokenProvider> {
-            doReturn(provider).whenever(it).delegate
-        }
-        val connectionSettingsMock = mock<TokenConnectionSettings> {
-            whenever(it.tokenProvider).thenReturn(mockBearerProvider)
-        }
-        val toolkitConnection = mock<AwsBearerTokenConnection> {
-            doReturn(connectionSettingsMock).whenever(it).getConnectionSettings()
-        }
+        val provider =
+            mock<BearerTokenProvider> {
+                doReturn(accessToken).whenever(it).refresh()
+            }
+        val mockBearerProvider =
+            mock<ToolkitBearerTokenProvider> {
+                doReturn(provider).whenever(it).delegate
+            }
+        val connectionSettingsMock =
+            mock<TokenConnectionSettings> {
+                whenever(it.tokenProvider).thenReturn(mockBearerProvider)
+            }
+        val toolkitConnection =
+            mock<AwsBearerTokenConnection> {
+                doReturn(connectionSettingsMock).whenever(it).getConnectionSettings()
+            }
         doReturn(toolkitConnection).whenever(toolkitConnectionManager).activeConnectionForFeature(any())
         project.replaceService(ToolkitConnectionManager::class.java, toolkitConnectionManager, disposableRule.disposable)
         telemetryManagerSpy = spy(CodeTransformTelemetryManager.getInstance(project))
@@ -248,6 +259,7 @@ open class CodeWhispererCodeModernizerTestBase(
         }
 
         val virtualFileMock = Mockito.mock(VirtualFile::class.java)
+        val summaryFileMock = Mockito.mock(File::class.java)
         doReturn("dummy/path").whenever(virtualFileMock).path
         testSessionContextSpy = spy(CodeModernizerSessionContext(project, virtualFileMock, JavaSdkVersion.JDK_1_8, JavaSdkVersion.JDK_11))
         testSessionSpy = spy(CodeModernizerSession(testSessionContextSpy, 0, 0))
@@ -261,18 +273,20 @@ open class CodeWhispererCodeModernizerTestBase(
                     validManifest,
                     listOf(examplePatchVirtualFile),
                     validTransformationSummary,
+                    summaryFileMock,
                 ),
             )
 
         // Set up the bottom tool window mocks
         testModernizerBottomWindowPanelSpy = spy(CodeModernizerBottomWindowPanelManager(project))
-        toolWindowMock = spy(
-            ToolWindowManager.getInstance(project).registerToolWindow(
-                RegisterToolWindowTask(
-                    id = CodeModernizerBottomToolWindowFactory.id,
+        toolWindowMock =
+            spy(
+                ToolWindowManager.getInstance(project).registerToolWindow(
+                    RegisterToolWindowTask(
+                        id = CodeModernizerBottomToolWindowFactory.id,
+                    ),
                 ),
-            ),
-        )
+            )
         doReturn(toolWindowMock).whenever(codeModernizerManagerSpy).getBottomToolWindow()
         doNothing().whenever(codeModernizerManagerSpy).notifyTransformationStopped()
         doNothing().whenever(codeModernizerManagerSpy).notifyTransformationStartStopping()

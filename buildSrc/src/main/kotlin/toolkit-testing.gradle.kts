@@ -21,6 +21,7 @@ dependencies {
     // Everything uses junit4/5 except rider, which uses TestNG
     testFixturesApi(platform(versionCatalog.findLibrary("junit5-bom").get()))
     testFixturesApi(versionCatalog.findLibrary("junit5-jupiterApi").get())
+    testFixturesApi(versionCatalog.findLibrary("junit5-jupiterParams").get())
 
     testRuntimeOnly(versionCatalog.findLibrary("junit5-jupiterEngine").get())
     testRuntimeOnly(versionCatalog.findLibrary("junit5-jupiterVintage").get())

@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.popup
 import com.intellij.codeInsight.CodeInsightSettings
 import com.intellij.codeInsight.hint.ParameterInfoController
 import com.intellij.codeInsight.lookup.LookupManager
+import com.intellij.idea.AppMode
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_BACKSPACE
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_ENTER
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_MOVE_CARET_LEFT
@@ -13,9 +14,11 @@ import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_MOVE_CARET_RIG
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_TAB
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.RangeMarker
+import com.intellij.openapi.editor.VisualPosition
 import com.intellij.openapi.editor.actionSystem.EditorActionManager
 import com.intellij.openapi.editor.actionSystem.TypedAction
 import com.intellij.openapi.editor.colors.EditorColors
@@ -27,6 +30,7 @@ import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.editor.event.SelectionEvent
 import com.intellij.openapi.editor.event.SelectionListener
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.JBPopup
 import com.intellij.openapi.ui.popup.JBPopupFactory
@@ -35,6 +39,7 @@ import com.intellij.openapi.wm.WindowManager
 import com.intellij.ui.ComponentUtil
 import com.intellij.ui.awt.RelativePoint
 import com.intellij.ui.popup.AbstractPopup
+import com.intellij.ui.popup.PopupFactoryImpl
 import com.intellij.util.messages.Topic
 import com.intellij.util.ui.UIUtil
 import software.amazon.awssdk.services.codewhispererruntime.model.Import
@@ -75,6 +80,7 @@ import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JLabel
 
+@Service
 class CodeWhispererPopupManager {
     val popupComponents = CodeWhispererPopupComponents()
 
@@ -289,7 +295,13 @@ class CodeWhispererPopupManager {
         CodeWhispererInvocationStatus.getInstance().setPopupActive(true)
 
         // Check if the current editor still has focus. If not, don't show the popup.
-        if (!editor.contentComponent.isFocusOwner) {
+        val isSameEditorAsTrigger = if (!AppMode.isRemoteDevHost()) {
+            editor.contentComponent.isFocusOwner
+        } else {
+            FileEditorManager.getInstance(states.requestContext.project).selectedTextEditorWithRemotes.firstOrNull() == editor
+        }
+        if (!isSameEditorAsTrigger) {
+            LOG.debug { "Current editor no longer has focus, not showing the popup" }
             cancelPopup(popup)
             return
         }
@@ -315,8 +327,11 @@ class CodeWhispererPopupManager {
             }
 
         val relativePopupLocationToEditor = RelativePoint(editor.contentComponent, popupLocation)
+
+        // TODO: visibleAreaChanged listener is not getting triggered in remote environment when scrolling
         if (popup.isVisible) {
-            if (!shouldHidePopup) {
+            // Changing the position of BackendBeAbstractPopup does not work
+            if (!shouldHidePopup && !AppMode.isRemoteDevHost()) {
                 popup.setLocation(relativePopupLocationToEditor.screenPoint)
                 popup.size = popup.preferredContentSize
             }
@@ -326,7 +341,23 @@ class CodeWhispererPopupManager {
             Disposer.register(popup) {
                 CodeInsightSettings.getInstance().AUTO_POPUP_COMPLETION_LOOKUP = originalAutoPopupCompletionLookup
             }
-            popup.show(relativePopupLocationToEditor)
+            if (!AppMode.isRemoteDevHost()) {
+                popup.show(relativePopupLocationToEditor)
+            } else {
+                // TODO: For now, the popup will always display below the suggestions, without checking
+                // if the location the popup is about to show at stays in the editor window or not, due to
+                // the limitation of BackendBeAbstractPopup
+                val caretVisualPosition = editor.offsetToVisualPosition(editor.caretModel.offset)
+
+                // display popup x lines below the caret where x is # of lines of suggestions, since inlays don't
+                // count as visual lines, the final math will always be just increment 1 line.
+                val popupPositionForRemote = VisualPosition(
+                    caretVisualPosition.line + 1,
+                    caretVisualPosition.column
+                )
+                editor.putUserData(PopupFactoryImpl.ANCHOR_POPUP_POSITION, popupPositionForRemote)
+                popup.showInBestPositionFor(editor)
+            }
             val perceivedLatency = CodeWhispererInvocationStatus.getInstance().getTimeSinceDocumentChanged()
             CodeWhispererTelemetryService.getInstance().sendPerceivedLatencyEvent(
                 detailContexts[selectedIndex].requestId,
@@ -335,10 +366,14 @@ class CodeWhispererPopupManager {
                 perceivedLatency
             )
         }
-        if (shouldHidePopup) {
-            WindowManager.getInstance().setAlphaModeRatio(popup.popupWindow, 1f)
-        } else {
-            WindowManager.getInstance().setAlphaModeRatio(popup.popupWindow, 0.1f)
+
+        // popup.popupWindow is null in remote host
+        if (!AppMode.isRemoteDevHost()) {
+            if (shouldHidePopup) {
+                WindowManager.getInstance().setAlphaModeRatio(popup.popupWindow, 1f)
+            } else {
+                WindowManager.getInstance().setAlphaModeRatio(popup.popupWindow, 0.1f)
+            }
         }
     }
 

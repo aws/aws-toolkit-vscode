@@ -3,10 +3,16 @@
 
 package software.aws.toolkits.jetbrains.core.gettingstarted.editor
 
+import com.intellij.configurationStore.getPersistentStateComponentStorageLocation
 import com.intellij.openapi.project.Project
+import software.aws.toolkits.core.utils.exists
+import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialsIdentifierSso
+import software.aws.toolkits.jetbrains.settings.GettingStartedSettings
+import software.aws.toolkits.telemetry.AuthStatus
+import software.aws.toolkits.telemetry.StartUpState
 
 fun getConnectionCount(): Int {
     val bearerTokenCount = ToolkitAuthManager.getInstance().listConnections().size
@@ -47,11 +53,37 @@ fun getEnabledConnectionsForTelemetry(project: Project?): Set<AuthFormId> {
             )
         }
     }
+
+    val qConnection = checkBearerConnectionValidity(project, BearerTokenFeatureSet.Q)
+    if (qConnection !is ActiveConnection.NotConnected) {
+        if (qConnection.connectionType == ActiveConnectionType.IAM_IDC) {
+            enabledConnections.add(AuthFormId.IDENTITYCENTER_Q)
+        } else {
+            enabledConnections.add(
+                AuthFormId.BUILDERID_Q
+            )
+        }
+    }
     return enabledConnections
 }
 
 fun getEnabledConnections(project: Project?): String =
     getEnabledConnectionsForTelemetry(project).joinToString(",")
+
+fun getStartupState(): StartUpState {
+    val hasStartedToolkitBefore = tryOrNull {
+        getPersistentStateComponentStorageLocation(GettingStartedSettings::class.java)?.exists()
+    } ?: true
+    return if (hasStartedToolkitBefore) StartUpState.Reloaded else StartUpState.FirstStartUp
+}
+
+fun getAuthStatus(project: Project) = when (checkConnectionValidity(project)) {
+    is ActiveConnection.ExpiredIam,
+    is ActiveConnection.ExpiredBearer -> AuthStatus.Expired
+    is ActiveConnection.ValidIam,
+    is ActiveConnection.ValidBearer -> AuthStatus.Connected
+    else -> AuthStatus.NotConnected
+}
 
 enum class AuthFormId {
     IAMCREDENTIALS_EXPLORER,
@@ -60,5 +92,7 @@ enum class AuthFormId {
     IDENTITYCENTER_CODECATALYST,
     BUILDERID_CODEWHISPERER,
     IDENTITYCENTER_CODEWHISPERER,
+    BUILDERID_Q,
+    IDENTITYCENTER_Q,
     UNKNOWN
 }

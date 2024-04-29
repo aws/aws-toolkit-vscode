@@ -176,8 +176,9 @@ class BuildProgressSplitterPanelManager(private val project: Project) :
         } else {
             if (backendProgressStepsAvailable && transformationPlan != null) {
                 currentBuildingTransformationStep = newBuildingTransformationStep
-                newBuildingTransformationStep = transformationPlan.transformationSteps().size
-                val transformationPlanSteps = transformationPlan.transformationSteps()?.map {
+                // skip step 0 (contains supplemental info)
+                newBuildingTransformationStep = transformationPlan.transformationSteps().size - 1
+                val transformationPlanSteps = transformationPlan.transformationSteps()?.drop(1)?.map {
                     getUpdatedBuildProgressStepTreeItem(it)
                 }
                 transformationPlanSteps?.sortedBy { it.transformationStepId }

@@ -222,6 +222,54 @@
                 "q",
                 "codewhispererQ"
             ]
+        },
+        {
+            "name": "authStatus",
+            "type": "string",
+            "allowedValues": ["connected", "notConnected", "expired"],
+            "description": "Status of the an auth connection."
+        },
+        {
+            "name": "authEnabledFeatures",
+            "type": "string",
+            "description": "Comma-delimited list of features for which auth is enabled."
+        },
+        {
+            "name": "authEnabledConnections",
+            "type": "string",
+            "description": "Comma-delimited list of enabled auths."
+        },
+        {
+            "name": "component",
+            "allowedValues": [
+                "editor",
+                "viewer",
+                "filesystem",
+                "explorer",
+                "infobar",
+                "hover",
+                "webview",
+                "quickfix",
+                "Manage Extensions",
+                "Got It",
+                "Read More",
+                "Install",
+                "Dismiss"
+            ],
+            "description": "The IDE or OS component used for the action. (Examples: S3 download to filesystem, S3 upload from editor, ...)"
+        },
+        {
+            "name": "reAuth",
+            "type": "boolean",
+            "description": "Connection requires re-authentication."
+        },
+        {
+            "name": "startUpState",
+            "allowedValues": [
+                "firstStartUp",
+                "reloaded"
+            ],
+            "description": "Toolkit run state."
         }
     ],
     "metrics": [
@@ -555,6 +603,109 @@
                 },
                 {
                     "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "auth_userState",
+            "description": "The state of the user's authentication.",
+            "metadata": [
+                {
+                    "type": "source",
+                    "required": true
+                },
+                {
+                    "type": "authStatus",
+                    "required": true
+                },
+                {
+                    "type": "authEnabledConnections",
+                    "required": true
+                }
+            ],
+            "passive": true
+        },
+        {
+            "name": "webview_amazonqSignInOpened",
+            "description": "Called when a Amazon Q sign in webview is opened.",
+            "metadata": [
+                {
+                    "type": "reAuth",
+                    "required": true
+                }
+            ],
+            "passive": true
+        },
+        {
+            "name": "aws_loginWithBrowser",
+            "description": "Called when a connection requires login using the browser",
+            "metadata": [
+                {
+                    "type": "credentialSourceId",
+                    "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "credentialType",
+                    "required": false
+                },
+                {
+                    "type": "isReAuth",
+                    "required": false
+                },
+                {
+                    "type": "reason",
+                    "required": false
+                },
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "auth_addConnection",
+            "description": "Captures the result of adding a new connection in the 'Add New Connection' workflow",
+            "metadata": [
+                {
+                    "type": "attempts",
+                    "required": false
+                },
+                {
+                    "type": "credentialSourceId"
+                },
+                {
+                    "type": "featureId",
+                    "required": false
+                },
+                {
+                    "type": "invalidInputFields",
+                    "required": false
+                },
+                {
+                    "type": "isAggregated",
+                    "required": false
+                },
+                {
+                    "type": "reason",
+                    "required": false
+                },
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "source",
+                    "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "isReAuth",
                     "required": false
                 }
             ]

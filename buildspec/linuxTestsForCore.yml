@@ -1,0 +1,71 @@
+version: 0.2
+
+cache:
+  paths:
+    #    - '/root/.gradle/caches/**/*'
+    - '/root/.gradle/wrapper/**/*'
+
+env:
+  variables:
+    CI: true
+    LOCAL_ENV_RUN: true
+
+phases:
+  install:
+    commands:
+      - useradd codebuild-user
+      - dnf install -y acl
+      - chown -R codebuild-user:codebuild-user /codebuild/output
+      - chown -R codebuild-user:codebuild-user /codebuild/local-cache
+      - setfacl -m d:o::rwx,o::rwx /root
+      # (CVE-2022-24765) fatal: detected dubious ownership in repository
+      - su codebuild-user -c "git config --global --add safe.directory \"$CODEBUILD_SRC_DIR\""
+
+  build:
+    commands:
+      - |
+        if [ "$CODEARTIFACT_DOMAIN_NAME" ] && [ "$CODEARTIFACT_REPO_NAME" ]; then
+          CODEARTIFACT_URL=$(aws codeartifact get-repository-endpoint --domain $CODEARTIFACT_DOMAIN_NAME --repository $CODEARTIFACT_REPO_NAME --format maven --query repositoryEndpoint --output text)
+          CODEARTIFACT_NUGET_URL=$(aws codeartifact get-repository-endpoint --domain $CODEARTIFACT_DOMAIN_NAME --repository $CODEARTIFACT_REPO_NAME --format nuget --query repositoryEndpoint --output text)
+          CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain $CODEARTIFACT_DOMAIN_NAME --query authorizationToken --output text --duration-seconds 3600)
+          su codebuild-user -c "dotnet codeartifact-creds install"
+        fi
+
+      - chmod +x gradlew
+      - su codebuild-user -c "./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME :plugin-core:check coverageReport --info --console plain --continue"
+      - ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME :plugin-core:buildPlugin
+      - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
+      - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
+      - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
+      - test -n "$CODE_COV_TOKEN" && curl -Os https://uploader.codecov.io/latest/linux/codecov && chmod +x codecov || true # this sometimes times out but we don't want to fail the build
+      - test -n "$CODE_COV_TOKEN" && test -n "$CODEBUILD_BUILD_SUCCEEDING" && ./codecov -t $CODE_COV_TOKEN -F unittest || true
+      - test -n "$CODE_COV_TOKEN" && test -n "$CODEBUILD_BUILD_SUCCEEDING" && ./codecov -t $CODE_COV_TOKEN -F codewhisperer || true
+
+  post_build:
+    commands:
+      - BUILD_ARTIFACTS="/tmp/buildArtifacts"
+      - TEST_ARTIFACTS="/tmp/testArtifacts"
+      - mkdir -p $TEST_ARTIFACTS/test-reports
+      - mkdir -p $BUILD_ARTIFACTS
+      - rsync -rmq --include='*/' --include '**/build/idea-sandbox/system*/log/**' --exclude='*' . $TEST_ARTIFACTS/ || true
+      - rsync -rmq --include='*/' --include '**/build/reports/**' --exclude='*' . $TEST_ARTIFACTS/ || true
+      - rsync -rmq --include='*/' --include '**/test-results/**/*.xml' --exclude='*' . $TEST_ARTIFACTS/test-reports || true
+      - cp -r ./plugins/core/build/distributions/*.zip $BUILD_ARTIFACTS/ || touch $BUILD_ARTIFACTS/build_failed
+
+reports:
+  unit-test:
+    files:
+      - "**/*"
+    base-directory: /tmp/testArtifacts/test-reports
+    discard-paths: yes
+
+artifacts:
+  files:
+    - "**/*"
+  base-directory: /tmp/testArtifacts
+  secondary-artifacts:
+    plugin:
+      files:
+        - /tmp/buildArtifacts/*
+      discard-paths: yes
+      name: plugin.zip

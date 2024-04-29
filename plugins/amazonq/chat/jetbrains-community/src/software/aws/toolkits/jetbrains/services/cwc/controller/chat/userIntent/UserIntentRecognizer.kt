@@ -15,6 +15,7 @@ class UserIntentRecognizer {
         EditorContextCommand.Refactor -> UserIntent.SUGGEST_ALTERNATE_IMPLEMENTATION
         EditorContextCommand.Fix -> UserIntent.APPLY_COMMON_BEST_PRACTICES
         EditorContextCommand.Optimize -> UserIntent.IMPROVE_CODE
+        EditorContextCommand.ExplainCodeScanIssue -> UserIntent.EXPLAIN_CODE_SELECTION
         EditorContextCommand.SendToPrompt -> null
     }
 

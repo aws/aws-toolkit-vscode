@@ -36,6 +36,7 @@ import software.aws.toolkits.jetbrains.core.credentials.diskCache
 import software.aws.toolkits.jetbrains.core.credentials.sso.AccessToken
 import software.aws.toolkits.jetbrains.core.credentials.sso.DeviceAuthorizationGrantToken
 import software.aws.toolkits.jetbrains.core.credentials.sso.DiskCache
+import software.aws.toolkits.jetbrains.core.credentials.sso.PendingAuthorization
 import software.aws.toolkits.jetbrains.core.credentials.sso.SsoAccessTokenProvider
 import java.time.Duration
 import java.time.Instant
@@ -90,7 +91,7 @@ interface BearerTokenProvider : SdkTokenProvider, SdkAutoCloseable, ToolkitBeare
 class InteractiveBearerTokenProvider(
     startUrl: String,
     region: String,
-    scopes: List<String>,
+    val scopes: List<String>,
     id: String,
     cache: DiskCache = diskCache
 ) : BearerTokenProvider, BearerTokenLogoutSupport, Disposable {
@@ -109,6 +110,9 @@ class InteractiveBearerTokenProvider(
 
     private val supplier = CachedSupplier.builder { refreshToken() }.prefetchStrategy(NonBlocking("AWS SSO bearer token refresher")).build()
     private val lastToken = AtomicReference<AccessToken?>()
+    val pendingAuthorization: PendingAuthorization?
+        get() = accessTokenProvider.authorization
+
     init {
         lastToken.set(accessTokenProvider.loadAccessToken())
 
@@ -118,6 +122,14 @@ class InteractiveBearerTokenProvider(
                 override fun invalidate(providerId: String) {
                     if (id == providerId) {
                         invalidate()
+                    }
+                }
+
+                override fun onChange(providerId: String, newScopes: List<String>?) {
+                    newScopes?.let {
+                        if (id == providerId && it.toSet() != scopes.toSet()) {
+                            invalidate()
+                        }
                     }
                 }
             }

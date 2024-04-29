@@ -103,6 +103,11 @@ class CodeCatalystCredentialManager {
         val closed = computeOnEdt {
             requestCredentialsForCodeCatalyst(project)
         }
+
+        if (closed == null) {
+            return@runUnderProgressIfNeeded null
+        }
+
         if (closed) {
             connection()?.let {
                 return@runUnderProgressIfNeeded provider(it)

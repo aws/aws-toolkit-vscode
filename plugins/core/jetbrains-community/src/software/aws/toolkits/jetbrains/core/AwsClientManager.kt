@@ -51,8 +51,7 @@ open class AwsClientManager : ToolkitClientManager(), Disposable {
         busConnection.subscribe(
             BearerTokenProviderListener.TOPIC,
             object : BearerTokenProviderListener {
-                override fun onChange(providerId: String) {
-                    // otherwise we potentially cache the provider with the wrong token
+                override fun onChange(providerId: String, newScopes: List<String>?) {
                     invalidateSdks(providerId)
                 }
 
@@ -97,7 +96,7 @@ open class AwsClientManager : ToolkitClientManager(), Disposable {
         private val platformName = tryOrNull { ApplicationNamesInfo.getInstance().fullProductNameWithEdition.replace(' ', '-') }
         private val platformVersion = tryOrNull { ApplicationInfoEx.getInstanceEx().fullVersion.replace(' ', '-') }
 
-        val CUSTOMIZER_EP = ExtensionPointName<ToolkitClientCustomizer>("aws.toolkit.sdk.clientCustomizer")
+        val CUSTOMIZER_EP = ExtensionPointName<ToolkitClientCustomizer>("aws.toolkit.core.sdk.clientCustomizer")
     }
 }
 

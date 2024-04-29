@@ -20,7 +20,6 @@ import org.cef.handler.CefLoadHandlerAdapter
 import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
 import software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindow
 import software.aws.toolkits.jetbrains.services.amazonq.webview.theme.EditorThemeAdapter
-import software.aws.toolkits.jetbrains.services.codewhisperer.learn.LearnCodeWhispererEditorProvider
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.UiTelemetry
 import java.util.Base64
@@ -58,10 +57,6 @@ class QGettingStartedContent(val project: Project) : Disposable {
         val handler = Function<String, JBCefJSQuery.Response> {
             val command = jacksonObjectMapper().readTree(it).get("command").asText()
             when (command) {
-                "goToHelp" -> {
-                    UiTelemetry.click(project, "amazonq_tryExamples")
-                    LearnCodeWhispererEditorProvider.openEditor(project)
-                }
                 "sendToQ" -> {
                     UiTelemetry.click(project, "amazonq_meet_askq")
                     AmazonQToolWindow.getStarted(project)
@@ -217,18 +212,6 @@ class QGettingStartedContent(val project: Project) : Disposable {
                     <div id="buttonContainer">
                         <button id="sendToQButton">${message("q.onboarding.button.text")}</button>
                     </div>
-                    <!-- spacing -->
-                    <div class="spacingrow"> </div>
-                    <div class="spacingrow"> </div>
-                    <!-- end spacing -->
-                    <div id="codewhisperer">
-                        <div id="imageContainer">
-                            <img id="codewhispererLogo"/>
-                        </div>
-                        <div id="textWrapper">
-                            <p>${message("q.onboarding.codewhisperer.description")}<br><a id="goToHelpLink">Try examples</a></p>
-                        </div>
-                    </div>
                 </div>
             </div>
             <script>
@@ -239,11 +222,8 @@ class QGettingStartedContent(val project: Project) : Disposable {
                      }
                 };
                     const sendToQ = () => { window.ideApi.postMessage({ command: "sendToQ" }) }
-                    const goToHelp = () => { window.ideApi.postMessage({ command: "goToHelp" }) }
                     const sendToQButton = document.getElementById('sendToQButton')
                     sendToQButton.onclick = sendToQ
-                    const goToHelpLink = document.getElementById('goToHelpLink')
-                    goToHelpLink.onclick = goToHelp
                 }())
             </script>
         </body>

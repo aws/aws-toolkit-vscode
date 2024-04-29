@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.service
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.application.runReadAction
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -17,6 +18,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.apache.commons.collections4.queue.CircularFifoQueue
+import software.aws.toolkits.jetbrains.core.coroutines.EDT
 import software.aws.toolkits.jetbrains.core.coroutines.applicationCoroutineScope
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererUnknownLanguage
@@ -33,6 +35,7 @@ import kotlin.math.exp
 
 data class ClassifierResult(val shouldTrigger: Boolean, val calculatedResult: Double = 0.0)
 
+@Service
 class CodeWhispererAutoTriggerService : CodeWhispererAutoTriggerHandler, Disposable {
     private val alarm = AlarmFactory.getInstance().create(Alarm.ThreadToUse.POOLED_THREAD, this)
     private val previousUserTriggerDecisions = CircularFifoQueue<CodewhispererPreviousSuggestionState>(5)
@@ -111,7 +114,7 @@ class CodeWhispererAutoTriggerService : CodeWhispererAutoTriggerHandler, Disposa
             }
 
             else -> run {
-                coroutineScope.launch {
+                coroutineScope.launch(EDT) {
                     performAutomatedTriggerAction(editor, triggerType, latencyContext)
                 }
             }

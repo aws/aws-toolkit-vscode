@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.core.credentials.profiles
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.service
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.AsyncFileListener
 import com.intellij.openapi.vfs.LocalFileSystem
@@ -19,14 +18,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import java.nio.file.Paths
 
-interface ProfileWatcher {
-    fun addListener(listener: () -> Unit)
-    fun forceRefresh() {}
-
-    companion object {
-        fun getInstance() = service<ProfileWatcher>()
-    }
-}
+typealias ProfileWatcher = migration.software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileWatcher
 
 class DefaultProfileWatcher : AsyncFileListener, Disposable, ProfileWatcher {
     private val listeners = ContainerUtil.createLockFreeCopyOnWriteList<() -> Unit>()

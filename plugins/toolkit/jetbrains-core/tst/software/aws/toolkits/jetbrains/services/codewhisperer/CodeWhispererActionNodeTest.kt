@@ -25,6 +25,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.Cod
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.OpenCodeReferenceNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.RunCodeScanNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow.CodeWhispererCodeReferenceManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 
 class CodeWhispererActionNodeTest {
     @JvmField
@@ -90,6 +91,6 @@ class CodeWhispererActionNodeTest {
 
         sut.onDoubleClick(mock())
 
-        verify(codeScanManager).runCodeScan()
+        verify(codeScanManager).runCodeScan(CodeWhispererConstants.CodeAnalysisScope.PROJECT)
     }
 }

@@ -11,6 +11,7 @@ const val SONO_URL = "https://view.awsapps.com/start"
 
 const val IDENTITY_CENTER_ROLE_ACCESS_SCOPE = "sso:account:access"
 
+@Deprecated("pending removal, merge into Q_SCOPES")
 val CODEWHISPERER_SCOPES = listOf(
     "codewhisperer:completions",
     "codewhisperer:analysis",
@@ -19,7 +20,9 @@ val CODEWHISPERER_SCOPES = listOf(
 val Q_SCOPES = listOf(
     "codewhisperer:conversations",
     "codewhisperer:transformations",
-    "codewhisperer:taskassist"
+    "codewhisperer:taskassist",
+    "codewhisperer:completions",
+    "codewhisperer:analysis",
 )
 
 val CODECATALYST_SCOPES = listOf(

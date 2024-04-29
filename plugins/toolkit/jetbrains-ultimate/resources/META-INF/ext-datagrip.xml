@@ -11,7 +11,7 @@
         <connectionInterceptor implementation="software.aws.toolkits.jetbrains.services.redshift.auth.IamAuth"/>
         <connectionInterceptor implementation="software.aws.toolkits.jetbrains.datagrip.auth.SecretsManagerAuth"/>
     </extensions>
-    <extensions defaultExtensionNs="aws.toolkit.codewhisperer">
+    <extensions defaultExtensionNs="amazon.q.codewhisperer">
         <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererSql"/>
     </extensions>
     <actions>

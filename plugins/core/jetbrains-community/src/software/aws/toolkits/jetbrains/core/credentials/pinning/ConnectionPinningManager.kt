@@ -8,16 +8,15 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
-import com.intellij.openapi.components.service
 import com.intellij.openapi.extensions.ExtensionPointName
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
-import software.aws.toolkits.jetbrains.utils.notifyInfo
-import software.aws.toolkits.resources.message
 import java.util.concurrent.ConcurrentHashMap
+
+typealias ConnectionPinningManager = migration.software.aws.toolkits.jetbrains.core.credentials.pinning.ConnectionPinningManager
 
 interface FeatureWithPinnedConnection {
     val featureId: String
@@ -26,19 +25,7 @@ interface FeatureWithPinnedConnection {
     fun supportsConnectionType(connection: ToolkitConnection): Boolean
 
     companion object {
-        val EP_NAME = ExtensionPointName<FeatureWithPinnedConnection>("aws.toolkit.connection.pinned.feature")
-    }
-}
-
-interface ConnectionPinningManager {
-    fun isFeaturePinned(feature: FeatureWithPinnedConnection): Boolean
-    fun getPinnedConnection(feature: FeatureWithPinnedConnection): ToolkitConnection?
-    fun setPinnedConnection(feature: FeatureWithPinnedConnection, newConnection: ToolkitConnection?)
-
-    fun pinFeatures(oldConnection: ToolkitConnection?, newConnection: ToolkitConnection, features: List<FeatureWithPinnedConnection>)
-
-    companion object {
-        fun getInstance(): ConnectionPinningManager = service()
+        val EP_NAME = ExtensionPointName<FeatureWithPinnedConnection>("aws.toolkit.core.connection.pinned.feature")
     }
 }
 
@@ -103,16 +90,12 @@ class DefaultConnectionPinningManager :
         }
 
         val pinConnections = { featuresToPin: List<FeatureWithPinnedConnection>, connectionToPin: ToolkitConnection ->
-            val featuresString = if (featuresToPin.size == 1) {
-                featuresToPin.first().featureName
-            } else {
-                "${featuresToPin.dropLast(1).joinToString(",") { it.featureName }} and ${featuresToPin.last().featureName}"
-            }
-
             featuresToPin.forEach {
                 setPinnedConnection(it, connectionToPin)
             }
-            notifyInfo(message("credentials.switch.notification.title", featuresString, connectionToPin.label))
+
+            // TODO: don't know if we still want to keep this for CodeCatalyst
+//            notifyInfo(message("credentials.switch.notification.title", featuresString, connectionToPin.label))
         }
 
         if (newConnectionFeatures.isNotEmpty()) {

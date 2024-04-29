@@ -18,7 +18,8 @@ fun getTransformationProgressStepsByTransformationStepId(
     transformationPlan: TransformationPlan?
 ): BuildProgressTimelineStepDetailsList<BuildProgressTimelineStepDetailItem> {
     val stepList = BuildProgressTimelineStepDetailsList<BuildProgressTimelineStepDetailItem>()
-    val transformationStep = transformationPlan?.transformationSteps()?.get(stepId - 1)
+    // skip step 0 (contains supplemental info)
+    val transformationStep = transformationPlan?.transformationSteps()?.drop(1)?.get(stepId - 1)
     transformationStep?.progressUpdates()?.let { progressUpdates ->
         for (progressStep in progressUpdates) {
             if (progressStep != null) {

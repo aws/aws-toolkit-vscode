@@ -3,9 +3,12 @@
 
 package software.aws.toolkits.jetbrains.core.explorer
 
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.ActionToolbar
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.BaseState
@@ -20,7 +23,7 @@ import com.intellij.ui.components.JBTabbedPane
 import com.intellij.util.ui.components.BorderLayoutPanel
 import software.aws.toolkits.jetbrains.core.credentials.CredsComboBoxActionGroup
 import software.aws.toolkits.jetbrains.core.explorer.cwqTab.CodewhispererQToolWindow
-import software.aws.toolkits.jetbrains.core.explorer.cwqTab.CwQTreeStructure
+import software.aws.toolkits.jetbrains.core.explorer.cwqTab.isQInstalled
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsToolWindow
 import software.aws.toolkits.resources.message
 import java.awt.Component
@@ -35,13 +38,24 @@ class AwsToolkitExplorerToolWindow(
 ) : SimpleToolWindowPanel(true, true), PersistentStateComponent<AwsToolkitExplorerToolWindowState> {
     private val tabPane = JBTabbedPane()
 
-    private val tabComponents = buildMap<String, () -> Component> {
-        if (CwQTreeStructure.EP_NAME.hasAnyExtensions()) {
-            put(CODEWHISPERER_Q_TAB_ID, { CodewhispererQToolWindow.getInstance(project) })
+    // TODO: Should we persist dismissed state as == don't show again?
+    val amazonQTabDismissAction = object : AnAction(
+        message("codewhisperer.explorer.node.dismiss"),
+        null,
+        AllIcons.Windows.CloseActive
+    ) {
+        override fun actionPerformed(e: AnActionEvent) {
+            val project = e.project ?: return
+            tabPane.remove(CodewhispererQToolWindow.getInstance(project))
         }
+    }
 
+    private val tabComponents = buildMap<String, () -> Component> {
         put(EXPLORER_TAB_ID, { ExplorerToolWindow.getInstance(project) })
         put(DEVTOOLS_TAB_ID, { DevToolsToolWindow.getInstance(project) })
+        if (!isQInstalled()) {
+            put(Q_TAB_ID, { CodewhispererQToolWindow.getInstance(project) })
+        }
     }
 
     init {
@@ -125,13 +139,13 @@ class AwsToolkitExplorerToolWindow(
     }
 
     override fun loadState(state: AwsToolkitExplorerToolWindowState) {
-        selectTab(CODEWHISPERER_Q_TAB_ID)
+        selectTab(Q_TAB_ID)
     }
 
     companion object {
         val EXPLORER_TAB_ID = message("explorer.toolwindow.title")
         val DEVTOOLS_TAB_ID = message("aws.developer.tools.tab.title")
-        val CODEWHISPERER_Q_TAB_ID = message("aws.codewhispererq.tab.title")
+        val Q_TAB_ID = message("aws.codewhispererq.tab.title")
 
         fun getInstance(project: Project) = project.service<AwsToolkitExplorerToolWindow>()
 

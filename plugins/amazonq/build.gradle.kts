@@ -1,32 +1,33 @@
 // Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+import software.aws.toolkits.gradle.changelog.tasks.GeneratePluginChangeLog
 import software.aws.toolkits.gradle.intellij.IdeFlavor
 import software.aws.toolkits.gradle.intellij.IdeVersions
 
 plugins {
-    id("org.jetbrains.intellij")
+    id("toolkit-publishing-conventions")
+    id("toolkit-patch-plugin-xml-conventions")
 }
 
-val ideProfile = IdeVersions.ideProfile(project)
+val changelog = tasks.register<GeneratePluginChangeLog>("pluginChangeLog") {
+    includeUnreleased.set(true)
+    changeLogFile.set(project.file("$buildDir/changelog/change-notes.xml"))
+}
 
-val toolkitVersion: String by project
-val publishToken: String by project
-val publishChannel: String by project
-
-version = "$toolkitVersion-${ideProfile.shortName}"
+tasks.jar {
+    dependsOn(changelog)
+    from(changelog) {
+        into("META-INF")
+    }
+}
 
 intellij {
-    version.set(ideProfile.community.version())
-    localPath.set(ideProfile.community.localPath())
     plugins.set(
         listOf(
             project(":plugin-core")
         )
     )
-
-    updateSinceUntilBuild.set(false)
-    instrumentCode.set(false)
 }
 
 dependencies {
@@ -35,15 +36,6 @@ dependencies {
     implementation(project(":plugin-amazonq:codewhisperer"))
     implementation(project(":plugin-amazonq:mynah-ui"))
     implementation(project(":plugin-amazonq:shared"))
-}
-
-configurations {
-    // Make sure we exclude stuff we either A) ships with IDE, B) we don't use to cut down on size
-    runtimeClasspath {
-        exclude(group = "org.slf4j")
-        exclude(group = "org.jetbrains.kotlin")
-        exclude(group = "org.jetbrains.kotlinx")
-    }
 }
 
 val moduleOnlyJar = tasks.create<Jar>("moduleOnlyJar") {
@@ -60,4 +52,16 @@ val moduleOnlyJars by configurations.creating {
 
 artifacts {
     add("moduleOnlyJars", moduleOnlyJar)
+}
+
+tasks.check {
+    val serviceSubdirs = project(":plugin-amazonq").subprojects
+    serviceSubdirs.forEach { serviceSubDir ->
+        val subDirs = serviceSubDir.subprojects
+        subDirs.forEach { insideService->
+            dependsOn(":plugin-amazonq:${serviceSubDir.name}:${insideService.name}:check")
+        }
+
+    }
+
 }

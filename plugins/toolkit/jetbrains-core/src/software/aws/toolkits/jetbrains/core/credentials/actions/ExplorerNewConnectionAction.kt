@@ -7,7 +7,12 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.DumbAwareAction
+import software.aws.toolkits.jetbrains.core.explorer.showWebview
+import software.aws.toolkits.jetbrains.core.explorer.webview.ToolkitWebviewPanel
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel
+import software.aws.toolkits.jetbrains.core.gettingstarted.shouldShowNonWebviewUI
+import software.aws.toolkits.jetbrains.core.webview.BrowserState
+import software.aws.toolkits.telemetry.FeatureId
 import software.aws.toolkits.telemetry.UiTelemetry
 
 class ExplorerNewConnectionAction : DumbAwareAction(AllIcons.General.Add) {
@@ -16,7 +21,12 @@ class ExplorerNewConnectionAction : DumbAwareAction(AllIcons.General.Add) {
     override fun actionPerformed(e: AnActionEvent) {
         e.project?.let {
             runInEdt {
-                GettingStartedPanel.openPanel(it)
+                if (shouldShowNonWebviewUI()) {
+                    GettingStartedPanel.openPanel(it)
+                } else {
+                    ToolkitWebviewPanel.getInstance(it).browser?.prepareBrowser(BrowserState(FeatureId.AwsExplorer, true))
+                    showWebview(it)
+                }
                 UiTelemetry.click(it, "devtools_connectToAws")
             }
         }

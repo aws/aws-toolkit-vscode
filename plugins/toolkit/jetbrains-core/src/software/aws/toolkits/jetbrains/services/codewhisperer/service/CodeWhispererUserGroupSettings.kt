@@ -4,11 +4,14 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.service
 
 import com.intellij.openapi.components.PersistentStateComponent
+import com.intellij.openapi.components.RoamingType
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
 import org.jetbrains.annotations.VisibleForTesting
 import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.jetbrains.AwsPlugin
 import software.aws.toolkits.jetbrains.AwsToolkit
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
@@ -16,7 +19,8 @@ import kotlin.reflect.KClass
 /**
  * Component controlling codewhisperer user group settings
  */
-@State(name = "codewhispererUserGroupSettings", storages = [Storage("aws.xml")])
+@Service
+@State(name = "codewhispererUserGroupSettings", storages = [Storage("aws.xml", roamingType = RoamingType.DISABLED)])
 class CodeWhispererUserGroupSettings : PersistentStateComponent<CodeWhispererUserGroupStates> {
     private var version: String? = null
 
@@ -57,7 +61,7 @@ class CodeWhispererUserGroupSettings : PersistentStateComponent<CodeWhispererUse
     }
 
     fun getUserGroup(): CodeWhispererUserGroup {
-        if (version != AwsToolkit.PLUGIN_VERSION) {
+        if (version != AwsToolkit.PLUGINS_INFO[AwsPlugin.TOOLKIT]?.version) {
             resetGroupSettings()
         }
 
@@ -65,7 +69,7 @@ class CodeWhispererUserGroupSettings : PersistentStateComponent<CodeWhispererUse
     }
 
     fun isExpThreshold(): Boolean {
-        if (version != AwsToolkit.PLUGIN_VERSION) {
+        if (version != AwsToolkit.PLUGINS_INFO[AwsPlugin.TOOLKIT]?.version) {
             resetGroupSettings()
         }
 
@@ -81,7 +85,7 @@ class CodeWhispererUserGroupSettings : PersistentStateComponent<CodeWhispererUse
         val group = CodeWhispererUserGroup.Control
 
         settings[USER_GROUP_KEY] = group.name
-        version = AwsToolkit.PLUGIN_VERSION
+        version = AwsToolkit.PLUGINS_INFO[AwsPlugin.TOOLKIT]?.version
 
         return group
     }
@@ -95,7 +99,7 @@ class CodeWhispererUserGroupSettings : PersistentStateComponent<CodeWhispererUse
         }
 
         settings[EXP_THRESHOLD_KEY] = group.name
-        version = AwsToolkit.PLUGIN_VERSION
+        version = AwsToolkit.PLUGINS_INFO[AwsPlugin.TOOLKIT]?.version
 
         return group
     }

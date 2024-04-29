@@ -9,7 +9,7 @@ detekt = "1.23.6"
 intellijGradle = "1.17.3"
 intellijRemoteRobot = "0.11.22"
 jackson = "2.16.1"
-jacoco = "0.8.11"
+jacoco = "0.8.12"
 jgit = "6.5.0.202303070854-r"
 junit4 = "4.13.2"
 junit5 = "5.10.2"
@@ -87,6 +87,7 @@ junit4 = { module = "junit:junit", version.ref = "junit4" }
 junit5-bom = { module = "org.junit:junit-bom", version.ref = "junit5" }
 junit5-jupiterApi = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit5" }
 junit5-jupiterEngine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit5" }
+junit5-jupiterParams = { module = "org.junit.jupiter:junit-jupiter-params", version.ref = "junit5" }
 junit5-jupiterVintage = { module = "org.junit.vintage:junit-vintage-engine", version.ref = "junit5" }
 kotlin-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinCoroutines" }
 kotlin-coroutinesDebug = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-debug", version.ref = "kotlinCoroutines" }

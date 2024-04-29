@@ -31,7 +31,7 @@ class LearnCodeWhispererEditor(val project: Project, val virtualFile: VirtualFil
             panel {
                 customize(Gaps(20, 50, 0, 0))
                 row {
-                    icon(AwsIcons.Logos.CODEWHISPERER_LARGE)
+                    icon(AwsIcons.Logos.AWS_Q_GRADIENT)
 
                     panel {
                         title(message("codewhisperer.learn_page.header.title"))
@@ -49,7 +49,7 @@ class LearnCodeWhispererEditor(val project: Project, val virtualFile: VirtualFil
                 customize(Gaps(0, 50, 0, 0))
                 align(AlignY.TOP)
 
-                title(message("codewhisperer.learn_page.examples.title")).bottomGap(BottomGap.MEDIUM)
+                subtitle(message("codewhisperer.learn_page.examples.title")).bottomGap(BottomGap.MEDIUM)
                 row {
                     cell(tryExamplePanel(project)).widthGroup(FIRST_COLUMN_WIDTH_GROUP)
                 }.bottomGap(BottomGap.MEDIUM)
@@ -97,6 +97,10 @@ class LearnCodeWhispererEditor(val project: Project, val virtualFile: VirtualFil
 
     private fun Panel.title(text: String) = row {
         label(text).bold().applyToComponent { font = font.deriveFont(24f) }
+    }
+
+    private fun Panel.subtitle(text: String) = row {
+        label(text).bold().applyToComponent { font = font.deriveFont(18f) }
     }
 
     companion object {

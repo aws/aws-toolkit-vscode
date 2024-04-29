@@ -7,6 +7,7 @@ import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.sono.CODEWHISPERER_SCOPES
 
+@Deprecated("pending removal, merge into QConnection & QSCOPES")
 class CodeWhispererConnection : FeatureWithPinnedConnection {
     override val featureId = "aws.codewhisperer"
     override val featureName = "CodeWhisperer"

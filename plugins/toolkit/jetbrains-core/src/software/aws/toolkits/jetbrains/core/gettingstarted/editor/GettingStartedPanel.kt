@@ -92,7 +92,7 @@ class GettingStartedPanel(
         ApplicationManager.getApplication().messageBus.connect(this).subscribe(
             BearerTokenProviderListener.TOPIC,
             object : BearerTokenProviderListener {
-                override fun onChange(providerId: String) {
+                override fun onChange(providerId: String, newScopes: List<String>?) {
                     connectionUpdated()
                 }
             }
@@ -546,9 +546,11 @@ class GettingStartedPanel(
             }
         }
 
-        private fun handleCodeCatalystLogin(authResult: Boolean, revertToPanel: Panel) {
-            handleLogin(authResult)
-            if (authResult) {
+        private fun handleCodeCatalystLogin(authResult: Boolean?, revertToPanel: Panel) {
+            val r = authResult ?: return
+
+            handleLogin(r)
+            if (r) {
                 controlPanelVisibility(panelConnectionInProgress, panelConnected)
 
                 val tooltip = GotItTooltip(
@@ -612,7 +614,7 @@ class GettingStartedPanel(
                                     )
                                     handleLogin(loginSuccess)
 
-                                    if (loginSuccess) {
+                                    if (loginSuccess == true) {
                                         val tooltip = GotItTooltip(
                                             "$GOT_IT_ID_PREFIX.explorer",
                                             message("gettingstarted.explorer.gotit.explorer.body"),
@@ -707,7 +709,7 @@ class GettingStartedPanel(
                                     )
                                     handleLogin(loginSuccess)
 
-                                    if (loginSuccess) {
+                                    if (loginSuccess == true) {
                                         controlPanelVisibility(panelConnectionInProgress, panelConnected)
                                         val tooltip = GotItTooltip(
                                             "$GOT_IT_ID_PREFIX.explorer",
@@ -1043,7 +1045,7 @@ class GettingStartedPanel(
                     .withHeader(message("codewhisperer.explorer.tooltip.title"))
                     .withPosition(Balloon.Position.above)
 
-                showGotIt(AwsToolkitExplorerToolWindow.CODEWHISPERER_Q_TAB_ID, message("action.q.openchat.text"), tooltip)
+                showGotIt(AwsToolkitExplorerToolWindow.Q_TAB_ID, message("action.q.openchat.text"), tooltip)
             } else {
                 controlPanelVisibility(panelConnectionInProgress, revertToPanel)
             }
@@ -1117,8 +1119,9 @@ class GettingStartedPanel(
         abstract val loginSuccessTitle: String
         abstract val loginSuccessBody: String
 
-        protected fun handleLogin(authResult: Boolean) {
-            if (authResult) {
+        protected fun handleLogin(authResult: Boolean?) {
+            val r = authResult ?: return
+            if (r) {
                 infoBanner.setSuccessMessage(loginSuccessTitle, loginSuccessBody)
             }
         }

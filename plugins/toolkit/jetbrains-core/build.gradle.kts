@@ -1,6 +1,10 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+import com.jetbrains.plugin.structure.base.utils.inputStream
+import com.jetbrains.plugin.structure.base.utils.simpleName
+import com.jetbrains.plugin.structure.intellij.utils.JDOMUtil
+import org.jetbrains.intellij.transformXml
 import software.aws.toolkits.gradle.buildMetadata
 import software.aws.toolkits.gradle.changelog.tasks.GeneratePluginChangeLog
 import software.aws.toolkits.gradle.intellij.IdeFlavor
@@ -46,6 +50,27 @@ val gatewayPluginXml = tasks.create<org.jetbrains.intellij.tasks.PatchPluginXmlT
 
     val buildSuffix = if (!project.isCi()) "+${buildMetadata()}" else ""
     version.set("GW-$toolkitVersion-${ideProfile.shortName}$buildSuffix")
+
+    // jetbrains expects gateway plugin to be dynamic
+    doLast {
+        pluginXmlFiles.get()
+            .map(File::toPath)
+            .forEach { p ->
+                val path = destinationDir.get()
+                    .asFile.toPath().toAbsolutePath()
+                    .resolve(p.simpleName)
+
+                val document = path.inputStream().use { inputStream ->
+                    JDOMUtil.loadDocument(inputStream)
+                }
+
+                document.rootElement
+                    .getAttribute("require-restart")
+                    .setValue("false")
+
+                transformXml(document, path)
+            }
+    }
 }
 
 val gatewayArtifacts by configurations.creating {
@@ -53,6 +78,12 @@ val gatewayArtifacts by configurations.creating {
     isCanBeResolved = false
     // share same dependencies as default configuration
     extendsFrom(configurations["implementation"], configurations["runtimeOnly"])
+}
+
+val jarNoPluginXmlArtifacts by configurations.creating {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+    // only consumed without transitive depen
 }
 
 val gatewayJar = tasks.create<Jar>("gatewayJar") {
@@ -79,8 +110,22 @@ val gatewayJar = tasks.create<Jar>("gatewayJar") {
     }
 }
 
+val jarNoPluginXml = tasks.create<Jar>("jarNoPluginXml") {
+    duplicatesStrategy = DuplicatesStrategy.WARN
+
+    dependsOn(tasks.instrumentedJar)
+
+    archiveBaseName.set("aws-toolkit-jetbrains-IC-noPluginXml")
+    from(tasks.instrumentedJar.get().outputs.files.map { zipTree(it) }) {
+        exclude("**/plugin.xml")
+        exclude("**/plugin-intellij.xml")
+        exclude("**/inactive")
+    }
+}
+
 artifacts {
     add("gatewayArtifacts", gatewayJar)
+    add("jarNoPluginXmlArtifacts", jarNoPluginXml)
 }
 
 tasks.prepareSandbox {
@@ -136,6 +181,7 @@ dependencies {
     compileOnlyApi(project(":plugin-toolkit:core"))
     compileOnlyApi(project(":plugin-core:jetbrains-community"))
 
+    // TODO: remove Q dependency when split is fully done
     implementation(project(":plugin-amazonq:mynah-ui"))
     implementation(libs.bundles.jackson)
     implementation(libs.zjsonpatch)

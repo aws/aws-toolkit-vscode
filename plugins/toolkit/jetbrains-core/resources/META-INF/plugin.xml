@@ -1,9 +1,9 @@
 <!-- Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-<idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude" require-restart="false">
+<idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude" require-restart="true">
     <id>aws.toolkit</id>
-    <name>AWS Toolkit - Amazon Q, CodeWhisperer, and more</name>
+    <name>AWS Toolkit</name>
     <version>1.0</version>
 
     <!-- delete when fully split -->
@@ -12,46 +12,8 @@
     </xi:include>
 
     <description><![CDATA[
-<h3><a href="https://aws.amazon.com/q">Amazon Q (preview)</a></h3>
-<p>Amazon Q is an interactive, generative AI-powered assistant that gives you expert guidance when building, troubleshooting, and transforming applications on AWS.</p>
-
-<p>Amazon Q can help you with the following:</p>
-<ul>
-    <li>
-        Answer questions about AWS
-    </li>
-    <li>
-        Answer questions about general programming concepts
-    </li>
-    <li>
-        Explain what a line of code or code function does
-    </li>
-    <li>
-        Write unit tests and code
-    </li>
-    <li>
-        Debug and fix code
-    </li>
-    <li>
-        Refactor code
-    </li>
-</ul>
-<img src="https://raw.githubusercontent.com/aws/aws-toolkit-jetbrains/main/marketplaceGifs/amazonQ.gif"></img>
-
-<h3><a href="https://aws.amazon.com/codewhisperer/">Amazon CodeWhisperer</a></h3>
-<p>An AI powered productivity tool for the IDE.</p>
-
-<ul>
-    <li>
-        <b>Real-time code suggestions</b> - automatic code recommendations in 15+ languages, now including infrastructure as code (CloudFormation, AWS CDK, and Terraform)
-    </li>
-    <li>
-        <b>Optimized for use with AWS services</b> - code suggestions are optimized for AWS APIs including Amazon Elastic Compute Cloud (Amazon EC2), AWS Lambda, and Amazon Simple Storage Service (Amazon S3)
-    </li>
-    <li>
-        <b>Built-in security scans</b> - Scan your code to detect hard-to-find vulnerabilities and get code suggestions to remediate them immediately
-    </li>
-</ul>
+<h3><a href="https://aws.amazon.com/q">Amazon Q and CodeWhisperer</a></h3>
+<p>CodeWhisperer is now part of Amazon Q. <a href="https://plugins.jetbrains.com/plugin/24267-amazon-q/">Try the Amazon Q extension.</a></p>
 
 <h3><a href="https://codecatalyst.aws/explore">Amazon CodeCatalyst</a></h3>
 <p>Unified software development service to quickly build and deliver applications on AWS.</p>
@@ -88,6 +50,9 @@
         See the <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/">user guide</a> for a full list of services and features supported
     </li>
 </ul>
+
+<h3>Getting started</h3>
+<img src="https://raw.githubusercontent.com/aws/aws-toolkit-jetbrains/main/marketplaceGifs/JB-auth-Toolkit.gif"></img>
 
 <h3>About</h3>
 <p>
@@ -213,7 +178,6 @@
         <extensionPoint name="tool" interface="software.aws.toolkits.jetbrains.core.tools.ToolType" dynamic="true"/>
         <extensionPoint name="devTools.serviceNode" interface="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.DevToolsServiceNode" dynamic="true"/>
         <extensionPoint name="devTools.treeStructure" interface="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsTreeStructureProvider" dynamic="true"/>
-        <extensionPoint name="cwq.rootNode" interface="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CwQRootNodeProvider" dynamic="true"/>
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -239,8 +203,9 @@
         <statusBarWidgetFactory id="AwsSettingsPanel" implementation="software.aws.toolkits.jetbrains.core.credentials.AwsSettingsPanelInstaller"/>
         <statusBarWidgetFactory id="CawsSpaceProjectInfo" implementation="software.aws.toolkits.jetbrains.services.caws.CawsStatusBarInstaller"/>
 
-        <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsTelemetryPrompter"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.executables.ExecutableLoader"/>
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.startup.QMigrationActivity"/>
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.startup.ToolWindowStartupActivity"/>
 
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.executables.ExecutableManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.executables.DefaultExecutableManager"/>
@@ -248,8 +213,6 @@
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.tools.ToolManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.tools.DefaultToolManager"
                             testServiceImplementation="software.aws.toolkits.jetbrains.core.tools.MockToolManager"/>
-
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.plugins.ToolkitUpdateManager"/>
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSupportedTypes"/>
@@ -265,6 +228,7 @@
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsToolWindow"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.AwsToolkitExplorerToolWindow"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CodewhispererQToolWindow"/>
 
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialsFileHelpNotificationProvider"/>
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceFileActionProvider"/>
@@ -286,39 +250,25 @@
 
         <!-- plugin configurables -->
         <applicationConfigurable
-            id="aws"
-            groupId="tools"
+            parentId="aws"
+            id="aws.toolkit"
             bundle="software.aws.toolkits.resources.MessagesBundle"
-            key="aws.settings.title"
-            instance="software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable"
+            key="aws.settings.toolkit.configurable.title"
+            instance="software.aws.toolkits.jetbrains.settings.ToolkitSettingsConfigurable"
         />
         <projectConfigurable
-            parentId="aws"
+            parentId="aws.toolkit"
             id="aws.lambda"
             bundle="software.aws.toolkits.resources.MessagesBundle"
             key="aws.settings.lambda.configurable.title"
             instance="software.aws.toolkits.jetbrains.services.lambda.settings.LambdaSettingsConfigurable"
         />
         <applicationConfigurable
-            parentId="aws"
+            parentId="aws.toolkit"
             id="aws.dynamicresources"
             bundle="software.aws.toolkits.resources.MessagesBundle"
             key="aws.settings.dynamic_resources_configurable.title"
             instance="software.aws.toolkits.jetbrains.settings.DynamicResourcesConfigurable"
-        />
-        <applicationConfigurable
-            parentId="aws"
-            id="aws.experiments"
-            bundle="software.aws.toolkits.resources.MessagesBundle"
-            key="aws.toolkit.experimental.title"
-            instance="software.aws.toolkits.jetbrains.core.experiments.ExperimentConfigurable"
-        />
-        <applicationConfigurable
-            parentId="aws"
-            id="aws.tools"
-            bundle="software.aws.toolkits.resources.MessagesBundle"
-            key="executableCommon.configurable.title"
-            instance="software.aws.toolkits.jetbrains.core.tools.ToolConfigurable"
         />
 
         <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamInvokeRunner"/>
@@ -690,6 +640,9 @@
 
         <action id="aws.toolkit.connection.pinning.unpin"
                 class="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.actions.UnpinConnectionAction"/>
+
+        <action id="aws.toolkit.cwQRootNode.installQ"
+                class="software.aws.toolkits.jetbrains.core.explorer.actions.InstallAmazonQAction"/>
 
     </actions>
 

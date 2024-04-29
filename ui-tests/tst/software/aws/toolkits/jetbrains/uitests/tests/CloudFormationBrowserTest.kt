@@ -8,6 +8,7 @@ import com.intellij.remoterobot.stepsProcessing.step
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
@@ -26,6 +27,7 @@ import java.nio.file.Paths
 import java.time.Duration
 import java.util.UUID
 
+@Disabled("Needs to be moved to accomodate plugin split")
 @TestInstance(Lifecycle.PER_CLASS)
 class CloudFormationBrowserTest {
     private val templateFileName = "SQSQueue.yml"

@@ -30,6 +30,6 @@ class CodeWhispererWhatIsAction :
     }
 
     override fun actionPerformed(e: AnActionEvent) {
-        BrowserUtil.browse(URI(CodeWhispererConstants.CODEWHISPERER_LEARN_MORE_URI))
+        BrowserUtil.browse(URI(CodeWhispererConstants.Q_MARKETPLACE_URI))
     }
 }

@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.util
 
 import software.amazon.awssdk.services.codewhisperer.model.ArtifactType
+import software.amazon.awssdk.services.codewhisperer.model.CodeAnalysisUploadContext
 import software.amazon.awssdk.services.codewhisperer.model.CodeScanFindingsSchema
 import software.amazon.awssdk.services.codewhisperer.model.CodeScanStatus
 import software.amazon.awssdk.services.codewhisperer.model.CodeWhispererResponseMetadata
@@ -15,6 +16,9 @@ import software.amazon.awssdk.services.codewhisperer.model.GetCodeScanResponse
 import software.amazon.awssdk.services.codewhisperer.model.ListCodeScanFindingsRequest
 import software.amazon.awssdk.services.codewhisperer.model.ListCodeScanFindingsResponse
 import software.amazon.awssdk.services.codewhisperer.model.ProgrammingLanguage
+import software.amazon.awssdk.services.codewhisperer.model.TaskAssistPlanningUploadContext
+import software.amazon.awssdk.services.codewhisperer.model.TransformationUploadContext
+import software.amazon.awssdk.services.codewhisperer.model.UploadContext
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.GetCodeAnalysisRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.GetCodeAnalysisResponse
@@ -37,6 +41,29 @@ private fun CodeScanFindingsSchema.transform(): software.amazon.awssdk.services.
         this.toString().replace("scan", "analysis")
     )
 
+private fun UploadContext.transform(): software.amazon.awssdk.services.codewhispererruntime.model.UploadContext =
+    software.amazon.awssdk.services.codewhispererruntime.model.UploadContext.builder()
+        .taskAssistPlanningUploadContext(this.taskAssistPlanningUploadContext().transform())
+        .transformationUploadContext(this.transformationUploadContext().transform())
+        .codeAnalysisUploadContext(this.codeAnalysisUploadContext().transform())
+        .build()
+
+private fun TaskAssistPlanningUploadContext.transform(): software.amazon.awssdk.services.codewhispererruntime.model.TaskAssistPlanningUploadContext =
+    software.amazon.awssdk.services.codewhispererruntime.model.TaskAssistPlanningUploadContext.builder()
+        .conversationId(this.conversationId())
+        .build()
+
+private fun TransformationUploadContext.transform(): software.amazon.awssdk.services.codewhispererruntime.model.TransformationUploadContext =
+    software.amazon.awssdk.services.codewhispererruntime.model.TransformationUploadContext.builder()
+        .jobId(this.jobId())
+        .uploadArtifactType(this.uploadArtifactTypeAsString())
+        .build()
+
+private fun CodeAnalysisUploadContext.transform(): software.amazon.awssdk.services.codewhispererruntime.model.CodeAnalysisUploadContext =
+    software.amazon.awssdk.services.codewhispererruntime.model.CodeAnalysisUploadContext.builder()
+        .codeScanName(this.codeScanName())
+        .build()
+
 private fun software.amazon.awssdk.services.codewhispererruntime.model.CodeAnalysisStatus.transform(): CodeScanStatus =
     CodeScanStatus.fromValue(this.toString())
 
@@ -44,6 +71,8 @@ fun CreateCodeScanUploadUrlRequest.transform(): CreateUploadUrlRequest =
     CreateUploadUrlRequest.builder()
         .contentMd5(this.contentMd5())
         .artifactType(this.artifactType().transform())
+        .uploadIntent(this.uploadIntent().toString())
+        .uploadContext(this.uploadContext().transform())
         .build()
 
 fun CreateCodeScanRequest.transform(): StartCodeAnalysisRequest =
@@ -51,6 +80,8 @@ fun CreateCodeScanRequest.transform(): StartCodeAnalysisRequest =
         .artifacts(this.artifacts().entries.map { it.key.transform() to it.value }.toMap())
         .programmingLanguage(this.programmingLanguage().transform())
         .clientToken(this.clientToken())
+        .scope(this.scopeAsString())
+        .codeScanName(this.codeScanName())
         .build()
 
 fun StartCodeAnalysisResponse.transform(): CreateCodeScanResponse =

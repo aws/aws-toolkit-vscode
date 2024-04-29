@@ -11,6 +11,10 @@ import com.intellij.openapi.editor.impl.EditorImpl
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import software.amazon.awssdk.services.codewhispererruntime.model.Completion
 import software.amazon.awssdk.services.codewhispererruntime.model.OptOutPreference
@@ -23,23 +27,14 @@ import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererCon
 import software.aws.toolkits.jetbrains.core.credentials.reauthConnectionIfNeeded
 import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
-import software.aws.toolkits.jetbrains.core.explorer.refreshCwQTree
-import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererLoginLearnMoreAction
-import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererSsoLearnMoreAction
-import software.aws.toolkits.jetbrains.services.codewhisperer.actions.ConnectWithAwsToContinueActionError
-import software.aws.toolkits.jetbrains.services.codewhisperer.actions.ConnectWithAwsToContinueActionWarn
-import software.aws.toolkits.jetbrains.services.codewhisperer.actions.DoNotShowAgainActionError
-import software.aws.toolkits.jetbrains.services.codewhisperer.actions.DoNotShowAgainActionWarn
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererExpired
 import software.aws.toolkits.jetbrains.services.codewhisperer.learn.LearnCodeWhispererManager.Companion.taskTypeToFilename
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.Chunk
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.isTelemetryEnabled
 import software.aws.toolkits.jetbrains.settings.AwsSettings
+import software.aws.toolkits.jetbrains.utils.isQExpired
 import software.aws.toolkits.jetbrains.utils.notifyError
-import software.aws.toolkits.jetbrains.utils.notifyInfo
-import software.aws.toolkits.jetbrains.utils.notifyWarn
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
 import software.aws.toolkits.telemetry.CodewhispererGettingStartedTask
@@ -153,14 +148,6 @@ object CodeWhispererUtil {
         }
     }
 
-    fun notifyWarnCodeWhispererUsageLimit(project: Project? = null) {
-        notifyWarn(
-            message("codewhisperer.notification.usage_limit.warn.title"),
-            message("codewhisperer.notification.usage_limit.codesuggestion.warn.content"),
-            project,
-        )
-    }
-
     fun notifyErrorCodeWhispererUsageLimit(project: Project? = null, isCodeScan: Boolean = false) {
         notifyError(
             "",
@@ -173,30 +160,6 @@ object CodeWhispererUtil {
         )
     }
 
-    // show when user login with Accountless
-    fun notifyWarnAccountless() = notifyWarn(
-        "",
-        message("codewhisperer.notification.accountless.warn.message"),
-        null,
-        listOf(CodeWhispererSsoLearnMoreAction(), ConnectWithAwsToContinueActionWarn(), DoNotShowAgainActionWarn())
-    )
-
-    // show after user selects Don't Show Again in Accountless login message
-    fun notifyInfoAccountless() = notifyInfo(
-        "",
-        message("codewhisperer.notification.accountless.info.dont.show.again.message"),
-        null,
-        listOf(CodeWhispererLoginLearnMoreAction())
-    )
-
-    // show when user login with Accountless and Accountless is not supported by CW
-    fun notifyErrorAccountless() = notifyError(
-        "",
-        message("codewhisperer.notification.accountless.error.message"),
-        null,
-        listOf(CodeWhispererSsoLearnMoreAction(), ConnectWithAwsToContinueActionError(), DoNotShowAgainActionError())
-    )
-
     // This will be called only when there's a CW connection, but it has expired(either accessToken or refreshToken)
     // 1. If connection is expired, try to refresh
     // 2. If not able to refresh, requesting re-login by showing a notification
@@ -206,11 +169,10 @@ object CodeWhispererUtil {
     //   for example, when user performs security scan or fetch code completion for the first time
     // Return true if need to re-auth, false otherwise
     fun promptReAuth(project: Project, isPluginStarting: Boolean = false): Boolean {
-        if (!isCodeWhispererExpired(project)) return false
+        if (!isQExpired(project)) return false
         val tokenProvider = tokenProvider(project) ?: return false
         return maybeReauthProviderIfNeeded(project, tokenProvider) {
             runInEdt {
-                project.refreshCwQTree()
                 if (!CodeWhispererService.hasReAuthPromptBeenShown()) {
                     notifyConnectionExpiredRequestReauth(project)
                 }
@@ -230,13 +192,11 @@ object CodeWhispererUtil {
             message("toolkit.sso_expire.dialog_message"),
             project,
             listOf(
-                NotificationAction.create(message("toolkit.sso_expire.dialog.yes_button")) { _, notification ->
+                NotificationAction.createSimpleExpiring(message("toolkit.sso_expire.dialog.yes_button")) {
                     reconnectCodeWhisperer(project)
-                    notification.expire()
                 },
-                NotificationAction.create(message("toolkit.sso_expire.dialog.no_button")) { _, notification ->
+                NotificationAction.createSimpleExpiring(message("toolkit.sso_expire.dialog.no_button")) {
                     CodeWhispererExplorerActionManager.getInstance().setConnectionExpiredDoNotShowAgain(true)
-                    notification.expire()
                 }
             )
         )
@@ -290,6 +250,21 @@ object CodeWhispererUtil {
         } else {
             OptOutPreference.OPTOUT
         }
+
+    fun <T> debounce(
+        waitMs: Long = 300L,
+        coroutineScope: CoroutineScope,
+        destinationFunction: (T) -> Unit
+    ): (T) -> Unit {
+        var debounceJob: Job? = null
+        return { param: T ->
+            debounceJob?.cancel()
+            debounceJob = coroutineScope.launch {
+                delay(waitMs)
+                destinationFunction(param)
+            }
+        }
+    }
 }
 
 enum class CaretMovement {

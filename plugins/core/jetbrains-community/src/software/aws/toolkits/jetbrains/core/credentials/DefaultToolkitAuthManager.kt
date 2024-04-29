@@ -16,13 +16,17 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileSsoSessionIdentifier
+import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
+import java.util.Collections
+
+typealias ToolkitAuthManager = migration.software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
 
 // TODO: unify with CredentialManager
 @State(name = "authManager", storages = [Storage("aws.xml")])
 class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<ToolkitAuthManagerState>, Disposable {
     private var state = ToolkitAuthManagerState()
-    private val connections = linkedSetOf<ToolkitConnection>()
+    private val connections = Collections.synchronizedSet(linkedSetOf<ToolkitConnection>())
     private val transientConnections = let {
         val factoryConnections = mutableListOf<ToolkitConnection>()
         ToolkitStartupAuthFactory.EP_NAME.forEachExtensionSafe { factory ->
@@ -84,7 +88,16 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
     override fun tryCreateTransientSsoConnection(profile: AuthProfile, callback: (AwsBearerTokenConnection) -> Unit): AwsBearerTokenConnection {
         val connection = (connectionFromProfile(profile) as AwsBearerTokenConnection).also {
             callback(it)
-            transientConnections.add(it)
+
+            if (profile is ManagedSsoProfile) {
+                disposeStaleConnections(it)
+
+                connections.add(it)
+            } else {
+                disposeStaleConnections(it)
+
+                transientConnections.add(it)
+            }
         }
 
         return connection
@@ -129,13 +142,46 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
         return connection
     }
 
+    private fun disposeStaleConnections(newConnection: AwsBearerTokenConnection) {
+        connections.removeAll { existOldConn ->
+            (existOldConn.id == newConnection.id).also { isDuplicate ->
+                if (isDuplicate && existOldConn is Disposable) {
+                    ApplicationManager.getApplication().messageBus.syncPublisher(BearerTokenProviderListener.TOPIC)
+                        .onChange(existOldConn.id, newConnection.scopes)
+                    Disposer.dispose(existOldConn)
+                }
+            }
+        }
+
+        transientConnections.removeAll { existOldConn ->
+            (existOldConn.id == newConnection.id).also { isDuplicate ->
+                if (isDuplicate && existOldConn is Disposable) {
+                    ApplicationManager.getApplication().messageBus.syncPublisher(BearerTokenProviderListener.TOPIC)
+                        .onChange(existOldConn.id, newConnection.scopes)
+                    Disposer.dispose(existOldConn)
+                }
+            }
+        }
+    }
+
     private fun deleteConnection(predicate: (ToolkitConnection) -> Boolean) {
         val deleted = mutableListOf<ToolkitConnection>()
         connections.removeAll { connection ->
             predicate(connection).also {
-                deleted.add(connection)
+                if (it) {
+                    deleted.add(connection)
+                }
             }
         }
+
+        transientConnections.removeAll { connection ->
+            predicate(connection).also {
+                if (it) {
+                    deleted.add(connection)
+                }
+            }
+        }
+
         for (connection in deleted) {
             if (connection is Disposable) {
                 disposeAndNotify(connection)
@@ -158,6 +204,7 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
     }
 
     override fun getConnection(connectionId: String) = listConnections().firstOrNull { it.id == connectionId }
+    override fun getLastLoginIdcInfo(): LastLoginIdcInfo = state.lastLoginIdcInfo.copy()
 
     override fun getState(): ToolkitAuthManagerState? {
         val data = connections.mapNotNull {
@@ -206,6 +253,9 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
 
     private fun connectionFromProfile(profile: AuthProfile): ToolkitConnection = when (profile) {
         is ManagedSsoProfile -> {
+            if (profile.startUrl != SONO_URL) {
+                state.lastLoginIdcInfo = LastLoginIdcInfo("", profile.startUrl, profile.ssoRegion)
+            }
             LegacyManagedBearerSsoConnection(
                 startUrl = profile.startUrl,
                 region = profile.ssoRegion,
@@ -214,6 +264,9 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
         }
 
         is UserConfigSsoSessionProfile -> {
+            if (profile.startUrl != SONO_URL) {
+                state.lastLoginIdcInfo = LastLoginIdcInfo(profile.configSessionName, profile.startUrl, profile.ssoRegion)
+            }
             ProfileSsoManagedBearerSsoConnection(
                 startUrl = profile.startUrl,
                 region = profile.ssoRegion,
@@ -223,12 +276,17 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
             )
         }
 
-        is DetectedDiskSsoSessionProfile -> DetectedDiskSsoSessionConnection(
-            sessionName = profile.profileName,
-            startUrl = profile.startUrl,
-            region = profile.ssoRegion,
-            scopes = profile.scopes
-        )
+        is DetectedDiskSsoSessionProfile -> {
+            if (profile.startUrl != SONO_URL) {
+                state.lastLoginIdcInfo = LastLoginIdcInfo(profile.profileName, profile.startUrl, profile.ssoRegion)
+            }
+            DetectedDiskSsoSessionConnection(
+                sessionName = profile.profileName,
+                startUrl = profile.startUrl,
+                region = profile.ssoRegion,
+                scopes = profile.scopes
+            )
+        }
     }
 
     companion object {
@@ -238,5 +296,12 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
 
 data class ToolkitAuthManagerState(
     // TODO: can't figure out how to make deserializer work with polymorphic types
-    var ssoProfiles: List<ManagedSsoProfile> = emptyList()
+    var ssoProfiles: List<ManagedSsoProfile> = emptyList(),
+    var lastLoginIdcInfo: LastLoginIdcInfo = LastLoginIdcInfo()
+)
+
+data class LastLoginIdcInfo(
+    var profileName: String = "",
+    var startUrl: String = "",
+    var region: String = ""
 )

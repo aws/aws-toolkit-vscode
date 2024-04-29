@@ -13,20 +13,17 @@ import software.aws.toolkits.gradle.findFolders
 import software.aws.toolkits.gradle.intellij.IdeFlavor
 import software.aws.toolkits.gradle.intellij.IdeVersions
 import software.aws.toolkits.gradle.intellij.ToolkitIntelliJExtension
+import software.aws.toolkits.gradle.intellij.toolkitIntelliJ
 import software.aws.toolkits.gradle.isCi
 
-val toolkitIntelliJ = project.extensions.create<ToolkitIntelliJExtension>("intellijToolkit")
-
 val ideProfile = IdeVersions.ideProfile(project)
-val toolkitVersion: String by project
-
-// please check changelog generation logic if this format is changed
-version = "$toolkitVersion-${ideProfile.shortName}"
 
 plugins {
+    id("toolkit-intellij-plugin")
     id("toolkit-kotlin-conventions")
     id("toolkit-testing")
     id("org.jetbrains.intellij")
+    id("toolkit-patch-plugin-xml-conventions")
 }
 
 // TODO: https://github.com/gradle/gradle/issues/15383
@@ -102,23 +99,6 @@ intellij {
 tasks.jar {
     // :plugin-toolkit:jetbrains-community results in: --plugin-toolkit-jetbrains-community-IC-<version>.jar
     archiveBaseName.set(toolkitIntelliJ.ideFlavor.map { "${project.buildTreePath.replace(':', '-')}-$it" })
-}
-
-tasks.withType<PatchPluginXmlTask>().all {
-    sinceBuild.set(toolkitIntelliJ.ideProfile().map { it.sinceVersion })
-    untilBuild.set(toolkitIntelliJ.ideProfile().map { it.untilVersion })
-}
-
-// attach the current commit hash on local builds
-if (!project.isCi()){
-    val buildMetadata = buildMetadata()
-    tasks.withType<PatchPluginXmlTask>().all {
-        version.set("${project.version}+$buildMetadata")
-    }
-
-    tasks.buildPlugin {
-        archiveClassifier.set(buildMetadata)
-    }
 }
 
 // Disable building the settings search cache since it 1. fails the build, 2. gets run on the final packaged plugin

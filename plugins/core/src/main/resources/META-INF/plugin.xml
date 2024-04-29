@@ -1,18 +1,22 @@
 <!-- Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-<idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude">
+<idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude" require-restart="true">
     <id>aws.toolkit.core</id>
+    <name>AWS Core</name>
+    <description><![CDATA[
+<p>This plugin is required to use the <a href="https://plugins.jetbrains.com/plugin/24267-amazon-q/>Amazon Q</a> or <a href="https://plugins.jetbrains.com/plugin/11349-aws-toolkit--amazon-q-codewhisperer-and-more">AWS Toolkit</a> plugins. It will be automatically installed if you install either plugin.</p>
+    ]]></description>
     <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://github.com/aws/aws-toolkit-jetbrains">AWS</vendor>
     <version>1.0</version>
-    <idea-version since-build="231" />
+    <idea-version since-build="232" />
     <depends>com.intellij.modules.platform</depends>
 
     <xi:include href="/META-INF/module-core.xml" />
 
     <extensions defaultExtensionNs="com.intellij">
         <!-- each plugin needs its own instance of these -->
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.coroutines.PluginCoroutineScopeTracker"/>
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.coroutines.PluginCoroutineScopeTracker"/>
+        <applicationService serviceImplementation="migration.software.aws.toolkits.jetbrains.core.coroutines.PluginCoroutineScopeTracker"/>
+        <projectService serviceImplementation="migration.software.aws.toolkits.jetbrains.core.coroutines.PluginCoroutineScopeTracker"/>
     </extensions>
 </idea-plugin>

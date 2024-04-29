@@ -21,10 +21,8 @@ dependencies {
 
     // delete when fully split
     compileOnlyApi(project(":plugin-toolkit:jetbrains-core"))
-    runtimeOnly(project(":plugin-toolkit:jetbrains-core")) {
-        // dont pull in any of the SDKs / other nonsense needed at runtime because it's provided by :plugin-core
-        isTransitive = false
-    }
+    runtimeOnly(project(":plugin-toolkit:jetbrains-core", "jarNoPluginXmlArtifacts"))
+
     // CodeWhispererTelemetryService uses a CircularFifoQueue
     implementation(libs.commons.collections)
 }

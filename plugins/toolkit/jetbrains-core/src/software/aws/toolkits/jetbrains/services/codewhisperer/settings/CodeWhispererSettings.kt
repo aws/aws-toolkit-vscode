@@ -1,16 +1,19 @@
-// Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.settings
 
 import com.intellij.openapi.components.BaseState
 import com.intellij.openapi.components.PersistentStateComponent
+import com.intellij.openapi.components.RoamingType
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
 import com.intellij.util.xmlb.annotations.Property
 
-@State(name = "codewhispererSettings", storages = [Storage("aws.xml")])
+@Service
+@State(name = "codewhispererSettings", storages = [Storage("aws.xml", roamingType = RoamingType.DISABLED)])
 class CodeWhispererSettings : PersistentStateComponent<CodeWhispererConfiguration> {
     private val state = CodeWhispererConfiguration()
 
@@ -61,5 +64,8 @@ class CodeWhispererConfiguration : BaseState() {
 enum class CodeWhispererConfigurationType {
     IsIncludeCodeWithReference,
     OptInSendingMetric,
-    IsImportAdderEnabled
+    IsImportAdderEnabled,
+    IsAutoUpdateEnabled,
+    IsAutoUpdateNotificationEnabled,
+    IsAutoUpdateFeatureNotificationShownOnce
 }

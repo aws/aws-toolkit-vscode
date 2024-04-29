@@ -7,10 +7,6 @@
     <xi:include href="/META-INF/plugin-codewhisperer.xml" />
 
     <extensions defaultExtensionNs="com.intellij">
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CodewhispererQToolWindow"/>
-    </extensions>
-
-    <extensions defaultExtensionNs="aws.toolkit">
-        <cwq.rootNode implementation="software.aws.toolkits.jetbrains.core.explorer.cwqTab.CwQRootNodeProviderImpl"/>
+        <applicationService serviceImplementation="migration.software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager"/>
     </extensions>
 </idea-plugin>

@@ -8,9 +8,12 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefBrowserBuilder
+import com.intellij.ui.jcef.JBCefClient
 
 fun createBrowser(parent: Disposable): JBCefBrowserBase {
-    val client = JBCefApp.getInstance().createClient()
+    val client = JBCefApp.getInstance().createClient().apply {
+        setProperty(JBCefClient.Properties.JS_QUERY_POOL_SIZE, 5)
+    }
 
     Disposer.register(parent, client)
 

@@ -147,9 +147,29 @@
                 "BuiltJars"
             ]
         },
+        "CodeAnalysisScope":{
+            "type":"string",
+            "enum":[
+                "FILE",
+                "PROJECT"
+            ]
+        },
+        "CodeAnalysisUploadContext": {
+            "type": "structure",
+            "required": ["codeScanName"],
+            "members": {
+                "codeScanName": { "shape": "CodeScanName" }
+            }
+        },
         "CodeScanFindingsSchema":{
             "type":"string",
             "enum":["codescan/findings/1.0"]
+        },
+        "CodeScanName":{
+            "type": "string",
+            "documentation": "<p>Code analysis scan name</p>",
+            "max":128,
+            "min":1
         },
         "CodeScanStatus":{
             "type":"string",
@@ -167,6 +187,15 @@
             },
             "exception":true
         },
+        "ContentChecksumType":{
+            "type":"string",
+            "enum":["SHA_256"]
+        },
+        "ConversationId":{
+            "type":"string",
+            "max":128,
+            "min":1
+        },
         "CreateCodeScanRequest":{
             "type":"structure",
             "required":[
@@ -179,7 +208,9 @@
                 "clientToken":{
                     "shape":"CreateCodeScanRequestClientTokenString",
                     "idempotencyToken":true
-                }
+                },
+                "scope":{"shape": "CodeAnalysisScope"},
+                "codeScanName": {"shape":  "CodeScanName"}
             }
         },
         "CreateCodeScanRequestClientTokenString":{
@@ -209,12 +240,28 @@
             "required":["contentMd5"],
             "members":{
                 "contentMd5":{"shape":"CreateUploadUrlRequestContentMd5String"},
-                "artifactType":{"shape":"ArtifactType"}
+                "contentChecksum":{"shape":"CreateUploadUrlRequestContentChecksumString"},
+                "artifactType":{"shape":"ArtifactType"},
+                "contentChecksumType":{"shape":"ContentChecksumType"},
+                "contentLength":{"shape":"CreateUploadUrlRequestContentLengthLong"},
+                "uploadIntent":{"shape":"UploadIntent"},
+                "uploadContext":{"shape":"UploadContext"}
             }
+        },
+        "CreateUploadUrlRequestContentChecksumString":{
+            "type":"string",
+            "max":512,
+            "min":1,
+            "sensitive":true
         },
         "CreateUploadUrlRequestContentMd5String":{
             "type":"string",
             "max":128,
+            "min":1
+        },
+        "CreateUploadUrlRequestContentLengthLong":{
+            "type":"long",
+            "box":true,
             "min":1
         },
         "CreateUploadUrlResponse":{
@@ -226,7 +273,8 @@
             "members":{
                 "uploadId":{"shape":"UploadId"},
                 "uploadUrl":{"shape":"PreSignedUrl"},
-                "kmsKeyArn":{"shape":"ResourceArn"}
+                "kmsKeyArn":{"shape":"ResourceArn"},
+                "requestHeaders":{"shape":"RequestHeaders"}
             }
         },
         "FileContext":{
@@ -510,6 +558,23 @@
             "max":10,
             "min":0
         },
+        "RequestHeaderKey": {
+            "type":"string",
+            "max":64,
+            "min":1
+        },
+        "RequestHeaders": {
+            "type":"map",
+            "key":{"shape":"RequestHeaderKey"},
+            "value":{"shape":"RequestHeaderValue"},
+            "max":16,
+            "min":1
+        },
+        "RequestHeaderValue": {
+            "type": "string",
+            "max": 256,
+            "min": 1
+        },
         "ResourceArn":{
             "type":"string",
             "max":1224,
@@ -558,10 +623,52 @@
             "exception":true,
             "retryable":{"throttling":false}
         },
+        "TaskAssistPlanningUploadContext": {
+            "type": "structure",
+            "required": ["conversationId"],
+            "members": {
+                "conversationId": { "shape": "ConversationId" }
+            }
+        },
+        "TransformationUploadArtifactType": {
+            "type": "string",
+            "enum": ["Dependencies"]
+        },
+        "TransformationJobId":{
+            "type":"string",
+            "max":128,
+            "min":1
+        },
+        "TransformationUploadContext": {
+            "type": "structure",
+            "required": ["jobId", "uploadArtifactType"],
+            "members": {
+                "jobId": { "shape": "TransformationJobId" },
+                "uploadArtifactType": { "shape": "TransformationUploadArtifactType" }
+            }
+        },
+        "UploadContext":{
+            "type":"structure",
+            "members":{
+                "taskAssistPlanningUploadContext": {"shape": "TaskAssistPlanningUploadContext"},
+                "transformationUploadContext": {"shape": "TransformationUploadContext"},
+                "codeAnalysisUploadContext": {"shape": "CodeAnalysisUploadContext"}
+            },
+            "union":true
+        },
         "UploadId":{
             "type":"string",
             "max":128,
             "min":1
+        },
+        "UploadIntent":{
+            "type":"string",
+            "enum":[
+                "TRANSFORMATION",
+                "TASK_ASSIST_PLANNING",
+                "AUTOMATIC_FILE_SECURITY_SCAN",
+                "FULL_PROJECT_SECURITY_SCAN"
+            ]
         },
         "ValidationException":{
             "type":"structure",

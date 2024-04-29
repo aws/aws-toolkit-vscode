@@ -46,6 +46,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.AwsPlugin
 import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
@@ -206,7 +207,7 @@ class CawsConnectionProvider : GatewayConnectionProvider {
                                     )
                             }
 
-                            val pluginPath = "$IDE_BACKEND_DIR/plugins/${AwsToolkit.pluginPath().fileName}"
+                            val pluginPath = "$IDE_BACKEND_DIR/plugins/${AwsToolkit.PLUGINS_INFO.getValue(AwsPlugin.TOOLKIT).path?.fileName}"
                             var retries = 3
                             val startTimeToCheckInstallation = System.currentTimeMillis()
 

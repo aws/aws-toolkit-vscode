@@ -19,7 +19,7 @@ class WhatIsCodeWhispererNode(nodeProject: Project) : CodeWhispererActionNode(
     AllIcons.Actions.Help
 ) {
     override fun onDoubleClick(event: MouseEvent) {
-        BrowserUtil.browse(URI(CodeWhispererConstants.CODEWHISPERER_LEARN_MORE_URI))
+        BrowserUtil.browse(URI(CodeWhispererConstants.Q_MARKETPLACE_URI))
         UiTelemetry.click(project, "cw_learnMore_Cta")
     }
 }

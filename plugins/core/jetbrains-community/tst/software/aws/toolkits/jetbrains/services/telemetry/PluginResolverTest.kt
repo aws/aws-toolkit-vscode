@@ -31,7 +31,7 @@ class PluginResolverTest {
     @Test
     fun getsProductForAmazonQPlugin() {
         val pluginDescriptor = mockk<IdeaPluginDescriptor> {
-            every { name } returns "amazon.q"
+            every { pluginId.idString } returns "amazon.q"
         }
         every { PluginManagerCore.getPluginDescriptorOrPlatformByClassName(any()) } returns pluginDescriptor
 
@@ -43,7 +43,7 @@ class PluginResolverTest {
     @Test
     fun getsToolkitProductByDefault() {
         val pluginDescriptor = mockk<IdeaPluginDescriptor> {
-            every { name } returns "amazon.foo"
+            every { pluginId.idString } returns "amazon.foo"
         }
         every { PluginManagerCore.getPluginDescriptorOrPlatformByClassName(any()) } returns pluginDescriptor
 
@@ -86,7 +86,7 @@ class PluginResolverTest {
         )
 
         val pluginDescriptor = mockk<IdeaPluginDescriptor> {
-            every { name } returns "amazon.q"
+            every { pluginId.idString } returns "amazon.q"
             every { version } returns "1.2.3"
         }
         val pluginResolver = PluginResolver.fromStackTrace(mockStackTrace)

@@ -14,6 +14,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.codemodernizer.TransformationSummary
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.unzipFile
+import java.io.File
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.Path
 import kotlin.io.path.isDirectory
@@ -26,7 +27,8 @@ open class CodeModernizerArtifact(
     val zipPath: String,
     val manifest: CodeModernizerManifest,
     private val patches: List<VirtualFile>,
-    val summary: TransformationSummary
+    val summary: TransformationSummary,
+    val summaryMarkdownFile: File,
 ) {
     val patch: VirtualFile
         get() = patches.first()
@@ -57,8 +59,9 @@ open class CodeModernizerArtifact(
                 }
                 val patches = extractPatches(manifest)
                 val summary = extractSummary(manifest)
+                val summaryMarkdownFile = getSummaryFile(manifest)
                 if (patches.size != 1) throw RuntimeException("Expected 1 patch, but found ${patches.size}")
-                return CodeModernizerArtifact(zipPath, manifest, patches, summary)
+                return CodeModernizerArtifact(zipPath, manifest, patches, summary, summaryMarkdownFile)
             }
             throw RuntimeException("Could not find artifact")
         }
@@ -71,18 +74,21 @@ open class CodeModernizerArtifact(
             return TransformationSummary(summaryFile.readText())
         }
 
+        private fun getSummaryFile(manifest: CodeModernizerManifest) = tempDir.toPath().resolve(manifest.summaryRoot).resolve(summaryNameInZip).toFile()
+
         /**
          * Attempts to load the manifest from the zip file. Throws an exception if the manifest is not found or cannot be serialized.
          */
         private fun loadManifest(): CodeModernizerManifest {
-            val manifestFile = tempDir.listFiles()
-                ?.firstOrNull { Path(it.name).endsWith(manifestPathInZip) }
-                ?: throw RuntimeException("Could not find manifest")
+            val manifestFile =
+                tempDir.listFiles()
+                    ?.firstOrNull { it.name.endsWith(manifestPathInZip) }
+                    ?: throw RuntimeException("Could not find manifest")
             try {
                 val manifest = MAPPER.readValue(manifestFile, CodeModernizerManifest::class.java)
-                if (manifest.version == 0.0F || manifest.patchesRoot == null || manifest.summaryRoot == null) {
+                if (manifest.version == 0.0F) {
                     throw RuntimeException(
-                        "Unable to deserialize the manifest"
+                        "Unable to deserialize the manifest",
                     )
                 }
                 return manifest

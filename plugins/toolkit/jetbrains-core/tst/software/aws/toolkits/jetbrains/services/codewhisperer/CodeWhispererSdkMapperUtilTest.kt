@@ -22,6 +22,7 @@ import software.amazon.awssdk.services.codewhispererruntime.model.StartCodeAnaly
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.metadata
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.sdkHttpResponse
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.transform
+import java.util.UUID
 
 class CodeWhispererSdkMapperUtilTest {
     // TODO: revisit these test cases since if we miss one field, they don't capture
@@ -32,6 +33,8 @@ class CodeWhispererSdkMapperUtilTest {
             .programmingLanguage { it.languageName("python") }
             .artifacts(mapOf(ArtifactType.SOURCE_CODE to "1", ArtifactType.BUILT_JARS to "2"))
             .clientToken("token")
+            .scope("PROJECT")
+            .codeScanName(UUID.randomUUID().toString().replace("-", "").take(16))
             .build()
 
         val actual = expected.transform()

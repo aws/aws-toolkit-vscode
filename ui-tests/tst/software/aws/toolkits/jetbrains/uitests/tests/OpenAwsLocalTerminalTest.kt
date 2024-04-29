@@ -21,6 +21,7 @@ import software.aws.toolkits.resources.message
 import java.nio.file.Path
 import java.util.function.Predicate
 
+@Disabled("Needs to be moved to accomodate plugin split")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class OpenAwsLocalTerminalTest {
 

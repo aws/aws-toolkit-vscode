@@ -33,6 +33,8 @@ object AwsIcons {
         @JvmField val AWS_Q = load("/icons/logos/AWS_Q.svg") // 13x13
 
         @JvmField val AWS_Q_GRADIENT = load("/icons/logos/Amazon-Q-Icon_Gradient_Large.svg") // 54x54
+
+        @JvmField val AWS_Q_GRADIENT_SMALL = load("/icons/logos/Amazon-Q-Icon_Gradient_Medium.svg") // 54x54
     }
 
     object Misc {
@@ -143,6 +145,30 @@ object AwsIcons {
         @JvmField val CHECKMARK_GRAY = load("/icons/resources/codetransform/checkmark.svg")
 
         @JvmField val TIMELINE_STEP = load("/icons/resources/codetransform/transform-timeline-step-done.svg") // 16 * 16
+
+        @JvmField val PLAN_VARIABLES_LIGHT = load("/icons/resources/codetransform/transform-variables-light.svg")
+
+        @JvmField val PLAN_VARIABLES_DARK = load("/icons/resources/codetransform/transform-variables-dark.svg")
+
+        @JvmField val PLAN_STEP_INTO_LIGHT = load("/icons/resources/codetransform/transform-step-into-light.svg")
+
+        @JvmField val PLAN_STEP_INTO_DARK = load("/icons/resources/codetransform/transform-step-into-dark.svg")
+
+        @JvmField val PLAN_DEPENDENCIES_LIGHT = load("/icons/resources/codetransform/transform-dependencies-light.svg")
+
+        @JvmField val PLAN_DEPENDENCIES_DARK = load("/icons/resources/codetransform/transform-dependencies-dark.svg")
+
+        @JvmField val PLAN_FILE_LIGHT = load("/icons/resources/codetransform/transform-file-light.svg")
+
+        @JvmField val PLAN_FILE_DARK = load("/icons/resources/codetransform/transform-file-dark.svg")
+
+        @JvmField val PLAN_ARROW_LIGHT = load("/icons/resources/codetransform/transform-arrow-light.svg")
+
+        @JvmField val PLAN_ARROW_DARK = load("/icons/resources/codetransform/transform-arrow-dark.svg")
+
+        @JvmField val PLAN_DEFAULT_LIGHT = load("/icons/resources/codetransform/transform-default-light.svg")
+
+        @JvmField val PLAN_DEFAULT_DARK = load("/icons/resources/codetransform/transform-default-dark.svg")
     }
 
     private fun load(path: String): Icon = IconLoader.getIcon(path, AwsIcons::class.java)

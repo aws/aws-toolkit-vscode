@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.editor
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.util.TextRange
@@ -20,6 +21,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import java.time.Instant
 import java.util.Stack
 
+@Service
 class CodeWhispererEditorManager {
     fun updateEditorWithRecommendation(states: InvocationContext, sessionContext: SessionContext) {
         val (requestContext, responseContext, recommendationContext) = states

@@ -21,6 +21,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.listeners
 import software.aws.toolkits.jetbrains.services.codewhisperer.layout.CodeWhispererLayoutConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.layout.CodeWhispererLayoutConfig.addHorizontalGlue
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererColorUtil.INACTIVE_TEXT_COLOR
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.resources.message
 import java.awt.BorderLayout
 import java.awt.Component
@@ -118,7 +119,12 @@ internal class CodeWhispererCodeScanResultsView(private val project: Project) : 
     /**
      * Updates the [codeScanTree] with the new tree model root and displays the same on the UI.
      */
-    fun updateAndDisplayScanResults(scanTreeModel: CodeWhispererCodeScanTreeModel, scannedFiles: List<VirtualFile>, isProjectTruncated: Boolean) {
+    fun updateAndDisplayScanResults(
+        scanTreeModel: CodeWhispererCodeScanTreeModel,
+        scannedFiles: List<VirtualFile>,
+        isProjectTruncated: Boolean,
+        scope: CodeWhispererConstants.CodeAnalysisScope
+    ) {
         codeScanTree.apply {
             model = scanTreeModel
             repaint()
@@ -142,7 +148,9 @@ internal class CodeWhispererCodeScanResultsView(private val project: Project) : 
             repaint()
         }
 
-        changeInfoLabelToDisplayScanCompleted(scannedFiles.size, isProjectTruncated)
+        if (scope == CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
+            changeInfoLabelToDisplayScanCompleted(scannedFiles.size, isProjectTruncated)
+        }
     }
 
     fun setStoppingCodeScan() {

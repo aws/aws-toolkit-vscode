@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.learn
 
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
@@ -10,6 +11,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhisp
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
 import software.aws.toolkits.telemetry.CodewhispererGettingStartedTask
 
+@Service(Service.Level.PROJECT)
 class LearnCodeWhispererManager(private val project: Project) {
     // Only supporting Java at the moment
     val language: CodeWhispererProgrammingLanguage = CodeWhispererJava.INSTANCE
@@ -20,9 +22,9 @@ class LearnCodeWhispererManager(private val project: Project) {
     companion object {
         fun getInstance(project: Project) = project.service<LearnCodeWhispererManager>()
         val taskTypeToFilename = mapOf(
-            CodewhispererGettingStartedTask.AutoTrigger to "CodeWhisperer_generate_suggestion",
-            CodewhispererGettingStartedTask.ManualTrigger to "CodeWhisperer_manual_invoke",
-            CodewhispererGettingStartedTask.UnitTest to "CodeWhisperer_generate_unit_tests",
+            CodewhispererGettingStartedTask.AutoTrigger to "AmazonQ_generate_suggestion",
+            CodewhispererGettingStartedTask.ManualTrigger to "AmazonQ_manual_invoke",
+            CodewhispererGettingStartedTask.UnitTest to "AmazonQ_generate_unit_tests",
         )
     }
 }

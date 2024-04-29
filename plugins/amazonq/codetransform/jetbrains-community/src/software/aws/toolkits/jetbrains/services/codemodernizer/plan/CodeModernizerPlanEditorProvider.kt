@@ -43,7 +43,7 @@ class CodeModernizerPlanEditorProvider : FileEditorProvider, DumbAware {
                         .getInstance(project)
                         .openFileEditor(OpenFileDescriptor(project, virtualFile), true)
                 } catch (e: Exception) {
-                    LOG.debug(e) { "Getting Started page failed to open" }
+                    LOG.debug(e) { "Transformation plan failed to open" }
                 }
             }
         }

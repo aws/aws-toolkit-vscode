@@ -168,7 +168,8 @@ class BuildProgressStepDetailsPanel : JPanel(BorderLayout()) {
             model.addElement(element)
         }
         stepDetailsList.model = model
-        val stepName = transformationPlanLocal?.transformationSteps()?.get(currentStepIdRendered - 1)?.name().orEmpty()
+        // skip step 0 (contains supplemental info)
+        val stepName = transformationPlanLocal?.transformationSteps()?.drop(1)?.get(currentStepIdRendered - 1)?.name().orEmpty()
         setHeaderText("$stepName details")
         revalidate()
         repaint()

@@ -8,7 +8,6 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule
 import com.intellij.analysis.problemsView.toolWindow.ProblemsView
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.RegisterToolWindowTask
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.testFramework.ApplicationRule
@@ -41,8 +40,10 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionco
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.utils.isInstanceOf
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
+import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.nio.file.Path
 import kotlin.test.assertNotNull
 
@@ -224,9 +225,6 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
             }
         ]                
     """
-    internal fun getSourceFilesUnderProjectRoot(sessionConfigSpy: CodeScanSessionConfig, testFile: VirtualFile, size: Int) = assertThat(
-        sessionConfigSpy.getSourceFilesUnderProjectRoot(testFile).size
-    ).isEqualTo(size)
 
     internal fun getTotalProjectSizeInBytes(sessionConfigSpy: CodeScanSessionConfig, totalSize: Long) = runBlocking {
         assertThat(sessionConfigSpy.getTotalProjectSizeInBytes()).isEqualTo(totalSize)
@@ -241,21 +239,24 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
         }
     }
 
-    internal fun includeDependencies(
+    internal fun getProjectPayloadMetadata(
         sessionConfigSpy: CodeScanSessionConfig,
         includedSourceFilesSize: Long,
         totalSize: Long,
         expectedTotalLines: Long,
-        expectedBuilds: Int
+        payloadLanguage: CodewhispererLanguage
     ) {
-        val payloadMetadata = sessionConfigSpy.includeDependencies()
+        val payloadMetadata = sessionConfigSpy.getProjectPayloadMetadata()
         assertNotNull(payloadMetadata)
-        val (includedSourceFiles, srcPayloadSize, totalLines) = payloadMetadata
+        val includedSourceFiles = payloadMetadata.sourceFiles
+        val srcPayloadSize = payloadMetadata.payloadSize
+        val totalLines = payloadMetadata.linesScanned
+        val maxCountLanguage = payloadMetadata.language
         assertThat(includedSourceFiles.size).isEqualTo(includedSourceFilesSize)
         assertThat(srcPayloadSize).isEqualTo(totalSize)
         assertThat(totalLines).isEqualTo(expectedTotalLines)
         assertThat(sessionConfigSpy.isProjectTruncated()).isFalse
-        assertThat(payloadMetadata.buildPaths).hasSize(expectedBuilds)
+        assertThat(maxCountLanguage).isEqualTo(payloadLanguage)
     }
 
     internal fun assertE2ERunsSuccessfully(
@@ -266,9 +267,9 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
         expectedTotalSize: Long,
         expectedTotalIssues: Int
     ) {
-        val codeScanContext = CodeScanSessionContext(project, sessionConfigSpy)
+        val codeScanContext = CodeScanSessionContext(project, sessionConfigSpy, CodeWhispererConstants.CodeAnalysisScope.PROJECT)
         val sessionMock = spy(CodeWhispererCodeScanSession(codeScanContext))
-        doNothing().`when`(sessionMock).uploadArtifactToS3(any(), any(), any(), any(), isNull())
+        doNothing().`when`(sessionMock).uploadArtifactToS3(any(), any(), any(), any(), isNull(), any())
         doNothing().`when`(sessionMock).sleepThread()
 
         ToolWindowManager.getInstance(project).registerToolWindow(

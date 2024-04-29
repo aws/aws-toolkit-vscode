@@ -73,9 +73,10 @@ open class CawsLoginOverlay(
         ApplicationManager.getApplication().messageBus.connect(disposable).subscribe(
             BearerTokenProviderListener.TOPIC,
             object : BearerTokenProviderListener {
-                override fun onChange(providerId: String) {
+                override fun onChange(providerId: String, newScopes: List<String>?) {
                     drawContent()
                 }
+
                 override fun invalidate(providerId: String) {
                     drawContent()
                 }

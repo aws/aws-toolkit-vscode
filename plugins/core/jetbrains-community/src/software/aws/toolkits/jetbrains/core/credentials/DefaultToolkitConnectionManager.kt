@@ -9,8 +9,12 @@ import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.project.Project
+import software.aws.toolkits.core.utils.debug
+import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.pinning.ConnectionPinningManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.FeatureWithPinnedConnection
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
 
 // TODO: unify with AwsConnectionManager
@@ -29,10 +33,13 @@ class DefaultToolkitConnectionManager : ToolkitConnectionManager, PersistentStat
             }
         )
     }
+
     private val project: Project?
+
     constructor(project: Project) {
         this.project = project
     }
+
     constructor() {
         this.project = null
     }
@@ -79,6 +86,23 @@ class DefaultToolkitConnectionManager : ToolkitConnectionManager, PersistentStat
         }
     }
 
+    override fun connectionStateForFeature(feature: FeatureWithPinnedConnection): BearerTokenAuthState {
+        val conn = activeConnectionForFeature(feature) as? AwsBearerTokenConnection? ?: run {
+            getLogger<DefaultToolkitConnectionManager>().debug {
+                """
+                    isFeatureEnabled: Feature $feature is not connected
+                    ActiveConnectionForFeature=${activeConnectionForFeature(feature)}
+                """.trimIndent()
+            }
+            return BearerTokenAuthState.NOT_AUTHENTICATED
+        }
+        val provider = conn.getConnectionSettings().tokenProvider.delegate as? BearerTokenProvider ?: run {
+            getLogger<DefaultToolkitConnectionManager>().debug { "isFeatureEnabled: provider can't be cast to BearerTokenProvider" }
+            return BearerTokenAuthState.NOT_AUTHENTICATED
+        }
+        return provider.state()
+    }
+
     override fun getState() = ToolkitConnectionManagerState(
         connection?.id
     )
@@ -117,6 +141,15 @@ class DefaultToolkitConnectionManager : ToolkitConnectionManager, PersistentStat
                                     )
                             )
                     ) {
+                        featuresToPin.add(it)
+                    } else if (
+                        newConnection is AwsBearerTokenConnection &&
+                        oldConnection is AwsBearerTokenConnection &&
+                        oldConnection.id == newConnection.id &&
+                        oldConnection.scopes.all { s -> s in newConnection.scopes }
+                    ) {
+                        // TODO: ugly
+                        // scope update case
                         featuresToPin.add(it)
                     }
                 }

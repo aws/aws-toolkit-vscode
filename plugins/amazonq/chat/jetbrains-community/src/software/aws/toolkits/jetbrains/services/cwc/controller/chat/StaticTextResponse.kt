@@ -29,13 +29,13 @@ enum class StaticTextResponse(
             - What is the syntax of declaring a variable in TypeScript?
             ### Special Commands
             - /clear - Clear the conversation.
-            - /dev - Get code suggestions across files in your current project. Provide a brief prompt, such as "Implement a GET API."<strong> Only available through CodeWhisperer Professional Tier.</strong>
-            - /transform - Transform your code. Use to upgrade Java code versions. <strong>Only available through CodeWhisperer Professional Tier.</strong>
+            - /dev - Get code suggestions across files in your current project. Provide a brief prompt, such as "Implement a GET API."
+            - /transform - Transform your code. Use to upgrade Java code versions.
             - /help - View chat topics and commands.
             ### Things to note:
             - I may not always provide completely accurate or current information.
             - Provide feedback by choosing the like or dislike buttons that appear below answers.
-            - When you use Amazon Q, AWS may, for service improvement purposes, store data about your usage and content. You can opt-out of sharing this data by following the steps in AI services opt-out policies. See <a href="https://docs.aws.amazon.com/codewhisperer/latest/userguide/sharing-data.html">here</a>
+            - When you use Amazon Q, AWS may, for service improvement purposes, store data about your usage and content. You can opt-out of sharing this data by following the steps in AI services opt-out policies. See <a href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/opt-out-IDE.html">here</a>
             - Do not enter any confidential, sensitive, or personal information.
             
             *For additional help, visit the [Amazon Q User Guide](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/getting-started.html).*

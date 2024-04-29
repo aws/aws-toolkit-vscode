@@ -7,27 +7,11 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
-import com.intellij.openapi.components.service
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.AwsTelemetry
 import java.util.UUID
 import java.util.prefs.Preferences
-
-interface AwsSettings {
-    var isTelemetryEnabled: Boolean
-    var promptedForTelemetry: Boolean
-    var useDefaultCredentialRegion: UseAwsCredentialRegion
-    var profilesNotification: ProfilesNotification
-    var isAutoUpdateEnabled: Boolean
-    var isAutoUpdateNotificationEnabled: Boolean
-    var isAutoUpdateFeatureNotificationShownOnce: Boolean
-    val clientId: UUID
-
-    companion object {
-        @JvmStatic
-        fun getInstance(): AwsSettings = service()
-    }
-}
 
 enum class ProfilesNotification(private val description: String) {
     Always(message("settings.profiles.always")),
@@ -44,6 +28,8 @@ enum class UseAwsCredentialRegion(private val description: String) {
 
     override fun toString(): String = description
 }
+
+typealias AwsSettings = migration.software.aws.toolkits.jetbrains.settings.AwsSettings
 
 @State(name = "aws", storages = [Storage("aws.xml")])
 class DefaultAwsSettings : PersistentStateComponent<AwsConfiguration>, AwsSettings {
@@ -84,12 +70,20 @@ class DefaultAwsSettings : PersistentStateComponent<AwsConfiguration>, AwsSettin
     override var isAutoUpdateEnabled: Boolean
         get() = state.isAutoUpdateEnabled ?: true
         set(value) {
+            if (state.isAutoUpdateEnabled != value) {
+                val settingState = if (value) "OPTIN" else "OPTOUT"
+                AwsTelemetry.modifySetting(project = null, settingId = ID_AUTO_UPDATE, settingState = settingState)
+            }
             state.isAutoUpdateEnabled = value
         }
 
     override var isAutoUpdateNotificationEnabled: Boolean
         get() = state.isAutoUpdateNotificationEnabled ?: true
         set(value) {
+            if (isAutoUpdateNotificationEnabled != value) {
+                val settingsState = if (value) "OPTIN" else "OPTOUT"
+                AwsTelemetry.modifySetting(project = null, settingId = ID_AUTO_UPDATE_NOTIFY, settingState = settingsState)
+            }
             state.isAutoUpdateNotificationEnabled = value
         }
 
@@ -97,6 +91,12 @@ class DefaultAwsSettings : PersistentStateComponent<AwsConfiguration>, AwsSettin
         get() = state.isAutoUpdateFeatureNotificationShownOnce ?: false
         set(value) {
             state.isAutoUpdateFeatureNotificationShownOnce = value
+        }
+
+    override var isQMigrationNotificationShownOnce: Boolean
+        get() = state.isQMigrationNotificationShownOnce ?: false
+        set(value) {
+            state.isQMigrationNotificationShownOnce = value
         }
 
     override val clientId: UUID
@@ -116,6 +116,8 @@ class DefaultAwsSettings : PersistentStateComponent<AwsConfiguration>, AwsSettin
 
     companion object {
         const val CLIENT_ID_KEY = "CLIENT_ID"
+        private const val ID_AUTO_UPDATE = "autoUpdate"
+        private const val ID_AUTO_UPDATE_NOTIFY = "autoUpdateNotification"
     }
 }
 
@@ -126,5 +128,6 @@ data class AwsConfiguration(
     var profilesNotification: String? = null,
     var isAutoUpdateEnabled: Boolean? = null,
     var isAutoUpdateNotificationEnabled: Boolean? = null,
-    var isAutoUpdateFeatureNotificationShownOnce: Boolean? = null
+    var isAutoUpdateFeatureNotificationShownOnce: Boolean? = null,
+    var isQMigrationNotificationShownOnce: Boolean? = null
 )

@@ -3,8 +3,4 @@
 
 package software.aws.toolkits.core.clients
 
-import software.amazon.awssdk.http.SdkHttpClient
-
-interface SdkClientProvider {
-    fun sharedSdkClient(): SdkHttpClient
-}
+typealias SdkClientProvider = migration.software.aws.toolkits.core.clients.SdkClientProvider

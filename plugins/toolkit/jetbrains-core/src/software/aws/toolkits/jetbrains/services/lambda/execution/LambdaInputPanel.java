@@ -16,7 +16,6 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
-import com.intellij.openapi.ui.ComponentWithBrowseButton;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.openapi.util.text.StringUtil;
@@ -31,14 +30,13 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
-import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.aws.toolkits.core.lambda.LambdaSampleEvent;
 import software.aws.toolkits.core.lambda.LambdaSampleEventProvider;
-import software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider;
+import migration.software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider;
 import software.aws.toolkits.jetbrains.ui.ProjectFileBrowseListenerKt;
 
 public class LambdaInputPanel {

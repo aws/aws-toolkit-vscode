@@ -86,6 +86,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.model.TriggerTypeI
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutomatedTriggerType
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.FEATURE_EVALUATION_PRODUCT_NAME
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
@@ -394,7 +395,7 @@ class CodeWhispererClientAdaptorTest {
     @Test
     fun `sendTelemetryEvent for codeScan respects telemetry optin status`() {
         sendTelemetryEventOptOutCheckHelper {
-            sut.sendCodeScanTelemetry(aProgrammingLanguage(), null)
+            sut.sendCodeScanTelemetry(aProgrammingLanguage(), null, CodeWhispererConstants.CodeAnalysisScope.PROJECT)
         }
     }
 
@@ -444,7 +445,7 @@ class CodeWhispererClientAdaptorTest {
                 ProgrammingLanguage.builder()
                     .languageName("python")
                     .build()
-            )
+            ).scope("PROJECT")
             .build()
 
         val createUploadUrlRequest = CreateUploadUrlRequest.builder()

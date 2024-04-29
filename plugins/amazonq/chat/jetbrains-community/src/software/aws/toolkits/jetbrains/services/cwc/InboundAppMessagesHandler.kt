@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.cwc
 
 import software.aws.toolkits.jetbrains.services.amazonq.onboarding.OnboardingPageInteraction
+import software.aws.toolkits.jetbrains.services.cwc.commands.CodeScanIssueActionMessage
 import software.aws.toolkits.jetbrains.services.cwc.commands.ContextMenuActionMessage
 import software.aws.toolkits.jetbrains.services.cwc.messages.IncomingCwcMessage
 
@@ -29,6 +30,7 @@ interface InboundAppMessagesHandler {
     suspend fun processClearQuickAction(message: IncomingCwcMessage.ClearChat)
     suspend fun processHelpQuickAction(message: IncomingCwcMessage.Help)
     suspend fun processContextMenuCommand(message: ContextMenuActionMessage)
+    suspend fun processCodeScanIssueAction(message: CodeScanIssueActionMessage)
 
     suspend fun processLinkClick(message: IncomingCwcMessage.ClickedLink)
 }

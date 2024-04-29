@@ -12,6 +12,8 @@ import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanIssue
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import javax.swing.tree.TreePath
 
 internal class CodeWhispererCodeScanDocumentListener(val project: Project) : DocumentListener {
@@ -35,6 +37,10 @@ internal class CodeWhispererCodeScanDocumentListener(val project: Project) : Doc
             issue.rangeHighlighter?.textAttributes = null
         }
         scanManager.updateScanNodes(file)
+
+        if (editedTextRange.length > 0 && !CodeWhispererExplorerActionManager.getInstance().isMonthlyQuotaForCodeScansExceeded()) {
+            scanManager.debouncedRunCodeScan(CodeWhispererConstants.CodeAnalysisScope.FILE)
+        }
     }
 
     companion object {
