@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Code Transformation: Omit Maven metadata files when uploading dependencies to fix certain build failures in backend."
+}

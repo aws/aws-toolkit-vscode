@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Chat: Added metric parameters to recordAddMessage telemetry event."
+}
