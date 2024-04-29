@@ -4,15 +4,16 @@
  */
 
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
-import { AuthStatus } from '../../../core/dist/src/shared/telemetry/telemetry'
-import { AwsConnection } from 'aws-core-vscode/auth'
+import { AuthStatus } from 'aws-core-vscode/telemetry'
+import { AwsConnection, Connection, AuthUtils } from 'aws-core-vscode/auth'
 import { activateExtension, getLogger } from 'aws-core-vscode/shared'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 
 /** Provides the status of the Auth connection for Amazon Q, specifically for telemetry purposes. */
-export async function getAuthStatus(): Promise<AuthStatus> {
+export async function getAuthStatus() {
     // Get auth state from the Amazon Q extension
     const authState = (await AuthUtil.instance.getChatAuthState()).codewhispererChat
+    let authEnabledConnections = AuthUtils.getAuthFormIdsFromConnection(AuthUtil.instance.conn)
     let authStatus: AuthStatus = authState === 'connected' || authState === 'expired' ? authState : 'notConnected'
 
     // If the Q extension does not have its own connection, it will fallback and check
@@ -28,10 +29,14 @@ export async function getAuthStatus(): Promise<AuthStatus> {
         // Determine the status of the Toolkit connection we will autoconnect to
         if (autoConnectConn) {
             authStatus = autoConnectConn.state === 'valid' ? 'connected' : 'expired'
+
+            // Though TS won't say it, AwsConnection sufficiently overlaps with Connection for the purposes
+            // of `getAuthFormIdsFromConnection`
+            authEnabledConnections = AuthUtils.getAuthFormIdsFromConnection(autoConnectConn as unknown as Connection)
         }
     }
 
-    return authStatus
+    return { authStatus, authEnabledConnections: authEnabledConnections.join(',') }
 }
 
 /**

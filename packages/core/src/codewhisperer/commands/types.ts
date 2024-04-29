@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ExtStartUpSources } from '../../shared/telemetry'
+import { ExtStartUpSources } from '../../shared/telemetry/util'
 import { CompositeKey, Commands, vscodeComponent } from '../../shared/vscode/commands2'
 
 /** Indicates a CodeWhisperer command was executed through a tree node */

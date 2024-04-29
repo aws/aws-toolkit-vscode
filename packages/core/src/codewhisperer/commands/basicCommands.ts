@@ -38,6 +38,7 @@ import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerComm
 import { removeDiagnostic } from '../service/diagnosticsProvider'
 import { SecurityIssueHoverProvider } from '../service/securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from '../service/securityIssueCodeActionProvider'
+import { SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.amazonq.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -183,22 +184,12 @@ export const connectWithCustomization = Commands.declare(
             customizationArn?: string,
             customizationNamePrefix?: string
         ) => {
+            SsoAccessTokenProvider.authSource = source
             if (startUrl && region) {
                 await connectToEnterpriseSso(startUrl, region)
             } else {
                 await getStartUrl()
             }
-
-            // This shortcut is unusual, and currently would only be used if another extension
-            // triggered a connection to Amazon Q. We should still capture and emit the event.
-            telemetry.auth_addConnection.emit({
-                source,
-                isReAuth: false,
-                credentialStartUrl: startUrl,
-                region,
-                authEnabledFeatures: 'codewhisperer',
-                credentialSourceId: 'iamIdentityCenter',
-            })
 
             // No customization match information given, exit early.
             if (!customizationArn && !customizationNamePrefix) {
