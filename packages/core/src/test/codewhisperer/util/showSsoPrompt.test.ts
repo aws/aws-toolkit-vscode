@@ -11,9 +11,14 @@ import { awsIdSignIn, showCodeWhispererConnectionPrompt } from '../../../codewhi
 import { getTestLogger } from '../../globalSetup.test'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
-import { assertTelemetryCurried } from '../../testUtil'
+import { assertTelemetryCurried, tryRegister } from '../../testUtil'
+import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
 
 describe('showConnectionPrompt', function () {
+    before(async function () {
+        tryRegister(refreshStatusBar)
+    })
+
     beforeEach(async function () {
         await resetCodeWhispererGlobalVariables()
     })

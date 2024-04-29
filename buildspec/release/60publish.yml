@@ -16,15 +16,18 @@ phases:
         commands:
             # Check for implicit env vars passed from the release pipeline.
             - test -n "${VS_MARKETPLACE_PAT}"
+            - test -n "${TARGET_EXTENSION}"
 
     build:
         commands:
+            - echo "TARGET_EXTENSION=${TARGET_EXTENSION}"
             # pull in the build artifacts
             - cp -r ${CODEBUILD_SRC_DIR_buildPipeline}/* .
             - |
+                UPLOAD_TARGET=$(ls *.vsix)
+                echo "Publishing: $UPLOAD_TARGET"
                 if [ "$STAGE" != "prod" ]; then
                   echo "Stage is not production, skipping publish step"
                   exit 0
                 fi
-                UPLOAD_TARGET=$(ls aws-toolkit-vscode*.vsix)
                 npx vsce publish --pat "$VS_MARKETPLACE_PAT" --packagePath "$UPLOAD_TARGET"

@@ -6,16 +6,8 @@
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import { EditorContextCommand } from '../../../commands/registerCommands'
 import { PromptMessage } from '../model'
-import { OnboardingPageInteraction } from '../../../../amazonq/onboardingPage/model'
 
 export class UserIntentRecognizer {
-    public getFromOnboardingPageInteraction(interaction: OnboardingPageInteraction): UserIntent | undefined {
-        switch (interaction.type) {
-            default:
-                return undefined
-        }
-    }
-
     public getFromContextMenuCommand(command: EditorContextCommand): UserIntent | undefined {
         switch (command.type) {
             case 'aws.amazonq.explainCode':

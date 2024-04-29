@@ -181,6 +181,17 @@ export class RuntimeLanguageContext {
     }
 
     /**
+     *
+     * @param fileExtension File extension i.e. py, js, java
+     * @returns The corresponding {@link CodewhispererLanguage} of the file extension
+     */
+    public getLanguageFromFileExtension(fileExtension: string): CodewhispererLanguage | undefined {
+        return [...this.supportedLanguageExtensionMap.entries()].find(
+            ([, extension]) => extension === fileExtension
+        )?.[0]
+    }
+
+    /**
      * Mapping the field ProgrammingLanguage of codewhisperer generateRecommendationRequest | listRecommendationRequest to
      * its Codewhisperer runtime language e.g. jsx -> typescript, typescript -> typescript
      * @param request : cwspr generateRecommendationRequest | ListRecommendationRequest

@@ -8,18 +8,16 @@ import { SecurityPanelSet, SecurityPanelItem, AggregatedCodeScanIssue } from '..
 import { getLocalDatetime } from '../util/commonUtil'
 
 function makeUri(...args: Parameters<typeof openEditorAtRange>): vscode.Uri {
-    return vscode.Uri.parse(`command:aws.codeWhisperer.openEditorAtRange?${encodeURIComponent(JSON.stringify(args))}`)
+    return vscode.Uri.parse(`command:aws.amazonq.openEditorAtRange?${encodeURIComponent(JSON.stringify(args))}`)
 }
 
-async function openEditorAtRange(path: string, startLine: number, endLine: number) {
+export async function openEditorAtRange(path: string, startLine: number, endLine: number) {
     const uri = vscode.Uri.parse(path)
     await vscode.window.showTextDocument(uri, { preview: false, preserveFocus: true }).then(e => {
         e.selection = new vscode.Selection(startLine, 0, endLine, 0)
         e.revealRange(new vscode.Range(startLine, 0, endLine, 0), vscode.TextEditorRevealType.InCenterIfOutsideViewport)
     })
 }
-
-vscode.commands.registerCommand('aws.codeWhisperer.openEditorAtRange', openEditorAtRange)
 
 export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.codeWhisperer.securityPanel'
