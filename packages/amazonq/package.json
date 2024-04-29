@@ -416,8 +416,7 @@
                 "category": "%AWS.amazonq.title%",
                 "cloud9": {
                     "cn": {
-                        "title": "%AWS.command.login.cn%",
-                        "category": "%AWS.amazonq.title.cn%"
+                        "title": "%AWS.command.login.cn%"
                     }
                 },
                 "enablement": "false"
@@ -426,33 +425,18 @@
                 "command": "aws.amazonq.credentials.profile.create",
                 "title": "%AWS.command.credentials.profile.create%",
                 "category": "%AWS.amazonq.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.amazonq.title.cn%"
-                    }
-                },
                 "enablement": "false"
             },
             {
                 "command": "aws.amazonq.credentials.edit",
                 "title": "%AWS.command.credentials.edit%",
                 "category": "%AWS.amazonq.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.amazonq.title.cn%"
-                    }
-                },
                 "enablement": "false"
             },
             {
                 "command": "aws.amazonq.logout",
                 "title": "%AWS.command.logout%",
                 "category": "%AWS.amazonq.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.amazonq.title.cn%"
-                    }
-                },
                 "enablement": "false"
             },
             {
@@ -518,24 +502,14 @@
             {
                 "command": "aws.amazonq.createIssueOnGitHub",
                 "title": "%AWS.command.createIssueOnGitHub%",
-                "category": "%AWS.amazonq.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.amazonq.title.cn%"
-                    }
-                }
+                "category": "%AWS.amazonq.title%"
             },
             {
                 "command": "aws.amazonq.submitFeedback",
                 "title": "%AWS.command.submitFeedback%",
                 "enablement": "!aws.isWebExtHost",
                 "category": "%AWS.amazonq.title%",
-                "icon": "$(comment)",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.amazonq.title.cn%"
-                    }
-                }
+                "icon": "$(comment)"
             },
             {
                 "command": "aws.amazonq.viewLogs",
@@ -545,12 +519,7 @@
             {
                 "command": "aws.amazonq.github",
                 "title": "%AWS.command.github%",
-                "category": "%AWS.amazonq.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.amazonq.title.cn%"
-                    }
-                }
+                "category": "%AWS.amazonq.title%"
             },
             {
                 "command": "aws.amazonq.aboutExtension",
@@ -566,12 +535,7 @@
                 "command": "aws.amazonq.configure",
                 "title": "%AWS.command.codewhisperer.configure%",
                 "category": "%AWS.amazonq.title%",
-                "icon": "$(gear)",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.amazonq.title.cn%"
-                    }
-                }
+                "icon": "$(gear)"
             },
             {
                 "command": "aws.amazonq.introduction",

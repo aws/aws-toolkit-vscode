@@ -35,7 +35,7 @@ export function connectionExpired(name: string) {
 export const checklogs = () =>
     localize(
         'AWS.error.check.logs',
-        'Check the logs by running the "View {0} Toolkit Logs" command from the {1}.',
+        'Check the logs by running the "{0}: View Logs" command from the {1}.',
         getIdeProperties().company,
         getIdeProperties().commandPalette
     )
