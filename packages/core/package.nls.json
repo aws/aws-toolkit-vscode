@@ -16,7 +16,7 @@
     "AWS.configuration.description.samcli.legacyDeploy": "Use the legacy SAM deploy experience, disabling all SAM sync functionality.",
     "AWS.configuration.description.telemetry": "Enable AWS Toolkit to send usage data to AWS. [Details](https://docs.aws.amazon.com/sdkref/latest/guide/support-maint-idetoolkits.html)",
     "AWS.configuration.description.telemetry.cn": "Enable Amazon Toolkit to send usage data to Amazon.",
-    "AWS.configuration.description.amazonq.telemetry": "Enable Amazon Q to send usage data to AWS. [Details](https://docs.aws.amazon.com/sdkref/latest/guide/support-maint-idetoolkits.html)",
+    "AWS.configuration.description.amazonq.telemetry": "Enable Amazon Q to send usage data to AWS. [Details](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/opt-out-IDE.html)",
     "AWS.configuration.description.suppressPrompts": "Prompts which ask for confirmation. Checking an item suppresses the prompt.",
     "AWS.configuration.enableCodeLenses": "Enable SAM hints in source code and template.yaml files",
     "AWS.configuration.description.resources.enabledResources": "AWS resources to display in the 'Resources' portion of the explorer.",
