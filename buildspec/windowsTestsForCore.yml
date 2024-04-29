@@ -1,0 +1,90 @@
+version: 0.2
+
+env:
+  variables:
+    CI: true
+    LOCAL_ENV_RUN: true
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto17
+
+    commands:
+      - |
+        if(-Not($Env:CODE_COV_TOKEN -eq $null)) {
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;
+            Invoke-WebRequest -Uri https://uploader.codecov.io/latest/windows/codecov.exe -Outfile codecov.exe
+        }
+      - dotnet --list-sdks
+      - |
+        $DOTNET_ROOT = "$Env:USERPROFILE\.dotnet"
+        $Env:PATH = "$Env:PATH;$DOTNET_ROOT;$DOTNET_ROOT\tools"
+        dotnet tool install -g AWS.CodeArtifact.NuGet.CredentialProvider
+        dotnet codeartifact-creds install
+      - dotnet --list-sdks
+
+  build:
+    commands:
+      - |
+        # See https://github.com/NuGet/NuGet.Client/pull/4259
+        $Env:NUGET_EXPERIMENTAL_CHAIN_BUILD_RETRY_POLICY = "3,1000"
+
+        if ($Env:CODEARTIFACT_DOMAIN_NAME -and $Env:CODEARTIFACT_REPO_NAME) {
+          $Env:CODEARTIFACT_URL=aws codeartifact get-repository-endpoint --domain $Env:CODEARTIFACT_DOMAIN_NAME --repository $Env:CODEARTIFACT_REPO_NAME --format maven --query repositoryEndpoint --output text
+          $Env:CODEARTIFACT_NUGET_URL=aws codeartifact get-repository-endpoint --domain $Env:CODEARTIFACT_DOMAIN_NAME --repository $Env:CODEARTIFACT_REPO_NAME --format nuget --query repositoryEndpoint --output text
+          $Env:CODEARTIFACT_AUTH_TOKEN=aws codeartifact get-authorization-token --domain $Env:CODEARTIFACT_DOMAIN_NAME --query authorizationToken --output text --duration-seconds 3600
+        }
+
+         # Rider is very expensive (spikes our CI jobs to 50% CPU, so let it do the prep work in parallel, but run tests later
+        ./gradlew -PideProfileName="$Env:ALTERNATIVE_IDE_PROFILE_NAME" :plugin-core:check  --info --console plain --continue
+        if ($LastExitCode -ne 0) {
+          Write-Host "Command failed with exit code $LastExitCode"
+          exit -1
+        }
+        # ./gradlew -PideProfileName="$Env:ALTERNATIVE_IDE_PROFILE_NAME" :plugin-toolkit:jetbrains-rider:check coverageReport --info --console plain
+
+  post_build:
+    commands:
+      - |
+        $script:TEST_ARTIFACTS=Join-Path $env:TEMP testArtifacts
+        $script:TEST_REPORTS=Join-Path $script:TEST_ARTIFACTS test-reports
+
+        function copyFolder($basedir, $subdir, $destdir) {
+          $src = Join-Path "." -ChildPath $basedir | Join-Path -ChildPath $subdir
+          $dest = Join-Path $destdir -ChildPath $basedir | Join-Path -ChildPath $subDir
+          if( (Get-ChildItem $src -ErrorAction SilentlyContinue | Measure-Object).Count -ne 0) {
+            Copy-Item $src $dest -Recurse -Force -ErrorAction SilentlyContinue
+          }
+        }
+
+        function copyArtifacts($root) {
+            copyFolder $root "build/reports/" $script:TEST_ARTIFACTS
+            copyFolder $root "build/idea-sandbox/system-test/log/" $script:TEST_ARTIFACTS
+            copyFolder $root "build/test-results/test/" $script:TEST_REPORTS
+        }
+
+        copyArtifacts "."
+        Get-ChildItem -Directory | ForEach-Object { copyArtifacts $_.Name }
+
+        if(-Not($Env:CODEBUILD_BUILD_SUCCEEDING -eq "0" -Or $Env:CODE_COV_TOKEN -eq $null)) {
+          $env:VCS_COMMIT_ID=$Env:CODEBUILD_RESOLVED_SOURCE_VERSION;
+          $env:CI_BUILD_URL=[uri]::EscapeUriString($Env:CODEBUILD_BUILD_URL);
+          $env:CI_BUILD_ID=$Env:CODEBUILD_BUILD_ID;
+          .\codecov.exe -t $Env:CODE_COV_TOKEN `
+            --flags unittest `
+            -f "build/reports/jacoco/coverageReport/coverageReport.xml" `
+            -c $Env:CODEBUILD_RESOLVED_SOURCE_VERSION
+        }
+
+reports:
+  unit-test:
+    files:
+      - "**/*"
+    base-directory: "$env:TEMP/testArtifacts/test-reports"
+    discard-paths: yes
+
+artifacts:
+  base-directory: "$env:TEMP/testArtifacts"
+  files:
+    - "**/*"

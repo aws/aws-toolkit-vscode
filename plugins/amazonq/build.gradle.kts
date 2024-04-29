@@ -40,3 +40,15 @@ val moduleOnlyJars by configurations.creating {
 artifacts {
     add("moduleOnlyJars", moduleOnlyJar)
 }
+
+tasks.check {
+    val serviceSubdirs = project(":plugin-amazonq").subprojects
+    serviceSubdirs.forEach { serviceSubDir ->
+        val subDirs = serviceSubDir.subprojects
+        subDirs.forEach { insideService->
+            dependsOn(":plugin-amazonq:${serviceSubDir.name}:${insideService.name}:check")
+        }
+
+    }
+
+}

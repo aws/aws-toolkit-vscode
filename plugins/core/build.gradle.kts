@@ -15,3 +15,11 @@ dependencies {
     implementation(project(":plugin-core:jetbrains-ultimate"))
     implementation(project(":plugin-core:webview"))
 }
+
+tasks.check {
+    val coreProject = project(":plugin-core").subprojects
+    coreProject.forEach {
+        dependsOn(":plugin-core:${it.name}:check")
+    }
+
+}
