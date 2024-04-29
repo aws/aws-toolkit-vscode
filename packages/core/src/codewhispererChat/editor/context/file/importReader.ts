@@ -15,8 +15,11 @@ export async function readImports(text: string, languageId: string): Promise<str
         case 'javascript':
         case 'javascriptreact':
         case 'typescriptreact':
-            names = await Tsx.findNames(text)
-            break
+            // Disable Tsx.findNames because promise Tsx.findNames
+            // may not resolve and can cause chat to hang
+            //names = await Tsx.findNames(text)
+            //break
+            return []
         case 'python':
             names = await Python.findNames(text)
             break
