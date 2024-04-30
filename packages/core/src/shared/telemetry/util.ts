@@ -59,7 +59,7 @@ export class TelemetryConfig {
     }
 
     public async initAmazonQSetting() {
-        if (globals.context.globalState.get<boolean>(this.amazonQSettingMigratedKey)) {
+        if (!isAmazonQ() || globals.context.globalState.get<boolean>(this.amazonQSettingMigratedKey)) {
             return
         }
         // aws.telemetry isn't deprecated, we are just initializing amazonQ.telemetry with its value.
