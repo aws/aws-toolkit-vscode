@@ -109,7 +109,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
             insertText: truncatedSuggestion,
             range: new vscode.Range(start, end),
             command: {
-                command: 'aws.codeWhisperer.accept',
+                command: 'aws.amazonq.accept',
                 title: 'On acceptance',
                 arguments: [
                     new vscode.Range(start, end),

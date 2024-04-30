@@ -19,8 +19,7 @@ describe('CdkRootNode', function () {
 
         sinon.stub(detectCdkProjects, 'detectCdkProjects').resolves([appLocation])
 
-        const rootNode = new CdkRootNode()
-        const treeNodes = await rootNode.getChildren()
+        const treeNodes = await CdkRootNode.instance.getChildren()
         assert.strictEqual(treeNodes.length, 1)
         assert.deepStrictEqual(treeNodes[0].resource, appLocation)
     })

@@ -4,15 +4,10 @@
  */
 
 import * as vscode from 'vscode'
-import { createFreeTierLimitMet, createSignIn, createReconnect } from '../../codewhisperer/ui/codeWhispererNodes'
 import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
-import { AuthUtil, amazonQScopes, codeWhispererChatScopes } from '../../codewhisperer/util/authUtil'
-import { createLearnMoreNode, enableAmazonQNode, switchToAmazonQNode } from './amazonQChildrenNodes'
-import { Command, Commands } from '../../shared/vscode/commands2'
-import { hasScopes, isBuilderIdConnection, isSsoConnection } from '../../auth/connection'
-import { listCodeWhispererCommands } from '../../codewhisperer/ui/statusBarMenu'
-import { getIcon } from '../../shared/icons'
-import { vsCodeState } from '../../codewhisperer/models/model'
+import { AuthState, isPreviousQUser } from '../../codewhisperer/util/authUtil'
+import { createLearnMoreNode, createInstallQNode, createDismissNode } from './amazonQChildrenNodes'
+import { Commands } from '../../shared/vscode/commands2'
 
 export class AmazonQNode implements TreeNode {
     public readonly id = 'amazonq'
@@ -24,13 +19,14 @@ export class AmazonQNode implements TreeNode {
     private readonly onDidChangeVisibilityEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeVisibility = this.onDidChangeVisibilityEmitter.event
 
-    constructor() {}
+    public static amazonQState: AuthState
+
+    private constructor() {}
 
     public getTreeItem() {
         const item = new vscode.TreeItem('Amazon Q')
-        item.description = this.getDescription()
         item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
-        item.contextValue = AuthUtil.instance.isUsingSavedConnection ? 'awsAmazonQNodeSaved' : 'awsAmazonQNode'
+        item.contextValue = 'awsAmazonQNode'
 
         return item
     }
@@ -43,54 +39,12 @@ export class AmazonQNode implements TreeNode {
         this.onDidChangeTreeItemEmitter.fire()
     }
 
-    private getDescription(): string {
-        if (AuthUtil.instance.isConnectionValid()) {
-            if (AuthUtil.instance.isEnterpriseSsoInUse()) {
-                return 'IAM Identity Center Connected'
-            } else if (AuthUtil.instance.isBuilderIdInUse()) {
-                return 'AWS Builder ID Connected'
-            } else {
-                return 'IAM Connected'
-            }
-        } else if (AuthUtil.instance.isConnectionExpired()) {
-            return 'Expired Connection'
-        }
-        return ''
-    }
-
     public getChildren() {
-        if (AuthUtil.instance.isConnectionExpired()) {
-            return [createReconnect('tree'), createLearnMoreNode()]
+        const children = [createInstallQNode(), createLearnMoreNode()]
+        if (!isPreviousQUser()) {
+            children.push(createDismissNode())
         }
-
-        if (!AuthUtil.instance.isConnected()) {
-            return [createSignIn('tree'), createLearnMoreNode()]
-        }
-
-        if (isSsoConnection(AuthUtil.instance.conn)) {
-            const missingScopes =
-                (AuthUtil.instance.isEnterpriseSsoInUse() && !hasScopes(AuthUtil.instance.conn, amazonQScopes)) ||
-                !hasScopes(AuthUtil.instance.conn, codeWhispererChatScopes)
-
-            if (missingScopes) {
-                return [enableAmazonQNode(), createLearnMoreNode()]
-            }
-        }
-
-        if (isBuilderIdConnection(AuthUtil.instance.conn)) {
-            const missingScopes =
-                (AuthUtil.instance.isBuilderIdInUse() && !hasScopes(AuthUtil.instance.conn, amazonQScopes)) ||
-                !hasScopes(AuthUtil.instance.conn, codeWhispererChatScopes)
-
-            if (missingScopes) {
-                return [enableAmazonQNode(), createLearnMoreNode()]
-            }
-        }
-
-        return [
-            vsCodeState.isFreeTierLimitReached ? createFreeTierLimitMet('tree') : switchToAmazonQNode('tree'),
-            createNewMenuButton(),
-        ]
+        return children
     }
 
     /**
@@ -104,28 +58,31 @@ export class AmazonQNode implements TreeNode {
     getParent(): TreeNode<unknown> | undefined {
         return undefined
     }
+
+    static #instance: AmazonQNode
+
+    static get instance(): AmazonQNode {
+        return (this.#instance ??= new AmazonQNode())
+    }
 }
 
-function createNewMenuButton(): TreeNode<Command> {
-    return listCodeWhispererCommands.build().asTreeNode({
-        label: 'New: Menu moved to status bar',
-        iconPath: getIcon('vscode-megaphone'),
-        description: 'Learn more',
-    })
-}
-
-export const amazonQNode = new AmazonQNode()
+/**
+ * Refreshes the Amazon Q Tree node. If Amazon Q's connection state is provided, it will also internally
+ * update the connection state.
+ *
+ * This command is meant to be called by Amazon Q. It doesn't serve much purpose being called otherwise.
+ */
 export const refreshAmazonQ = (provider?: ResourceTreeDataProvider) =>
-    Commands.register({ id: 'aws.amazonq.refresh', logging: false }, () => {
-        amazonQNode.refresh()
+    Commands.register({ id: '_aws.toolkit.amazonq.refreshTreeNode', logging: false }, () => {
+        AmazonQNode.instance.refresh()
         if (provider) {
             provider.refresh()
         }
     })
 
 export const refreshAmazonQRootNode = (provider?: ResourceTreeDataProvider) =>
-    Commands.register({ id: 'aws.amazonq.refreshRootNode', logging: false }, () => {
-        amazonQNode.refreshRootNode()
+    Commands.register({ id: '_aws.amazonq.refreshRootNode', logging: false }, () => {
+        AmazonQNode.instance.refreshRootNode()
         if (provider) {
             provider.refresh()
         }

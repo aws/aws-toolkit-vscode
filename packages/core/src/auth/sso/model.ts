@@ -45,6 +45,8 @@ export interface SsoToken {
     readonly refreshToken?: string
 }
 
+export type AuthenticationFlow = 'auth code'
+
 export interface ClientRegistration {
     /**
      * Unique registration id.
@@ -65,6 +67,11 @@ export interface ClientRegistration {
      * Scope of the client registration. Applies to all tokens created using this registration.
      */
     readonly scopes?: string[]
+
+    /**
+     * The sso flow used to create this registration.
+     */
+    readonly flow?: AuthenticationFlow
 }
 
 export interface SsoProfile {
@@ -102,20 +109,6 @@ export async function openSsoPortalLink(startUrl: string, authorization: Authori
         return vscode.Uri.parse(`${authorization.verificationUri}?user_code=${authorization.userCode}`)
     }
 
-    async function openSsoUrl() {
-        const ssoLoginUrl = makeConfirmCodeUrl(authorization)
-        const didOpenUrl = await vscode.env.openExternal(ssoLoginUrl)
-
-        if (!didOpenUrl) {
-            throw new ToolkitError(`User clicked 'Copy' or 'Cancel' during the Trusted Domain popup`, {
-                code: trustedDomainCancellation,
-                name: trustedDomainCancellation,
-                cancelled: true,
-            })
-        }
-        return didOpenUrl
-    }
-
     async function showLoginNotification() {
         const name = startUrl === builderIdStartUrl ? localizedText.builderId() : localizedText.iamIdentityCenterFull()
         // C9 doesn't support `detail` field with modals so we need to put it all in the `title`
@@ -134,7 +127,7 @@ export async function openSsoPortalLink(startUrl: string, authorization: Authori
             const resp = await vscode.window.showInformationMessage(title, { modal: true, detail }, proceedToBrowser)
             switch (resp) {
                 case proceedToBrowser:
-                    return openSsoUrl()
+                    return openSsoUrl(makeConfirmCodeUrl(authorization))
                 case localizedText.help:
                     await tryOpenHelpUrl(ssoAuthHelpUrl)
                     continue
@@ -147,8 +140,25 @@ export async function openSsoPortalLink(startUrl: string, authorization: Authori
     return showLoginNotification()
 }
 
+export async function openSsoUrl(location: vscode.Uri) {
+    const didOpenUrl = await vscode.env.openExternal(location)
+
+    if (!didOpenUrl) {
+        throw new ToolkitError(`User clicked 'Copy' or 'Cancel' during the Trusted Domain popup`, {
+            code: trustedDomainCancellation,
+            name: trustedDomainCancellation,
+            cancelled: true,
+        })
+    }
+    return didOpenUrl
+}
+
 // Most SSO 'expirables' are fairly long lived, so a one minute buffer is plenty.
 const expirationBufferMs = 60000
 export function isExpired(expirable: { expiresAt: Date }): boolean {
     return globals.clock.Date.now() + expirationBufferMs >= expirable.expiresAt.getTime()
+}
+
+export function isDeprecatedAuth(registration: ClientRegistration): boolean {
+    return registration.flow === undefined || registration.flow !== 'auth code'
 }

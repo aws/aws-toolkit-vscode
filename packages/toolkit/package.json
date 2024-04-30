@@ -1,8 +1,8 @@
 {
     "name": "aws-toolkit-vscode",
-    "displayName": "AWS Toolkit - Amazon Q, CodeWhisperer, and more",
-    "description": "Including Amazon Q, CodeWhisperer, CodeCatalyst, Application Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services",
-    "version": "2.21.0-SNAPSHOT",
+    "displayName": "AWS Toolkit",
+    "description": "Including CodeCatalyst, Application Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services.",
+    "version": "3.1.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -29,9 +29,9 @@
     "keywords": [
         "Lambda",
         "CodeCatalyst",
-        "CodeWhisperer",
-        "Code",
-        "Whisperer"
+        "Composer",
+        "Amazon",
+        "S3"
     ],
     "preview": false,
     "qna": "https://github.com/aws/aws-toolkit-vscode/issues",
@@ -39,7 +39,6 @@
         "onStartupFinished",
         "onUri",
         "onDebugResolve:aws-sam",
-        "onView:aws.codeWhisperer.securityPanel",
         "onDebugInitialConfigurations",
         "onLanguage:javascript",
         "onLanguage:java",
@@ -47,8 +46,7 @@
         "onLanguage:csharp",
         "onLanguage:yaml",
         "onFileSystem:s3",
-        "onFileSystem:s3-readonly",
-        "onCommand:aws.codeWhisperer.accept"
+        "onFileSystem:s3-readonly"
     ],
     "main": "./dist/src/main",
     "browser": "./dist/src/mainWeb",
@@ -57,9 +55,9 @@
     "scripts": {
         "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production",
         "buildScripts": "npm run generateNonCodeFiles && npm run copyFiles",
-        "generateNonCodeFiles": "ts-node ./scripts/build/generateNonCodeFiles.ts",
+        "generateNonCodeFiles": "ts-node ../../scripts/generateNonCodeFiles.ts",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
-        "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE quickStart* CHANGELOG.md",
+        "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE quickStart*",
         "compile": "npm run clean && npm run buildScripts && webpack",
         "webWatch": "npm run clean && npm run buildScripts && webpack --mode development --watch",
         "webCompile": "npm run clean && npm run buildScripts && webpack --config-name web",
@@ -69,7 +67,8 @@
         "format": "prettier --ignore-path ../../.prettierignore --check src scripts",
         "formatfix": "prettier --ignore-path ../../.prettierignore --write src scripts",
         "lint": "echo 'Nothing to lint yet!'",
-        "createRelease": "ts-node ./scripts/build/createRelease.ts",
+        "createRelease": "ts-node ../../scripts/createRelease.ts",
+        "newChange": "ts-node ../../scripts/newChange.ts",
         "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
         "copyPackageJson": "ts-node ./scripts/build/handlePackageJson",
         "restorePackageJson": "ts-node ./scripts/build/handlePackageJson --restore"

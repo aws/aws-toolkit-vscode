@@ -8,6 +8,7 @@ phases:
     pre_build:
         commands:
             - aws codeartifact login --tool npm --domain "$TOOLKITS_CODEARTIFACT_DOMAIN" --domain-owner "$TOOLKITS_ACCOUNT_ID" --repository "$TOOLKITS_CODEARTIFACT_REPO"
+            - test -n "${TARGET_EXTENSION}"
     install:
         runtime-versions:
             nodejs: 16
@@ -19,12 +20,19 @@ phases:
             - apt-get install -y libasound2-plugins
     build:
         commands:
+            - echo "TARGET_EXTENSION=${TARGET_EXTENSION}"
             # --unsafe-perm is needed because we run as root
             - npm ci --unsafe-perm
-            - npm run package
+            - npm run package -w packages/${TARGET_EXTENSION}
+            - cp packages/${TARGET_EXTENSION}/package.json ./package.json
+            - NUM_VSIX=$(ls -1q *.vsix | wc -l)
+            - |
+                if [ "$NUM_VSIX" != "1" ]; then
+                  echo "Number of .vsix to release is not exactly 1, it is: ${NUM_VSIX}"
+                  exit 1
+                fi
 
 artifacts:
     files:
-        - aws-toolkit-vscode*
-        - packages/toolkit/package.json
-    discard-paths: true
+        - '*.vsix'
+        - package.json

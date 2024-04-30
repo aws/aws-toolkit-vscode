@@ -17,7 +17,7 @@ import {
     initializeComputeRegion,
     mostRecentVersionKey,
 } from '../../shared/extensionUtilities'
-import { isDifferentVersion, safeGet, setMostRecentVersion } from '../../shared/extensionUtilities'
+import { isDifferentVersion, setMostRecentVersion } from '../../shared/extensionUtilities'
 import * as filesystemUtilities from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { InstanceIdentity } from '../../shared/clients/ec2MetadataClient'
@@ -27,31 +27,6 @@ import globals from '../../shared/extensionGlobals'
 import { createQuickStartWebview } from '../../shared/extensionStartup'
 
 describe('extensionUtilities', function () {
-    describe('safeGet', function () {
-        class Blah {
-            public someProp?: string
-
-            public constructor(someProp?: string) {
-                this.someProp = someProp
-            }
-        }
-
-        it('can access sub-property', function () {
-            assert.strictEqual(
-                safeGet(new Blah('hello!'), x => x.someProp),
-                'hello!'
-            )
-            assert.strictEqual(
-                safeGet(new Blah(), x => x.someProp),
-                undefined
-            )
-            assert.strictEqual(
-                safeGet(undefined as Blah | undefined, x => x.someProp),
-                undefined
-            )
-        })
-    })
-
     describe('createQuickStartWebview', async function () {
         const context = await FakeExtensionContext.create()
         let tempDir: string | undefined

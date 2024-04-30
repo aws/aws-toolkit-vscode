@@ -49,10 +49,11 @@ jobs:
                   echo "FEAT_NAME=" >> $GITHUB_ENV
                   echo "TAG_NAME=prerelease" >> $GITHUB_ENV
             - run: npm ci
-            - name: vsix # TODO: For packages/toolkit release only
+            - name: vsix
               run: |
-                  npm run createRelease  # Generate CHANGELOG.md
+                  npm run createRelease -w packages/toolkit -w packages/amazonq  # Generate CHANGELOG.md
                   npm run -w packages/toolkit package -- --feature "$FEAT_NAME"
+                  npm run -w packages/amazonq package -- --feature "$FEAT_NAME"
             - uses: actions/upload-artifact@v4
               with:
                   name: artifacts
@@ -61,11 +62,18 @@ jobs:
             - name: Export outputs
               id: build
               run: |
+                  write_package_info() {
+                      PKG_NAME=$1
+                      PKG_DISPLAY_NAME=$(grep -m 1 displayName packages/${PKG_NAME}/package.json | grep -o '[a-zA-z][^\"]\+' | tail -n1)
+                      echo "version=$(grep -m 1 version packages/${PKG_NAME}/package.json | grep -o '[0-9][^\"]\+' | sed 's/-SNAPSHOT//')" >> $GITHUB_OUTPUT
+                      echo "${PKG_NAME}_changes<<EOF" >> $GITHUB_OUTPUT
+                      # Add extension display name to the topmost changelog section.
+                      cat packages/${PKG_NAME}/CHANGELOG.md | perl -ne 'BEGIN{$/="\n\n"} print; exit if $. == 2' | sed -e "1 s/## /## ${PKG_DISPLAY_NAME} - /" >> $GITHUB_OUTPUT
+                  }
                   echo "feature=$FEAT_NAME" >> $GITHUB_OUTPUT
                   echo "tagname=$TAG_NAME" >> $GITHUB_OUTPUT
-                  echo "version=$(grep -m 1 version packages/toolkit/package.json | grep -o '[0-9][^\"]\+' | sed 's/-SNAPSHOT//')" >> $GITHUB_OUTPUT
-                  echo 'changes<<EOF' >> $GITHUB_OUTPUT
-                  cat CHANGELOG.md | perl -ne 'BEGIN{$/="\n\n"} print; exit if $. == 2' >> $GITHUB_OUTPUT
+                  write_package_info toolkit
+                  write_package_info amazonq
                   echo 'EOF' >> $GITHUB_OUTPUT
 
     publish:
@@ -82,7 +90,8 @@ jobs:
             # Used in release_notes.md
             BRANCH: ${{ github.ref_name }}
             # Used in release_notes.md
-            AWS_TOOLKIT_CHANGES: ${{ needs.package.outputs.changes }}
+            AWS_TOOLKIT_CHANGES: ${{ needs.package.outputs.toolkit_changes }}
+            AMAZON_Q_CHANGES: ${{ needs.package.outputs.amazonq_changes }}
         permissions:
             contents: write
         steps:
