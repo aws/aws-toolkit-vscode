@@ -26,7 +26,7 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.PlanIterationL
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.GenerateTaskAssistPlanResult
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.CodeGenerationStreamResult
-import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.CodeReferenceGenerated
 import software.aws.toolkits.resources.message
 import software.amazon.awssdk.services.codewhispererstreaming.model.ThrottlingException as StreamingThrottlingException
 
@@ -266,6 +266,6 @@ class FeatureDevClientUtilTest : FeatureDevTestBase() {
             assertThat(actual).isInstanceOf(CodeGenerationStreamResult::class.java)
             assertThat(actual.new_file_contents).isEqualTo(mapOf(Pair("test.ts", "contents")))
             assertThat(actual.deleted_files).isEqualTo(emptyList<String>())
-            assertThat(actual.references).isEqualTo(emptyList<CodeReference>())
+            assertThat(actual.references).isEqualTo(emptyList<CodeReferenceGenerated>())
         }
 }

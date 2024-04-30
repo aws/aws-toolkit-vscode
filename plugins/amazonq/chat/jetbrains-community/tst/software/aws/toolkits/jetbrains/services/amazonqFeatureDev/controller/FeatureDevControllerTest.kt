@@ -57,7 +57,6 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.Sessio
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.storage.ChatSessionStorage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.getFollowUpOptions
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.uploadArtifactToS3
-import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AmazonqTelemetry
 import org.mockito.kotlin.verify as mockitoVerify
@@ -83,7 +82,6 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
         DeletedFileInfo("delete.ts", false),
         DeletedFileInfo("delete2.ts", true)
     )
-    private val references = listOf(CodeReference(information = "test"))
 
     @Before
     override fun setup() {
@@ -286,7 +284,7 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
         whenever(mockSession.send(userMessage)).thenReturn(mockInteraction)
         whenever(mockSession.sessionState).thenReturn(
             PrepareCodeGenerationState(
-                testTabId, "", mock(), newFileContents, deletedFiles, references, testUploadId, 0, messenger
+                testTabId, "", mock(), newFileContents, deletedFiles, testReferences, testUploadId, 0, messenger
             )
         )
 
@@ -296,7 +294,7 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
             messenger.sendAsyncEventProgress(testTabId, true, message("amazonqFeatureDev.chat_message.start_code_generation"))
             messenger.sendAnswer(testTabId, message("amazonqFeatureDev.chat_message.requesting_changes"), FeatureDevMessageType.AnswerStream)
             messenger.sendUpdatePlaceholder(testTabId, message("amazonqFeatureDev.placeholder.generating_code"))
-            messenger.sendCodeResult(testTabId, testUploadId, newFileContents, deletedFiles, references)
+            messenger.sendCodeResult(testTabId, testUploadId, newFileContents, deletedFiles, testReferences)
             messenger.sendSystemPrompt(testTabId, getFollowUpOptions(SessionStatePhase.CODEGEN, true))
             messenger.sendUpdatePlaceholder(testTabId, message("amazonqFeatureDev.placeholder.after_code_generation"))
             messenger.sendAsyncEventProgress(testTabId, false)
@@ -325,7 +323,6 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
     fun `test handleChat onCodeGeneration doesn't return any files with retries`() = runTest {
         val filePaths = emptyList<NewFileZipInfo>()
         val deletedFiles = emptyList<DeletedFileInfo>()
-        val references = listOf(CodeReference(information = "test"))
 
         val mockInteraction = mock<Interaction>()
 
@@ -333,7 +330,7 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
         whenever(mockSession.send(userMessage)).thenReturn(mockInteraction)
         whenever(mockSession.sessionState).thenReturn(
             PrepareCodeGenerationState(
-                testTabId, "", mock(), filePaths, deletedFiles, references, testUploadId, 0, messenger
+                testTabId, "", mock(), filePaths, deletedFiles, testReferences, testUploadId, 0, messenger
             )
         )
         whenever(mockSession.retries).thenReturn(3)
@@ -354,7 +351,6 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
     fun `test handleChat onCodeGeneration doesn't return any files no retries`() = runTest {
         val filePaths = emptyList<NewFileZipInfo>()
         val deletedFiles = emptyList<DeletedFileInfo>()
-        val references = listOf(CodeReference(information = "test"))
 
         val mockInteraction = mock<Interaction>()
 
@@ -362,7 +358,7 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
         whenever(mockSession.send(userMessage)).thenReturn(mockInteraction)
         whenever(mockSession.sessionState).thenReturn(
             PrepareCodeGenerationState(
-                testTabId, "", mock(), filePaths, deletedFiles, references, testUploadId, 0, messenger
+                testTabId, "", mock(), filePaths, deletedFiles, testReferences, testUploadId, 0, messenger
             )
         )
         whenever(mockSession.retries).thenReturn(0)
@@ -384,7 +380,7 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
         whenever(chatSessionStorage.getSession(any(), any())).thenReturn(spySession)
         whenever(spySession.sessionState).thenReturn(
             PrepareCodeGenerationState(
-                testTabId, "", mock(), newFileContents, deletedFiles, references, testUploadId, 0, messenger
+                testTabId, "", mock(), newFileContents, deletedFiles, testReferences, testUploadId, 0, messenger
             )
         )
 

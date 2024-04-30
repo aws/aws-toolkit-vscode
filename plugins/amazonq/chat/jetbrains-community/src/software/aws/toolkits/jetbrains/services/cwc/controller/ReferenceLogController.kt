@@ -7,6 +7,7 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.codewhispererruntime.model.Reference
 import software.amazon.awssdk.services.codewhispererruntime.model.Span
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.CodeReferenceGenerated
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil
 import software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow.CodeWhispererCodeReferenceManager
 import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
@@ -41,7 +42,7 @@ object ReferenceLogController {
         }
     }
 
-    fun addReferenceLog(codeReferences: List<CodeReference>?, project: Project) {
+    fun addReferenceLog(codeReferences: List<CodeReferenceGenerated>?, project: Project) {
         val manager = CodeWhispererCodeReferenceManager.getInstance(project)
 
         codeReferences?.forEach { reference ->

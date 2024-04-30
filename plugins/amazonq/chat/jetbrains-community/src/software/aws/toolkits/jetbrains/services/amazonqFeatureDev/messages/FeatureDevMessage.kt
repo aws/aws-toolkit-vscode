@@ -182,7 +182,7 @@ data class CodeResultMessage(
     val conversationId: String,
     val filePaths: List<NewFileZipInfo>,
     val deletedFiles: List<DeletedFileInfo>,
-    val references: List<ReducedCodeReference>
+    val references: List<CodeReference>
 ) : UiMessage(
     tabId = tabId,
     type = "codeResultMessage"

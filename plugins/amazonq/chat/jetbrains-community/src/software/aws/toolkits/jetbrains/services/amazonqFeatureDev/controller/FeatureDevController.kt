@@ -54,6 +54,7 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendM
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendSystemPrompt
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendUpdatePlaceholder
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.updateFileComponent
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.CodeReferenceGenerated
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.DeletedFileInfo
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.NewFileZipInfo
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.PrepareCodeGenerationState
@@ -61,7 +62,6 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.Sessio
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.SessionStatePhase
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.storage.ChatSessionStorage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.getFollowUpOptions
-import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
 import software.aws.toolkits.jetbrains.ui.feedback.FeatureDevFeedbackDialog
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AmazonqTelemetry
@@ -279,7 +279,7 @@ class FeatureDevController(
 
             var filePaths: List<NewFileZipInfo> = emptyList()
             var deletedFiles: List<DeletedFileInfo> = emptyList()
-            var references: List<CodeReference> = emptyList()
+            var references: List<CodeReferenceGenerated> = emptyList()
 
             when (val state = session.sessionState) {
                 is PrepareCodeGenerationState -> {

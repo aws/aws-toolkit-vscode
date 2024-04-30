@@ -8,7 +8,6 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendA
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.createUploadUrl
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.deleteUploadArtifact
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.uploadArtifactToS3
-import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AmazonqTelemetry
 import software.aws.toolkits.telemetry.AmazonqUploadIntent
@@ -19,7 +18,7 @@ class PrepareCodeGenerationState(
     private var config: SessionStateConfig,
     val filePaths: List<NewFileZipInfo>,
     val deletedFiles: List<DeletedFileInfo>,
-    val references: List<CodeReference>,
+    val references: List<CodeReferenceGenerated>,
     var uploadId: String,
     private val currentIteration: Int,
     private var messenger: MessagePublisher

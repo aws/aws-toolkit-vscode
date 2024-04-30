@@ -16,7 +16,6 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.createCon
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.resolveAndCreateOrUpdateFile
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.resolveAndDeleteFile
 import software.aws.toolkits.jetbrains.services.cwc.controller.ReferenceLogController
-import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
 import software.aws.toolkits.telemetry.AmazonqTelemetry
 
 class Session(val tabID: String, val project: Project) {
@@ -93,7 +92,7 @@ class Session(val tabID: String, val project: Project) {
     /**
      * Triggered by the Insert code follow-up button to apply code changes.
      */
-    fun insertChanges(filePaths: List<NewFileZipInfo>, deletedFiles: List<DeletedFileInfo>, references: List<CodeReference>) {
+    fun insertChanges(filePaths: List<NewFileZipInfo>, deletedFiles: List<DeletedFileInfo>, references: List<CodeReferenceGenerated>) {
         val projectRootPath = context.projectRoot.toNioPath()
 
         filePaths.forEach { resolveAndCreateOrUpdateFile(projectRootPath, it.zipFilePath, it.fileContent) }

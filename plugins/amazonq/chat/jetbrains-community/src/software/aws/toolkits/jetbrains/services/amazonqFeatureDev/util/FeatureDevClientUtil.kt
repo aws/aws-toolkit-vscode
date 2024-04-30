@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.codewhispererstreaming.model.CodeWhispere
 import software.amazon.awssdk.services.codewhispererstreaming.model.ServiceQuotaExceededException
 import software.amazon.awssdk.services.codewhispererstreaming.model.ThrottlingException
 import software.aws.toolkits.core.utils.debug
+import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.CodeIterationLimitError
@@ -207,6 +208,7 @@ suspend fun exportTaskAssistArchiveResult(proxyClient: FeatureDevClient, convers
         val result = exportResponse.reduce { acc, next -> acc + next } // To map the result it is needed to combine the  full byte array
         parsedResult = jacksonObjectMapper().readValue(result)
     } catch (e: Exception) {
+        logger.error(e) { "Failed to parse downloaded code results" }
         exportParseError()
     }
 
