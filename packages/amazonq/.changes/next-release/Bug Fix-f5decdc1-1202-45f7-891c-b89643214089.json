@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Fixed a crash when trying to use Q /dev on large projects or projects containing files with unsupported encoding."
-}
