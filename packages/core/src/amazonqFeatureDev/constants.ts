@@ -14,6 +14,9 @@ export const featureDevChat = 'featureDevChat'
 
 export const featureName = 'Amazon Q feature development'
 
+// Max allowed size for file collection
+export const maxRepoSizeBytes = 200 * 1024 * 1024
+
 // License text that's used in codewhisperer reference log
 export const referenceLogText = (reference: CodeReference) =>
     `[${new Date().toLocaleString()}] Accepted recommendation from Amazon Q. Code provided with reference under <a href="${LicenseUtil.getLicenseHtml(
