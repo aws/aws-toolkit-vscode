@@ -874,8 +874,16 @@ export async function migrateSetting<T, U = T>(
         const logPrefix = `Settings migration ("${from.key}" -> "${to.key}"), (scope: ${valueProp})`
 
         const oldSettingProps = config.inspect(from.key)
-        if (hasLatest || !oldSettingProps || oldSettingProps[valueProp] === undefined) {
-            getLogger().debug(`${logPrefix}: skipping, no migration needed`)
+        if (hasLatest) {
+            getLogger().debug(`skipping: ${logPrefix}, the latest setting is already defined for this scope.`)
+            return
+        }
+        if (!oldSettingProps) {
+            getLogger().debug(`skipping: ${logPrefix}, the old setting does not exist.`)
+            return
+        }
+        if (oldSettingProps[valueProp] === undefined) {
+            getLogger().debug(`skipping: ${logPrefix}, the old setting is not defined for this scope.`)
             return
         }
 
