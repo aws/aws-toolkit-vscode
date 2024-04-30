@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix help icon in the AWS Explorer pointing to the wrong auth instructions page"
-}

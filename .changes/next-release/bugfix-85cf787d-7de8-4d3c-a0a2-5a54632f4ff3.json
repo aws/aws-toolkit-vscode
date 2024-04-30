@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Amazon Q Feature Development: Handle generated code parsing for rendering references correctly"
-}
