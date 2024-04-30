@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Code Transformation: Proposed changes not updated when multiple transformation jobs run in sequence."
-}
