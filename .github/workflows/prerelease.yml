@@ -178,5 +178,5 @@ jobs:
           gh release upload "$TAG_NAME" plugin-amazonq-*/*.zip
       - name: Publish XML manifest
         run: |
-          gh release view "$TAG_NAME" --repo aws/aws-toolkit-jetbrains --json assets | python3 "$GITHUB_WORKSPACE/.github/workflows/generateUpdatesXml.py" - > updatePlugins.xml
+          gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --json assets | python3 "$GITHUB_WORKSPACE/.github/workflows/generateUpdatesXml.py" - > updatePlugins.xml
           gh release upload "$TAG_NAME" updatePlugins.xml
