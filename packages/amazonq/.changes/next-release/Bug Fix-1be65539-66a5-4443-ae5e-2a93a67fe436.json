@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Code Transformation: Transform may fail if JAVA_HOME has leading or trailing whitespace"
-}
