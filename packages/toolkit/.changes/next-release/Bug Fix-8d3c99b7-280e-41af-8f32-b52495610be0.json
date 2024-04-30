@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Installation error when installing amazon q in remote AND you have the extension locally"
+}

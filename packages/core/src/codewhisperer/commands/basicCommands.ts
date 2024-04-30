@@ -39,6 +39,8 @@ import { removeDiagnostic } from '../service/diagnosticsProvider'
 import { SecurityIssueHoverProvider } from '../service/securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from '../service/securityIssueCodeActionProvider'
 import { SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
+import { SystemUtilities } from '../../shared/systemUtilities'
+import { ToolkitError } from '../../shared/errors'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.amazonq.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -299,7 +301,32 @@ export const fetchFeatureConfigsCmd = Commands.declare(
 export const installAmazonQExtension = Commands.declare(
     { id: 'aws.toolkit.installAmazonQExtension', logging: true },
     () => async () => {
+        if (vscode.env.remoteName === 'ssh-remote') {
+            /**
+             * due to a bug in https://github.com/microsoft/vscode/pull/206381/files#diff-efa08c29460835c0ffa740d751c34078033fd6cb6c7b031500fb31f524655de2R360
+             * installExtension will fail on remote environments when the amazon q extension is already installed locally.
+             * Until thats fixed we need to manually install the amazon q extension using the cli
+             */
+            const vscPath = await SystemUtilities.getVscodeCliPath()
+            if (!vscPath) {
+                throw new ToolkitError('installAmazonQ: Unable to find VSCode CLI path', {
+                    code: 'CodeCLINotFound',
+                })
+            }
+            await vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    cancellable: false,
+                },
+                (progress, token) => {
+                    progress.report({ message: 'Installing Amazon Q' })
+                    return SystemUtilities.tryRun(vscPath, ['--install-extension', VSCODE_EXTENSION_ID.amazonq])
+                }
+            )
+            return
+        }
         await vscode.commands.executeCommand('workbench.extensions.installExtension', VSCODE_EXTENSION_ID.amazonq)
+
         // jump to Amazon Q extension view after install.
         // this command won't work without a small delay after install
         setTimeout(() => {
