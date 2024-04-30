@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Application Composer: Support template file watching outside of the workspace."
-}
