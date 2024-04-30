@@ -94,7 +94,6 @@ jobs:
 
       - name: Generate artifact
         run: |
-
           ./gradlew -PideProfileName=${{ matrix.supported_versions }} :plugin-core:buildPlugin
       - name: Upload artifact
         uses: actions/upload-artifact@v4

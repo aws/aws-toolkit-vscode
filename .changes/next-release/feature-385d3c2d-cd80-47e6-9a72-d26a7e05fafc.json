@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Amazon Q Chat: Added additional parameters to onCopyCodeToClipboard and onCodeInsertToCursorPosition events"
-}

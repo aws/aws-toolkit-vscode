@@ -1,0 +1,35 @@
+{
+  "date" : "2024-04-29",
+  "version" : "3.0",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Amazon Q: Security scans can now run automatically when file changes are made"
+  }, {
+    "type" : "feature",
+    "description" : "Amazon Q: Send security issue to chat for explanation and fix"
+  }, {
+    "type" : "feature",
+    "description" : "Amazon Q: Security scans can now run on all files in the project"
+  }, {
+    "type" : "feature",
+    "description" : "Amazon Q Chat: Added additional parameters to onCopyCodeToClipboard and onCodeInsertToCursorPosition events"
+  }, {
+    "type" : "feature",
+    "description" : "Amazon Q Code Transformation: include details about expected changes in transformation plan"
+  }, {
+    "type" : "feature",
+    "description" : "Connection id is now shown beside CodeCatalyst dropdown"
+  }, {
+    "type" : "feature",
+    "description" : "Amazon Q Chat: Updates quick action commands style and groupings"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Chat: Q panel doesn't fit to its parent"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Code Feature Development: Update welcome message and menu item description for /dev command"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Feature Development: Update error message for monthly conversation limit reach"
+  } ]
+}

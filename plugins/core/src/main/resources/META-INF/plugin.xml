@@ -5,7 +5,7 @@
     <id>aws.toolkit.core</id>
     <name>AWS Core</name>
     <description><![CDATA[
-<p>This plugin is required to use the <a href="https://plugins.jetbrains.com/plugin/24267-amazon-q/>Amazon Q</a> or <a href="https://plugins.jetbrains.com/plugin/11349-aws-toolkit--amazon-q-codewhisperer-and-more">AWS Toolkit</a> plugins. It will be automatically installed if you install either plugin.</p>
+<p>This plugin is required to use the <a href="https://plugins.jetbrains.com/plugin/24267-amazon-q/">Amazon Q</a> or <a href="https://plugins.jetbrains.com/plugin/11349-aws-toolkit--amazon-q-codewhisperer-and-more">AWS Toolkit</a> plugins. It will be automatically installed if you install either plugin.</p>
     ]]></description>
     <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://github.com/aws/aws-toolkit-jetbrains">AWS</vendor>
     <version>1.0</version>

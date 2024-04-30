@@ -1,3 +1,15 @@
+# _3.0_ (2024-04-29)
+- **(Feature)** Amazon Q: Security scans can now run automatically when file changes are made
+- **(Feature)** Amazon Q: Send security issue to chat for explanation and fix
+- **(Feature)** Amazon Q: Security scans can now run on all files in the project
+- **(Feature)** Amazon Q Chat: Added additional parameters to onCopyCodeToClipboard and onCodeInsertToCursorPosition events
+- **(Feature)** Amazon Q Code Transformation: include details about expected changes in transformation plan
+- **(Feature)** Connection id is now shown beside CodeCatalyst dropdown
+- **(Feature)** Amazon Q Chat: Updates quick action commands style and groupings
+- **(Bug Fix)** Amazon Q Chat: Q panel doesn't fit to its parent
+- **(Bug Fix)** Amazon Q Code Feature Development: Update welcome message and menu item description for /dev command
+- **(Bug Fix)** Amazon Q Feature Development: Update error message for monthly conversation limit reach
+
 # _2.19_ (2024-04-19)
 - **(Feature)** Enable Amazon Q feature development and Amazon Q transform capabilities (/dev and /transform) for AWS Builder ID users.
 - **(Bug Fix)** Amazon Q Code Transformation: ensure full error message shown in notifications
