@@ -1,3 +1,9 @@
+## 1.1.0 2024-04-30
+
+- **Bug Fix** Amazon Q Chat: Fixed markdown is not getting parsed inside list items.
+- **Bug Fix** Amazon Q Chat: Copy to clipboard on code blocks doesn't work
+- **Bug Fix** Fixed a crash when trying to use Q /dev on large projects or projects containing files with unsupported encoding.
+
 ## 1.0.0 2024-04-29
 
 - **Bug Fix** Code Transformation: Address various issues in TransformationHub UX.

@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q Chat: Fixed markdown is not getting parsed inside list items."
-}
