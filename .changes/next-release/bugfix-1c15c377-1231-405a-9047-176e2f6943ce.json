@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Amazon Q: Fix an issue where /dev usage would cause the UI to freeze and take an unusually long time to complete. (#4269)"
+}

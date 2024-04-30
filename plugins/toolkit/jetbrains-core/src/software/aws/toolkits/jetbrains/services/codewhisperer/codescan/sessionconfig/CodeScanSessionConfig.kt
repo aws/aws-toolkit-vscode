@@ -10,6 +10,7 @@ import com.intellij.openapi.vfs.VFileProperty
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.time.withTimeout
 import software.aws.toolkits.core.utils.createTemporaryZipFile
 import software.aws.toolkits.core.utils.debug
@@ -140,7 +141,7 @@ class CodeScanSessionConfig(
                 } else {
                     VfsUtil.collectChildrenRecursively(projectRoot).filter {
                         !it.isDirectory && !it.`is`((VFileProperty.SYMLINK)) && (
-                            !featureDevSessionContext.ignoreFile(it)
+                            !featureDevSessionContext.ignoreFile(it, this)
                             )
                     }.fold(0L) { acc, next ->
                         totalSize = acc + next.length
@@ -174,7 +175,7 @@ class CodeScanSessionConfig(
             val current = stack.pop()
 
             if (!current.isDirectory) {
-                if (!featureDevSessionContext.ignoreFile(current)) {
+                if (runBlocking { !featureDevSessionContext.ignoreFile(current, this) }) {
                     if (willExceedPayloadLimit(currentTotalFileSize, current.length)) {
                         break
                     } else {
@@ -190,7 +191,7 @@ class CodeScanSessionConfig(
                 }
             } else {
                 // Directory case: only traverse if not ignored
-                if (!featureDevSessionContext.ignoreFile(current)) {
+                if (runBlocking { !featureDevSessionContext.ignoreFile(current, this) }) {
                     for (child in current.children) {
                         stack.push(child)
                     }
