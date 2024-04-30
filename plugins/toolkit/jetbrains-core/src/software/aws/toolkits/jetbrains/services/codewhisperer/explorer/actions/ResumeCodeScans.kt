@@ -8,6 +8,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAwareAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isUserBuilderId
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.resources.message
 
@@ -21,7 +22,7 @@ class ResumeCodeScans : DumbAwareAction(
         val actionManager = CodeWhispererExplorerActionManager.getInstance()
         actionManager.setAutoCodeScan(project, true)
         //  Run Proactive Code File Scan once toggle is enabled
-        if (!actionManager.isMonthlyQuotaForCodeScansExceeded()) {
+        if (!actionManager.isMonthlyQuotaForCodeScansExceeded() && !isUserBuilderId(project)) {
             CodeWhispererCodeScanManager.getInstance(project).debouncedRunCodeScan(CodeWhispererConstants.CodeAnalysisScope.FILE)
         }
     }

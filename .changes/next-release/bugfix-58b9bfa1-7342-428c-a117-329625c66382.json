@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix for Code Scan Issue editor popup for Builder Id users."
+}
