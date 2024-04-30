@@ -153,13 +153,9 @@ function main() {
         }
 
         fs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
-        child_process.execFileSync(
-            'vsce',
-            ['package', '--ignoreFile', '../.vscodeignore.packages', '--allow-missing-repository'],
-            {
-                stdio: 'inherit',
-            }
-        )
+        child_process.execFileSync('vsce', ['package', '--ignoreFile', '../.vscodeignore.packages'], {
+            stdio: 'inherit',
+        })
 
         console.log(`VSIX Version: ${packageJson.version}`)
 

@@ -1,22 +1,40 @@
 {
     "name": "amazon-q-vscode",
-    "displayName": "Standalone Test",
-    "description": "",
-    "version": "0.21.0-SNAPSHOT",
+    "displayName": "Amazon Q",
+    "description": "Amazon Q is your generative AI-powered assistant across the software development lifecycle.",
+    "version": "1.2.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
     "publisher": "amazonwebservices",
     "icon": "resources/marketplace/amazonq-icon-256x256.png",
     "license": "Apache-2.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/aws/aws-toolkit-vscode"
+    },
+    "bugs": {
+        "url": "https://github.com/aws/aws-toolkit-vscode/issues"
+    },
     "galleryBanner": {
         "color": "#232F3E",
         "theme": "dark"
     },
-    "categories": [],
-    "keywords": [],
-    "preview": true,
-    "qna": false,
+    "categories": [
+        "Programming Languages",
+        "Education",
+        "Snippets",
+        "Machine Learning"
+    ],
+    "keywords": [
+        "AWS",
+        "Codewhisperer",
+        "AI",
+        "Assistant",
+        "Chatbot"
+    ],
+    "preview": false,
+    "qna": "https://github.com/aws/aws-toolkit-vscode/issues",
     "activationEvents": [
         "onStartupFinished",
         "onUri",

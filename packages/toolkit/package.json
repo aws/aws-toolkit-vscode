@@ -1,8 +1,8 @@
 {
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
-    "description": "Including CodeCatalyst, Application Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services",
-    "version": "2.21.0-SNAPSHOT",
+    "description": "Including CodeCatalyst, Application Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services.",
+    "version": "3.2.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -29,9 +29,9 @@
     "keywords": [
         "Lambda",
         "CodeCatalyst",
-        "CodeWhisperer",
-        "Code",
-        "Whisperer"
+        "Composer",
+        "Amazon",
+        "S3"
     ],
     "preview": false,
     "qna": "https://github.com/aws/aws-toolkit-vscode/issues",

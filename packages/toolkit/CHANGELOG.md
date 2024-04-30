@@ -1,3 +1,15 @@
+## 3.1.0 2024-04-30
+
+- **Bug Fix** Installation error when installing amazon q in remote AND you have the extension locally
+- **Bug Fix** Application Composer: Support template file watching outside of the workspace.
+
+## 3.0.0 2024-04-30
+
+- **Breaking Change** Remove Amazon Q and CodeWhisperer features. They are now a part of the [Amazon Q extension](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.amazon-q-vscode).
+- **Bug Fix** CodeCatalyst: User can create a dev environment inside a dev environment
+- **Bug Fix** CodeCatalyst: Fix extension activation in new dev environments
+- **Bug Fix** CodeCatalyst: Fix heartbeat activity registration
+
 ## 2.20.0 2024-04-19
 
 - **Bug Fix** Amazon Q CodeTransform may fail if JAVA_HOME has leading or trailing whitespace

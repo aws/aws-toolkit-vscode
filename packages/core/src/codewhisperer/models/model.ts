@@ -311,6 +311,7 @@ export class ZipManifest {
     buildLogs: string = 'build-logs.txt'
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
+    transformCapabilities: string[] = ['EXPLAINABILITY_V1']
 }
 
 export interface IHilZipManifestParams {
@@ -327,13 +328,10 @@ export class HilZipManifest {
         targetPomVersion: '',
         dependenciesRoot: 'dependencies/',
     }
-    constructor({ pomGroupId, pomArtifactId, targetPomVersion }: IHilZipManifestParams, dependencyPath?: FolderInfo) {
+    constructor({ pomGroupId, pomArtifactId, targetPomVersion }: IHilZipManifestParams) {
         this.hilInput.pomGroupId = pomGroupId
         this.hilInput.pomArtifactId = pomArtifactId
         this.hilInput.targetPomVersion = targetPomVersion
-        // if (dependencyPath) {
-        //     this.hilInput.dependenciesRoot = `dependencies/${dependencyPath.name}/`
-        // }
     }
 }
 

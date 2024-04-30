@@ -33,7 +33,8 @@ phases:
                 git add package-lock.json
                 git commit -m "Release $VERSION"
                 echo "tagging commit"
-                git tag -a "v$VERSION" -m "version $VERSION $DATE"
+                # e.g. amazonq/v1.0.0. Ensure this tag is up to date with 50githubrelease.yml
+                git tag -a "${TARGET_EXTENSION}/v${VERSION}" -m "${TARGET_EXTENSION} version $VERSION $DATE"
                 # cleanup
                 git clean -fxd
                 git reset HEAD --hard

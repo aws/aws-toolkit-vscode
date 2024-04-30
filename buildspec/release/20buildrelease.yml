@@ -23,10 +23,6 @@ phases:
             - echo "TARGET_EXTENSION=${TARGET_EXTENSION}"
             # --unsafe-perm is needed because we run as root
             - npm ci --unsafe-perm
-            - |
-                if [ $TARGET_EXTENSION = "toolkit" ]; then
-                  cp ./README.quickstart.vscode.md ./README.md
-                fi
             - npm run package -w packages/${TARGET_EXTENSION}
             - cp packages/${TARGET_EXTENSION}/package.json ./package.json
             - NUM_VSIX=$(ls -1q *.vsix | wc -l)

@@ -14,13 +14,14 @@ import { vscodeComponent } from '../../shared/vscode/commands2'
  */
 export const AuthSources = {
     addConnectionQuickPick: 'addConnectionQuickPick',
-    firstStartup: ExtStartUpSources.firstStartUp,
+    firstStartUp: ExtStartUpSources.firstStartUp,
     codecatalystDeveloperTools: 'codecatalystDeveloperTools',
     vscodeComponent: vscodeComponent,
     cwQuickPick: cwQuickPickSource,
     cwTreeNode: cwTreeNodeSource,
     amazonQChat: amazonQChatSource,
-    authNode: 'authNode',
+    authNode: 'authNode', // deprecated?
+    unknown: 'unknown',
 } as const
 
 export type AuthSource = (typeof AuthSources)[keyof typeof AuthSources]

@@ -431,7 +431,6 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
         const uploadPayloadFilePath = await zipCode({
             dependenciesFolder: uploadFolderInfo,
             zipManifest: createZipManifest({
-                dependenciesFolder: uploadFolderInfo,
                 hilZipParams: {
                     pomGroupId: manifestFileValues.pomGroupId,
                     pomArtifactId: manifestFileValues.pomArtifactId,
@@ -525,17 +524,20 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
     try {
         plan = await getTransformationPlan(jobId)
     } catch (error) {
+        // means API call failed
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToCompleteJobNotification}`, error)
         transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToGetPlanNotification)
         transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToGetPlanChatMessage)
         throw new Error('Get plan failed')
     }
 
-    const planFilePath = path.join(os.tmpdir(), 'transformation-plan.md')
-    fs.writeFileSync(planFilePath, plan)
-    await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(planFilePath))
-    transformByQState.setPlanFilePath(planFilePath)
-    await vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', true)
+    if (plan !== undefined) {
+        const planFilePath = path.join(transformByQState.getProjectPath(), 'transformation-plan.md')
+        fs.writeFileSync(planFilePath, plan)
+        await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(planFilePath))
+        transformByQState.setPlanFilePath(planFilePath)
+        await vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', true)
+    }
     sessionPlanProgress['generatePlan'] = StepProgress.Succeeded
     throwIfCancelled()
 }

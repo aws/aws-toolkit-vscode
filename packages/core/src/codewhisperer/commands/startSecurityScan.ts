@@ -269,8 +269,8 @@ export function showSecurityScanResults(
             void vscode.commands.executeCommand('workbench.action.problems.focus')
         }
     }
-    populateCodeScanLogStream(zipMetadata.scannedFiles)
     if (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
+        populateCodeScanLogStream(zipMetadata.scannedFiles)
         showScanCompletedNotification(totalIssues, zipMetadata.scannedFiles, false)
     }
 }
