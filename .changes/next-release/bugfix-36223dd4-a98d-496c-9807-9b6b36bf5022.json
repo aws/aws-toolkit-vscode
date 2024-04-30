@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Amazon Q Chat: Copy to clipboard on code blocks doesn't work"
+}
