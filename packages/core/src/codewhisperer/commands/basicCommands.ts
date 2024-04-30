@@ -323,7 +323,6 @@ export const installAmazonQExtension = Commands.declare(
                     return SystemUtilities.tryRun(vscPath, ['--install-extension', VSCODE_EXTENSION_ID.amazonq])
                 }
             )
-            await AuthUtil.instance.setVscodeContextProps()
             return
         }
         await vscode.commands.executeCommand('workbench.extensions.installExtension', VSCODE_EXTENSION_ID.amazonq)
