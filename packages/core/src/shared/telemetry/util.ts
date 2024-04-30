@@ -62,7 +62,8 @@ export class TelemetryConfig {
         if (globals.context.globalState.get<boolean>(this.amazonQSettingMigratedKey)) {
             return
         }
-        // aws.telemetry isn't deprecated, we are just initializing amazonQ.telemetry with its value
+        // aws.telemetry isn't deprecated, we are just initializing amazonQ.telemetry with its value.
+        // This is also why we need to check that we only try this migration once.
         await migrateSetting({ key: 'aws.telemetry', type: Boolean }, { key: 'amazonQ.telemetry' })
         await globals.context.globalState.update(this.amazonQSettingMigratedKey, true)
     }
