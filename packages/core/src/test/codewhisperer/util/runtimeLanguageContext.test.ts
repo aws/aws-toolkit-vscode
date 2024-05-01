@@ -9,9 +9,15 @@ import { runtimeLanguageContext, RuntimeLanguageContext } from '../../../codewhi
 import * as codewhispererClient from '../../../codewhisperer/client/codewhispererclient'
 import { CodewhispererLanguage } from '../../../shared/telemetry/telemetry.gen'
 import { PlatformLanguageId } from '../../../codewhisperer/models/constants'
+import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
+import { tryRegister } from '../../testUtil'
 
 describe('runtimeLanguageContext', function () {
     const languageContext = new RuntimeLanguageContext()
+
+    before(async function () {
+        tryRegister(refreshStatusBar)
+    })
 
     describe('test isLanguageSupported', function () {
         const cases: [string, boolean][] = [
@@ -296,6 +302,8 @@ describe('runtimeLanguageContext', function () {
 
         for (const [originalLanguage, mappedLanguage] of cases) {
             it(`convert ListRecommendationRequest - ${originalLanguage} should map to ${mappedLanguage}`, function () {
+                tryRegister(refreshStatusBar)
+
                 const originalRequest: codewhispererClient.ListRecommendationsRequest = {
                     fileContext: {
                         leftFileContent: leftFileContent,

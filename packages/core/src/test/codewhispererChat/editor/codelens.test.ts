@@ -10,7 +10,7 @@ import {
     resolveModifierKey,
     tryChatCodeLensCommand,
 } from '../../../codewhispererChat/editor/codelens'
-import { assertTelemetry, installFakeClock } from '../../testUtil'
+import { assertTelemetry, installFakeClock, tryRegister } from '../../testUtil'
 import { InstalledClock } from '@sinonjs/fake-timers'
 import globals from '../../../shared/extensionGlobals'
 import { focusAmazonQPanel } from '../../../codewhispererChat/commands/registerCommands'
@@ -20,6 +20,15 @@ describe('TryChatCodeLensProvider', () => {
     let cancellationTokenSource: vscode.CancellationTokenSource
     let clock: InstalledClock
     const codeLensPosition = new vscode.Position(1, 2)
+
+    before(async function () {
+        // HACK: We need to register these commands since the `core` `activate()` function
+        // does not run Amazon Q `activate()` functions anymore. Due to this we need to register the Commands
+        // that originally would have been registered by the `core` `activate()` at some point
+        tryRegister(tryChatCodeLensCommand)
+        tryRegister(focusAmazonQPanel)
+        await TryChatCodeLensProvider.register()
+    })
 
     beforeEach(function () {
         instance = new TryChatCodeLensProvider(() => codeLensPosition)

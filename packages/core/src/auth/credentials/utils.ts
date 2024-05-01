@@ -48,7 +48,9 @@ export function showLoginFailedMessage(credentialsId: string, errMsg: string): v
         if (selection === getHelp) {
             return openUrl(vscode.Uri.parse(authHelpUrl))
         } else if (selection === editCreds) {
-            return vscode.commands.executeCommand('aws.credentials.edit')
+            // TODO: clean this up, its confusing. Only Toolkit should enter this flow, which is why we are hardcoding it.
+            // (Also, if we got it dynamically by calling authCommands(), it would be a circular dependency)
+            return vscode.commands.executeCommand('aws.toolkit.credentials.edit')
         }
     })
 }

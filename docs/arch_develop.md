@@ -35,7 +35,7 @@ Current quirks of the current monorepo status that should be resolved/evaluated 
 -   The [root package.json](../package.json) contains common dependencies for subprojects, and workspace
     entries for each of the subprojects.
     -   This package contains shortcuts to some of the `npm` scripts found in the subproject(s).
-    -   Other scripts, like `createRelease` and `newChange` run at the root level.
+    -   `createRelease` and `newChange` run at the subproject level only, e.g. from root level, try npm run createRelease -w packages/toolkit
     -   To run a script not present in the root `package.json`, use `npm run -w packages/toolkit <script>`
 -   `coverage/`, `.test-reports/`, `node_modules/` are hoisted to the project root. As more subprojects are added,
     we will need to evaluate how to merge and publish coverage reports.
@@ -58,6 +58,19 @@ Additional quirks introduced by creating a core library from the original extens
 -   Extension runs from `packages/toolkit`
 -   Extension tests run from the core lib. Since some of the tests require an extension context/sandbox, we initiate a "fake" extension to run these tests. This is also why there are vscode extensionproperties in the package.json
 -   Some of original extension code (that now lives in `packages/core`) depends on the package.json, specifically the contributes section. This section is very large AND needs to be present in both the core library and toolkit extension package.jsons. The core library code needs access to this section to create types, set up SAM debuggers, etc. The toolkit needs this section during packaging/debugging so that the extension can run in vscode. The short term solution was to creat a [build script](../packages/toolkit/scripts/build/handlePackageJson.ts) to copy necessary fields over to the toolkit extension during packaging and debugging.
+
+### Contributes and Settings
+
+Some components of the core library depend on the `package.json`s of the extensions. One example of this is compile time checking of the extension's settings values. However, VSCode also requires a complete local `package.json` for the individual extensions during packaging. As a temporary workaround to this, we are using scripts to auto-populate the `package.json`s for the individual extensions from the core `package.json`.
+
+-   [`packages/toolkit/../handlePackageJson.ts`](../packages/toolkit/scripts/build/handlePackageJson.ts)
+    -   Copies the entirety of the `contributes` and `engine` sections, except for `configuration.properties` relating to `packages/amazon`.
+    -   Restores to the original barebones `package.json` after packaging/debugging, to avoid a large amount of duplicate code.
+    -   To develop for the Toolkit extension: add all changes to `packages/core/package.json`
+-   [`packages/amazonq/../syncPackageJson.ts`](../packages/amazonq/scripts/build/syncPackageJson.ts)
+    -   Moves all Amazon Q related `configuration.properties` to the local `package.json` only, overwriting anything that exists with the same name locally.
+    -   Does not restore, it is a superset of what exists in `packages/core` for `configuration.properties`.
+    -   To develop for the Amazon Q extension: add all changes to `packages/amazonq/package.json`, EXCEPT for settings that are references by code in the core library, or settings that already exist in the core `package.json`
 
 ## Commands
 

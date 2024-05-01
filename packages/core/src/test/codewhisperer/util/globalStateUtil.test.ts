@@ -9,9 +9,15 @@ import { vsCodeState } from '../../../codewhisperer/models/model'
 import { resetIntelliSenseState } from '../../../codewhisperer/util/globalStateUtil'
 import { resetCodeWhispererGlobalVariables } from '../testUtil'
 import { getLogger } from '../../../shared/logger/logger'
+import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
+import { tryRegister } from '../../testUtil'
 
 describe('globalStateUtil', function () {
     let loggerSpy: sinon.SinonSpy
+
+    before(async function () {
+        tryRegister(refreshStatusBar)
+    })
 
     beforeEach(async function () {
         await resetCodeWhispererGlobalVariables()

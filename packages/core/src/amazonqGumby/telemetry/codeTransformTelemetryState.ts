@@ -5,15 +5,14 @@
 
 import { randomUUID } from '../../common/crypto'
 
-interface ICodeTransformerTelemetryState {
+interface ICodeTransformTelemetryState {
     sessionId: string
     sessionStartTime: number
     resultStatus: string
 }
 
-class CodeTransformerTelemetryState {
-    private static instance: CodeTransformerTelemetryState
-    mainState: ICodeTransformerTelemetryState
+export class CodeTransformTelemetryState {
+    mainState: ICodeTransformTelemetryState
 
     private constructor() {
         this.mainState = {
@@ -21,14 +20,6 @@ class CodeTransformerTelemetryState {
             sessionStartTime: Date.now(),
             resultStatus: '',
         }
-    }
-
-    public static getInstance(): CodeTransformerTelemetryState {
-        if (!CodeTransformerTelemetryState.instance) {
-            CodeTransformerTelemetryState.instance = new CodeTransformerTelemetryState()
-        }
-
-        return CodeTransformerTelemetryState.instance
     }
 
     public getSessionId = () => this.mainState.sessionId
@@ -44,6 +35,10 @@ class CodeTransformerTelemetryState {
     public setResultStatus = (newValue: string) => {
         this.mainState.resultStatus = newValue
     }
-}
 
-export const codeTransformTelemetryState = CodeTransformerTelemetryState.getInstance()
+    static #instance: CodeTransformTelemetryState
+
+    public static get instance() {
+        return (this.#instance ??= new this())
+    }
+}

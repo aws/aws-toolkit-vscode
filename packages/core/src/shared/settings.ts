@@ -4,10 +4,10 @@
  */
 
 import * as vscode from 'vscode'
-import * as packageJson from '../../package.json'
 import * as codecatalyst from './clients/codecatalystClient'
 import * as codewhisperer from '../codewhisperer/client/codewhisperer'
-import { getLogger, showLogOutputChannel } from './logger'
+import packageJson from '../../package.json'
+import { getLogger } from './logger'
 import { cast, FromDescriptor, Record, TypeConstructor, TypeDescriptor } from './utilities/typeConstructors'
 import { assertHasProps, ClassToInterfaceType, keys } from './utilities/tsUtils'
 import { toRecord } from './utilities/collectionUtils'
@@ -15,6 +15,7 @@ import { isNameMangled } from './vscode/env'
 import { once, onceChanged } from './utilities/functionUtils'
 import { ToolkitError } from './errors'
 import { telemetry } from './telemetry/telemetry'
+import globals from './extensionGlobals'
 
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
 
@@ -31,7 +32,7 @@ export async function showSettingsFailedMsg(kind: 'read' | 'update', key?: strin
     const p = vscode.window.showErrorMessage(msg, {}, ...items)
     return p.then<string | undefined>(async selection => {
         if (selection === logsItem) {
-            showLogOutputChannel()
+            globals.logOutputChannel.show(true)
         } else if (selection === openSettingsItem) {
             await vscode.commands.executeCommand('workbench.action.openSettingsJson')
         }
@@ -580,10 +581,9 @@ export function fromExtensionManifest<T extends TypeDescriptor & Partial<Section
     return Settings.define(section, descriptor)
 }
 
-const prompts = settingsProps['aws.suppressPrompts'].properties
-type PromptName = keyof typeof prompts
-
 /**
+ * PromptSettings
+ *
  * Controls flags for prompts that allow the user to hide them. Usually this is presented as
  * some variation of "Don't show again".
  *
@@ -599,12 +599,21 @@ type PromptName = keyof typeof prompts
  *     }
  * }
  * ```
+ *
+ * There are individual implementations for the Toolkit extension and Amazon Q extension.
+ * This is a temporary workaround to get compile time checking and runtime fetching
+ * of settings working.
+ *
+ * TODO: Settings should be defined in individual extensions, and passed to the
+ * core lib as necessary.
  */
-export class PromptSettings extends Settings.define(
+export const toolkitPrompts = settingsProps['aws.suppressPrompts'].properties
+type toolkitPromptName = keyof typeof toolkitPrompts
+export class ToolkitPromptSettings extends Settings.define(
     'aws.suppressPrompts',
-    toRecord(keys(prompts), () => Boolean)
+    toRecord(keys(toolkitPrompts), () => Boolean)
 ) {
-    public async isPromptEnabled(promptName: PromptName): Promise<boolean> {
+    public async isPromptEnabled(promptName: toolkitPromptName): Promise<boolean> {
         try {
             return !this._getOrThrow(promptName, false)
         } catch (e) {
@@ -615,13 +624,43 @@ export class PromptSettings extends Settings.define(
         }
     }
 
-    public async disablePrompt(promptName: PromptName): Promise<void> {
+    public async disablePrompt(promptName: toolkitPromptName): Promise<void> {
         if (await this.isPromptEnabled(promptName)) {
             await this.update(promptName, true)
         }
     }
 
-    static #instance: PromptSettings
+    static #instance: ToolkitPromptSettings
+
+    public static get instance() {
+        return (this.#instance ??= new this())
+    }
+}
+
+export const amazonQPrompts = settingsProps['amazonQ.suppressPrompts'].properties
+type amazonQPromptName = keyof typeof amazonQPrompts
+export class AmazonQPromptSettings extends Settings.define(
+    'amazonQ.suppressPrompts',
+    toRecord(keys(amazonQPrompts), () => Boolean)
+) {
+    public async isPromptEnabled(promptName: amazonQPromptName): Promise<boolean> {
+        try {
+            return !this._getOrThrow(promptName, false)
+        } catch (e) {
+            this._log('prompt check for "%s" failed: %s', promptName, (e as Error).message)
+            await this.reset()
+
+            return true
+        }
+    }
+
+    public async disablePrompt(promptName: amazonQPromptName): Promise<void> {
+        if (await this.isPromptEnabled(promptName)) {
+            await this.update(promptName, true)
+        }
+    }
+
+    static #instance: AmazonQPromptSettings
 
     public static get instance() {
         return (this.#instance ??= new this())
@@ -689,6 +728,7 @@ const devSettings = {
     codewhispererService: Record(String, String),
     ssoCacheDirectory: String,
     enableIamPolicyChecksFeature: Boolean,
+    pkceAuth: Boolean,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
 type AwsDevSetting = keyof ResolvedDevSettings
@@ -821,34 +861,51 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
  * Simple utility function to 'migrate' a setting from one key to another.
  *
  * Currently only used for simple migrations where we are not concerned about maintaining the
- * legacy definition. Only migrates to global settings.
+ * legacy definition.
  */
 export async function migrateSetting<T, U = T>(
     from: { key: string; type: TypeConstructor<T> },
-    to: { key: string; transform?: (value: T) => U }
+    to: { key: keyof SettingsProps; transform?: (value: T) => U }
 ) {
-    // TODO(sijaden): we should handle other targets besides 'global'
     const config = vscode.workspace.getConfiguration()
-    const hasLatest = config.inspect(to.key)?.globalValue !== undefined
-    const logPrefix = `Settings migration ("${from.key}" -> "${to.key}")`
 
-    if (hasLatest || !config.has(from.key)) {
-        return true
+    const migrateForScope = async (scope: vscode.ConfigurationTarget) => {
+        const valueProp = scope === vscode.ConfigurationTarget.Global ? 'globalValue' : 'workspaceValue'
+        const hasLatest = config.inspect(to.key)![valueProp] !== undefined
+        const logPrefix = `Settings migration ("${from.key}" -> "${to.key}"), (scope: ${valueProp})`
+
+        const oldSettingProps = config.inspect(from.key)
+        if (hasLatest) {
+            getLogger().debug(`skipping: ${logPrefix}, the latest setting is already defined for this scope.`)
+            return
+        }
+        if (!oldSettingProps) {
+            getLogger().debug(`skipping: ${logPrefix}, the old setting does not exist.`)
+            return
+        }
+        if (oldSettingProps[valueProp] === undefined) {
+            getLogger().debug(`skipping: ${logPrefix}, the old setting is not defined for this scope.`)
+            return
+        }
+
+        try {
+            const oldVal = cast(config.get(from.key), from.type)
+            const newVal = to.transform?.(oldVal) ?? oldVal
+
+            await config.update(to.key, newVal, scope)
+            getLogger().info(`${logPrefix}: succeeded`)
+        } catch (error) {
+            getLogger().verbose(`${logPrefix}: failed: %s`, error)
+        }
     }
 
-    try {
-        const oldVal = cast(config.get(from.key), from.type)
-        const newVal = to.transform?.(oldVal) ?? oldVal
+    await migrateForScope(vscode.ConfigurationTarget.Workspace)
+    await migrateForScope(vscode.ConfigurationTarget.Global)
+}
 
-        await config.update(to.key, newVal, vscode.ConfigurationTarget.Global)
-        getLogger().debug(`${logPrefix}: succeeded`)
-
-        return true
-    } catch (error) {
-        getLogger().verbose(`${logPrefix}: failed: %s`, error)
-
-        return false
-    }
+/** Opens the settings UI filtered by the given prefix. */
+export async function openSettings(prefix: string): Promise<void> {
+    await vscode.commands.executeCommand('workbench.action.openSettings', prefix)
 }
 
 /**
@@ -856,6 +913,6 @@ export async function migrateSetting<T, U = T>(
  *
  * This only works for keys that are considered "top-level", e.g. keys of {@link settingsProps}.
  */
-export async function openSettings<K extends keyof SettingsProps>(key: K): Promise<void> {
+export async function openSettingsId<K extends keyof SettingsProps>(key: K): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.openSettings', `@id:${key}`)
 }

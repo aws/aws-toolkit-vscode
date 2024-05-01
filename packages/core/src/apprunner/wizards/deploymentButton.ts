@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 
 import { QuickInputButton, QuickInputToggleButton } from '../../shared/ui/buttons'
 import { apprunnerPricingUrl } from '../../shared/constants'
-import { PromptSettings } from '../../shared/settings'
+import { ToolkitPromptSettings } from '../../shared/settings'
 import { getIcon } from '../../shared/icons'
 import { dontShow } from '../../shared/localizedText'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
@@ -30,7 +30,7 @@ function makeDeployButtons() {
 }
 
 async function showDeploymentCostNotification(): Promise<void> {
-    const settings = PromptSettings.instance
+    const settings = ToolkitPromptSettings.instance
 
     if (await settings.isPromptEnabled('apprunnerNotifyPricing')) {
         const notice = localize(

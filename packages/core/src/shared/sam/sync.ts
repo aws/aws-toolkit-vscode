@@ -24,7 +24,7 @@ import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { ToolkitError, UnknownError } from '../errors'
 import { telemetry } from '../telemetry/telemetry'
 import { createCommonButtons } from '../ui/buttons'
-import { PromptSettings } from '../settings'
+import { ToolkitPromptSettings } from '../settings'
 import { getLogger } from '../logger'
 import { isCloud9 } from '../extensionUtilities'
 import { removeAnsi } from '../utilities/textUtilities'
@@ -647,7 +647,7 @@ async function updateRecentResponse(region: string, key: string, value: string |
 }
 
 async function confirmDevStack() {
-    const canPrompt = await PromptSettings.instance.isPromptEnabled('samcliConfirmDevStack')
+    const canPrompt = await ToolkitPromptSettings.instance.isPromptEnabled('samcliConfirmDevStack')
     if (!canPrompt) {
         return
     }
@@ -667,7 +667,7 @@ Confirm that you are synchronizing a development stack.
     }
 
     if (resp === okDontShow) {
-        await PromptSettings.instance.disablePrompt('samcliConfirmDevStack')
+        await ToolkitPromptSettings.instance.disablePrompt('samcliConfirmDevStack')
     }
 }
 
