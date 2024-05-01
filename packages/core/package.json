@@ -214,6 +214,18 @@
                     "description": "%AWS.configuration.description.lambda.recentlyUploaded%",
                     "default": []
                 },
+                "aws.accessAnalyzer.policyChecks.referencePolicyFilePath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "File path or S3 path to a control policy for Custom Policy Checks.",
+                    "scope": "window"
+                },
+                "aws.accessAnalyzer.policyChecks.cloudFormationParameterFilePath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Keys and values for CloudFormation template parameters. Only parameters that are referenced by IAM policies in the template are required.",
+                    "scope": "machine-overridable"
+                },
                 "amazonQ.telemetry": {
                     "type": "boolean",
                     "default": true,
@@ -2001,6 +2013,12 @@
             ]
         },
         "commands": [
+            {
+                "command": "aws.accessanalyzer.iamPolicyChecks",
+                "title": "%AWS.command.accessanalyzer.iamPolicyChecks%",
+                "category": "%AWS.title%",
+                "enablement": "aws.iamPolicyChecks.enabled"
+            },
             {
                 "command": "aws.launchConfigForm",
                 "title": "%AWS.command.launchConfigForm.title%",
@@ -4037,6 +4055,7 @@
         "@smithy/shared-ini-file-loader": "^2.2.8",
         "@vscode/debugprotocol": "^1.57.0",
         "adm-zip": "^0.5.10",
+        "amazon-s3-uri": "^0.1.1",
         "amazon-states-language-service": "^1.11.0",
         "archiver": "^7.0.1",
         "async-lock": "^1.4.0",

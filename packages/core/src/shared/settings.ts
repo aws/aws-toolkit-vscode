@@ -727,6 +727,7 @@ const devSettings = {
     codecatalystService: Record(String, String),
     codewhispererService: Record(String, String),
     ssoCacheDirectory: String,
+    enableIamPolicyChecksFeature: Boolean,
     pkceAuth: Boolean,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
