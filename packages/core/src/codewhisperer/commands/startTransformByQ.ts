@@ -65,7 +65,6 @@ import { placeholder } from '../../shared/vscode/commands2'
 import { AlternateDependencyVersionsNotFoundError, JavaHomeNotSetError } from '../../amazonqGumby/errors'
 import { ChatSessionManager } from '../../amazonqGumby/chat/storages/chatSession'
 import {
-    createPomCopy,
     getCodeIssueSnippetFromPom,
     getDependenciesFolderInfo,
     getJsonValuesFromManifestFile,
@@ -75,7 +74,6 @@ import {
 } from '../service/transformByQ/transformFileHandler'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import DependencyVersions from '../../amazonqGumby/models/dependencies'
-import { IManifestFile } from '../../amazonqFeatureDev/models'
 import { dependencyNoAvailableVersions } from '../../amazonqGumby/models/constants'
 import { HumanInTheLoopManager } from '../service/transformByQ/humanInTheLoopManager'
 
@@ -262,10 +260,6 @@ export async function preTransformationUploadCode() {
     return uploadId
 }
 
-let PomFileVirtualFileReference: vscode.Uri
-let manifestFileValues: IManifestFile
-let newPomFileVirtualFileReference: vscode.Uri
-
 export async function initiateHumanInTheLoopPrompt(jobId: string) {
     try {
         const humanInTheLoopManager = HumanInTheLoopManager.instance
@@ -290,14 +284,16 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
             artifactId,
             humanInTheLoopManager.getTmpDownloadsDir()
         )
-        PomFileVirtualFileReference = pomFileVirtualFileReference
-        manifestFileValues = await getJsonValuesFromManifestFile(manifestFileVirtualFileReference)
+        humanInTheLoopManager.setPomFileVirtualFileReference(pomFileVirtualFileReference)
+        const manifestFileValues = await getJsonValuesFromManifestFile(manifestFileVirtualFileReference)
+        humanInTheLoopManager.setManifestFileValues(manifestFileValues)
 
         // 3) We need to replace version in pom.xml
-        newPomFileVirtualFileReference = await humanInTheLoopManager.createPomFileCopy(
+        const newPomFileVirtualFileReference = await humanInTheLoopManager.createPomFileCopy(
             humanInTheLoopManager.getTmpDependencyListDir(),
             pomFileVirtualFileReference
         )
+        humanInTheLoopManager.setNewPomFileVirtualFileReference(newPomFileVirtualFileReference)
         await humanInTheLoopManager.replacePomFileVersion(
             newPomFileVirtualFileReference,
             manifestFileValues.sourcePomVersion
@@ -363,6 +359,7 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
             result: MetadataResult.Fail,
             reason: CodeTransformTelemetryState.instance.getCodeTransformMetaData().errorMessage,
         })
+        await HumanInTheLoopManager.instance.cleanUpArtifacts()
         return true
     } finally {
         await sleep(1000)
@@ -371,10 +368,11 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
 }
 
 export async function openHilPomFile() {
+    const humanInTheLoopManager = HumanInTheLoopManager.instance
     await highlightPomIssueInProject(
-        newPomFileVirtualFileReference,
+        humanInTheLoopManager.getNewPomFileVirtualFileReference(),
         HumanInTheLoopManager.instance.diagnosticCollection,
-        manifestFileValues.sourcePomVersion
+        humanInTheLoopManager.getManifestFileValues().sourcePomVersion
     )
 }
 
@@ -390,6 +388,7 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
     let hilResult: MetadataResult = MetadataResult.Pass
     try {
         const humanInTheLoopManager = HumanInTheLoopManager.instance
+        const manifestFileValues = humanInTheLoopManager.getManifestFileValues()
         const getUserInputValue = selectedDependency
         CodeTransformTelemetryState.instance.setCodeTransformMetaDataField({
             dependencyVersionSelected: selectedDependency,
@@ -398,7 +397,7 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
         // original pom.xml is intact somewhere, and run maven compile
         const userInputPomFileVirtualFileReference = await humanInTheLoopManager.createPomFileCopy(
             humanInTheLoopManager.getUserDependencyUpdateDir(),
-            PomFileVirtualFileReference
+            humanInTheLoopManager.getPomFileVirtualFileReference()
         )
         await humanInTheLoopManager.replacePomFileVersion(userInputPomFileVirtualFileReference, getUserInputValue)
 
