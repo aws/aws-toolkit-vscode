@@ -14,6 +14,7 @@ import { getLogger } from './logger/logger'
 import { GitExtension } from './extensions/git'
 import { Settings } from './settings'
 import globals, { isWeb } from './extensionGlobals'
+import { isValidPath } from './utilities/pathUtils'
 
 /**
  * Deprecated interface for filesystem operations.
@@ -38,13 +39,13 @@ export class SystemUtilities {
 
         const env = process.env as EnvironmentVariables
 
-        if (env.HOME !== undefined) {
-            return env.HOME
+        if (env.HOME && isValidPath(path.resolve(env.HOME))) {
+            return path.resolve(env.HOME)
         }
-        if (env.USERPROFILE !== undefined) {
-            return env.USERPROFILE
+        if (env.USERPROFILE && isValidPath(path.resolve(env.USERPROFILE))) {
+            return path.resolve(env.USERPROFILE)
         }
-        if (env.HOMEPATH !== undefined) {
+        if (env.HOMEPATH && isValidPath(env.HOMEPATH)) {
             const homeDrive: string = env.HOMEDRIVE || 'C:'
 
             return path.join(homeDrive, env.HOMEPATH)
