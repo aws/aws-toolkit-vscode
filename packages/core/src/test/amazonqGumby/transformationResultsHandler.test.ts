@@ -10,12 +10,9 @@ import {
     DiffModel,
     AddedChangeNode,
     ModifiedChangeNode,
-} from '../../../codewhisperer/service/transformByQ/transformationResultsViewProvider'
+} from '../../codewhisperer/service/transformByQ/transformationResultsViewProvider'
 import path from 'path'
-
-const getTestFilePath = (relativePathToFile: string) => {
-    return path.resolve(__dirname, relativePathToFile)
-}
+import { getTestResourceFilePath } from './amazonQGumbyUtil'
 
 describe('DiffModel', function () {
     afterEach(() => {
@@ -36,7 +33,7 @@ describe('DiffModel', function () {
             return true
         })
 
-        testDiffModel.parseDiff(getTestFilePath('resources/addedFile.diff'), workspacePath)
+        testDiffModel.parseDiff(getTestResourceFilePath('resources/files/addedFile.diff'), workspacePath)
 
         assert.strictEqual(testDiffModel.changes.length, 1)
         const change = testDiffModel.changes[0]
@@ -56,7 +53,7 @@ describe('DiffModel', function () {
             'This guide walks you through using Gradle to build a simple Java project.'
         )
 
-        testDiffModel.parseDiff(getTestFilePath('resources/modifiedFile.diff'), workspacePath)
+        testDiffModel.parseDiff(getTestResourceFilePath('resources/files/modifiedFile.diff'), workspacePath)
 
         assert.strictEqual(testDiffModel.changes.length, 1)
         const change = testDiffModel.changes[0]

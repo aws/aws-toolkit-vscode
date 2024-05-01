@@ -780,9 +780,9 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
     return status
 }
 
-export function getArtifactsFromProgressUpdate(progressUpdate: TransformationProgressUpdate) {
-    const artifactType = progressUpdate.downloadArtifacts?.[0]?.downloadArtifactType
-    const artifactId = progressUpdate.downloadArtifacts?.[0]?.downloadArtifactId
+export function getArtifactsFromProgressUpdate(progressUpdate?: TransformationProgressUpdate) {
+    const artifactType = progressUpdate?.downloadArtifacts?.[0]?.downloadArtifactType
+    const artifactId = progressUpdate?.downloadArtifacts?.[0]?.downloadArtifactId
     return {
         artifactId,
         artifactType,
