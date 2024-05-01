@@ -2020,31 +2020,6 @@
                 "enablement": "aws.iamPolicyChecks.enabled"
             },
             {
-                "command": "aws.amazonq.explainCode",
-                "title": "%AWS.command.amazonq.explainCode%",
-                "category": "%AWS.title%"
-            },
-            {
-                "command": "aws.amazonq.refactorCode",
-                "title": "%AWS.command.amazonq.refactorCode%",
-                "category": "%AWS.title%"
-            },
-            {
-                "command": "aws.amazonq.fixCode",
-                "title": "%AWS.command.amazonq.fixCode%",
-                "category": "%AWS.title%"
-            },
-            {
-                "command": "aws.amazonq.optimizeCode",
-                "title": "%AWS.command.amazonq.optimizeCode%",
-                "category": "%AWS.title%"
-            },
-            {
-                "command": "aws.amazonq.sendToPrompt",
-                "title": "%AWS.command.amazonq.sendToPrompt%",
-                "category": "%AWS.title%"
-            },
-            {
                 "command": "aws.launchConfigForm",
                 "title": "%AWS.command.launchConfigForm.title%",
                 "category": "%AWS.title%",
