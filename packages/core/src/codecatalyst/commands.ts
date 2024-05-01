@@ -25,7 +25,8 @@ import { AccountStatus } from '../shared/telemetry/telemetryClient'
 import { CreateDevEnvironmentRequest, UpdateDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
 import { Auth } from '../auth/auth'
 import { SsoConnection } from '../auth/connection'
-import { showManageConnections } from '../auth/ui/vue/show'
+import { getShowManageConnections } from '../auth/ui/vue/show'
+import { isInDevEnv } from '../shared/vscode/env'
 
 /** "List CodeCatalyst Commands" command. */
 export async function listCommands(): Promise<void> {
@@ -205,6 +206,14 @@ type Inject<T, U> = T extends (...args: infer P) => infer R
 
 type WithClient<T> = Parameters<Inject<T, CodeCatalystClient>>
 
+class RemoteContextError extends ToolkitError {
+    constructor() {
+        super('Cannot connect from a remote context. Try again from a local VS Code instance.', {
+            code: 'ConnectedToRemote',
+        })
+    }
+}
+
 export class CodeCatalystCommands {
     public readonly withClient: ClientInjector
     public readonly bindClient = createCommandDecorator(this)
@@ -222,6 +231,9 @@ export class CodeCatalystCommands {
     }
 
     public createDevEnv(): Promise<void> {
+        if (vscode.env.remoteName === 'ssh-remote' && isInDevEnv()) {
+            throw new RemoteContextError()
+        }
         return this.withClient(showCreateDevEnv, globals.context, CodeCatalystCommands.declared)
     }
 
@@ -268,10 +280,8 @@ export class CodeCatalystCommands {
         targetPath?: string,
         connection?: { startUrl: string; region: string }
     ): Promise<void> {
-        if (vscode.env.remoteName === 'ssh-remote') {
-            throw new ToolkitError('Cannot connect from a remote context. Try again from a local VS Code instance.', {
-                code: 'ConnectedToRemote',
-            })
+        if (vscode.env.remoteName === 'ssh-remote' && isInDevEnv()) {
+            throw new RemoteContextError()
         }
 
         const devenv = id ?? (await this.selectDevEnv())
@@ -288,7 +298,7 @@ export class CodeCatalystCommands {
         if (connection !== undefined) {
             await this.authProvider.tryConnectTo(connection)
         } else if (!this.authProvider.isConnectionValid()) {
-            void showManageConnections.execute(placeholder, 'codecatalystDeveloperTools', 'codecatalyst')
+            void getShowManageConnections().execute(placeholder, 'codecatalystDeveloperTools', 'codecatalyst')
             return
         }
 

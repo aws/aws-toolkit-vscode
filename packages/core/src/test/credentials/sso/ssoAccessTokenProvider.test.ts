@@ -87,7 +87,7 @@ describe('SsoAccessTokenProvider', function () {
         oidcClient = stub(OidcClient)
         tempDir = await makeTemporaryTokenCacheFolder()
         cache = getCache(tempDir)
-        sut = new SsoAccessTokenProvider({ region, startUrl }, cache, oidcClient)
+        sut = SsoAccessTokenProvider.create({ region, startUrl }, cache, oidcClient)
     })
 
     afterEach(async function () {

@@ -16,6 +16,7 @@ import { TextMessageHandler } from './messages/handler'
 import { MessageController } from './messages/controller'
 import { getActions, getDetails } from './diffTree/actions'
 import { DiffTreeFileInfo } from './diffTree/types'
+import '../../../../resources/css/amazonq-webview.css'
 
 export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
     // eslint-disable-next-line prefer-const
@@ -110,9 +111,6 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             } else if (command === 'aws.awsq.clearchat') {
                 quickActionHandler.handle({ command: '/clear' }, tabID)
             }
-        },
-        onCWCOnboardingPageInteractionMessage: (message: ChatItem): string | undefined => {
-            return messageController.sendMessageToTab(message, 'cwc')
         },
         onCWCContextCommandMessage: (message: ChatItem, command?: string): string | undefined => {
             if (command === 'aws.amazonq.sendToPrompt') {

@@ -14,6 +14,7 @@ import {
     formatLocalized,
     formatDateTimestamp,
     sanitizeFilename,
+    toSnakeCase,
 } from '../../../shared/utilities/textUtilities'
 import globals from '../../../shared/extensionGlobals'
 
@@ -104,6 +105,44 @@ describe('getStringHash', async function () {
 
     it('produces a different hash for different strings', async function () {
         assert.notStrictEqual(getStringHash('hello'), getStringHash('hello '))
+    })
+})
+
+describe('toSnakeCase', function () {
+    const expected = {
+        foo_bar_fi: 'fi',
+        fi_fo_fum: 'fum',
+    }
+
+    it('converts camel case to snake case', function () {
+        const input = {
+            fooBarFi: 'fi',
+            fiFoFum: 'fum',
+        }
+
+        assert.deepStrictEqual(toSnakeCase(input), expected)
+    })
+
+    it('converts pascal case to snake case', function () {
+        const input = {
+            FooBarFi: 'fi',
+            FiFoFum: 'fum',
+        }
+
+        assert.deepStrictEqual(toSnakeCase(input), expected)
+    })
+
+    it('converts upper case to snake case', function () {
+        const input = {
+            FOO_BAR_FI: 'fi',
+            FI_FO_FUM: 'fum',
+        }
+
+        assert.deepStrictEqual(toSnakeCase(input), expected)
+    })
+
+    it('maintains snake case', function () {
+        assert.deepStrictEqual(toSnakeCase(expected), expected)
     })
 })
 

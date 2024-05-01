@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { isWeb } from '../common/webUtils'
+import { isWeb } from '../shared/extensionGlobals'
 
 describe('isWeb', function () {
     it('returns true when in web mode', function () {

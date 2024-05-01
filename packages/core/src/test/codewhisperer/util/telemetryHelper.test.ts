@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { assertTelemetryCurried } from '../../testUtil'
+import { assertTelemetryCurried, tryRegister } from '../../testUtil'
 import { resetCodeWhispererGlobalVariables } from '../testUtil'
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
@@ -16,6 +16,7 @@ import {
 } from '../../../shared/telemetry/telemetry.gen'
 import { Completion } from '../../../codewhisperer/client/codewhispereruserclient'
 import { session } from '../../../codewhisperer/util/codeWhispererSession'
+import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
 
 // TODO: improve and move the following test utils to codewhisperer/testUtils.ts
 function aUserDecision(
@@ -46,6 +47,10 @@ function aCompletion(): Completion {
 describe('telemetryHelper', function () {
     describe('aggregateUserDecisionByRequest', function () {
         let sut: TelemetryHelper
+
+        before(async function () {
+            tryRegister(refreshStatusBar)
+        })
 
         beforeEach(function () {
             sut = new TelemetryHelper()

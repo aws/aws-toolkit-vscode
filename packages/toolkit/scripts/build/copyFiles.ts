@@ -25,13 +25,17 @@ interface CopyTask {
 }
 
 const tasks: CopyTask[] = [
-    ...['CHANGELOG.md', 'LICENSE', 'NOTICE'].map(f => {
+    ...['LICENSE', 'NOTICE'].map(f => {
         return { target: path.join('../../', f), destination: path.join(projectRoot, f) }
     }),
 
     { target: path.join('../core', 'resources'), destination: path.join('..', 'resources') },
     { target: path.join('../core', 'package.nls.json'), destination: path.join('..', 'package.nls.json') },
     { target: path.join('../core', 'src', 'templates'), destination: path.join('src', 'templates') },
+    {
+        target: '../core/src/auth/sso/vue',
+        destination: 'src/auth/sso/vue',
+    },
 
     // SSM
     {

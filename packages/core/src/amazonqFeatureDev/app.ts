@@ -17,7 +17,7 @@ import { Messenger } from './controllers/chat/messenger/messenger'
 import { AppToWebViewMessageDispatcher } from './views/connector/connector'
 import globals from '../shared/extensionGlobals'
 import { ChatSessionStorage } from './storages/chatSession'
-import { AuthUtil, getChatAuthState } from '../codewhisperer/util/authUtil'
+import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { debounce } from 'lodash'
 
 export function init(appContext: AmazonQAppInitContext) {
@@ -82,7 +82,7 @@ export function init(appContext: AmazonQAppInitContext) {
     )
 
     const debouncedEvent = debounce(async () => {
-        const authenticated = (await getChatAuthState()).amazonQ === 'connected'
+        const authenticated = (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'
         let authenticatingSessionIDs: string[] = []
         if (authenticated) {
             const authenticatingSessions = sessionStorage.getAuthenticatingSessions()

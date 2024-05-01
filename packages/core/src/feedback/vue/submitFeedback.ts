@@ -10,7 +10,7 @@ import { TelemetryService } from '../../shared/telemetry/telemetryService'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { VueWebview, VueWebviewPanel } from '../../webviews/main'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { Commands, VsCodeCommandArg, placeholder } from '../../shared/vscode/commands2'
+import { Commands, RegisteredCommand, VsCodeCommandArg, placeholder } from '../../shared/vscode/commands2'
 import { transformByQState } from '../../codewhisperer/models/model'
 
 export interface FeedbackMessage {
@@ -67,18 +67,36 @@ export class FeedbackWebview extends VueWebview {
     }
 }
 
+// TODO: remove CodeWhisperer from here?
 type FeedbackId = 'AWS Toolkit' | 'CodeWhisperer' | 'Amazon Q' | 'Application Composer' | 'Threat Composer'
 
-export const submitFeedback = Commands.declare(
-    { id: 'aws.submitFeedback', autoconnect: false },
-    (context: vscode.ExtensionContext) => async (_: VsCodeCommandArg, id: FeedbackId) => {
-        if (_ !== placeholder) {
-            // No args exist, we must supply them
-            id = 'AWS Toolkit'
-        }
-        await showFeedbackView(context, id)
+let _submitFeedback: RegisteredCommand<(_: VsCodeCommandArg, id: FeedbackId) => Promise<void>> | undefined
+export function submitFeedback(_: VsCodeCommandArg, id: FeedbackId) {
+    if (_submitFeedback === undefined) {
+        getLogger().error(
+            'Attempted to access "submitFeedback" command, but it was never initialized.' +
+                '\nThis should be initialized during extension activation.'
+        )
+        throw new Error("'submitFeedback' command was called programmitically, but its not registered.")
     }
-)
+    return _submitFeedback.execute(_, id)
+}
+
+export function registerSubmitFeedback(context: vscode.ExtensionContext, defaultId: FeedbackId, contextPrefix: string) {
+    _submitFeedback = Commands.register(
+        { id: `aws.${contextPrefix}.submitFeedback`, autoconnect: false },
+        async (_: VsCodeCommandArg, id: FeedbackId) => {
+            if (_ !== placeholder) {
+                // No args exist, we must supply them
+                id = defaultId
+            }
+            await showFeedbackView(context, id)
+        }
+    )
+    getLogger().info(`initialized \'submitFeedback\' command with default feedback id: ${defaultId}`)
+
+    return _submitFeedback
+}
 
 let activeWebview: VueWebviewPanel | undefined
 

@@ -5,6 +5,7 @@
 
 import { ToolkitError } from '../shared/errors'
 import { featureName } from './constants'
+import { uploadCodeError } from './userFacingText'
 
 export class ConversationIdNotFoundError extends ToolkitError {
     constructor() {
@@ -57,7 +58,7 @@ export class PrepareRepoFailedError extends ToolkitError {
 
 export class UploadCodeError extends ToolkitError {
     constructor(statusCode: string) {
-        super('Unable to upload code', { code: `UploadCode-${statusCode}` })
+        super(uploadCodeError, { code: `UploadCode-${statusCode}` })
     }
 }
 
@@ -91,6 +92,12 @@ export class CodeIterationLimitError extends ToolkitError {
             'You have reached the free tier limit for number of iterations on a code generation. Please proceed to accept the code or start a new conversation.',
             { code: 'CodeIterationLimitError' }
         )
+    }
+}
+
+export class MonthlyConversationLimitError extends ToolkitError {
+    constructor(message: string) {
+        super(message, { code: 'MonthlyConversationLimitError' })
     }
 }
 
