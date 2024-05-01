@@ -12,47 +12,12 @@ import {
     findDownloadArtifactStep,
     getArtifactsFromProgressUpdate,
 } from '../../../../codewhisperer/service/transformByQ/transformApiHandler'
+import { fsCommon } from '../../../../srcShared/fs'
 
 describe('Amazon Q Gumby Human In The Loop Handler', function () {
     describe('parseXmlDependenciesReport', function () {
         it('Will return parsed values', async function () {
-            const testXmlReport = `
-            <?xml version="1.0" encoding="UTF-8"?>
-                <DependencyUpdatesReport xsi:schemaLocation="https://www.mojohaus.org/VERSIONS/DEPENDENCY-UPDATES-REPORT/2.0.0 https://www.mojohaus.org/versions/versions-model-report/xsd/dependency-updates-report-2.0.0.xsd"
-                    xmlns="https://www.mojohaus.org/VERSIONS/DEPENDENCY-UPDATES-REPORT/2.0.0"
-                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-                <summary>
-                    <usingLastVersion>0</usingLastVersion>
-                    <nextVersionAvailable>0</nextVersionAvailable>
-                    <nextIncrementalAvailable>1</nextIncrementalAvailable>
-                    <nextMinorAvailable>0</nextMinorAvailable>
-                    <nextMajorAvailable>0</nextMajorAvailable>
-                </summary>
-                <dependencies>
-                    <dependency>
-                    <groupId>org.projectlombok</groupId>
-                    <artifactId>lombok</artifactId>
-                    <scope>compile</scope>
-                    <type>jar</type>
-                    <currentVersion>0.11.4</currentVersion>
-                    <lastVersion>1.18.32</lastVersion>
-                    <incrementals>
-                        <incremental>0.11.6</incremental>
-                        <incremental>0.11.8</incremental>
-                    </incrementals>
-                    <minors>
-                        <minor>0.12.0</minor>
-                    </minors>
-                    <majors>
-                        <major>1.12.2</major>
-                        <major>1.12.4</major>
-                        <major>1.12.6</major>
-                    </majors>
-                    <status>incremental available</status>
-                    </dependency>
-                </dependencies>
-                </DependencyUpdatesReport>
-                `
+            const testXmlReport = await fsCommon.readFileAsString('../files/dependency-report.xml')
             const { latestVersion, majorVersions, minorVersions, status } = await parseVersionsListFromPomFile(
                 testXmlReport
             )
@@ -147,4 +112,26 @@ describe('Amazon Q Gumby Human In The Loop Handler', function () {
             assert.strictEqual(progressUpdate, undefined)
         })
     })
+    // describe('initiateHumanInTheLoopPrompt', function () {
+    //     it('will delete dependencies', function () {
+    //         const downloadArtifactId = 'hil-test-artifact-id'
+    //         const downloadArtifactType = 'BuiltJars'
+    //         const transformationStepsFixture: TransformationProgressUpdate = {
+    //             name: 'Status step',
+    //             status: 'FAILED',
+    //             description: 'This step should be hil identifier',
+    //             startTime: new Date(),
+    //             endTime: new Date(),
+    //             downloadArtifacts: [
+    //                 {
+    //                     downloadArtifactId,
+    //                     downloadArtifactType,
+    //                 },
+    //             ],
+    //         }
+    //         const snippet = getCodeIssueSnippetFromPom()
+
+    //         assert.strictEqual(snippet, downloadArtifactId)
+    //     })
+    // })
 })
