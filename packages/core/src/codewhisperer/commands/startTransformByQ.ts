@@ -71,14 +71,13 @@ import {
     getJsonValuesFromManifestFile,
     highlightPomIssueInProject,
     parseVersionsListFromPomFile,
-    replacePomVersion,
     writeLogs,
 } from '../service/transformByQ/transformFileHandler'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import DependencyVersions from '../../amazonqGumby/models/dependencies'
 import { IManifestFile } from '../../amazonqFeatureDev/models'
 import { dependencyNoAvailableVersions } from '../../amazonqGumby/models/constants'
-import { fsCommon } from '../../srcShared/fs'
+import { HumanInTheLoopManager } from '../service/transformByQ/humanInTheLoopManager'
 
 let sessionJobHistory: { timestamp: string; module: string; status: string; duration: string; id: string }[] = []
 let pollUIIntervalId: string | number | NodeJS.Timer | undefined = undefined
@@ -263,23 +262,13 @@ export async function preTransformationUploadCode() {
     return uploadId
 }
 
-//to-do: store this state somewhere
 let PomFileVirtualFileReference: vscode.Uri
 let manifestFileValues: IManifestFile
-const osTmpDir = os.tmpdir()
-const tmpDownloadsFolderName = 'q-hil-dependency-artifacts'
-const tmpDependencyListFolderName = 'q-pom-dependency-list'
-const userDependencyUpdateFolderName = 'q-pom-dependency-update'
-const tmpDependencyListDir = path.join(osTmpDir, tmpDependencyListFolderName)
-const userDependencyUpdateDir = path.join(osTmpDir, userDependencyUpdateFolderName)
-const tmpDownloadsDir = path.join(osTmpDir, tmpDownloadsFolderName)
-const pomReplacementDelimiter = '*****'
-const diagnosticCollection = vscode.languages.createDiagnosticCollection('hilFileDiagnostics')
 let newPomFileVirtualFileReference: vscode.Uri
 
 export async function initiateHumanInTheLoopPrompt(jobId: string) {
-    const localPathToXmlDependencyList = '/target/dependency-updates-aggregate-report.xml'
     try {
+        const humanInTheLoopManager = HumanInTheLoopManager.instance
         // 1) We need to call GetTransformationPlan to get artifactId
         const transformationSteps = await getTransformationSteps(jobId, false)
         const { transformationStep, progressUpdate } = findDownloadArtifactStep(transformationSteps)
@@ -299,21 +288,19 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
         const { pomFileVirtualFileReference, manifestFileVirtualFileReference } = await downloadHilResultArchive(
             jobId,
             artifactId,
-            tmpDownloadsDir
+            humanInTheLoopManager.getTmpDownloadsDir()
         )
         PomFileVirtualFileReference = pomFileVirtualFileReference
         manifestFileValues = await getJsonValuesFromManifestFile(manifestFileVirtualFileReference)
 
         // 3) We need to replace version in pom.xml
-        newPomFileVirtualFileReference = await createPomCopy(
-            tmpDependencyListDir,
-            pomFileVirtualFileReference,
-            'pom.xml'
+        newPomFileVirtualFileReference = await humanInTheLoopManager.createPomFileCopy(
+            humanInTheLoopManager.getTmpDependencyListDir(),
+            pomFileVirtualFileReference
         )
-        await replacePomVersion(
+        await humanInTheLoopManager.replacePomFileVersion(
             newPomFileVirtualFileReference,
-            manifestFileValues.sourcePomVersion,
-            pomReplacementDelimiter
+            manifestFileValues.sourcePomVersion
         )
 
         const codeSnippet = await getCodeIssueSnippetFromPom(newPomFileVirtualFileReference)
@@ -324,12 +311,9 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
         })
 
         // 4) We need to run maven commands on that pom.xml to get available versions
-        const compileFolderInfo: FolderInfo = {
-            name: tmpDependencyListFolderName,
-            path: tmpDependencyListDir,
-        }
+        const compileFolderInfo = humanInTheLoopManager.getCompileDependencyListFolderInfo()
         runMavenDependencyUpdateCommands(compileFolderInfo)
-        const xmlString = await fsCommon.readFileAsString(path.join(tmpDependencyListDir, localPathToXmlDependencyList))
+        const xmlString = await humanInTheLoopManager.getDependencyListXmlOutput()
         const { latestVersion, majorVersions, minorVersions, status } = await parseVersionsListFromPomFile(xmlString)
 
         if (status === dependencyNoAvailableVersions) {
@@ -389,7 +373,7 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
 export async function openHilPomFile() {
     await highlightPomIssueInProject(
         newPomFileVirtualFileReference,
-        diagnosticCollection,
+        HumanInTheLoopManager.instance.diagnosticCollection,
         manifestFileValues.sourcePomVersion
     )
 }
@@ -405,24 +389,21 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
     const jobId = transformByQState.getJobId()
     let hilResult: MetadataResult = MetadataResult.Pass
     try {
+        const humanInTheLoopManager = HumanInTheLoopManager.instance
         const getUserInputValue = selectedDependency
         CodeTransformTelemetryState.instance.setCodeTransformMetaDataField({
             dependencyVersionSelected: selectedDependency,
         })
         // 6) We need to add user input to that pom.xml,
         // original pom.xml is intact somewhere, and run maven compile
-        const userInputPomFileVirtualFileReference = await createPomCopy(
-            userDependencyUpdateDir,
-            PomFileVirtualFileReference,
-            'pom.xml'
+        const userInputPomFileVirtualFileReference = await humanInTheLoopManager.createPomFileCopy(
+            humanInTheLoopManager.getUserDependencyUpdateDir(),
+            PomFileVirtualFileReference
         )
-        await replacePomVersion(userInputPomFileVirtualFileReference, getUserInputValue, pomReplacementDelimiter)
+        await humanInTheLoopManager.replacePomFileVersion(userInputPomFileVirtualFileReference, getUserInputValue)
 
         // 7) We need to take that output of maven and use CreateUploadUrl
-        const uploadFolderInfo: FolderInfo = {
-            name: userDependencyUpdateFolderName,
-            path: userDependencyUpdateDir,
-        }
+        const uploadFolderInfo = humanInTheLoopManager.getUploadFolderInfo()
         // TODO maybe separate function for just install
         // IF WE fail, do we allow user to retry? or just fail
         // Maybe have clientside retries?
@@ -469,9 +450,7 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
         hilResult = MetadataResult.Fail
     } finally {
         // Always delete the dependency directories
-        await fsCommon.delete(userDependencyUpdateDir)
-        await fsCommon.delete(tmpDependencyListDir)
-        await fsCommon.delete(tmpDownloadsDir)
+        await HumanInTheLoopManager.instance.cleanUpArtifacts()
         telemetry.codeTransform_humanInTheLoop.emit({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformJobId: jobId,
