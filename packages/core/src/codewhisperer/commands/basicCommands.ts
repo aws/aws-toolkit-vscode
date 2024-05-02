@@ -41,6 +41,7 @@ import { SecurityIssueCodeActionProvider } from '../service/securityIssueCodeAct
 import { SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import { ToolkitError } from '../../shared/errors'
+import { isRemoteWorkspace } from '../../shared/vscode/env'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.amazonq.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -301,7 +302,7 @@ export const fetchFeatureConfigsCmd = Commands.declare(
 export const installAmazonQExtension = Commands.declare(
     { id: 'aws.toolkit.installAmazonQExtension', logging: true },
     () => async () => {
-        if (vscode.env.remoteName === 'ssh-remote') {
+        if (isRemoteWorkspace()) {
             /**
              * due to a bug in https://github.com/microsoft/vscode/pull/206381/files#diff-efa08c29460835c0ffa740d751c34078033fd6cb6c7b031500fb31f524655de2R360
              * installExtension will fail on remote environments when the amazon q extension is already installed locally.
