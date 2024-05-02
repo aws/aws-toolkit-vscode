@@ -330,6 +330,7 @@ export default defineComponent({
         }
     },
     async created() {
+        this.startUrl = await this.getDefaultStartUrl()
         await this.emitUpdate('created')
     },
 
@@ -499,6 +500,9 @@ export default defineComponent({
             }
 
             this.$forceUpdate()
+        },
+        async getDefaultStartUrl() {
+            return await client.getDefaultStartUrl()
         },
     },
 })

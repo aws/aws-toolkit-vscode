@@ -212,6 +212,7 @@
     "AWS.command.q.transform.showChanges": "Show Proposed Changes",
     "AWS.command.q.transform.showChangeSummary": "Show Transformation Summary",
     "AWS.command.q.transform.showTransformationPlan": "Show Transformation Plan",
+    "AWS.command.accessanalyzer.iamPolicyChecks": "Open IAM Policy Checks",
     "AWS.lambda.explorerTitle": "Explorer",
     "AWS.developerTools.explorerTitle": "Developer Tools",
     "AWS.codewhisperer.explorerTitle": "CodeWhisperer",
