@@ -48,32 +48,8 @@ export async function listScanResults(
         })
         .promise()
     issues.forEach(issue => {
-        mapToAggregatedList(codeScanIssueMap, aggregatedCodeScanIssueList, issue, projectPath)
+        mapToAggregatedList(codeScanIssueMap, issue)
     })
-    return aggregatedCodeScanIssueList
-}
-
-function mapToAggregatedList(
-    codeScanIssueMap: Map<string, RawCodeScanIssue[]>,
-    aggregatedCodeScanIssueList: AggregatedCodeScanIssue[],
-    json: string,
-    projectPath: string
-) {
-    const codeScanIssues: RawCodeScanIssue[] = JSON.parse(json)
-    codeScanIssues.forEach(issue => {
-        if (codeScanIssueMap.has(issue.filePath)) {
-            const list = codeScanIssueMap.get(issue.filePath)
-            if (list === undefined) {
-                codeScanIssueMap.set(issue.filePath, [issue])
-            } else {
-                list.push(issue)
-                codeScanIssueMap.set(issue.filePath, list)
-            }
-        } else {
-            codeScanIssueMap.set(issue.filePath, [issue])
-        }
-    })
-
     codeScanIssueMap.forEach((issues, key) => {
         const filePath = path.join(projectPath, '..', key)
         if (existsSync(filePath) && statSync(filePath).isFile()) {
@@ -98,6 +74,24 @@ function mapToAggregatedList(
                 }),
             }
             aggregatedCodeScanIssueList.push(aggregatedCodeScanIssue)
+        }
+    })
+    return aggregatedCodeScanIssueList
+}
+
+function mapToAggregatedList(codeScanIssueMap: Map<string, RawCodeScanIssue[]>, json: string) {
+    const codeScanIssues: RawCodeScanIssue[] = JSON.parse(json)
+    codeScanIssues.forEach(issue => {
+        if (codeScanIssueMap.has(issue.filePath)) {
+            const list = codeScanIssueMap.get(issue.filePath)
+            if (list === undefined) {
+                codeScanIssueMap.set(issue.filePath, [issue])
+            } else {
+                list.push(issue)
+                codeScanIssueMap.set(issue.filePath, list)
+            }
+        } else {
+            codeScanIssueMap.set(issue.filePath, [issue])
         }
     })
 }

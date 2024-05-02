@@ -4,9 +4,11 @@
  */
 
 import NoOnlyInTests from './lib/rules/no-only-in-tests'
+import NoAwaitOnVscodeMsg from './lib/rules/no-await-on-vscode-msg'
 
 const rules = {
     'no-only-in-tests': NoOnlyInTests,
+    'no-await-on-vscode-msg': NoAwaitOnVscodeMsg,
 }
 
 export { rules }

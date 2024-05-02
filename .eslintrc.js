@@ -149,7 +149,10 @@ module.exports = {
             },
             { lineEndings: 'unix' },
         ],
+
         'aws-toolkits/no-only-in-tests': 'error',
+        'aws-toolkits/no-await-on-vscode-msg': 'error',
+
         'no-restricted-imports': [
             'error',
             {
