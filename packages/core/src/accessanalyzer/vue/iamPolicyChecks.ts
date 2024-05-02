@@ -14,10 +14,11 @@ import { ExtContext } from '../../shared/extensions'
 import { AccessAnalyzer, S3 } from 'aws-sdk'
 import { execSync } from 'child_process'
 import { ToolkitError } from '../../shared/errors'
+import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
+import { globals } from '../../shared'
 const AmazonS3URI = require('amazon-s3-uri')
 
-const defaultTerraformConfigPath = path.join(__dirname, '..', 'terraformConfig', 'default.yaml')
-const tempFilePath = path.join(__dirname, 'policyDocument.json')
+const defaultTerraformConfigPath = 'resources/policychecks-tf-default.yaml'
 // Diagnostics for Custom checks are shared
 const customPolicyCheckDiagnosticCollection = vscode.languages.createDiagnosticCollection('customPolicyCheck')
 const validatePolicyDiagnosticCollection = vscode.languages.createDiagnosticCollection('validatePolicy')
@@ -182,7 +183,9 @@ export class IamPolicyChecksWebview extends VueWebview {
                 return
             }
             case PolicyChecksDocumentType.TERRAFORM_PLAN: {
-                const tfCommand = `tf-policy-validator validate --template-path ${document} --region ${this.region} --config ${defaultTerraformConfigPath}`
+                const tfCommand = `tf-policy-validator validate --template-path ${document} --region ${
+                    this.region
+                } --config ${globals.context.asAbsolutePath(defaultTerraformConfigPath)}`
                 this.executeValidatePolicyCommand(tfCommand)
                 return
             }
@@ -203,6 +206,9 @@ export class IamPolicyChecksWebview extends VueWebview {
         referenceDocument: string,
         cfnParameterPath?: string
     ) {
+        const tempFolder = await makeTemporaryToolkitFolder()
+        const tempFilePath = path.join(tempFolder, 'policyChecksDocument')
+
         const document = IamPolicyChecksWebview.editedDocumentFileName
         customPolicyCheckDiagnosticCollection.clear()
         if (referenceDocument !== '') {
@@ -214,7 +220,11 @@ export class IamPolicyChecksWebview extends VueWebview {
 
         switch (documentType) {
             case PolicyChecksDocumentType.TERRAFORM_PLAN: {
-                const tfCommand = `tf-policy-validator check-no-new-access --template-path ${document} --region ${this.region} --config ${defaultTerraformConfigPath} --reference-policy ${tempFilePath} --reference-policy-type ${policyType}`
+                const tfCommand = `tf-policy-validator check-no-new-access --template-path ${document} --region ${
+                    this.region
+                } --config ${globals.context.asAbsolutePath(
+                    defaultTerraformConfigPath
+                )} --reference-policy ${tempFilePath} --reference-policy-type ${policyType}`
                 this.executeCustomPolicyChecksCommand(tfCommand)
                 return
             }
@@ -227,9 +237,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                 return
             }
         }
-        if (fs.existsSync(tempFilePath)) {
-            fs.unlinkSync(tempFilePath)
-        }
+        await tryRemoveFolder(tempFolder)
     }
 
     public async checkAccessNotGranted(documentType: string, actions: string, cfnParameterPath?: string) {
@@ -239,12 +247,14 @@ export class IamPolicyChecksWebview extends VueWebview {
             // Remove spaces, line breaks, carriage returns, and tabs
             actions = actions.replace(/\s*|\t|\r|\n/gm, '')
         } else {
-            this.onCustomPolicyCheckResponse.fire(['Reference policy document is missing.', 'red'])
+            this.onCustomPolicyCheckResponse.fire(['Reference document is missing.', 'red'])
             return
         }
         switch (documentType) {
             case PolicyChecksDocumentType.TERRAFORM_PLAN: {
-                const tfCommand = `tf-policy-validator check-access-not-granted --template-path ${document} --region ${this.region} --config ${defaultTerraformConfigPath} --actions ${actions}`
+                const tfCommand = `tf-policy-validator check-access-not-granted --template-path ${document} --region ${
+                    this.region
+                } --config ${globals.context.asAbsolutePath(defaultTerraformConfigPath)} --actions ${actions}`
                 this.executeCustomPolicyChecksCommand(tfCommand)
                 return
             }
@@ -305,7 +315,13 @@ export class IamPolicyChecksWebview extends VueWebview {
 
     public handleCustomPolicyChecksCliResponse(response: string) {
         const diagnostics: vscode.Diagnostic[] = []
-        const jsonOutput = JSON.parse(response)
+        let jsonOutput
+        try {
+            jsonOutput = JSON.parse(response)
+        } catch (err: any) {
+            this.onCustomPolicyCheckResponse.fire([err.message, 'red'])
+            return
+        }
         if (jsonOutput.BlockingFindings.length === 0 && jsonOutput.NonBlockingFindings.length === 0) {
             this.onCustomPolicyCheckResponse.fire([
                 'Result: PASS. Policy checks did not discover any problems with your policy.',
@@ -435,6 +451,7 @@ async function _readCustomChecksFile(input: string): Promise<string> {
 
 //Check if Cfn and Tf tools are installed
 function arePythonToolsInstalled(): boolean {
+    const logger: Logger = getLogger()
     let cfnToolInstalled = true
     let tfToolInstalled = true
     try {
@@ -442,6 +459,7 @@ function arePythonToolsInstalled(): boolean {
     } catch (err: any) {
         if (err.message.includes('command not found')) {
             tfToolInstalled = false
+            logger.error('Terraform Policy Validator is not found')
         }
     }
     try {
@@ -449,6 +467,7 @@ function arePythonToolsInstalled(): boolean {
     } catch (err: any) {
         if (err.message.includes('command not found')) {
             cfnToolInstalled = false
+            logger.error('Cloudformation Policy Validator is not found')
         }
     }
     return cfnToolInstalled && tfToolInstalled
