@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fix bug when Amazon Q chat sends code selection while user has no selection"
+}
