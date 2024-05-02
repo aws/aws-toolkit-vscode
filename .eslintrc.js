@@ -157,7 +157,7 @@ module.exports = {
                     {
                         group: ['**/core/dist/*'],
                         message:
-                            "Avoid importing from the core lib's dist/ folders, please use from or add to the exports instead.",
+                            "Avoid importing from the core lib's dist/ folders; please use directly from the core lib defined exports.",
                     },
                 ],
             },
