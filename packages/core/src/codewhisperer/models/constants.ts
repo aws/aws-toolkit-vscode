@@ -232,13 +232,17 @@ export const codeFileScanJobTimeoutSeconds = 60 //1 minute
 
 export const projectSizeCalculateTimeoutSeconds = 10
 
-export const codeScanJobPollingIntervalSeconds = 1
+export const codeScanJobPollingIntervalSeconds = 5
+
+export const fileScanPollingDelaySeconds = 10
+
+export const projectScanPollingDelaySeconds = 30
 
 export const artifactTypeSource = 'SourceCode'
 
 export const codeScanFindingsSchema = 'codescan/findings/1.0'
 
-export const autoScanDebounceDelaySeconds = 2
+export const autoScanDebounceDelaySeconds = 5
 
 export const codewhispererDiagnosticSourceLabel = 'Amazon Q '
 
