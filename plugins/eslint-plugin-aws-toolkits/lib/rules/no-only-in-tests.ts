@@ -3,6 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * .only() can be important during testing to test a specific feature/unit test.
+ * This rule prevents us from accidentially committing this to the public repo.
+ */
+
 import { ESLintUtils } from '@typescript-eslint/utils'
 import { AST_NODE_TYPES } from '@typescript-eslint/types'
 import { CallExpression, Identifier, MemberExpression } from '@typescript-eslint/types/dist/generated/ast-spec'
