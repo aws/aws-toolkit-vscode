@@ -121,6 +121,7 @@ export class CodeScansState {
     onDidChangeState = this.#onDidChangeState.event
 
     private exceedsMonthlyQuota = false
+    private latestScanTime: number | undefined = undefined
 
     static #instance: CodeScansState
     static get instance() {
@@ -157,6 +158,14 @@ export class CodeScansState {
 
     isMonthlyQuotaExceeded() {
         return this.exceedsMonthlyQuota
+    }
+
+    setLatestScanTime(time: number) {
+        this.latestScanTime = time
+    }
+
+    getLatestScanTime() {
+        return this.latestScanTime
     }
 }
 
