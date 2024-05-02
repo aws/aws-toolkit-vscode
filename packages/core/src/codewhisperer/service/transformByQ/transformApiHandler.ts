@@ -845,7 +845,7 @@ export async function downloadResultArchive({
         getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'ExportResultArchive',
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformJobId: transformByQState.getJobId(),
             codeTransformApiErrorMessage: downloadErrorMessage,
             codeTransformRequestId: e.requestId ?? '',
