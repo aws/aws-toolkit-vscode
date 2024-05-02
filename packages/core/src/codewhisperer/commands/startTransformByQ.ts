@@ -449,7 +449,6 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
         hilResult = MetadataResult.Fail
     } finally {
         // Always delete the dependency directories
-        await HumanInTheLoopManager.instance.cleanUpArtifacts()
         telemetry.codeTransform_humanInTheLoop.emit({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformJobId: jobId,
@@ -457,6 +456,7 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
             result: hilResult,
             reason: CodeTransformTelemetryState.instance.getCodeTransformMetaData().errorMessage,
         })
+        await HumanInTheLoopManager.instance.cleanUpArtifacts()
     }
 
     return successfulFeedbackLoop
