@@ -4,7 +4,8 @@
         "packages/core/src/web",
         "packages/*",
         "plugins/*",
-        "src.gen/@amzn/codewhisperer-streaming"
+        "src.gen/@amzn/codewhisperer-streaming",
+        "client-sso-oidc"
     ],
     "version": "0.0.1",
     "private": true,
