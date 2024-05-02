@@ -64,7 +64,7 @@ exit !$?
             })
 
             if (!result.stdout.includes(runningMessage) && !result.stderr) {
-                await vscode.window.showInformationMessage(
+                void vscode.window.showInformationMessage(
                     localize('AWS.ssh.ssh-agent.start', 'The SSH agent has been started.')
                 )
             }

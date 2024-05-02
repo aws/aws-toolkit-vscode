@@ -135,7 +135,7 @@ export class AwsContextCommands {
             credentialTypeId: resp.name,
         }
 
-        await vscode.window.showInformationMessage(
+        void vscode.window.showInformationMessage(
             localize(
                 'AWS.message.prompt.credentials.definition.done',
                 'Created {0} credentials profile: {1}',

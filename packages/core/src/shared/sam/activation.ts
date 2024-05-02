@@ -180,7 +180,7 @@ async function activateCodeLensRegistry(context: ExtContext) {
         ])
         await registry.rebuild()
     } catch (e) {
-        await vscode.window.showErrorMessage(
+        void vscode.window.showErrorMessage(
             localize(
                 'AWS.codelens.failToInitializeCode',
                 'Failed to activate Lambda handler {0}',
@@ -199,7 +199,7 @@ async function samDebugConfigCmd() {
     const activeEditor = vscode.window.activeTextEditor
     if (!activeEditor) {
         getLogger().error(`aws.addSamDebugConfig was called without an active text editor`)
-        await vscode.window.showErrorMessage(
+        void vscode.window.showErrorMessage(
             localize('AWS.pickDebugHandler.noEditor', 'Toolkit could not find an active editor')
         )
 
@@ -209,7 +209,7 @@ async function samDebugConfigCmd() {
     const provider = supportedLanguages[document.languageId]
     if (!provider) {
         getLogger().error(`aws.addSamDebugConfig called on a document with an invalid language: ${document.languageId}`)
-        await vscode.window.showErrorMessage(
+        void vscode.window.showErrorMessage(
             localize(
                 'AWS.pickDebugHandler.invalidLanguage',
                 'Toolkit cannot detect handlers in language: {0}',
