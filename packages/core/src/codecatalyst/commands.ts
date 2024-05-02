@@ -26,7 +26,7 @@ import { CreateDevEnvironmentRequest, UpdateDevEnvironmentRequest } from 'aws-sd
 import { Auth } from '../auth/auth'
 import { SsoConnection } from '../auth/connection'
 import { getShowManageConnections } from '../auth/ui/vue/show'
-import { isInDevEnv } from '../shared/vscode/env'
+import { isInDevEnv, isRemoteWorkspace } from '../shared/vscode/env'
 
 /** "List CodeCatalyst Commands" command. */
 export async function listCommands(): Promise<void> {
@@ -231,7 +231,7 @@ export class CodeCatalystCommands {
     }
 
     public createDevEnv(): Promise<void> {
-        if (vscode.env.remoteName === 'ssh-remote' && isInDevEnv()) {
+        if (isRemoteWorkspace() && isInDevEnv()) {
             throw new RemoteContextError()
         }
         return this.withClient(showCreateDevEnv, globals.context, CodeCatalystCommands.declared)
@@ -280,7 +280,7 @@ export class CodeCatalystCommands {
         targetPath?: string,
         connection?: { startUrl: string; region: string }
     ): Promise<void> {
-        if (vscode.env.remoteName === 'ssh-remote' && isInDevEnv()) {
+        if (isRemoteWorkspace() && isInDevEnv()) {
             throw new RemoteContextError()
         }
 

@@ -8,7 +8,7 @@ import { env, Memento, version } from 'vscode'
 import { getLogger } from '../logger'
 import { fromExtensionManifest, migrateSetting, Settings } from '../settings'
 import { shared } from '../utilities/functionUtils'
-import { isInDevEnv, extensionVersion, isAutomation } from '../vscode/env'
+import { isInDevEnv, extensionVersion, isAutomation, isRemoteWorkspace } from '../vscode/env'
 import { addTypeName } from '../utilities/typeConstructors'
 import globals, { isWeb } from '../extensionGlobals'
 import { mapMetadata } from './telemetryLogger'
@@ -154,7 +154,7 @@ export function getComputeEnvType(): EnvType {
         return 'codecatalyst'
     } else if (isSageMaker()) {
         return 'sagemaker'
-    } else if (env.remoteName === 'ssh-remote' && !isInDevEnv()) {
+    } else if (isRemoteWorkspace() && !isInDevEnv()) {
         return 'ec2'
     } else if (env.remoteName) {
         return 'wsl'
