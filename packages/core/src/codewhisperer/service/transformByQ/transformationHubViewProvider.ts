@@ -15,6 +15,7 @@ import {
     ProgressUpdates,
     TransformationStatus,
 } from '../../../codewhisperer/client/codewhispereruserclient'
+// import '../../../../resources/css/amazonq-codetransform-transformationHub.css'
 
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.transformationHub'
@@ -136,6 +137,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 minute: '2-digit',
                 second: '2-digit',
             })
+
             const stepDuration = convertToTimeString(endTime.getTime() - startTime.getTime())
             const isAllStepsComplete = isLastStep && (stepProgress === StepProgress.Succeeded || StepProgress.Failed)
             return `
@@ -287,6 +289,9 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
     }
 
     public async showPlanProgress(startTime: number): Promise<string> {
+        const styleSheet = this._view?.webview.asWebviewUri(
+            vscode.Uri.joinPath(this._extensionUri, 'resources', 'css', 'amazonq-codetransform-transformationHub.css')
+        )
         const planProgress = getPlanProgress()
         const simpleStep = (icon: string, text: string, isActive: boolean) => {
             return isActive
@@ -378,111 +383,8 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             <html lang="en">
             
             <head>
-            <title>Transformation Hub</title>
-            <style>
-                @keyframes spin {
-                    0% {
-                        transform: rotate(0deg);
-                    }
-                    100% {
-                        transform: rotate(360deg);
-                    }
-                }
-                body {
-                    margin: 0;
-                    padding: 0 1em;
-                    height: 100vh;
-                }
-
-                .wrapper {
-                    height: 100%;
-                    display: flex;
-                }
-
-                .spinner {
-                    display: inline-block;
-                    animation: spin 1s infinite;
-                }
-
-                .column--container, .substep-container {
-                    display: flex;
-                    flex-direction: row;
-                }
-
-                .column {
-                    flex-grow: 1;
-                }
-
-                .substep-container  p {
-                    margin: .5em 0;
-                }
-
-                .step, .simple-step {
-                    padding: .5em 0 .5em 0;
-                    margin: 0;
-                }
-
-                .step {
-                    padding-left: 20px;
-                }
-
-                .step:hover, .active {
-                    background-color: aliceblue;
-                    background-color: var(button.hoverBackground);
-                }
-
-                #stepdetails {
-                    width: 40%;
-                    padding: 0 20px;
-                    border-left: solid rgba(229,229,229, .5);
-                    min-height: 100vh;
-                    display: block;
-                }
-
-                #progress {
-                    width: 60%;
-                }
-
-                .status-PENDING {
-                    color: grey;
-                }
-
-                .status-COMPLETED {
-                    color: green;
-                }
-
-                .status-FAILED {
-                    color: red;
-                }
-
-                .substep {
-                    display: none;
-                }
-
-                .substep-icon {
-                    padding: 0 1em;
-                }
-
-                .visible {
-                    display: block;
-                }
-
-                .center {
-                    position: absolute;
-                    top: 50%;
-                    transform: translate(0, -50%);
-                }
-
-                .center-flex {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-
-                #step-duration {
-                    color: rgba(59, 59, 59, .75);
-                }
-            </style>
+                <title>Transformation Hub</title>
+                <link href="${styleSheet}" rel="stylesheet">
             </head>
             <body>
             <div class="wrapper">
