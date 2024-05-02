@@ -38,19 +38,30 @@ describe('crossFileContextUtil', function () {
             tempFolder = (await createTestWorkspaceFolder()).uri.fsPath
         })
 
-        describe('should fetch 3 chunks and each chunk should contains 10 lines', function () {
+        describe('should fetch 10 chunks and each chunk should contains 50 lines', function () {
             async function assertCorrectCodeChunk() {
-                await openATextEditorWithText(sampleFileOf60Lines, 'CrossFile.java', tempFolder, { preview: false })
+                await openATextEditorWithText(sampleFileOf60Lines.repeat(10), 'CrossFile.java', tempFolder, {
+                    preview: false,
+                })
                 const myCurrentEditor = await openATextEditorWithText('', 'TargetFile.java', tempFolder, {
                     preview: false,
                 })
                 const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
                 assert.ok(actual)
-                assert.ok(actual.supplementalContextItems.length === 3)
+                assert.ok(actual.supplementalContextItems.length === crossFileContextConfig.topK)
 
-                assert.strictEqual(actual.supplementalContextItems[0].content.split('\n').length, 10)
-                assert.strictEqual(actual.supplementalContextItems[1].content.split('\n').length, 10)
-                assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 10)
+                assert.strictEqual(
+                    actual.supplementalContextItems[0].content.split('\n').length,
+                    crossFileContextConfig.numberOfLinesEachChunk
+                )
+                assert.strictEqual(
+                    actual.supplementalContextItems[1].content.split('\n').length,
+                    crossFileContextConfig.numberOfLinesEachChunk
+                )
+                assert.strictEqual(
+                    actual.supplementalContextItems[2].content.split('\n').length,
+                    crossFileContextConfig.numberOfLinesEachChunk
+                )
             }
 
             it('control group', async function () {
@@ -267,12 +278,12 @@ describe('crossFileContextUtil', function () {
             assert.strictEqual(chunks[1].content, 'line_6\nline_7')
         })
 
-        it('codewhisperer crossfile config should use 10 lines', async function () {
+        it('codewhisperer crossfile config should use 50 lines', async function () {
             const filePath = path.join(tempFolder, 'file.txt')
             await toFile(sampleFileOf60Lines, filePath)
 
             const chunks = await crossFile.splitFileToChunks(filePath, crossFileContextConfig.numberOfLinesEachChunk)
-            assert.strictEqual(chunks.length, 6)
+            assert.strictEqual(chunks.length, 2)
         })
     })
 })
