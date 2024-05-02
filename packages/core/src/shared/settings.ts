@@ -729,6 +729,7 @@ const devSettings = {
     ssoCacheDirectory: String,
     enableIamPolicyChecksFeature: Boolean,
     pkceAuth: Boolean,
+    autofillStartUrl: String,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
 type AwsDevSetting = keyof ResolvedDevSettings
