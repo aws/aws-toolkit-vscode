@@ -5,7 +5,12 @@
 
 import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
-import { AuthorizationPendingException, SSOOIDCServiceException, SlowDownException } from '@aws-sdk/client-sso-oidc'
+import {
+    AuthorizationPendingException,
+    CreateTokenRequest,
+    SSOOIDCServiceException,
+    SlowDownException,
+} from '@aws-sdk/client-sso-oidc'
 import {
     SsoToken,
     ClientRegistration,
@@ -18,7 +23,7 @@ import {
 } from './model'
 import { getCache } from './cache'
 import { hasProps, hasStringProps, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
-import { OidcClient, OidcClientV2 } from './clients'
+import { OidcClient } from './clients'
 import { loadOr } from '../../shared/utilities/cacheUtils'
 import {
     ToolkitError,
@@ -33,7 +38,6 @@ import { AwsLoginWithBrowser, AwsRefreshCredentials, Metric, telemetry } from '.
 import { indent } from '../../shared/utilities/textUtilities'
 import { AuthSSOServer } from './server'
 import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
-import OidcClientPKCE from './oidcclientpkce'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { randomUUID, randomBytes, createHash } from 'crypto'
 import { UriHandler } from '../../shared/vscode/uriHandler'
@@ -97,7 +101,7 @@ export abstract class SsoAccessTokenProvider {
     public constructor(
         protected readonly profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
         protected readonly cache = getCache(),
-        protected readonly oidc: OidcClient | OidcClientV2 = OidcClient.create(profile.region)
+        protected readonly oidc: OidcClient = OidcClient.create(profile.region)
     ) {}
 
     public async invalidate(): Promise<void> {
@@ -253,7 +257,7 @@ export abstract class SsoAccessTokenProvider {
         if (!DevSettings.instance.get('pkceAuth', false)) {
             return new DeviceFlowAuthorization(profile, cache, oidc)
         }
-        return new AuthFlowAuthorization(profile, cache, OidcClientV2.create(profile.region))
+        return new AuthFlowAuthorization(profile, cache, OidcClient.create(profile.region))
     }
 }
 
@@ -402,22 +406,25 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
     constructor(
         profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
         cache = getCache(),
-        protected override readonly oidc: OidcClientV2
+        oidc: OidcClient
     ) {
         super(profile, cache, oidc)
     }
 
     override async registerClient(): Promise<ClientRegistration> {
         const companyName = getIdeProperties().company
-        return this.oidc.registerClient({
-            // All AWS extensions (Q, Toolkit) for a given IDE use the same client name.
-            clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
-            clientType: clientRegistrationType,
-            scopes: this.profile.scopes,
-            grantTypes: [authorizationGrantType, refreshGrantType],
-            redirectUris: ['http://127.0.0.1/oauth/callback'],
-            issuerUrl: this.profile.startUrl,
-        })
+        return this.oidc.registerClient(
+            {
+                // All AWS extensions (Q, Toolkit) for a given IDE use the same client name.
+                clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
+                clientType: clientRegistrationType,
+                scopes: this.profile.scopes,
+                grantTypes: [authorizationGrantType, refreshGrantType],
+                redirectUris: ['http://127.0.0.1/oauth/callback'],
+                issuerUrl: this.profile.startUrl,
+            },
+            'auth code'
+        )
     }
 
     override async authorize(
@@ -454,7 +461,7 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
                     throw authorizationCode.err()
                 }
 
-                const tokenRequest: OidcClientPKCE.CreateTokenRequest = {
+                const tokenRequest: CreateTokenRequest = {
                     clientId: registration.clientId,
                     clientSecret: registration.clientSecret,
                     grantType: authorizationGrantType,
