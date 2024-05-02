@@ -31,6 +31,9 @@ export class SecurityScanLanguageContext {
             terragrunt: 'tf',
             packer: 'tf',
             plaintext: 'plaintext',
+            c: 'c',
+            cpp: 'cpp',
+            php: 'php',
         })
     }
 

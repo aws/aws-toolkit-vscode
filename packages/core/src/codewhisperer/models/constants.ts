@@ -261,6 +261,9 @@ export const securityScanLanguageIds = [
     'packer',
     'plaintext',
     'jsonc',
+    'c',
+    'cpp',
+    'php',
 ] as const
 
 export type SecurityScanLanguageId = (typeof securityScanLanguageIds)[number]

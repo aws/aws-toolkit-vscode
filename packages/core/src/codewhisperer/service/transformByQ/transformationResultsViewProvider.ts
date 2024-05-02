@@ -428,7 +428,7 @@ export class ProposedTransformationExplorer {
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {
             diffModel.saveChanges()
             telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
-            await vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedNotification)
+            void vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedNotification)
             transformByQState.getChatControllers()?.transformationFinished.fire({
                 message: CodeWhispererConstants.changesAppliedChatMessage,
                 tabID: ChatSessionManager.Instance.getSession().tabID,
