@@ -218,30 +218,10 @@ export class SecondaryAuth<T extends Connection = Connection> {
     }
 
     public async addScopes(conn: T & SsoConnection, extraScopes: string[]) {
-        const oldScopes = conn.scopes ?? []
-        const newScopes = Array.from(new Set([...oldScopes, ...extraScopes]))
-
-        const updateConnectionScopes = (scopes: string[]) => {
-            return this.auth.updateConnection(conn, {
-                type: 'sso',
-                scopes,
-                startUrl: conn.startUrl,
-                ssoRegion: conn.ssoRegion,
-            })
-        }
-
-        const updatedConn = await updateConnectionScopes(newScopes)
-
-        try {
-            return await this.auth.reauthenticate(updatedConn)
-        } catch (e) {
-            // We updated the connection scopes pre-emptively, but if there is some issue (e.g. user cancels,
-            // InvalidGrantException, etc), then we need to revert to the old connection scopes. Otherwise,
-            // this could soft-lock users into a broken connection that cannot be re-authenticated without
-            // first deleting the connection.
-            await updateConnectionScopes(oldScopes)
-            throw e
-        }
+        return await addScopes(conn, extraScopes, {
+            invalidate: true,
+            auth: this.auth,
+        })
     }
 
     // Used to lazily restore persisted connections.
@@ -286,5 +266,48 @@ export class SecondaryAuth<T extends Connection = Connection> {
             this.#savedConnection = undefined
             this.#activeConnection = undefined
         }
+    }
+}
+
+type AddScopesOptions = {
+    invalidate?: boolean
+    auth?: Auth
+}
+
+/**
+ * This should exist in connection.ts or utils.ts, but due to circular dependencies, it must go here.
+ * TODO: Determine if invalidating the connection is ever required.
+ */
+export async function addScopes(conn: SsoConnection, extraScopes: string[], opts?: AddScopesOptions) {
+    const auth = opts?.auth ?? Auth.instance
+    const invalidateConn = opts?.invalidate ?? true
+
+    const oldScopes = conn.scopes ?? []
+    const newScopes = Array.from(new Set([...oldScopes, ...extraScopes]))
+
+    const updateConnectionScopes = (scopes: string[]) => {
+        return auth.updateConnection(
+            conn,
+            {
+                type: 'sso',
+                scopes,
+                startUrl: conn.startUrl,
+                ssoRegion: conn.ssoRegion,
+            },
+            invalidateConn
+        )
+    }
+
+    const updatedConn = await updateConnectionScopes(newScopes)
+
+    try {
+        return await auth.reauthenticate(updatedConn)
+    } catch (e) {
+        // We updated the connection scopes pre-emptively, but if there is some issue (e.g. user cancels,
+        // InvalidGrantException, etc), then we need to revert to the old connection scopes. Otherwise,
+        // this could soft-lock users into a broken connection that cannot be re-authenticated without
+        // first deleting the connection.
+        await updateConnectionScopes(oldScopes)
+        throw e
     }
 }

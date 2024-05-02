@@ -380,14 +380,24 @@ export class Auth implements AuthService, ConnectionManager {
         await this.validateConnection(connection.id, profile)
     }
 
-    public async updateConnection(connection: Pick<SsoConnection, 'id'>, profile: SsoProfile): Promise<SsoConnection>
-    public async updateConnection(connection: Pick<Connection, 'id'>, profile: Profile): Promise<Connection> {
+    public async updateConnection(
+        connection: Pick<SsoConnection, 'id'>,
+        profile: SsoProfile,
+        invalidate?: boolean
+    ): Promise<SsoConnection>
+    public async updateConnection(
+        connection: Pick<Connection, 'id'>,
+        profile: Profile,
+        invalidate?: boolean
+    ): Promise<Connection> {
         getLogger().info(`auth: Updating connection ${connection.id}`)
         if (profile.type === 'iam') {
             throw new Error('Updating IAM connections is not supported')
         }
 
-        await this.invalidateConnection(connection.id, { skipGlobalLogout: true })
+        if (invalidate ?? true) {
+            await this.invalidateConnection(connection.id, { skipGlobalLogout: true })
+        }
 
         const newProfile = await this.store.updateProfile(connection.id, profile)
         const updatedConn = this.getSsoConnection(connection.id, newProfile as StoredProfile<SsoProfile>)

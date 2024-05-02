@@ -20,8 +20,8 @@ import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { createCommonButtons, createExitButton, createHelpButton, createRefreshButton } from '../shared/ui/buttons'
-import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
-import { getDependentAuths } from './secondaryAuth'
+import { getIdeProperties, isAmazonQ, isCloud9 } from '../shared/extensionUtilities'
+import { addScopes, getDependentAuths } from './secondaryAuth'
 import { DevSettings } from '../shared/settings'
 import { createRegionPrompter } from '../shared/ui/common/region'
 import { saveProfileToCredentials } from './credentials/sharedCredentials'
@@ -40,6 +40,7 @@ import {
     createSsoProfile,
     hasScopes,
     scopesSsoAccountAccess,
+    isSsoConnection,
 } from './connection'
 import { Commands, placeholder, RegisteredCommand, vscodeComponent } from '../shared/vscode/commands2'
 import { Auth } from './auth'
@@ -93,12 +94,18 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'iam-only' 
 
 export async function promptAndUseConnection(...[auth, type]: Parameters<typeof promptForConnection>) {
     return telemetry.aws_setCredentials.run(async span => {
-        const resp = await promptForConnection(auth, type)
-        if (!resp) {
+        let conn = await promptForConnection(auth, type)
+        if (!conn) {
             throw new CancellationError('user')
         }
 
-        await auth.useConnection(resp)
+        // HACK: We assume that if we are toolkit we want AWS account scopes.
+        // Although, Q shouldn't enter this codepath anyways.
+        if (!isAmazonQ() && isSsoConnection(conn) && !hasScopes(conn, scopesSsoAccountAccess)) {
+            conn = await addScopes(conn, scopesSsoAccountAccess, { invalidate: false })
+        }
+
+        await auth.useConnection(conn)
     })
 }
 

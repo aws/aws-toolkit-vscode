@@ -7,10 +7,18 @@ import * as vscode from 'vscode'
 import { tryAddCredentials } from '../../../../auth/utils'
 import { getLogger } from '../../../../shared/logger'
 import { CommonAuthWebview } from '../backend'
-import { AwsConnection, Connection, createSsoProfile } from '../../../../auth/connection'
+import {
+    AwsConnection,
+    Connection,
+    createSsoProfile,
+    hasScopes,
+    isIdcSsoConnection,
+    scopesSsoAccountAccess,
+} from '../../../../auth/connection'
 import { Auth } from '../../../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
 import { AuthError, AuthFlowState, TelemetryMetadata } from '../types'
+import { addScopes } from '../../../../auth/secondaryAuth'
 
 export class ToolkitLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.toolkit.AmazonCommonAuth'
@@ -126,7 +134,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
      */
     async useConnection(connectionId: string, auto: boolean): Promise<AuthError | undefined> {
         return this.ssoSetup('useConnection', async () => {
-            const conn = await Auth.instance.getConnection({ id: connectionId })
+            let conn = await Auth.instance.getConnection({ id: connectionId })
             if (conn === undefined || conn.type !== 'sso') {
                 return
             }
@@ -136,6 +144,11 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
             if (this.isCodeCatalystLogin) {
                 await this.codeCatalystAuth.tryUseConnection(conn)
             } else {
+                if (isIdcSsoConnection(conn) && !hasScopes(conn, scopesSsoAccountAccess)) {
+                    conn = await addScopes(conn, scopesSsoAccountAccess, {
+                        invalidate: false,
+                    })
+                }
                 await Auth.instance.useConnection({ id: connectionId })
             }
 
