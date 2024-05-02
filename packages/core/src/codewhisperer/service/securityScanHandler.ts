@@ -99,14 +99,18 @@ function mapToAggregatedList(codeScanIssueMap: Map<string, RawCodeScanIssue[]>, 
 export async function pollScanJobStatus(
     client: DefaultCodeWhispererClient,
     jobId: string,
-    scope: CodeWhispererConstants.CodeAnalysisScope
+    scope: CodeWhispererConstants.CodeAnalysisScope,
+    codeScanStartTime: number
 ) {
+    // We don't expect to get results immediately, so sleep for some time initially to not make unnecessary calls
+    await sleep(getPollingDelayForScope(scope))
+
     const logger = getLoggerForScope(scope)
     logger.verbose(`Polling scan job status...`)
     let status: string = 'Pending'
     let timer: number = 0
     while (true) {
-        throwIfCancelled(scope)
+        throwIfCancelled(scope, codeScanStartTime)
         const req: codewhispererClient.GetCodeScanRequest = {
             jobId: jobId,
         }
@@ -118,7 +122,7 @@ export async function pollScanJobStatus(
             logger.verbose(`Complete Polling scan job status.`)
             break
         }
-        throwIfCancelled(scope)
+        throwIfCancelled(scope, codeScanStartTime)
         await sleep(CodeWhispererConstants.codeScanJobPollingIntervalSeconds * 1000)
         timer += CodeWhispererConstants.codeScanJobPollingIntervalSeconds
         const timeoutSeconds =
@@ -208,18 +212,23 @@ function getMd5(fileName: string) {
     return hasher.digest('base64')
 }
 
-export function throwIfCancelled(scope: CodeWhispererConstants.CodeAnalysisScope) {
+export function throwIfCancelled(scope: CodeWhispererConstants.CodeAnalysisScope, codeScanStartTime: number) {
     switch (scope) {
         case CodeWhispererConstants.CodeAnalysisScope.PROJECT:
             if (codeScanState.isCancelling()) {
                 throw new CodeScanStoppedError()
             }
             break
-        case CodeWhispererConstants.CodeAnalysisScope.FILE:
-            if (!CodeScansState.instance.isScansEnabled()) {
+        case CodeWhispererConstants.CodeAnalysisScope.FILE: {
+            const latestCodeScanStartTime = CodeScansState.instance.getLatestScanTime()
+            if (
+                !CodeScansState.instance.isScansEnabled() ||
+                (latestCodeScanStartTime && latestCodeScanStartTime > codeScanStartTime)
+            ) {
                 throw new CodeScanStoppedError()
             }
             break
+        }
         default:
             getLogger().warn(`Unknown code analysis scope: ${scope}`)
             break
@@ -262,4 +271,10 @@ export async function uploadArtifactToS3(
 
 export function getLoggerForScope(scope: CodeWhispererConstants.CodeAnalysisScope) {
     return scope === CodeWhispererConstants.CodeAnalysisScope.FILE ? getNullLogger() : getLogger()
+}
+
+function getPollingDelayForScope(scope: CodeWhispererConstants.CodeAnalysisScope) {
+    return scope === CodeWhispererConstants.CodeAnalysisScope.FILE
+        ? CodeWhispererConstants.fileScanPollingDelaySeconds
+        : CodeWhispererConstants.projectScanPollingDelaySeconds
 }

@@ -12,21 +12,18 @@ import { CodeAnalysisScope, codewhispererDiagnosticSourceLabel } from '../models
 interface SecurityScanRender {
     securityDiagnosticCollection: vscode.DiagnosticCollection | undefined
     initialized: boolean
-    lastUpdated: number
 }
 
 export const securityScanRender: SecurityScanRender = {
     securityDiagnosticCollection: undefined,
     initialized: false,
-    lastUpdated: 0,
 }
 
 export function initSecurityScanRender(
     securityRecommendationList: AggregatedCodeScanIssue[],
     context: vscode.ExtensionContext,
     editor: vscode.TextEditor,
-    scope: CodeAnalysisScope,
-    codeScanStartTime: number
+    scope: CodeAnalysisScope
 ) {
     securityScanRender.initialized = false
     if (scope === CodeAnalysisScope.FILE) {
@@ -39,7 +36,6 @@ export function initSecurityScanRender(
         updateSecurityIssueHoverAndCodeActions(securityRecommendation)
     })
     securityScanRender.initialized = true
-    securityScanRender.lastUpdated = codeScanStartTime
 }
 
 function updateSecurityIssueHoverAndCodeActions(securityRecommendation: AggregatedCodeScanIssue) {
