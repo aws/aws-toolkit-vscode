@@ -92,6 +92,10 @@ export function isInDevEnv(): boolean {
     return !!getCodeCatalystDevEnvId()
 }
 
+export function isRemoteWorkspace(): boolean {
+    return vscode.env.remoteName === 'ssh-remote'
+}
+
 export function getCodeCatalystProjectName(): string | undefined {
     return process.env['__DEV_ENVIRONMENT_PROJECT_NAME']
 }
