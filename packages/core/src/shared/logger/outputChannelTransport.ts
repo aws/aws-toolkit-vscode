@@ -64,13 +64,7 @@ export class OutputChannelTransport extends Transport {
                 } else if (loglevel === 'warn') {
                     c.warn(msg)
                 } else if (loglevel === 'debug' || loglevel === 'verbose') {
-                    // XXX: `vscode.LogOutputChannel` loglevel is currently readonly:
-                    //      https://github.com/microsoft/vscode/issues/170450
-                    //      https://github.com/PowerShell/vscode-powershell/issues/4441
-                    // So debug() will just drop messages unless the user configures vscode (via
-                    // `code --log …` or `.vscode/argv.json` https://stackoverflow.com/a/77257398/152142).
-                    // Use info() until vscode adds a way to set the loglevel.
-                    c.info(msg)
+                    c.debug(msg)
                 } else {
                     c.info(msg)
                 }

@@ -28,6 +28,7 @@ import {
     getHeadersObj,
     throwIfCancelled,
     zipCode,
+    getTableMapping,
 } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
 import {
     validateOpenProjects,
@@ -256,5 +257,45 @@ describe('transformByQ', function () {
                 assert(expectedFilesAfterClean.includes(dependency.name))
             })
         })
+    })
+
+    it(`WHEN getTableMapping on complete step 0 progressUpdates THEN map IDs to tables`, async function () {
+        const stepZeroProgressUpdates = [
+            {
+                name: '0',
+                status: 'COMPLETED',
+                description:
+                    '{"columnNames":["name","value"],"rows":[{"name":"Lines of code in your application","value":"3000"},{"name":"Dependencies to be replaced","value":"5"},{"name":"Deprecated code instances to be replaced","value":"10"},{"name":"Files to be updated","value":"7"}]}',
+            },
+            {
+                name: '1-dependency-change-abc',
+                status: 'COMPLETED',
+                description:
+                    '{"columnNames":["dependencyName","action","currentVersion","targetVersion"],"rows":[{"dependencyName":"org.springboot.com","action":"Update","currentVersion":"2.1","targetVersion":"2.4"}, {"dependencyName":"com.lombok.java","action":"Remove","currentVersion":"1.7","targetVersion":"-"}]}',
+            },
+            {
+                name: '2-deprecated-code-xyz',
+                status: 'COMPLETED',
+                description:
+                    '{"columnNames":["apiFullyQualifiedName","numChangedFiles"],“rows”:[{"apiFullyQualifiedName":"java.lang.Thread.stop()","numChangedFiles":"6"}, {"apiFullyQualifiedName":"java.math.bad()","numChangedFiles":"3"}]}',
+            },
+            {
+                name: '-1',
+                status: 'COMPLETED',
+                description:
+                    '{"columnNames":["relativePath","action"],"rows":[{"relativePath":"pom.xml","action":"Update"}, {"relativePath":"src/main/java/com/bhoruka/bloodbank/BloodbankApplication.java","action":"Update"}]}',
+            },
+        ]
+
+        const actual = getTableMapping(stepZeroProgressUpdates)
+        const expected = {
+            '0': '{"columnNames":["name","value"],"rows":[{"name":"Lines of code in your application","value":"3000"},{"name":"Dependencies to be replaced","value":"5"},{"name":"Deprecated code instances to be replaced","value":"10"},{"name":"Files to be updated","value":"7"}]}',
+            '1-dependency-change-abc':
+                '{"columnNames":["dependencyName","action","currentVersion","targetVersion"],"rows":[{"dependencyName":"org.springboot.com","action":"Update","currentVersion":"2.1","targetVersion":"2.4"}, {"dependencyName":"com.lombok.java","action":"Remove","currentVersion":"1.7","targetVersion":"-"}]}',
+            '2-deprecated-code-xyz':
+                '{"columnNames":["apiFullyQualifiedName","numChangedFiles"],“rows”:[{"apiFullyQualifiedName":"java.lang.Thread.stop()","numChangedFiles":"6"}, {"apiFullyQualifiedName":"java.math.bad()","numChangedFiles":"3"}]}',
+            '-1': '{"columnNames":["relativePath","action"],"rows":[{"relativePath":"pom.xml","action":"Update"}, {"relativePath":"src/main/java/com/bhoruka/bloodbank/BloodbankApplication.java","action":"Update"}]}',
+        }
+        assert.deepStrictEqual(actual, expected)
     })
 })

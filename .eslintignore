@@ -11,9 +11,11 @@ src/shared/telemetry/clienttelemetry.d.ts
 src/codewhisperer/client/codewhispererclient.d.ts
 src/codewhisperer/client/codewhispereruserclient.d.ts
 src/amazonqFeatureDev/client/featuredevproxyclient.d.ts
+src/auth/sso/oidcclientpkce.d.ts
 src/testFixtures/**
 packages/core/src/shared/telemetry/clienttelemetry.d.ts
 packages/core/src/codewhisperer/client/codewhispererclient.d.ts
 packages/core/src/codewhisperer/client/codewhispereruserclient.d.ts
 packages/core/src/amazonqFeatureDev/client/featuredevproxyclient.d.ts
+packages/core/src/auth/sso/oidcclientpkce.d.ts
 packages/core/src/testFixtures/**

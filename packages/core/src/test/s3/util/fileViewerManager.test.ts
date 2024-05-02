@@ -14,7 +14,7 @@ import { bufferToStream } from '../../../shared/utilities/streamUtilities'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { assertTelemetry, assertTextEditorContains } from '../../testUtil'
-import { PromptSettings } from '../../../shared/settings'
+import { ToolkitPromptSettings } from '../../../shared/settings'
 import { stub } from '../../utilities/stubber'
 import { assertHasProps } from '../../../shared/utilities/tsUtils'
 import { ToolkitError } from '../../../shared/errors'
@@ -198,7 +198,7 @@ describe('FileViewerManager', function () {
         s3 = createS3()
         fs = new VirtualFileSystem()
 
-        fileViewerManager = new S3FileViewerManager(() => s3.client, fs, new PromptSettings(), {
+        fileViewerManager = new S3FileViewerManager(() => s3.client, fs, new ToolkitPromptSettings(), {
             read: readScheme,
             edit: editScheme,
         })

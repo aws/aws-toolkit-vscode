@@ -1,0 +1,18 @@
+{
+	"date": "2024-04-30",
+	"version": "1.1.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Fixed markdown is not getting parsed inside list items."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Copy to clipboard on code blocks doesn't work"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fixed a crash when trying to use Q /dev on large projects or projects containing files with unsupported encoding."
+		}
+	]
+}

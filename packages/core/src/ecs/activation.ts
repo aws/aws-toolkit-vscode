@@ -15,7 +15,7 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 
 export async function activate(ctx: ExtContext): Promise<void> {
-    ctx.extensionContext.subscriptions.push(runCommandInContainer, openTaskInTerminal)
+    ctx.extensionContext.subscriptions.push(runCommandInContainer.register(), openTaskInTerminal.register())
     ctx.extensionContext.subscriptions.push(
         Commands.register('aws.ecs.enableEcsExec', (param?: unknown) => {
             return telemetry.ecs_enableExecuteCommand.run(async () => {

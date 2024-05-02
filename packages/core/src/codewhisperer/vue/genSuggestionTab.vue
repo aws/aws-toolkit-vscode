@@ -34,10 +34,11 @@
         </div>
 
         <div class="generateSuggestionDescription">
-            CodeWhisperer supports 15 programming languages, including TypeScript, JavaScript, Python, Java, and C#.
+            Amazon Q inline suggestions supports 15 programming languages, including TypeScript, JavaScript, Python,
+            Java, and C#.
             <a
                 class="generateSuggestionLearnMore"
-                href="https://docs.aws.amazon.com/codewhisperer/latest/userguide/language-ide-support.html"
+                href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/q-language-ide-support.html"
                 @click="emitUiClick('codewhisperer_GenerateSuggestions_LearnMore')"
                 >Learn more</a
             >
@@ -66,16 +67,16 @@ export default defineComponent({
                     tableData: [
                         {
                             column1: [
-                                'CodeWhisperer_generate_suggestion.py',
+                                'AmazonQ_generate_suggestion.py',
                                 `# TODO: place your cursor at the end of line 5 and press Enter to generate a suggestion.${'\n'}# Tip: press tab to accept the suggestion.${'\n'}${'\n'}fake_users = [${'\n'}    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },`,
                             ],
                             column2: [
-                                'CodeWhisperer_manual_invoke.py',
+                                'AmazonQ_manual_invoke.py',
                                 `# TODO: Press either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}# Function to upload a file to an S3 bucket.${'\n'}`,
                             ],
                             column3: [
                                 'Generate_unit_tests.py',
-                                `# TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}def sum(a, b):${'\n'}    """${'\n'}    Function to sum two numbers.${'\n'}${'\n'}    Args:${'\n'}    - a: First number.${'\n'}    - b: Second number.${'\n'}${'\n'}    Returns:${'\n'}    - Sum of the two numbers.${'\n'}    """${'\n'}    return a + b${'\n'}${'\n'}# Write a test case for the above function.${'\n'}`,
+                                `# TODO: Ask Amazon Q to write unit tests.${'\n'}${'\n'}def sum(a, b):${'\n'}    """${'\n'}    Function to sum two numbers.${'\n'}${'\n'}    Args:${'\n'}    - a: First number.${'\n'}    - b: Second number.${'\n'}${'\n'}    Returns:${'\n'}    - Sum of the two numbers.${'\n'}    """${'\n'}    return a + b${'\n'}${'\n'}# Write a test case for the above function.${'\n'}`,
                             ],
                         },
                     ],
@@ -90,9 +91,9 @@ export default defineComponent({
         onClick(names: string[], label: string) {
             let taskType: CodewhispererGettingStartedTask = 'autoTrigger'
             const fileName = names[0]
-            if (fileName.startsWith('CodeWhisperer_generate_suggestion')) {
+            if (fileName.startsWith('AmazonQ_generate_suggestion')) {
                 taskType = 'autoTrigger'
-            } else if (fileName.startsWith('CodeWhisperer_manual_invoke')) {
+            } else if (fileName.startsWith('AmazonQ_manual_invoke')) {
                 taskType = 'manualTrigger'
             } else {
                 taskType = 'unitTest'
@@ -129,7 +130,7 @@ export default defineComponent({
 }
 .generateSuggestionHeader {
     font-family: Verdana;
-    font-size: 24px;
+    font-size: 18px;
     font-weight: 860;
     line-height: 24px;
     letter-spacing: 0em;

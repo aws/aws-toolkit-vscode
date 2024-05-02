@@ -113,7 +113,7 @@ export async function createSearchSchemasWebView(context: ExtContext, node: Regi
         const client = new DefaultSchemaClient(node.regionCode)
         const registryNames = await getRegistryNames(node, client)
         if (registryNames.length === 0) {
-            await vscode.window.showInformationMessage(
+            void vscode.window.showInformationMessage(
                 localize('AWS.schemas.search.no_registries', 'No Schema Registries')
             )
 

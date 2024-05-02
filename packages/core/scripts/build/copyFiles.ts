@@ -29,6 +29,7 @@ const tasks: CopyTask[] = [
     { target: path.join('src', 'test', 'shared', 'cloudformation', 'yaml') },
     { target: path.join('src', 'test', 'codewhisperer', 'service', 'resources') },
     { target: path.join('src', 'testFixtures') },
+    { target: 'src/auth/sso/vue' },
 
     // SSM
     {

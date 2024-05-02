@@ -21,8 +21,7 @@
  *
  * Once we do not need `crypto` anymore, we can get rid of the polyfill.
  */
-
-import { isWeb } from './webUtils'
+import { isWeb } from '../shared/extensionGlobals'
 
 export function randomUUID(): `${string}-${string}-${string}-${string}-${string}` {
     if (isWeb()) {

@@ -66,7 +66,7 @@ class AutotriggerState implements AnnotationState {
     id = AutotriggerState.id
 
     suppressWhileRunning = true
-    text = () => 'CodeWhisperer Tip 1/3: Start typing to get suggestions ([ESC] to exit)'
+    text = () => 'Amazon Q Tip 1/3: Start typing to get suggestions ([ESC] to exit)'
     static acceptedCount = 0
 
     updateState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState | undefined {
@@ -99,7 +99,7 @@ class PressTabState implements AnnotationState {
 
     suppressWhileRunning = false
 
-    text = () => 'CodeWhisperer Tip 1/3: Press [TAB] to accept ([ESC] to exit)'
+    text = () => 'Amazon Q Tip 1/3: Press [TAB] to accept ([ESC] to exit)'
 
     updateState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState | undefined {
         return new AutotriggerState().updateState(changeSource, force)
@@ -127,10 +127,10 @@ class ManualtriggerState implements AnnotationState {
 
     text = () => {
         if (os.platform() === 'win32') {
-            return 'CodeWhisperer Tip 2/3: Invoke suggestions with [Alt] + [C] ([ESC] to exit)'
+            return 'Amazon Q Tip 2/3: Invoke suggestions with [Alt] + [C] ([ESC] to exit)'
         }
 
-        return 'CodeWhisperer Tip 2/3: Invoke suggestions with [Option] + [C] ([ESC] to exit)'
+        return 'Amazon Q Tip 2/3: Invoke suggestions with [Option] + [C] ([ESC] to exit)'
     }
     hasManualTrigger: boolean = false
     hasValidResponse: boolean = false
@@ -167,7 +167,7 @@ class TryMoreExState implements AnnotationState {
 
     suppressWhileRunning = true
 
-    text = () => 'CodeWhisperer Tip 3/3: For settings, open the CodeWhisperer menu from the status bar ([ESC] to exit)'
+    text = () => 'Amazon Q Tip 3/3: For settings, open the Amazon Q menu from the status bar ([ESC] to exit)'
     updateState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState {
         if (force) {
             return new EndState()
@@ -275,7 +275,7 @@ export class LineAnnotationController implements vscode.Disposable {
             this.container.auth.secondaryAuth.onDidChangeActiveConnection(async () => {
                 await this.refresh(vscode.window.activeTextEditor, 'editor')
             }),
-            Commands.register('aws.codeWhisperer.dismissTutorial', async () => {
+            Commands.register('aws.amazonq.dismissTutorial', async () => {
                 const editor = vscode.window.activeTextEditor
                 if (editor) {
                     this.clear()

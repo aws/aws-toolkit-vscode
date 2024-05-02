@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import { CodeWhispererCodeCoverageTracker } from '../../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
 import { createMockDocument, createMockTextEditor, resetCodeWhispererGlobalVariables } from '../testUtil'
 import globals from '../../../shared/extensionGlobals'
-import { assertTelemetryCurried } from '../../testUtil'
+import { assertTelemetryCurried, tryRegister } from '../../testUtil'
 import { vsCodeState } from '../../../codewhisperer/models/model'
 import { FakeMemento } from '../../fakeExtensionContext'
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
@@ -17,11 +17,16 @@ import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 import { extensionVersion } from '../../../shared/vscode/env'
+import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
 
 describe('codewhispererCodecoverageTracker', function () {
     const language = 'python'
 
     describe('test getTracker', function () {
+        before(async function () {
+            tryRegister(refreshStatusBar)
+        })
+
         afterEach(async function () {
             await resetCodeWhispererGlobalVariables()
             CodeWhispererCodeCoverageTracker.instances.clear()

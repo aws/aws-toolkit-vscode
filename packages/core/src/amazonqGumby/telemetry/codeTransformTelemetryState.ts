@@ -12,16 +12,15 @@ export interface ICodeTransformMetaData {
     errorMessage?: string
 }
 
-interface ICodeTransformerTelemetryState {
+interface ICodeTransformTelemetryState {
     sessionId: string
     sessionStartTime: number
     resultStatus: string
     codeTransformMetadata: ICodeTransformMetaData
 }
 
-class CodeTransformerTelemetryState {
-    private static instance: CodeTransformerTelemetryState
-    mainState: ICodeTransformerTelemetryState
+export class CodeTransformTelemetryState {
+    mainState: ICodeTransformTelemetryState
 
     private constructor() {
         this.mainState = {
@@ -30,14 +29,6 @@ class CodeTransformerTelemetryState {
             resultStatus: '',
             codeTransformMetadata: {},
         }
-    }
-
-    public static getInstance(): CodeTransformerTelemetryState {
-        if (!CodeTransformerTelemetryState.instance) {
-            CodeTransformerTelemetryState.instance = new CodeTransformerTelemetryState()
-        }
-
-        return CodeTransformerTelemetryState.instance
     }
 
     public getSessionId = () => this.mainState.sessionId
@@ -62,6 +53,10 @@ class CodeTransformerTelemetryState {
         }
     }
     public resetCodeTransformMetaDataField = () => (this.mainState.codeTransformMetadata = {})
-}
 
-export const codeTransformTelemetryState = CodeTransformerTelemetryState.getInstance()
+    static #instance: CodeTransformTelemetryState
+
+    public static get instance() {
+        return (this.#instance ??= new this())
+    }
+}

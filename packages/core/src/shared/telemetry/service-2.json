@@ -45,7 +45,9 @@
         "AWS Toolkit For JetBrains",
         "AWS Toolkit For Eclipse",
         "AWS Toolkit For VisualStudio",
-        "AWS Toolkit For VS Code"
+        "AWS Toolkit For VS Code",
+        "Amazon Q For JetBrains",
+        "Amazon Q For VS Code"
       ]
     },
     "AWSProductVersion":{
