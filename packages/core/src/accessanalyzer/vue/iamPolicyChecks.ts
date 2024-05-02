@@ -32,9 +32,9 @@ export interface IamPolicyChecksInitialData {
 export class IamPolicyChecksWebview extends VueWebview {
     public static readonly sourcePath: string = 'src/accessanalyzer/vue/index.js'
     public readonly id = 'iamPolicyChecks'
-    private static editedDocumentUri: vscode.Uri = vscode.window.activeTextEditor?.document.uri!
-    private static editedDocumentFileName: string = vscode.window.activeTextEditor?.document.uri.path!
-    private static editedDocument: string = ''
+    private static editedDocumentUri: vscode.Uri
+    private static editedDocumentFileName: string
+    private static editedDocument: string
 
     public constructor(
         private readonly data: IamPolicyChecksInitialData,
@@ -51,9 +51,9 @@ export class IamPolicyChecksWebview extends VueWebview {
         this._setActiveTextEditorListener()
         this._setActiveConfigurationListener()
         if (vscode.window.activeTextEditor) {
-            IamPolicyChecksWebview.editedDocumentFileName = vscode.window.activeTextEditor?.document.uri.path!
-            IamPolicyChecksWebview.editedDocument = vscode.window.activeTextEditor?.document.getText()
-            IamPolicyChecksWebview.editedDocumentUri = vscode.window.activeTextEditor?.document.uri
+            IamPolicyChecksWebview.editedDocumentFileName = vscode.window.activeTextEditor.document.uri.path
+            IamPolicyChecksWebview.editedDocument = vscode.window.activeTextEditor.document.getText()
+            IamPolicyChecksWebview.editedDocumentUri = vscode.window.activeTextEditor.document.uri
         }
     }
 
@@ -115,7 +115,7 @@ export class IamPolicyChecksWebview extends VueWebview {
         validatePolicyDiagnosticCollection.clear()
         const diagnostics: vscode.Diagnostic[] = []
         switch (documentType) {
-            case 'JSON Policy Language':
+            case PolicyChecksDocumentType.JSON_POLICY_LANGUAGE: {
                 this.client.validatePolicy(
                     {
                         policyDocument: IamPolicyChecksWebview.editedDocument,
@@ -168,7 +168,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                                     'Please view the problems panel to review the issues with your policy document. Policy checks should be run until issues are no longer found in your policy document.',
                                     'yellow',
                                 ])
-                                vscode.commands.executeCommand('workbench.actions.view.problems')
+                                void vscode.commands.executeCommand('workbench.actions.view.problems')
                             } else {
                                 this.onValidatePolicyResponse.fire([
                                     'Policy checks did not discover any problems with your policy.',
@@ -179,17 +179,20 @@ export class IamPolicyChecksWebview extends VueWebview {
                     }
                 )
                 return
-            case 'Terraform Plan':
+            }
+            case PolicyChecksDocumentType.TERRAFORM_PLAN: {
                 const tfCommand = `tf-policy-validator validate --template-path ${document} --region ${this.region} --config ${defaultTerraformConfigPath}`
                 this.executeValidatePolicyCommand(tfCommand)
                 return
-            case 'CloudFormation':
+            }
+            case PolicyChecksDocumentType.CLOUDFORMATION: {
                 const cfnCommand =
                     cfnParameterPath === ''
                         ? `cfn-policy-validator validate --template-path ${document} --region ${this.region}`
                         : `cfn-policy-validator validate --template-path ${document} --region ${this.region} --template-configuration-file ${cfnParameterPath}`
                 this.executeValidatePolicyCommand(cfnCommand)
                 return
+            }
         }
     }
 
@@ -209,17 +212,19 @@ export class IamPolicyChecksWebview extends VueWebview {
         }
 
         switch (documentType) {
-            case 'Terraform Plan':
+            case PolicyChecksDocumentType.TERRAFORM_PLAN: {
                 const tfCommand = `tf-policy-validator check-no-new-access --template-path ${document} --region ${this.region} --config ${defaultTerraformConfigPath} --reference-policy ${tempFilePath} --reference-policy-type ${policyType}`
                 this.executeCustomPolicyChecksCommand(tfCommand)
                 return
-            case 'CloudFormation':
+            }
+            case PolicyChecksDocumentType.CLOUDFORMATION: {
                 const cfnCommand =
                     cfnParameterPath === ''
                         ? `cfn-policy-validator check-no-new-access --template-path ${document} --region ${this.region} --reference-policy ${tempFilePath} --reference-policy-type ${policyType}`
                         : `cfn-policy-validator check-no-new-access --template-path ${document} --region ${this.region} --reference-policy ${tempFilePath} --reference-policy-type ${policyType} --template-configuration-file ${cfnParameterPath}`
                 this.executeCustomPolicyChecksCommand(cfnCommand)
                 return
+            }
         }
         if (fs.existsSync(tempFilePath)) {
             fs.unlinkSync(tempFilePath)
@@ -237,17 +242,19 @@ export class IamPolicyChecksWebview extends VueWebview {
             return
         }
         switch (documentType) {
-            case 'Terraform Plan':
+            case PolicyChecksDocumentType.TERRAFORM_PLAN: {
                 const tfCommand = `tf-policy-validator check-access-not-granted --template-path ${document} --region ${this.region} --config ${defaultTerraformConfigPath} --actions ${referenceDocument}`
                 this.executeCustomPolicyChecksCommand(tfCommand)
                 return
-            case 'CloudFormation':
+            }
+            case PolicyChecksDocumentType.CLOUDFORMATION: {
                 const cfnCommand =
                     cfnParameterPath === ''
                         ? `cfn-policy-validator check-access-not-granted --template-path ${document} --region ${this.region} --actions ${referenceDocument}`
                         : `cfn-policy-validator check-access-not-granted --template-path ${document} --region ${this.region} --actions ${referenceDocument} --template-copnfiguration-file ${cfnParameterPath}`
                 this.executeCustomPolicyChecksCommand(cfnCommand)
                 return
+            }
         }
     }
 
@@ -302,7 +309,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                 'Please view the problems panel to review the issues with your policy document. Policy checks should be run until issues are no longer found in your policy document.',
                 'yellow',
             ])
-            vscode.commands.executeCommand('workbench.actions.view.problems')
+            void vscode.commands.executeCommand('workbench.actions.view.problems')
         }
     }
 
@@ -332,7 +339,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                 finding.details.reasons.forEach((reason: any) => {
                     diagnostics.push(
                         new vscode.Diagnostic(
-                            new vscode.Range(0, reason.statementIndex, 0, reason.statementIndex),
+                            new vscode.Range(0, 0, 0, 0),
                             `${finding.findingType}: ${finding.message} - Resource name: ${finding.resourceName}, Policy name: ${finding.policyName} - ${reason.description}`,
                             vscode.DiagnosticSeverity.Error
                         )
@@ -344,7 +351,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                 finding.details.reasons.forEach((reason: any) => {
                     diagnostics.push(
                         new vscode.Diagnostic(
-                            new vscode.Range(0, reason.statementIndex, 0, reason.statementIndex),
+                            new vscode.Range(0, 0, 0, 0),
                             `${finding.findingType}: ${finding.message} - Resource name: ${finding.resourceName}, Policy name: ${finding.policyName} - ${reason.description}`,
                             vscode.DiagnosticSeverity.Warning
                         )
@@ -356,7 +363,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                 'Result: FAIL. Please view the problems panel to review the issues with your policy document. Policy checks should be run until issues are no longer found in your policy document.',
                 'yellow',
             ])
-            vscode.commands.executeCommand('workbench.actions.view.problems')
+            void vscode.commands.executeCommand('workbench.actions.view.problems')
         }
     }
 }
@@ -471,4 +478,10 @@ export enum PolicyChecksErrorCode {
     FileReadError = 'FileReadError',
     ValidatePolicyError = 'ValidatePolicyError',
     CustomPolicyCheckError = 'CustomPolicyCheckError',
+}
+
+enum PolicyChecksDocumentType {
+    TERRAFORM_PLAN = 'Terraform Plan',
+    CLOUDFORMATION = 'CloudFormation',
+    JSON_POLICY_LANGUAGE = 'JSON Policy Language',
 }
