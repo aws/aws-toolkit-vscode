@@ -34,25 +34,34 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                     const [suggestedFix] = issue.suggestedFixes
                     if (suggestedFix) {
                         const fixIssue = new vscode.CodeAction(
-                            `Apply fix for "${issue.title}"`,
+                            `Amazon Q: Fix "${issue.title}"`,
                             vscode.CodeActionKind.QuickFix
                         )
                         const args: [CodeScanIssue, string, Component] = [issue, group.filePath, 'quickfix']
                         fixIssue.command = {
-                            title: 'Apply suggested fix',
-                            command: 'aws.codeWhisperer.applySecurityFix',
+                            title: 'Fix with Amazon Q',
+                            command: 'aws.amazonq.applySecurityFix',
                             arguments: args,
                         }
                         codeActions.push(fixIssue)
                     }
-                    const openIssue = new vscode.CodeAction(`View details for "${issue.title}"`)
+                    const openIssue = new vscode.CodeAction(`Amazon Q: View details for "${issue.title}"`)
                     const args: [CodeScanIssue, string] = [issue, group.filePath]
                     openIssue.command = {
-                        title: 'Open "CodeWhisperer Security Issue"',
-                        command: 'aws.codeWhisperer.openSecurityIssuePanel',
+                        title: 'Open "Amazon Q Security Issue"',
+                        command: 'aws.amazonq.openSecurityIssuePanel',
                         arguments: args,
                     }
                     codeActions.push(openIssue)
+
+                    const explainWithQ = new vscode.CodeAction(`Amazon Q: Explain "${issue.title}"`)
+                    const explainWithQArgs = [issue]
+                    explainWithQ.command = {
+                        title: 'Explain with Amazon Q',
+                        command: 'aws.amazonq.explainIssue',
+                        arguments: explainWithQArgs,
+                    }
+                    codeActions.push(explainWithQ)
                 }
             }
         }

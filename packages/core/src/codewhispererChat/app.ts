@@ -26,7 +26,6 @@ import {
     UIFocusMessage,
 } from './controllers/chat/model'
 import { EditorContextCommand, registerCommands } from './commands/registerCommands'
-import { OnboardingPageInteraction } from '../amazonq/onboardingPage/model'
 
 export function init(appContext: AmazonQAppInitContext) {
     const cwChatControllerEventEmitters = {
@@ -42,7 +41,6 @@ export function init(appContext: AmazonQAppInitContext) {
         processChatItemVotedMessage: new EventEmitter<ChatItemVotedMessage>(),
         processChatItemFeedbackMessage: new EventEmitter<ChatItemFeedbackMessage>(),
         processUIFocusMessage: new EventEmitter<UIFocusMessage>(),
-        processOnboardingPageInteraction: new EventEmitter<OnboardingPageInteraction>(),
         processSourceLinkClick: new EventEmitter<SourceLinkClickMessage>(),
         processResponseBodyLinkClick: new EventEmitter<ResponseBodyLinkClickMessage>(),
         processFooterInfoLinkClick: new EventEmitter<FooterInfoLinkClick>(),
@@ -83,9 +81,6 @@ export function init(appContext: AmazonQAppInitContext) {
             cwChatControllerEventEmitters.processChatItemFeedbackMessage
         ),
         processUIFocusMessage: new MessageListener<UIFocusMessage>(cwChatControllerEventEmitters.processUIFocusMessage),
-        processOnboardingPageInteraction: new MessageListener<OnboardingPageInteraction>(
-            cwChatControllerEventEmitters.processOnboardingPageInteraction
-        ),
         processSourceLinkClick: new MessageListener<SourceLinkClickMessage>(
             cwChatControllerEventEmitters.processSourceLinkClick
         ),
@@ -133,9 +128,6 @@ export function init(appContext: AmazonQAppInitContext) {
         ),
         processUIFocusMessage: new MessagePublisher<UIFocusMessage>(
             cwChatControllerEventEmitters.processUIFocusMessage
-        ),
-        processOnboardingPageInteraction: new MessagePublisher<OnboardingPageInteraction>(
-            cwChatControllerEventEmitters.processOnboardingPageInteraction
         ),
         processSourceLinkClick: new MessagePublisher<SourceLinkClickMessage>(
             cwChatControllerEventEmitters.processSourceLinkClick

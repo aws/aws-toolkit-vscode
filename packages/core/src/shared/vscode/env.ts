@@ -8,6 +8,8 @@ import * as vscode from 'vscode'
 import * as packageJson from '../../../package.json'
 import { getLogger } from '../logger'
 import { onceChanged } from '../utilities/functionUtils'
+import { ChildProcess } from '../utilities/childProcess'
+import { isWeb } from '../extensionGlobals'
 
 /**
  * Returns true if the current build is running on CI (build server).
@@ -90,6 +92,10 @@ export function isInDevEnv(): boolean {
     return !!getCodeCatalystDevEnvId()
 }
 
+export function isRemoteWorkspace(): boolean {
+    return vscode.env.remoteName === 'ssh-remote'
+}
+
 export function getCodeCatalystProjectName(): string | undefined {
     return process.env['__DEV_ENVIRONMENT_PROJECT_NAME']
 }
@@ -159,4 +165,12 @@ export function getServiceEnvVarConfig<T extends string[]>(service: string, conf
     }
 
     return config
+}
+
+export async function getMachineId(): Promise<string> {
+    if (isWeb()) {
+        return 'browser'
+    }
+    const proc = new ChildProcess('hostname', [], { collect: true, logging: 'no' })
+    return (await proc.run()).stdout.trim() ?? 'unknown-host'
 }

@@ -3,10 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/**
- * This is the final webpack config that collects all webpack configs.
- */
-
 const baseConfigFactory = require('../webpack.base.config')
 const baseVueConfigFactory = require('../webpack.vue.config')
 

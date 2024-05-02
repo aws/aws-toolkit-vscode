@@ -1,27 +1,8 @@
 The AWS Toolkit lets you interact with AWS directly from VS Code. Ready to install? See [Getting Started](#getting-started).
 
-## [Amazon Q (preview)](https://aws.amazon.com/q/)
+## Amazon Q and CodeWhisperer
 
-Amazon Q is your conversational assistant for building, maintaining, and transforming applications. Amazon Q can do the following from the IDE:
-
--   Answer questions about AWS
--   Answer questions about general programming concepts
--   Explain what a line of code or code function does
--   Write unit tests and code
--   Debug and fix code
--   Refactor code
-
-![Amazon Q](https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhispererChat.gif)
-
-## [Amazon CodeWhisperer](https://aws.amazon.com/codewhisperer/)
-
-An AI powered productivity tool for the IDE.
-
--   **Real-time code suggestions** - automatic code recommendations in 15+ languages, now including infrastructure as code (CloudFormation, AWS CDK, and Terraform)
--   **Optimized for use with AWS services** - code suggestions are optimized for AWS APIs including Amazon Elastic Compute Cloud (Amazon EC2), AWS Lambda, and Amazon Simple Storage Service (Amazon S3)
--   **Built-in security scans** - Scan your code to detect hard-to-find vulnerabilities and get code suggestions to remediate them immediately
-
-![CodeWhisperer](https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif)
+Amazon CodeWhisperer is now part of Amazon Q. [Try the Amazon Q extension](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.amazon-q-vscode).
 
 ## [Application Composer](https://aws.amazon.com/application-composer/)
 
@@ -33,13 +14,11 @@ AWS Application Composer maintains a real-time visual representation of your app
 
 ![Application Composer](https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/appComposer.gif)
 
-## [**Amazon CodeCatalyst**](https://codecatalyst.aws/explore)
+## [Amazon CodeCatalyst](https://codecatalyst.aws/explore)
 
 Unified software development service to quickly build and deliver applications on AWS.
 
 **Dev Environments** - launch VS Code in a cloud development environment, available on-demand in the cloud and automatically created with branch code and consistent project settings, providing faster setup, development, and testing
-
-![CodeCatalyst](https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/CC_dev_env.gif)
 
 ## View, modify, and deploy AWS resources
 
@@ -82,13 +61,12 @@ For a full list of features, visit [our documentation](https://docs.aws.amazon.c
 ## Getting Started
 
 1. Open the AWS Toolkit extension
-2. Add AWS credentials
-    1. **AWS resources** - connect using IAM credentials or IAM Identity Center (formerly SSO)
-    2. **CodeWhisperer** - connect using AWS Builder ID or IAM Identity Center (formerly SSO)
-    3. **CodeCatalyst** - connect using AWS Builder ID
+2. Sign in with your AWS credentials
 
-![getting-started](https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/getting-started.gif)
+![getting-started](https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/auth-Toolkit.gif)
 
 ## Troubleshooting
 
 Submit bug reports and feature requests [on our Github repository](https://github.com/aws/aws-toolkit-vscode/issues/new/choose).
+
+Looking for Amazon Q or CodeWhisperer? [Try the Amazon Q extension](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.amazon-q-vscode).

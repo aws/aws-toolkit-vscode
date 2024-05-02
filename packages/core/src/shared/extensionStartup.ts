@@ -24,7 +24,7 @@ export async function showQuickStartWebview(context: vscode.ExtensionContext): P
         const view = await createQuickStartWebview(context)
         view.reveal()
     } catch {
-        await vscode.window.showErrorMessage(
+        void vscode.window.showErrorMessage(
             localize('AWS.command.quickStart.error', 'Error while loading Quick Start page')
         )
     }

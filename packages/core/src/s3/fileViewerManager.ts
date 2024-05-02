@@ -14,7 +14,7 @@ import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { downloadFile } from './commands/downloadFileAs'
 import { s3FileViewerHelpUrl } from '../shared/constants'
 import { FileProvider, VirtualFileSystem } from '../shared/virtualFilesystem'
-import { PromptSettings } from '../shared/settings'
+import { ToolkitPromptSettings } from '../shared/settings'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { ToolkitError } from '../shared/errors'
 
@@ -124,7 +124,7 @@ export class S3FileViewerManager {
     public constructor(
         private readonly clientFactory: S3ClientFactory,
         private readonly fs: VirtualFileSystem,
-        private readonly settings = PromptSettings.instance,
+        private readonly settings = ToolkitPromptSettings.instance,
         private readonly schemes = { read: s3ReadScheme, edit: s3EditScheme }
     ) {
         this.disposables.push(this.registerTabCleanup())

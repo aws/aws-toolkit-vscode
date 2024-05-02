@@ -8,7 +8,7 @@ import { getLogger } from '../../../shared/logger'
 import * as CodeWhispererConstants from '../../models/constants'
 import { spawnSync } from 'child_process' // Consider using ChildProcess once we finalize all spawnSync calls
 import { CodeTransformMavenBuildCommand, telemetry } from '../../../shared/telemetry/telemetry'
-import { codeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
+import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import { ToolkitError } from '../../../shared/errors'
 import { writeLogs } from './transformFileHandler'
@@ -72,7 +72,7 @@ function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: 
             mavenBuildCommand = 'mvnw.cmd'
         }
         telemetry.codeTransform_mvnBuildFailed.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformMavenBuildCommand: mavenBuildCommand as CodeTransformMavenBuildCommand,
             result: MetadataResult.Fail,
             reason: errorReason,
@@ -138,7 +138,7 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
             mavenBuildCommand = 'mvnw.cmd'
         }
         telemetry.codeTransform_mvnBuildFailed.emit({
-            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformMavenBuildCommand: mavenBuildCommand as CodeTransformMavenBuildCommand,
             result: MetadataResult.Fail,
             reason: errorReason,

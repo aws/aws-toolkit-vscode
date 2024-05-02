@@ -14,7 +14,7 @@ import { Auth } from '../auth'
 import { getAllConnectionsInUse, onDidChangeConnections } from '../secondaryAuth'
 import { codicon, getIcon } from '../../shared/icons'
 import { debounce } from '../../shared/utilities/functionUtils'
-import { login } from '../utils'
+import { authCommands } from '../utils'
 
 const statusbarPriority = 1
 
@@ -24,7 +24,7 @@ export async function initializeAwsCredentialsStatusBarItem(
 ): Promise<void> {
     const devSettings = DevSettings.instance
     const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, statusbarPriority)
-    statusBarItem.command = login.build().asCommand({ title: 'Login' })
+    statusBarItem.command = authCommands().login.build().asCommand({ title: 'Login' })
     statusBarItem.show()
 
     const update = debounce(() => updateItem(statusBarItem, devSettings))

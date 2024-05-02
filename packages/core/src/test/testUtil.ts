@@ -15,6 +15,7 @@ import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
 import { keys, selectFrom } from '../shared/utilities/tsUtils'
 import { fsCommon } from '../srcShared/fs'
+import { DeclaredCommand } from '../shared/vscode/commands2'
 
 const testTempDirs: string[] = []
 
@@ -472,4 +473,25 @@ export function shuffleList<T>(list: T[]): T[] {
     }
 
     return shuffledList
+}
+
+/**
+ * Try to register a command for tests since some commands are only registered during
+ * extension activation. These commands will need to be manually activated here.
+ *
+ * Swallows 'already exists' exceptions because these commands can persist
+ * across tests.
+ *
+ * TODO: This is a workaround because some code being tested exists in multiple extensions.
+ * Activating/debugging multiple extensions at once is currently not functional.
+ * To avoid this, we should drop tests/code down to their respective extensions.
+ */
+export function tryRegister(command: DeclaredCommand<() => Promise<any>>) {
+    try {
+        command.register()
+    } catch (err) {
+        if (!(err as Error).message.includes('already exists')) {
+            throw err
+        }
+    }
 }

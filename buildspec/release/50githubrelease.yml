@@ -19,23 +19,27 @@ phases:
         commands:
             # Check for implicit env vars passed from the release pipeline.
             - test -n "${TOOLKITS_GITHUB_REPO_OWNER}"
+            - test -n "${TARGET_EXTENSION}"
             - REPO="${TOOLKITS_GITHUB_REPO_OWNER}/aws-toolkit-vscode"
 
     build:
         commands:
+            - echo "TARGET_EXTENSION=${TARGET_EXTENSION}"
             # pull in the build artifacts
             - cp -r ${CODEBUILD_SRC_DIR_buildPipeline}/* .
-            - VERSION=$(node -e "console.log(require('./packages/toolkit/package.json').version);")
-            - UPLOAD_TARGET=$(ls aws-toolkit-vscode*.vsix)
+            - VERSION=$(node -e "console.log(require('./packages/${TARGET_EXTENSION}/package.json').version);")
+            - UPLOAD_TARGET=$(ls *.vsix)
             - HASH_UPLOAD_TARGET=${UPLOAD_TARGET}.sha384
             - 'HASH=$(sha384sum -b $UPLOAD_TARGET | cut -d" " -f1)'
             - echo "Writing hash to $HASH_UPLOAD_TARGET"
             - echo $HASH > $HASH_UPLOAD_TARGET
             - echo "posting $VERSION with sha384 hash $HASH to GitHub"
-            - RELEASE_MESSAGE="AWS Toolkit for VS Code $VERSION"
+            - PKG_DISPLAY_NAME=$(grep -m 1 displayName packages/${TARGET_EXTENSION}/package.json | grep -o '[a-zA-z][^\"]\+' | tail -n1)
+            - RELEASE_MESSAGE="${PKG_DISPLAY_NAME} for VS Code $VERSION"
             - |
-                if [ $STAGE = "prod" ]; then
-                  gh release create --repo $REPO --title "$VERSION" --notes "$RELEASE_MESSAGE" -- "v$VERSION" "$UPLOAD_TARGET" "$HASH_UPLOAD_TARGET"
+                if [ "$STAGE" = "prod" ]; then
+                  # note: the tag arg passed here should match what is in 10changeversion.yml
+                  gh release create --repo $REPO --title "$PKG_DISPLAY_NAME $VERSION" --notes "$RELEASE_MESSAGE" -- "${TARGET_EXTENSION}/v${VERSION}" "$UPLOAD_TARGET" "$HASH_UPLOAD_TARGET"
                 else
                   echo "SKIPPED: 'gh release create --repo $REPO'"
                 fi

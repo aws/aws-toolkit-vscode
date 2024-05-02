@@ -112,9 +112,6 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 quickActionHandler.handle({ command: '/clear' }, tabID)
             }
         },
-        onCWCOnboardingPageInteractionMessage: (message: ChatItem): string | undefined => {
-            return messageController.sendMessageToTab(message, 'cwc')
-        },
         onCWCContextCommandMessage: (message: ChatItem, command?: string): string | undefined => {
             if (command === 'aws.amazonq.sendToPrompt') {
                 return messageController.sendSelectedCodeToTab(message)

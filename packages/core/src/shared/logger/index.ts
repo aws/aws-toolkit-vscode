@@ -6,7 +6,6 @@
 // This file is the common import file, intended for use by most extension code.
 // It surfaces Logger and related interfaces, types, and retrieval.
 import * as logger from './logger'
-export { showLogOutputChannel } from './outputChannel'
 
 export type Loggable = Error | string
 

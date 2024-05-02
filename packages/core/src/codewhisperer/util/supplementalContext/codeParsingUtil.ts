@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import path = require('path')
-import { DependencyGraph } from '../dependencyGraph/dependencyGraph'
 import { normalize } from '../../../shared/utilities/pathUtils'
 
 export interface utgLanguageConfig {
@@ -71,7 +70,6 @@ export async function isTestFile(
     filePath: string,
     languageConfig: {
         languageId: vscode.TextDocument['languageId']
-        dependencyGraph?: DependencyGraph
         fileContent?: string
     }
 ): Promise<boolean> {
@@ -86,12 +84,7 @@ export async function isTestFile(
         return true
     }
 
-    // This run slowly thus lazily execute
-    const fileHasTestDependency =
-        languageConfig.dependencyGraph && languageConfig.fileContent
-            ? await languageConfig.dependencyGraph.isTestFile(languageConfig.fileContent)
-            : false
-    return fileHasTestDependency
+    return false
 }
 
 function isTestFileByName(filePath: string, language: vscode.TextDocument['languageId']): boolean {
