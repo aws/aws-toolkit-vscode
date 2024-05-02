@@ -97,6 +97,7 @@ const tasks: CopyTask[] = [
 
     // AccessAnalyzer
     {
+        // Used for Terraform Policy Validator CLI tool in IAM Policy Checks
         target: path.join('../core', 'src', 'accessanalyzer', 'terraformConfig', 'default.yaml'),
         destination: path.join('terraformConfig', 'default.yaml'),
     },

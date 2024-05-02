@@ -41,7 +41,11 @@
                         <label for="select-policy-type" style="display: block; margin-top: 5px; margin-bottom: 3px"
                             >Policy Type</label
                         >
-                        <select id="select-policy-type" v-on:change="setPolicyType" v-model="policyType">
+                        <select
+                            id="select-policy-type"
+                            v-on:change="setValidatePolicyType"
+                            v-model="validatePolicyType"
+                        >
                             <option value="Identity">Identity</option>
                             <option value="Resource">Resource</option>
                         </select>
@@ -160,8 +164,8 @@
                             >
                             <select
                                 id="select-reference-type"
-                                v-on:change="setResourcePolicyType"
-                                v-model="resourcePolicyType"
+                                v-on:change="setCustomChecksPolicyType"
+                                v-model="customChecksPolicyType"
                             >
                                 <option value="Identity">Identity</option>
                                 <option value="Resource">Resource</option>
@@ -182,13 +186,13 @@
                         "
                         id="input-path"
                         :placeholder="customChecksPathPlaceholder"
-                        v-on:change="setReferenceFilePath"
-                        v-model="initialData.referenceFilePath"
+                        v-on:change="setCustomChecksFilePath"
+                        v-model="initialData.customChecksFilePath"
                     />
                 </div>
-                <div style="margin-top: 5px" v-if="initialData.referenceFileErrorMessage">
+                <div style="margin-top: 5px" v-if="initialData.customChecksFileErrorMessage">
                     <p style="color: red">
-                        {{ initialData.referenceFileErrorMessage }}
+                        {{ initialData.customChecksFileErrorMessage }}
                     </p>
                 </div>
                 <div>
@@ -200,7 +204,7 @@
                                 sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;
                         "
                         rows="30"
-                        v-model="initialData.referenceDocument"
+                        v-model="initialData.customChecksTextArea"
                         :placeholder="customChecksTextAreaPlaceholder"
                     ></textarea>
                 </div>
@@ -243,13 +247,13 @@ export default defineComponent({
     mixins: [saveData],
     data: () => ({
         documentType: 'CloudFormation',
-        policyType: 'Identity',
-        resourcePolicyType: 'Identity',
+        validatePolicyType: 'Identity',
+        customChecksPolicyType: 'Identity',
         checkType: 'CheckNoNewAccess',
         initialData: {
-            referenceFilePath: '',
-            referenceDocument: '',
-            referenceFileErrorMessage: '',
+            customChecksFilePath: '',
+            customChecksTextArea: '',
+            customChecksFileErrorMessage: '',
             cfnParameterPath: '',
             pythonToolsInstalled: false,
         },
@@ -266,12 +270,12 @@ export default defineComponent({
         client.onChangeInputPath((data: string) => {
             this.inputPath = data
         })
-        client.onChangeReferenceFilePath((data: string) => {
-            this.initialData.referenceFilePath = data
+        client.onChangeCustomChecksFilePath((data: string) => {
+            this.initialData.customChecksFilePath = data
             client
-                .getReferenceDocument(this.initialData.referenceFilePath)
+                .readCustomChecksFile(this.initialData.customChecksFilePath)
                 .then(response => {
-                    this.initialData.referenceDocument = response
+                    this.initialData.customChecksTextArea = response
                 })
                 .catch(err => console.log(err))
         })
@@ -287,18 +291,18 @@ export default defineComponent({
             this.customPolicyCheckResponseColor = data[1]
         })
         client.onFileReadError((data: string) => {
-            this.initialData.referenceFileErrorMessage = data
+            this.initialData.customChecksFileErrorMessage = data
         })
     },
     methods: {
         setDocumentType: function (event: any) {
             this.documentType = event.target.value
         },
-        setPolicyType: function (event: any) {
-            this.policyType = event.target.value
+        setValidatePolicyType: function (event: any) {
+            this.validatePolicyType = event.target.value
         },
-        setResourcePolicyType: function (event: any) {
-            this.resourcePolicyType = event.target.value
+        setCustomChecksPolicyType: function (event: any) {
+            this.customChecksPolicyType = event.target.value
         },
         setCheckType: function (event: any) {
             this.checkType = event.target.value
@@ -310,12 +314,12 @@ export default defineComponent({
                 this.customChecksTextAreaPlaceholder = 'Enter list of actions'
             }
         },
-        setReferenceFilePath: function (event: any) {
-            this.initialData.referenceFilePath = event.target.value
+        setCustomChecksFilePath: function (event: any) {
+            this.initialData.customChecksFilePath = event.target.value
             client
-                .getReferenceDocument(this.initialData.referenceFilePath)
+                .readCustomChecksFile(this.initialData.customChecksFilePath)
                 .then(response => {
-                    this.initialData.referenceDocument = response
+                    this.initialData.customChecksTextArea = response
                 })
                 .catch(err => console.log(err))
         },
@@ -323,20 +327,20 @@ export default defineComponent({
             this.initialData.cfnParameterPath = event.target.value
         },
         runValidator: function () {
-            client.validatePolicy(this.documentType, this.policyType, this.initialData.cfnParameterPath)
+            client.validatePolicy(this.documentType, this.validatePolicyType, this.initialData.cfnParameterPath)
         },
         runCustomPolicyCheck: function () {
             if (this.checkType == 'CheckNoNewAccess') {
                 client.checkNoNewAccess(
                     this.documentType,
-                    this.resourcePolicyType,
-                    this.initialData.referenceDocument,
+                    this.customChecksPolicyType,
+                    this.initialData.customChecksTextArea,
                     this.initialData.cfnParameterPath
                 )
-            } else {
+            } else if (this.checkType == 'CheckAccessNotGranted') {
                 client.checkAccessNotGranted(
                     this.documentType,
-                    this.initialData.referenceDocument,
+                    this.initialData.customChecksTextArea,
                     this.initialData.cfnParameterPath
                 )
             }
