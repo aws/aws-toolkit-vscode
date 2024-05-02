@@ -201,7 +201,7 @@ export class IamPolicyChecksWebview extends VueWebview {
     ) {
         const document = IamPolicyChecksWebview.editedDocumentFileName
         customPolicyCheckDiagnosticCollection.clear()
-        if (referenceDocument != '') {
+        if (referenceDocument !== '') {
             fs.writeFileSync(tempFilePath, referenceDocument)
         } else {
             this.onCustomPolicyCheckResponse.fire(['Reference policy document is missing.', 'red'])
@@ -221,12 +221,15 @@ export class IamPolicyChecksWebview extends VueWebview {
                 this.executeCustomPolicyChecksCommand(cfnCommand)
                 return
         }
+        if (fs.existsSync(tempFilePath)) {
+            fs.unlinkSync(tempFilePath)
+        }
     }
 
     public async checkAccessNotGranted(documentType: string, referenceDocument: string, cfnParameterPath?: string) {
         const document = IamPolicyChecksWebview.editedDocumentFileName
         customPolicyCheckDiagnosticCollection.clear()
-        if (referenceDocument != '') {
+        if (referenceDocument !== '') {
             // Remove spaces, line breaks, carriage returns, and tabs
             referenceDocument = referenceDocument.replace(/\s*|\t|\r|\n/gm, '')
         } else {
@@ -308,7 +311,7 @@ export class IamPolicyChecksWebview extends VueWebview {
             const response = execSync(command)
             this.handleCustomPolicyChecksCliResponse(response.toString())
         } catch (err: any) {
-            if (err.status == 1) {
+            if (err.status === 1) {
                 this.onCustomPolicyCheckResponse.fire([getCliErrorMessage(err.message), 'red'])
             } else {
                 this.handleCustomPolicyChecksCliResponse(err.stdout.toString())
@@ -403,6 +406,7 @@ export async function renderIamPolicyChecks(context: ExtContext): Promise<void> 
 }
 
 // Helper function to get document contents from a path
+// TODO: Use 'shared/clients/s3Client.ts' and add AmazonS3URI's algorithm as a helper function rather than a depdendency
 async function _getReferenceDocument(input: string): Promise<string> {
     if (fs.existsSync(input)) {
         return fs.readFileSync(input).toString()
