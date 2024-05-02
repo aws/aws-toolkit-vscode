@@ -88,6 +88,7 @@ describe('CodeWhisperer security scan', async function () {
     returns artifactMap, projectPath and codeScanName
     */
     async function securityJobSetup(editor: vscode.TextEditor) {
+        const codeScanStartTime = performance.now()
         const zipUtil = new ZipUtil()
         const uri = editor.document.uri
 
@@ -106,6 +107,7 @@ describe('CodeWhisperer security scan', async function () {
             artifactMap: artifactMap,
             projectPath: projectPath,
             codeScanName: codeScanName,
+            codeScanStartTime: codeScanStartTime,
         }
     }
 
@@ -130,7 +132,12 @@ describe('CodeWhisperer security scan', async function () {
             scope,
             securityJobSetupResult.codeScanName
         )
-        const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scope)
+        const jobStatus = await pollScanJobStatus(
+            client,
+            scanJob.jobId,
+            scope,
+            securityJobSetupResult.codeScanStartTime
+        )
         const securityRecommendationCollection = await listScanResults(
             client,
             scanJob.jobId,
@@ -165,7 +172,12 @@ describe('CodeWhisperer security scan', async function () {
         )
 
         //get job status and result
-        const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scope)
+        const jobStatus = await pollScanJobStatus(
+            client,
+            scanJob.jobId,
+            scope,
+            securityJobSetupResult.codeScanStartTime
+        )
         const securityRecommendationCollection = await listScanResults(
             client,
             scanJob.jobId,
