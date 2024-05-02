@@ -193,6 +193,10 @@ describe('startSecurityScan', function () {
         assert.ok(securityScanRenderSpy.calledOnce)
         const warnings = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Warning)
         assert.strictEqual(warnings.length, 0)
+        assertTelemetry('codewhisperer_securityScan', {
+            codewhispererCodeScanScope: 'FILE',
+            passive: true,
+        })
     })
 
     it('Should stop security scan for project scans when confirmed', async function () {
@@ -287,6 +291,8 @@ describe('startSecurityScan', function () {
             codewhispererLanguage: 'yaml',
             codewhispererCodeScanTotalIssues: 1,
             codewhispererCodeScanIssuesWithFixes: 0,
+            codewhispererCodeScanScope: 'PROJECT',
+            passive: false,
         } as CodewhispererSecurityScan)
     })
 
