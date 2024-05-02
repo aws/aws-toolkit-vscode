@@ -22,7 +22,7 @@ export async function addFileWatchMessageHandler(request: AddFileWatchRequestMes
         }
         const filePath = context.defaultTemplatePath
         const fileName = context.defaultTemplateName
-        const fileWatch = vscode.workspace.createFileSystemWatcher(filePath)
+        const fileWatch = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(filePath, '*'))
         context.disposables.push(fileWatch)
 
         fileWatch.onDidChange(async () => {

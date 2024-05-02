@@ -59,8 +59,8 @@ export const isBuilderIdConnection = (conn?: Connection): conn is SsoConnection 
 export const isValidCodeCatalystConnection = (conn?: Connection): conn is SsoConnection =>
     isSsoConnection(conn) && hasScopes(conn, scopesCodeCatalyst)
 
-export function hasScopes(target: SsoConnection | SsoProfile, scopes: string[]): boolean {
-    return scopes?.every(s => target.scopes?.includes(s))
+export function hasScopes(target: SsoConnection | SsoProfile | string[], scopes: string[]): boolean {
+    return scopes?.every(s => (Array.isArray(target) ? target : target.scopes)?.includes(s))
 }
 
 export function createBuilderIdProfile(
@@ -169,6 +169,11 @@ export interface ProfileMetadata {
      * * `invalid` -> `invalid` -> immediately throw to stop the user from being spammed
      */
     readonly connectionState: 'valid' | 'invalid' | 'unauthenticated' | 'authenticating'
+
+    /**
+     * Source of this connection profile where it was first created.
+     */
+    readonly source?: 'amazonq' | 'toolkit'
 }
 
 // Difference between "Connection" vs. "Profile":
@@ -366,3 +371,13 @@ export async function* loadLinkedProfilesIntoStore(
 // The true connection state can only be known after trying to use the connection
 // So it is not exposed on the `Connection` interface
 export type StatefulConnection = Connection & { readonly state: ProfileMetadata['connectionState'] }
+
+export interface AwsConnection {
+    readonly id: string
+    readonly label: string
+    readonly type: string
+    readonly ssoRegion: string
+    readonly startUrl: string
+    readonly scopes?: string[]
+    readonly state: ProfileMetadata['connectionState']
+}

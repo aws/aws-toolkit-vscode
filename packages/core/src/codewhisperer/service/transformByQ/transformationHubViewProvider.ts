@@ -15,7 +15,6 @@ import {
     ProgressUpdates,
     TransformationStatus,
 } from '../../../codewhisperer/client/codewhispereruserclient'
-// import '../../../../resources/css/amazonq-codetransform-transformationHub.css'
 
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.transformationHub'
@@ -137,7 +136,6 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 minute: '2-digit',
                 second: '2-digit',
             })
-
             const stepDuration = convertToTimeString(endTime.getTime() - startTime.getTime())
             const isAllStepsComplete = isLastStep && (stepProgress === StepProgress.Succeeded || StepProgress.Failed)
             return `

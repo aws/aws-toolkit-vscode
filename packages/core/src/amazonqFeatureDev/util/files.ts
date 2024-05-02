@@ -12,7 +12,7 @@ import { Uri } from 'vscode'
 import { GitIgnoreFilter } from './gitignore'
 
 import AdmZip from 'adm-zip'
-import { PrepareRepoFailedError } from '../errors'
+import { ContentLengthError, PrepareRepoFailedError } from '../errors'
 import { getLogger } from '../../shared/logger/logger'
 import { maxFileSizeBytes } from '../limits'
 import { createHash } from 'crypto'
@@ -21,6 +21,7 @@ import { ToolkitError } from '../../shared/errors'
 import { AmazonqCreateUpload, Metric } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from './telemetryHelper'
 import { sanitizeFilename } from '../../shared/utilities/textUtilities'
+import { maxRepoSizeBytes } from '../constants'
 
 export function getExcludePattern(additionalPatterns: string[] = []) {
     const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map(pattern => `**/${pattern}/*`)
@@ -94,6 +95,7 @@ export async function collectFiles(
         return prefix === '' ? path : `${prefix}/${path}`
     }
 
+    let totalSizeBytes = 0
     for (const rootPath of sourcePaths) {
         const allFiles = await vscode.workspace.findFiles(
             new vscode.RelativePattern(rootPath, '**'),
@@ -102,27 +104,46 @@ export async function collectFiles(
         const files = respectGitIgnore ? await filterOutGitignoredFiles(rootPath, allFiles) : allFiles
 
         for (const file of files) {
-            try {
-                const fileContent = await SystemUtilities.readFile(file, new TextDecoder('utf8', { fatal: true }))
-                const relativePath = getWorkspaceRelativePath(file.fsPath, { workspaceFolders })
-
-                if (relativePath) {
-                    storage.push({
-                        workspaceFolder: relativePath.workspaceFolder,
-                        relativeFilePath: relativePath.relativePath,
-                        fileUri: file,
-                        fileContent: fileContent,
-                        zipFilePath: prefixWithFolderPrefix(relativePath.workspaceFolder, relativePath.relativePath),
-                    })
-                }
-            } catch (error) {
-                getLogger().debug(
-                    `featureDev: Failed to read file ${file.fsPath} when collecting repository: ${error}. Skipping the file`
-                )
+            const relativePath = getWorkspaceRelativePath(file.fsPath, { workspaceFolders })
+            if (!relativePath) {
+                continue
             }
+
+            const fileStat = await vscode.workspace.fs.stat(file)
+            if (totalSizeBytes + fileStat.size > maxRepoSizeBytes) {
+                throw new ContentLengthError()
+            }
+
+            const fileContent = await readFile(file)
+            if (fileContent === undefined) {
+                continue
+            }
+
+            // Now that we've read the file, increase our usage
+            totalSizeBytes += fileStat.size
+            storage.push({
+                workspaceFolder: relativePath.workspaceFolder,
+                relativeFilePath: relativePath.relativePath,
+                fileUri: file,
+                fileContent: fileContent,
+                zipFilePath: prefixWithFolderPrefix(relativePath.workspaceFolder, relativePath.relativePath),
+            })
         }
     }
     return storage
+}
+
+const readFile = async (file: vscode.Uri) => {
+    try {
+        const fileContent = await SystemUtilities.readFile(file, new TextDecoder('utf8', { fatal: false }))
+        return fileContent
+    } catch (error) {
+        getLogger().debug(
+            `featureDev: Failed to read file ${file.fsPath} when collecting repository. Skipping the file`
+        )
+    }
+
+    return undefined
 }
 
 const getSha256 = (file: Buffer) => createHash('sha256').update(file).digest('base64')
@@ -137,9 +158,9 @@ export async function prepareRepoData(
     span: Metric<AmazonqCreateUpload>
 ) {
     try {
+        const files = await collectFiles(repoRootPaths, workspaceFolders, true)
         const zip = new AdmZip()
 
-        const files = await collectFiles(repoRootPaths, workspaceFolders, true)
         let totalBytes = 0
         for (const file of files) {
             const fileSize = (await vscode.workspace.fs.stat(file.fileUri)).size
@@ -163,6 +184,9 @@ export async function prepareRepoData(
         }
     } catch (error) {
         getLogger().debug(`featureDev: Failed to prepare repo: ${error}`)
+        if (error instanceof ContentLengthError) {
+            throw error
+        }
         throw new PrepareRepoFailedError()
     }
 }

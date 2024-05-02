@@ -5,95 +5,86 @@
 
 import * as vscode from 'vscode'
 import { Logger, LogLevel, getLogger } from '.'
-import { setLogger } from './logger'
-import { logOutputChannel } from './outputChannel'
+import { fromVscodeLogLevel, setLogger } from './logger'
 import { WinstonToolkitLogger } from './winstonToolkitLogger'
 import { Settings } from '../settings'
 import { Logging } from './commands'
 import { resolvePath } from '../utilities/pathUtils'
-import { isWeb } from '../../common/webUtils'
 import { fsCommon } from '../../srcShared/fs'
-
-const defaultLogLevel: LogLevel = 'info'
+import { isWeb } from '../extensionGlobals'
 
 /**
  * Activate Logger functionality for the extension.
  */
 export async function activate(
     extensionContext: vscode.ExtensionContext,
-    outputChannel: vscode.LogOutputChannel
+    contextPrefix: string,
+    outputChannel: vscode.LogOutputChannel,
+    logChannel: vscode.LogOutputChannel
 ): Promise<void> {
-    const chan = logOutputChannel
     const settings = Settings.instance.getSection('aws')
     const devLogfile = settings.get('dev.logfile', '')
     const logUri = devLogfile ? vscode.Uri.file(resolvePath(devLogfile)) : undefined
+    const chanLogLevel = fromVscodeLogLevel(logChannel.logLevel)
 
     await fsCommon.mkdir(extensionContext.logUri)
 
-    const mainLogger = makeLogger(
-        {
-            logPaths: logUri ? [logUri] : undefined,
-            outputChannels: [chan],
-            useConsoleLog: isWeb(),
-        },
-        extensionContext.subscriptions
-    )
+    const mainLogger = makeLogger({
+        logLevel: chanLogLevel,
+        logPaths: logUri ? [logUri] : undefined,
+        outputChannels: [logChannel],
+        useConsoleLog: isWeb(),
+    })
+    logChannel.onDidChangeLogLevel?.(logLevel => {
+        const newLogLevel = fromVscodeLogLevel(logLevel)
+        mainLogger.setLogLevel(newLogLevel) // Also logs a message.
+    })
 
     setLogger(mainLogger)
-    getLogger().info(`log level: ${getLogLevel()}`)
+    getLogger().info(`Log level: ${chanLogLevel}`)
 
     // Logs to "AWS Toolkit" output channel.
     setLogger(
-        makeLogger(
-            {
-                logPaths: logUri ? [logUri] : undefined,
-                outputChannels: [outputChannel, chan],
-            },
-            extensionContext.subscriptions
-        ),
+        makeLogger({
+            logLevel: chanLogLevel,
+            logPaths: logUri ? [logUri] : undefined,
+            outputChannels: [outputChannel, logChannel],
+        }),
         'channel'
     )
 
     // Logs to vscode Debug Console.
     setLogger(
-        makeLogger(
-            {
-                staticLogLevel: 'debug',
-                outputChannels: [outputChannel, chan],
-                useDebugConsole: true,
-            },
-            extensionContext.subscriptions
-        ),
+        makeLogger({
+            logLevel: chanLogLevel,
+            outputChannels: [outputChannel, logChannel],
+            useDebugConsole: true,
+        }),
         'debugConsole'
     )
 
     getLogger().debug(`Logging started: ${logUri}`)
 
-    const commands = new Logging(logUri, mainLogger)
-    extensionContext.subscriptions.push(...Object.values(Logging.declared).map(c => c.register(commands)))
+    Logging.init(logUri, mainLogger, contextPrefix)
+    extensionContext.subscriptions.push(Logging.instance.viewLogs, Logging.instance.viewLogsAtMessage)
 }
 
 /**
  * Creates a logger off of specified params
- * @param opts Specified parameters, all optional:
- * @param opts.staticLogLevel Static log level, overriding config value. Will persist overridden config value even if the config value changes.
+ * @param opts.logLevel Log messages at or above this level
  * @param opts.logPaths Array of paths to output log entries to
  * @param opts.outputChannels Array of output channels to log entries to
  * @param opts.useDebugConsole If true, outputs log entries to `vscode.debug.activeDebugConsole`
  * @param opts.useConsoleLog If true, outputs log entries to the nodejs or browser devtools console.
- * @param disposables Array of disposables to add a subscription to
  */
-export function makeLogger(
-    opts: {
-        staticLogLevel?: LogLevel
-        logPaths?: vscode.Uri[]
-        outputChannels?: vscode.OutputChannel[]
-        useDebugConsole?: boolean
-        useConsoleLog?: boolean
-    },
-    disposables?: vscode.Disposable[]
-): Logger {
-    const logger = new WinstonToolkitLogger(opts.staticLogLevel ?? getLogLevel())
+export function makeLogger(opts: {
+    logLevel: LogLevel
+    logPaths?: vscode.Uri[]
+    outputChannels?: vscode.OutputChannel[]
+    useDebugConsole?: boolean
+    useConsoleLog?: boolean
+}): Logger {
+    const logger = new WinstonToolkitLogger(opts.logLevel)
     // debug console can show ANSI colors, output channels can not
     const stripAnsi = opts.useDebugConsole ?? false
     for (const logPath of opts.logPaths ?? []) {
@@ -109,23 +100,5 @@ export function makeLogger(
         logger.logToConsole()
     }
 
-    if (!opts.staticLogLevel) {
-        vscode.workspace.onDidChangeConfiguration(
-            configurationChangeEvent => {
-                if (configurationChangeEvent.affectsConfiguration('aws.logLevel')) {
-                    const newLogLevel = getLogLevel()
-                    logger.setLogLevel(newLogLevel)
-                }
-            },
-            undefined,
-            disposables
-        )
-    }
-
     return logger
-}
-
-function getLogLevel(): LogLevel {
-    const configuration = Settings.instance.getSection('aws')
-    return configuration.get('logLevel', defaultLogLevel)
 }

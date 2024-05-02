@@ -1,0 +1,86 @@
+{
+	"date": "2024-04-29",
+	"version": "1.0.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Code Transformation: Address various issues in TransformationHub UX."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Code Transformation: Transform may fail if JAVA_HOME has leading or trailing whitespace"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Chat: Q panel doesn't fit to its parent"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Feature Development: update welcome message and menu item description for /dev command"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Code Transformation: show error messages in chat"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Code Transformation: Proposed changes not updated when multiple transformation jobs run in sequence."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Feature Development: Update error message for monthly conversation limit reach"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Code Transformation: Omit Maven metadata files when uploading dependencies to fix certain build failures in backend."
+		},
+		{
+			"type": "Feature",
+			"description": "Code Transformation: Refreshed UI during CodeTransformation"
+		},
+		{
+			"type": "Feature",
+			"description": "Chat: cmd + i to open chat"
+		},
+		{
+			"type": "Feature",
+			"description": "Right Click + no code selected shows Q context menu"
+		},
+		{
+			"type": "Feature",
+			"description": "Security Scan: Scans can now run on all files in the project"
+		},
+		{
+			"type": "Feature",
+			"description": "Chat: Updates quick action commands style and groupings"
+		},
+		{
+			"type": "Feature",
+			"description": "Code Transformation: add details about expected changes in transformation plan"
+		},
+		{
+			"type": "Feature",
+			"description": "Enable Amazon Q feature development and Amazon Q transform capabilities (/dev and /transform) for AWS Builder ID users."
+		},
+		{
+			"type": "Feature",
+			"description": "Initial release"
+		},
+		{
+			"type": "Feature",
+			"description": "Chat: Added metric parameters to recordAddMessage telemetry event."
+		},
+		{
+			"type": "Feature",
+			"description": "Security Scan: Scans can now run automatically when file changes are made"
+		},
+		{
+			"type": "Feature",
+			"description": "Chat: brief CodeLens to advertise chat"
+		},
+		{
+			"type": "Feature",
+			"description": "Security Scan: Send security issue to chat for explanation and fix"
+		}
+	]
+}

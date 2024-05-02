@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import assert from 'assert'
-import { openSsoPortalLink, proceedToBrowser } from '../../../auth/sso/model'
+import { openSsoPortalLink, openSsoUrl, proceedToBrowser } from '../../../auth/sso/model'
 import { getOpenExternalStub } from '../../globalSetup.test'
 import { getTestWindow } from '../../shared/vscode/window'
 
@@ -45,8 +46,25 @@ describe('openSsoPortalLink', function () {
 
     it('continues to show the notification if the user selects help', async function () {
         this.skip()
-        await runFlow('help', 'open')
-        assert.ok(getOpenExternalStub().calledTwice)
-        assert.notStrictEqual(getOpenExternalStub().args[0].toString(), getOpenExternalStub().args[1].toString())
+    })
+})
+
+describe('openSsoUrl', function () {
+    const verificationUri = vscode.Uri.parse('https://example.com/')
+
+    it('opens a link', async function () {
+        getOpenExternalStub().resolves(true)
+        await openSsoUrl(verificationUri)
+        assert.ok(getOpenExternalStub().calledOnce)
+        assert.strictEqual(getOpenExternalStub().args[0].toString(), `${verificationUri}`)
+    })
+
+    it('canceled opening a link', async function () {
+        getOpenExternalStub().resolves(false)
+        await assert.rejects(async () => {
+            await openSsoUrl(verificationUri)
+        })
+        assert.ok(getOpenExternalStub().calledOnce)
+        assert.strictEqual(getOpenExternalStub().args[0].toString(), `${verificationUri}`)
     })
 })

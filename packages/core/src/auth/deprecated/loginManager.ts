@@ -181,7 +181,7 @@ export async function loginWithMostRecentCredentials(
             }
             getLogger().info('autoconnect: connected: %O', asString(creds))
             if (popup) {
-                await vscode.window.showInformationMessage(
+                void vscode.window.showInformationMessage(
                     localize(
                         'AWS.message.credentials.connected',
                         'Connected to {0} with {1}',
