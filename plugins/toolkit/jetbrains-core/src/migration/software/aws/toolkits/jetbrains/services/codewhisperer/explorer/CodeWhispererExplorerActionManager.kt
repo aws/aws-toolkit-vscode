@@ -23,18 +23,12 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhisp
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getConnectionStartUrl
 import software.aws.toolkits.telemetry.AwsTelemetry
-import java.time.LocalDateTime
 
 // TODO: refactor this class, now it's managing action and state
 @State(name = "codewhispererStates", storages = [Storage("aws.xml")])
 class CodeWhispererExplorerActionManager : PersistentStateComponent<CodeWhispererExploreActionState> {
     private val actionState = CodeWhispererExploreActionState()
     private val suspendedConnections = mutableSetOf<String>()
-
-    fun isSuspended(project: Project): Boolean {
-        val startUrl = getCodeWhispererConnectionStartUrl(project)
-        return suspendedConnections.contains(startUrl)
-    }
 
     fun setSuspended(project: Project) {
         val startUrl = getCodeWhispererConnectionStartUrl(project)
@@ -70,40 +64,10 @@ class CodeWhispererExplorerActionManager : PersistentStateComponent<CodeWhispere
         actionState.value[CodeWhispererExploreStateType.HasShownNewOnboardingPage] = hasShownNewOnboardingPage
     }
 
-    fun setAccountlessNotificationWarnTimestamp() {
-        actionState.accountlessWarnTimestamp = LocalDateTime.now().format(CodeWhispererConstants.TIMESTAMP_FORMATTER)
-    }
-
-    fun setAccountlessNotificationErrorTimestamp() {
-        actionState.accountlessErrorTimestamp = LocalDateTime.now().format(CodeWhispererConstants.TIMESTAMP_FORMATTER)
-    }
-
-    fun getAccountlessWarnNotificationTimestamp(): String? = actionState.accountlessWarnTimestamp
-
-    fun getAccountlessErrorNotificationTimestamp(): String? = actionState.accountlessErrorTimestamp
-
-    fun getDoNotShowAgainWarn(): Boolean = actionState.value.getOrDefault(CodeWhispererExploreStateType.DoNotShowAgainWarn, false)
-
-    fun setDoNotShowAgainWarn(doNotShowAgain: Boolean) {
-        actionState.value[CodeWhispererExploreStateType.DoNotShowAgainWarn] = doNotShowAgain
-    }
-
-    fun getDoNotShowAgainError(): Boolean = actionState.value.getOrDefault(CodeWhispererExploreStateType.DoNotShowAgainError, false)
-
-    fun setDoNotShowAgainError(doNotShowAgain: Boolean) {
-        actionState.value[CodeWhispererExploreStateType.DoNotShowAgainError] = doNotShowAgain
-    }
-
     fun getConnectionExpiredDoNotShowAgain(): Boolean = actionState.value.getOrDefault(CodeWhispererExploreStateType.ConnectionExpiredDoNotShowAgain, false)
 
     fun setConnectionExpiredDoNotShowAgain(doNotShowAgain: Boolean) {
         actionState.value[CodeWhispererExploreStateType.ConnectionExpiredDoNotShowAgain] = doNotShowAgain
-    }
-
-    fun getAccountlessNullified(): Boolean = actionState.value.getOrDefault(CodeWhispererExploreStateType.AccountlessNullified, false)
-
-    fun setAccountlessNullified(accountlessNullified: Boolean) {
-        actionState.value[CodeWhispererExploreStateType.AccountlessNullified] = accountlessNullified
     }
 
     fun setAutoSuggestion(project: Project, isAutoEnabled: Boolean) {
@@ -158,13 +122,6 @@ class CodeWhispererExplorerActionManager : PersistentStateComponent<CodeWhispere
                 BearerTokenAuthState.NOT_AUTHENTICATED -> CodeWhispererLoginType.Logout
             }
         } ?: CodeWhispererLoginType.Logout
-    }
-
-    fun nullifyAccountlessCredentialIfNeeded() {
-        if (actionState.token != null) {
-            setAccountlessNullified(true)
-            actionState.token = null
-        }
     }
 
     override fun getState(): CodeWhispererExploreActionState = CodeWhispererExploreActionState().apply {

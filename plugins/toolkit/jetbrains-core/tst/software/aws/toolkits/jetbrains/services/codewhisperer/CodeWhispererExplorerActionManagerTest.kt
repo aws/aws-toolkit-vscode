@@ -34,7 +34,6 @@ import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBe
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererExpired
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -97,7 +96,6 @@ class CodeWhispererExplorerActionManagerTest {
         val actual = mockManager.checkActiveCodeWhispererConnectionType(project)
         assertThat(actual).isEqualTo(CodeWhispererLoginType.Logout)
         assertThat(isCodeWhispererEnabled(project)).isFalse
-        assertThat(isCodeWhispererExpired(project)).isFalse
     }
 
     /**
@@ -174,6 +172,7 @@ class CodeWhispererExplorerActionManagerTest {
         assertThat(ConnectionPinningManager.getInstance().isFeaturePinned(CodeWhispererConnection.getInstance())).isFalse
     }
 
+    @SuppressWarnings("UnusedParameter")
     private fun assertConnectionState(
         startUrl: String,
         refreshToken: String?,
@@ -213,6 +212,5 @@ class CodeWhispererExplorerActionManagerTest {
         assertThat(myTokenProvider.state()).isEqualTo(expectedState)
         assertThat(CodeWhispererExplorerActionManager.getInstance().checkActiveCodeWhispererConnectionType(project)).isEqualTo(expectedLoginType)
         assertThat(isCodeWhispererEnabled(project)).isEqualTo(expectedIsCwEnabled)
-        assertThat(isCodeWhispererExpired(project)).isEqualTo(expectedIsCwExpired)
     }
 }
