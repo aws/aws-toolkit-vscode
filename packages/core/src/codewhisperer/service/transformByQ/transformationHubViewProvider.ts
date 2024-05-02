@@ -426,9 +426,9 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     padding-left: 20px;
                 }
 
-                .step:hover, .active {
-                    background-color: aliceblue;
-                    background-color: var(button.hoverBackground);
+                .step:hover, .step.active {
+                    color: var(--vscode-editor-selectionForeground, inherit);
+                    background-color: var(--vscode-editor-selectionBackground, aliceblue);                
                 }
 
                 #stepdetails {

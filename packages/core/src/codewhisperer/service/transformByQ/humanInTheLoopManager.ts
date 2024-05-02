@@ -25,7 +25,6 @@ export class HumanInTheLoopManager {
     private readonly tmpDownloadsDir = path.join(this.osTmpDir, this.tmpDownloadsFolderName)
 
     private tmpSessionFiles: string[] = []
-
     private pomFileVirtualFileReference!: vscode.Uri
     private manifestFileValues!: IManifestFile
     private newPomFileVirtualFileReference!: vscode.Uri
@@ -59,23 +58,40 @@ export class HumanInTheLoopManager {
         await fsCommon.readFileAsString(path.join(this.tmpDependencyListDir, this.localPathToXmlDependencyList))
 
     public createPomFileCopy = async (outputDirectoryPath: string, pomFileVirtualFileReference: vscode.Uri) => {
-        this.tmpSessionFiles.push(pomFileVirtualFileReference.fsPath)
-        return await createPomCopy(this.userDependencyUpdateDir, pomFileVirtualFileReference, 'pom.xml')
+        const newPomCopyRef = await createPomCopy(outputDirectoryPath, pomFileVirtualFileReference, 'pom.xml')
+        this.tmpSessionFiles.push(newPomCopyRef.path)
+        return newPomCopyRef
     }
 
     public replacePomFileVersion = async (pomFileVirtualFileReference: vscode.Uri, version: string) =>
         await replacePomVersion(pomFileVirtualFileReference, version, this.pomReplacementDelimiter)
 
     public cleanUpArtifacts = async () => {
+        const artifactCleanUpErrorMessage = (e: any) =>
+            `CodeTransformation: Error cleaning up artifacts = ${e?.message}`
         try {
             await fsCommon.delete(this.userDependencyUpdateDir)
-            await fsCommon.delete(this.tmpDependencyListDir)
-            await fsCommon.delete(this.tmpDownloadsDir)
-            this.tmpSessionFiles.forEach(async file => await fsCommon.delete(file))
-            this.tmpSessionFiles = []
         } catch (e: any) {
-            getLogger().error(`CodeTransformation: Error deleting temporary artifacts = ${e?.message}`)
+            getLogger().error(artifactCleanUpErrorMessage(e))
         }
+        try {
+            await fsCommon.delete(this.tmpDependencyListDir)
+        } catch (e: any) {
+            getLogger().error(artifactCleanUpErrorMessage(e))
+        }
+        try {
+            await fsCommon.delete(this.tmpDownloadsDir)
+        } catch (e: any) {
+            getLogger().error(artifactCleanUpErrorMessage(e))
+        }
+        for (let i = 0; i < this.tmpSessionFiles.length; i++) {
+            try {
+                await fsCommon.delete(this.tmpSessionFiles[i])
+            } catch (e: any) {
+                getLogger().error(artifactCleanUpErrorMessage(e))
+            }
+        }
+        this.tmpSessionFiles = []
     }
 
     static #instance: HumanInTheLoopManager | undefined

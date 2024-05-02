@@ -57,26 +57,4 @@ describe('Amazon Q Gumby Human In The Loop Handler', function () {
             assert.strictEqual(progressUpdate, undefined)
         })
     })
-    // describe('initiateHumanInTheLoopPrompt', function () {
-    //     it('will delete dependencies', function () {
-    //         const downloadArtifactId = 'hil-test-artifact-id'
-    //         const downloadArtifactType = 'BuiltJars'
-    //         const transformationStepsFixture: TransformationProgressUpdate = {
-    //             name: 'Status step',
-    //             status: 'FAILED',
-    //             description: 'This step should be hil identifier',
-    //             startTime: new Date(),
-    //             endTime: new Date(),
-    //             downloadArtifacts: [
-    //                 {
-    //                     downloadArtifactId,
-    //                     downloadArtifactType,
-    //                 },
-    //             ],
-    //         }
-    //         const snippet = getCodeIssueSnippetFromPom()
-
-    //         assert.strictEqual(snippet, downloadArtifactId)
-    //     })
-    // })
 })

@@ -115,10 +115,7 @@ async function addDiagnosticOverview(
             {
                 code: 'Amazon Q',
                 message: 'Amazon Q experienced an issue upgrading this dependency version',
-                range: new vscode.Range(
-                    new vscode.Position(lineNumber - 1, 0),
-                    new vscode.Position(lineNumber - 1, 50)
-                ),
+                range: new vscode.Range(new vscode.Position(lineNumber, 0), new vscode.Position(lineNumber, 50)),
                 severity: vscode.DiagnosticSeverity.Error,
                 relatedInformation: [
                     new vscode.DiagnosticRelatedInformation(
@@ -151,9 +148,9 @@ export async function getCodeIssueSnippetFromPom(pomFileVirtualFileReference: vs
 async function setHilAnnotationObjectDetails(lineNumber: number = 0) {
     // Get active diff editor
     const diffEditor = vscode.window.activeTextEditor
-
+    const backgroundColor = new vscode.ThemeColor('editor.wordHighlightBackground')
     const highlightDecorationType = vscode.window.createTextEditorDecorationType({
-        backgroundColor: 'lightyellow',
+        backgroundColor,
         isWholeLine: true,
         overviewRulerColor: new vscode.ThemeColor('warning'),
     })
