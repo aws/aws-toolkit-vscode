@@ -288,7 +288,10 @@ export async function emitCodeScanTelemetry(editor: vscode.TextEditor, codeScanT
         )
         codeScanTelemetryEntry.codewhispererCodeScanProjectBytes = projectSize
     }
-    telemetry.codewhisperer_securityScan.emit(codeScanTelemetryEntry)
+    telemetry.codewhisperer_securityScan.emit({
+        ...codeScanTelemetryEntry,
+        passive: codeScanTelemetryEntry.codewhispererCodeScanScope === CodeAnalysisScope.FILE,
+    })
 }
 
 export function errorPromptHelper(error: Error, scope: CodeAnalysisScope) {
