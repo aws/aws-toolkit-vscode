@@ -9,6 +9,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.options.ShowSettingsUtil
 import software.aws.toolkits.resources.AwsToolkitBundle.message
+import software.aws.toolkits.telemetry.UiTelemetry
 
 class InstallAmazonQAction : AnAction(message("codewhisperer.explorer.node.install_q"), null, AllIcons.Actions.Install) {
     override fun actionPerformed(e: AnActionEvent) {
@@ -18,5 +19,6 @@ class InstallAmazonQAction : AnAction(message("codewhisperer.explorer.node.insta
         ) { configurable: PluginManagerConfigurable ->
             configurable.openMarketplaceTab("Amazon Q")
         }
+        UiTelemetry.click(e.project, "aws_installAmazonQ")
     }
 }
