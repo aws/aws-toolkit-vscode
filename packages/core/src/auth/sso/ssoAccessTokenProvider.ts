@@ -37,8 +37,8 @@ import OidcClientPKCE from './oidcclientpkce'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { randomUUID, randomBytes, createHash } from 'crypto'
 import { UriHandler } from '../../shared/vscode/uriHandler'
-import { DevSettings } from '../../shared/settings'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { isRemoteWorkspace } from '../../shared/vscode/env'
 
 export const authenticationPath = 'sso/authenticated'
 
@@ -250,7 +250,7 @@ export abstract class SsoAccessTokenProvider {
         cache = getCache(),
         oidc: OidcClient = OidcClient.create(profile.region)
     ) {
-        if (!DevSettings.instance.get('pkceAuth', false)) {
+        if (isRemoteWorkspace()) {
             return new DeviceFlowAuthorization(profile, cache, oidc)
         }
         return new AuthFlowAuthorization(profile, cache, OidcClientV2.create(profile.region))
