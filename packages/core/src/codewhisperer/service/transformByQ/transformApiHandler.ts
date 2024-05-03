@@ -207,7 +207,7 @@ export async function uploadPayload(payloadFileName: string) {
         throw new Error('S3 upload failed')
     }
     transformByQState.setJobId(encodeHTML(response.uploadId))
-    await updateJobHistory()
+    updateJobHistory()
     return response.uploadId
 }
 
