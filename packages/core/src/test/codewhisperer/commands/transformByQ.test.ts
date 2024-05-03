@@ -9,7 +9,7 @@ import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
-import * as startTransformByQ from '../../../codewhisperer/commands/startTransformByQ'
+import { stopTransformByQ } from '../../../codewhisperer/commands/startTransformByQ'
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
@@ -27,6 +27,7 @@ import {
     pollTransformationJob,
     getHeadersObj,
     throwIfCancelled,
+    updateJobHistory,
     zipCode,
     getTableMapping,
 } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
@@ -78,7 +79,7 @@ describe('transformByQ', function () {
 
     it('WHEN job is stopped THEN status is updated to cancelled', async function () {
         transformByQState.setToRunning()
-        await startTransformByQ.stopTransformByQ('abc-123')
+        await stopTransformByQ('abc-123')
         assert.strictEqual(transformByQState.getStatus(), 'Cancelled')
     })
 
@@ -168,7 +169,7 @@ describe('transformByQ', function () {
         transformByQState.setProjectName('test-project')
         transformByQState.setPolledJobStatus('COMPLETED')
         transformByQState.setStartTime('05/03/24, 11:35 AM')
-        const actual = await startTransformByQ.updateJobHistory()
+        const actual = await updateJobHistory()
         const expected = {
             'abc-123': {
                 duration: '0 sec',

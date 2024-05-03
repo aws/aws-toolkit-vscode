@@ -14,17 +14,17 @@ import {
     StepProgress,
     JDKVersion,
     jobPlanProgress,
-    sessionJobHistory,
     FolderInfo,
     TransformationCandidateProject,
 } from '../models/model'
-import { convertToTimeString, convertDateToTimestamp } from '../../shared/utilities/textUtilities'
+import { convertDateToTimestamp } from '../../shared/utilities/textUtilities'
 import {
     getTransformationPlan,
     pollTransformationJob,
     startJob,
     stopJob,
     throwIfCancelled,
+    updateJobHistory,
     uploadPayload,
     zipCode,
 } from '../service/transformByQ/transformApiHandler'
@@ -426,22 +426,6 @@ export async function cleanupTransformationJob() {
         'aws.amazonq.showPlanProgressInHub',
         CodeTransformTelemetryState.instance.getStartTime()
     )
-}
-
-export async function updateJobHistory() {
-    if (transformByQState.getJobId() !== '') {
-        sessionJobHistory[transformByQState.getJobId()] = {
-            startTime: transformByQState.getStartTime(),
-            projectName: transformByQState.getProjectName(),
-            status: transformByQState.getPolledJobStatus(),
-            duration: convertToTimeString(calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime())),
-        }
-    }
-    return sessionJobHistory
-}
-
-export function getJobHistory() {
-    return sessionJobHistory
 }
 
 export async function stopTransformByQ(

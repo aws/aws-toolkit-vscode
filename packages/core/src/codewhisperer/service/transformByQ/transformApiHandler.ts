@@ -12,6 +12,7 @@ import * as CodeWhispererConstants from '../../models/constants'
 import {
     FolderInfo,
     jobPlanProgress,
+    sessionJobHistory,
     StepProgress,
     transformByQState,
     TransformByQStoppedError,
@@ -31,8 +32,7 @@ import { ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import { writeLogs } from './transformFileHandler'
 import { AuthUtil } from '../../util/authUtil'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
-import { encodeHTML } from '../../../shared/utilities/textUtilities'
-import { updateJobHistory } from '../../commands/startTransformByQ'
+import { convertToTimeString, encodeHTML } from '../../../shared/utilities/textUtilities'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -54,6 +54,18 @@ export function throwIfCancelled() {
     if (transformByQState.isCancelled()) {
         throw new TransformByQStoppedError()
     }
+}
+
+export async function updateJobHistory() {
+    if (transformByQState.getJobId() !== '') {
+        sessionJobHistory[transformByQState.getJobId()] = {
+            startTime: transformByQState.getStartTime(),
+            projectName: transformByQState.getProjectName(),
+            status: transformByQState.getPolledJobStatus(),
+            duration: convertToTimeString(calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime())),
+        }
+    }
+    return sessionJobHistory
 }
 
 export function getHeadersObj(sha256: string, kmsKeyArn: string | undefined) {
