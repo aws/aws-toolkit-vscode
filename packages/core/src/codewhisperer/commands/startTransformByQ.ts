@@ -128,12 +128,12 @@ export async function compileProject() {
 }
 
 export async function startInterval() {
-    const intervalId = setInterval(() => {
-        void vscode.commands.executeCommand(
+    const intervalId = setInterval(async () => {
+        await vscode.commands.executeCommand(
             'aws.amazonq.showPlanProgressInHub',
             CodeTransformTelemetryState.instance.getStartTime()
         )
-        updateJobHistory()
+        await updateJobHistory()
     }, CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
     transformByQState.setIntervalId(intervalId)
 }
