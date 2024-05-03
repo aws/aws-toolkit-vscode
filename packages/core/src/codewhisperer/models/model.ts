@@ -339,6 +339,8 @@ export class TransformByQState {
     private projectName: string = ''
     private projectPath: string = ''
 
+    private startTime: string = ''
+
     private jobId: string = ''
 
     private sourceJDKVersion: JDKVersion | undefined = undefined
@@ -405,6 +407,10 @@ export class TransformByQState {
 
     public getProjectPath() {
         return this.projectPath
+    }
+
+    public getStartTime() {
+        return this.startTime
     }
 
     public getJobId() {
@@ -521,6 +527,10 @@ export class TransformByQState {
 
     public setProjectPath(path: string) {
         this.projectPath = path
+    }
+
+    public setStartTime(time: string) {
+        this.startTime = time
     }
 
     public setJobId(id: string) {

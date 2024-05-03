@@ -301,6 +301,9 @@ export async function setTransformationToRunningState() {
     transformByQState.setPolledJobStatus('') // so that previous job's status does not display at very beginning of this job
 
     CodeTransformTelemetryState.instance.setStartTime()
+    transformByQState.setStartTime(
+        convertDateToTimestamp(new Date(CodeTransformTelemetryState.instance.getStartTime()))
+    )
 
     const projectPath = transformByQState.getProjectPath()
     let projectId = telemetryUndefined
@@ -408,6 +411,8 @@ export async function transformationJobErrorHandler(error: any) {
                 }
             })
     } else {
+        transformByQState.setToCancelled()
+        transformByQState.setPolledJobStatus('CANCELLED')
         transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.jobCancelledChatMessage)
     }
     getLogger().error(`CodeTransformation: ${error.message}`)
@@ -426,7 +431,7 @@ export async function cleanupTransformationJob() {
 export async function updateJobHistory() {
     if (transformByQState.getJobId() !== '') {
         sessionJobHistory[transformByQState.getJobId()] = {
-            startTime: convertDateToTimestamp(new Date(CodeTransformTelemetryState.instance.getStartTime())),
+            startTime: transformByQState.getStartTime(),
             projectName: transformByQState.getProjectName(),
             status: transformByQState.getPolledJobStatus(),
             duration: convertToTimeString(calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime())),

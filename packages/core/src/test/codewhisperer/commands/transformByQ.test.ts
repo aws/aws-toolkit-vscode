@@ -165,15 +165,18 @@ describe('transformByQ', function () {
 
     it(`WHEN update job history called THEN returns details of last run job`, async function () {
         transformByQState.setJobId('abc-123')
-        const actual = startTransformByQ.updateJobHistory()
-        const expected = [
-            {
-                startTime: '01/01/23, 12:00 AM',
-                projectName: 'my-module',
-                status: 'Succeeded',
-                duration: '20 sec',
+        transformByQState.setProjectName('test-project')
+        transformByQState.setPolledJobStatus('COMPLETED')
+        transformByQState.setStartTime('05/03/24, 11:35 AM')
+        const actual = await startTransformByQ.updateJobHistory()
+        const expected = {
+            'abc-123': {
+                duration: '0 sec',
+                projectName: 'test-project',
+                startTime: '05/03/24, 11:35 AM',
+                status: 'COMPLETED',
             },
-        ]
+        }
         assert.deepStrictEqual(actual, expected)
     })
 
