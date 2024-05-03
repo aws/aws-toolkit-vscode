@@ -226,8 +226,12 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
         await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForPlanGenerated)
     } catch (error) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToCompleteJobNotification}`, error)
-        transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToCompleteJobNotification)
-        transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToCompleteJobChatMessage)
+        if (!transformByQState.getJobFailureErrorNotification()) {
+            transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToCompleteJobNotification)
+        }
+        if (!transformByQState.getJobFailureErrorChatMessage()) {
+            transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToCompleteJobChatMessage)
+        }
         throw new Error('Poll job failed')
     }
     let plan = undefined
@@ -258,8 +262,12 @@ export async function pollTransformationStatusUntilComplete(jobId: string) {
         status = await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForCheckingDownloadUrl)
     } catch (error) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToCompleteJobNotification}`, error)
-        transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToCompleteJobNotification)
-        transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToCompleteJobChatMessage)
+        if (!transformByQState.getJobFailureErrorNotification()) {
+            transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToCompleteJobNotification)
+        }
+        if (!transformByQState.getJobFailureErrorChatMessage()) {
+            transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToCompleteJobChatMessage)
+        }
         throw new Error('Poll job failed')
     }
 
