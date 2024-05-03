@@ -258,24 +258,19 @@
             ],
             "view/title": [
                 {
-                    "command": "aws.amazonq.startTransformationInHub",
+                    "command": "aws.amazonq.stopTransformationInHub",
                     "when": "view == aws.amazonq.transformationHub",
                     "group": "navigation@1"
                 },
                 {
-                    "command": "aws.amazonq.stopTransformationInHub",
+                    "command": "aws.amazonq.showPlanProgressInHub",
                     "when": "view == aws.amazonq.transformationHub",
                     "group": "navigation@2"
                 },
                 {
-                    "command": "aws.amazonq.showPlanProgressInHub",
-                    "when": "view == aws.amazonq.transformationHub",
-                    "group": "navigation@3"
-                },
-                {
                     "command": "aws.amazonq.showHistoryInHub",
                     "when": "view == aws.amazonq.transformationHub",
-                    "group": "navigation@4"
+                    "group": "navigation@3"
                 },
                 {
                     "command": "aws.amazonq.transformationHub.summary.reveal",
@@ -600,12 +595,6 @@
                 "title": "Open Developer Menu",
                 "category": "Amazon Q (Developer)",
                 "enablement": "aws.isDevMode"
-            },
-            {
-                "command": "aws.amazonq.startTransformationInHub",
-                "title": "Start Transformation",
-                "icon": "$(play)",
-                "enablement": "gumby.isTransformAvailable"
             },
             {
                 "command": "aws.amazonq.stopTransformationInHub",

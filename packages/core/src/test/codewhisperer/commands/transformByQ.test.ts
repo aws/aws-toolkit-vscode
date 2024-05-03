@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import * as model from '../../../codewhisperer/models/model'
+import { transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
 import * as startTransformByQ from '../../../codewhisperer/commands/startTransformByQ'
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
@@ -70,16 +70,16 @@ describe('transformByQ', function () {
     })
 
     it('WHEN job status is cancelled THEN error is thrown', async function () {
-        model.transformByQState.setToCancelled()
+        transformByQState.setToCancelled()
         assert.throws(() => {
             throwIfCancelled()
-        }, new model.TransformByQStoppedError())
+        }, new TransformByQStoppedError())
     })
 
     it('WHEN job is stopped THEN status is updated to cancelled', async function () {
-        model.transformByQState.setToRunning()
+        transformByQState.setToRunning()
         await startTransformByQ.stopTransformByQ('abc-123')
-        assert.strictEqual(model.transformByQState.getStatus(), 'Cancelled')
+        assert.strictEqual(transformByQState.getStatus(), 'Cancelled')
     })
 
     it('WHEN validateProjectSelection called on non-Java project THEN throws error', async function () {
@@ -158,27 +158,20 @@ describe('transformByQ', function () {
             transformationJob: { status: 'COMPLETED' },
         }
         sinon.stub(codeWhisperer.codeWhispererClient, 'codeModernizerGetCodeTransformation').resolves(mockJobResponse)
-        model.transformByQState.setToSucceeded()
+        transformByQState.setToSucceeded()
         const status = await pollTransformationJob('dummyId', CodeWhispererConstants.validStatesForCheckingDownloadUrl)
         assert.strictEqual(status, 'COMPLETED')
     })
 
-    it(`WHEN process history called THEN returns details of last run job`, async function () {
-        const actual = startTransformByQ.processHistory(
-            [],
-            '01/01/23, 12:00 AM',
-            'my-module',
-            'Succeeded',
-            '20 sec',
-            '123'
-        )
+    it(`WHEN update job history called THEN returns details of last run job`, async function () {
+        transformByQState.setJobId('abc-123')
+        const actual = startTransformByQ.updateJobHistory()
         const expected = [
             {
-                timestamp: '01/01/23, 12:00 AM',
-                module: 'my-module',
+                startTime: '01/01/23, 12:00 AM',
+                projectName: 'my-module',
                 status: 'Succeeded',
                 duration: '20 sec',
-                id: '123',
             },
         ]
         assert.deepStrictEqual(actual, expected)
@@ -238,7 +231,7 @@ describe('transformByQ', function () {
         })
 
         const tempFileName = `testfile-${Date.now()}.zip`
-        model.transformByQState.setProjectPath(tempDir)
+        transformByQState.setProjectPath(tempDir)
         return zipCode({
             path: tempDir,
             name: tempFileName,
