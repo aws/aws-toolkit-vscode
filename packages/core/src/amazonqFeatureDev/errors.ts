@@ -71,7 +71,7 @@ export class IllegalStateTransition extends ToolkitError {
 export class ContentLengthError extends ToolkitError {
     constructor() {
         super(
-            'The project you have selected for source code is too large to use as context. Please select a different folder to use for this conversation',
+            'The project you have selected for source code is too large to use as context. Please select a different folder to use',
             { code: 'ContentLengthError' }
         )
     }

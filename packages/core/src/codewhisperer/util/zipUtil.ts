@@ -122,7 +122,12 @@ export class ZipUtil {
             throw Error('No workspace folder found')
         }
 
-        const files = await collectFiles([projectPath], [workspaceFolder])
+        const files = await collectFiles(
+            [projectPath],
+            [workspaceFolder],
+            true,
+            CodeWhispererConstants.projectScanPayloadSizeLimitBytes
+        )
         const languageCount = new Map<CodewhispererLanguage, number>()
         for (const file of files) {
             const isFileOpenAndDirty = this.isFileOpenAndDirty(file.fileUri)

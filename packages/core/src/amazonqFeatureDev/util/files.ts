@@ -69,7 +69,8 @@ async function filterOutGitignoredFiles(rootPath: string, files: Uri[]): Promise
 export async function collectFiles(
     sourcePaths: string[],
     workspaceFolders: CurrentWsFolders,
-    respectGitIgnore: boolean = true
+    respectGitIgnore: boolean = true,
+    maxSize = maxRepoSizeBytes
 ): Promise<
     {
         workspaceFolder: vscode.WorkspaceFolder
@@ -110,7 +111,7 @@ export async function collectFiles(
             }
 
             const fileStat = await vscode.workspace.fs.stat(file)
-            if (totalSizeBytes + fileStat.size > maxRepoSizeBytes) {
+            if (totalSizeBytes + fileStat.size > maxSize) {
                 throw new ContentLengthError()
             }
 
