@@ -169,7 +169,7 @@ describe('transformByQ', function () {
         transformByQState.setProjectName('test-project')
         transformByQState.setPolledJobStatus('COMPLETED')
         transformByQState.setStartTime('05/03/24, 11:35 AM')
-        const actual = await updateJobHistory()
+        const actual = updateJobHistory()
         const expected = {
             'abc-123': {
                 duration: '0 sec',

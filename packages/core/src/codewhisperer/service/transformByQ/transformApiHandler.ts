@@ -56,7 +56,7 @@ export function throwIfCancelled() {
     }
 }
 
-export async function updateJobHistory() {
+export function updateJobHistory() {
     if (transformByQState.getJobId() !== '') {
         sessionJobHistory[transformByQState.getJobId()] = {
             startTime: transformByQState.getStartTime(),

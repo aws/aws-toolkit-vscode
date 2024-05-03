@@ -127,13 +127,13 @@ export async function compileProject() {
     }
 }
 
-export async function startInterval() {
-    const intervalId = setInterval(async () => {
-        await vscode.commands.executeCommand(
+export function startInterval() {
+    const intervalId = setInterval(() => {
+        void vscode.commands.executeCommand(
             'aws.amazonq.showPlanProgressInHub',
             CodeTransformTelemetryState.instance.getStartTime()
         )
-        await updateJobHistory()
+        updateJobHistory()
     }, CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
     transformByQState.setIntervalId(intervalId)
 }
@@ -144,7 +144,7 @@ export async function startTransformByQ() {
 
     try {
         // Set webview UI to poll for progress
-        await startInterval()
+        startInterval()
 
         // step 1: CreateUploadUrl and upload code
         const uploadId = await preTransformationUploadCode()
@@ -327,7 +327,7 @@ export async function setTransformationToRunningState() {
 }
 
 export async function postTransformationJob() {
-    await updateJobHistory()
+    updateJobHistory()
     if (jobPlanProgress['startJob'] !== StepProgress.Succeeded) {
         jobPlanProgress['startJob'] = StepProgress.Failed
     }

@@ -38,7 +38,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 this._view!.webview.html = this.showJobHistory()
             } else {
                 if (transformByQState.getIntervalId() === undefined && transformByQState.isRunning()) {
-                    await startInterval()
+                    startInterval()
                 }
                 await this.showPlanProgress(startTime)
                     .then(jobPlanProgress => {
