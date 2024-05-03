@@ -189,7 +189,7 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
 
             // 6. Return the results from the ListCodeScan API.
             currentCoroutineContext.ensureActive()
-            var listCodeScanFindingsResponse = listCodeScanFindings(jobId)
+            var listCodeScanFindingsResponse = listCodeScanFindings(jobId, null)
             val serviceInvocationDuration = now() - serviceInvocationStartTime
             codeScanResponseContext = codeScanResponseContext.copy(
                 serviceInvocationContext = codeScanResponseContext.serviceInvocationContext.copy(serviceInvocationDuration = serviceInvocationDuration)
@@ -198,10 +198,10 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
             val documents = mutableListOf<String>()
             documents.add(listCodeScanFindingsResponse.codeScanFindings())
             // coroutineContext helps to actively cancel the bigger projects quickly
-            withContext(coroutineContext) {
-                while (listCodeScanFindingsResponse.nextToken() != null && coroutineContext.isActive) {
+            withContext(currentCoroutineContext) {
+                while (listCodeScanFindingsResponse.nextToken() != null && currentCoroutineContext.isActive) {
+                    listCodeScanFindingsResponse = listCodeScanFindings(jobId, listCodeScanFindingsResponse.nextToken())
                     documents.add(listCodeScanFindingsResponse.codeScanFindings())
-                    listCodeScanFindingsResponse = listCodeScanFindings(jobId)
                 }
             }
 
@@ -335,11 +335,12 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
         throw e
     }
 
-    fun listCodeScanFindings(jobId: String): ListCodeScanFindingsResponse = try {
+    fun listCodeScanFindings(jobId: String, nextToken: String?): ListCodeScanFindingsResponse = try {
         clientAdaptor.listCodeScanFindings(
             ListCodeScanFindingsRequest.builder()
                 .jobId(jobId)
                 .codeScanFindingsSchema(CodeScanFindingsSchema.CODESCAN_FINDINGS_1_0)
+                .nextToken(nextToken)
                 .build()
         )
     } catch (e: Exception) {

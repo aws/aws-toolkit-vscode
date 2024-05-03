@@ -159,7 +159,7 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsigh
         inOrder.verify(codeScanSessionSpy, Times(1)).createUploadUrlAndUpload(eq(file), eq("SourceCode"), anyString())
         inOrder.verify(codeScanSessionSpy, Times(1)).createCodeScan(eq(CodewhispererLanguage.Python.toString()), anyString())
         inOrder.verify(codeScanSessionSpy, Times(1)).getCodeScan(any())
-        inOrder.verify(codeScanSessionSpy, Times(1)).listCodeScanFindings(eq("jobId"))
+        inOrder.verify(codeScanSessionSpy, Times(1)).listCodeScanFindings(eq("jobId"), eq(null))
     }
 
     @Test
