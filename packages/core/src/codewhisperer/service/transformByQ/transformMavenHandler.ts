@@ -156,6 +156,9 @@ export async function prepareProjectDependencies(dependenciesFolder: FolderInfo)
         copyProjectDependencies(dependenciesFolder)
     } catch (err) {
         // continue in case of errors
+        getLogger().info(
+            `CodeTransformation: Maven copy-dependencies failed, but transformation will continue and may succeed`
+        )
     }
 
     try {
