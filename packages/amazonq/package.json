@@ -773,7 +773,7 @@
             {
                 "id": "aws.amazonq.walkthrough",
                 "title": "Meet Amazon Q",
-                "description": "Your AI assistant",
+                "description": "Your generative AI-powered assistant across the software development lifecycle.",
                 "steps": [
                     {
                         "id": "aws.amazonq.walkthrough.chat",
