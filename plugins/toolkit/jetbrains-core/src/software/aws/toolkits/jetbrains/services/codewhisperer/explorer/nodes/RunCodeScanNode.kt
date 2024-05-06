@@ -18,7 +18,7 @@ class RunCodeScanNode(nodeProject: Project) : CodeWhispererActionNode(
     private val codeScanManager = CodeWhispererCodeScanManager.getInstance(project)
 
     override fun onDoubleClick(event: MouseEvent) {
-        if (codeScanManager.isCodeScanInProgress()) {
+        if (codeScanManager.isProjectScanInProgress()) {
             codeScanManager.stopCodeScan()
         } else {
             codeScanManager.runCodeScan(CodeWhispererConstants.CodeAnalysisScope.PROJECT)

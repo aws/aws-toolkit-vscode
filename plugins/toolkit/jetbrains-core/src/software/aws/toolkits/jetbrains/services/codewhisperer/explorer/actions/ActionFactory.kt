@@ -62,7 +62,7 @@ fun<T> buildActionListForCodeScan(project: Project, actionProvider: ActionProvid
                 add(actionProvider.resumeAutoScans)
             }
         }
-        if (codeScanManager.isCodeScanInProgress()) {
+        if (codeScanManager.isProjectScanInProgress()) {
             add(actionProvider.stopScan)
         } else {
             add(actionProvider.runScan)

@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Amazon Q: Reduce frequency of automated code scans and terminate superseded file scans."
+}
