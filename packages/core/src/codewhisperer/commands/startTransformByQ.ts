@@ -62,7 +62,11 @@ import {
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
-import { AlternateDependencyVersionsNotFoundError, JavaHomeNotSetError } from '../../amazonqGumby/errors'
+import {
+    AlternateDependencyVersionsNotFoundError,
+    JavaHomeNotSetError,
+    ModuleUploadError,
+} from '../../amazonqGumby/errors'
 import { ChatSessionManager } from '../../amazonqGumby/chat/storages/chatSession'
 import {
     getCodeIssueSnippetFromPom,
@@ -249,7 +253,11 @@ export async function preTransformationUploadCode() {
     } catch (err) {
         const errorMessage = `Failed to upload code due to ${(err as Error).message}`
         transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToUploadProjectNotification)
-        transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToUploadProjectChatMessage)
+
+        transformByQState.getChatControllers()?.errorThrown.fire({
+            error: new ModuleUploadError(),
+            tabID: ChatSessionManager.Instance.getSession().tabID,
+        })
         getLogger().error(errorMessage)
         throw err
     }
@@ -341,9 +349,8 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
         try {
             // Regardless of the error,
             // Continue transformation flow
-            await shortCircuitHiL(jobId)
+            await terminateHILEarly(jobId)
         } finally {
-            // TODO: report telemetry
             transformByQState.getChatControllers()?.errorThrown.fire({
                 error: err,
                 tabID: ChatSessionManager.Instance.getSession().tabID,
@@ -376,20 +383,24 @@ export async function openHilPomFile() {
     )
 }
 
-export async function shortCircuitHiL(jobID: string) {
+export async function terminateHILEarly(jobID: string) {
     // Call resume with "REJECTED" state which will put our service
     // back into the normal flow and will not trigger HIL again for this step
     await resumeTransformationJob(jobID, 'REJECTED')
 }
 
-export async function finishHumanInTheLoop(selectedDependency: string) {
+export async function finishHumanInTheLoop(selectedDependency?: string) {
     let successfulFeedbackLoop = true
     const jobId = transformByQState.getJobId()
     let hilResult: MetadataResult = MetadataResult.Pass
     try {
+        if (!selectedDependency) {
+            throw new Error('No user action')
+        }
         const humanInTheLoopManager = HumanInTheLoopManager.instance
         const manifestFileValues = humanInTheLoopManager.getManifestFileValues()
         const getUserInputValue = selectedDependency
+
         CodeTransformTelemetryState.instance.setCodeTransformMetaDataField({
             dependencyVersionSelected: selectedDependency,
         })
@@ -439,15 +450,18 @@ export async function finishHumanInTheLoop(selectedDependency: string) {
 
         void humanInTheLoopRetryLogic(jobId)
     } catch (err: any) {
-        // If anything went wrong in HIL state, we should restart the job
-        // with the rejected state
-        await resumeTransformationJob(jobId, 'REJECTED')
         successfulFeedbackLoop = false
         CodeTransformTelemetryState.instance.setCodeTransformMetaDataField({
             errorMessage: err.message,
         })
         hilResult = MetadataResult.Fail
+
+        // If anything went wrong in HIL state, we should restart the job
+        // with the rejected state
+        await terminateHILEarly(jobId)
+        void humanInTheLoopRetryLogic(jobId)
     } finally {
+        // Always delete the dependency directories
         // Always delete the dependency directories
         telemetry.codeTransform_humanInTheLoop.emit({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),

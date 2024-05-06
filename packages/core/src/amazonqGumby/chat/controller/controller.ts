@@ -21,7 +21,6 @@ import {
     getValidCandidateProjects,
     openHilPomFile,
     processTransformFormInput,
-    shortCircuitHiL,
     startTransformByQ,
     stopTransformByQ,
     validateCanCompileProject,
@@ -30,6 +29,7 @@ import { JDKVersion, TransformationCandidateProject, transformByQState } from '.
 import {
     AlternateDependencyVersionsNotFoundError,
     JavaHomeNotSetError,
+    ModuleUploadError,
     NoJavaProjectsFoundError,
     NoMavenJavaProjectsFoundError,
 } from '../../errors'
@@ -124,7 +124,7 @@ export class GumbyController {
         })
 
         this.chatControllerMessageListeners.errorThrown.event(data => {
-            return this.reportError(data)
+            return this.handleError(data)
         })
     }
 
@@ -172,7 +172,7 @@ export class GumbyController {
         // check that a project is open
         const workspaceFolders = vscode.workspace.workspaceFolders
         if (workspaceFolders === undefined || workspaceFolders.length === 0) {
-            this.messenger.sendRetryableErrorResponse('no-project-found', message.tabID)
+            this.messenger.sendUnrecoverableErrorResponse('no-project-found', message.tabID)
             return
         }
 
@@ -226,11 +226,11 @@ export class GumbyController {
             return await getValidCandidateProjects()
         } catch (err: any) {
             if (err instanceof NoJavaProjectsFoundError) {
-                this.messenger.sendRetryableErrorResponse('no-java-project-found', message.tabID)
+                this.messenger.sendUnrecoverableErrorResponse('no-java-project-found', message.tabID)
             } else if (err instanceof NoMavenJavaProjectsFoundError) {
-                this.messenger.sendRetryableErrorResponse('no-maven-java-project-found', message.tabID)
+                this.messenger.sendUnrecoverableErrorResponse('no-maven-java-project-found', message.tabID)
             } else {
-                this.messenger.sendRetryableErrorResponse('no-project-found', message.tabID)
+                this.messenger.sendUnrecoverableErrorResponse('no-project-found', message.tabID)
             }
         }
         return []
@@ -260,7 +260,8 @@ export class GumbyController {
                 await this.continueJobWithSelectedDependency({ ...message, tabID: message.tabId })
                 break
             case ButtonActions.CANCEL_DEPENDENCY_FORM:
-                await this.continueJobWithoutHIL({ tabID: message.tabId })
+                this.messenger.sendUserPrompt('Cancel', message.tabId)
+                await this.continueTransformationWithoutHIL({ tabID: message.tabId })
                 break
             case ButtonActions.OPEN_FILE:
                 await openHilPomFile()
@@ -284,7 +285,7 @@ export class GumbyController {
         this.messenger.sendProjectSelectionMessage(projectName, fromJDKVersion, toJDKVersion, message.tabId)
 
         if (fromJDKVersion === JDKVersion.UNSUPPORTED) {
-            this.messenger.sendRetryableErrorResponse('unsupported-source-jdk-version', message.tabId)
+            this.messenger.sendUnrecoverableErrorResponse('unsupported-source-jdk-version', message.tabId)
             return
         }
 
@@ -305,7 +306,7 @@ export class GumbyController {
             this.messenger.sendCompilationInProgress(message.tabID)
             await compileProject()
         } catch (err: any) {
-            this.messenger.sendRetryableErrorResponse('could-not-compile-project', message.tabID)
+            this.messenger.sendUnrecoverableErrorResponse('could-not-compile-project', message.tabID)
             // reset state to allow "Start a new transformation" button to work
             this.sessionStorage.getSession().conversationState = ConversationState.IDLE
             throw err
@@ -384,7 +385,7 @@ export class GumbyController {
                         tabID: data.tabID,
                     })
                 } else {
-                    this.messenger.sendRetryableErrorResponse('invalid-java-home', data.tabID)
+                    this.messenger.sendUnrecoverableErrorResponse('invalid-java-home', data.tabID)
                 }
             }
         }
@@ -400,20 +401,23 @@ export class GumbyController {
         void openUrl(vscode.Uri.parse(message.link))
     }
 
-    private reportError(message: { error: Error; tabID: string }) {
+    private async handleError(message: { error: Error; tabID: string }) {
         if (message.error instanceof AlternateDependencyVersionsNotFoundError) {
-            this.messenger.sendUnrecoverableError('no-alternate-dependencies-found', message.tabID)
+            this.messenger.sendKnownErrorResponse('no-alternate-dependencies-found', message.tabID)
+            await this.continueTransformationWithoutHIL(message)
+        } else if (message.error instanceof ModuleUploadError) {
+            this.messenger.sendKnownErrorResponse('upload-to-s3-failed', message.tabID)
+            await this.transformationFinished(message)
         } else {
             this.messenger.sendErrorMessage(message.error.message, message.tabID)
         }
     }
 
-    private async continueJobWithoutHIL(message: { tabID: string }) {
-        const jobID = transformByQState.getJobId()
+    private async continueTransformationWithoutHIL(message: { tabID: string }) {
         this.sessionStorage.getSession().conversationState = ConversationState.JOB_SUBMITTED
 
         try {
-            await shortCircuitHiL(jobID)
+            await finishHumanInTheLoop()
         } catch (err: any) {
             await this.transformationFinished({ tabID: message.tabID })
         }
