@@ -10,10 +10,10 @@ import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
 import { ToolkitError } from '../../shared/errors'
 import { fsCommon } from '../../srcShared/fs'
-import { collectFiles } from '../../amazonqFeatureDev/util/files'
 import { getLoggerForScope } from '../service/securityScanHandler'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
+import { collectFiles } from '../../shared/utilities/workspaceUtils'
 
 export interface ZipMetadata {
     rootDir: string
