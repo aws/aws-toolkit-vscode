@@ -32,7 +32,7 @@ const createVueBundleName = file => {
  */
 const createVueEntries = (targetPattern = 'index.ts') => {
     return glob
-        .sync(path.resolve(currentDir, 'src', '**', 'vue', '**', targetPattern))
+        .sync(path.resolve(currentDir, 'src', '**', 'vue', '**', targetPattern).replace(/\\/g, '/'))
         .map(f => ({ name: createVueBundleName(f), path: f }))
         .reduce((a, b) => ((a[b.name] = b.path), a), {})
 }
