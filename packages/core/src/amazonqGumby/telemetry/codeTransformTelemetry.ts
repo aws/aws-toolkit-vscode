@@ -89,4 +89,4 @@ export const javapOutputToTelemetryValue = (javapCommandLineOutput: string) => {
     }
 }
 
-export const calculateTotalLatency = (startTime: number, endTime: number = Date.now()): number => endTime - startTime
+export const calculateTotalLatency = (startTime: number): number => Date.now() - startTime

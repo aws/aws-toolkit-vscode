@@ -326,7 +326,7 @@ export enum DropdownStep {
     STEP_2 = 2,
 }
 
-export const sessionPlanProgress: {
+export const jobPlanProgress: {
     startJob: StepProgress
     buildCode: StepProgress
     generatePlan: StepProgress
@@ -338,11 +338,17 @@ export const sessionPlanProgress: {
     transformCode: StepProgress.NotStarted,
 }
 
+export let sessionJobHistory: {
+    [jobId: string]: { startTime: string; projectName: string; status: string; duration: string }
+} = {}
+
 export class TransformByQState {
     private transformByQState: TransformByQStatus = TransformByQStatus.NotStarted
 
     private projectName: string = ''
     private projectPath: string = ''
+
+    private startTime: string = ''
 
     private jobId: string = ''
 
@@ -378,6 +384,8 @@ export class TransformByQState {
 
     private planSteps: TransformationSteps | undefined = undefined
 
+    private intervalId: NodeJS.Timeout | undefined = undefined
+
     public isNotStarted() {
         return this.transformByQState === TransformByQStatus.NotStarted
     }
@@ -408,6 +416,10 @@ export class TransformByQState {
 
     public getProjectPath() {
         return this.projectPath
+    }
+
+    public getStartTime() {
+        return this.startTime
     }
 
     public getJobId() {
@@ -486,6 +498,10 @@ export class TransformByQState {
         return this.planSteps
     }
 
+    public getIntervalId() {
+        return this.intervalId
+    }
+
     public appendToErrorLog(message: string) {
         this.errorLog += `${message}\n\n`
     }
@@ -520,6 +536,10 @@ export class TransformByQState {
 
     public setProjectPath(path: string) {
         this.projectPath = path
+    }
+
+    public setStartTime(time: string) {
+        this.startTime = time
     }
 
     public setJobId(id: string) {
@@ -586,6 +606,10 @@ export class TransformByQState {
         this.dependencyFolderInfo = folderInfo
     }
 
+    public setIntervalId(id: NodeJS.Timeout | undefined) {
+        this.intervalId = id
+    }
+
     public setPlanSteps(steps: TransformationSteps) {
         this.planSteps = steps
     }
@@ -594,34 +618,18 @@ export class TransformByQState {
         this.planSteps = undefined
     }
 
-    public getPrefixTextForButton() {
-        switch (this.transformByQState) {
-            case TransformByQStatus.NotStarted:
-                return 'Run'
-            case TransformByQStatus.Cancelled:
-                return 'Stopping'
-            default:
-                return 'Stop'
-        }
-    }
-
-    public getIconForButton() {
-        switch (this.transformByQState) {
-            case TransformByQStatus.NotStarted:
-                return getIcon('vscode-play')
-            default:
-                return getIcon('vscode-stop-circle')
-        }
+    public resetSessionJobHistory() {
+        sessionJobHistory = {}
     }
 
     public setJobDefaults() {
-        this.setToNotStarted() // so that the "Transform by Q" button resets
-        this.polledJobStatus = '' // reset polled job status too
+        this.setToNotStarted()
         this.jobFailureErrorNotification = undefined
         this.jobFailureErrorChatMessage = undefined
         this.jobFailureMetadata = ''
         this.payloadFilePath = ''
         this.errorLog = ''
+        this.intervalId = undefined
     }
 }
 
