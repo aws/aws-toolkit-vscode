@@ -151,7 +151,18 @@
                 </svg>
             </button>
             <div class="auth-container-section">
-                <div class="header bottomMargin">Sign in with AWS IAM Identity Center:</div>
+                <div class="header bottomMargin">
+                    Sign in with AWS IAM Identity Center:<br />
+                    <a
+                        class="help-link"
+                        href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/q-in-IDE-setup.html#q-in-IDE-setup-pro-auth"
+                        v-if="app === 'AMAZONQ'"
+                        @click="handleHelpLinkClick"
+                    >
+                        <span class="help-link__icon">?</span
+                        ><span class="help-link__label">Need help signing in?</span></a
+                    >
+                </div>
                 <div class="code-catalyst-login" v-if="app === 'TOOLKIT'">
                     <div style="margin-bottom: 4px"></div>
                     <div class="subHeader">
@@ -504,6 +515,9 @@ export default defineComponent({
         async getDefaultStartUrl() {
             return await client.getDefaultStartUrl()
         },
+        handleHelpLinkClick() {
+            void client.emitUiClick('auth_helpLink')
+        },
     },
 })
 </script>
@@ -676,5 +690,33 @@ body.vscode-light #logo-text {
 }
 .topMargin {
     margin-top: 12px;
+}
+
+.help-link,
+.help-link__icon {
+    align-items: center;
+    display: flex;
+}
+
+.help-link,
+.help-link__label {
+    font-size: 10px;
+    font-weight: 400;
+    margin: 4px 0 0;
+    text-decoration: none;
+}
+
+.help-link__icon {
+    border-radius: 50%;
+    border: 1px solid var(--vscode-textLink-foreground);
+    font-size: 8px;
+    height: 10px;
+    justify-content: center;
+    width: 10px;
+}
+
+.help-link__label {
+    margin: 0;
+    padding: 0 0 0 2px;
 }
 </style>
