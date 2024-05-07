@@ -14,6 +14,7 @@ import { featureDevScheme } from '../../constants'
 import {
     CodeIterationLimitError,
     ContentLengthError,
+    MonthlyConversationLimitError,
     PlanIterationLimitError,
     SelectedFolderNotInWorkspaceFolderError,
     createUserFacingErrorMessage,
@@ -24,7 +25,7 @@ import { featureName } from '../../constants'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { FollowUpTypes, SessionStatePhase } from '../../types'
 import { Messenger } from './messenger/messenger'
-import { AuthUtil, getChatAuthState } from '../../../codewhisperer/util/authUtil'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { getLogger } from '../../../shared/logger'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
@@ -212,7 +213,7 @@ export class FeatureDevController {
 
             session = await this.sessionStorage.getSession(message.tabID)
 
-            const authState = await getChatAuthState()
+            const authState = await AuthUtil.instance.getChatAuthState()
             if (authState.amazonQ !== 'connected') {
                 await this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
                 session.isAuthenticating = true
@@ -242,6 +243,8 @@ export class FeatureDevController {
                         },
                     ],
                 })
+            } else if (err instanceof MonthlyConversationLimitError) {
+                this.messenger.sendMonthlyLimitError(message.tabID)
             } else if (err instanceof PlanIterationLimitError) {
                 this.messenger.sendErrorMessage(err.message, message.tabID, this.retriesRemaining(session))
                 this.messenger.sendAnswer({
@@ -297,6 +300,8 @@ export class FeatureDevController {
     private async onApproachGeneration(session: Session, message: string, tabID: string) {
         await session.preloader(message)
 
+        getLogger().info(`Q - Dev Chat conversation id: ${session.conversationId}`)
+
         this.messenger.sendAnswer({
             type: 'answer',
             tabID,
@@ -342,6 +347,8 @@ export class FeatureDevController {
      * Handle a regular incoming message when a user is in the code generation phase
      */
     private async onCodeGeneration(session: Session, message: string, tabID: string) {
+        getLogger().info(`Q - Dev chat conversation id: ${session.conversationId}`)
+
         // lock the UI/show loading bubbles
         this.messenger.sendAsyncEventProgress(
             tabID,
@@ -620,7 +627,7 @@ export class FeatureDevController {
         }
 
         if (uri && uri instanceof vscode.Uri) {
-            session.config.workspaceRoots = [uri.fsPath]
+            session.updateWorkspaceRoot(uri.fsPath)
             this.messenger.sendAnswer({
                 message: `Changed source root to: ${uri.fsPath}`,
                 type: 'answer',
@@ -711,7 +718,7 @@ export class FeatureDevController {
             session = await this.sessionStorage.getSession(message.tabID)
             getLogger().debug(`${featureName}: Session created with id: ${session.tabID}`)
 
-            const authState = await getChatAuthState()
+            const authState = await AuthUtil.instance.getChatAuthState()
             if (authState.amazonQ !== 'connected') {
                 void this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
                 session.isAuthenticating = true
@@ -778,7 +785,7 @@ export class FeatureDevController {
     }
 
     private sendFeedback() {
-        void submitFeedback.execute(placeholder, 'Amazon Q')
+        void submitFeedback(placeholder, 'Amazon Q')
     }
 
     private processLink(message: any) {

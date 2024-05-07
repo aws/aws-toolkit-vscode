@@ -47,6 +47,24 @@
             }
         },
         {
+            "label": "terminate",
+            "command": "echo run terminate",
+            "type": "shell",
+            "presentation": {
+                "close": true
+            }
+        },
+        {
+            "type": "npm",
+            "script": "lint",
+            "problemMatcher": "$eslint-stylish"
+        },
+        {
+            "type": "npm",
+            "script": "lintfix",
+            "problemMatcher": "$eslint-stylish"
+        },
+        {
             "type": "npm",
             "script": "compile",
             "dependsOn": ["Kill Tasks"],

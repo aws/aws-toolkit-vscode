@@ -20,7 +20,7 @@ export class ActiveStateController implements vscode.Disposable {
         vscode.window.createTextEditorDecorationType({
             after: {
                 margin: '0 0 0 3em',
-                contentText: 'CodeWhisperer is generating...',
+                contentText: 'Amazon Q is generating...',
                 textDecoration: 'none',
                 fontWeight: 'normal',
                 fontStyle: 'normal',

@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as localizedText from '../localizedText'
-import { getLogger, showLogOutputChannel } from '../../shared/logger'
+import { getLogger } from '../../shared/logger'
 import { ProgressEntry } from '../../shared/vscode/window'
 import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { sleep } from './timeoutUtils'
@@ -15,7 +15,7 @@ import { addCodiconToString } from './textUtilities'
 import { getIcon, codicon } from '../icons'
 import globals from '../extensionGlobals'
 import { openUrl } from './vsCodeUtils'
-import { PromptSettings } from '../../shared/settings'
+import { AmazonQPromptSettings, ToolkitPromptSettings } from '../../shared/settings'
 
 export const messages = {
     editCredentials(icon: boolean) {
@@ -103,7 +103,7 @@ export async function showViewLogsMessage(
     const p = showMessageWithItems(message, kind, items)
     return p.then<string | undefined>(selection => {
         if (selection === logsItem) {
-            showLogOutputChannel()
+            globals.logOutputChannel.show(true)
         }
         return selection
     })
@@ -152,15 +152,16 @@ export async function showReauthenticateMessage({
     message,
     connect,
     suppressId,
+    settings,
     reauthFunc,
 }: {
     message: string
     connect: string
-    suppressId: Parameters<PromptSettings['isPromptEnabled']>[0]
+    suppressId: string // Parameters<PromptSettings['isPromptEnabled']>[0]
+    settings: AmazonQPromptSettings | ToolkitPromptSettings
     reauthFunc: () => Promise<void>
 }) {
-    const settings = PromptSettings.instance
-    const shouldShow = await settings.isPromptEnabled(suppressId)
+    const shouldShow = await settings.isPromptEnabled(suppressId as any)
     if (!shouldShow) {
         return
     }
@@ -169,7 +170,7 @@ export async function showReauthenticateMessage({
         if (resp === connect) {
             await reauthFunc()
         } else if (resp === localizedText.dontShow) {
-            await settings.disablePrompt(suppressId)
+            await settings.disablePrompt(suppressId as any)
         }
     })
 }

@@ -14,7 +14,7 @@ import { TransformByQReviewStatus, transformByQState } from '../../models/model'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../../shared/utilities/download'
 import { getLogger } from '../../../shared/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import { codeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
+import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import * as CodeWhispererConstants from '../../models/constants'
@@ -97,6 +97,11 @@ export class AddedChangeNode extends ProposedChangeNode {
     }
 
     override saveFile(): void {
+        // create parent directory before copying files (ex. for the summary/ and assets/ folders)
+        const parentDir = path.dirname(this.pathToWorkspaceFile)
+        if (!fs.existsSync(parentDir)) {
+            fs.mkdirSync(parentDir, { recursive: true })
+        }
         fs.copyFileSync(this.pathToTmpFile, this.pathToWorkspaceFile)
     }
 }
@@ -261,9 +266,31 @@ export class ProposedTransformationExplorer {
             treeDataProvider: transformDataProvider,
         })
 
+        const reset = async () => {
+            await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
+            await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
+
+            // delete result archive after changes cleared; summary is under ResultArchiveFilePath
+            if (fs.existsSync(transformByQState.getResultArchiveFilePath())) {
+                fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
+            }
+            if (fs.existsSync(transformByQState.getProjectCopyFilePath())) {
+                fs.rmSync(transformByQState.getProjectCopyFilePath(), { recursive: true, force: true })
+            }
+
+            diffModel.clearChanges()
+            transformByQState.setSummaryFilePath('')
+            transformByQState.setProjectCopyFilePath('')
+            transformByQState.setResultArchiveFilePath('')
+            transformDataProvider.refresh()
+        }
+
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.refresh', () =>
             transformDataProvider.refresh()
         )
+
+        vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.reset', async () => await reset())
+
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.reveal', async () => {
             await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', true)
             const root = diffModel.getRoot()
@@ -325,7 +352,7 @@ export class ProposedTransformationExplorer {
                 getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
                 telemetry.codeTransform_logApiError.emit({
                     codeTransformApiNames: 'ExportResultArchive',
-                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                     codeTransformJobId: transformByQState.getJobId(),
                     codeTransformApiErrorMessage: downloadErrorMessage,
                     codeTransformRequestId: e.requestId ?? '',
@@ -337,7 +364,7 @@ export class ProposedTransformationExplorer {
                 // This metric is emitted when user clicks Download Proposed Changes button
                 telemetry.codeTransform_vcsViewerClicked.emit({
                     codeTransformVCSViewerSrcComponents: 'toastNotification',
-                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                     codeTransformJobId: transformByQState.getJobId(),
                     result: downloadErrorMessage ? MetadataResult.Fail : MetadataResult.Pass,
                     reason: downloadErrorMessage,
@@ -372,7 +399,7 @@ export class ProposedTransformationExplorer {
 
                 // This metric is only emitted when placed before showInformationMessage
                 telemetry.codeTransform_vcsDiffViewerVisible.emit({
-                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                     codeTransformJobId: transformByQState.getJobId(),
                     result: MetadataResult.Pass,
                 })
@@ -394,7 +421,7 @@ export class ProposedTransformationExplorer {
                 void vscode.window.showErrorMessage(CodeWhispererConstants.errorDeserializingDiffNotification)
             } finally {
                 telemetry.codeTransform_jobArtifactDownloadAndDeserializeTime.emit({
-                    codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                     codeTransformJobId: transformByQState.getJobId(),
                     codeTransformRunTimeLatency: calculateTotalLatency(deserializeArchiveStartTime),
                     codeTransformTotalByteSize: exportResultsArchiveSize,
@@ -408,19 +435,14 @@ export class ProposedTransformationExplorer {
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {
             diffModel.saveChanges()
             telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
-            await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
-            await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
-            transformDataProvider.refresh()
-            await vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedNotification)
+            void vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedNotification)
             transformByQState.getChatControllers()?.transformationFinished.fire({
                 message: CodeWhispererConstants.changesAppliedChatMessage,
                 tabID: ChatSessionManager.Instance.getSession().tabID,
             })
-            // delete result archive and copied source code after changes accepted
-            fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
-            fs.rmSync(transformByQState.getProjectCopyFilePath(), { recursive: true, force: true })
+            await reset()
             telemetry.codeTransform_vcsViewerSubmitted.emit({
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),
                 codeTransformStatus: transformByQState.getStatus(),
                 result: MetadataResult.Pass,
@@ -429,17 +451,12 @@ export class ProposedTransformationExplorer {
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.rejectChanges', async () => {
             diffModel.rejectChanges()
+            await reset()
             telemetry.ui_click.emit({ elementId: 'transformationHub_rejectChanges' })
-            await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
-            await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
-            transformDataProvider.refresh()
-            // delete result archive after changes rejected
-            fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
-            fs.rmSync(transformByQState.getProjectCopyFilePath(), { recursive: true, force: true })
             telemetry.codeTransform_vcsViewerCanceled.emit({
                 // eslint-disable-next-line id-length
                 codeTransformPatchViewerCancelSrcComponents: 'cancelButton',
-                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),
                 codeTransformStatus: transformByQState.getStatus(),
                 result: MetadataResult.Pass,

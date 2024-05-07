@@ -4,11 +4,12 @@ about: Ask for guidance, "how to", or other questions
 labels: guidance
 ---
 
-## System details (run the `AWS: About Toolkit` command)
+## System details (run `AWS: About` and/or `Amazon Q: About`)
 
 -   OS:
 -   Visual Studio Code version:
 -   AWS Toolkit version:
+-   Amazon Q version:
 
 ## Question
 

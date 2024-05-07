@@ -28,6 +28,7 @@ import { builderIdStartUrl } from '../auth/sso/model'
 import { codeWhispererClient } from '../codewhisperer/client/codewhisperer'
 import { AuthUtil as CodeWhispererAuth } from '../codewhisperer/util/authUtil'
 import { showReauthenticateMessage } from '../shared/utilities/messages'
+import { ToolkitPromptSettings } from '../shared/settings'
 
 // Secrets stored on the macOS keychain appear as individual entries for each key
 // This is fine so long as the user has only a few accounts. Otherwise this should
@@ -196,13 +197,13 @@ export class CodeCatalystAuthenticationProvider {
     }
 
     public async showReauthenticationPrompt(conn: Connection, isPartialExpiration?: boolean): Promise<void> {
-        const partiallyExpiredMessage =
-            'CodeCatalyst connection has expired. Amazon Q/CodeWhisperer is still connected.'
+        const partiallyExpiredMessage = 'CodeCatalyst connection has expired. Amazon Q is still connected.'
 
         await showReauthenticateMessage({
             message: isPartialExpiration ? partiallyExpiredMessage : localizedText.connectionExpired('CodeCatalyst'),
             connect: localizedText.connect,
             suppressId: 'codeCatalystConnectionExpired',
+            settings: ToolkitPromptSettings.instance,
             reauthFunc: async () => {
                 await this.auth.reauthenticate(conn)
             },
@@ -370,18 +371,42 @@ export class CodeCatalystAuthenticationProvider {
             }
         }
     }
+    /**
+     * Try to use an existing connection for CodeCatalyst Login
+     */
+    public async tryUseConnection(conn: SsoConnection) {
+        const connId = conn.id
+        if (isValidCodeCatalystConnection(conn)) {
+            getLogger().info(`auth: re-use connection from existing connection id ${connId}`)
+            await this.secondaryAuth.useNewConnection(conn)
+            await this.isConnectionOnboarded(conn, true)
+        } else {
+            getLogger().info(`auth: re-use(new scope) to connection from existing connection id ${connId}`)
+            const newConn = await this.secondaryAuth.addScopes(conn, scopesCodeCatalyst)
+            await this.secondaryAuth.useNewConnection(newConn)
+            await this.isConnectionOnboarded(newConn, true)
+        }
+    }
 
-    private getState(): Record<string, ConnectionState> {
+    private getStates(): Record<string, ConnectionState> {
         return this.memento.get(this.mementoKey, {} as Record<string, ConnectionState>)
     }
 
+    public tryGetConnectionState(conn: SsoConnection): ConnectionState | undefined {
+        return this.getStates()[conn.id]
+    }
     public getConnectionState(conn: SsoConnection): ConnectionState {
-        return this.getState()[conn.id]
+        return (
+            this.tryGetConnectionState(conn) ?? {
+                onboarded: false,
+                scopeExpired: false,
+            }
+        )
     }
 
     private async setConnectionState(conn: SsoConnection, state: ConnectionState) {
         await this.memento.update(this.mementoKey, {
-            ...this.getState(),
+            ...this.getStates(),
             [conn.id]: state,
         })
     }
@@ -392,7 +417,7 @@ export class CodeCatalystAuthenticationProvider {
     }
 
     public async isConnectionOnboarded(conn: SsoConnection, recheck = false) {
-        const state = this.getConnectionState(conn)
+        const state = this.tryGetConnectionState(conn)
         if (state !== undefined && !recheck) {
             return state.onboarded
         }

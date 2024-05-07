@@ -8,8 +8,8 @@ import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import * as model from '../../../codewhisperer/models/model'
-import * as startTransformByQ from '../../../codewhisperer/commands/startTransformByQ'
+import { transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
+import { stopTransformByQ } from '../../../codewhisperer/commands/startTransformByQ'
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
@@ -27,7 +27,9 @@ import {
     pollTransformationJob,
     getHeadersObj,
     throwIfCancelled,
+    updateJobHistory,
     zipCode,
+    getTableMapping,
 } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
 import {
     validateOpenProjects,
@@ -69,16 +71,16 @@ describe('transformByQ', function () {
     })
 
     it('WHEN job status is cancelled THEN error is thrown', async function () {
-        model.transformByQState.setToCancelled()
+        transformByQState.setToCancelled()
         assert.throws(() => {
             throwIfCancelled()
-        }, new model.TransformByQStoppedError())
+        }, new TransformByQStoppedError())
     })
 
     it('WHEN job is stopped THEN status is updated to cancelled', async function () {
-        model.transformByQState.setToRunning()
-        await startTransformByQ.stopTransformByQ('abc-123')
-        assert.strictEqual(model.transformByQState.getStatus(), 'Cancelled')
+        transformByQState.setToRunning()
+        await stopTransformByQ('abc-123')
+        assert.strictEqual(transformByQState.getStatus(), 'Cancelled')
     })
 
     it('WHEN validateProjectSelection called on non-Java project THEN throws error', async function () {
@@ -157,29 +159,25 @@ describe('transformByQ', function () {
             transformationJob: { status: 'COMPLETED' },
         }
         sinon.stub(codeWhisperer.codeWhispererClient, 'codeModernizerGetCodeTransformation').resolves(mockJobResponse)
-        model.transformByQState.setToSucceeded()
+        transformByQState.setToSucceeded()
         const status = await pollTransformationJob('dummyId', CodeWhispererConstants.validStatesForCheckingDownloadUrl)
         assert.strictEqual(status, 'COMPLETED')
     })
 
-    it(`WHEN process history called THEN returns details of last run job`, async function () {
-        const actual = startTransformByQ.processHistory(
-            [],
-            '01/01/23, 12:00 AM',
-            'my-module',
-            'Succeeded',
-            '20 sec',
-            '123'
-        )
-        const expected = [
-            {
-                timestamp: '01/01/23, 12:00 AM',
-                module: 'my-module',
-                status: 'Succeeded',
-                duration: '20 sec',
-                id: '123',
+    it(`WHEN update job history called THEN returns details of last run job`, async function () {
+        transformByQState.setJobId('abc-123')
+        transformByQState.setProjectName('test-project')
+        transformByQState.setPolledJobStatus('COMPLETED')
+        transformByQState.setStartTime('05/03/24, 11:35 AM')
+        const actual = updateJobHistory()
+        const expected = {
+            'abc-123': {
+                duration: '0 sec',
+                projectName: 'test-project',
+                startTime: '05/03/24, 11:35 AM',
+                status: 'COMPLETED',
             },
-        ]
+        }
         assert.deepStrictEqual(actual, expected)
     })
 
@@ -237,7 +235,7 @@ describe('transformByQ', function () {
         })
 
         const tempFileName = `testfile-${Date.now()}.zip`
-        model.transformByQState.setProjectPath(tempDir)
+        transformByQState.setProjectPath(tempDir)
         return zipCode({
             path: tempDir,
             name: tempFileName,
@@ -251,5 +249,45 @@ describe('transformByQ', function () {
                 assert(expectedFilesAfterClean.includes(dependency.name))
             })
         })
+    })
+
+    it(`WHEN getTableMapping on complete step 0 progressUpdates THEN map IDs to tables`, async function () {
+        const stepZeroProgressUpdates = [
+            {
+                name: '0',
+                status: 'COMPLETED',
+                description:
+                    '{"columnNames":["name","value"],"rows":[{"name":"Lines of code in your application","value":"3000"},{"name":"Dependencies to be replaced","value":"5"},{"name":"Deprecated code instances to be replaced","value":"10"},{"name":"Files to be updated","value":"7"}]}',
+            },
+            {
+                name: '1-dependency-change-abc',
+                status: 'COMPLETED',
+                description:
+                    '{"columnNames":["dependencyName","action","currentVersion","targetVersion"],"rows":[{"dependencyName":"org.springboot.com","action":"Update","currentVersion":"2.1","targetVersion":"2.4"}, {"dependencyName":"com.lombok.java","action":"Remove","currentVersion":"1.7","targetVersion":"-"}]}',
+            },
+            {
+                name: '2-deprecated-code-xyz',
+                status: 'COMPLETED',
+                description:
+                    '{"columnNames":["apiFullyQualifiedName","numChangedFiles"],“rows”:[{"apiFullyQualifiedName":"java.lang.Thread.stop()","numChangedFiles":"6"}, {"apiFullyQualifiedName":"java.math.bad()","numChangedFiles":"3"}]}',
+            },
+            {
+                name: '-1',
+                status: 'COMPLETED',
+                description:
+                    '{"columnNames":["relativePath","action"],"rows":[{"relativePath":"pom.xml","action":"Update"}, {"relativePath":"src/main/java/com/bhoruka/bloodbank/BloodbankApplication.java","action":"Update"}]}',
+            },
+        ]
+
+        const actual = getTableMapping(stepZeroProgressUpdates)
+        const expected = {
+            '0': '{"columnNames":["name","value"],"rows":[{"name":"Lines of code in your application","value":"3000"},{"name":"Dependencies to be replaced","value":"5"},{"name":"Deprecated code instances to be replaced","value":"10"},{"name":"Files to be updated","value":"7"}]}',
+            '1-dependency-change-abc':
+                '{"columnNames":["dependencyName","action","currentVersion","targetVersion"],"rows":[{"dependencyName":"org.springboot.com","action":"Update","currentVersion":"2.1","targetVersion":"2.4"}, {"dependencyName":"com.lombok.java","action":"Remove","currentVersion":"1.7","targetVersion":"-"}]}',
+            '2-deprecated-code-xyz':
+                '{"columnNames":["apiFullyQualifiedName","numChangedFiles"],“rows”:[{"apiFullyQualifiedName":"java.lang.Thread.stop()","numChangedFiles":"6"}, {"apiFullyQualifiedName":"java.math.bad()","numChangedFiles":"3"}]}',
+            '-1': '{"columnNames":["relativePath","action"],"rows":[{"relativePath":"pom.xml","action":"Update"}, {"relativePath":"src/main/java/com/bhoruka/bloodbank/BloodbankApplication.java","action":"Update"}]}',
+        }
+        assert.deepStrictEqual(actual, expected)
     })
 })

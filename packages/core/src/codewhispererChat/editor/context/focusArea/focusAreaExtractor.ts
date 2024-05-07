@@ -36,7 +36,8 @@ export class FocusAreaContextExtractor {
 
         // It means we don't really have a selection, but cursor position only
         if (!this.isCodeBlockSelected(editor)) {
-            importantRange = editor.visibleRanges[0]
+            // Select the whole line
+            importantRange = editor.document.lineAt(importantRange.start.line).range
         }
 
         const names = await this.findNamesInRange(editor.document.getText(), importantRange, editor.document.languageId)
@@ -56,7 +57,7 @@ export class FocusAreaContextExtractor {
             extendedCodeBlock: this.getRangeText(editor.document, extendedCodeBlockRange),
             codeBlock: codeBlock,
             selectionInsideExtendedCodeBlock: this.getSelectionInsideExtendedCodeBlock(
-                importantRange as Selection,
+                editor.selection,
                 extendedCodeBlockRange
             ),
             names:

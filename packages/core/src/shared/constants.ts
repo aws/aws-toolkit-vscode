@@ -135,3 +135,7 @@ export const redshiftHelpUrl = 'https://docs.aws.amazon.com/toolkit-for-vscode/l
 
 // URL for Amazon Q
 export const amazonQHelpUrl = 'https://aws.amazon.com/q/'
+
+// URL for Amazon Q VS Code
+export const amazonQVscodeMarketplace =
+    'https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.amazon-q-vscode'

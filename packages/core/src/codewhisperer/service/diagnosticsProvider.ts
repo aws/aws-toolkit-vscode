@@ -4,9 +4,10 @@
  */
 
 import * as vscode from 'vscode'
-import { CodeScanIssue, AggregatedCodeScanIssue } from '../models/model'
+import { CodeScanIssue, AggregatedCodeScanIssue, CodeScansState } from '../models/model'
 import { SecurityIssueHoverProvider } from './securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from './securityIssueCodeActionProvider'
+import { CodeAnalysisScope, codewhispererDiagnosticSourceLabel } from '../models/constants'
 
 interface SecurityScanRender {
     securityDiagnosticCollection: vscode.DiagnosticCollection | undefined
@@ -20,16 +21,32 @@ export const securityScanRender: SecurityScanRender = {
 
 export function initSecurityScanRender(
     securityRecommendationList: AggregatedCodeScanIssue[],
-    context: vscode.ExtensionContext
+    context: vscode.ExtensionContext,
+    editor: vscode.TextEditor,
+    scope: CodeAnalysisScope
 ) {
     securityScanRender.initialized = false
-    securityScanRender.securityDiagnosticCollection?.clear()
+    if (scope === CodeAnalysisScope.FILE) {
+        securityScanRender.securityDiagnosticCollection?.delete(editor.document.uri)
+    } else if (scope === CodeAnalysisScope.PROJECT) {
+        securityScanRender.securityDiagnosticCollection?.clear()
+    }
     securityRecommendationList.forEach(securityRecommendation => {
         updateSecurityDiagnosticCollection(securityRecommendation)
+        updateSecurityIssueHoverAndCodeActions(securityRecommendation)
     })
     securityScanRender.initialized = true
-    SecurityIssueHoverProvider.instance.issues = securityRecommendationList
-    SecurityIssueCodeActionProvider.instance.issues = securityRecommendationList
+}
+
+function updateSecurityIssueHoverAndCodeActions(securityRecommendation: AggregatedCodeScanIssue) {
+    const updatedSecurityRecommendationList = [
+        ...SecurityIssueHoverProvider.instance.issues.filter(
+            group => group.filePath !== securityRecommendation.filePath
+        ),
+        securityRecommendation,
+    ]
+    SecurityIssueHoverProvider.instance.issues = updatedSecurityRecommendationList
+    SecurityIssueCodeActionProvider.instance.issues = updatedSecurityRecommendationList
 }
 
 export function updateSecurityDiagnosticCollection(securityRecommendation: AggregatedCodeScanIssue) {
@@ -50,14 +67,18 @@ export function createSecurityDiagnostic(securityIssue: CodeScanIssue) {
         securityIssue.title,
         vscode.DiagnosticSeverity.Warning
     )
-    securityDiagnostic.source = 'Detected by CodeWhisperer '
+    securityDiagnostic.source = codewhispererDiagnosticSourceLabel
+    securityDiagnostic.code = {
+        value: securityIssue.detectorId,
+        target: vscode.Uri.parse(securityIssue.recommendation.url),
+    }
     return securityDiagnostic
 }
 
 export function createSecurityDiagnosticCollection() {
     if (securityScanRender.securityDiagnosticCollection === undefined) {
         securityScanRender.securityDiagnosticCollection =
-            vscode.languages.createDiagnosticCollection('CodeWhisperer Security Scan')
+            vscode.languages.createDiagnosticCollection('Amazon Q Security Scan')
     }
     return securityScanRender.securityDiagnosticCollection
 }
@@ -78,7 +99,8 @@ export function disposeSecurityDiagnostic(event: vscode.TextDocumentChangeEvent)
         if (
             issue.severity === vscode.DiagnosticSeverity.Warning &&
             intersection &&
-            (/\S/.test(changedText) || changedText === '')
+            (/\S/.test(changedText) || changedText === '') &&
+            !CodeScansState.instance.isScansEnabled()
         ) {
             issue.severity = vscode.DiagnosticSeverity.Information
             issue.message = 'Re-scan to validate the fix: ' + issue.message
@@ -100,4 +122,20 @@ function getLineOffset(range: vscode.Range, text: string) {
     const originLines = range.end.line - range.start.line + 1
     const changedLines = text.split('\n').length
     return changedLines - originLines
+}
+
+export function removeDiagnostic(uri: vscode.Uri, issue: CodeScanIssue) {
+    const currentSecurityDiagnostics = securityScanRender.securityDiagnosticCollection?.get(uri)
+    if (currentSecurityDiagnostics) {
+        const newSecurityDiagnostics = currentSecurityDiagnostics.filter(diagnostic => {
+            return (
+                typeof diagnostic.code !== 'string' &&
+                typeof diagnostic.code !== 'number' &&
+                diagnostic.code?.value !== issue.detectorId &&
+                diagnostic.message !== issue.title &&
+                diagnostic.range !== new vscode.Range(issue.startLine, 0, issue.endLine, 0)
+            )
+        })
+        securityScanRender.securityDiagnosticCollection?.set(uri, newSecurityDiagnostics)
+    }
 }

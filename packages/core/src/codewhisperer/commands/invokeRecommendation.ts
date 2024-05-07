@@ -28,7 +28,7 @@ export async function invokeRecommendation(
      * IntelliSense in Cloud9 needs editor.suggest.showMethods
      */
     if (!config.isShowMethodsEnabled && isCloud9()) {
-        void vscode.window.showWarningMessage('Turn on "editor.suggest.showMethods" to use CodeWhisperer')
+        void vscode.window.showWarningMessage('Turn on "editor.suggest.showMethods" to use Amazon Q inline suggestions')
         return
     }
     if (!editor) {

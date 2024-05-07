@@ -14,7 +14,7 @@ import {
     DefaultDocumentChangedType,
 } from '../../../codewhisperer/service/keyStrokeHandler'
 import { createMockTextEditor, createTextDocumentChangeEvent, resetCodeWhispererGlobalVariables } from '../testUtil'
-import { InlineCompletionService } from '../../../codewhisperer/service/inlineCompletionService'
+import { InlineCompletionService, refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
 import * as EditorContext from '../../../codewhisperer/util/editorContext'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import { isInlineCompletionEnabled } from '../../../codewhisperer/util/commonUtil'
@@ -22,6 +22,7 @@ import { ClassifierTrigger } from '../../../codewhisperer/service/classifierTrig
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { RecommendationService } from '../../../codewhisperer/service/recommendationService'
+import { tryRegister } from '../../testUtil'
 
 describe('keyStrokeHandler', function () {
     const config: ConfigurationEntry = {
@@ -52,6 +53,8 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Whatever the input is, should skip when automatic trigger is turned off, should not call invokeAutomatedTrigger', async function () {
+            tryRegister(refreshStatusBar)
+
             const mockEditor = createMockTextEditor()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,

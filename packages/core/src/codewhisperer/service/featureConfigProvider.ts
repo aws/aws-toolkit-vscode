@@ -42,7 +42,7 @@ export class FeatureConfigProvider {
             return
         }
 
-        getLogger().debug('CodeWhisperer: Fetching feature configs')
+        getLogger().debug('amazonq: Fetching feature configs')
         try {
             const response = await client.listFeatureEvaluations()
 

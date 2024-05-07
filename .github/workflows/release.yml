@@ -24,8 +24,10 @@ jobs:
         outputs:
             feature: ${{ steps.build.outputs.feature }}
             tagname: ${{ steps.build.outputs.tagname }}
-            version: ${{ steps.build.outputs.version }}
-            changes: ${{ steps.build.outputs.changes }}
+            toolkit_version: ${{ steps.build.outputs.toolkit_version }}
+            amazonq_version: ${{ steps.build.outputs.amazonq_version }}
+            toolkit_changes: ${{ steps.build.outputs.toolkit_changes }}
+            amazonq_changes: ${{ steps.build.outputs.amazonq_changes }}
         steps:
             - uses: actions/checkout@v4
               with:
@@ -49,10 +51,11 @@ jobs:
                   echo "FEAT_NAME=" >> $GITHUB_ENV
                   echo "TAG_NAME=prerelease" >> $GITHUB_ENV
             - run: npm ci
-            - name: vsix # TODO: For packages/toolkit release only
+            - name: vsix
               run: |
-                  npm run createRelease  # Generate CHANGELOG.md
+                  npm run createRelease -w packages/toolkit -w packages/amazonq  # Generate CHANGELOG.md
                   npm run -w packages/toolkit package -- --feature "$FEAT_NAME"
+                  npm run -w packages/amazonq package -- --feature "$FEAT_NAME"
             - uses: actions/upload-artifact@v4
               with:
                   name: artifacts
@@ -61,28 +64,39 @@ jobs:
             - name: Export outputs
               id: build
               run: |
+                  write_package_info() {
+                      PKG_NAME=$1
+                      PKG_DISPLAY_NAME=$(grep -m 1 displayName packages/${PKG_NAME}/package.json | grep -o '[a-zA-z][^\"]\+' | tail -n1)
+                      echo "${PKG_NAME}_version=$(grep -m 1 version packages/${PKG_NAME}/package.json | grep -o '[0-9][^\"]\+' | sed 's/-SNAPSHOT//')" >> $GITHUB_OUTPUT
+                      echo "${PKG_NAME}_changes<<EOF" >> $GITHUB_OUTPUT
+                      # Add extension display name to the topmost changelog section.
+                      cat packages/${PKG_NAME}/CHANGELOG.md | perl -ne 'BEGIN{$/="\n\n"} print; exit if $. == 2' | sed -e "1 s/## /## ${PKG_DISPLAY_NAME} - /" >> $GITHUB_OUTPUT
+                      echo 'EOF' >> $GITHUB_OUTPUT
+                  }
                   echo "feature=$FEAT_NAME" >> $GITHUB_OUTPUT
                   echo "tagname=$TAG_NAME" >> $GITHUB_OUTPUT
-                  echo "version=$(grep -m 1 version packages/toolkit/package.json | grep -o '[0-9][^\"]\+' | sed 's/-SNAPSHOT//')" >> $GITHUB_OUTPUT
-                  echo 'changes<<EOF' >> $GITHUB_OUTPUT
-                  cat CHANGELOG.md | perl -ne 'BEGIN{$/="\n\n"} print; exit if $. == 2' >> $GITHUB_OUTPUT
-                  echo 'EOF' >> $GITHUB_OUTPUT
+                  write_package_info toolkit
+                  write_package_info amazonq
 
     publish:
         needs: [package]
         runs-on: ubuntu-latest
         env:
+            #
             # For `gh`.
+            #
             GH_REPO: ${{ github.repository }}
-            # For `gh`.
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             FEAT_NAME: ${{ needs.package.outputs.feature }}
             TAG_NAME: ${{ needs.package.outputs.tagname }}
-            AWS_TOOLKIT_VERSION: ${{ needs.package.outputs.version }}
+            AWS_TOOLKIT_VERSION: ${{ needs.package.outputs.toolkit_version }}
+            AMAZON_Q_VERSION: ${{ needs.package.outputs.amazonq_version }}
+            #
             # Used in release_notes.md
+            #
             BRANCH: ${{ github.ref_name }}
-            # Used in release_notes.md
-            AWS_TOOLKIT_CHANGES: ${{ needs.package.outputs.changes }}
+            AWS_TOOLKIT_CHANGES: ${{ needs.package.outputs.toolkit_changes }}
+            AMAZON_Q_CHANGES: ${{ needs.package.outputs.amazonq_changes }}
         permissions:
             contents: write
         steps:
@@ -94,7 +108,7 @@ jobs:
               # "prerelease" (main branch) or "pre-<feature>"
               if: "env.TAG_NAME == 'prerelease' || startsWith(env.TAG_NAME, 'pre-')"
               run: |
-                  echo "SUBJECT=AWS Toolkit ${AWS_TOOLKIT_VERSION}: ${FEAT_NAME:-${TAG_NAME}}" >> $GITHUB_ENV
+                  echo "SUBJECT=AWS IDE Extensions: ${FEAT_NAME:-${TAG_NAME}}" >> $GITHUB_ENV
                   gh release delete "$TAG_NAME" --cleanup-tag --yes || true
                   # git push origin :"$TAG_NAME" || true
             - name: Publish Prerelease
