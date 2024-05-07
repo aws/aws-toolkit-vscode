@@ -22,11 +22,11 @@ export const securityScanRender: SecurityScanRender = {
 export function initSecurityScanRender(
     securityRecommendationList: AggregatedCodeScanIssue[],
     context: vscode.ExtensionContext,
-    editor: vscode.TextEditor,
+    editor: vscode.TextEditor | undefined,
     scope: CodeAnalysisScope
 ) {
     securityScanRender.initialized = false
-    if (scope === CodeAnalysisScope.FILE) {
+    if (scope === CodeAnalysisScope.FILE && editor) {
         securityScanRender.securityDiagnosticCollection?.delete(editor.document.uri)
     } else if (scope === CodeAnalysisScope.PROJECT) {
         securityScanRender.securityDiagnosticCollection?.clear()

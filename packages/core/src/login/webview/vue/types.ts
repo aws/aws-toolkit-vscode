@@ -59,6 +59,7 @@ export type AuthUiClick =
     | 'auth_toolkitCloseButton'
     | 'auth_reauthenticate'
     | 'auth_signout'
+    | 'auth_helpLink'
     | 'amazonq_switchToQSignIn'
 
 export const userCancelled = 'userCancelled'

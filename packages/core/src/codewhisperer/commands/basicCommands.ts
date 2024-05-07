@@ -33,7 +33,6 @@ import { FeatureConfigProvider } from '../service/featureConfigProvider'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { Auth, AwsConnection } from '../../auth'
 import { once } from '../../shared/utilities/functionUtils'
-import { isTextEditor } from '../../shared/utilities/editorUtilities'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import { removeDiagnostic } from '../service/diagnosticsProvider'
 import { SecurityIssueHoverProvider } from '../service/securityIssueHoverProvider'
@@ -117,26 +116,16 @@ export const showSecurityScan = Commands.declare(
             if (AuthUtil.instance.isConnectionExpired()) {
                 await AuthUtil.instance.notifyReauthenticate()
             }
-            const editor = vscode.window.activeTextEditor
-            if (editor && isTextEditor(editor)) {
-                if (codeScanState.isNotStarted()) {
-                    // User intends to start as "Start Security Scan" is shown in the explorer tree
-                    codeScanState.setToRunning()
-                    void startSecurityScanWithProgress(
-                        securityPanelViewProvider,
-                        editor,
-                        client,
-                        context.extensionContext
-                    )
-                } else if (codeScanState.isRunning()) {
-                    // User intends to stop as "Stop Security Scan" is shown in the explorer tree
-                    // Cancel only when the code scan state is "Running"
-                    await confirmStopSecurityScan()
-                }
-                vsCodeState.isFreeTierLimitReached = false
-            } else {
-                void vscode.window.showInformationMessage('Open a valid file to scan.')
+            if (codeScanState.isNotStarted()) {
+                // User intends to start as "Start Security Scan" is shown in the explorer tree
+                codeScanState.setToRunning()
+                void startSecurityScanWithProgress(securityPanelViewProvider, client, context.extensionContext)
+            } else if (codeScanState.isRunning()) {
+                // User intends to stop as "Stop Security Scan" is shown in the explorer tree
+                // Cancel only when the code scan state is "Running"
+                await confirmStopSecurityScan()
             }
+            vsCodeState.isFreeTierLimitReached = false
         }
 )
 
