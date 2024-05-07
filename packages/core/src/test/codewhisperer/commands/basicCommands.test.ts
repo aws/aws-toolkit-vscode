@@ -51,7 +51,6 @@ import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { listCodeWhispererCommands } from '../../../codewhisperer/ui/statusBarMenu'
 import { CodeScansState, CodeSuggestionsState } from '../../../codewhisperer/models/model'
 import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
-import { isTextEditor } from '../../../shared/utilities/editorUtilities'
 import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
 import { focusAmazonQPanel } from '../../../codewhispererChat/commands/registerCommands'
 import * as diagnosticsProvider from '../../../codewhisperer/service/diagnosticsProvider'
@@ -218,16 +217,6 @@ describe('CodeWhisperer-basicCommands', function () {
 
             await targetCommand.execute(placeholder, cwQuickPickSource)
             assert.ok(spy.called)
-        })
-
-        it('shows information message if there is no active text editor', async function () {
-            targetCommand = testCommand(showSecurityScan, mockExtContext, mockSecurityPanelViewProvider, mockClient)
-
-            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
-
-            assert.ok(!vscode.window.activeTextEditor || !isTextEditor(vscode.window.activeTextEditor))
-            await targetCommand.execute(placeholder, cwQuickPickSource)
-            assert.strictEqual(getTestWindow().shownMessages[0].message, 'Open a valid file to scan.')
         })
 
         it('includes the "source" in the command execution metric', async function () {

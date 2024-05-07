@@ -18,17 +18,10 @@ describe('zipUtil', function () {
     const appRoot = join(workspaceFolder, 'java11-plain-maven-sam-app')
     const appCodePath = join(appRoot, 'HelloWorldFunction', 'src', 'main', 'java', 'helloworld', 'App.java')
 
-    describe('getProjectName', function () {
-        it('Should return the correct project name', function () {
+    describe('getProjectPaths', function () {
+        it('Should return the correct project paths', function () {
             const zipUtil = new ZipUtil()
-            assert.strictEqual(zipUtil.getProjectName(vscode.Uri.file(appCodePath)), 'workspaceFolder')
-        })
-    })
-
-    describe('getProjectPath', function () {
-        it('Should return the correct project path', function () {
-            const zipUtil = new ZipUtil()
-            assert.strictEqual(zipUtil.getProjectPath(vscode.Uri.file(appCodePath)), workspaceFolder)
+            assert.deepStrictEqual(zipUtil.getProjectPaths(), [workspaceFolder])
         })
     })
 
