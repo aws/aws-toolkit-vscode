@@ -72,8 +72,6 @@ import DependencyVersions from '../../amazonqGumby/models/dependencies'
 import { dependencyNoAvailableVersions } from '../../amazonqGumby/models/constants'
 import { HumanInTheLoopManager } from '../service/transformByQ/humanInTheLoopManager'
 
-let pollUIIntervalId: string | number | NodeJS.Timer | undefined = undefined
-
 export async function processTransformFormInput(
     pathToProject: string,
     fromJDKVersion: JDKVersion,
