@@ -13,6 +13,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import kotlinx.coroutines.launch
 import org.apache.commons.collections4.queue.CircularFifoQueue
 import org.jetbrains.annotations.TestOnly
+import software.amazon.awssdk.services.codewhispererruntime.model.CodeAnalysisScope
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererRuntimeException
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
@@ -33,6 +34,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispe
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getCodeWhispererStartUrl
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getConnectionStartUrl
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getGettingStartedTaskType
@@ -292,6 +294,7 @@ class CodeWhispererTelemetryService {
         val reason = codeScanEvent.codeScanResponseContext.reason
         val startUrl = getConnectionStartUrl(codeScanEvent.connection)
         val codeAnalysisScope = codeScanEvent.codeAnalysisScope
+        val passive = codeAnalysisScope == CodeWhispererConstants.CodeAnalysisScope.FILE
 
         LOG.debug {
             "Recording code security scan event. \n" +
@@ -308,7 +311,8 @@ class CodeWhispererTelemetryService {
                 "Service invocation duration in milliseconds: ${serviceInvocationContext.serviceInvocationDuration}, \n" +
                 "Total number of lines scanned: ${payloadContext.totalLines}, \n" +
                 "Reason: $reason \n" +
-                "Scope: ${codeAnalysisScope.value} \n"
+                "Scope: ${codeAnalysisScope.value} \n" +
+                "Passive: $passive \n"
         }
         CodewhispererTelemetry.securityScan(
             project = project,
@@ -328,7 +332,8 @@ class CodeWhispererTelemetryService {
             reason = reason,
             result = codeScanEvent.result,
             credentialStartUrl = startUrl,
-            codewhispererCodeScanScope = CodewhispererCodeScanScope.from(codeAnalysisScope.value)
+            codewhispererCodeScanScope = CodewhispererCodeScanScope.from(codeAnalysisScope.value),
+            passive = passive
         )
     }
 
