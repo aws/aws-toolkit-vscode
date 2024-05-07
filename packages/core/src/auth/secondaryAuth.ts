@@ -285,7 +285,7 @@ export async function addScopes(conn: SsoConnection, extraScopes: string[], auth
     const updatedConn = await updateConnectionScopes(newScopes)
 
     try {
-        return await auth.reauthenticate(updatedConn)
+        return await auth.reauthenticate(updatedConn, false)
     } catch (e) {
         // We updated the connection scopes pre-emptively, but if there is some issue (e.g. user cancels,
         // InvalidGrantException, etc), then we need to revert to the old connection scopes. Otherwise,

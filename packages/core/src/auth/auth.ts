@@ -164,9 +164,10 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
-    public async reauthenticate({ id }: Pick<SsoConnection, 'id'>): Promise<SsoConnection>
-    public async reauthenticate({ id }: Pick<IamConnection, 'id'>): Promise<IamConnection>
-    public async reauthenticate({ id }: Pick<Connection, 'id'>): Promise<Connection> {
+    public async reauthenticate({ id }: Pick<SsoConnection, 'id'>, invalidate?: boolean): Promise<SsoConnection>
+    public async reauthenticate({ id }: Pick<IamConnection, 'id'>, invalidate?: boolean): Promise<IamConnection>
+    public async reauthenticate({ id }: Pick<Connection, 'id'>, invalidate?: boolean): Promise<Connection> {
+        const shouldInvalidate = invalidate ?? true
         const profile = this.store.getProfileOrThrow(id)
         if (profile.type === 'sso') {
             const provider = this.getSsoTokenProvider(id, profile)
@@ -175,13 +176,13 @@ export class Auth implements AuthService, ConnectionManager {
             // so we need to set it here.
             await telemetry.aws_loginWithBrowser.run(async span => {
                 span.record({ isReAuth: true, credentialStartUrl: profile.startUrl })
-                await this.authenticate(id, () => provider.createToken())
+                await this.authenticate(id, () => provider.createToken(), shouldInvalidate)
             })
 
             return this.getSsoConnection(id, profile)
         } else {
             const provider = await this.getCredentialsProvider(id, profile)
-            await this.authenticate(id, () => this.createCachedCredentials(provider))
+            await this.authenticate(id, () => this.createCachedCredentials(provider), shouldInvalidate)
 
             return this.getIamConnection(id, profile)
         }
@@ -559,7 +560,10 @@ export class Auth implements AuthService, ConnectionManager {
             }
         }
 
-        return runCheck().catch(err => this.handleSsoTokenError(id, err))
+        return runCheck().catch(async err => {
+            await this.updateConnectionState(id, 'invalid')
+            return this.handleSsoTokenError(id, err)
+        })
     }
 
     private async handleSsoTokenError(id: Connection['id'], err: unknown) {
@@ -567,7 +571,6 @@ export class Auth implements AuthService, ConnectionManager {
 
         this.#validationErrors.set(id, UnknownError.cast(err))
         getLogger().info(`auth: Handling validation error of connection: ${id}`)
-        return this.updateConnectionState(id, 'invalid')
     }
 
     private async getConnectionFromStoreEntry([id, profile]: readonly [Connection['id'], StoredProfile<Profile>]) {
@@ -704,7 +707,8 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private readonly authenticate = keyedDebounce(this._authenticate.bind(this))
-    private async _authenticate<T>(id: Connection['id'], callback: () => Promise<T>): Promise<T> {
+    private async _authenticate<T>(id: Connection['id'], callback: () => Promise<T>, invalidate?: boolean): Promise<T> {
+        const originalState = this.getConnectionState({ id }) ?? 'unauthenticated'
         await this.updateConnectionState(id, 'authenticating')
 
         try {
@@ -714,6 +718,7 @@ export class Auth implements AuthService, ConnectionManager {
             return result
         } catch (err) {
             await this.handleSsoTokenError(id, err)
+            await this.updateConnectionState(id, invalidate ? 'invalid' : originalState)
             throw err
         }
     }
