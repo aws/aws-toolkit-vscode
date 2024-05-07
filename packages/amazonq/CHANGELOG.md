@@ -1,3 +1,12 @@
+## 1.2.0 2024-05-07
+
+- **Bug Fix** Fix bug when Amazon Q chat sends code selection while user has no selection
+- **Bug Fix** Amazon Q Code Transformation: make jobId visible in job history tab at start of job and allow summary.md + icons to be saved when accepting changes
+- **Bug Fix** Amazon Q Chat: Typewriter animator parts showing up in code fields inside listitems
+- **Bug Fix** Security Scan: Addresses a bug where security issues sometimes appear multiple times
+- **Feature** Update cross file context config for Q inline suggestion
+- **Feature** Amazon Q: Security scans now support C, C++, and PHP files
+
 ## 1.1.0 2024-04-30
 
 - **Bug Fix** Amazon Q Chat: Fixed markdown is not getting parsed inside list items.
