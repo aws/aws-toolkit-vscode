@@ -19,12 +19,7 @@ export const tempDirPath = path.join(
     'aws-toolkit-vscode'
 )
 
-export async function getDirSize(
-    dirPath: string,
-    startTime: number,
-    duration: number,
-    fileExt: string
-): Promise<number> {
+export async function getDirSize(dirPath: string, startTime: number, duration: number): Promise<number> {
     if (performance.now() - startTime > duration) {
         getLogger().warn('getDirSize: exceeds time limit')
         return 0
@@ -38,9 +33,9 @@ export async function getDirSize(
             return 0
         }
         if (type === vscode.FileType.Directory) {
-            return getDirSize(filePath, startTime, duration, fileExt)
+            return getDirSize(filePath, startTime, duration)
         }
-        if (type === vscode.FileType.File && fileName.endsWith(fileExt)) {
+        if (type === vscode.FileType.File) {
             // TODO: This is SLOW on Cloud9.
             const stat = await fsCommon.stat(filePath)
             return stat.size
