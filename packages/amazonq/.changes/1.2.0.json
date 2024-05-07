@@ -1,0 +1,30 @@
+{
+	"date": "2024-05-07",
+	"version": "1.2.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Fix bug when Amazon Q chat sends code selection while user has no selection"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Code Transformation: make jobId visible in job history tab at start of job and allow summary.md + icons to be saved when accepting changes"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Typewriter animator parts showing up in code fields inside listitems"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Security Scan: Addresses a bug where security issues sometimes appear multiple times"
+		},
+		{
+			"type": "Feature",
+			"description": "Update cross file context config for Q inline suggestion"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q: Security scans now support C, C++, and PHP files"
+		}
+	]
+}

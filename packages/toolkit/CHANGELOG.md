@@ -1,3 +1,7 @@
+## 3.2.0 2024-05-06
+
+- **Release** No user-facing changes
+
 ## 3.1.0 2024-04-30
 
 - **Bug Fix** Installation error when installing amazon q in remote AND you have the extension locally
