@@ -6,7 +6,7 @@ import * as vscode from 'vscode'
 import assert from 'assert'
 import { HumanInTheLoopManager } from '../../codewhisperer/service/transformByQ/humanInTheLoopManager'
 import { getTestResourceFilePath, stripStringWhitespace } from './amazonQGumbyUtil'
-import path from 'path'
+import path, { normalize } from 'path'
 import { fsCommon } from '../../srcShared/fs'
 
 describe('HumanInTheLoopManager', async function () {
@@ -33,7 +33,8 @@ describe('HumanInTheLoopManager', async function () {
             outputDirectoryPath,
             pomFileVirtualFileReference
         )
-        assert.strictEqual(newPomFilePath.path, path.resolve(outputDirectoryPath, 'pom.xml'))
+        const outputPathResult = normalize(path.resolve(outputDirectoryPath, 'pom.xml'))
+        assert.strictEqual(normalize(newPomFilePath.path), outputPathResult)
         const newPomFileContents = await fsCommon.readFileAsString(newPomFilePath.path)
         assert.strictEqual(
             stripStringWhitespace(newPomFileContents),
