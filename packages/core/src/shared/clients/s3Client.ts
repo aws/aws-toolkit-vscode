@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as url from 'url'
 import _ from 'lodash'
 import { AWSError, S3 } from 'aws-sdk'
 import { inspect } from 'util'
@@ -127,6 +128,15 @@ export interface DeleteObjectsResponse {
 
 export interface DeleteBucketRequest {
     readonly bucketName: string
+}
+
+export interface GetObjectRequest {
+    readonly bucketName: string
+    readonly key: string
+}
+
+export interface GetObjectResponse {
+    readonly objectBody: S3.Body
 }
 
 export class DefaultS3Client {
@@ -626,6 +636,28 @@ export class DefaultS3Client {
             }
         }
     }
+
+    /**
+     * Gets an object from a bucket.
+     *
+     * The bucket should reside in the same region as the one configured for the client.
+     *
+     * @throws Error if there is an error calling S3.
+     */
+    public async getObject(request: GetObjectRequest): Promise<GetObjectResponse> {
+        getLogger().debug('GetObject called with request: %O', request)
+        const s3 = await this.createS3()
+
+        const output = await s3
+            .getObject({
+                Bucket: request.bucketName,
+                Key: request.key,
+            })
+            .promise()
+        const response: GetObjectResponse = { objectBody: output.Body! }
+        getLogger().debug('GetObject returned response: %O', response)
+        return response
+    }
 }
 
 /**
@@ -708,4 +740,90 @@ async function createSdkClient(regionCode: string): Promise<S3> {
  */
 function clearInternalBucketCache(): void {
     ;(S3.prototype as any).bucketRegionCache = {}
+}
+
+/**
+ * A URI parser that can parse out information about an S3 URI
+ * Adapted from
+ * @see https://github.com/frantz/amazon-s3-uri/
+ */
+export function parseS3Uri(uri: string): [region: string, bucket: string, key: string] {
+    const ENDPOINT_PATTERN = /^(.+\.)?s3[.-]([a-z0-9-]+)\./
+    const DEFAULT_REGION = 'us-east-1' // Default region for URI parsing, if region is not found
+    let parsedUri = url.parse(uri)
+    let bucket: string | null = null
+    let region: string = DEFAULT_REGION
+    let key: string | null = null
+
+    if (parsedUri.protocol === 's3:') {
+        bucket = parsedUri.host
+        if (!bucket) {
+            throw new Error(`Invalid S3 URI: no bucket: ${uri}`)
+        }
+        if (!parsedUri.pathname || parsedUri.pathname.length <= 1) {
+            // s3://bucket or s3://bucket/
+            key = null
+        } else {
+            // s3://bucket/key
+            // Remove the leading '/'.
+            key = parsedUri.pathname.substring(1)
+        }
+        if (key !== null) {
+            key = decodeURIComponent(key)
+        }
+        return [region, bucket, key!]
+    }
+
+    if (!parsedUri.host) {
+        throw new Error(`Invalid S3 URI: no hostname: ${uri}`)
+    }
+
+    const matches = parsedUri.host.match(ENDPOINT_PATTERN)
+    if (!matches) {
+        throw new Error(`Invalid S3 URI: hostname does not appear to be a valid S3 endpoint: ${uri}`)
+    }
+
+    const prefix = matches[1]
+    if (!prefix) {
+        if (parsedUri.pathname === '/') {
+            bucket = null
+            key = null
+        } else {
+            const index = parsedUri.pathname!.indexOf('/', 1)
+            if (index === -1) {
+                // https://s3.amazonaws.com/bucket
+                bucket = parsedUri.pathname!.substring(1) ?? null
+                key = null
+            } else if (index === parsedUri.pathname!.length - 1) {
+                // https://s3.amazonaws.com/bucket/
+                bucket = parsedUri.pathname!.substring(1, index)
+                key = null
+            } else {
+                // https://s3.amazonaws.com/bucket/key
+                bucket = parsedUri.pathname!.substring(1, index)
+                key = parsedUri.pathname!.substring(index + 1)
+            }
+        }
+    } else {
+        // Remove the trailing '.' from the prefix to get the bucket.
+        bucket = prefix.substring(0, prefix.length - 1)
+
+        if (!parsedUri.pathname || parsedUri.pathname === '/') {
+            key = null
+        } else {
+            // Remove the leading '/'.
+            key = parsedUri.pathname.substring(1)
+        }
+    }
+
+    if (matches[2] !== 'amazonaws') {
+        region = matches[2]
+    } else {
+        region = DEFAULT_REGION
+    }
+
+    if (key !== null) {
+        key = decodeURIComponent(key)
+    }
+    return [region, bucket!, key!]
 }

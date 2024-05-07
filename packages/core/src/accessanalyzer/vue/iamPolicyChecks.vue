@@ -29,7 +29,7 @@
                 <div style="display: flex">
                     <div style="display: block; margin-right: 25px">
                         <label for="select-document-type" style="display: block; margin-top: 5px; margin-bottom: 3px"
-                            >Document Type</label
+                            >Select a Document Type</label
                         >
                         <select id="select-document-type" v-on:change="setDocumentType" v-model="documentType">
                             <option value="CloudFormation">CloudFormation</option>
@@ -117,7 +117,13 @@
                 </p>
                 <div style="display: grid">
                     <div>
-                        <button class="button-theme-primary" v-on:click="runValidator">Run Policy Validation</button>
+                        <button
+                            class="button-theme-primary"
+                            v-on:click="runValidator"
+                            :disabled="validateButtonDisabled"
+                        >
+                            Run Policy Validation
+                        </button>
                         <div style="margin-top: 5px">
                             <p :style="{ color: validatePolicyResponseColor }">
                                 {{ validatePolicyResponse }}
@@ -143,7 +149,7 @@
                     <div style="display: flex">
                         <div style="display: block; margin-right: 25px">
                             <label for="select-check-type" style="display: block; margin-top: 15px; margin-bottom: 3px"
-                                >Check Type</label
+                                >Select a Check Type</label
                             >
                             <select id="select-check-type" style="margin-bottom: 5px" v-on:change="setCheckType">
                                 <option value="CheckNoNewAccess">CheckNoNewAccess</option>
@@ -160,7 +166,7 @@
                             <label
                                 for="select-reference-type"
                                 style="display: block; margin-top: 15px; margin-bottom: 3px"
-                                >Reference Policy Type</label
+                                >Select a Reference Policy Type</label
                             >
                             <select
                                 id="select-reference-type"
@@ -174,7 +180,7 @@
                     </div>
                 </div>
                 <div>
-                    <label for="input-path" style="display: block; margin-bottom: 3px">Reference File</label>
+                    <label for="input-path" style="display: block; margin-bottom: 3px">Provide a Reference File</label>
                     <input
                         type="text"
                         style="
@@ -218,6 +224,7 @@
                             class="button-theme-primary"
                             style="margin-bottom: 5px"
                             v-on:click="runCustomPolicyCheck"
+                            :disabled="customCheckButtonDisabled"
                         >
                             Run Custom Policy Check
                         </button>
@@ -264,6 +271,8 @@ export default defineComponent({
         validatePolicyResponseColor: 'red',
         customPolicyCheckResponse: '',
         customPolicyCheckResponseColor: 'red',
+        validateButtonDisabled: false,
+        customCheckButtonDisabled: false,
     }),
     async created() {
         this.initialData = (await client.init()) ?? this.initialData
@@ -326,24 +335,28 @@ export default defineComponent({
         setCfnParameterFilePath: function (event: any) {
             this.initialData.cfnParameterPath = event.target.value
         },
-        runValidator: function () {
-            client.validatePolicy(this.documentType, this.validatePolicyType, this.initialData.cfnParameterPath)
+        runValidator: async function () {
+            this.validateButtonDisabled = true
+            await client.validatePolicy(this.documentType, this.validatePolicyType, this.initialData.cfnParameterPath)
+            this.validateButtonDisabled = false
         },
-        runCustomPolicyCheck: function () {
+        runCustomPolicyCheck: async function () {
+            this.customCheckButtonDisabled = true
             if (this.checkType == 'CheckNoNewAccess') {
-                client.checkNoNewAccess(
+                await client.checkNoNewAccess(
                     this.documentType,
                     this.customChecksPolicyType,
                     this.initialData.customChecksTextArea,
                     this.initialData.cfnParameterPath
                 )
             } else if (this.checkType == 'CheckAccessNotGranted') {
-                client.checkAccessNotGranted(
+                await client.checkAccessNotGranted(
                     this.documentType,
                     this.initialData.customChecksTextArea,
                     this.initialData.cfnParameterPath
                 )
             }
+            this.customCheckButtonDisabled = false
         },
     },
     computed: {},
