@@ -9,7 +9,7 @@ import vscode from 'vscode'
 import { ThreatComposerEditorProvider } from '../editorWebviewManager'
 import * as fs from 'fs-extra'
 
-export const CreateNewThreatComposer = Commands.declare('aws.createNewThreatComposer', () => async () => {
+const createNewThreatComposerFile = async () => {
     const title = await vscode.window.showInputBox({
         prompt: 'Enter name for file',
     })
@@ -32,4 +32,10 @@ export const CreateNewThreatComposer = Commands.declare('aws.createNewThreatComp
     } else {
         await vscode.window.showErrorMessage('Workspace folder not defined')
     }
-})
+}
+
+export const CreateNewThreatComposer = Commands.declare(
+    'aws.createNewThreatComposer',
+    () => createNewThreatComposerFile
+)
+export const NewThreatComposerFile = Commands.declare('aws.newThreatComposerFile', () => createNewThreatComposerFile)

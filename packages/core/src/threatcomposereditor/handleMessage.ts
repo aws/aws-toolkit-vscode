@@ -3,11 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Command, LogMessage, Message, WebviewContext, SaveFileRequestMessage, MessageType } from './types'
+import {
+    Command,
+    LogMessage,
+    Message,
+    WebviewContext,
+    SaveFileRequestMessage,
+    MessageType,
+    LoadStageMessage,
+} from './types'
 import { autoSaveFileMessageHandler, saveFileMessageHandler } from './messageHandlers/saveFileMessageHandler'
 import { logMessageHandler } from './messageHandlers/logMessageHandler'
 import { openFeedbackMessageHandler } from './messageHandlers/openFeedbackMessageHandler'
 import { initMessageHandler, reloadMessageHandler } from './messageHandlers/initMessageHandler'
+import { loadStageMessageHandler } from './messageHandlers/loadStageMessageHandler'
 
 export async function handleMessage(message: unknown, context: WebviewContext) {
     const composerMessage = message as Message
@@ -35,6 +44,9 @@ export async function handleMessage(message: unknown, context: WebviewContext) {
                 break
             case Command.OPEN_FEEDBACK:
                 openFeedbackMessageHandler()
+                break
+            case Command.LOAD_STAGE:
+                void loadStageMessageHandler(message as LoadStageMessage, context)
                 break
         }
     }

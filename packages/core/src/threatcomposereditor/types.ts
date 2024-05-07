@@ -13,6 +13,16 @@ export type WebviewContext = {
     defaultTemplateName: string
     fileWatches: Record<string, FileWatchInfo>
     autoSaveFileWatches: Record<string, FileWatchInfo>
+    loaderNotification: undefined | LoaderNotification
+}
+
+export type LoaderNotification = {
+    progress: vscode.Progress<{
+        message?: string | undefined
+        increment?: number | undefined
+    }>
+    cancellationToken: vscode.CancellationToken
+    promiseResolve: any
 }
 
 export type FileWatchInfo = {
@@ -32,6 +42,7 @@ export enum Command {
     OPEN_FEEDBACK = 'OPEN_FEEDBACK',
     INIT = 'INIT',
     RELOAD = 'RELOAD',
+    LOAD_STAGE = 'LOAD_STAGE',
 
     FILE_CHANGED = 'FILE_CHANGED',
     THEME_CHANGED = 'THEME_CHANGED',
@@ -59,9 +70,17 @@ enum TelemetryType {
     CLOSE_WFS = 'CLOSE_WFS',
 }
 
+export enum SaveCompleteSubType {
+    SAVED = 'SAVED',
+    SAVE_SKIPPED_SAME_CONTENT = 'SAVE_SKIPPED_SAME_CONTENT',
+    SAVE_SKIPPED_SAME_JSON = 'SAVE_SKIPPED_SAME_CONTENT',
+    SAVE_FAILED = 'SAVE_FAILED',
+}
+
 export interface SaveFileResponseMessage extends Message {
     filePath: string
     isSuccess: boolean
+    saveCompleteSubType: SaveCompleteSubType
     failureReason?: string
 }
 
@@ -102,6 +121,10 @@ export interface EmitTelemetryMessage extends Message {
     eventId?: string
     eventType: TelemetryType
     metadata?: string
+}
+
+export interface LoadStageMessage extends Message {
+    loadStage: 'API_LOADED' | 'RENDER_COMPLETE'
 }
 
 export interface ReferenceDetails {

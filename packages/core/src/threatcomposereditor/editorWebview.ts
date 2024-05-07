@@ -4,14 +4,16 @@
  */
 
 import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { handleMessage } from './handleMessage'
-import { FileWatchInfo } from './types'
+import { FileWatchInfo, WebviewContext } from './types'
+import { telemetry } from '../shared/telemetry/telemetry'
 import { addFileWatchMessageHandler } from './messageHandlers/addFileWatchMessageHandler'
 import { addThemeWatchMessageHandler } from './messageHandlers/addThemeWatchMessageHandler'
-import { telemetry } from '../shared/telemetry/telemetry'
+import { sendThreatComposerOpenCancelled } from './messageHandlers/emitTelemetryMessageHandler'
+
+const localize = nls.loadMessageBundle()
 
 export class ThreatComposer {
     public readonly documentUri: vscode.Uri
@@ -75,10 +77,7 @@ export class ThreatComposer {
     private setupWebviewPanel(textDocument: vscode.TextDocument, context: vscode.ExtensionContext) {
         const documentUri = textDocument.uri
 
-        // Initialise the panel panel
-        this.initialiseVisualizationWebviewPanel(documentUri, context)
-
-        const contextObject = {
+        const contextObject: WebviewContext = {
             panel: this.webviewPanel,
             textDocument: textDocument,
             disposables: this.disposables,
@@ -87,47 +86,102 @@ export class ThreatComposer {
             defaultTemplateName: this.defaultTemplateName,
             fileWatches: this.fileWatches,
             autoSaveFileWatches: this.autoSaveFileWatches,
+            loaderNotification: undefined,
         }
-        // Hook up event handlers so that we can synchronize the webview with the text document.
-        //
-        // The text document acts as our model, so we have to sync change in the document to our
-        // editor and sync changes in the editor back to the document.
-        //
-        // Remember that a single text document can also be shared between multiple custom
-        // editors (this happens for example when you split a custom editor)
 
-        addFileWatchMessageHandler(contextObject)
-        addThemeWatchMessageHandler(contextObject)
+        async function cancelOpenInThreatComposer(reason: string) {
+            await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+            await vscode.commands.executeCommand('vscode.openWith', documentUri, 'default')
+            sendThreatComposerOpenCancelled({ reason: reason })
+        }
 
-        // Handle messages from the webview
-        this.disposables.push(
-            this.webviewPanel.webview.onDidReceiveMessage(message => handleMessage(message, contextObject))
-        )
+        void vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+                title: 'Opening file in Threat Composer',
+                cancellable: true,
+            },
+            (progress, token) => {
+                let autoCloseNotificationTimeoutID: NodeJS.Timeout
 
-        // When the panel is closed, dispose of any disposables/remove subscriptions
-        const disposePanel = async () => {
-            if (this.isPanelDisposed) {
-                return
-            }
+                token.onCancellationRequested(async () => {
+                    if (autoCloseNotificationTimeoutID) {
+                        clearTimeout(autoCloseNotificationTimeoutID)
+                    }
 
-            await telemetry.threatcomposer_closed.run(async span => {
-                this.isPanelDisposed = true
-                this.onVisualizationDisposeEmitter.fire()
-                this.disposables.forEach(disposable => {
-                    disposable.dispose()
+                    console.log('User canceled opening in TC operation')
+                    await cancelOpenInThreatComposer('User canceled opening in THreatComposer operation')
                 })
-                this.onVisualizationDisposeEmitter.dispose()
-            })
-        }
 
-        this.disposables.push(
-            this.webviewPanel.onDidDispose(async () => {
-                await disposePanel()
-            })
+                progress.report({ increment: 0 })
+
+                return new Promise<void>(resolve => {
+                    autoCloseNotificationTimeoutID = setTimeout(async () => {
+                        resolve()
+                        // const errorMessage = "ThreatComposer took too long to open"
+                        // await cancelOpenInThreatComposer(errorMessage)
+                        // await vscode.window.showErrorMessage(errorMessage)
+                    }, 10000)
+
+                    contextObject.loaderNotification = {
+                        progress: progress,
+                        cancellationToken: token,
+                        promiseResolve: () => {
+                            clearTimeout(autoCloseNotificationTimeoutID)
+                            resolve()
+                        },
+                    }
+
+                    // Initialise the panel panel
+                    this.initialiseVisualizationWebviewPanel(documentUri, context)
+
+                    // Hook up event handlers so that we can synchronize the webview with the text document.
+                    //
+                    // The text document acts as our model, so we have to sync change in the document to our
+                    // editor and sync changes in the editor back to the document.
+                    //
+                    // Remember that a single text document can also be shared between multiple custom
+                    // editors (this happens for example when you split a custom editor)
+
+                    addFileWatchMessageHandler(contextObject)
+                    addThemeWatchMessageHandler(contextObject)
+
+                    // Handle messages from the webview
+                    this.disposables.push(
+                        this.webviewPanel.webview.onDidReceiveMessage(message => handleMessage(message, contextObject))
+                    )
+
+                    // When the panel is closed, dispose of any disposables/remove subscriptions
+                    const disposePanel = async () => {
+                        if (this.isPanelDisposed) {
+                            return
+                        }
+
+                        await telemetry.threatcomposer_closed.run(async span => {
+                            this.isPanelDisposed = true
+                            this.onVisualizationDisposeEmitter.fire()
+                            this.disposables.forEach(disposable => {
+                                disposable.dispose()
+                            })
+                            this.onVisualizationDisposeEmitter.dispose()
+                        })
+                    }
+
+                    this.disposables.push(
+                        this.webviewPanel.onDidDispose(async () => {
+                            await disposePanel()
+                        })
+                    )
+
+                    progress.report({ increment: 10 })
+
+                    // Set the initial html for the webpage
+                    this.webviewPanel.webview.html = this.getWebviewContent()
+
+                    progress.report({ increment: 20 })
+                })
+            }
         )
-
-        // Set the initial html for the webpage
-        this.webviewPanel.webview.html = this.getWebviewContent()
     }
 
     private initialiseVisualizationWebviewPanel(documentUri: vscode.Uri, context: vscode.ExtensionContext) {

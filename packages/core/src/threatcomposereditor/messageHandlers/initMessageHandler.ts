@@ -15,6 +15,9 @@ export async function initMessageHandler(context: WebviewContext) {
         context.fileWatches[filePath] = { fileContents: fileContents }
         context.autoSaveFileWatches[filePath] = { fileContents: fileContents }
         await broadcastFileChange(context.defaultTemplateName, filePath, fileContents, context.panel)
+        if (context.loaderNotification) {
+            context.loaderNotification.progress.report({ increment: 20 })
+        }
     } catch (e) {
         await context.panel.webview.postMessage({
             messageType: MessageType.RESPONSE,

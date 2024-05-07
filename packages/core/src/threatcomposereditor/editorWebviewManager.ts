@@ -20,7 +20,7 @@ const localize = nls.loadMessageBundle()
 // const localize = nls.loadMessageBundle()
 
 // Change this to true for local dev
-const isLocalDev = true
+const isLocalDev = false
 const localhost = 'http://127.0.0.1:3000'
 const cdn = 'https://ide-toolkits.threat-composer.aws.dev'
 
@@ -120,27 +120,34 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         webviewPanel: vscode.WebviewPanel,
         _token: vscode.CancellationToken
     ): Promise<void> {
-        await telemetry.threatcomposer_opened.run(async span => {
-            // Attempt to retrieve existing visualization if it exists.
-            const existingVisualization = this.getExistingVisualization(document.uri.fsPath)
-            if (existingVisualization) {
-                existingVisualization.showPanel()
-            }
+        const threatComposerSettings = vscode.workspace.getConfiguration('aws').threatComposer
 
-            // Existing visualization does not exist, construct new visualization
-            try {
-                const newVisualization = new ThreatComposer(
-                    document,
-                    webviewPanel,
-                    this.extensionContext,
-                    this.getWebviewContent
-                )
-                this.handleNewVisualization(document.uri.fsPath, newVisualization)
-            } catch (err) {
-                this.handleErr(err as Error)
-                throw new ToolkitError((err as Error).message, { code: 'Failed to Open Threat Composer' })
-            }
-        })
+        if (threatComposerSettings.defaultEditor) {
+            await telemetry.threatcomposer_opened.run(async span => {
+                // Attempt to retrieve existing visualization if it exists.
+                const existingVisualization = this.getExistingVisualization(document.uri.fsPath)
+                if (existingVisualization) {
+                    existingVisualization.showPanel()
+                }
+
+                // Existing visualization does not exist, construct new visualization
+                try {
+                    const newVisualization = new ThreatComposer(
+                        document,
+                        webviewPanel,
+                        this.extensionContext,
+                        this.getWebviewContent
+                    )
+                    this.handleNewVisualization(document.uri.fsPath, newVisualization)
+                } catch (err) {
+                    this.handleErr(err as Error)
+                    throw new ToolkitError((err as Error).message, { code: 'Failed to Open Threat Composer' })
+                }
+            })
+        } else {
+            await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+            await vscode.commands.executeCommand('vscode.openWith', document.uri, 'default')
+        }
     }
 
     protected handleErr(err: Error): void {

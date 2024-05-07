@@ -270,6 +270,11 @@
                     "markdownDescription": "%AWS.configuration.description.amazonq.shareContentWithAWS%",
                     "default": true,
                     "scope": "application"
+                },
+                "aws.threatComposer.defaultEditor": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "%AWS.configuration.description.threatComposer.defaultEditor%"
                 }
             }
         },
@@ -1170,6 +1175,10 @@
                 {
                     "command": "aws.toolkit.amazonq.extensionpage",
                     "when": "false"
+                },
+                {
+                    "command": "aws.newThreatComposerFile",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -1220,7 +1229,7 @@
                 },
                 {
                     "command": "aws.openInApplicationComposer",
-                    "when": "editorLangId == json || editorLangId == yaml || resourceFilename =~ /^.*\\.(template)$/",
+                    "when": "(editorLangId == json && !(resourceFilename =~ /^.*\\.tc\\.json$/)) || editorLangId == yaml || resourceFilename =~ /^.*\\.(template)$/",
                     "group": "navigation"
                 }
             ],
@@ -1341,7 +1350,7 @@
                 },
                 {
                     "command": "aws.openInApplicationComposer",
-                    "when": "isFileSystemResource && resourceFilename =~ /^.*\\.(json|yml|yaml|template)$/",
+                    "when": "isFileSystemResource && !(resourceFilename =~ /^.*\\.tc\\.json$/) && resourceFilename =~ /^.*\\.(json|yml|yaml|template)$/",
                     "group": "z_aws@1"
                 }
             ],
@@ -2009,6 +2018,11 @@
                 {
                     "command": "aws.toolkit.viewLogs",
                     "group": "1_help@5"
+                }
+            ],
+            "file/newFile": [
+                {
+                    "command": "aws.newThreatComposerFile"
                 }
             ]
         },
@@ -3499,6 +3513,16 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.newThreatComposerFile",
+                "title": "%AWS.command.threatComposer.newFile%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             }
         ],
         "jsonValidation": [
@@ -3963,7 +3987,8 @@
                     {
                         "filenamePattern": "*.tc.json"
                     }
-                ]
+                ],
+                "when": "config.aws.threatComposer.defaultEditor"
             }
         ],
         "configurationDefaults": {

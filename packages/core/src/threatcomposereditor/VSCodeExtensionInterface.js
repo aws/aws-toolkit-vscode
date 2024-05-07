@@ -16,13 +16,10 @@ window.addEventListener('message', handelMessage)
 
 function handelMessage(event) {
     const message = event.data // The json data that the extension sent
-    console.log('message')
-    console.log(event)
 
     if (message.messageType === 'BROADCAST') {
         switch (message.command) {
             case 'FILE_CHANGED':
-                console.log('FILE_CHANGED')
                 const fileContents = message.fileContents
 
                 // Persist state information.
@@ -38,12 +35,10 @@ function handelMessage(event) {
                 break
 
             case 'THEME_CHANGED':
-                console.log('THEME_CHANGED')
                 applyTheme(message.newTheme)
                 break
 
             case 'OVERWRITE_FILE':
-                console.log('OVERWRITE_FILE')
                 disableAutoSave = false
                 break
         }
@@ -73,7 +68,6 @@ function updateContent(/** @type {string} */ text) {
 
 async function checkThreatComposerAPI() {
     while (!window.threatcomposer || !window.threatcomposer.setCurrentWorkspaceData) {
-        console.debug('Waiting for window.threatcomposer.setCurrentWorkspaceData to be ready.')
         await new Promise(r => setTimeout(r, 50))
     }
 }
@@ -84,11 +78,16 @@ async function checkThreatComposerAPI() {
 async function render(/** @type {string} */ text) {
     await checkThreatComposerAPI()
 
+    vscode.postMessage({
+        command: 'LOAD_STAGE',
+        messageType: 'BROADCAST',
+        loadStage: 'API_LOADED',
+    })
+
     try {
         let threatModel = text && JSON.parse(text)
         await window.threatcomposer.setCurrentWorkspaceData(threatModel)
     } catch (e) {
-        console.log(e.message)
         disableAutoSave = true
         await window.threatcomposer.setCurrentWorkspaceData('')
         vscode.postMessage({
@@ -99,6 +98,13 @@ async function render(/** @type {string} */ text) {
             showNotification: true,
             notifitonType: 'INVALD_JSON',
         })
+    }
+
+    let defaultTemplate = ''
+
+    if (text === '') {
+        const initialState = await window.threatcomposer.getCurrentWorkspaceData()
+        defaultTemplate = window.threatcomposer.stringifyWorkspaceData(initialState)
     }
 
     window.threatcomposer.addEventListener('save', e => {
@@ -120,13 +126,12 @@ async function render(/** @type {string} */ text) {
             return
         }
 
-        console.log('AutoSave')
         const data = await window.threatcomposer.getCurrentWorkspaceData()
         const stringyfiedData = window.threatcomposer.stringifyWorkspaceData(data)
 
         const currentState = vscode.getState()
 
-        if (stringyfiedData === currentState.fileContents) {
+        if (stringyfiedData === defaultTemplate || stringyfiedData === currentState.fileContents) {
             return
         }
 
@@ -139,6 +144,12 @@ async function render(/** @type {string} */ text) {
             fileContents: stringyfiedData,
         })
     }, 1000)
+
+    vscode.postMessage({
+        command: 'LOAD_STAGE',
+        messageType: 'BROADCAST',
+        loadStage: 'RENDER_COMPLETE',
+    })
 }
 
 function applyTheme(newTheme) {
@@ -147,8 +158,6 @@ function applyTheme(newTheme) {
     }
     theme = newTheme
 
-    console.log('Applying theme: ')
-    console.log(newTheme)
     window.threatcomposer.applyTheme(newTheme)
 }
 
@@ -166,5 +175,3 @@ if (state && state.fileContents) {
         messageType: 'REQUEST',
     })
 }
-
-console.log('VSCodeExtensionInterface loaded')

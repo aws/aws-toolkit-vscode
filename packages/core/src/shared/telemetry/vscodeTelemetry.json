@@ -1240,6 +1240,10 @@
             "description": "Called after a threat composer file has been saved"
         },
         {
+            "name": "threatcomposer_fileAutoSaved",
+            "description": "Called after a threat composer file has been auto saved periodically"
+        },
+        {
             "name": "threatcomposer_closed",
             "description": "Called after closing a threat composer file"
         },
