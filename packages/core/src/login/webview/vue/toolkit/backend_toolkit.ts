@@ -44,20 +44,26 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
 
         if (this.isCodeCatalystLogin) {
             return this.ssoSetup('startCodeCatalystSSOSetup', async () => {
-                this.storeMetricMetadata({ ...metadata, authEnabledFeatures: 'codecatalyst' })
+                this.storeMetricMetadata({ ...metadata })
 
-                await this.codeCatalystAuth.connectToEnterpriseSso(startUrl, region)
+                const conn = await this.codeCatalystAuth.connectToEnterpriseSso(startUrl, region)
+
+                this.storeMetricMetadata({ authEnabledFeatures: this.getAuthEnabledFeatures(conn) })
+
                 await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
                 await this.showResourceExplorer()
             })
         }
 
         return this.ssoSetup('createIdentityCenterConnection', async () => {
-            this.storeMetricMetadata({ ...metadata, authEnabledFeatures: 'awsExplorer' })
+            this.storeMetricMetadata({ ...metadata })
 
             const ssoProfile = createSsoProfile(startUrl, region)
             const conn = await Auth.instance.createConnection(ssoProfile)
             await Auth.instance.useConnection(conn)
+
+            this.storeMetricMetadata({ authEnabledFeatures: this.getAuthEnabledFeatures(conn) })
+
             await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
             void vscode.window.showInformationMessage('Toolkit: Successfully connected to AWS IAM Identity Center')
             void this.showResourceExplorer()
@@ -145,9 +151,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
                 await this.codeCatalystAuth.tryUseConnection(conn)
             } else {
                 if (isIdcSsoConnection(conn) && !hasScopes(conn, scopesSsoAccountAccess)) {
-                    conn = await addScopes(conn, scopesSsoAccountAccess, {
-                        invalidate: false,
-                    })
+                    conn = await addScopes(conn, scopesSsoAccountAccess)
                 }
                 await Auth.instance.useConnection({ id: connectionId })
             }

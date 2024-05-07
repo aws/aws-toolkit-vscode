@@ -102,7 +102,11 @@ export async function promptAndUseConnection(...[auth, type]: Parameters<typeof 
         // HACK: We assume that if we are toolkit we want AWS account scopes.
         // Although, Q shouldn't enter this codepath anyways.
         if (!isAmazonQ() && isSsoConnection(conn) && !hasScopes(conn, scopesSsoAccountAccess)) {
-            conn = await addScopes(conn, scopesSsoAccountAccess, { invalidate: false })
+            try {
+                conn = await addScopes(conn, scopesSsoAccountAccess)
+            } catch (e: any) {
+                throw new ToolkitError(`Failed to use connection${conn.label ? `: ${conn.label}` : '.'}`, e)
+            }
         }
 
         await auth.useConnection(conn)

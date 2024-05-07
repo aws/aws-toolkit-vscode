@@ -218,10 +218,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
     }
 
     public async addScopes(conn: T & SsoConnection, extraScopes: string[]) {
-        return await addScopes(conn, extraScopes, {
-            invalidate: true,
-            auth: this.auth,
-        })
+        return await addScopes(conn, extraScopes, this.auth)
     }
 
     // Used to lazily restore persisted connections.
@@ -269,33 +266,20 @@ export class SecondaryAuth<T extends Connection = Connection> {
     }
 }
 
-type AddScopesOptions = {
-    invalidate?: boolean
-    auth?: Auth
-}
-
 /**
  * This should exist in connection.ts or utils.ts, but due to circular dependencies, it must go here.
- * TODO: Determine if invalidating the connection is ever required.
  */
-export async function addScopes(conn: SsoConnection, extraScopes: string[], opts?: AddScopesOptions) {
-    const auth = opts?.auth ?? Auth.instance
-    const invalidateConn = opts?.invalidate ?? true
-
+export async function addScopes(conn: SsoConnection, extraScopes: string[], auth = Auth.instance) {
     const oldScopes = conn.scopes ?? []
     const newScopes = Array.from(new Set([...oldScopes, ...extraScopes]))
 
     const updateConnectionScopes = (scopes: string[]) => {
-        return auth.updateConnection(
-            conn,
-            {
-                type: 'sso',
-                scopes,
-                startUrl: conn.startUrl,
-                ssoRegion: conn.ssoRegion,
-            },
-            invalidateConn
-        )
+        return auth.updateConnection(conn, {
+            type: 'sso',
+            scopes,
+            startUrl: conn.startUrl,
+            ssoRegion: conn.ssoRegion,
+        })
     }
 
     const updatedConn = await updateConnectionScopes(newScopes)

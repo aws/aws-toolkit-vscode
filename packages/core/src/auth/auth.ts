@@ -92,8 +92,6 @@ interface AuthService {
     /**
      * Replaces the profile for a connection with a new one.
      *
-     * This will invalidate the connection, potentially requiring a re-authentication.
-     *
      * **IAM connections are not implemented**
      */
     updateConnection(connection: Pick<Connection, 'id'>, profile: Profile): Promise<Connection>
@@ -395,7 +393,7 @@ export class Auth implements AuthService, ConnectionManager {
             throw new Error('Updating IAM connections is not supported')
         }
 
-        if (invalidate ?? true) {
+        if (invalidate ?? false) {
             await this.invalidateConnection(connection.id, { skipGlobalLogout: true })
         }
 
