@@ -88,6 +88,11 @@ export class Session {
         )
     }
 
+    updateWorkspaceRoot(workspaceRootFolder: string) {
+        this.config.workspaceRoots = [workspaceRootFolder]
+        this._state && this._state.updateWorkspaceRoot && this._state.updateWorkspaceRoot(workspaceRootFolder)
+    }
+
     private getSessionStateConfig(): Omit<SessionStateConfig, 'uploadId'> {
         return {
             workspaceRoots: this.config.workspaceRoots,
