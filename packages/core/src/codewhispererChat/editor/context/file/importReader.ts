@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Java, Python, TypeScript, Tsx } from '@aws/fully-qualified-names'
+import { Java, Python, TypeScript } from '@aws/fully-qualified-names'
 import { extractContextFromJavaImports } from './javaImportReader'
 
 export async function readImports(text: string, languageId: string): Promise<string[]> {
@@ -15,14 +15,16 @@ export async function readImports(text: string, languageId: string): Promise<str
         case 'javascript':
         case 'javascriptreact':
         case 'typescriptreact':
-            names = await Tsx.findNames(text)
-            break
+            // Disable Tsx.findNames because promise Tsx.findNames
+            // may not resolve and can cause chat to hang
+            //names = await Tsx.findNames(text)
+            return []
         case 'python':
             names = await Python.findNames(text)
             break
         case 'typescript':
-            names = await TypeScript.findNames(text)
-            break
+            //names = await TypeScript.findNames(text)
+            return []
     }
     if (names.fullyQualified === undefined) {
         return []

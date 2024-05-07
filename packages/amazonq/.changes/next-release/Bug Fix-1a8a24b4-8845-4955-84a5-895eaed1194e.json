@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Prevent Q chat hang in js/ts files by disable FQN"
+}
