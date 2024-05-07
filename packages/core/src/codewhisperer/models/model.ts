@@ -598,6 +598,10 @@ export class TransformByQState {
         this.javaHome = javaHome
     }
 
+    public unsetJavaHome() {
+        this.javaHome = undefined
+    }
+
     public setChatControllers(controllers: ChatControllerEventEmitters) {
         this.chatControllers = controllers
     }

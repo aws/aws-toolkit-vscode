@@ -255,13 +255,6 @@ export class GumbyController {
     }
 
     private async prepareProjectForSubmission(message: { pathToJavaHome: string; tabID: string }): Promise<void> {
-        if (message.pathToJavaHome) {
-            transformByQState.setJavaHome(message.pathToJavaHome)
-            getLogger().info(
-                `CodeTransformation: using JAVA_HOME = ${transformByQState.getJavaHome()} since source JDK does not match Maven JDK`
-            )
-        }
-
         try {
             this.sessionStorage.getSession().conversationState = ConversationState.COMPILING
             this.messenger.sendCompilationInProgress(message.tabID)
@@ -326,24 +319,30 @@ export class GumbyController {
             case ConversationState.PROMPT_JAVA_HOME: {
                 const pathToJavaHome = extractPath(data.message)
 
-                try {
-                    await validateCanCompileProject()
-                } catch (err: any) {
-                    if (err instanceof JavaHomeNotSetError) {
-                        this.sessionStorage.getSession().conversationState = ConversationState.PROMPT_JAVA_HOME
-                        this.messenger.sendStaticTextResponse('java-home-not-set', data.tabID)
-                        this.messenger.sendChatInputEnabled(data.tabID, true)
-                        this.messenger.sendUpdatePlaceholder(
-                            data.tabID,
-                            `Incompatible JDK, Enter the path to your Java ${transformByQState.getSourceJDKVersion()} installation.`
-                        )
-                        return
-                    }
-                    throw err
-                }
-                await validateCanCompileProject()
-                // TODO validate here
                 if (pathToJavaHome) {
+                    transformByQState.setJavaHome(pathToJavaHome)
+                    getLogger().info(
+                        `CodeTransformation: using JAVA_HOME = ${transformByQState.getJavaHome()} since source JDK does not match Maven JDK`
+                    )
+
+                    try {
+                        // When user provided a
+                        await validateCanCompileProject()
+                    } catch (err: any) {
+                        if (err instanceof JavaHomeNotSetError) {
+                            transformByQState.unsetJavaHome()
+                            this.sessionStorage.getSession().conversationState = ConversationState.PROMPT_JAVA_HOME
+                            this.messenger.sendStaticTextResponse('java-home-not-set', data.tabID)
+                            this.messenger.sendChatInputEnabled(data.tabID, true)
+                            this.messenger.sendUpdatePlaceholder(
+                                data.tabID,
+                                `Incompatible JDK, Enter the path to your Java ${transformByQState.getSourceJDKVersion()} installation.`
+                            )
+                            return
+                        }
+                        throw err
+                    }
+
                     await this.prepareProjectForSubmission({
                         pathToJavaHome,
                         tabID: data.tabID,
