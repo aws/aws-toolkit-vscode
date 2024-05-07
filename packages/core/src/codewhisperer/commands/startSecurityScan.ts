@@ -29,7 +29,6 @@ import {
     CodeScanTelemetryEntry,
 } from '../models/model'
 import { cancel, ok } from '../../shared/localizedText'
-import { getFileExt } from '../util/commonUtil'
 import { getDirSize } from '../../shared/filesystemUtilities'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { isAwsError } from '../../shared/errors'
@@ -63,7 +62,6 @@ const getLogOutputChan = once(() => {
 
 export function startSecurityScanWithProgress(
     securityPanelViewProvider: SecurityPanelViewProvider,
-    editor: vscode.TextEditor,
     client: DefaultCodeWhispererClient,
     context: vscode.ExtensionContext
 ) {
@@ -76,7 +74,7 @@ export function startSecurityScanWithProgress(
         async () => {
             await startSecurityScan(
                 securityPanelViewProvider,
-                editor,
+                undefined,
                 client,
                 context,
                 CodeWhispererConstants.CodeAnalysisScope.PROJECT
@@ -92,7 +90,7 @@ export const debounceStartSecurityScan = debounce(
 
 export async function startSecurityScan(
     securityPanelViewProvider: SecurityPanelViewProvider,
-    editor: vscode.TextEditor,
+    editor: vscode.TextEditor | undefined,
     client: DefaultCodeWhispererClient,
     context: vscode.ExtensionContext,
     scope: CodeWhispererConstants.CodeAnalysisScope
@@ -107,10 +105,12 @@ export async function startSecurityScan(
     }
     let serviceInvocationStartTime = 0
     const codeScanTelemetryEntry: CodeScanTelemetryEntry = {
-        codewhispererLanguage: runtimeLanguageContext.getLanguageContext(
-            editor.document.languageId,
-            path.extname(editor.document.fileName)
-        ).language,
+        codewhispererLanguage: editor
+            ? runtimeLanguageContext.getLanguageContext(
+                  editor.document.languageId,
+                  path.extname(editor.document.fileName)
+              ).language
+            : 'plaintext',
         codewhispererCodeScanSrcPayloadBytes: 0,
         codewhispererCodeScanSrcZipFileBytes: 0,
         codewhispererCodeScanLines: 0,
@@ -131,8 +131,8 @@ export async function startSecurityScan(
          */
         throwIfCancelled(scope, codeScanStartTime)
         const zipUtil = new ZipUtil()
-        const zipMetadata = await zipUtil.generateZip(editor.document.uri, scope)
-        const projectPath = zipUtil.getProjectPath(editor.document.uri)
+        const zipMetadata = await zipUtil.generateZip(editor?.document.uri, scope)
+        const projectPaths = zipUtil.getProjectPaths()
 
         const contextTruncationStartTime = performance.now()
         codeScanTelemetryEntry.contextTruncationDuration = performance.now() - contextTruncationStartTime
@@ -195,7 +195,7 @@ export async function startSecurityScan(
             client,
             scanJob.jobId,
             CodeWhispererConstants.codeScanFindingsSchema,
-            projectPath,
+            projectPaths,
             scope
         )
         const { total, withFixes } = securityRecommendationCollection.reduce(
@@ -250,14 +250,14 @@ export async function startSecurityScan(
         codeScanState.setToNotStarted()
         codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime
         codeScanTelemetryEntry.codeScanServiceInvocationsDuration = performance.now() - serviceInvocationStartTime
-        await emitCodeScanTelemetry(editor, codeScanTelemetryEntry)
+        await emitCodeScanTelemetry(codeScanTelemetryEntry)
     }
 }
 
 export function showSecurityScanResults(
     securityPanelViewProvider: SecurityPanelViewProvider,
     securityRecommendationCollection: AggregatedCodeScanIssue[],
-    editor: vscode.TextEditor,
+    editor: vscode.TextEditor | undefined,
     context: vscode.ExtensionContext,
     scope: CodeWhispererConstants.CodeAnalysisScope,
     zipMetadata: ZipMetadata,
@@ -278,18 +278,15 @@ export function showSecurityScanResults(
     }
 }
 
-export async function emitCodeScanTelemetry(editor: vscode.TextEditor, codeScanTelemetryEntry: CodeScanTelemetryEntry) {
-    const uri = editor.document.uri
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
-    const fileExt = getFileExt(editor.document.languageId)
-    if (workspaceFolder !== undefined && fileExt !== undefined) {
-        const projectSize = await getDirSize(
-            workspaceFolder.uri.fsPath,
-            performance.now(),
-            CodeWhispererConstants.projectSizeCalculateTimeoutSeconds * 1000,
-            fileExt
+export async function emitCodeScanTelemetry(codeScanTelemetryEntry: CodeScanTelemetryEntry) {
+    codeScanTelemetryEntry.codewhispererCodeScanProjectBytes = 0
+    const now = performance.now()
+    for (const folder of vscode.workspace.workspaceFolders ?? []) {
+        codeScanTelemetryEntry.codewhispererCodeScanProjectBytes += await getDirSize(
+            folder.uri.fsPath,
+            now,
+            CodeWhispererConstants.projectSizeCalculateTimeoutSeconds * 1000
         )
-        codeScanTelemetryEntry.codewhispererCodeScanProjectBytes = projectSize
     }
     telemetry.codewhisperer_securityScan.emit({
         ...codeScanTelemetryEntry,
