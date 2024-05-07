@@ -97,6 +97,11 @@ export class AddedChangeNode extends ProposedChangeNode {
     }
 
     override saveFile(): void {
+        // create parent directory before copying files (ex. for the summary/ and assets/ folders)
+        const parentDir = path.dirname(this.pathToWorkspaceFile)
+        if (!fs.existsSync(parentDir)) {
+            fs.mkdirSync(parentDir, { recursive: true })
+        }
         fs.copyFileSync(this.pathToTmpFile, this.pathToWorkspaceFile)
     }
 }
@@ -265,10 +270,13 @@ export class ProposedTransformationExplorer {
             await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
             await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
 
-            // delete result archive after changes cleared
-            // Summary is under ResultArchiveFilePath
-            fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
-            fs.rmSync(transformByQState.getProjectCopyFilePath(), { recursive: true, force: true })
+            // delete result archive after changes cleared; summary is under ResultArchiveFilePath
+            if (fs.existsSync(transformByQState.getResultArchiveFilePath())) {
+                fs.rmSync(transformByQState.getResultArchiveFilePath(), { recursive: true, force: true })
+            }
+            if (fs.existsSync(transformByQState.getProjectCopyFilePath())) {
+                fs.rmSync(transformByQState.getProjectCopyFilePath(), { recursive: true, force: true })
+            }
 
             diffModel.clearChanges()
             transformByQState.setSummaryFilePath('')
@@ -427,7 +435,7 @@ export class ProposedTransformationExplorer {
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {
             diffModel.saveChanges()
             telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
-            await vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedNotification)
+            void vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedNotification)
             transformByQState.getChatControllers()?.transformationFinished.fire({
                 message: CodeWhispererConstants.changesAppliedChatMessage,
                 tabID: ChatSessionManager.Instance.getSession().tabID,

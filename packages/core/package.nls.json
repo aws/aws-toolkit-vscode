@@ -215,6 +215,7 @@
     "AWS.command.threatComposer.createNew": "Create New Threat Composer file",
     "AWS.threatComposer.page.title": "{0} (Threat Composer)",
     "AWS.threatComposer.title": "Threat Composer",
+    "AWS.command.accessanalyzer.iamPolicyChecks": "Open IAM Policy Checks",
     "AWS.lambda.explorerTitle": "Explorer",
     "AWS.developerTools.explorerTitle": "Developer Tools",
     "AWS.codewhisperer.explorerTitle": "CodeWhisperer",

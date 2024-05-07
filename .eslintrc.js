@@ -149,14 +149,27 @@ module.exports = {
             },
             { lineEndings: 'unix' },
         ],
+
         'aws-toolkits/no-only-in-tests': 'error',
-        // The following will place an error on the `fs-extra` import since we do not want it to be used for browser compatibility reasons.
-        // "no-restricted-imports": [
-        //     "error",
-        //     {
-        //         "name": "fs-extra",
-        //         "message": "Avoid fs-extra, use FileSystemCommon. Notify the Toolkit team if your required functionality is not available."
-        //     }
-        // ],
+        'aws-toolkits/no-await-on-vscode-msg': 'error',
+
+        'no-restricted-imports': [
+            'error',
+            {
+                patterns: [
+                    {
+                        group: ['**/core/dist/*'],
+                        message:
+                            "Avoid importing from the core lib's dist/ folders; please use directly from the core lib defined exports.",
+                    },
+                ],
+            },
+            // The following will place an error on the `fs-extra` import since we do not want it to be used for browser compatibility reasons.
+            // {
+            //     name: 'fs-extra',
+            //     message:
+            //         'Avoid fs-extra, use FileSystemCommon. Notify the Toolkit team if your required functionality is not available.',
+            // },
+        ],
     },
 }

@@ -10,6 +10,7 @@ import * as nls from 'vscode-nls'
 import { showViewLogsMessage } from '../utilities/messages'
 import { URL, URLSearchParams } from 'whatwg-url'
 import { VSCODE_EXTENSION_ID } from '../extensions'
+import { isAmazonQ } from '../extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -100,7 +101,8 @@ export class UriHandler implements vscode.UriHandler {
     }
 
     static buildUri(path: string) {
-        return vscode.Uri.parse(`vscode://${VSCODE_EXTENSION_ID.awstoolkit}/${path}`)
+        const extensionId = isAmazonQ() ? VSCODE_EXTENSION_ID.amazonq : VSCODE_EXTENSION_ID.awstoolkit
+        return vscode.Uri.parse(`vscode://${extensionId}/${path}`)
     }
 }
 

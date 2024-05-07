@@ -38,6 +38,7 @@ import { activate as activateIot } from './iot/activation'
 import { activate as activateDev } from './dev/activation'
 import { activate as activateApplicationComposer } from './applicationcomposer/activation'
 import { activate as activateRedshift } from './redshift/activation'
+import { activate as activateIamPolicyChecks } from './accessanalyzer/activation'
 import { Ec2CredentialsProvider } from './auth/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './auth/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './auth/providers/ecsCredentialsProvider'
@@ -227,6 +228,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateStepFunctions(context, globals.awsContext, globals.outputChannel)
 
         await activateRedshift(extContext)
+
+        await activateIamPolicyChecks(extContext)
 
         context.subscriptions.push(
             vscode.window.registerUriHandler({

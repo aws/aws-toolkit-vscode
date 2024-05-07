@@ -29,7 +29,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         extensionContext.subscriptions.push(registry)
         setTemplateRegistryInGlobals(registry)
     } catch (e) {
-        await vscode.window.showErrorMessage(
+        void vscode.window.showErrorMessage(
             localize(
                 'AWS.codelens.failToInitialize',
                 'Failed to activate template registry. {0}} will not appear on SAM template files.',
