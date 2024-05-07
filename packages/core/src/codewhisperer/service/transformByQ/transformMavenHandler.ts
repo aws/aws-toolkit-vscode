@@ -6,13 +6,18 @@ import * as vscode from 'vscode'
 import { FolderInfo, transformByQState } from '../../models/model'
 import { getLogger } from '../../../shared/logger'
 import * as CodeWhispererConstants from '../../models/constants'
-import { spawnSync } from 'child_process' // Consider using ChildProcess once we finalize all spawnSync calls
+import { spawnSync, SpawnSyncOptionsWithStringEncoding } from 'child_process' // Consider using ChildProcess once we finalize all spawnSync calls
 import { CodeTransformMavenBuildCommand, telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import { ToolkitError } from '../../../shared/errors'
 import { writeLogs } from './transformFileHandler'
 import { throwIfCancelled } from './transformApiHandler'
+
+interface MavenVersionData {
+    mavenVersion: string | undefined
+    javaVersion: string | undefined
+}
 
 // run 'install' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
 function installProjectDependencies(dependenciesFolder: FolderInfo) {
@@ -176,11 +181,19 @@ export async function prepareProjectDependencies(dependenciesFolder: FolderInfo)
     void vscode.window.showInformationMessage(CodeWhispererConstants.buildSucceededNotification)
 }
 
-export async function getVersionData() {
+export async function getVersionData(): Promise<MavenVersionData> {
     const baseCommand = transformByQState.getMavenName() // will be one of: 'mvnw.cmd', './mvnw', 'mvn'
     const modulePath = transformByQState.getProjectPath()
+    const javaHome = transformByQState.getJavaHome() // If customer provided JAVA_HOME use that
+
     const args = ['-v']
-    const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: true, encoding: 'utf-8' })
+    let env = process.env
+    if (javaHome) {
+        env = { ...env, JAVA_HOME: javaHome }
+    }
+
+    const options: SpawnSyncOptionsWithStringEncoding = { cwd: modulePath, shell: true, encoding: 'utf-8', env: env }
+    const spawnResult = spawnSync(baseCommand, args, options)
 
     let localMavenVersion: string | undefined = ''
     let localJavaVersion: string | undefined = ''
@@ -204,5 +217,5 @@ export async function getVersionData() {
     getLogger().info(
         `CodeTransformation: Ran ${baseCommand} to get Maven version = ${localMavenVersion} and Java version = ${localJavaVersion} with project JDK = ${transformByQState.getSourceJDKVersion()}`
     )
-    return [localMavenVersion, localJavaVersion]
+    return { mavenVersion: localMavenVersion, javaVersion: localJavaVersion }
 }

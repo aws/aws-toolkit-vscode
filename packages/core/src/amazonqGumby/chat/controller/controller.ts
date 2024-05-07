@@ -326,6 +326,23 @@ export class GumbyController {
             case ConversationState.PROMPT_JAVA_HOME: {
                 const pathToJavaHome = extractPath(data.message)
 
+                try {
+                    await validateCanCompileProject()
+                } catch (err: any) {
+                    if (err instanceof JavaHomeNotSetError) {
+                        this.sessionStorage.getSession().conversationState = ConversationState.PROMPT_JAVA_HOME
+                        this.messenger.sendStaticTextResponse('java-home-not-set', data.tabID)
+                        this.messenger.sendChatInputEnabled(data.tabID, true)
+                        this.messenger.sendUpdatePlaceholder(
+                            data.tabID,
+                            `Incompatible JDK, Enter the path to your Java ${transformByQState.getSourceJDKVersion()} installation.`
+                        )
+                        return
+                    }
+                    throw err
+                }
+                await validateCanCompileProject()
+                // TODO validate here
                 if (pathToJavaHome) {
                     await this.prepareProjectForSubmission({
                         pathToJavaHome,

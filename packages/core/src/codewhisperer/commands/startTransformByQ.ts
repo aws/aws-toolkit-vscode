@@ -81,7 +81,7 @@ async function setMaven() {
 
 async function validateJavaHome(): Promise<boolean> {
     const versionData = await getVersionData()
-    let javaVersionUsedByMaven = versionData[1]
+    let javaVersionUsedByMaven = versionData.javaVersion
     if (javaVersionUsedByMaven !== undefined) {
         javaVersionUsedByMaven = javaVersionUsedByMaven.slice(0, 3)
         if (javaVersionUsedByMaven === '1.8') {
@@ -363,8 +363,8 @@ export async function postTransformationJob() {
     const resultStatusMessage = transformByQState.getStatus()
 
     const versionInfo = await getVersionData()
-    const mavenVersionInfoMessage = `${versionInfo[0]} (${transformByQState.getMavenName()})`
-    const javaVersionInfoMessage = `${versionInfo[1]} (${transformByQState.getMavenName()})`
+    const mavenVersionInfoMessage = `${versionInfo.mavenVersion} (${transformByQState.getMavenName()})`
+    const javaVersionInfoMessage = `${versionInfo.javaVersion} (${transformByQState.getMavenName()})`
 
     // Note: IntelliJ implementation of ResultStatusMessage includes additional metadata such as jobId.
     telemetry.codeTransform_totalRunTime.emit({
