@@ -155,6 +155,7 @@ function main() {
         fs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
         child_process.execFileSync('vsce', ['package', '--ignoreFile', '../.vscodeignore.packages'], {
             stdio: 'inherit',
+            shell: process.platform === 'win32',  // For vsce.cmd on Windows.
         })
 
         console.log(`VSIX Version: ${packageJson.version}`)
