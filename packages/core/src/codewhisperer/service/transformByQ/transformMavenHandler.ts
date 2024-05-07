@@ -189,6 +189,7 @@ export async function getVersionData(): Promise<MavenVersionData> {
     const args = ['-v']
     let env = process.env
     if (javaHome) {
+        getLogger().info(`CodeTransformation: using customer provided JAVA_HOME = ${javaHome}`)
         env = { ...env, JAVA_HOME: javaHome }
     }
 
