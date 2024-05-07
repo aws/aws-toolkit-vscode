@@ -27,7 +27,7 @@ export class TabDataGenerator {
     private tabInputPlaceholder: Map<TabType, string> = new Map([
         ['unknown', 'Ask a question or enter "/" for quick commands'],
         ['cwc', 'Ask a question or enter "/" for quick commands'],
-        ['featuredev', 'Briefly describe a task or issue'],
+        ['featuredev', 'Describe your task or issue in as much detail as possible'],
     ])
 
     private tabWelcomeMessage: Map<TabType, string> = new Map([
