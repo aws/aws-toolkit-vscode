@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Java, Python, TypeScript } from '@aws/fully-qualified-names'
+import { Java, Python } from '@aws/fully-qualified-names'
 import { extractContextFromJavaImports } from './javaImportReader'
 
 export async function readImports(text: string, languageId: string): Promise<string[]> {
