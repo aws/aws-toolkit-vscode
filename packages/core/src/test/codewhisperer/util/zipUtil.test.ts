@@ -57,7 +57,9 @@ describe('zipUtil', function () {
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.FILE),
-                new ToolkitError('Payload size limit reached.')
+                new ToolkitError(
+                    `Amazon Q:  Selected file is larger than 0.1953125MB. Please try again with a different file.`
+                )
             )
         })
 
@@ -77,7 +79,9 @@ describe('zipUtil', function () {
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT),
-                new ToolkitError('Payload size limit reached.')
+                new ToolkitError(
+                    'Amazon Q:  Selected file is larger than 5120MB. Please try again with a different file.'
+                )
             )
         })
 
@@ -86,7 +90,9 @@ describe('zipUtil', function () {
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT),
-                new ToolkitError('Payload size limit reached.')
+                new ToolkitError(
+                    'Amazon Q:  Selected file is larger than 5120MB. Please try again with a different file.'
+                )
             )
         })
 

@@ -131,8 +131,8 @@ export async function pollScanJobStatus(
                 : CodeWhispererConstants.codeScanJobTimeoutSeconds
         if (timer > timeoutSeconds) {
             logger.verbose(`Scan job status: ${status}`)
-            logger.verbose(`Scan job timeout.`)
-            throw new Error('Scan job timeout.')
+            logger.verbose(`Security Scan failed. Amazon Q timed out.`)
+            throw new Error('Security Scan failed. Amazon Q timed out.')
         }
     }
     return status
@@ -157,7 +157,8 @@ export async function createScanJob(
     }
     const resp = await client.createCodeScan(req).catch(err => {
         getLogger().error(`Failed creating scan job. Request id: ${err.requestId}`)
-        throw err
+        throw new Error("Amazon Q: Can't create code scan")
+        // throw err
     })
     logger.verbose(`Request id: ${resp.$response.requestId}`)
     TelemetryHelper.instance.sendCodeScanEvent(languageId, resp.$response.requestId)
@@ -172,7 +173,7 @@ export async function getPresignedUrlAndUpload(
 ) {
     const logger = getLoggerForScope(scope)
     if (zipMetadata.zipFilePath === '') {
-        throw new Error("Zip failure: can't find valid source zip.")
+        throw new Error("Amazon Q: Can't find valid source zip.")
     }
     const srcReq: CreateUploadUrlRequest = {
         contentMd5: getMd5(zipMetadata.zipFilePath),
@@ -187,7 +188,8 @@ export async function getPresignedUrlAndUpload(
     logger.verbose(`Prepare for uploading src context...`)
     const srcResp = await client.createUploadUrl(srcReq).catch(err => {
         getLogger().error(`Failed getting presigned url for uploading src context. Request id: ${err.requestId}`)
-        throw err
+        throw new Error("Amazon Q: Can't create upload url.")
+        // throw err
     })
     logger.verbose(`Request id: ${srcResp.$response.requestId}`)
     logger.verbose(`Complete Getting presigned Url for uploading src context.`)

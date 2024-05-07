@@ -172,7 +172,7 @@ export async function startSecurityScan(
             scanName
         )
         if (scanJob.status === 'Failed') {
-            throw new Error(scanJob.errorMessage)
+            throw new Error('Amazon Q: Security scan failed. Please try again')
         }
         logger.verbose(`Created security scan job.`)
         codeScanTelemetryEntry.codewhispererCodeScanJobId = scanJob.jobId
@@ -183,7 +183,7 @@ export async function startSecurityScan(
         throwIfCancelled(scope, codeScanStartTime)
         const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scope, codeScanStartTime)
         if (jobStatus === 'Failed') {
-            throw new Error('Security scan job failed.')
+            throw new Error('Amazon Q: Security scan failed. Please try again')
         }
 
         /**
@@ -245,7 +245,31 @@ export async function startSecurityScan(
                 CodeScansState.instance.setMonthlyQuotaExceeded()
             }
         }
-        codeScanTelemetryEntry.reason = (error as Error).message
+        let telemetryErrorMessage = ''
+        switch ((error as Error).message) {
+            case "Amazon Q: Can't find valid source zip.":
+                telemetryErrorMessage = 'Failed to create valid source zip'
+                break
+            case "Amazon Q: Can't create upload url.":
+                telemetryErrorMessage = 'Failed to create upload url'
+                break
+            case 'Amazon Q is unable to upload workspace artifacts to Amazon S3 for security scans. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security_iam_manage-access-with-policies.html) or contact your network or organization administrator.':
+                telemetryErrorMessage = 'Failed to upload aritfact to S3'
+                break
+            case "Amazon Q: Can't create code scan":
+                telemetryErrorMessage = 'Failed in Creating a code scan'
+                break
+            case 'Amazon Q: Security scan failed. Please try again':
+                telemetryErrorMessage = 'Failed code scan service error'
+                break
+            default:
+                if ((error as Error).message.startsWith('Amazon Q:  Selected file is larger than')) {
+                    telemetryErrorMessage = 'Payload size limit reached.'
+                }
+                break
+        }
+
+        codeScanTelemetryEntry.reason = telemetryErrorMessage !== '' ? telemetryErrorMessage : (error as Error).message
     } finally {
         codeScanState.setToNotStarted()
         codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime
