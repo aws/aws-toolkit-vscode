@@ -112,7 +112,7 @@ async function generate(mappings: Record<string, number | undefined> = {}) {
         template: 'css',
         templateClassName: 'icon',
         descent: 200, // Icons were negatively offset on the y-axes, this fixes it
-        templateFontPath: path.relative(stylesheetsDir, fontsDir),
+        templateFontPath: path.relative(stylesheetsDir, fontsDir).replace(/\\/g, '/'),
         glyphTransformFn: obj => {
             const filePath = (obj as { path?: string }).path
 

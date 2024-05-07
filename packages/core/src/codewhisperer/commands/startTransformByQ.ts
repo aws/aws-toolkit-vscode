@@ -12,19 +12,13 @@ import * as CodeWhispererConstants from '../models/constants'
 import {
     transformByQState,
     StepProgress,
-    TransformByQReviewStatus,
     JDKVersion,
-    sessionPlanProgress,
+    jobPlanProgress,
     FolderInfo,
     TransformationCandidateProject,
     ZipManifest,
 } from '../models/model'
-import {
-    convertToTimeString,
-    convertDateToTimestamp,
-    getStringHash,
-    encodeHTML,
-} from '../../shared/utilities/textUtilities'
+import { convertDateToTimestamp, getStringHash } from '../../shared/utilities/textUtilities'
 import {
     createZipManifest,
     downloadHilResultArchive,
@@ -37,6 +31,7 @@ import {
     startJob,
     stopJob,
     throwIfCancelled,
+    updateJobHistory,
     uploadPayload,
     zipCode,
 } from '../service/transformByQ/transformApiHandler'
@@ -77,7 +72,6 @@ import DependencyVersions from '../../amazonqGumby/models/dependencies'
 import { dependencyNoAvailableVersions } from '../../amazonqGumby/models/constants'
 import { HumanInTheLoopManager } from '../service/transformByQ/humanInTheLoopManager'
 
-let sessionJobHistory: { timestamp: string; module: string; status: string; duration: string; id: string }[] = []
 let pollUIIntervalId: string | number | NodeJS.Timer | undefined = undefined
 
 export async function processTransformFormInput(
@@ -156,20 +150,26 @@ export async function compileProject() {
     }
 }
 
+export function startInterval() {
+    const intervalId = setInterval(() => {
+        void vscode.commands.executeCommand(
+            'aws.amazonq.showPlanProgressInHub',
+            CodeTransformTelemetryState.instance.getStartTime()
+        )
+        updateJobHistory()
+    }, CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
+    transformByQState.setIntervalId(intervalId)
+}
+
 export async function startTransformByQ() {
     // Set the default state variables for our store and the UI
     await setTransformationToRunningState()
 
     try {
-        // Set web view UI to poll for progress
-        pollUIIntervalId = setInterval(() => {
-            void vscode.commands.executeCommand(
-                'aws.amazonq.showPlanProgressInHub',
-                CodeTransformTelemetryState.instance.getStartTime()
-            )
-        }, CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
+        // Set webview UI to poll for progress
+        startInterval()
 
-        // step 1: CreateCodeUploadUrl and upload code
+        // step 1: CreateUploadUrl and upload code
         const uploadId = await preTransformationUploadCode()
 
         // step 2: StartJob and store the returned jobId in TransformByQState
@@ -466,6 +466,7 @@ export async function startTransformationJob(uploadId: string) {
     let jobId = ''
     try {
         jobId = await startJob(uploadId)
+        getLogger().info(`CodeTransformation: jobId: ${jobId}`)
     } catch (error) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToStartJobNotification}`, error)
         if ((error as Error).message.includes('too many active running jobs')) {
@@ -481,7 +482,6 @@ export async function startTransformationJob(uploadId: string) {
         }
         throw new Error('Start job failed')
     }
-    transformByQState.setJobId(encodeHTML(jobId))
 
     await sleep(2000) // sleep before polling job to prevent ThrottlingException
     throwIfCancelled()
@@ -494,8 +494,12 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
         await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForPlanGenerated)
     } catch (error) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToCompleteJobNotification}`, error)
-        transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToCompleteJobNotification)
-        transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToCompleteJobChatMessage)
+        if (!transformByQState.getJobFailureErrorNotification()) {
+            transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToCompleteJobNotification)
+        }
+        if (!transformByQState.getJobFailureErrorChatMessage()) {
+            transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToCompleteJobChatMessage)
+        }
         throw new Error('Poll job failed')
     }
     let plan = undefined
@@ -516,7 +520,7 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
         transformByQState.setPlanFilePath(planFilePath)
         await vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', true)
     }
-    sessionPlanProgress['generatePlan'] = StepProgress.Succeeded
+    jobPlanProgress['generatePlan'] = StepProgress.Succeeded
     throwIfCancelled()
 }
 
@@ -526,8 +530,12 @@ export async function pollTransformationStatusUntilComplete(jobId: string) {
         status = await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForCheckingDownloadUrl)
     } catch (error) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToCompleteJobNotification}`, error)
-        transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToCompleteJobNotification)
-        transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToCompleteJobChatMessage)
+        if (!transformByQState.getJobFailureErrorNotification()) {
+            transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToCompleteJobNotification)
+        }
+        if (!transformByQState.getJobFailureErrorChatMessage()) {
+            transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToCompleteJobChatMessage)
+        }
         throw new Error('Poll job failed')
     }
 
@@ -537,23 +545,17 @@ export async function pollTransformationStatusUntilComplete(jobId: string) {
 export async function finalizeTransformationJob(status: string) {
     if (!(status === 'COMPLETED' || status === 'PARTIALLY_COMPLETED')) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToCompleteJobNotification}`)
-        sessionPlanProgress['transformCode'] = StepProgress.Failed
+        jobPlanProgress['transformCode'] = StepProgress.Failed
         transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToCompleteJobNotification)
         transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToCompleteJobChatMessage)
         throw new Error('Job was not successful nor partially successful')
     }
-
     transformByQState.setToSucceeded()
     if (status === 'PARTIALLY_COMPLETED') {
         transformByQState.setToPartiallySucceeded()
-        CodeTransformTelemetryState.instance.setResultStatus('JobPartiallySucceeded')
-    } else {
-        CodeTransformTelemetryState.instance.setResultStatus('JobCompletedSuccessfully')
     }
-
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.reveal')
-
-    sessionPlanProgress['transformCode'] = StepProgress.Succeeded
+    jobPlanProgress['transformCode'] = StepProgress.Succeeded
 }
 
 export async function getValidCandidateProjects(): Promise<TransformationCandidateProject[]> {
@@ -565,13 +567,19 @@ export async function setTransformationToRunningState() {
     await setContextVariables()
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.reset')
     transformByQState.setToRunning()
-    sessionPlanProgress['startJob'] = StepProgress.Pending
-    sessionPlanProgress['buildCode'] = StepProgress.Pending
-    sessionPlanProgress['generatePlan'] = StepProgress.Pending
-    sessionPlanProgress['transformCode'] = StepProgress.Pending
+    jobPlanProgress['startJob'] = StepProgress.Pending
+    jobPlanProgress['buildCode'] = StepProgress.Pending
+    jobPlanProgress['generatePlan'] = StepProgress.Pending
+    jobPlanProgress['transformCode'] = StepProgress.Pending
     transformByQState.resetPlanSteps()
+    transformByQState.resetSessionJobHistory()
+    transformByQState.setJobId('') // so that details for last job are not overwritten when running one job after another
+    transformByQState.setPolledJobStatus('') // so that previous job's status does not display at very beginning of this job
 
     CodeTransformTelemetryState.instance.setStartTime()
+    transformByQState.setStartTime(
+        convertDateToTimestamp(new Date(CodeTransformTelemetryState.instance.getStartTime()))
+    )
 
     const projectPath = transformByQState.getProjectPath()
     let projectId = telemetryUndefined
@@ -592,24 +600,21 @@ export async function setTransformationToRunningState() {
     })
 
     await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-transformation-hub')
-    await vscode.commands.executeCommand(
-        'aws.amazonq.showPlanProgressInHub',
-        CodeTransformTelemetryState.instance.getStartTime()
-    )
 }
 
 export async function postTransformationJob() {
-    if (sessionPlanProgress['startJob'] !== StepProgress.Succeeded) {
-        sessionPlanProgress['startJob'] = StepProgress.Failed
+    updateJobHistory()
+    if (jobPlanProgress['startJob'] !== StepProgress.Succeeded) {
+        jobPlanProgress['startJob'] = StepProgress.Failed
     }
-    if (sessionPlanProgress['buildCode'] !== StepProgress.Succeeded) {
-        sessionPlanProgress['buildCode'] = StepProgress.Failed
+    if (jobPlanProgress['buildCode'] !== StepProgress.Succeeded) {
+        jobPlanProgress['buildCode'] = StepProgress.Failed
     }
-    if (sessionPlanProgress['generatePlan'] !== StepProgress.Succeeded) {
-        sessionPlanProgress['generatePlan'] = StepProgress.Failed
+    if (jobPlanProgress['generatePlan'] !== StepProgress.Succeeded) {
+        jobPlanProgress['generatePlan'] = StepProgress.Failed
     }
-    if (sessionPlanProgress['transformCode'] !== StepProgress.Succeeded) {
-        sessionPlanProgress['transformCode'] = StepProgress.Failed
+    if (jobPlanProgress['transformCode'] !== StepProgress.Succeeded) {
+        jobPlanProgress['transformCode'] = StepProgress.Failed
     }
 
     let chatMessage = transformByQState.getJobFailureErrorChatMessage()
@@ -623,7 +628,7 @@ export async function postTransformationJob() {
         .getChatControllers()
         ?.transformationFinished.fire({ message: chatMessage, tabID: ChatSessionManager.Instance.getSession().tabID })
     const durationInMs = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime())
-    const resultStatusMessage = CodeTransformTelemetryState.instance.getResultStatus()
+    const resultStatusMessage = transformByQState.getStatus()
 
     const versionInfo = await getVersionData()
     const mavenVersionInfoMessage = `${versionInfo[0]} (${transformByQState.getMavenName()})`
@@ -636,18 +641,9 @@ export async function postTransformationJob() {
         codeTransformRunTimeLatency: durationInMs,
         codeTransformLocalMavenVersion: mavenVersionInfoMessage,
         codeTransformLocalJavaVersion: javaVersionInfoMessage,
-        result: resultStatusMessage === 'JobCompletedSuccessfully' ? MetadataResult.Pass : MetadataResult.Fail,
+        result: resultStatusMessage === 'Succeeded' ? MetadataResult.Pass : MetadataResult.Fail,
         reason: resultStatusMessage,
     })
-
-    sessionJobHistory = processHistory(
-        sessionJobHistory,
-        convertDateToTimestamp(new Date(CodeTransformTelemetryState.instance.getStartTime())),
-        transformByQState.getProjectName(),
-        transformByQState.getStatus(),
-        convertToTimeString(durationInMs),
-        transformByQState.getJobId()
-    )
 
     if (transformByQState.isSucceeded()) {
         void vscode.window.showInformationMessage(CodeWhispererConstants.jobCompletedNotification)
@@ -673,9 +669,10 @@ export async function transformationJobErrorHandler(error: any) {
     if (!transformByQState.isCancelled()) {
         // means some other error occurred; cancellation already handled by now with stopTransformByQ
         transformByQState.setToFailed()
-        CodeTransformTelemetryState.instance.setResultStatus('JobFailed')
+        transformByQState.setPolledJobStatus('FAILED')
         // jobFailureErrorNotification should always be defined here
-        let displayedErrorMessage = transformByQState.getJobFailureErrorNotification() ?? 'Job failed'
+        let displayedErrorMessage =
+            transformByQState.getJobFailureErrorNotification() ?? CodeWhispererConstants.failedToCompleteJobNotification
         if (transformByQState.getJobFailureMetadata() !== '') {
             displayedErrorMessage += ` ${transformByQState.getJobFailureMetadata()}`
             transformByQState.setJobFailureErrorChatMessage(
@@ -690,13 +687,15 @@ export async function transformationJobErrorHandler(error: any) {
                 }
             })
     } else {
+        transformByQState.setToCancelled()
+        transformByQState.setPolledJobStatus('CANCELLED')
         transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.jobCancelledChatMessage)
     }
     getLogger().error(`CodeTransformation: ${error.message}`)
 }
 
 export async function cleanupTransformationJob() {
-    clearInterval(pollUIIntervalId)
+    clearInterval(transformByQState.getIntervalId())
     transformByQState.setJobDefaults()
     await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
     await vscode.commands.executeCommand(
@@ -706,28 +705,6 @@ export async function cleanupTransformationJob() {
     CodeTransformTelemetryState.instance.resetCodeTransformMetaDataField()
 }
 
-export function processHistory(
-    sessionJobHistory: { timestamp: string; module: string; status: string; duration: string; id: string }[],
-    startTime: string,
-    module: string,
-    status: string,
-    duration: string,
-    id: string
-) {
-    sessionJobHistory = [] // reset job history; only storing the last run for now
-    const copyState = { timestamp: startTime, module: module, status: status, duration: duration, id: id }
-    sessionJobHistory.push(copyState)
-    return sessionJobHistory
-}
-
-export function getJobHistory() {
-    return sessionJobHistory
-}
-
-export function getPlanProgress() {
-    return sessionPlanProgress
-}
-
 export async function stopTransformByQ(
     jobId: string,
     cancelSrc: CancelActionPositions = CancelActionPositions.BottomHubPanel
@@ -735,7 +712,7 @@ export async function stopTransformByQ(
     if (transformByQState.isRunning()) {
         getLogger().info('CodeTransformation: User requested to stop transformation. Stopping transformation.')
         transformByQState.setToCancelled()
-        CodeTransformTelemetryState.instance.setResultStatus('JobCancelled')
+        transformByQState.setPolledJobStatus('CANCELLED')
         await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
         try {
             await stopJob(jobId)
@@ -774,6 +751,4 @@ async function setContextVariables() {
     await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', true)
     await vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', false)
     await vscode.commands.executeCommand('setContext', 'gumby.isSummaryAvailable', false)
-    await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
-    await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
 }

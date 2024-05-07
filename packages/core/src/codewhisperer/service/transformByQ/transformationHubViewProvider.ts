@@ -5,8 +5,8 @@
 
 import * as vscode from 'vscode'
 import globals from '../../../shared/extensionGlobals'
-import { getJobHistory, getPlanProgress } from '../../commands/startTransformByQ'
-import { StepProgress, transformByQState } from '../../models/model'
+import * as CodeWhispererConstants from '../../models/constants'
+import { StepProgress, jobPlanProgress, sessionJobHistory, transformByQState } from '../../models/model'
 import { convertToTimeString } from '../../../shared/utilities/textUtilities'
 import { getLogger } from '../../../shared/logger'
 import { getTransformationSteps } from './transformApiHandler'
@@ -15,6 +15,8 @@ import {
     ProgressUpdates,
     TransformationStatus,
 } from '../../../codewhisperer/client/codewhispereruserclient'
+import { startInterval } from '../../commands/startTransformByQ'
+import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.transformationHub'
@@ -24,15 +26,23 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
     constructor() {}
     static #instance: TransformationHubViewProvider
 
-    public updateContent(button: 'job history' | 'plan progress', startTime: number) {
+    public async updateContent(
+        button: 'job history' | 'plan progress',
+        startTime: number = CodeTransformTelemetryState.instance.getStartTime()
+    ) {
         this.lastClickedButton = button
         if (this._view) {
             if (this.lastClickedButton === 'job history') {
+                clearInterval(transformByQState.getIntervalId())
+                transformByQState.setIntervalId(undefined)
                 this._view!.webview.html = this.showJobHistory()
             } else {
-                this.showPlanProgress(startTime)
-                    .then(planProgress => {
-                        this._view!.webview.html = planProgress
+                if (transformByQState.getIntervalId() === undefined && transformByQState.isRunning()) {
+                    startInterval()
+                }
+                await this.showPlanProgress(startTime)
+                    .then(jobPlanProgress => {
+                        this._view!.webview.html = jobPlanProgress
                     })
                     .catch(e => {
                         getLogger().error('showPlanProgress failed: %s', (e as Error).message)
@@ -61,8 +71,8 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             this._view!.webview.html = this.showJobHistory()
         } else {
             this.showPlanProgress(Date.now())
-                .then(planProgress => {
-                    this._view!.webview.html = planProgress
+                .then(jobPlanProgress => {
+                    this._view!.webview.html = jobPlanProgress
                 })
                 .catch(e => {
                     getLogger().error('showPlanProgress failed: %s', (e as Error).message)
@@ -71,7 +81,6 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
     }
 
     private showJobHistory(): string {
-        const history = getJobHistory()
         return `<!DOCTYPE html>
             <html lang="en">
             <head>
@@ -84,35 +93,35 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             </head>
             <body>
             <p><b>Job Status</b></p>
-            ${history.length === 0 ? '<p>Nothing to show</p>' : this.getTableMarkup(history)}
+            ${
+                Object.keys(sessionJobHistory).length === 0
+                    ? `<p>${CodeWhispererConstants.nothingToShowMessage}</p>`
+                    : this.getTableMarkup(sessionJobHistory[transformByQState.getJobId()])
+            }
             </body>
             </html>`
     }
 
-    private getTableMarkup(
-        history: { timestamp: string; module: string; status: string; duration: string; id: string }[]
-    ) {
+    private getTableMarkup(job: { startTime: string; projectName: string; status: string; duration: string }) {
         return `
             <table border="1" style="border-collapse:collapse">
                 <thead>
                     <tr>
                         <th>Date</th>
-                        <th>Module</th>
+                        <th>Project</th>
                         <th>Status</th>
                         <th>Duration</th>
                         <th>Id</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${history.map(
-                        job => `<tr>
-                        <td>${job.timestamp}</td>
-                        <td>${job.module}</td>
-                        <td>${job.status}</td>
-                        <td>${job.duration}</td>
-                        <td>${job.id}</td>
-                    </tr>`
-                    )}
+                <tr>
+                    <td>${job.startTime}</td>
+                    <td>${job.projectName}</td>
+                    <td>${job.status}</td>
+                    <td>${job.duration}</td>
+                    <td>${transformByQState.getJobId()}</td>
+                </tr>
                 </tbody>
             </table>
         `
@@ -251,43 +260,46 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             case 'CREATED':
             case 'ACCEPTED':
             case 'STARTED':
-                return 'Files have been uploaded to Amazon Q, transformation job has been accepted and is preparing to start.'
+                return CodeWhispererConstants.filesUploadedMessage
             case 'PREPARING':
             case 'PREPARED':
-                return `Amazon Q is building your code using Java ${transformByQState.getSourceJDKVersion()} in a secure build environment.`
+                return CodeWhispererConstants.buildingCodeMessage.replace(
+                    'JAVA_VERSION_HERE',
+                    transformByQState.getSourceJDKVersion() ?? ''
+                )
             case 'PLANNING':
             case 'PLANNED':
-                return 'Amazon Q is analyzing your code in order to generate a transformation plan.'
+                return CodeWhispererConstants.planningMessage
             case 'TRANSFORMING':
             case 'TRANSFORMED':
             case 'COMPLETED':
             case 'PARTIALLY_COMPLETED':
-                return 'Amazon Q is transforming your code. Details will appear soon.'
+                return CodeWhispererConstants.transformingMessage
             case 'STOPPING':
             case 'STOPPED':
-                return 'Stopping the job...'
+                return CodeWhispererConstants.stoppingJobMessage
             case 'FAILED':
             case 'REJECTED':
-                return 'The step failed, fetching additional details...'
+                return CodeWhispererConstants.failedStepMessage
             default:
                 if (transformByQState.isCancelled()) {
-                    return 'Stopping the job...'
+                    return CodeWhispererConstants.stoppingJobMessage
                 } else if (transformByQState.isFailed()) {
-                    return 'The step failed, fetching additional details...'
+                    return CodeWhispererConstants.failedStepMessage
                 } else if (transformByQState.isRunning()) {
-                    return `Amazon Q is scanning the project files and getting ready to start the job. 
-                    To start the job, Amazon Q needs to upload the project artifacts. Once that's done, Q can start the transformation job. 
-                    The estimated time for this operation ranges from a few seconds to several minutes.`
+                    return CodeWhispererConstants.scanningProjectMessage
                 } else if (transformByQState.isPartiallySucceeded() || transformByQState.isSucceeded()) {
-                    return 'Job completed' // this should never have too be shown since substeps will block the generic details. Added for completeness.
+                    return CodeWhispererConstants.jobCompletedMessage // this should never have to be shown since substeps will block the generic details, added for completeness
                 } else {
-                    return 'No ongoing job.'
+                    return CodeWhispererConstants.noOngoingJobMessage
                 }
         }
     }
 
     public async showPlanProgress(startTime: number): Promise<string> {
-        const planProgress = getPlanProgress()
+        const styleSheet = this._view?.webview.asWebviewUri(
+            vscode.Uri.joinPath(this._extensionUri, 'resources', 'css', 'amazonqTransformationHub.css')
+        )
         const simpleStep = (icon: string, text: string, isActive: boolean) => {
             return isActive
                 ? `<p class="simple-step active">${icon} ${text}</p>`
@@ -295,55 +307,55 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         }
 
         let planSteps = transformByQState.getPlanSteps()
-        if (planProgress['generatePlan'] === StepProgress.Succeeded && transformByQState.isRunning()) {
+        if (jobPlanProgress['generatePlan'] === StepProgress.Succeeded && transformByQState.isRunning()) {
             planSteps = await getTransformationSteps(transformByQState.getJobId(), false)
             transformByQState.setPlanSteps(planSteps)
         }
         let progressHtml
         // for each step that has succeeded, increment activeStepId by 1
         let activeStepId = [
-            planProgress.startJob,
-            planProgress.buildCode,
-            planProgress.generatePlan,
-            planProgress.transformCode,
+            jobPlanProgress.startJob,
+            jobPlanProgress.buildCode,
+            jobPlanProgress.generatePlan,
+            jobPlanProgress.transformCode,
         ]
             .map(it => (it === StepProgress.Succeeded ? 1 : 0) as number)
             .reduce((prev, current) => prev + current)
         // When we receive plan step details, we want those to be active -> increment activeStepId
         activeStepId += planSteps === undefined || planSteps.length === 0 ? 0 : 1
 
-        if (planProgress['transformCode'] !== StepProgress.NotStarted) {
+        if (jobPlanProgress['transformCode'] !== StepProgress.NotStarted) {
             const waitingMarkup = simpleStep(
-                this.getProgressIconMarkup(planProgress['startJob']),
-                'Waiting for job to start',
+                this.getProgressIconMarkup(jobPlanProgress['startJob']),
+                CodeWhispererConstants.waitingForJobStartStepMessage,
                 activeStepId === 0
             )
             const buildMarkup =
                 activeStepId >= 1
                     ? simpleStep(
-                          this.getProgressIconMarkup(planProgress['buildCode']),
-                          'Build uploaded code in secure build environment',
+                          this.getProgressIconMarkup(jobPlanProgress['buildCode']),
+                          CodeWhispererConstants.buildCodeStepMessage,
                           activeStepId === 1
                       )
                     : ''
             const planMarkup =
                 activeStepId >= 2
                     ? simpleStep(
-                          this.getProgressIconMarkup(planProgress['generatePlan']),
-                          'Generate transformation plan',
+                          this.getProgressIconMarkup(jobPlanProgress['generatePlan']),
+                          CodeWhispererConstants.generatePlanStepMessage,
                           activeStepId === 2
                       )
                     : ''
             const transformMarkup =
                 activeStepId >= 3
                     ? simpleStep(
-                          this.getProgressIconMarkup(planProgress['transformCode']),
-                          'Transform your code to Java 17 using transformation plan',
+                          this.getProgressIconMarkup(jobPlanProgress['transformCode']),
+                          CodeWhispererConstants.transformStepMessage,
                           activeStepId === 3
                       )
                     : ''
 
-            const isTransformFailed = planProgress['transformCode'] === StepProgress.Failed
+            const isTransformFailed = jobPlanProgress['transformCode'] === StepProgress.Failed
             const progress = this.getTransformationStepProgressMarkup(planSteps, isTransformFailed)
             const latestGenericStepDetails = this.getLatestGenericStepDetails(transformByQState.getPolledJobStatus())
             progressHtml = `
@@ -378,111 +390,8 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             <html lang="en">
             
             <head>
-            <title>Transformation Hub</title>
-            <style>
-                @keyframes spin {
-                    0% {
-                        transform: rotate(0deg);
-                    }
-                    100% {
-                        transform: rotate(360deg);
-                    }
-                }
-                body {
-                    margin: 0;
-                    padding: 0 1em;
-                    height: 100vh;
-                }
-
-                .wrapper {
-                    height: 100%;
-                    display: flex;
-                }
-
-                .spinner {
-                    display: inline-block;
-                    animation: spin 1s infinite;
-                }
-
-                .column--container, .substep-container {
-                    display: flex;
-                    flex-direction: row;
-                }
-
-                .column {
-                    flex-grow: 1;
-                }
-
-                .substep-container  p {
-                    margin: .5em 0;
-                }
-
-                .step, .simple-step {
-                    padding: .5em 0 .5em 0;
-                    margin: 0;
-                }
-
-                .step {
-                    padding-left: 20px;
-                }
-
-                .step:hover, .step.active {
-                    color: var(--vscode-editor-selectionForeground, inherit);
-                    background-color: var(--vscode-editor-selectionBackground, aliceblue);                
-                }
-
-                #stepdetails {
-                    width: 40%;
-                    padding: 0 20px;
-                    border-left: solid rgba(229,229,229, .5);
-                    min-height: 100vh;
-                    display: block;
-                }
-
-                #progress {
-                    width: 60%;
-                }
-
-                .status-PENDING {
-                    color: grey;
-                }
-
-                .status-COMPLETED {
-                    color: green;
-                }
-
-                .status-FAILED {
-                    color: red;
-                }
-
-                .substep {
-                    display: none;
-                }
-
-                .substep-icon {
-                    padding: 0 1em;
-                }
-
-                .visible {
-                    display: block;
-                }
-
-                .center {
-                    position: absolute;
-                    top: 50%;
-                    transform: translate(0, -50%);
-                }
-
-                .center-flex {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-
-                #step-duration {
-                    color: rgba(59, 59, 59, .75);
-                }
-            </style>
+                <title>Transformation Hub</title>
+                <link href="${styleSheet}" rel="stylesheet">
             </head>
             <body>
             <div class="wrapper">
