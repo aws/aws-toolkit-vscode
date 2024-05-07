@@ -49,7 +49,7 @@ import {
 } from '../../../codewhisperer/ui/codeWhispererNodes'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { listCodeWhispererCommands } from '../../../codewhisperer/ui/statusBarMenu'
-import { CodeScansState, CodeSuggestionsState } from '../../../codewhisperer/models/model'
+import { CodeScansState, CodeSuggestionsState, codeScanState } from '../../../codewhisperer/models/model'
 import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
 import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
 import { focusAmazonQPanel } from '../../../codewhispererChat/commands/registerCommands'
@@ -207,6 +207,7 @@ describe('CodeWhisperer-basicCommands', function () {
         afterEach(function () {
             targetCommand?.dispose()
             sinon.restore()
+            codeScanState.setToNotStarted()
         })
 
         it('prompts user to reauthenticate if connection is expired', async function () {
