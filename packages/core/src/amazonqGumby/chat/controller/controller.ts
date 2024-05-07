@@ -326,7 +326,6 @@ export class GumbyController {
                     )
 
                     try {
-                        // When user provided a
                         await validateCanCompileProject()
                     } catch (err: any) {
                         if (err instanceof JavaHomeNotSetError) {
