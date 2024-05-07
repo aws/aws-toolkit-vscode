@@ -764,7 +764,7 @@ export class FeatureDevController {
             tabID: message.tabID,
             message: newTaskChanges,
         })
-        this.messenger.sendUpdatePlaceholder(message.tabID, 'Briefly describe a task or issue')
+        this.messenger.sendUpdatePlaceholder(message.tabID, 'Describe your task or issue in as much detail as possible')
     }
 
     private async closeSession(message: any) {
