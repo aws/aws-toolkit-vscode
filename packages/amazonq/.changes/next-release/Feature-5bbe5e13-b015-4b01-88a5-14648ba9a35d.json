@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Inline Suggestions: Only display the 'Open Chat' CodeLens if the user is signed into Amazon Q."
+}

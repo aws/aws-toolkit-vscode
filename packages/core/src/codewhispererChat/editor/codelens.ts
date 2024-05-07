@@ -8,6 +8,7 @@ import { ToolkitError } from '../../shared/errors'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { platform } from 'os'
 import { focusAmazonQPanel } from '../commands/registerCommands'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
 
 /** When the user clicks the CodeLens that prompts user to try Amazon Q chat */
 export const tryChatCodeLensCommand = Commands.declare(`_aws.amazonq.tryChatCodeLens`, () => async () => {
@@ -65,6 +66,10 @@ export class TryChatCodeLensProvider implements vscode.CodeLensProvider {
     ): vscode.ProviderResult<vscode.CodeLens[]> {
         return new Promise(async resolve => {
             token.onCancellationRequested(() => resolve([]))
+
+            if ((await AuthUtil.instance.getChatAuthState(false)).amazonQ !== 'connected') {
+                return resolve([])
+            }
 
             if (this.count >= TryChatCodeLensProvider.maxCount) {
                 // We only want to show this code lens a certain amount of times
