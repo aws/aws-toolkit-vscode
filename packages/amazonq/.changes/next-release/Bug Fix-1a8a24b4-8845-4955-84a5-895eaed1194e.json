@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Prevent Q chat from hanging in Js/Ts files by temporarily disable FQN"
+	"description": "Q chat may stop responding after processing Javascript/Typescript code"
 }
