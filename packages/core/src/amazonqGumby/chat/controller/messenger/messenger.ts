@@ -197,6 +197,7 @@ export class Messenger {
     public sendCompilationInProgress(tabID: string) {
         const message = CodeWhispererConstants.buildStartedChatMessage
 
+        // Mynah UI requires us sending `message: undefined` before passing the `message` for animation to work
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, { inProgress: true, message: undefined })
         )
@@ -353,6 +354,7 @@ export class Messenger {
     }
 
     public sendTransformationIntroduction(tabID: string) {
+        // Mynah UI requires us sending `message: undefined` before passing the `message` for animation to work
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, { inProgress: true, message: undefined })
         )
