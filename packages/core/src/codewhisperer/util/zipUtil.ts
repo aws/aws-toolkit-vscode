@@ -10,11 +10,10 @@ import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
 import { ToolkitError } from '../../shared/errors'
 import { fsCommon } from '../../srcShared/fs'
-import { collectFiles } from '../../amazonqFeatureDev/util/files'
 import { getLoggerForScope } from '../service/securityScanHandler'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
-import { CurrentWsFolders } from '../../amazonqFeatureDev/types'
+import { CurrentWsFolders, collectFiles } from '../../shared/utilities/workspaceUtils'
 
 export interface ZipMetadata {
     rootDir: string
@@ -127,7 +126,12 @@ export class ZipUtil {
 
         const projectPaths = this.getProjectPaths()
 
-        const files = await collectFiles(projectPaths, vscode.workspace.workspaceFolders as CurrentWsFolders)
+        const files = await collectFiles(
+            projectPaths,
+            vscode.workspace.workspaceFolders as CurrentWsFolders,
+            true,
+            CodeWhispererConstants.projectScanPayloadSizeLimitBytes
+        )
         const languageCount = new Map<CodewhispererLanguage, number>()
         for (const file of files) {
             const isFileOpenAndDirty = this.isFileOpenAndDirty(file.fileUri)
