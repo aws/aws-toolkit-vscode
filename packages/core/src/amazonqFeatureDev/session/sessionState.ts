@@ -55,6 +55,11 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
     constructor(private config: Omit<SessionStateConfig, 'uploadId'>, public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
+
+    updateWorkspaceRoot(workspaceRoot: string) {
+        this.config.workspaceRoots = [workspaceRoot]
+    }
+
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         const uploadId = await telemetry.amazonq_createUpload.run(async span => {
             span.record({
@@ -452,6 +457,11 @@ export class PrepareCodeGenState implements SessionState {
         this.uploadId = config.uploadId
         this.conversationId = config.conversationId
     }
+
+    updateWorkspaceRoot(workspaceRoot: string) {
+        this.config.workspaceRoots = [workspaceRoot]
+    }
+
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         action.messenger.sendAnswer({
             message: 'Uploading code ...',
