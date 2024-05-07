@@ -372,7 +372,7 @@ export class GumbyController {
     private async processHumanChatMessage(data: { message: string; tabID: string }) {
         this.messenger.sendUserPrompt(data.message, data.tabID)
         this.messenger.sendChatInputEnabled(data.tabID, false)
-        this.messenger.sendUpdatePlaceholder(data.tabID, 'Chat is disabled during Code Transformation.')
+        this.messenger.sendUpdatePlaceholder(data.tabID, 'Open a new tab to chat with Q')
 
         const session = this.sessionStorage.getSession()
         switch (session.conversationState) {

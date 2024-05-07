@@ -28,7 +28,7 @@ export class TabDataGenerator {
         ['unknown', 'Ask a question or enter "/" for quick actions'],
         ['cwc', 'Ask a question or enter "/" for quick actions'],
         ['featuredev', 'Briefly describe a task or issue'],
-        ['gumby', 'Chat is disabled during Code Transformation.'],
+        ['gumby', 'Open a new tab to chat with Q'],
     ])
 
     private tabWelcomeMessage: Map<TabType, string> = new Map([

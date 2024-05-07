@@ -296,13 +296,17 @@ describe('startSecurityScan', function () {
         } as CodewhispererSecurityScan)
     })
 
-    it('Should not show security scan results if a later scan already finished', async function () {
+    it('Should cancel a scan if a newer one has started', async function () {
         getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
-        const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
-        const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
-        diagnosticsProvider.securityScanRender.lastUpdated = Date.now() + 60
-
         await model.CodeScansState.instance.setScansEnabled(true)
+
+        const scanPromise = startSecurityScan.startSecurityScan(
+            mockSecurityPanelViewProvider,
+            editor,
+            createClient(),
+            extensionContext,
+            CodeAnalysisScope.FILE
+        )
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
@@ -310,7 +314,46 @@ describe('startSecurityScan', function () {
             extensionContext,
             CodeAnalysisScope.FILE
         )
-        assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
-        assert.ok(securityScanRenderSpy.notCalled)
+        await scanPromise
+        assertTelemetry('codewhisperer_securityScan', [
+            {
+                result: 'Cancelled',
+                reason: 'Security scan stopped by user.',
+            },
+            {
+                result: 'Succeeded',
+            },
+        ])
+    })
+
+    it('Should not cancel a project scan if a file scan has started', async function () {
+        getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
+        await model.CodeScansState.instance.setScansEnabled(true)
+
+        const scanPromise = startSecurityScan.startSecurityScan(
+            mockSecurityPanelViewProvider,
+            editor,
+            createClient(),
+            extensionContext,
+            CodeAnalysisScope.PROJECT
+        )
+        await startSecurityScan.startSecurityScan(
+            mockSecurityPanelViewProvider,
+            editor,
+            createClient(),
+            extensionContext,
+            CodeAnalysisScope.FILE
+        )
+        await scanPromise
+        assertTelemetry('codewhisperer_securityScan', [
+            {
+                result: 'Succeeded',
+                codewhispererCodeScanScope: 'FILE',
+            },
+            {
+                result: 'Succeeded',
+                codewhispererCodeScanScope: 'PROJECT',
+            },
+        ])
     })
 })

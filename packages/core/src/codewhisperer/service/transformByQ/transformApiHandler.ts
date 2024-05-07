@@ -13,7 +13,8 @@ import {
     FolderInfo,
     HilZipManifest,
     IHilZipManifestParams,
-    sessionPlanProgress,
+    jobPlanProgress,
+    sessionJobHistory,
     StepProgress,
     transformByQState,
     TransformByQStatus,
@@ -45,6 +46,7 @@ import { downloadExportResultArchive } from '../../../shared/utilities/download'
 import { ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhisperer-streaming'
 import { fsCommon } from '../../../srcShared/fs'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
+import { convertToTimeString, encodeHTML } from '../../../shared/utilities/textUtilities'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -66,6 +68,18 @@ export function throwIfCancelled() {
     if (transformByQState.isCancelled()) {
         throw new TransformByQStoppedError()
     }
+}
+
+export function updateJobHistory() {
+    if (transformByQState.getJobId() !== '') {
+        sessionJobHistory[transformByQState.getJobId()] = {
+            startTime: transformByQState.getStartTime(),
+            projectName: transformByQState.getProjectName(),
+            status: transformByQState.getPolledJobStatus(),
+            duration: convertToTimeString(calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime())),
+        }
+    }
+    return sessionJobHistory
 }
 
 export function getHeadersObj(sha256: string, kmsKeyArn: string | undefined) {
@@ -242,6 +256,8 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
         getLogger().error(`CodeTransformation: UploadArtifactToS3 error: = ${errorMessage}`)
         throw new Error('S3 upload failed')
     }
+    transformByQState.setJobId(encodeHTML(response.uploadId))
+    updateJobHistory()
     return response.uploadId
 }
 
@@ -498,32 +514,7 @@ export function getTransformationIcon(name: string) {
 }
 
 export function getFormattedString(s: string) {
-    switch (s) {
-        case 'linesOfCode':
-            return CodeWhispererConstants.linesOfCodeMessage
-        case 'plannedDependencyChanges':
-            return CodeWhispererConstants.dependenciesToBeReplacedMessage
-        case 'plannedDeprecatedApiChanges':
-            return CodeWhispererConstants.deprecatedCodeToBeReplacedMessage
-        case 'plannedFileChanges':
-            return CodeWhispererConstants.filesToBeChangedMessage
-        case 'dependencyName':
-            return CodeWhispererConstants.dependencyNameColumn
-        case 'action':
-            return CodeWhispererConstants.actionColumn
-        case 'currentVersion':
-            return CodeWhispererConstants.currentVersionColumn
-        case 'targetVersion':
-            return CodeWhispererConstants.targetVersionColumn
-        case 'relativePath':
-            return CodeWhispererConstants.relativePathColumn
-        case 'apiFullyQualifiedName':
-            return CodeWhispererConstants.apiNameColumn
-        case 'numChangedFiles':
-            return CodeWhispererConstants.numChangedFilesColumn
-        default:
-            return s
-    }
+    return CodeWhispererConstants.formattedStringMap.get(s) ?? s
 }
 
 export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [key: string]: string }) {
@@ -617,13 +608,13 @@ export async function getTransformationPlan(jobId: string) {
 
         const arrowIcon = getTransformationIcon('upArrow')
 
-        let plan = `<style>table {border: 1px solid #424750;}</style>\n\n<a id="top"></a><br><p style="font-size: 24px; color: white;"><img src="${logoIcon}" style="margin-right: 15px; vertical-align: middle;"></img><b>${CodeWhispererConstants.planTitle}</b></p><br>`
+        let plan = `<style>table {border: 1px solid #424750;}</style>\n\n<a id="top"></a><br><p style="font-size: 24px;"><img src="${logoIcon}" style="margin-right: 15px; vertical-align: middle;"></img><b>${CodeWhispererConstants.planTitle}</b></p><br>`
         plan += `<div style="display: flex;"><div style="flex: 1; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p>${
             CodeWhispererConstants.planIntroductionMessage
         }</p></div>${getJobStatisticsHtml(jobStatistics)}</div>`
-        plan += `<div style="margin-top: 32px; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p style="font-size: 18px; color: white; margin-bottom: 4px;"><b>${CodeWhispererConstants.planHeaderMessage}</b></p><i>${CodeWhispererConstants.planDisclaimerMessage} <a href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html">Read more.</a></i><br><br>`
+        plan += `<div style="margin-top: 32px; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p style="font-size: 18px; margin-bottom: 4px;"><b>${CodeWhispererConstants.planHeaderMessage}</b></p><i>${CodeWhispererConstants.planDisclaimerMessage} <a href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html">Read more.</a></i><br><br>`
         response.transformationPlan.transformationSteps.slice(1).forEach(step => {
-            plan += `<div style="border: 1px solid #424750; border-radius: 8px; padding: 20px;"><div style="display:flex; justify-content:space-between; align-items:center;"><p style="font-size: 16px; color: white; margin-bottom: 4px;">${step.name}</p><a href="#top">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle"></a></div><p>${step.description}</p>`
+            plan += `<div style="border: 1px solid #424750; border-radius: 8px; padding: 20px;"><div style="display:flex; justify-content:space-between; align-items:center;"><p style="font-size: 16px; margin-bottom: 4px;">${step.name}</p><a href="#top">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle"></a></div><p>${step.description}</p>`
             plan = addTableMarkdown(plan, step.id, tableMapping)
             plan += `</div><br>`
         })
@@ -712,10 +703,10 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             status = response.transformationJob.status!
             // must be series of ifs, not else ifs
             if (CodeWhispererConstants.validStatesForJobStarted.includes(status)) {
-                sessionPlanProgress['startJob'] = StepProgress.Succeeded
+                jobPlanProgress['startJob'] = StepProgress.Succeeded
             }
             if (CodeWhispererConstants.validStatesForBuildSucceeded.includes(status)) {
-                sessionPlanProgress['buildCode'] = StepProgress.Succeeded
+                jobPlanProgress['buildCode'] = StepProgress.Succeeded
             }
             // emit metric when job status changes
             if (status !== transformByQState.getPolledJobStatus()) {

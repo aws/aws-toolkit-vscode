@@ -300,6 +300,8 @@ export class FeatureDevController {
     private async onApproachGeneration(session: Session, message: string, tabID: string) {
         await session.preloader(message)
 
+        getLogger().info(`Q - Dev Chat conversation id: ${session.conversationId}`)
+
         this.messenger.sendAnswer({
             type: 'answer',
             tabID,
@@ -345,6 +347,8 @@ export class FeatureDevController {
      * Handle a regular incoming message when a user is in the code generation phase
      */
     private async onCodeGeneration(session: Session, message: string, tabID: string) {
+        getLogger().info(`Q - Dev chat conversation id: ${session.conversationId}`)
+
         // lock the UI/show loading bubbles
         this.messenger.sendAsyncEventProgress(
             tabID,
@@ -623,7 +627,7 @@ export class FeatureDevController {
         }
 
         if (uri && uri instanceof vscode.Uri) {
-            session.config.workspaceRoots = [uri.fsPath]
+            session.updateWorkspaceRoot(uri.fsPath)
             this.messenger.sendAnswer({
                 message: `Changed source root to: ${uri.fsPath}`,
                 type: 'answer',
