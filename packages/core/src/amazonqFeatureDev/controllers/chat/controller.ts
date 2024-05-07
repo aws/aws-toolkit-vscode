@@ -32,8 +32,9 @@ import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { placeholder } from '../../../shared/vscode/commands2'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
-import { getPathsFromZipFilePath, getWorkspaceFoldersByPrefixes } from '../../util/files'
+import { getPathsFromZipFilePath } from '../../util/files'
 import { examples, newTaskChanges, approachCreation, sessionClosed, updateCode } from '../../userFacingText'
+import { getWorkspaceFoldersByPrefixes } from '../../../shared/utilities/workspaceUtils'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
