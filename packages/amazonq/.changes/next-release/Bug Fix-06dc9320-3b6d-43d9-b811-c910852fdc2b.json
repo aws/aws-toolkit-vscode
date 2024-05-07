@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "modifying the root folder for /dev now modifies it"
+}
