@@ -9,7 +9,8 @@
     - Update the changelog using `npm run newChange`.
     - Link to related issues/commits.
     - Testing: how did you test your changes?
-    - Screenshots
+    - Screenshots (if the pull request is related to UI/UX then please include light and dark theme screenshots)
+    - UX Reviews and Sign-off
 -->
 
 ## License
