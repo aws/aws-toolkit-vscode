@@ -27,3 +27,6 @@ internal fun fileTooLarge(presentableSize: String): Nothing =
 
 internal fun uploadArtifactFailedError(): Nothing =
     throw CodeWhispererCodeScanException(message("codewhisperer.codescan.upload_to_s3_failed"))
+
+internal fun noSupportedFilesError(): Nothing =
+    throw CodeWhispererCodeScanException(message("codewhisperer.codescan.unsupported_language_error"))

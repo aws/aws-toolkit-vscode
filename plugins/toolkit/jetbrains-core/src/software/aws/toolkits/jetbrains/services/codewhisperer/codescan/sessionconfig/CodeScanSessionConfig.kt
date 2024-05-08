@@ -18,6 +18,11 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.jetbrains.services.amazonq.FeatureDevSessionContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.fileTooLarge
+import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.noFileOpenError
+import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.noSupportedFilesError
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPlainText
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererUnknownLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.CODE_SCAN_CREATE_PAYLOAD_TIMEOUT_IN_SECONDS
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.CodeAnalysisScope
@@ -37,7 +42,7 @@ import java.util.Stack
 import kotlin.io.path.relativeTo
 
 class CodeScanSessionConfig(
-    private val selectedFile: VirtualFile,
+    private val selectedFile: VirtualFile?,
     private val project: Project,
     private val scope: CodeAnalysisScope
 ) {
@@ -69,27 +74,32 @@ class CodeScanSessionConfig(
         return exceedsLimit
     }
 
-    fun getSelectedFile(): VirtualFile = selectedFile
+    private var programmingLanguage: CodeWhispererProgrammingLanguage = selectedFile?.programmingLanguage() ?: CodeWhispererUnknownLanguage.INSTANCE
+
+    fun getProgrammingLanguage(): CodeWhispererProgrammingLanguage = programmingLanguage
+
+    fun getSelectedFile(): VirtualFile? = selectedFile
 
     fun createPayload(): Payload {
+        // Fail fast if the selected file is null for File Scan
+        if (scope == CodeAnalysisScope.FILE && selectedFile == null) {
+            noFileOpenError()
+        }
+
         // Fail fast if the selected file size is greater than the payload limit.
-        if (selectedFile.length > getPayloadLimitInBytes()) {
+        if (selectedFile != null && selectedFile.length > getPayloadLimitInBytes()) {
             fileTooLarge(getPresentablePayloadLimit())
         }
 
         val start = Instant.now().toEpochMilli()
 
-        LOG.debug { "Creating payload. File selected as root for the context truncation: ${selectedFile.path}" }
+        LOG.debug { "Creating payload. File selected as root for the context truncation: ${projectRoot.path}" }
 
-        val payloadMetadata = when (selectedFile.path.startsWith(projectRoot.path)) {
-            true -> when (scope) {
+        val payloadMetadata = when (selectedFile) {
+            null -> getProjectPayloadMetadata()
+            else -> when (scope) {
                 CodeAnalysisScope.PROJECT -> getProjectPayloadMetadata()
-                CodeAnalysisScope.FILE -> getFilePayloadMetadata()
-            }
-            false -> {
-                // Set project root as the parent of the selected file.
-                projectRoot = selectedFile.parent
-                getFilePayloadMetadata()
+                CodeAnalysisScope.FILE -> getFilePayloadMetadata(selectedFile)
             }
         }
 
@@ -108,13 +118,13 @@ class CodeScanSessionConfig(
         return Payload(payloadContext, srcZip)
     }
 
-    fun getFilePayloadMetadata(): PayloadMetadata =
+    fun getFilePayloadMetadata(file: VirtualFile): PayloadMetadata =
         // Handle the case where the selected file is outside the project root.
         PayloadMetadata(
-            setOf(selectedFile.path),
-            selectedFile.length,
-            Files.lines(selectedFile.toNioPath()).count().toLong(),
-            selectedFile.programmingLanguage().toTelemetryType()
+            setOf(file.path),
+            file.length,
+            Files.lines(file.toNioPath()).count().toLong(),
+            file.programmingLanguage().toTelemetryType()
         )
 
     /**
@@ -137,7 +147,7 @@ class CodeScanSessionConfig(
         try {
             withTimeout(Duration.ofSeconds(TELEMETRY_TIMEOUT_IN_SECONDS)) {
                 if (scope == CodeAnalysisScope.FILE) {
-                    totalSize = selectedFile.length
+                    totalSize = selectedFile?.length ?: 0L
                 } else {
                     VfsUtil.collectChildrenRecursively(projectRoot).filter {
                         !it.isDirectory && !it.`is`((VFileProperty.SYMLINK)) && (
@@ -168,7 +178,7 @@ class CodeScanSessionConfig(
         val stack = Stack<VirtualFile>()
         var currentTotalFileSize = 0L
         var currentTotalLines = 0L
-        val languageCounts = mutableMapOf<CodewhispererLanguage, Int>()
+        val languageCounts = mutableMapOf<CodeWhispererProgrammingLanguage, Int>()
 
         stack.push(projectRoot)
         while (stack.isNotEmpty()) {
@@ -179,8 +189,8 @@ class CodeScanSessionConfig(
                     if (willExceedPayloadLimit(currentTotalFileSize, current.length)) {
                         break
                     } else {
-                        val language = current.programmingLanguage().toTelemetryType()
-                        if (language != CodewhispererLanguage.Plaintext && language != CodewhispererLanguage.Unknown) {
+                        val language = current.programmingLanguage()
+                        if (language != CodeWhispererPlainText.INSTANCE && language != CodeWhispererUnknownLanguage.INSTANCE) {
                             languageCounts[language] = (languageCounts[language] ?: 0) + 1
                         }
 
@@ -202,9 +212,11 @@ class CodeScanSessionConfig(
         val maxCountLanguage = languageCounts.filter { it.value == maxCount }.keys.firstOrNull()
 
         if (maxCountLanguage == null) {
-            return PayloadMetadata(files, currentTotalFileSize, currentTotalLines, CodewhispererLanguage.Unknown)
+            programmingLanguage = CodeWhispererUnknownLanguage.INSTANCE
+            noSupportedFilesError()
         }
-        return PayloadMetadata(files, currentTotalFileSize, currentTotalLines, maxCountLanguage)
+        programmingLanguage = maxCountLanguage
+        return PayloadMetadata(files, currentTotalFileSize, currentTotalLines, maxCountLanguage.toTelemetryType())
     }
 
     fun isProjectTruncated() = isProjectTruncated
@@ -221,7 +233,7 @@ class CodeScanSessionConfig(
     companion object {
         private val LOG = getLogger<CodeScanSessionConfig>()
         private const val TELEMETRY_TIMEOUT_IN_SECONDS: Long = 10
-        fun create(file: VirtualFile, project: Project, scope: CodeAnalysisScope): CodeScanSessionConfig = CodeScanSessionConfig(file, project, scope)
+        fun create(file: VirtualFile?, project: Project, scope: CodeAnalysisScope): CodeScanSessionConfig = CodeScanSessionConfig(file, project, scope)
     }
 }
 
