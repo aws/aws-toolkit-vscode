@@ -23,7 +23,7 @@ describe('zipStream', function () {
     })
 
     it('Should create a zip stream from text content', async function () {
-        const zipStream = new ZipStream()
+        const zipStream = new ZipStream({ hashAlgorithm: 'md5' })
         await zipStream.writeString('foo bar', 'file.txt')
         const result = await zipStream.finalize()
 
@@ -36,7 +36,7 @@ describe('zipStream', function () {
             .createHash('md5')
             .update(await fsCommon.readFile(zipPath))
             .digest('base64')
-        assert.strictEqual(result.md5, expectedMd5)
+        assert.strictEqual(result.hash, expectedMd5)
         assert.strictEqual(result.sizeInBytes, (await fsCommon.stat(zipPath)).size)
     })
 
@@ -44,8 +44,8 @@ describe('zipStream', function () {
         const testFilePath = path.join(tmpDir, 'test.txt')
         await fsCommon.writeFile(testFilePath, 'foo bar')
 
-        const zipStream = new ZipStream()
-        await zipStream.writeFile(testFilePath, 'file.txt')
+        const zipStream = new ZipStream({ hashAlgorithm: 'md5' })
+        zipStream.writeFile(testFilePath, 'file.txt')
         const result = await zipStream.finalize()
 
         const zipPath = path.join(tmpDir, 'test.zip')
@@ -58,7 +58,7 @@ describe('zipStream', function () {
             .createHash('md5')
             .update(await fsCommon.readFile(zipPath))
             .digest('base64')
-        assert.strictEqual(result.md5, expectedMd5)
+        assert.strictEqual(result.hash, expectedMd5)
         assert.strictEqual(result.sizeInBytes, (await fsCommon.stat(zipPath)).size)
     })
 })
