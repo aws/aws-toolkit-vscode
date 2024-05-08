@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Completion may fail unexpected if user opened many tabs"
+}
