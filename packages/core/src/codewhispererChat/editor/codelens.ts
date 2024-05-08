@@ -8,7 +8,7 @@ import { ToolkitError } from '../../shared/errors'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { platform } from 'os'
 import { focusAmazonQPanel } from '../commands/registerCommands'
-import { AuthUtil } from '../../codewhisperer/util/authUtil'
+import { AuthStates, AuthUtil } from '../../codewhisperer/util/authUtil'
 
 /** When the user clicks the CodeLens that prompts user to try Amazon Q chat */
 export const tryChatCodeLensCommand = Commands.declare(`_aws.amazonq.tryChatCodeLens`, () => async () => {
@@ -67,7 +67,7 @@ export class TryChatCodeLensProvider implements vscode.CodeLensProvider {
         return new Promise(async resolve => {
             token.onCancellationRequested(() => resolve([]))
 
-            if ((await AuthUtil.instance.getChatAuthState(false)).amazonQ !== 'connected') {
+            if ((await AuthUtil.instance.getChatAuthState(false)).amazonQ !== AuthStates.connected) {
                 return resolve([])
             }
 
