@@ -611,9 +611,9 @@ export const codeFixAppliedFailedMessage = 'Failed to apply suggested code fix.'
 export const runSecurityScanButtonTitle = 'Run security scan'
 
 export const crossFileContextConfig = {
-    numberOfChunkToFetch: 200,
-    topK: 10,
-    numberOfLinesEachChunk: 50,
+    numberOfChunkToFetch: 60,
+    topK: 3,
+    numberOfLinesEachChunk: 10,
 }
 
 export const utgConfig = {
