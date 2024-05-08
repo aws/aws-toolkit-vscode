@@ -172,7 +172,7 @@ export async function startSecurityScan(
             scanName
         )
         if (scanJob.status === 'Failed') {
-            throw new Error('Amazon Q: Security scan failed. Please try again')
+            throw new Error('Failed code scan service error')
         }
         logger.verbose(`Created security scan job.`)
         codeScanTelemetryEntry.codewhispererCodeScanJobId = scanJob.jobId
@@ -183,7 +183,7 @@ export async function startSecurityScan(
         throwIfCancelled(scope, codeScanStartTime)
         const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scope, codeScanStartTime)
         if (jobStatus === 'Failed') {
-            throw new Error('Amazon Q: Security scan failed. Please try again')
+            throw new Error('Failed code scan service error')
         }
 
         /**
@@ -246,30 +246,23 @@ export async function startSecurityScan(
             }
         }
         let telemetryErrorMessage = ''
-        switch ((error as Error).message) {
+        const errorMessage = (error as Error).message
+        switch (errorMessage) {
             case "Amazon Q: Can't find valid source zip.":
                 telemetryErrorMessage = 'Failed to create valid source zip'
                 break
-            case "Amazon Q: Can't create upload url.":
-                telemetryErrorMessage = 'Failed to create upload url'
-                break
-            case 'Amazon Q is unable to upload workspace artifacts to Amazon S3 for security scans. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security_iam_manage-access-with-policies.html) or contact your network or organization administrator.':
-                telemetryErrorMessage = 'Failed to upload aritfact to S3'
-                break
-            case "Amazon Q: Can't create code scan":
-                telemetryErrorMessage = 'Failed in Creating a code scan'
-                break
-            case 'Amazon Q: Security scan failed. Please try again':
-                telemetryErrorMessage = 'Failed code scan service error'
-                break
             default:
-                if ((error as Error).message.startsWith('Amazon Q:  Selected file is larger than')) {
+                if (errorMessage.startsWith('Amazon Q: The selected file is larger than')) {
                     telemetryErrorMessage = 'Payload size limit reached.'
                 }
                 break
         }
-
-        codeScanTelemetryEntry.reason = telemetryErrorMessage !== '' ? telemetryErrorMessage : (error as Error).message
+        codeScanTelemetryEntry.reason =
+            telemetryErrorMessage !== ''
+                ? telemetryErrorMessage
+                : error instanceof Error && error.message !== null
+                ? error.message
+                : 'Security scan failed.'
     } finally {
         codeScanState.setToNotStarted()
         codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime
@@ -320,10 +313,17 @@ export async function emitCodeScanTelemetry(editor: vscode.TextEditor, codeScanT
         passive: codeScanTelemetryEntry.codewhispererCodeScanScope === CodeAnalysisScope.FILE,
     })
 }
-
+const CodeScanErrorMessage = 'Amazon Q encountered an error while scanning for security issues. Try again later.'
 export function errorPromptHelper(error: Error, scope: CodeAnalysisScope) {
     if (scope === CodeAnalysisScope.PROJECT) {
-        void vscode.window.showWarningMessage(`Security scan failed. ${error}`, ok)
+        if (
+            error.message.startsWith('Amazon Q: The selected project is larger than') ||
+            error.message.startsWith('Amazon Q: The selected fle is larger than')
+        ) {
+            void vscode.window.showWarningMessage(`${error}`, ok)
+        } else {
+            void vscode.window.showWarningMessage(CodeScanErrorMessage, ok)
+        }
     }
 }
 

@@ -106,9 +106,7 @@ export class ZipUtil {
 
         if (this.reachSizeLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.FILE)) {
             throw new ToolkitError(
-                `Amazon Q:  Selected file is larger than ${
-                    this.getFileScanPayloadSizeLimitInBytes() / CodeWhispererConstants.totalBytesInMB
-                }MB. Please try again with a different file.`
+                `Amazon Q: The selected file is larger than ${CodeWhispererConstants.fileScanPayloadSizeLimitKB}. Try again with a smaller file.`
             )
         }
 
@@ -142,9 +140,7 @@ export class ZipUtil {
                     this.willReachSizeLimit(this._totalSize, fileSize)
                 ) {
                     throw new ToolkitError(
-                        `Amazon Q:  Selected file is larger than ${
-                            this.getProjectScanPayloadSizeLimitInBytes() / CodeWhispererConstants.totalBytesInMB
-                        }MB. Please try again with a different file.`
+                        `Amazon Q: The selected project is larger than ${CodeWhispererConstants.projectScanPayloadSizeLimitMB}. Try again with a small project.`
                     )
                 }
                 this._pickedSourceFiles.add(file.fileUri.fsPath)

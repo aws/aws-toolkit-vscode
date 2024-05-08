@@ -214,11 +214,13 @@ export const codeScanJavascriptPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 
 
 export const fileScanPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
 
+export const fileScanPayloadSizeLimitKB = '200KB'
+
 export const fileScanUploadIntent = 'AUTOMATIC_FILE_SECURITY_SCAN'
 
 export const projectScanPayloadSizeLimitBytes = 500 * Math.pow(2, 20) // 500 MB
 
-export const totalBytesInMB = 1024 * 1024
+export const projectScanPayloadSizeLimitMB = '500MB'
 
 export const projectScanUploadIntent = 'FULL_PROJECT_SECURITY_SCAN'
 
@@ -294,7 +296,7 @@ export const freeTierLimitReachedCodeScan = 'You have reached the monthly quota 
 
 export const fileScansLimitReached = 'You have reached the monthly quota of auto-scans.'
 
-export const projectScansLimitReached = 'You have reached maximum project scan count for this month.'
+export const projectScansLimitReached = 'You have reached the monthly limit for project scans.'
 
 export const throttlingLearnMore = `Learn More`
 
