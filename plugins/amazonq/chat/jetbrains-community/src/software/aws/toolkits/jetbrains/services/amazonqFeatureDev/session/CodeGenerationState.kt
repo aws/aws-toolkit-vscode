@@ -5,14 +5,18 @@ package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session
 
 import kotlinx.coroutines.delay
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeGenerationWorkflowStatus
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublisher
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FEATURE_NAME
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.codeGenerationFailedError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAnswerPart
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.exportTaskAssistArchiveResult
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.getTaskAssistCodeGeneration
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.startTaskAssistCodeGeneration
+import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.getStartUrl
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AmazonqTelemetry
+import software.aws.toolkits.telemetry.Result
+
+private val logger = getLogger<CodeGenerationState>()
 
 class CodeGenerationState(
     override val tabID: String,
@@ -27,49 +31,67 @@ class CodeGenerationState(
 
     override suspend fun interact(action: SessionStateAction): SessionStateInteraction {
         val startTime = System.currentTimeMillis()
+        var result: Result = Result.Succeeded
+        var failureReason: String? = null
+        var codeGenerationWorkflowStatus: CodeGenerationWorkflowStatus = CodeGenerationWorkflowStatus.COMPLETE
+        var numberOfReferencesGenerated: Int? = null
+        var numberOfFilesGenerated: Int? = null
+        try {
+            val response = config.featureDevService.startTaskAssistCodeGeneration(
+                conversationId = config.conversationId,
+                uploadId = uploadId,
+                message = action.msg
+            )
 
-        val response = startTaskAssistCodeGeneration(
-            proxyClient = config.proxyClient,
-            conversationId = config.conversationId,
-            uploadId = uploadId,
-            message = action.msg
-        )
+            messenger.sendAnswerPart(
+                tabId = tabID,
+                message = message("amazonqFeatureDev.code_generation.generating_code")
+            )
 
-        messenger.sendAnswerPart(
-            tabId = tabID,
-            message = message("amazonqFeatureDev.code_generation.generating_code")
-        )
+            val codeGenerationResult = generateCode(codeGenerationId = response.codeGenerationId())
+            numberOfReferencesGenerated = codeGenerationResult.references.size
+            numberOfFilesGenerated = codeGenerationResult.newFiles.size
 
-        val codeGenerationResult = generateCode(codeGenerationId = response.codeGenerationId())
+            val nextState = PrepareCodeGenerationState(
+                tabID = tabID,
+                approach = approach,
+                config = config,
+                filePaths = codeGenerationResult.newFiles,
+                deletedFiles = codeGenerationResult.deletedFiles,
+                references = codeGenerationResult.references,
+                currentIteration = currentIteration + 1,
+                uploadId = uploadId,
+                messenger = messenger,
+            )
 
-        AmazonqTelemetry.codeGenerationInvoke(
-            amazonqConversationId = config.conversationId,
-            amazonqCodeGenerationResult = CodeGenerationWorkflowStatus.COMPLETE.toString(),
-            amazonqGenerateCodeIteration = currentIteration.toDouble(),
-            amazonqNumberOfReferences = codeGenerationResult.references.size.toDouble(),
-            amazonqGenerateCodeResponseLatency = (System.currentTimeMillis() - startTime).toDouble(),
-            amazonqNumberOfFilesGenerated = codeGenerationResult.newFiles.size.toDouble(),
-            amazonqRepositorySize = repositorySize,
-        )
+            // It is not needed to interact right away with the PrepareCodeGeneration.
+            // returns therefore a SessionStateInteraction object to be handled by the controller.
+            return SessionStateInteraction(
+                nextState = nextState,
+                interaction = Interaction(content = "", interactionSucceeded = true)
+            )
+        } catch (e: Exception) {
+            logger.warn(e) { "$FEATURE_NAME: Code generation failed: ${e.message}" }
+            result = Result.Failed
+            failureReason = e.javaClass.simpleName
+            codeGenerationWorkflowStatus = CodeGenerationWorkflowStatus.FAILED
 
-        val nextState = PrepareCodeGenerationState(
-            tabID = tabID,
-            approach = approach,
-            config = config,
-            filePaths = codeGenerationResult.newFiles,
-            deletedFiles = codeGenerationResult.deletedFiles,
-            references = codeGenerationResult.references,
-            currentIteration = currentIteration + 1,
-            uploadId = uploadId,
-            messenger = messenger,
-        )
-
-        // It is not needed to interact right away with the PrepareCodeGeneration.
-        // returns therefore a SessionStateInteraction object to be handled by the controller.
-        return SessionStateInteraction(
-            nextState = nextState,
-            interaction = Interaction(content = "", interactionSucceeded = true)
-        )
+            throw e
+        } finally {
+            AmazonqTelemetry.codeGenerationInvoke(
+                amazonqConversationId = config.conversationId,
+                amazonqCodeGenerationResult = codeGenerationWorkflowStatus.toString(),
+                amazonqGenerateCodeIteration = currentIteration.toDouble(),
+                amazonqNumberOfReferences = numberOfReferencesGenerated?.toDouble(),
+                amazonqGenerateCodeResponseLatency = (System.currentTimeMillis() - startTime).toDouble(),
+                amazonqNumberOfFilesGenerated = numberOfFilesGenerated?.toDouble(),
+                amazonqRepositorySize = repositorySize,
+                result = result,
+                reason = failureReason,
+                duration = (System.currentTimeMillis() - startTime).toDouble(),
+                credentialStartUrl = getStartUrl(config.featureDevService.project)
+            )
+        }
     }
 }
 
@@ -78,16 +100,14 @@ private suspend fun CodeGenerationState.generateCode(codeGenerationId: String): 
     val requestDelay = 10000L
 
     repeat(pollCount) {
-        val codeGenerationResultState = getTaskAssistCodeGeneration(
-            proxyClient = config.proxyClient,
+        val codeGenerationResultState = config.featureDevService.getTaskAssistCodeGeneration(
             conversationId = config.conversationId,
             codeGenerationId = codeGenerationId,
         )
 
         when (codeGenerationResultState.codeGenerationStatus().status()) {
             CodeGenerationWorkflowStatus.COMPLETE -> {
-                val codeGenerationStreamResult = exportTaskAssistArchiveResult(
-                    proxyClient = config.proxyClient,
+                val codeGenerationStreamResult = config.featureDevService.exportTaskAssistArchiveResult(
                     conversationId = config.conversationId
                 )
 

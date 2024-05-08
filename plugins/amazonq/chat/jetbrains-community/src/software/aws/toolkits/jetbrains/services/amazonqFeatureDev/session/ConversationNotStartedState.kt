@@ -3,7 +3,10 @@
 
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session
 
-class ConversationNotStartedState(override var approach: String, override val tabID: String) : SessionState {
+class ConversationNotStartedState(
+    override var approach: String,
+    override val tabID: String,
+) : SessionState {
     override val phase = SessionStatePhase.INIT
 
     override suspend fun interact(action: SessionStateAction): SessionStateInteraction {

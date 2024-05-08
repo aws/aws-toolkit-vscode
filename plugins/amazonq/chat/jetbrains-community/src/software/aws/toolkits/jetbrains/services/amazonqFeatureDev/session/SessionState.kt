@@ -7,6 +7,5 @@ interface SessionState {
     val tabID: String
     val phase: SessionStatePhase?
     var approach: String
-
     suspend fun interact(action: SessionStateAction): SessionStateInteraction
 }

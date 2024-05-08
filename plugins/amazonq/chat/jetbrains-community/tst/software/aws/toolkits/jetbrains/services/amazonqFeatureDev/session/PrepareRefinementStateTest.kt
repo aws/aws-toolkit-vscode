@@ -21,7 +21,7 @@ import org.mockito.kotlin.whenever
 import software.aws.toolkits.jetbrains.services.amazonq.FeatureDevSessionContext
 import software.aws.toolkits.jetbrains.services.amazonq.ZipCreationResult
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FeatureDevTestBase
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.FeatureDevService
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.uploadArtifactToS3
 import java.io.File
 
@@ -33,16 +33,17 @@ class PrepareRefinementStateTest : FeatureDevTestBase() {
     private lateinit var prepareRefinementState: PrepareRefinementState
     private lateinit var repoContext: FeatureDevSessionContext
     private lateinit var sessionStateConfig: SessionStateConfig
-    private lateinit var featureDevClient: FeatureDevClient
+    private lateinit var featureDevService: FeatureDevService
 
     @Before
     override fun setup() {
         repoContext = mock()
-        featureDevClient = mock()
-        sessionStateConfig = SessionStateConfig(testConversationId, featureDevClient, repoContext)
+        featureDevService = mock()
+        sessionStateConfig = SessionStateConfig(testConversationId, repoContext, featureDevService)
         prepareRefinementState = PrepareRefinementState("", "tabId", sessionStateConfig)
         mockkStatic("software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.UploadArtifactKt")
         every { uploadArtifactToS3(any(), any(), any(), any(), any()) } just runs
+        whenever(featureDevService.project).thenReturn(projectRule.project)
     }
 
     @Test
@@ -52,11 +53,11 @@ class PrepareRefinementStateTest : FeatureDevTestBase() {
         val action = SessionStateAction("test-task", userMessage)
 
         whenever(repoContext.getProjectZip()).thenReturn(repoZipResult)
-        whenever(featureDevClient.createTaskAssistUploadUrl(testConversationId, testChecksumSha, testContentLength)).thenReturn(exampleCreateUploadUrlResponse)
+        whenever(featureDevService.createUploadUrl(testConversationId, testChecksumSha, testContentLength)).thenReturn(exampleCreateUploadUrlResponse)
 
         runTest {
             whenever(
-                featureDevClient.generateTaskAssistPlan(testConversationId, exampleCreateUploadUrlResponse.uploadId(), userMessage)
+                featureDevService.generatePlan(testConversationId, exampleCreateUploadUrlResponse.uploadId(), userMessage, 0)
             ).thenReturn(exampleGenerateTaskAssistPlanResult)
 
             val actual = prepareRefinementState.interact(action)
@@ -64,6 +65,6 @@ class PrepareRefinementStateTest : FeatureDevTestBase() {
         }
         assertThat(prepareRefinementState.phase).isEqualTo(SessionStatePhase.APPROACH)
         verify(repoContext, times(1)).getProjectZip()
-        verify(featureDevClient, times(1)).createTaskAssistUploadUrl(any(), any(), any())
+        verify(featureDevService, times(1)).createUploadUrl(any(), any(), any())
     }
 }

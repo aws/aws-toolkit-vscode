@@ -18,8 +18,8 @@ import org.mockito.kotlin.whenever
 import software.aws.toolkits.jetbrains.services.amazonq.FeatureDevSessionContext
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FeatureDevException
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FeatureDevTestBase
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.GenerateTaskAssistPlanResult
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.FeatureDevService
 import software.aws.toolkits.resources.message
 
 class RefinementStateTest : FeatureDevTestBase() {
@@ -29,16 +29,17 @@ class RefinementStateTest : FeatureDevTestBase() {
 
     private lateinit var refinementState: RefinementState
     private lateinit var sessionStateConfig: SessionStateConfig
-    private lateinit var featureDevClient: FeatureDevClient
     private lateinit var repoContext: FeatureDevSessionContext
+    private lateinit var featureDevService: FeatureDevService
 
     private val action = SessionStateAction("test-task", userMessage)
 
     @Before
     override fun setup() {
-        featureDevClient = mock()
         repoContext = mock()
-        sessionStateConfig = SessionStateConfig(testConversationId, featureDevClient, repoContext)
+        featureDevService = mock()
+        whenever(featureDevService.project).thenReturn(projectRule.project)
+        sessionStateConfig = SessionStateConfig(testConversationId, repoContext, featureDevService)
         refinementState = RefinementState("", "tabId", sessionStateConfig, exampleCreateUploadUrlResponse.uploadId(), 0)
     }
 
@@ -55,14 +56,14 @@ class RefinementStateTest : FeatureDevTestBase() {
     @Test
     fun `test refinement state with successful approach`() = runTest {
         whenever(
-            featureDevClient.generateTaskAssistPlan(testConversationId, exampleCreateUploadUrlResponse.uploadId(), userMessage)
+            featureDevService.generatePlan(testConversationId, exampleCreateUploadUrlResponse.uploadId(), userMessage, 0)
         ).thenReturn(exampleGenerateTaskAssistPlanResult)
 
         val actual = refinementState.interact(action)
         assertThat(actual.nextState).isInstanceOf(RefinementState::class.java)
         assertThat(actual.interaction.interactionSucceeded).isTrue()
 
-        verify(featureDevClient, times(1)).generateTaskAssistPlan(any(), any(), any())
+        verify(featureDevService, times(1)).generatePlan(any(), any(), any(), any())
         assertThat(refinementState.phase).isEqualTo(SessionStatePhase.APPROACH)
         assertThat(refinementState.approach).isEqualTo(exampleGenerateTaskAssistPlanResult.approach)
     }
@@ -71,14 +72,14 @@ class RefinementStateTest : FeatureDevTestBase() {
     fun `test refinement state with failed approach`() = runTest {
         val generateTaskAssistPlanResult = GenerateTaskAssistPlanResult(approach = "There has been a problem generating approach", succeededPlanning = false)
         whenever(
-            featureDevClient.generateTaskAssistPlan(testConversationId, exampleCreateUploadUrlResponse.uploadId(), userMessage)
+            featureDevService.generatePlan(testConversationId, exampleCreateUploadUrlResponse.uploadId(), userMessage, 0)
         ).thenReturn(generateTaskAssistPlanResult)
 
         val actual = refinementState.interact(action)
         assertThat(actual.nextState).isInstanceOf(RefinementState::class.java)
         assertThat(actual.interaction.interactionSucceeded).isFalse()
 
-        verify(featureDevClient, times(1)).generateTaskAssistPlan(any(), any(), any())
+        verify(featureDevService, times(1)).generatePlan(any(), any(), any(), any())
         assertThat(refinementState.phase).isEqualTo(SessionStatePhase.APPROACH)
         assertThat(refinementState.approach).isEqualTo(generateTaskAssistPlanResult.approach)
     }

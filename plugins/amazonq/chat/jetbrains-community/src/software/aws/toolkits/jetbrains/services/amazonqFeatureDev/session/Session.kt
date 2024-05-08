@@ -12,10 +12,11 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.CODE_GENERATIO
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.conversationIdNotFound
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAsyncEventProgress
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.createConversation
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.FeatureDevService
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.resolveAndCreateOrUpdateFile
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.resolveAndDeleteFile
 import software.aws.toolkits.jetbrains.services.cwc.controller.ReferenceLogController
+import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.getStartUrl
 import software.aws.toolkits.telemetry.AmazonqTelemetry
 
 class Session(val tabID: String, val project: Project) {
@@ -28,6 +29,7 @@ class Session(val tabID: String, val project: Project) {
     private var _latestMessage: String = ""
     private var task: String = ""
     private val proxyClient: FeatureDevClient
+    private val featureDevService: FeatureDevService
 
     // retry session state vars
     private var approachRetries: Int
@@ -37,9 +39,10 @@ class Session(val tabID: String, val project: Project) {
     var isAuthenticating: Boolean
 
     init {
-        _state = ConversationNotStartedState("", tabID)
         context = FeatureDevSessionContext(project)
         proxyClient = FeatureDevClient.getInstance(project)
+        featureDevService = FeatureDevService(proxyClient, project)
+        _state = ConversationNotStartedState("", tabID)
         isAuthenticating = false
         approachRetries = APPROACH_RETRY_LIMIT
         codegenRetries = CODE_GENERATION_RETRY_LIMIT
@@ -64,7 +67,7 @@ class Session(val tabID: String, val project: Project) {
         // Store the initial message when setting up the conversation so that if it fails we can retry with this message
         _latestMessage = msg
 
-        _conversationId = createConversation(proxyClient)
+        _conversationId = featureDevService.createConversation()
         val sessionStateConfig = getSessionStateConfig().copy(conversationId = this.conversationId)
         _state = PrepareRefinementState("", tabID, sessionStateConfig)
     }
@@ -86,7 +89,7 @@ class Session(val tabID: String, val project: Project) {
         )
         this._latestMessage = ""
 
-        AmazonqTelemetry.isApproachAccepted(amazonqConversationId = conversationId, enabled = true)
+        AmazonqTelemetry.isApproachAccepted(amazonqConversationId = conversationId, enabled = true, credentialStartUrl = getStartUrl(project = context.project))
     }
 
     /**
@@ -136,8 +139,8 @@ class Session(val tabID: String, val project: Project) {
 
     private fun getSessionStateConfig(): SessionStateConfig = SessionStateConfig(
         conversationId = this.conversationId,
-        proxyClient = this.proxyClient,
         repoContext = this.context,
+        featureDevService = this.featureDevService,
     )
 
     val conversationId: String

@@ -2,16 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session
-
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.userMessageNotFound
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.generatePlan
 
 class RefinementState(
     override var approach: String,
     override val tabID: String,
     val config: SessionStateConfig,
     val uploadId: String,
-    private val currentIteration: Int
+    private val currentIteration: Int,
 ) : SessionState {
     override val phase = SessionStatePhase.APPROACH
 
@@ -19,7 +17,7 @@ class RefinementState(
         if (action.msg.isEmpty()) {
             userMessageNotFound()
         }
-        val approachResponse = generatePlan(config.proxyClient, config.conversationId, uploadId, action.msg, currentIteration)
+        val approachResponse = config.featureDevService.generatePlan(config.conversationId, uploadId, action.msg, currentIteration)
 
         approach = approachResponse.approach
 

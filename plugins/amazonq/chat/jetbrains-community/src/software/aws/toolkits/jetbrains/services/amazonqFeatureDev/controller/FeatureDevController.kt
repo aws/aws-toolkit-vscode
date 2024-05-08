@@ -62,6 +62,7 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.Sessio
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.SessionStatePhase
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.storage.ChatSessionStorage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.getFollowUpOptions
+import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.getStartUrl
 import software.aws.toolkits.jetbrains.ui.feedback.FeatureDevFeedbackDialog
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AmazonqTelemetry
@@ -119,20 +120,32 @@ class FeatureDevController(
             SessionStatePhase.APPROACH -> {
                 when (message.vote) {
                     "upvote" -> {
-                        AmazonqTelemetry.approachThumbsUp(amazonqConversationId = session.conversationId)
+                        AmazonqTelemetry.approachThumbsUp(
+                            amazonqConversationId = session.conversationId,
+                            credentialStartUrl = getStartUrl(project = context.project)
+                        )
                     }
                     "downvote" -> {
-                        AmazonqTelemetry.approachThumbsDown(amazonqConversationId = session.conversationId)
+                        AmazonqTelemetry.approachThumbsDown(
+                            amazonqConversationId = session.conversationId,
+                            credentialStartUrl = getStartUrl(project = context.project)
+                        )
                     }
                 }
             }
             SessionStatePhase.CODEGEN -> {
                 when (message.vote) {
                     "upvote" -> {
-                        AmazonqTelemetry.codeGenerationThumbsUp(amazonqConversationId = session.conversationId)
+                        AmazonqTelemetry.codeGenerationThumbsUp(
+                            amazonqConversationId = session.conversationId,
+                            credentialStartUrl = getStartUrl(project = context.project)
+                        )
                     }
                     "downvote" -> {
-                        AmazonqTelemetry.codeGenerationThumbsDown(amazonqConversationId = session.conversationId)
+                        AmazonqTelemetry.codeGenerationThumbsDown(
+                            amazonqConversationId = session.conversationId,
+                            credentialStartUrl = getStartUrl(project = context.project)
+                        )
                     }
                 }
             }
@@ -167,7 +180,11 @@ class FeatureDevController(
     override suspend fun processOpenDiff(message: IncomingFeatureDevMessage.OpenDiff) {
         val session = getSessionInfo(message.tabId)
 
-        AmazonqTelemetry.isReviewedChanges(amazonqConversationId = session.conversationId, enabled = true)
+        AmazonqTelemetry.isReviewedChanges(
+            amazonqConversationId = session.conversationId,
+            enabled = true,
+            credentialStartUrl = getStartUrl(project = context.project)
+        )
 
         val project = context.project
         val sessionState = session.sessionState
@@ -292,7 +309,8 @@ class FeatureDevController(
             AmazonqTelemetry.isAcceptedCodeChanges(
                 amazonqNumberOfFilesAccepted = (filePaths.filterNot { it.rejected }.size + deletedFiles.filterNot { it.rejected }.size) * 1.0,
                 amazonqConversationId = session.conversationId,
-                enabled = true
+                enabled = true,
+                credentialStartUrl = getStartUrl(project = context.project)
             )
 
             session.insertChanges(
@@ -358,13 +376,21 @@ class FeatureDevController(
 
         val session = getSessionInfo(tabId)
         val sessionLatency = System.currentTimeMillis() - session.sessionStartTime
-        AmazonqTelemetry.endChat(amazonqConversationId = session.conversationId, amazonqEndOfTheConversationLatency = sessionLatency.toDouble())
+        AmazonqTelemetry.endChat(
+            amazonqConversationId = session.conversationId,
+            amazonqEndOfTheConversationLatency = sessionLatency.toDouble(),
+            credentialStartUrl = getStartUrl(project = context.project)
+        )
     }
 
     private suspend fun provideFeedbackAndRegenerateCode(tabId: String) {
         val session = getSessionInfo(tabId)
 
-        AmazonqTelemetry.isProvideFeedbackForCodeGen(amazonqConversationId = session.conversationId, enabled = true)
+        AmazonqTelemetry.isProvideFeedbackForCodeGen(
+            amazonqConversationId = session.conversationId,
+            enabled = true,
+            credentialStartUrl = getStartUrl(project = context.project)
+        )
 
         // Unblock the message button
         messenger.sendAsyncEventProgress(tabId = tabId, inProgress = false)
