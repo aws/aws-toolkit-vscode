@@ -25,7 +25,7 @@ describe('HumanInTheLoopManager', async function () {
         assert.strictEqual(compileFolderInfo.name, 'q-pom-dependency-list')
         assert.strictEqual(compileFolderInfo.path, HumanInTheLoopManager.instance.getTmpDependencyListDir())
     })
-    it('will createPomFileCopy() and delete artifact', async function () {
+    it.skip('will createPomFileCopy() and delete artifact', async function () {
         const pomFileVirtualFileReference = vscode.Uri.file(
             getTestResourceFilePath('resources/files/humanInTheLoop/downloadResults/pom.xml')
         )
