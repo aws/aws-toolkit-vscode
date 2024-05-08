@@ -11,6 +11,10 @@ class CodeWhispererPlainText private constructor() : CodeWhispererProgrammingLan
 
     override fun toTelemetryType(): CodewhispererLanguage = CodewhispererLanguage.Plaintext
 
+    override fun isCodeScanSupported(): Boolean = true
+
+    override fun isAutoFileScanSupported(): Boolean = true
+
     companion object {
         const val ID = "plaintext"
 

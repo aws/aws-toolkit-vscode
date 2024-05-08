@@ -62,7 +62,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionco
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.overlaps
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isUserBuilderId
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererUnknownLanguage
@@ -74,9 +73,9 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.ISSUE_HIGHLIGHT_TEXT_ATTRIBUTES
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.promptReAuth
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.runIfIdcConnectionOrTelemetryEnabled
+import software.aws.toolkits.jetbrains.utils.isQConnected
 import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
 import software.aws.toolkits.resources.message
-import software.aws.toolkits.telemetry.CodewhispererLanguage
 import software.aws.toolkits.telemetry.Result
 import java.time.Duration
 import java.time.Instant
@@ -144,7 +143,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
      * Triggers a code scan and displays results in the new tab in problems view panel.
      */
     fun runCodeScan(scope: CodeWhispererConstants.CodeAnalysisScope) {
-        if (!isCodeWhispererEnabled(project)) return
+        if (!isQConnected(project)) return
 
         // Return if a scan is already in progress.
         if (isProjectScanInProgress() && scope == CodeWhispererConstants.CodeAnalysisScope.PROJECT) return
@@ -227,7 +226,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
             val codeScanSessionConfig = CodeScanSessionConfig.create(file, project, scope)
             language = codeScanSessionConfig.getSelectedFile().programmingLanguage()
             if (scope == CodeWhispererConstants.CodeAnalysisScope.FILE &&
-                (language == CodeWhispererUnknownLanguage.INSTANCE || language.toTelemetryType() == CodewhispererLanguage.Plaintext)
+                !language.isAutoFileScanSupported()
             ) {
                 LOG.debug { "Language is unknown or plaintext, skipping code scan." }
                 codeScanStatus = Result.Cancelled

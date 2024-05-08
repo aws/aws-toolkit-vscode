@@ -3,7 +3,11 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.codescan
 
+import com.intellij.openapi.fileEditor.FileEditor
+import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
+import com.intellij.testFramework.replaceService
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.apache.commons.codec.digest.DigestUtils
@@ -11,6 +15,10 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.mockito.ArgumentMatchers.anyString
+import org.mockito.Mockito
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.times
+import org.mockito.Mockito.`when`
 import org.mockito.internal.verification.Times
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -43,9 +51,13 @@ import kotlin.test.assertNotNull
 class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsightTestFixtureRule()) {
     private lateinit var psifile: PsiFile
     private lateinit var psifile2: PsiFile
+    private lateinit var psifile3: PsiFile
     private lateinit var file: File
     private lateinit var file2: File
+    private lateinit var file3: File
+    private lateinit var virtualFile3: VirtualFile
     private lateinit var sessionConfigSpy: CodeScanSessionConfig
+    private lateinit var sessionConfigSpy2: CodeScanSessionConfig
     private val payloadContext = PayloadContext(CodewhispererLanguage.Python, 1, 1, 10, listOf(), 600, 200)
     private lateinit var codeScanSessionContext: CodeScanSessionContext
     private lateinit var codeScanSessionSpy: CodeWhispererCodeScanSession
@@ -84,6 +96,21 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
         )
         file = psifile.virtualFile.toNioPath().toFile()
 
+        psifile3 = projectRule.fixture.addFileToProject(
+            "/test.kt",
+            // write simple addition function in kotlin
+            """
+                fun main() {
+                    val a = 1
+                    val b = 2
+                    val c = a + b
+                    println(c)
+                }
+            """.trimMargin()
+        )
+        virtualFile3 = psifile3.virtualFile
+        file3 = virtualFile3.toNioPath().toFile()
+
         sessionConfigSpy = spy(
             CodeScanSessionConfig.create(
                 psifile.virtualFile,
@@ -91,6 +118,15 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
                 CodeWhispererConstants.CodeAnalysisScope.FILE
             )
         )
+
+        sessionConfigSpy2 = spy(
+            CodeScanSessionConfig.create(
+                virtualFile3,
+                project,
+                CodeWhispererConstants.CodeAnalysisScope.FILE
+            )
+        )
+
         setupResponse(psifile.virtualFile.toNioPath().relativeTo(sessionConfigSpy.projectRoot.toNioPath()))
 
         sessionConfigSpy.stub {
@@ -171,6 +207,28 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
         inOrder.verify(codeScanSessionSpy, Times(1)).createCodeScan(eq(CodewhispererLanguage.Python.toString()), anyString())
         inOrder.verify(codeScanSessionSpy, Times(1)).getCodeScan(any())
         inOrder.verify(codeScanSessionSpy, Times(1)).listCodeScanFindings(eq("jobId"), eq(null))
+    }
+
+    @Test
+    fun `unsupported languages file scan fail`() {
+        scanManagerSpy = Mockito.spy(CodeWhispererCodeScanManager.getInstance(projectRule.project))
+        projectRule.project.replaceService(CodeWhispererCodeScanManager::class.java, scanManagerSpy, disposableRule.disposable)
+
+        val fileEditorManager = mock(FileEditorManager::class.java)
+        val selectedEditor = mock(FileEditor::class.java)
+        val editorList: MutableList<FileEditor> = mutableListOf(selectedEditor)
+
+        `when`(fileEditorManager.selectedEditorWithRemotes).thenReturn(editorList)
+        `when`(fileEditorManager.selectedEditor).thenReturn(selectedEditor)
+        `when`(selectedEditor.file).thenReturn(virtualFile3)
+
+        runBlocking {
+            scanManagerSpy.runCodeScan(CodeWhispererConstants.CodeAnalysisScope.FILE)
+        }
+        // verify that function was run but none of the results/error handling methods were called.
+        verify(scanManagerSpy, times(0)).updateFileIssues(any(), any())
+        verify(scanManagerSpy, times(0)).handleError(any(), any(), any())
+        verify(scanManagerSpy, times(0)).handleException(any(), any(), any())
     }
 
     @Test
