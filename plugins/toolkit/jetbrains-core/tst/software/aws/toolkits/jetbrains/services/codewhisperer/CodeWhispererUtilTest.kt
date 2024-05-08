@@ -106,6 +106,7 @@ class CodeWhispererUtilTest {
             """public class Main {
                 |    public static void main() {
                 |    }
+                |}
             """.trimMargin()
         )
         assertThat(result[1].content).isEqualTo(
@@ -119,18 +120,26 @@ class CodeWhispererUtilTest {
 
     @Test
     fun `toCodeChunk case_2`() {
-        val psiFile = fixture.configureByText("Sample.java", codeSample33Lines)
+        val psiFile = fixture.configureByText("Sample.java", codeSample33Lines.repeat(2))
 
         val result = runBlocking {
             psiFile.virtualFile.toCodeChunk("fake/path")
         }.toList()
 
-        assertThat(result).hasSize(5)
+        assertThat(result).hasSize(3)
 
         // 0th
         assertThat(result[0].content).isEqualTo(
-            """public int runBinarySearchRecursively(int[] sortedArray, int key, int low, int high) {
-                |    int middle = low  + ((high - low) / 2);
+            """|public int runBinarySearchRecursively(int[] sortedArray, int key, int low, int high) {
+                    |    int middle = low  + ((high - low) / 2);
+                    |    
+                    |    if (high < low) {
+                    |        return -1;
+                    |    }
+                    |
+                    |    if (key == sortedArray[middle]) {
+                    |        return middle;
+                    |    } else if (key < sortedArray[middle]) {
             """.trimMargin()
         )
         assertThat(result[0].path).isEqualTo("fake/path")
@@ -148,6 +157,46 @@ class CodeWhispererUtilTest {
                     |    if (key == sortedArray[middle]) {
                     |        return middle;
                     |    } else if (key < sortedArray[middle]) {
+                    |        return runBinarySearchRecursively(sortedArray, key, low, middle - 1);
+                    |    } else {
+                    |        return runBinarySearchRecursively(sortedArray, key, middle + 1, high);
+                    |    }
+                    |}
+                    |
+                    |public int runBinarySearchIteratively(int[] sortedArray, int key, int low, int high) {
+                    |    int index = Integer.MAX_VALUE;
+                    |    
+                    |    while (low <= high) {
+                    |        int mid = low  + ((high - low) / 2);
+                    |        if (sortedArray[mid] < key) {
+                    |            low = mid + 1;
+                    |        } else if (sortedArray[mid] > key) {
+                    |            high = mid - 1;
+                    |        } else if (sortedArray[mid] == key) {
+                    |            index = mid;
+                    |            break;
+                    |        }
+                    |     }
+                    |    
+                    |    return index;
+                    |}
+                    |public int runBinarySearchRecursively(int[] sortedArray, int key, int low, int high) {
+                    |    int middle = low  + ((high - low) / 2);
+                    |    
+                    |    if (high < low) {
+                    |        return -1;
+                    |    }
+                    |
+                    |    if (key == sortedArray[middle]) {
+                    |        return middle;
+                    |    } else if (key < sortedArray[middle]) {
+                    |        return runBinarySearchRecursively(sortedArray, key, low, middle - 1);
+                    |    } else {
+                    |        return runBinarySearchRecursively(sortedArray, key, middle + 1, high);
+                    |    }
+                    |}
+                    |
+                    |public int runBinarySearchIteratively(int[] sortedArray, int key, int low, int high) {
             """.trimMargin()
         )
         assertThat(result[1].path).isEqualTo("fake/path")
@@ -155,47 +204,25 @@ class CodeWhispererUtilTest {
 
         // 2nd
         assertThat(result[2].content).isEqualTo(
-            """|        return runBinarySearchRecursively(sortedArray, key, low, middle - 1);
-               |    } else {
-               |        return runBinarySearchRecursively(sortedArray, key, middle + 1, high);
-               |    }
-               |}
-               |
-               |public int runBinarySearchIteratively(int[] sortedArray, int key, int low, int high) {
-               |    int index = Integer.MAX_VALUE;
-               |    
-               |    while (low <= high) {
+            """ |    int index = Integer.MAX_VALUE;
+                |    
+                |    while (low <= high) {
+                |        int mid = low  + ((high - low) / 2);
+                |        if (sortedArray[mid] < key) {
+                |            low = mid + 1;
+                |        } else if (sortedArray[mid] > key) {
+                |            high = mid - 1;
+                |        } else if (sortedArray[mid] == key) {
+                |            index = mid;
+                |            break;
+                |        }
+                |     }
+                |    
+                |    return index;
+                |}
             """.trimMargin()
         )
         assertThat(result[2].path).isEqualTo("fake/path")
-        assertThat(result[2].nextChunk).isEqualTo(result[3].content)
-
-        // 3rd
-        assertThat(result[3].content).isEqualTo(
-            """|        int mid = low  + ((high - low) / 2);
-       |        if (sortedArray[mid] < key) {
-       |            low = mid + 1;
-       |        } else if (sortedArray[mid] > key) {
-       |            high = mid - 1;
-       |        } else if (sortedArray[mid] == key) {
-       |            index = mid;
-       |            break;
-       |        }
-       |     }
-            """.trimMargin()
-        )
-        assertThat(result[3].path).isEqualTo("fake/path")
-        assertThat(result[3].nextChunk).isEqualTo(result[4].content)
-
-        // 4th
-        assertThat(result[4].content).isEqualTo(
-            """|    
-               |    return index;
-               |}
-            """.trimMargin()
-        )
-        assertThat(result[4].path).isEqualTo("fake/path")
-        assertThat(result[4].nextChunk).isEqualTo(result[4].content)
     }
 
     @Test
