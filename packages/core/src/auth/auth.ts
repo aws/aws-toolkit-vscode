@@ -561,8 +561,8 @@ export class Auth implements AuthService, ConnectionManager {
         }
 
         return runCheck().catch(async err => {
+            await this.handleSsoTokenError(id, err) // may throw without setting state to invalid - this is intended.
             await this.updateConnectionState(id, 'invalid')
-            return this.handleSsoTokenError(id, err)
         })
     }
 
