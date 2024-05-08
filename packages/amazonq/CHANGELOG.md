@@ -1,3 +1,12 @@
+## 1.3.0 2024-05-08
+
+- **Bug Fix** modifying the root folder for /dev now modifies it
+- **Bug Fix** Q chat may stop responding after processing Javascript/Typescript code
+- **Bug Fix** Completion may fail unexpected if user opened many tabs
+- **Feature** Inline Suggestions: Only display the 'Open Chat' CodeLens if the user is signed into Amazon Q.
+- **Feature** Security Scan: Scans can now be run without an open editor
+- **Feature** Security Scan: Multi-root workspace support
+
 ## 1.2.0 2024-05-07
 
 - **Bug Fix** Fix bug when Amazon Q chat sends code selection while user has no selection

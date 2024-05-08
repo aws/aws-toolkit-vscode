@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Q chat may stop responding after processing Javascript/Typescript code"
-}
