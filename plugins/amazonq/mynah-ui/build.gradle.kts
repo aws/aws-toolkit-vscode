@@ -3,7 +3,7 @@
 import com.github.gradle.node.npm.task.NpmTask
 
 plugins {
-    id("java")
+    id("toolkit-jvm-conventions")
     alias(libs.plugins.node.gradle)
 }
 
