@@ -10,10 +10,10 @@ import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
 import { ToolkitError } from '../../shared/errors'
 import { fsCommon } from '../../srcShared/fs'
-import { collectFiles } from '../../amazonqFeatureDev/util/files'
 import { getLoggerForScope } from '../service/securityScanHandler'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
+import { CurrentWsFolders, collectFiles } from '../../shared/utilities/workspaceUtils'
 
 export interface ZipMetadata {
     rootDir: string
@@ -53,21 +53,12 @@ export class ZipUtil {
         return CodeWhispererConstants.projectScanPayloadSizeLimitBytes
     }
 
-    public getProjectName(uri: vscode.Uri) {
-        const projectPath = this.getProjectPath(uri)
-        return path.basename(projectPath)
-    }
-
-    public getProjectPath(uri: vscode.Uri) {
-        const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
-        if (workspaceFolder === undefined) {
-            return this.getBaseDirPath(uri)
+    public getProjectPaths() {
+        const workspaceFolders = vscode.workspace.workspaceFolders
+        if (!workspaceFolders || workspaceFolders.length === 0) {
+            throw Error('No workspace folders found')
         }
-        return workspaceFolder.uri.fsPath
-    }
-
-    protected getBaseDirPath(uri: vscode.Uri) {
-        return path.dirname(uri.fsPath)
+        return workspaceFolders.map(folder => folder.uri.fsPath)
     }
 
     protected async getTextContent(uri: vscode.Uri) {
@@ -93,12 +84,22 @@ export class ZipUtil {
         return willReachLimit
     }
 
-    protected async zipFile(uri: vscode.Uri) {
+    protected async zipFile(uri: vscode.Uri | undefined) {
+        if (!uri) {
+            throw Error('Uri is undefined')
+        }
         const zip = new admZip()
 
         const content = await this.getTextContent(uri)
 
-        zip.addFile(this.getZipPath(uri), Buffer.from(content, 'utf-8'))
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
+        if (!workspaceFolder) {
+            throw Error('No workspace folder found')
+        }
+        const projectName = workspaceFolder.name
+        const relativePath = vscode.workspace.asRelativePath(uri)
+        const zipEntryPath = this.getZipEntryPath(projectName, relativePath)
+        zip.addFile(zipEntryPath, Buffer.from(content, 'utf-8'))
 
         this._pickedSourceFiles.add(uri.fsPath)
         this._totalSize += (await fsCommon.stat(uri.fsPath)).size
@@ -115,16 +116,24 @@ export class ZipUtil {
         return zipFilePath
     }
 
-    protected async zipProject(uri: vscode.Uri) {
+    protected getZipEntryPath(projectName: string, relativePath: string) {
+        // Workspaces with multiple folders have the folder names as the root folder,
+        // but workspaces with only a single folder don't. So prepend the workspace folder name
+        // if it is not present.
+        return relativePath.split('/').shift() === projectName ? relativePath : path.join(projectName, relativePath)
+    }
+
+    protected async zipProject() {
         const zip = new admZip()
 
-        const projectPath = this.getProjectPath(uri)
-        const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
-        if (!workspaceFolder) {
-            throw Error('No workspace folder found')
-        }
+        const projectPaths = this.getProjectPaths()
 
-        const files = await collectFiles([projectPath], [workspaceFolder])
+        const files = await collectFiles(
+            projectPaths,
+            vscode.workspace.workspaceFolders as CurrentWsFolders,
+            true,
+            CodeWhispererConstants.projectScanPayloadSizeLimitBytes
+        )
         const languageCount = new Map<CodewhispererLanguage, number>()
         for (const file of files) {
             const isFileOpenAndDirty = this.isFileOpenAndDirty(file.fileUri)
@@ -155,10 +164,12 @@ export class ZipUtil {
                 }
             }
 
+            const zipEntryPath = this.getZipEntryPath(file.workspaceFolder.name, file.zipFilePath)
+
             if (isFileOpenAndDirty) {
-                zip.addFile(this.getZipPath(file.fileUri), Buffer.from(fileContent, 'utf-8'))
+                zip.addFile(zipEntryPath, Buffer.from(fileContent, 'utf-8'))
             } else {
-                zip.addLocalFile(file.fileUri.fsPath, path.dirname(this.getZipPath(file.fileUri)))
+                zip.addLocalFile(file.fileUri.fsPath, path.dirname(zipEntryPath))
             }
         }
 
@@ -175,12 +186,6 @@ export class ZipUtil {
         return vscode.workspace.textDocuments.some(document => document.uri.fsPath === uri.fsPath && document.isDirty)
     }
 
-    protected getZipPath(uri: vscode.Uri) {
-        const projectName = this.getProjectName(uri)
-        const relativePath = vscode.workspace.asRelativePath(uri)
-        return path.join(projectName, relativePath)
-    }
-
     protected getZipDirPath(): string {
         if (this._zipDir === '') {
             this._zipDir = path.join(
@@ -191,14 +196,17 @@ export class ZipUtil {
         return this._zipDir
     }
 
-    public async generateZip(uri: vscode.Uri, scope: CodeWhispererConstants.CodeAnalysisScope): Promise<ZipMetadata> {
+    public async generateZip(
+        uri: vscode.Uri | undefined,
+        scope: CodeWhispererConstants.CodeAnalysisScope
+    ): Promise<ZipMetadata> {
         try {
             const zipDirPath = this.getZipDirPath()
             let zipFilePath: string
             if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE) {
                 zipFilePath = await this.zipFile(uri)
             } else if (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
-                zipFilePath = await this.zipProject(uri)
+                zipFilePath = await this.zipProject()
             } else {
                 throw new ToolkitError(`Unknown code analysis scope: ${scope}`)
             }

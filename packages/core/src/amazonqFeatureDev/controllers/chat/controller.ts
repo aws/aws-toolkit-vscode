@@ -32,8 +32,9 @@ import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { placeholder } from '../../../shared/vscode/commands2'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
-import { getPathsFromZipFilePath, getWorkspaceFoldersByPrefixes } from '../../util/files'
+import { getPathsFromZipFilePath } from '../../util/files'
 import { examples, newTaskChanges, approachCreation, sessionClosed, updateCode } from '../../userFacingText'
+import { getWorkspaceFoldersByPrefixes } from '../../../shared/utilities/workspaceUtils'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -300,6 +301,8 @@ export class FeatureDevController {
     private async onApproachGeneration(session: Session, message: string, tabID: string) {
         await session.preloader(message)
 
+        getLogger().info(`Q - Dev Chat conversation id: ${session.conversationId}`)
+
         this.messenger.sendAnswer({
             type: 'answer',
             tabID,
@@ -345,6 +348,8 @@ export class FeatureDevController {
      * Handle a regular incoming message when a user is in the code generation phase
      */
     private async onCodeGeneration(session: Session, message: string, tabID: string) {
+        getLogger().info(`Q - Dev chat conversation id: ${session.conversationId}`)
+
         // lock the UI/show loading bubbles
         this.messenger.sendAsyncEventProgress(
             tabID,
@@ -623,7 +628,7 @@ export class FeatureDevController {
         }
 
         if (uri && uri instanceof vscode.Uri) {
-            session.config.workspaceRoots = [uri.fsPath]
+            session.updateWorkspaceRoot(uri.fsPath)
             this.messenger.sendAnswer({
                 message: `Changed source root to: ${uri.fsPath}`,
                 type: 'answer',
@@ -760,7 +765,7 @@ export class FeatureDevController {
             tabID: message.tabID,
             message: newTaskChanges,
         })
-        this.messenger.sendUpdatePlaceholder(message.tabID, 'Briefly describe a task or issue')
+        this.messenger.sendUpdatePlaceholder(message.tabID, 'Describe your task or issue in as much detail as possible')
     }
 
     private async closeSession(message: any) {

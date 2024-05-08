@@ -155,7 +155,7 @@ export class Connector {
         if (this.onChatAnswerReceived !== undefined) {
             const actions = getActions([...messageData.filePaths, ...messageData.deletedFiles])
             const answer: ChatItem = {
-                type: ChatItemType.CODE_RESULT,
+                type: ChatItemType.ANSWER,
                 relatedContent: undefined,
                 followUp: undefined,
                 canBeVoted: true,
@@ -163,6 +163,7 @@ export class Connector {
                 // TODO get the backend to store a message id in addition to conversationID
                 messageId: messageData.messageID ?? messageData.triggerID ?? messageData.conversationID,
                 fileList: {
+                    rootFolderTitle: 'Changes',
                     filePaths: messageData.filePaths.map((f: DiffTreeFileInfo) => f.zipFilePath),
                     deletedFiles: messageData.deletedFiles.map((f: DiffTreeFileInfo) => f.zipFilePath),
                     actions,

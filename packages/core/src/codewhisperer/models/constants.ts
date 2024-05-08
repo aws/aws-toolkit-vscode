@@ -382,6 +382,37 @@ export const amazonQFeedbackKey = 'Amazon Q'
 
 export const amazonQFeedbackText = 'Submit feedback'
 
+export const waitingForJobStartStepMessage = 'Waiting for job to start'
+
+export const buildCodeStepMessage = 'Build uploaded code in secure build environment'
+
+export const generatePlanStepMessage = 'Generate transformation plan'
+
+export const transformStepMessage = 'Transform your code to Java 17 using transformation plan'
+
+export const filesUploadedMessage =
+    'Files have been uploaded to Amazon Q, transformation job has been accepted and is preparing to start.'
+
+export const planningMessage = 'Amazon Q is analyzing your code in order to generate a transformation plan.'
+
+export const transformingMessage = 'Amazon Q is transforming your code. Details will appear soon.'
+
+export const stoppingJobMessage = 'Stopping the transformation...'
+
+export const buildingCodeMessage =
+    'Amazon Q is building your code using Java JAVA_VERSION_HERE in a secure build environment.'
+
+export const scanningProjectMessage =
+    'Amazon Q is scanning the project files and getting ready to start the job. To start the job, Amazon Q needs to upload the project artifacts. Once that is done, Amazon Q can start the transformation job. The estimated time for this operation ranges from a few seconds to several minutes.'
+
+export const failedStepMessage = 'The step failed, fetching additional details...'
+
+export const jobCompletedMessage = 'The transformation completed.'
+
+export const noOngoingJobMessage = 'No ongoing job.'
+
+export const nothingToShowMessage = 'Nothing to show'
+
 export const jobStartedChatMessage =
     "I'm starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub."
 
@@ -552,27 +583,19 @@ export const planHeaderMessage = 'Planned transformation changes'
 export const planDisclaimerMessage =
     'Amazon Q will use the proposed changes as guidance during the transformation. The final code updates might differ from this plan.'
 
-export const linesOfCodeMessage = 'Lines of code in your application'
-
-export const dependenciesToBeReplacedMessage = 'Dependencies to be replaced'
-
-export const deprecatedCodeToBeReplacedMessage = 'Deprecated code instances to be replaced'
-
-export const filesToBeChangedMessage = 'Files to be changed'
-
-export const dependencyNameColumn = 'Dependency'
-
-export const actionColumn = 'Action'
-
-export const currentVersionColumn = 'Current version'
-
-export const targetVersionColumn = 'Target version'
-
-export const relativePathColumn = 'File'
-
-export const apiNameColumn = 'Deprecated code'
-
-export const numChangedFilesColumn = 'Files to be changed'
+export const formattedStringMap = new Map([
+    ['linesOfCode', 'Lines of code in your application'],
+    ['plannedDependencyChanges', 'Dependencies to be replaced'],
+    ['plannedDeprecatedApiChanges', 'Deprecated code instances to be replaced'],
+    ['plannedFileChanges', 'Files to be changed'],
+    ['dependencyName', 'Dependency'],
+    ['action', 'Action'],
+    ['currentVersion', 'Current version'],
+    ['targetVersion', 'Target version'],
+    ['relativePath', 'File'],
+    ['apiFullyQualifiedName', 'Deprecated code'],
+    ['numChangedFiles', 'Files to be changed'],
+])
 
 // end of QCT Strings
 

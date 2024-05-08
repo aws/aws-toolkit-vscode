@@ -29,7 +29,7 @@ export async function listScanResults(
     client: DefaultCodeWhispererClient,
     jobId: string,
     codeScanFindingsSchema: string,
-    projectPath: string,
+    projectPaths: string[],
     scope: CodeWhispererConstants.CodeAnalysisScope
 ) {
     const logger = getLoggerForScope(scope)
@@ -51,30 +51,32 @@ export async function listScanResults(
         mapToAggregatedList(codeScanIssueMap, issue)
     })
     codeScanIssueMap.forEach((issues, key) => {
-        const filePath = path.join(projectPath, '..', key)
-        if (existsSync(filePath) && statSync(filePath).isFile()) {
-            const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
-                filePath: filePath,
-                issues: issues.map(issue => {
-                    return {
-                        startLine: issue.startLine - 1 >= 0 ? issue.startLine - 1 : 0,
-                        endLine: issue.endLine,
-                        comment: `${issue.title.trim()}: ${issue.description.text.trim()}`,
-                        title: issue.title,
-                        description: issue.description,
-                        detectorId: issue.detectorId,
-                        detectorName: issue.detectorName,
-                        findingId: issue.findingId,
-                        ruleId: issue.ruleId,
-                        relatedVulnerabilities: issue.relatedVulnerabilities,
-                        severity: issue.severity,
-                        recommendation: issue.remediation.recommendation,
-                        suggestedFixes: issue.remediation.suggestedFixes,
-                    }
-                }),
+        projectPaths.forEach(projectPath => {
+            const filePath = path.join(projectPath, '..', key)
+            if (existsSync(filePath) && statSync(filePath).isFile()) {
+                const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
+                    filePath: filePath,
+                    issues: issues.map(issue => {
+                        return {
+                            startLine: issue.startLine - 1 >= 0 ? issue.startLine - 1 : 0,
+                            endLine: issue.endLine,
+                            comment: `${issue.title.trim()}: ${issue.description.text.trim()}`,
+                            title: issue.title,
+                            description: issue.description,
+                            detectorId: issue.detectorId,
+                            detectorName: issue.detectorName,
+                            findingId: issue.findingId,
+                            ruleId: issue.ruleId,
+                            relatedVulnerabilities: issue.relatedVulnerabilities,
+                            severity: issue.severity,
+                            recommendation: issue.remediation.recommendation,
+                            suggestedFixes: issue.remediation.suggestedFixes,
+                        }
+                    }),
+                }
+                aggregatedCodeScanIssueList.push(aggregatedCodeScanIssue)
             }
-            aggregatedCodeScanIssueList.push(aggregatedCodeScanIssue)
-        }
+        })
     })
     return aggregatedCodeScanIssueList
 }
