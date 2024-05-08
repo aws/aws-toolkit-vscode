@@ -267,8 +267,9 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeT
         },
         onFileComponentUpdate: (tabID: string, filePaths: DiffTreeFileInfo[], deletedFiles: DiffTreeFileInfo[]) => {
             const updateWith: Partial<ChatItem> = {
-                type: ChatItemType.CODE_RESULT,
+                type: ChatItemType.ANSWER,
                 fileList: {
+                    rootFolderTitle: 'Changes',
                     filePaths: filePaths.map(i => i.zipFilePath),
                     deletedFiles: deletedFiles.map(i => i.zipFilePath),
                     details: getDetails(filePaths),
