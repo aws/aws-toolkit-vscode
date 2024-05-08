@@ -44,14 +44,12 @@ describe('TryChatCodeLensProvider', () => {
         sinon.restore()
     })
 
+    function stubConnection(state: AuthState) {
+        return sinon.stub(AuthUtil.instance, 'getChatAuthStateSync').returns({ amazonQ: state } as FeatureAuthState)
+    }
+
     it('keeps returning a code lense until it hits the max times it should show', async function () {
-        sinon.stub(AuthUtil.instance, 'getChatAuthState').returns(
-            new Promise(resolve => {
-                return resolve({
-                    amazonQ: 'connected',
-                } as FeatureAuthState)
-            })
-        )
+        stubConnection('connected')
 
         let codeLensCount = 0
         const modifierKey = resolveModifierKey()
@@ -96,13 +94,8 @@ describe('TryChatCodeLensProvider', () => {
 
     it('does show codelens if amazon Q is not connected', async function () {
         const testConnection = async (state: AuthState) => {
-            const stub = sinon.stub(AuthUtil.instance, 'getChatAuthState').returns(
-                new Promise(resolve => {
-                    return resolve({
-                        amazonQ: state,
-                    } as FeatureAuthState)
-                })
-            )
+            const stub = stubConnection(state)
+
             const emptyResult = await instance.provideCodeLenses({} as any, new vscode.CancellationTokenSource().token)
             assert.deepStrictEqual(emptyResult, [], `codelens shown with state: ${state}`)
             stub.restore()

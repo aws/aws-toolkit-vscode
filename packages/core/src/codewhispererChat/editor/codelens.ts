@@ -64,10 +64,10 @@ export class TryChatCodeLensProvider implements vscode.CodeLensProvider {
         document: vscode.TextDocument,
         token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.CodeLens[]> {
-        return new Promise(async resolve => {
+        return new Promise(resolve => {
             token.onCancellationRequested(() => resolve([]))
 
-            if ((await AuthUtil.instance.getChatAuthState(false)).amazonQ !== AuthStates.connected) {
+            if (AuthUtil.instance.getChatAuthStateSync().amazonQ !== AuthStates.connected) {
                 return resolve([])
             }
 
