@@ -100,17 +100,13 @@ export class IamPolicyChecksWebview extends VueWebview {
     public _setActiveConfigurationListener() {
         vscode.workspace.onDidChangeConfiguration((config: vscode.ConfigurationChangeEvent) => {
             // If settings change, we want to update the Webview to reflect the change in inputs
-            if (config.affectsConfiguration(IamPolicyChecksConstants.CUSTOM_CHECK_FILE_PATH_SETTING)) {
+            if (config.affectsConfiguration(IamPolicyChecksConstants.CustomCheckFilePathSetting)) {
                 this.onChangeCustomChecksFilePath.fire(
-                    vscode.workspace.getConfiguration().get(IamPolicyChecksConstants.CUSTOM_CHECK_FILE_PATH_SETTING)!
+                    vscode.workspace.getConfiguration().get(IamPolicyChecksConstants.CustomCheckFilePathSetting)!
                 )
-            } else if (
-                config.affectsConfiguration(IamPolicyChecksConstants.CLOUDFORMATION_PARAMETER_FILE_PATH_SETTING)
-            ) {
+            } else if (config.affectsConfiguration(IamPolicyChecksConstants.CfnParameterFilePathSetting)) {
                 this.onChangeCloudformationParameterFilePath.fire(
-                    vscode.workspace
-                        .getConfiguration()
-                        .get(IamPolicyChecksConstants.CLOUDFORMATION_PARAMETER_FILE_PATH_SETTING)!
+                    vscode.workspace.getConfiguration().get(IamPolicyChecksConstants.CfnParameterFilePathSetting)!
                 )
             }
         })
@@ -136,7 +132,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                             if (err) {
                                 if (err.message.includes('The security token included in the request is invalid')) {
                                     this.onValidatePolicyResponse.fire([
-                                        IamPolicyChecksConstants.INVALID_AWS_CREDENTIALS,
+                                        IamPolicyChecksConstants.InvalidAwsCredentials,
                                         'red',
                                     ])
                                 }
@@ -182,13 +178,13 @@ export class IamPolicyChecksWebview extends VueWebview {
                                         }
                                     })
                                     this.onValidatePolicyResponse.fire([
-                                        IamPolicyChecksConstants.VALIDATE_POLICY_SUCCESS_FINDINGS_FOUND,
+                                        IamPolicyChecksConstants.ValidatePolicySuccessWithFindings,
                                         'yellow',
                                     ])
                                     void vscode.commands.executeCommand('workbench.actions.view.problems')
                                 } else {
                                     this.onValidatePolicyResponse.fire([
-                                        IamPolicyChecksConstants.VALIDATE_POLICY_SUCCESS_NO_FINDINGS,
+                                        IamPolicyChecksConstants.ValidatePolicySuccessNoFindings,
                                         'green',
                                     ])
                                 }
@@ -197,7 +193,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                     )
                     return
                 } else {
-                    this.onValidatePolicyResponse.fire([IamPolicyChecksConstants.INCORRECT_FILE_EXTENSION, 'red'])
+                    this.onValidatePolicyResponse.fire([IamPolicyChecksConstants.IncorrectFileExtension, 'red'])
                     return
                 }
             }
@@ -209,7 +205,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                     this.executeValidatePolicyCommand(tfCommand)
                     return
                 } else {
-                    this.onValidatePolicyResponse.fire([IamPolicyChecksConstants.INCORRECT_FILE_EXTENSION, 'red'])
+                    this.onValidatePolicyResponse.fire([IamPolicyChecksConstants.IncorrectFileExtension, 'red'])
                     return
                 }
             }
@@ -222,7 +218,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                     this.executeValidatePolicyCommand(cfnCommand)
                     return
                 } else {
-                    this.onValidatePolicyResponse.fire([IamPolicyChecksConstants.INCORRECT_FILE_EXTENSION, 'red'])
+                    this.onValidatePolicyResponse.fire([IamPolicyChecksConstants.IncorrectFileExtension, 'red'])
                     return
                 }
             }
@@ -243,7 +239,7 @@ export class IamPolicyChecksWebview extends VueWebview {
         if (referenceDocument !== '') {
             fs.writeFileSync(tempFilePath, referenceDocument)
         } else {
-            this.onCustomPolicyCheckResponse.fire([IamPolicyChecksConstants.MISSING_REFERENCE_DOC_ERROR, 'red'])
+            this.onCustomPolicyCheckResponse.fire([IamPolicyChecksConstants.MissingReferenceDocError, 'red'])
             return
         }
 
@@ -258,7 +254,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                     this.executeCustomPolicyChecksCommand(tfCommand)
                     return
                 } else {
-                    this.onCustomPolicyCheckResponse.fire([IamPolicyChecksConstants.INCORRECT_FILE_EXTENSION, 'red'])
+                    this.onCustomPolicyCheckResponse.fire([IamPolicyChecksConstants.IncorrectFileExtension, 'red'])
                     return
                 }
             }
@@ -271,7 +267,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                     this.executeCustomPolicyChecksCommand(cfnCommand)
                     return
                 } else {
-                    this.onCustomPolicyCheckResponse.fire([IamPolicyChecksConstants.INCORRECT_FILE_EXTENSION, 'red'])
+                    this.onCustomPolicyCheckResponse.fire([IamPolicyChecksConstants.IncorrectFileExtension, 'red'])
                     return
                 }
             }
@@ -286,7 +282,7 @@ export class IamPolicyChecksWebview extends VueWebview {
             // Remove spaces, line breaks, carriage returns, and tabs
             actions = actions.replace(/\s*|\t|\r|\n/gm, '')
         } else {
-            this.onCustomPolicyCheckResponse.fire([IamPolicyChecksConstants.MISSING_REFERENCE_DOC_ERROR, 'red'])
+            this.onCustomPolicyCheckResponse.fire([IamPolicyChecksConstants.MissingReferenceDocError, 'red'])
             return
         }
         switch (documentType) {
@@ -298,7 +294,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                     this.executeCustomPolicyChecksCommand(tfCommand)
                     return
                 } else {
-                    this.onCustomPolicyCheckResponse.fire([IamPolicyChecksConstants.INCORRECT_FILE_EXTENSION, 'red'])
+                    this.onCustomPolicyCheckResponse.fire([IamPolicyChecksConstants.IncorrectFileExtension, 'red'])
                     return
                 }
             }
@@ -311,7 +307,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                     this.executeCustomPolicyChecksCommand(cfnCommand)
                     return
                 } else {
-                    this.onCustomPolicyCheckResponse.fire([IamPolicyChecksConstants.INCORRECT_FILE_EXTENSION, 'red'])
+                    this.onCustomPolicyCheckResponse.fire([IamPolicyChecksConstants.IncorrectFileExtension, 'red'])
                     return
                 }
             }
@@ -330,7 +326,7 @@ export class IamPolicyChecksWebview extends VueWebview {
         const diagnostics: vscode.Diagnostic[] = []
         const jsonOutput = JSON.parse(response)
         if (jsonOutput.BlockingFindings.length === 0 && jsonOutput.NonBlockingFindings.length === 0) {
-            this.onValidatePolicyResponse.fire([IamPolicyChecksConstants.VALIDATE_POLICY_SUCCESS_NO_FINDINGS, 'green'])
+            this.onValidatePolicyResponse.fire([IamPolicyChecksConstants.ValidatePolicySuccessNoFindings, 'green'])
         } else {
             jsonOutput.BlockingFindings.forEach((finding: any) => {
                 this.pushValidatePolicyDiagnostic(diagnostics, finding, true)
@@ -338,10 +334,7 @@ export class IamPolicyChecksWebview extends VueWebview {
             jsonOutput.NonBlockingFindings.forEach((finding: any) => {
                 this.pushValidatePolicyDiagnostic(diagnostics, finding, false)
             })
-            this.onValidatePolicyResponse.fire([
-                IamPolicyChecksConstants.VALIDATE_POLICY_SUCCESS_FINDINGS_FOUND,
-                'yellow',
-            ])
+            this.onValidatePolicyResponse.fire([IamPolicyChecksConstants.ValidatePolicySuccessWithFindings, 'yellow'])
             void vscode.commands.executeCommand('workbench.actions.view.problems')
         }
     }
@@ -365,10 +358,7 @@ export class IamPolicyChecksWebview extends VueWebview {
         try {
             const jsonOutput = JSON.parse(response)
             if (jsonOutput.BlockingFindings.length === 0 && jsonOutput.NonBlockingFindings.length === 0) {
-                this.onCustomPolicyCheckResponse.fire([
-                    IamPolicyChecksConstants.CUSTOM_CHECK_SUCCESS_NO_FINDINGS,
-                    'green',
-                ])
+                this.onCustomPolicyCheckResponse.fire([IamPolicyChecksConstants.CustomCheckSuccessNoFindings, 'green'])
             } else {
                 jsonOutput.BlockingFindings.forEach((finding: any) => {
                     this.pushCustomCheckDiagnostic(diagnostics, finding, true)
@@ -377,7 +367,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                     this.pushCustomCheckDiagnostic(diagnostics, finding, false)
                 })
                 this.onCustomPolicyCheckResponse.fire([
-                    IamPolicyChecksConstants.CUSTOM_CHECK_SUCCESS_FINDINGS_FOUND,
+                    IamPolicyChecksConstants.CustomCheckSuccessWithFindings,
                     'yellow',
                 ])
                 void vscode.commands.executeCommand('workbench.actions.view.problems')
@@ -438,10 +428,10 @@ export async function renderIamPolicyChecks(context: ExtContext): Promise<void> 
         //Read from settings to auto-fill some inputs
         const customChecksFilePath: string = vscode.workspace
             .getConfiguration()
-            .get(IamPolicyChecksConstants.CUSTOM_CHECK_FILE_PATH_SETTING)!
+            .get(IamPolicyChecksConstants.CustomCheckFilePathSetting)!
         const cfnParameterPath: string = vscode.workspace
             .getConfiguration()
-            .get(IamPolicyChecksConstants.CLOUDFORMATION_PARAMETER_FILE_PATH_SETTING)!
+            .get(IamPolicyChecksConstants.CfnParameterFilePathSetting)!
         let customChecksTextArea: string = ''
         let customChecksFileErrorMessage: string = ''
         try {
@@ -527,7 +517,7 @@ function parseCliErrorMessage(message: string): string {
         return errorMatch[0]
     } else if (botoMatch?.[0]) {
         if (botoMatch[0].includes('The security token included in the request is invalid')) {
-            return IamPolicyChecksConstants.INVALID_AWS_CREDENTIALS
+            return IamPolicyChecksConstants.InvalidAwsCredentials
         }
         return botoMatch[0]
     } else if (message.includes('command not found')) {

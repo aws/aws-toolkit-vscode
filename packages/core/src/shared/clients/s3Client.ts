@@ -748,27 +748,27 @@ function clearInternalBucketCache(): void {
  * @see https://github.com/frantz/amazon-s3-uri/
  */
 export function parseS3Uri(uri: string): [region: string, bucket: string, key: string] {
-    const ENDPOINT_PATTERN = /^(.+\.)?s3[.-]([a-z0-9-]+)\./
-    const DEFAULT_REGION = 'us-east-1' // Default region for URI parsing, if region is not found
-    let parsedUri = url.parse(uri)
-    let bucket: string | null = null
-    let region: string = DEFAULT_REGION
-    let key: string | null = null
+    const endpointPattern = /^(.+\.)?s3[.-]([a-z0-9-]+)\./
+    const defaultRegion = 'us-east-1' // Default region for URI parsing, if region is not found
+    const parsedUri = url.parse(uri)
+    let bucket: string | undefined = undefined
+    let region: string = defaultRegion
+    let key: string | undefined = undefined
 
     if (parsedUri.protocol === 's3:') {
-        bucket = parsedUri.host
+        bucket = parsedUri.host ?? undefined
         if (!bucket) {
             throw new Error(`Invalid S3 URI: no bucket: ${uri}`)
         }
         if (!parsedUri.pathname || parsedUri.pathname.length <= 1) {
             // s3://bucket or s3://bucket/
-            key = null
+            key = undefined
         } else {
             // s3://bucket/key
             // Remove the leading '/'.
             key = parsedUri.pathname.substring(1)
         }
-        if (key !== null) {
+        if (key !== undefined) {
             key = decodeURIComponent(key)
         }
         return [region, bucket, key!]
@@ -778,7 +778,7 @@ export function parseS3Uri(uri: string): [region: string, bucket: string, key: s
         throw new Error(`Invalid S3 URI: no hostname: ${uri}`)
     }
 
-    const matches = parsedUri.host.match(ENDPOINT_PATTERN)
+    const matches = parsedUri.host.match(endpointPattern)
     if (!matches) {
         throw new Error(`Invalid S3 URI: hostname does not appear to be a valid S3 endpoint: ${uri}`)
     }
@@ -786,18 +786,18 @@ export function parseS3Uri(uri: string): [region: string, bucket: string, key: s
     const prefix = matches[1]
     if (!prefix) {
         if (parsedUri.pathname === '/') {
-            bucket = null
-            key = null
+            bucket = undefined
+            key = undefined
         } else {
             const index = parsedUri.pathname!.indexOf('/', 1)
             if (index === -1) {
                 // https://s3.amazonaws.com/bucket
-                bucket = parsedUri.pathname!.substring(1) ?? null
-                key = null
+                bucket = parsedUri.pathname!.substring(1) ?? undefined
+                key = undefined
             } else if (index === parsedUri.pathname!.length - 1) {
                 // https://s3.amazonaws.com/bucket/
                 bucket = parsedUri.pathname!.substring(1, index)
-                key = null
+                key = undefined
             } else {
                 // https://s3.amazonaws.com/bucket/key
                 bucket = parsedUri.pathname!.substring(1, index)
@@ -809,7 +809,7 @@ export function parseS3Uri(uri: string): [region: string, bucket: string, key: s
         bucket = prefix.substring(0, prefix.length - 1)
 
         if (!parsedUri.pathname || parsedUri.pathname === '/') {
-            key = null
+            key = undefined
         } else {
             // Remove the leading '/'.
             key = parsedUri.pathname.substring(1)
@@ -819,10 +819,10 @@ export function parseS3Uri(uri: string): [region: string, bucket: string, key: s
     if (matches[2] !== 'amazonaws') {
         region = matches[2]
     } else {
-        region = DEFAULT_REGION
+        region = defaultRegion
     }
 
-    if (key !== null) {
+    if (key !== undefined) {
         key = decodeURIComponent(key)
     }
     return [region, bucket!, key!]
