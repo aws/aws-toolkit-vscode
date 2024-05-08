@@ -92,7 +92,7 @@ describe('TryChatCodeLensProvider', () => {
         })
     })
 
-    it('does show codelens if amazon Q is not connected', async function () {
+    it('does NOT show codelens if amazon Q is not connected', async function () {
         const testConnection = async (state: AuthState) => {
             const stub = stubConnection(state)
 
