@@ -172,6 +172,7 @@ export async function startSecurityScan(
             scanName
         )
         if (scanJob.status === 'Failed') {
+            logger.verbose(`Failed to create scan job due to service error`)
             throw new Error('Failed code scan service error')
         }
         logger.verbose(`Created security scan job.`)
@@ -183,6 +184,7 @@ export async function startSecurityScan(
         throwIfCancelled(scope, codeScanStartTime)
         const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scope, codeScanStartTime)
         if (jobStatus === 'Failed') {
+            logger.verbose(`Security code scan status failed due to service error`)
             throw new Error('Failed code scan service error')
         }
 

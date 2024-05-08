@@ -174,6 +174,7 @@ export async function getPresignedUrlAndUpload(
 ) {
     const logger = getLoggerForScope(scope)
     if (zipMetadata.zipFilePath === '') {
+        getLogger().error('Failed to create valid source zip')
         throw new Error('Failed to create valid source zip')
     }
     const srcReq: CreateUploadUrlRequest = {
