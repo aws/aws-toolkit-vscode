@@ -1,8 +1,10 @@
 <template>
     <div
         class="item-container-base"
+        tabindex="0"
         :class="{ selected: isSelected, hovering: isHovering }"
         @click="toggleSelection"
+        @keydown.enter="toggleSelection"
         @mouseover="isHovering = true"
         @mouseout="isHovering = false"
     >
