@@ -24,6 +24,7 @@ import { TelemetryHelper } from '../util/telemetryHelper'
 import request from '../../common/request'
 import { ZipMetadata } from '../util/zipUtil'
 import { getNullLogger } from '../../shared/logger/logger'
+import { InvalidSourceZipError } from '../models/errors'
 
 export async function listScanResults(
     client: DefaultCodeWhispererClient,
@@ -175,7 +176,8 @@ export async function getPresignedUrlAndUpload(
     const logger = getLoggerForScope(scope)
     if (zipMetadata.zipFilePath === '') {
         getLogger().error('Failed to create valid source zip')
-        throw new Error('Failed to create valid source zip')
+        throw new InvalidSourceZipError()
+        // throw new Error('Failed to create valid source zip')
     }
     const srcReq: CreateUploadUrlRequest = {
         contentMd5: getMd5(zipMetadata.zipFilePath),

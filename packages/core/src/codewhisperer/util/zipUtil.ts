@@ -14,6 +14,7 @@ import { getLoggerForScope } from '../service/securityScanHandler'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
 import { CurrentWsFolders, collectFiles } from '../../shared/utilities/workspaceUtils'
+import { FileSizeExceededError, ProjectSizeExceededError } from '../models/errors'
 
 export interface ZipMetadata {
     rootDir: string
@@ -106,9 +107,7 @@ export class ZipUtil {
         this._totalLines += content.split(ZipConstants.newlineRegex).length
 
         if (this.reachSizeLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.FILE)) {
-            throw new ToolkitError(
-                `Amazon Q: The selected file is larger than ${CodeWhispererConstants.fileScanPayloadSizeLimitKB}. Try again with a smaller file.`
-            )
+            throw new FileSizeExceededError()
         }
 
         const zipFilePath = this.getZipDirPath() + CodeWhispererConstants.codeScanZipExt
@@ -148,9 +147,7 @@ export class ZipUtil {
                     this.reachSizeLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.PROJECT) ||
                     this.willReachSizeLimit(this._totalSize, fileSize)
                 ) {
-                    throw new ToolkitError(
-                        `Amazon Q: The selected project is larger than ${CodeWhispererConstants.projectScanPayloadSizeLimitMB}. Try again with a small project.`
-                    )
+                    throw new ProjectSizeExceededError()
                 }
                 this._pickedSourceFiles.add(file.fileUri.fsPath)
                 this._totalSize += fileSize

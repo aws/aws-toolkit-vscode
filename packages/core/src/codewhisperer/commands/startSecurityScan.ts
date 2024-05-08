@@ -31,7 +31,7 @@ import {
 import { cancel, ok } from '../../shared/localizedText'
 import { getDirSize } from '../../shared/filesystemUtilities'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { isAwsError } from '../../shared/errors'
+import { ToolkitError, isAwsError } from '../../shared/errors'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { AuthUtil } from '../util/authUtil'
 import path from 'path'
@@ -40,6 +40,7 @@ import { debounce } from 'lodash'
 import { once } from '../../shared/utilities/functionUtils'
 import { randomUUID } from '../../common/crypto'
 import { CodeAnalysisScope } from '../models/constants'
+import { mapEnumToString } from '../models/errors'
 
 const localize = nls.loadMessageBundle()
 export const stopScanButton = localize('aws.codewhisperer.stopscan', 'Stop Scan')
@@ -172,8 +173,8 @@ export async function startSecurityScan(
             scanName
         )
         if (scanJob.status === 'Failed') {
-            logger.verbose(`Failed to create scan job due to service error`)
-            throw new Error('Failed code scan service error')
+            logger.verbose(`${scanJob.errorMessage}`)
+            throw new Error(scanJob.errorMessage)
         }
         logger.verbose(`Created security scan job.`)
         codeScanTelemetryEntry.codewhispererCodeScanJobId = scanJob.jobId
@@ -184,8 +185,8 @@ export async function startSecurityScan(
         throwIfCancelled(scope, codeScanStartTime)
         const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scope, codeScanStartTime)
         if (jobStatus === 'Failed') {
-            logger.verbose(`Security code scan status failed due to service error`)
-            throw new Error('Failed code scan service error')
+            logger.verbose(`Security scan job failed.`)
+            throw new Error('Security scan job failed.')
         }
 
         /**
@@ -227,7 +228,7 @@ export async function startSecurityScan(
         if (error instanceof CodeScanStoppedError) {
             codeScanTelemetryEntry.result = 'Cancelled'
         } else {
-            errorPromptHelper(error as Error, scope)
+            errorPromptHelper(error as ToolkitError, scope)
             codeScanTelemetryEntry.result = 'Failed'
         }
 
@@ -247,24 +248,7 @@ export async function startSecurityScan(
                 CodeScansState.instance.setMonthlyQuotaExceeded()
             }
         }
-        let telemetryErrorMessage = ''
-        const errorMessage = (error as Error).message
-        switch (errorMessage) {
-            case "Amazon Q: Can't find valid source zip.":
-                telemetryErrorMessage = 'Failed to create valid source zip'
-                break
-            default:
-                if (errorMessage.startsWith('Amazon Q: The selected file is larger than')) {
-                    telemetryErrorMessage = 'Payload size limit reached.'
-                }
-                break
-        }
-        codeScanTelemetryEntry.reason =
-            telemetryErrorMessage !== ''
-                ? telemetryErrorMessage
-                : error instanceof Error && error.message !== null
-                ? error.message
-                : 'Security scan failed.'
+        codeScanTelemetryEntry.reason = (error as ToolkitError).message
     } finally {
         codeScanState.setToNotStarted()
         codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime
@@ -312,17 +296,11 @@ export async function emitCodeScanTelemetry(codeScanTelemetryEntry: CodeScanTele
         passive: codeScanTelemetryEntry.codewhispererCodeScanScope === CodeAnalysisScope.FILE,
     })
 }
-const CodeScanErrorMessage = 'Amazon Q encountered an error while scanning for security issues. Try again later.'
-export function errorPromptHelper(error: Error, scope: CodeAnalysisScope) {
+
+export function errorPromptHelper(error: ToolkitError, scope: CodeAnalysisScope) {
     if (scope === CodeAnalysisScope.PROJECT) {
-        if (
-            error.message.startsWith('Amazon Q: The selected project is larger than') ||
-            error.message.startsWith('Amazon Q: The selected fle is larger than')
-        ) {
-            void vscode.window.showWarningMessage(`${error}`, ok)
-        } else {
-            void vscode.window.showWarningMessage(CodeScanErrorMessage, ok)
-        }
+        const errorMessage = error.code !== undefined ? mapEnumToString[error.code] : mapEnumToString['DefaultError']
+        void vscode.window.showWarningMessage(errorMessage, ok)
     }
 }
 

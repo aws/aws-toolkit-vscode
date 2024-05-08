@@ -50,7 +50,9 @@ describe('zipUtil', function () {
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.FILE),
-                new ToolkitError(`Amazon Q: The selected file is larger than 200KB. Try again with a smaller file.`)
+                new ToolkitError(
+                    `Amazon Q: The selected file is larger than the allowed size limit. Try again with a smaller file.`
+                )
             )
         })
 
@@ -70,7 +72,9 @@ describe('zipUtil', function () {
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT),
-                new ToolkitError('Amazon Q: The selected project is larger than 500MB. Try again with a small project.')
+                new ToolkitError(
+                    'Amazon Q: The selected project is larger than the allowed size limit. Try again with a smaller project.'
+                )
             )
         })
 
@@ -79,7 +83,9 @@ describe('zipUtil', function () {
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT),
-                new ToolkitError('Amazon Q: The selected project is larger than 500MB. Try again with a small project.')
+                new ToolkitError(
+                    'Amazon Q: The selected project is larger than the allowed size limit. Try again with a smaller project.'
+                )
             )
         })
 
