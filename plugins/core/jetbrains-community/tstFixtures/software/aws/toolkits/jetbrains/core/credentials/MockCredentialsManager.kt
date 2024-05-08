@@ -16,6 +16,7 @@ import software.aws.toolkits.core.credentials.CredentialIdentifierBase
 import software.aws.toolkits.core.credentials.CredentialProviderFactory
 import software.aws.toolkits.core.credentials.CredentialSourceId
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
+import software.aws.toolkits.core.credentials.SsoSessionIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.test.aString
@@ -47,6 +48,20 @@ class MockCredentialsManager : CredentialManager() {
         regionId: String? = null
     ): MockCredentialIdentifier = MockCredentialIdentifier(id, credentials, regionId).also {
         addProvider(it)
+    }
+
+    fun addCredentials(
+        credentialIdentifier: CredentialIdentifier
+    ): CredentialIdentifier {
+        addProvider(credentialIdentifier)
+        return credentialIdentifier
+    }
+
+    fun addSsoProvider(
+        ssoSessionIdentifier: SsoSessionIdentifier
+    ): SsoSessionIdentifier {
+        super.addSsoSession(ssoSessionIdentifier)
+        return ssoSessionIdentifier
     }
 
     fun createCredentialProvider(
@@ -112,6 +127,14 @@ open class MockCredentialManagerRule : ApplicationRule() {
         credentials: AwsCredentialsProvider,
         regionId: String? = null
     ): MockCredentialsManager.MockCredentialIdentifier = credentialManager.addCredentials(id, credentials, regionId)
+
+    fun addCredentials(
+        credentialIdentifier: CredentialIdentifier
+    ): CredentialIdentifier = credentialManager.addCredentials(credentialIdentifier)
+
+    fun addSsoProvider(
+        ssoSessionIdentifier: SsoSessionIdentifier
+    ): SsoSessionIdentifier = credentialManager.addSsoProvider(ssoSessionIdentifier)
 
     fun createCredentialProvider(
         id: String = aString(),

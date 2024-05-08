@@ -5,10 +5,14 @@ package software.aws.toolkits.jetbrains.services.rds.auth
 
 import com.intellij.credentialStore.Credentials
 import com.intellij.database.access.DatabaseCredentials
+import com.intellij.database.connection.throwable.KnownDatabaseException
+import com.intellij.database.connection.throwable.info.ErrorInfo
+import com.intellij.database.connection.throwable.info.SimpleErrorInfo
 import com.intellij.database.dataSource.DatabaseAuthProvider.AuthWidget
 import com.intellij.database.dataSource.DatabaseConnectionInterceptor.ProtoConnection
 import com.intellij.database.dataSource.DatabaseCredentialsAuthProvider
 import com.intellij.database.dataSource.LocalDataSource
+import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.future.future
 import software.amazon.awssdk.regions.Region
@@ -17,6 +21,12 @@ import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
+import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
+import software.aws.toolkits.jetbrains.core.credentials.UserConfigSsoSessionProfile
+import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialsIdentifierSso
+import software.aws.toolkits.jetbrains.core.credentials.reauthConnectionIfNeeded
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.NoTokenInitializedException
 import software.aws.toolkits.jetbrains.datagrip.auth.compatability.DatabaseAuthProviderCompatabilityAdapter
 import software.aws.toolkits.jetbrains.datagrip.auth.compatability.project
 import software.aws.toolkits.jetbrains.datagrip.getAwsConnectionSettings
@@ -49,6 +59,17 @@ class IamAuth : DatabaseAuthProviderCompatabilityAdapter {
 
     override fun createWidget(project: Project?, credentials: DatabaseCredentials, dataSource: LocalDataSource): AuthWidget? = IamAuthWidget()
 
+    inner class SsoNoTokenFix(val project: Project, val connection: ProtoConnection) : ErrorInfo.Fix {
+
+        override fun getName(): String = message("credentials.sso.login.session", getAuthInformation(connection).connectionSettings.credentials.id)
+
+        override fun isSilent(): Boolean = false
+
+        override fun apply(dataContext: DataContext) {
+            handleSsoAuthentication(project, connection)
+        }
+    }
+
     override fun intercept(
         connection: ProtoConnection,
         silent: Boolean
@@ -63,11 +84,41 @@ class IamAuth : DatabaseAuthProviderCompatabilityAdapter {
                 DatabaseCredentialsAuthProvider.applyCredentials(connection, credentials, true)
             } catch (e: Throwable) {
                 result = Result.Failed
-                throw e
+                if (e is NoTokenInitializedException) {
+                    val simpleErrorInfo = SimpleErrorInfo(
+                        message("rds.validation.iam_sso_connection.error_info"),
+                        e,
+                        listOf(SsoNoTokenFix(project, connection))
+                    )
+                    throw KnownDatabaseException(simpleErrorInfo)
+                } else {
+                    throw e
+                }
             } finally {
                 RdsTelemetry.getCredentials(project = project, result = result, databaseCredentials = IAM, databaseEngine = connection.getDatabaseEngine())
             }
         }
+    }
+
+    fun handleSsoAuthentication(project: Project, connection: ProtoConnection): ProtoConnection {
+        val authInformation = getAuthInformation(connection)
+        val profileCredentials =
+            CredentialManager.getInstance().getCredentialIdentifierById(authInformation.connectionSettings.credentials.id) as ProfileCredentialsIdentifierSso
+
+        val session = CredentialManager.getInstance()
+            .getSsoSessionIdentifiers()
+            .first { it.id == profileCredentials.sessionIdentifier }
+        val ssoConnection = ToolkitAuthManager.getInstance().getOrCreateSsoConnection(
+            UserConfigSsoSessionProfile(
+                configSessionName = profileCredentials.ssoSessionName,
+                ssoRegion = session.ssoRegion,
+                startUrl = session.startUrl,
+                scopes = session.scopes.toList()
+            )
+        )
+
+        reauthConnectionIfNeeded(project, ssoConnection)
+        return connection
     }
 
     internal fun getAuthInformation(connection: ProtoConnection): RdsAuth {

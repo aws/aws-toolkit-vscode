@@ -19,16 +19,25 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.services.ssooidc.SsoOidcClient
+import software.aws.toolkits.core.credentials.CredentialType
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.core.utils.unwrap
+import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
+import software.aws.toolkits.jetbrains.core.credentials.MockToolkitAuthManagerRule
+import software.aws.toolkits.jetbrains.core.credentials.diskCache
+import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialsIdentifierSso
+import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileSsoSessionIdentifier
+import software.aws.toolkits.jetbrains.core.credentials.sso.DeviceAuthorizationGrantToken
 import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.RequireSsl
 import software.aws.toolkits.jetbrains.datagrip.auth.compatability.project
 import software.aws.toolkits.resources.message
+import java.time.Instant
 
 class IamAuthTest {
     @Rule
@@ -53,10 +62,34 @@ class IamAuthTest {
     @JvmField
     val credentialManager = MockCredentialManagerRule()
 
+    @Rule
+    @JvmField
+    val authManager = MockToolkitAuthManagerRule()
+
+    @JvmField
+    @Rule
+    val mockClientManager = MockClientManagerRule()
+
+    private lateinit var ssoClient: SsoOidcClient
+
     @Before
     fun setUp() {
         credentialManager.addCredentials(credentialId, mockCreds)
         regionProvider.addRegion(AwsRegion(defaultRegion, RuleUtils.randomName(), RuleUtils.randomName()))
+        ssoClient = mockClientManager.create()
+    }
+
+    @Test
+    fun `Handle Sso authentication no token present`() {
+        val noTokenCredentialId = RuleUtils.randomName()
+        val ssoUrl = RuleUtils.randomName()
+        diskCache.saveAccessToken(ssoUrl, DeviceAuthorizationGrantToken(ssoUrl, "us-east-1", "access1", "refresh1", Instant.MAX))
+        credentialManager.addCredentials(ProfileCredentialsIdentifierSso(noTokenCredentialId, noTokenCredentialId, "us-east-1", CredentialType.SsoProfile))
+        credentialManager.addSsoProvider(ProfileSsoSessionIdentifier(noTokenCredentialId, ssoUrl, "us-east-1", setOf()))
+        val conneciton = buildConnection(hasCredentials = true, credentialId = "profile:" + noTokenCredentialId)
+
+        val connection = iamAuth.handleSsoAuthentication(projectRule.project, conneciton)
+        assertThat(connection).isNotNull
     }
 
     @Test
@@ -168,7 +201,8 @@ class IamAuthTest {
         hasCredentials: Boolean = true,
         hasBadHost: Boolean = false,
         hasSslConfig: Boolean = true,
-        dbmsType: Dbms = Dbms.POSTGRES
+        dbmsType: Dbms = Dbms.POSTGRES,
+        credentialId: String = this.credentialId
     ): ProtoConnection {
         val mockConnection = mock<LocalDataSource> {
             on { url } doReturn "jdbc:postgresql://$dbHost:$connectionPort/dev"

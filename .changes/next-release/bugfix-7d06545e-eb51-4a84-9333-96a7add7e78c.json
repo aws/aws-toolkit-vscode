@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix AWS SSO connection when authenticating with RDS using an IAM Identity Center profile (#4145)"
+}

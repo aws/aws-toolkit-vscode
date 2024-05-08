@@ -51,6 +51,7 @@ import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConst
 import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants.SSO_SESSION_SECTION_NAME
 import software.aws.toolkits.jetbrains.core.credentials.reauthConnectionIfNeeded
 import software.aws.toolkits.jetbrains.core.credentials.sso.SsoCache
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.NoTokenInitializedException
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.settings.ProfilesNotification
 import software.aws.toolkits.jetbrains.utils.createNotificationExpiringAction
@@ -93,7 +94,7 @@ class ProfileCredentialsIdentifierSso @TestOnly constructor(
 
     override fun handleValidationException(e: Exception): ConnectionState.RequiresUserAction? {
         // in the new SSO flow, we must attempt validation before knowing if user action is truly required
-        if (findUpException<SsoOidcException>(e) || findUpException<IllegalStateException>(e)) {
+        if (findUpException<SsoOidcException>(e) || findUpException<IllegalStateException>(e) || findUpException<NoTokenInitializedException>(e)) {
             return ConnectionState.RequiresUserAction(
                 object : InteractiveCredential, CredentialIdentifier by this {
                     override val userActionDisplayMessage = message("credentials.sso.display", displayName)
