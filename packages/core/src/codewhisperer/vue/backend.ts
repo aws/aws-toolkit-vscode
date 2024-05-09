@@ -93,7 +93,7 @@ export class CodeWhispererWebview extends VueWebview {
 
     //This function opens the Feedback CodeWhisperer page in the webview
     async openFeedBack(): Promise<void> {
-        return submitFeedback(placeholder, 'CodeWhisperer') // TODO: update this?
+        return submitFeedback(placeholder, 'Amazon Q')
     }
 
     //------Telemetry------
