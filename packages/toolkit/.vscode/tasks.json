@@ -57,9 +57,8 @@
         },
         {
             "label": "copyPackageJson",
-            "type": "npm",
-            "script": "copyPackageJson",
-            "problemMatcher": [],
+            "type": "shell",
+            "command": "npm run copyPackageJson -- --development",
             "isBackground": false,
             "group": {
                 "kind": "build",
