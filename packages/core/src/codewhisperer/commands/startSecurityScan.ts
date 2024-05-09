@@ -40,7 +40,12 @@ import { debounce } from 'lodash'
 import { once } from '../../shared/utilities/functionUtils'
 import { randomUUID } from '../../common/crypto'
 import { CodeAnalysisScope } from '../models/constants'
-import { CodeScanJobFailedError, CreateCodeScanFailedError, mapErrorToCustomerFacingMessage } from '../models/errors'
+import {
+    CodeScanJobFailedError,
+    CreateCodeScanFailedError,
+    ErrorCodes,
+    mapErrorToCustomerFacingMessage,
+} from '../models/errors'
 
 const localize = nls.loadMessageBundle()
 export const stopScanButton = localize('aws.codewhisperer.stopscan', 'Stop Scan')
@@ -301,7 +306,7 @@ export async function emitCodeScanTelemetry(codeScanTelemetryEntry: CodeScanTele
 
 export function errorPromptHelper(error: ToolkitError, scope: CodeAnalysisScope) {
     if (scope === CodeAnalysisScope.PROJECT) {
-        const errorMessage = mapErrorToCustomerFacingMessage[error.code ?? 'DefaultError']
+        const errorMessage = mapErrorToCustomerFacingMessage[(error.code as ErrorCodes) ?? ErrorCodes.DefaultError]
         void vscode.window.showWarningMessage(errorMessage, ok)
     }
 }
