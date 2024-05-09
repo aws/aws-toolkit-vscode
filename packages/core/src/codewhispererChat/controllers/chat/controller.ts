@@ -539,12 +539,14 @@ export class ChatController {
     }
     async getPrompt(triggerPayload: TriggerPayload) {
         try {
-            await request.fetch('POST', 'http://localhost:5000/getPrompt', {
+            const resp = await request.fetch('POST', 'http://localhost:5000/getPrompt', {
                 body: JSON.stringify(triggerPayload),
                 headers: {
                     'Content-Type': 'application/json',
                 },
             }).response
+            const j = await resp.json()
+            return j.prompt
         } catch (e: any) {
             getLogger().error(`failed to get prompt: ${(e as Error).message}`)
         }
