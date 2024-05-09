@@ -45,6 +45,7 @@ import { triggerPayloadToChatRequest } from './chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { randomUUID } from '../../../common/crypto'
+import request from '../../../common/request'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -536,40 +537,24 @@ export class ChatController {
 
         this.messenger.sendStaticTextResponse(responseType, triggerID, tabID)
     }
+    async getPrompt(triggerPayload: TriggerPayload) {
+        try {
+            await request.fetch('POST', 'http://localhost:5000/getPrompt', {
+                body: JSON.stringify(triggerPayload),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }).response
+        } catch (e: any) {
+            getLogger().error(`failed to get prompt: ${(e as Error).message}`)
+        }
+    }
 
     private async generateResponse(triggerPayload: TriggerPayload, triggerID: string) {
         // Loop while we waiting for tabID to be set
-        triggerPayload.message += `
-        Here is the README file of this project. 
-        
-        # AWS Toolkit for Visual Studio Code
-
-        [![Coverage](https://img.shields.io/codecov/c/github/aws/aws-toolkit-vscode/master.svg)](https://codecov.io/gh/aws/aws-toolkit-vscode/branch/master) [![Marketplace Version](https://img.shields.io/vscode-marketplace/v/AmazonWebServices.aws-toolkit-vscode.svg) ![Marketplace Downloads](https://img.shields.io/vscode-marketplace/d/AmazonWebServices.aws-toolkit-vscode.svg)](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode)
-        
-        AWS Toolkit is a [VS Code extension](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.aws-toolkit-vscode) for connecting your IDE to your AWS resources:
-        
-        -   Connect with [IAM credentials](https://docs.aws.amazon.com/sdkref/latest/guide/access-users.html),
-            [IAM Identity Center (SSO)](https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html),
-            or [AWS Builder ID](https://docs.aws.amazon.com/signin/latest/userguide/differences-aws_builder_id.html)
-        -   Use [Amazon Q](https://aws.amazon.com/q/developer/) to write code
-        -   Connect to your [CodeCatalyst](https://codecatalyst.aws/) Dev Environments
-        -   Debug your Lambda functions using [SAM CLI](https://github.com/aws/aws-sam-cli)
-        -   Browse your AWS resources
-        
-        This project is open source. We love issues, feature requests, code reviews, pull requests or any
-        positive contribution. See [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
-        
-        ## Documentation
-        
-        -   [Quick Start Guide](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.aws-toolkit-vscode)
-        -   [FAQ / Troubleshooting](./docs/faq-credentials.md)
-        -   [User Guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome)
-        -   General info about [AWS SDKs and Tools](https://docs.aws.amazon.com/sdkref/latest/guide/overview.html)
-
-
-
-
-        `
+        if (triggerPayload.message) {
+            triggerPayload.message += await this.getPrompt(triggerPayload)
+        }
 
         const triggerEvent = this.triggerEventsStorage.getTriggerEvent(triggerID)
         if (triggerEvent === undefined) {
