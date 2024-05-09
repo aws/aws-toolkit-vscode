@@ -75,7 +75,7 @@ export class IamPolicyChecksWebview extends VueWebview {
             this.onFileReadError.fire('') // Reset error message display if no error is found
             return customChecksTextArea
         } catch (err) {
-            if (err instanceof PolicyChecksError && err.code === PolicyChecksErrorCode.FileReadError) {
+            if (err instanceof PolicyChecksError && (err.code as PolicyChecksErrorCode) === 'FileReadError') {
                 this.onFileReadError.fire(err.message)
             }
             return ''
@@ -116,12 +116,12 @@ export class IamPolicyChecksWebview extends VueWebview {
      * Responses are exposed in the Webview, including errors
      * Diagnostic objects are created to expose findings, which appear in the problems panel
      */
-    public async validatePolicy(documentType: string, policyType: string, cfnParameterPath?: string) {
+    public async validatePolicy(documentType: PolicyChecksDocumentType, policyType: string, cfnParameterPath?: string) {
         const document = IamPolicyChecksWebview.editedDocumentFileName
         validatePolicyDiagnosticCollection.clear()
         const diagnostics: vscode.Diagnostic[] = []
         switch (documentType) {
-            case PolicyChecksDocumentType.JSON_POLICY_LANGUAGE: {
+            case 'JSON Policy Language': {
                 if (document.endsWith('.json')) {
                     this.client.validatePolicy(
                         {
@@ -141,7 +141,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                                 if (data.findings.length > 0) {
                                     data.findings.forEach((finding: AccessAnalyzer.ValidatePolicyFinding) => {
                                         const message = `${finding.findingType}: ${finding.issueCode} - ${finding.findingDetails} Learn more: ${finding.learnMoreLink}`
-                                        if (finding.findingType === ValidatePolicyFindingType.ERROR) {
+                                        if ((finding.findingType as ValidatePolicyFindingType) === 'ERROR') {
                                             diagnostics.push(
                                                 new vscode.Diagnostic(
                                                     new vscode.Range(
@@ -197,7 +197,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                     return
                 }
             }
-            case PolicyChecksDocumentType.TERRAFORM_PLAN: {
+            case 'Terraform Plan': {
                 if (document.endsWith('.json')) {
                     const tfCommand = `tf-policy-validator validate --template-path ${document} --region ${
                         this.region
@@ -209,7 +209,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                     return
                 }
             }
-            case PolicyChecksDocumentType.CLOUDFORMATION: {
+            case 'CloudFormation': {
                 if (document.endsWith('.yaml') || document.endsWith('.yml')) {
                     const cfnCommand =
                         cfnParameterPath === ''
@@ -226,7 +226,7 @@ export class IamPolicyChecksWebview extends VueWebview {
     }
 
     public async checkNoNewAccess(
-        documentType: string,
+        documentType: PolicyChecksDocumentType,
         policyType: string,
         referenceDocument: string,
         cfnParameterPath?: string
@@ -244,7 +244,7 @@ export class IamPolicyChecksWebview extends VueWebview {
         }
 
         switch (documentType) {
-            case PolicyChecksDocumentType.TERRAFORM_PLAN: {
+            case 'Terraform Plan': {
                 if (document.endsWith('.json')) {
                     const tfCommand = `tf-policy-validator check-no-new-access --template-path ${document} --region ${
                         this.region
@@ -258,7 +258,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                     return
                 }
             }
-            case PolicyChecksDocumentType.CLOUDFORMATION: {
+            case 'CloudFormation': {
                 if (document.endsWith('.yaml') || document.endsWith('.yml')) {
                     const cfnCommand =
                         cfnParameterPath === ''
@@ -275,7 +275,11 @@ export class IamPolicyChecksWebview extends VueWebview {
         await tryRemoveFolder(tempFolder)
     }
 
-    public async checkAccessNotGranted(documentType: string, actions: string, cfnParameterPath?: string) {
+    public async checkAccessNotGranted(
+        documentType: PolicyChecksDocumentType,
+        actions: string,
+        cfnParameterPath?: string
+    ) {
         const document = IamPolicyChecksWebview.editedDocumentFileName
         customPolicyCheckDiagnosticCollection.clear()
         if (actions !== '') {
@@ -286,7 +290,7 @@ export class IamPolicyChecksWebview extends VueWebview {
             return
         }
         switch (documentType) {
-            case PolicyChecksDocumentType.TERRAFORM_PLAN: {
+            case 'Terraform Plan': {
                 if (document.endsWith('.json')) {
                     const tfCommand = `tf-policy-validator check-access-not-granted --template-path ${document} --region ${
                         this.region
@@ -298,7 +302,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                     return
                 }
             }
-            case PolicyChecksDocumentType.CLOUDFORMATION: {
+            case 'CloudFormation': {
                 if (document.endsWith('.yaml') || document.endsWith('.yml')) {
                     const cfnCommand =
                         cfnParameterPath === ''
@@ -476,9 +480,9 @@ async function _readCustomChecksFile(input: string): Promise<string> {
             return resp.objectBody.toString()
         } catch (e: any) {
             if (e.message.includes('Invalid S3 URI')) {
-                throw new PolicyChecksError('Invalid file path or S3 URI', PolicyChecksErrorCode.FileReadError)
+                throw new PolicyChecksError('Invalid file path or S3 URI', 'FileReadError')
             } else {
-                throw new PolicyChecksError(e.message, PolicyChecksErrorCode.FileReadError)
+                throw new PolicyChecksError(e.message, 'FileReadError')
             }
         }
     }

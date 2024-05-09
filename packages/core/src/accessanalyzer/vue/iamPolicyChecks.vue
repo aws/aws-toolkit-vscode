@@ -245,6 +245,7 @@ import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../webviews/client'
 import saveData from '../../webviews/mixins/saveData'
 import { IamPolicyChecksWebview } from './iamPolicyChecks'
+import { PolicyChecksDocumentType } from './constants'
 import '@../../../resources/css/base.css'
 import '@../../../resources/css/securityIssue.css'
 
@@ -337,21 +338,25 @@ export default defineComponent({
         },
         runValidator: async function () {
             this.validateButtonDisabled = true
-            await client.validatePolicy(this.documentType, this.validatePolicyType, this.initialData.cfnParameterPath)
+            await client.validatePolicy(
+                this.documentType as PolicyChecksDocumentType,
+                this.validatePolicyType,
+                this.initialData.cfnParameterPath
+            )
             this.validateButtonDisabled = false
         },
         runCustomPolicyCheck: async function () {
             this.customCheckButtonDisabled = true
             if (this.checkType == 'CheckNoNewAccess') {
                 await client.checkNoNewAccess(
-                    this.documentType,
+                    this.documentType as PolicyChecksDocumentType,
                     this.customChecksPolicyType,
                     this.initialData.customChecksTextArea,
                     this.initialData.cfnParameterPath
                 )
             } else if (this.checkType == 'CheckAccessNotGranted') {
                 await client.checkAccessNotGranted(
-                    this.documentType,
+                    this.documentType as PolicyChecksDocumentType,
                     this.initialData.customChecksTextArea,
                     this.initialData.cfnParameterPath
                 )

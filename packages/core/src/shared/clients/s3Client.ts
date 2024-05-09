@@ -638,9 +638,7 @@ export class DefaultS3Client {
     }
 
     /**
-     * Gets an object from a bucket.
-     *
-     * The bucket should reside in the same region as the one configured for the client.
+     * Gets an object's body from a bucket.
      *
      * @throws Error if there is an error calling S3.
      */
@@ -655,7 +653,7 @@ export class DefaultS3Client {
             })
             .promise()
         const response: GetObjectResponse = { objectBody: output.Body! }
-        getLogger().debug('GetObject returned response: %O', response)
+        getLogger().debug('GetObject returned response: %O', output.$response)
         return response
     }
 }
