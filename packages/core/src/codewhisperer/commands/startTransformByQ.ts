@@ -362,7 +362,8 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
             codeTransformJobId: jobId,
             codeTransformMetadata: CodeTransformTelemetryState.instance.getCodeTransformMetaDataString(),
             result: MetadataResult.Fail,
-            reason: CodeTransformTelemetryState.instance.getCodeTransformMetaData().errorMessage,
+            // TODO: make a generic reason field for telemetry logging so we don't log sensitive PII data
+            reason: 'Runtime error occurred',
         })
         await HumanInTheLoopManager.instance.cleanUpArtifacts()
         return true
@@ -412,9 +413,6 @@ export async function finishHumanInTheLoop(selectedDependency?: string) {
 
         // 7) We need to take that output of maven and use CreateUploadUrl
         const uploadFolderInfo = humanInTheLoopManager.getUploadFolderInfo()
-        // TODO maybe separate function for just install
-        // IF WE fail, do we allow user to retry? or just fail
-        // Maybe have clientside retries?
         await prepareProjectDependencies(uploadFolderInfo, uploadFolderInfo.path)
         // zipCode side effects deletes the uploadFolderInfo right away
         const uploadPayloadFilePath = await zipCode({
@@ -427,7 +425,6 @@ export async function finishHumanInTheLoop(selectedDependency?: string) {
                 },
             }),
         })
-        // TODO map `CLIENT_INSTRUCTIONS` to `ClientInstructions` through UploadArtifactType
         await uploadPayload(uploadPayloadFilePath, {
             transformationUploadContext: {
                 jobId,
@@ -441,7 +438,6 @@ export async function finishHumanInTheLoop(selectedDependency?: string) {
         })
 
         // 8) Once code has been uploaded we will restart the job
-        // TODO response returns "RESUMED"
         await resumeTransformationJob(jobId, 'COMPLETED')
 
         await sleep(1500)
@@ -460,13 +456,13 @@ export async function finishHumanInTheLoop(selectedDependency?: string) {
         void humanInTheLoopRetryLogic(jobId)
     } finally {
         // Always delete the dependency directories
-        // Always delete the dependency directories
         telemetry.codeTransform_humanInTheLoop.emit({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformJobId: jobId,
             codeTransformMetadata: CodeTransformTelemetryState.instance.getCodeTransformMetaDataString(),
             result: hilResult,
-            reason: CodeTransformTelemetryState.instance.getCodeTransformMetaData().errorMessage,
+            // TODO: make a generic reason field for telemetry logging so we don't log sensitive PII data
+            reason: hilResult === MetadataResult.Fail ? 'Runtime error occurred' : undefined,
         })
         await HumanInTheLoopManager.instance.cleanUpArtifacts()
     }

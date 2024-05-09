@@ -285,7 +285,7 @@ export class GumbyController {
         this.messenger.sendProjectSelectionMessage(projectName, fromJDKVersion, toJDKVersion, message.tabID)
 
         if (fromJDKVersion === JDKVersion.UNSUPPORTED) {
-            this.messenger.sendRetryableErrorResponse('unsupported-source-jdk-version', message.tabID)
+            this.messenger.sendUnrecoverableErrorResponse('unsupported-source-jdk-version', message.tabID)
             return
         }
 
@@ -415,7 +415,9 @@ export class GumbyController {
 
     private async continueTransformationWithoutHIL(message: { tabID: string }) {
         this.sessionStorage.getSession().conversationState = ConversationState.JOB_SUBMITTED
-
+        CodeTransformTelemetryState.instance.setCodeTransformMetaDataField({
+            canceledFromChat: true,
+        })
         try {
             await finishHumanInTheLoop()
         } catch (err: any) {
