@@ -40,7 +40,7 @@ import { debounce } from 'lodash'
 import { once } from '../../shared/utilities/functionUtils'
 import { randomUUID } from '../../common/crypto'
 import { CodeAnalysisScope } from '../models/constants'
-import { mapEnumToString } from '../models/errors'
+import { CodeScanJobFailedError, CreateCodeScanFailedError, mapErrorToCustomerFacingMessage } from '../models/errors'
 
 const localize = nls.loadMessageBundle()
 export const stopScanButton = localize('aws.codewhisperer.stopscan', 'Stop Scan')
@@ -174,7 +174,8 @@ export async function startSecurityScan(
         )
         if (scanJob.status === 'Failed') {
             logger.verbose(`${scanJob.errorMessage}`)
-            throw new Error(scanJob.errorMessage)
+            const errorMessage = scanJob.errorMessage ?? 'CreateCodeScanFailed'
+            throw new CreateCodeScanFailedError(errorMessage)
         }
         logger.verbose(`Created security scan job.`)
         codeScanTelemetryEntry.codewhispererCodeScanJobId = scanJob.jobId
@@ -186,7 +187,7 @@ export async function startSecurityScan(
         const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scope, codeScanStartTime)
         if (jobStatus === 'Failed') {
             logger.verbose(`Security scan job failed.`)
-            throw new Error('Security scan job failed.')
+            throw new CodeScanJobFailedError()
         }
 
         /**
@@ -237,6 +238,7 @@ export async function startSecurityScan(
                 scope === CodeAnalysisScope.PROJECT &&
                 error.message.includes(CodeWhispererConstants.projectScansThrottlingMessage)
             ) {
+                getLogger().error(CodeWhispererConstants.projectScansLimitReached)
                 void vscode.window.showErrorMessage(CodeWhispererConstants.projectScansLimitReached)
                 // TODO: Should we set a graphical state?
                 // We shouldn't set vsCodeState.isFreeTierLimitReached here because it will hide CW and Q chat options.
@@ -299,7 +301,7 @@ export async function emitCodeScanTelemetry(codeScanTelemetryEntry: CodeScanTele
 
 export function errorPromptHelper(error: ToolkitError, scope: CodeAnalysisScope) {
     if (scope === CodeAnalysisScope.PROJECT) {
-        const errorMessage = error.code !== undefined ? mapEnumToString[error.code] : mapEnumToString['DefaultError']
+        const errorMessage = mapErrorToCustomerFacingMessage[error.code ?? 'DefaultError']
         void vscode.window.showWarningMessage(errorMessage, ok)
     }
 }

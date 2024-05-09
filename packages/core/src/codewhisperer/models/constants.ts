@@ -290,9 +290,9 @@ export const freeTierLimitReached = 'You have reached the monthly fair use limit
 
 export const freeTierLimitReachedCodeScan = 'You have reached the monthly quota of code scans.'
 
-export const fileScansLimitReached = 'You have reached the monthly quota of auto-scans.'
+export const fileScansLimitReached = 'Amazon Q: You have reached the monthly limit for auto-scans.'
 
-export const projectScansLimitReached = 'You have reached the monthly limit for project scans.'
+export const projectScansLimitReached = 'Amazon Q: You have reached the monthly limit for project scans.'
 
 export const throttlingLearnMore = `Learn More`
 

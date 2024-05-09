@@ -4,29 +4,22 @@
  */
 
 import { ToolkitError } from '../../shared/errors'
-/*
-create an emum for all error codes
 
-export const enum EnumDe {
-    FileSizeExceeded = 'FileSizeExceeded',
-    ProjectSizeExceeded = 'ProjectSizeExceeded',
-    DefaultError = 'DefaultError',
-}
-export const mapEnumToString: Record<EnumDe, string> = {
-    [EnumDe.FileSizeExceeded]:
-        'Amazon Q: The selected file is larger than the allowed size limit. Try again with a smaller file.',
-    [EnumDe.ProjectSizeExceeded]:
-        'Amazon Q: The selected project is larger than the allowed size limit. Try again with a smaller project.',
-    [EnumDe.DefaultError]: 'Amazon Q encountered an error while scanning for security issues. Try again later.',
-}
-*/
-export const mapEnumToString: Record<string, string> = {
-    FileSizeExceeded:
-        'Amazon Q: The selected file is larger than the allowed size limit. Try again with a smaller file.',
-    ProjectSizeExceeded:
-        'Amazon Q: The selected project is larger than the allowed size limit. Try again with a smaller project.',
-    DefaultError: 'Amazon Q encountered an error while scanning for security issues. Try again later.',
-    InvalidSourceZipError: 'Amazon Q encountered an error while scanning for security issues. Try again later.',
+const DefaultErrorMessage = 'Amazon Q encountered an error while scanning for security issues. Try again later.'
+
+export const mapErrorToCustomerFacingMessage: Record<string, string> = {
+    FileSizeExceeded: `Amazon Q: The selected file exceeds the input artifact limit. Try again with a smaller file. For more information about scan limits, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security-scans.html#quotas).`,
+    ProjectSizeExceeded: `Amazon Q: The selected file exceeds the input artifact limit. Try again with a smaller project. For more information about scan limits, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security-scans.html#quotas).`,
+    NoWorkspaceFound: 'Amazon Q: No workspace folders found',
+    InvalidSourceFiles: 'Amazon Q: Project does not contain valid files to scan',
+    CreateUploadUrlError: DefaultErrorMessage,
+    UploadArtifactToS3Error: `Amazon Q is unable to upload your workspace artifacts to Amazon S3 for security scans. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security_iam_manage-access-with-policies.html#data-perimeters).`,
+    DefaultError: DefaultErrorMessage,
+    InvalidSourceZip: DefaultErrorMessage,
+    CreateCodeScanError: DefaultErrorMessage,
+    CreateCodeScanFailedError: DefaultErrorMessage,
+    SecurityScanTimedOutError: DefaultErrorMessage,
+    CodeScanJobFailedError: DefaultErrorMessage,
 }
 
 export class FileSizeExceededError extends ToolkitError {
@@ -51,6 +44,54 @@ export class DefaultError extends ToolkitError {
 
 export class InvalidSourceZipError extends ToolkitError {
     constructor() {
-        super('Failed to create valid source zip', { code: 'DefaultError' })
+        super('Failed to create valid source zip', { code: 'InvalidSourceZip' })
+    }
+}
+
+export class NoWorkspaceFolderFoundError extends ToolkitError {
+    constructor() {
+        super('No workspace folders found', { code: 'NoWorkspaceFound' })
+    }
+}
+
+export class InvalidSourceFilesError extends ToolkitError {
+    constructor() {
+        super('Project does not contain valid files to scan', { code: 'InvalidSourceFiles' })
+    }
+}
+
+export class CreateUploadUrlError extends ToolkitError {
+    constructor(error: string) {
+        super(error, { code: 'CreateUploadUrlError' })
+    }
+}
+
+export class UploadArtifactToS3Error extends ToolkitError {
+    constructor(error: string) {
+        super(error, { code: 'UploadArtifactToS3Error' })
+    }
+}
+
+export class CreateCodeScanError extends ToolkitError {
+    constructor(error: string) {
+        super(error, { code: 'CreateCodeScanError' })
+    }
+}
+
+export class CreateCodeScanFailedError extends ToolkitError {
+    constructor(error: string) {
+        super(error, { code: 'CreateCodeScanFailedError' })
+    }
+}
+
+export class SecurityScanTimedOutError extends ToolkitError {
+    constructor() {
+        super('Security Scan failed. Amazon Q timed out.', { code: 'SecurityScanTimedOutError' })
+    }
+}
+
+export class CodeScanJobFailedError extends ToolkitError {
+    constructor() {
+        super('Security scan job failed.', { code: 'CodeScanJobFailedError' })
     }
 }
