@@ -356,7 +356,8 @@ export class CodeCatalystAuthenticationProvider {
             await this.promptOnboarding()
         }
 
-        return this.secondaryAuth.useNewConnection(conn)
+        await this.secondaryAuth.useNewConnection(conn)
+        return conn
     }
 
     /**

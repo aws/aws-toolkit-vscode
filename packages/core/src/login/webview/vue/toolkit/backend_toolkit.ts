@@ -7,10 +7,18 @@ import * as vscode from 'vscode'
 import { tryAddCredentials } from '../../../../auth/utils'
 import { getLogger } from '../../../../shared/logger'
 import { CommonAuthWebview } from '../backend'
-import { AwsConnection, Connection, createSsoProfile } from '../../../../auth/connection'
+import {
+    AwsConnection,
+    Connection,
+    createSsoProfile,
+    hasScopes,
+    isIdcSsoConnection,
+    scopesSsoAccountAccess,
+} from '../../../../auth/connection'
 import { Auth } from '../../../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
 import { AuthError, AuthFlowState, TelemetryMetadata } from '../types'
+import { addScopes } from '../../../../auth/secondaryAuth'
 
 export class ToolkitLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.toolkit.AmazonCommonAuth'
@@ -36,20 +44,26 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
 
         if (this.isCodeCatalystLogin) {
             return this.ssoSetup('startCodeCatalystSSOSetup', async () => {
-                this.storeMetricMetadata({ ...metadata, authEnabledFeatures: 'codecatalyst' })
+                this.storeMetricMetadata({ ...metadata })
 
-                await this.codeCatalystAuth.connectToEnterpriseSso(startUrl, region)
+                const conn = await this.codeCatalystAuth.connectToEnterpriseSso(startUrl, region)
+
+                this.storeMetricMetadata({ authEnabledFeatures: this.getAuthEnabledFeatures(conn) })
+
                 await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
                 await this.showResourceExplorer()
             })
         }
 
         return this.ssoSetup('createIdentityCenterConnection', async () => {
-            this.storeMetricMetadata({ ...metadata, authEnabledFeatures: 'awsExplorer' })
+            this.storeMetricMetadata({ ...metadata })
 
             const ssoProfile = createSsoProfile(startUrl, region)
             const conn = await Auth.instance.createConnection(ssoProfile)
             await Auth.instance.useConnection(conn)
+
+            this.storeMetricMetadata({ authEnabledFeatures: this.getAuthEnabledFeatures(conn) })
+
             await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
             void vscode.window.showInformationMessage('Toolkit: Successfully connected to AWS IAM Identity Center')
             void this.showResourceExplorer()
@@ -126,7 +140,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
      */
     async useConnection(connectionId: string, auto: boolean): Promise<AuthError | undefined> {
         return this.ssoSetup('useConnection', async () => {
-            const conn = await Auth.instance.getConnection({ id: connectionId })
+            let conn = await Auth.instance.getConnection({ id: connectionId })
             if (conn === undefined || conn.type !== 'sso') {
                 return
             }
@@ -136,6 +150,9 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
             if (this.isCodeCatalystLogin) {
                 await this.codeCatalystAuth.tryUseConnection(conn)
             } else {
+                if (isIdcSsoConnection(conn) && !hasScopes(conn, scopesSsoAccountAccess)) {
+                    conn = await addScopes(conn, scopesSsoAccountAccess)
+                }
                 await Auth.instance.useConnection({ id: connectionId })
             }
 
