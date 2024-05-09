@@ -135,7 +135,7 @@ export interface TriggerPayload {
     readonly fileText: string | undefined
     readonly fileLanguage: string | undefined
     readonly filePath: string | undefined
-    readonly message: string | undefined
+    message: string | undefined
     readonly matchPolicy: MatchPolicy | undefined
     readonly codeQuery: CodeQuery | undefined
     readonly userIntent: UserIntent | undefined
