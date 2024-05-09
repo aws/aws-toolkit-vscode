@@ -5,11 +5,14 @@
 import * as vscode from 'vscode'
 import * as os from 'os'
 import path from 'path'
-import { FolderInfo } from '../../models/model'
+import { FolderInfo, transformByQState } from '../../models/model'
 import { fsCommon } from '../../../srcShared/fs'
 import { createPomCopy, replacePomVersion } from './transformFileHandler'
 import { IManifestFile } from '../../../amazonqFeatureDev/models'
 import { getLogger } from '../../../shared/logger'
+import { telemetry } from '../../../shared/telemetry'
+import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
+import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 
 /**
  * @description This class helps encapsulate the "human in the loop" behavior of Amazon Q transform. Users
@@ -73,32 +76,42 @@ export class HumanInTheLoopManager {
         await replacePomVersion(pomFileVirtualFileReference, version, this.pomReplacementDelimiter)
 
     public cleanUpArtifacts = async () => {
-        const artifactCleanUpErrorMessage = (e: any) =>
-            `CodeTransformation: Error cleaning up artifacts = ${e?.message}`
         try {
             await fsCommon.delete(this.userDependencyUpdateDir)
         } catch (e: any) {
-            getLogger().error(artifactCleanUpErrorMessage(e))
+            this.logArtifactError(e)
         }
         try {
             await fsCommon.delete(this.tmpDependencyListDir)
         } catch (e: any) {
-            getLogger().error(artifactCleanUpErrorMessage(e))
+            this.logArtifactError(e)
         }
         try {
             await fsCommon.delete(this.tmpDownloadsDir)
         } catch (e: any) {
-            getLogger().error(artifactCleanUpErrorMessage(e))
+            this.logArtifactError(e)
         }
         for (let i = 0; i < this.tmpSessionFiles.length; i++) {
             try {
                 await fsCommon.delete(this.tmpSessionFiles[i])
             } catch (e: any) {
-                getLogger().error(artifactCleanUpErrorMessage(e))
+                this.logArtifactError(e)
             }
         }
         this.tmpSessionFiles = []
-        // todo add logger and telemetry log here
+    }
+
+    private logArtifactError(e: any) {
+        const errorMessage = 'Error cleaning up artifacts'
+        const artifactCleanUpErrorMessage = (e: any) => `CodeTransformation: ${errorMessage} = ${e?.message}`
+        getLogger().error(artifactCleanUpErrorMessage(e))
+        telemetry.codeTransform_logGeneralError.emit({
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformJobId: transformByQState.getJobId(),
+            result: MetadataResult.Fail,
+            reason: errorMessage,
+            codeTransformApiErrorMessage: errorMessage,
+        })
     }
 
     static #instance: HumanInTheLoopManager | undefined
