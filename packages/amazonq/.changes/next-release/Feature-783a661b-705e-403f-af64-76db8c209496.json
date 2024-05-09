@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Human in the loop - Adding human intervention to help update dependencies during the Amazon Q Transformation process\""
+	"description": "Transform: Add human intervention to help update dependencies during transformation."
 }
