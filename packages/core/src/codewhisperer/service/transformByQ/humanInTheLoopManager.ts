@@ -11,6 +11,12 @@ import { createPomCopy, replacePomVersion } from './transformFileHandler'
 import { IManifestFile } from '../../../amazonqFeatureDev/models'
 import { getLogger } from '../../../shared/logger'
 
+/**
+ * @description This class helps encapsulate the "human in the loop" behavior of Amazon Q transform. Users
+ * will be prompted for input during the transformation process. Amazon Q will make some temporary folders
+ * and take action on behalf of the user. To make sure those actions are executed and cleanup up properly,
+ * we have encapsulated in this class.
+ */
 export class HumanInTheLoopManager {
     public readonly diagnosticCollection = vscode.languages.createDiagnosticCollection('hilPomFileDiagnostics')
 
@@ -92,6 +98,7 @@ export class HumanInTheLoopManager {
             }
         }
         this.tmpSessionFiles = []
+        // todo add logger and telemetry log here
     }
 
     static #instance: HumanInTheLoopManager | undefined

@@ -307,7 +307,7 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
 
         const codeSnippet = await getCodeIssueSnippetFromPom(newPomFileVirtualFileReference)
         // Let the user know we've entered the loop in the chat
-        transformByQState.getChatControllers()?.startHumanInTheLoopIntervention.fire({
+        transformByQState.getChatControllers()?.humanInTheLoopStartIntervention.fire({
             tabID: ChatSessionManager.Instance.getSession().tabID,
             codeSnippet,
         })
@@ -339,7 +339,7 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
 
         // 5) We need to wait for user input
         // This is asynchronous, so we have to wait to be called to complete this loop
-        transformByQState.getChatControllers()?.promptForDependencyHIL.fire({
+        transformByQState.getChatControllers()?.humanInTheLoopPromptUserForDependency.fire({
             tabID: ChatSessionManager.Instance.getSession().tabID,
             dependencies,
         })
@@ -357,6 +357,9 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
         CodeTransformTelemetryState.instance.setCodeTransformMetaDataField({
             errorMessage: err.message,
         })
+        return true
+    } finally {
+        await sleep(1000)
         telemetry.codeTransform_humanInTheLoop.emit({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformJobId: jobId,
@@ -366,9 +369,6 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
             reason: 'Runtime error occurred',
         })
         await HumanInTheLoopManager.instance.cleanUpArtifacts()
-        return true
-    } finally {
-        await sleep(1000)
     }
     return false
 }
@@ -433,7 +433,7 @@ export async function finishHumanInTheLoop(selectedDependency?: string) {
         })
 
         // inform user in chat
-        transformByQState.getChatControllers()?.HILSelectionUploaded.fire({
+        transformByQState.getChatControllers()?.humanInTheLoopSelectionUploaded.fire({
             tabID: ChatSessionManager.Instance.getSession().tabID,
         })
 
