@@ -343,6 +343,12 @@ export class Messenger {
         )
     }
 
+    /**
+     * @description This method renders an error message as a plain message with no other prompt or action
+     * for the user to follow. Either the job can continue and this message is purely for
+     * informational purposes, or some other error workflow is meant to contribute a
+     * follow-up with a user action.
+     */
     public sendKnownErrorResponse(type: ErrorResponseType, tabID: string) {
         let message = '...'
 
