@@ -100,7 +100,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                                     // if failed, connection is set to invalid
                                     const oldScopes = conn?.scopes ? conn.scopes : []
                                     const newScopes = Array.from(new Set([...oldScopes, ...amazonQScopes]))
-                                    newConn = await Auth.instance.createConnectionFromApi({
+                                    const payload: AwsConnection = {
                                         type: conn.type,
                                         ssoRegion: conn.ssoRegion,
                                         scopes: newScopes,
@@ -108,8 +108,15 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                                         state: conn.state,
                                         id: conn.id,
                                         label: conn.label,
-                                    })
-                                    await Auth.instance.reauthenticate(newConn)
+                                    }
+                                    newConn = await Auth.instance.createConnectionFromApi(payload)
+                                    try {
+                                        await Auth.instance.reauthenticate(newConn, false)
+                                    } catch (e) {
+                                        // Restore original scopes as to not soft-lock connections.
+                                        await Auth.instance.createConnectionFromApi({ ...payload, scopes: oldScopes })
+                                        throw e
+                                    }
                                     await AuthUtil.instance.secondaryAuth.useNewConnection(newConn)
                                 }
                                 if (!auto) {
