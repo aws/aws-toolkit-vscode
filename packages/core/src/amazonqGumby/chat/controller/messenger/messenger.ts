@@ -367,7 +367,7 @@ export class Messenger {
     }
 
     public sendCommandMessage(message: any) {
-        this.dispatcher.sendCommandMessage(new SendCommandMessage(message.command, message.tabId, message.eventId))
+        this.dispatcher.sendCommandMessage(new SendCommandMessage(message.command, message.tabID, message.eventId))
     }
 
     public sendJobFinishedMessage(tabID: string, message: string = '') {

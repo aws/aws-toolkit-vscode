@@ -57,9 +57,8 @@
         },
         {
             "label": "copyPackageJson",
-            "type": "npm",
-            "script": "copyPackageJson",
-            "problemMatcher": [],
+            "type": "shell",
+            "command": "npm run copyPackageJson -- --development",
             "isBackground": false,
             "group": {
                 "kind": "build",
@@ -92,6 +91,7 @@
             },
             "dependsOn": ["restorePackageJson"]
         },
+        // ---------- Start: Web Mode Tasks ----------
         {
             "label": "webRun",
             "type": "npm",
@@ -163,6 +163,7 @@
             "type": "shell",
             "dependsOn": ["restorePackageJson"]
         },
+        // ---------- End: Web Mode Tasks ----------
         {
             "type": "npm",
             "script": "lint",

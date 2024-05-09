@@ -92,7 +92,7 @@ describe('CodeWhisperer security scan', async function () {
         const zipUtil = new ZipUtil()
         const uri = editor.document.uri
 
-        const projectPath = zipUtil.getProjectPath(editor.document.uri)
+        const projectPaths = zipUtil.getProjectPaths()
         const scope = CodeWhispererConstants.CodeAnalysisScope.PROJECT
         const zipMetadata = await zipUtil.generateZip(uri, scope)
         const codeScanName = randomUUID()
@@ -105,7 +105,7 @@ describe('CodeWhisperer security scan', async function () {
         }
         return {
             artifactMap: artifactMap,
-            projectPath: projectPath,
+            projectPaths: projectPaths,
             codeScanName: codeScanName,
             codeScanStartTime: codeScanStartTime,
         }
@@ -120,7 +120,7 @@ describe('CodeWhisperer security scan', async function () {
         //run security scan
         const securityJobSetupResult = await securityJobSetup(editor)
         const artifactMap = securityJobSetupResult.artifactMap
-        const projectPath = securityJobSetupResult.projectPath
+        const projectPaths = securityJobSetupResult.projectPaths
 
         const scope = CodeWhispererConstants.CodeAnalysisScope.PROJECT
 
@@ -142,7 +142,7 @@ describe('CodeWhisperer security scan', async function () {
             client,
             scanJob.jobId,
             CodeWhispererConstants.codeScanFindingsSchema,
-            projectPath,
+            projectPaths,
             scope
         )
 
@@ -162,7 +162,7 @@ describe('CodeWhisperer security scan', async function () {
         //run security scan
         const securityJobSetupResult = await securityJobSetup(editor)
         const artifactMap = securityJobSetupResult.artifactMap
-        const projectPath = securityJobSetupResult.projectPath
+        const projectPaths = securityJobSetupResult.projectPaths
         const scanJob = await createScanJob(
             client,
             artifactMap,
@@ -182,7 +182,7 @@ describe('CodeWhisperer security scan', async function () {
             client,
             scanJob.jobId,
             CodeWhispererConstants.codeScanFindingsSchema,
-            projectPath,
+            projectPaths,
             scope
         )
 

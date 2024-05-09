@@ -32,8 +32,9 @@ import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { placeholder } from '../../../shared/vscode/commands2'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
-import { getPathsFromZipFilePath, getWorkspaceFoldersByPrefixes } from '../../util/files'
+import { getPathsFromZipFilePath } from '../../util/files'
 import { examples, newTaskChanges, approachCreation, sessionClosed, updateCode } from '../../userFacingText'
+import { getWorkspaceFoldersByPrefixes } from '../../../shared/utilities/workspaceUtils'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -764,7 +765,7 @@ export class FeatureDevController {
             tabID: message.tabID,
             message: newTaskChanges,
         })
-        this.messenger.sendUpdatePlaceholder(message.tabID, 'Briefly describe a task or issue')
+        this.messenger.sendUpdatePlaceholder(message.tabID, 'Describe your task or issue in as much detail as possible')
     }
 
     private async closeSession(message: any) {
