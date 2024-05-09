@@ -117,7 +117,7 @@ private fun runMavenCopyDependencies(
         } catch (t: Throwable) {
             val error = "Maven Copy: Unexpected error when executing bundled Maven copy dependencies"
             copyTransformRunnable.setExitCode(Integer.MIN_VALUE) // to stop looking for the exitCode
-            logger.error(t) { error }
+            logger.info(t) { error }
             buildlogBuilder.appendLine("IntelliJ bundled Maven copy dependencies failed: ${t.message}")
             telemetry.mvnBuildFailed(CodeTransformMavenBuildCommand.IDEBundledMaven, error)
         }

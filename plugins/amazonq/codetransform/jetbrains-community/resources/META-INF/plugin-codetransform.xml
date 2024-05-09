@@ -2,4 +2,5 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <idea-plugin>
     <depends optional="true" config-file="ext-codetransform-java.xml">com.intellij.modules.java</depends>
+    <depends optional="true">org.jetbrains.plugins.gradle</depends>
 </idea-plugin>

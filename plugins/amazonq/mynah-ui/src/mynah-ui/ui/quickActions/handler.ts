@@ -92,7 +92,7 @@ export class QuickActionHandler {
             this.mynahUI.updateStore(affectedTabId, this.tabDataGenerator.getTabData('codetransform', true))
             this.mynahUI.updateStore(affectedTabId, {
                 promptInputDisabledState: true,
-                promptInputPlaceholder: 'Chat disabled during Code Transformation.',
+                promptInputPlaceholder: 'Open a new tab to chat with Q.',
                 loadingChat: true,
             })
 
