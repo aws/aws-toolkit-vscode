@@ -267,7 +267,17 @@ export class SecondaryAuth<T extends Connection = Connection> {
 }
 
 /**
- * This should exist in connection.ts or utils.ts, but due to circular dependencies, it must go here.
+ * Used to add scopes to a connection, usually when re-using a connection across extensions.
+ * It does not invalidate or otherwise change the state of the connection, but it does
+ * trigger listeners for connection updates.
+ *
+ * How connections and scopes currently work for both this quickpick and the common Login page:
+ * - Don't request AWS scopes if we are signing into Amazon Q
+ * - Request AWS scopes for explorer sign in. Request AWS + CodeCatalyst scopes for CC sign in.
+ * - Request scope difference if re-using a connection. Cancelling or otherwise failing to get the new scopes does NOT invalidate the connection.
+ * - Adding scopes updates the connection profile, but does not change its state.
+ *
+ * Note: This should exist in connection.ts or utils.ts, but due to circular dependencies, it must go here.
  */
 export async function addScopes(conn: SsoConnection, extraScopes: string[], auth = Auth.instance) {
     const oldScopes = conn.scopes ?? []

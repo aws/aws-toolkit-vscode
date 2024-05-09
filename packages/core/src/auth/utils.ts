@@ -92,6 +92,10 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'iam-only' 
     return resp
 }
 
+/**
+ * Creates the 'Switch Connection' quickpick for the Toolkit.
+ * See {@link addScopes} for details about how scopes are requested for new and existing connections.
+ */
 export async function promptAndUseConnection(...[auth, type]: Parameters<typeof promptForConnection>) {
     return telemetry.aws_setCredentials.run(async span => {
         let conn = await promptForConnection(auth, type)
@@ -100,7 +104,8 @@ export async function promptAndUseConnection(...[auth, type]: Parameters<typeof 
         }
 
         // HACK: We assume that if we are toolkit we want AWS account scopes.
-        // Although, Q shouldn't enter this codepath anyways.
+        // TODO: Although, Q shouldn't enter this codepath anyways.
+        // We should deprecate any codepath in Q that may enter this.
         if (!isAmazonQ() && isSsoConnection(conn) && !hasScopes(conn, scopesSsoAccountAccess)) {
             try {
                 conn = await addScopes(conn, scopesSsoAccountAccess)
