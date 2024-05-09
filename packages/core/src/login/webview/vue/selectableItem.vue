@@ -8,7 +8,7 @@
     >
         <div class="icon">
             <svg
-                v-if="itemTitle == 'Use For Free'"
+                v-if="itemType === LoginOption.BUILDER_ID"
                 width="16"
                 height="16"
                 viewBox="0 0 16 16"
@@ -23,7 +23,7 @@
                 />
             </svg>
             <svg
-                v-if="itemTitle == 'Workforce' || itemTitle == 'Use with Pro license'"
+                v-if="itemType === LoginOption.ENTERPRISE_SSO"
                 width="16"
                 height="16"
                 viewBox="0 0 16 16"
@@ -38,7 +38,7 @@
                 />
             </svg>
             <svg
-                v-if="itemTitle == 'IAM Credentials'"
+                v-if="itemType === LoginOption.IAM_CREDENTIAL"
                 width="16"
                 height="16"
                 viewBox="0 0 16 16"
@@ -70,6 +70,7 @@ export default defineComponent({
         itemId: Number,
         itemText: String,
         itemTitle: String,
+        itemType: Number,
         isSelected: Boolean,
         isHovering: Boolean,
     },

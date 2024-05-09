@@ -90,6 +90,7 @@
                             :itemId="LoginOption.EXISTING_LOGINS + index"
                             :itemText="existingLogin.text"
                             :itemTitle="existingLogin.title"
+                            :itemType="existingLogin.type"
                             class="selectable-item bottomMargin"
                         ></SelectableItem>
                     </div>
@@ -103,6 +104,7 @@
                     :itemId="LoginOption.BUILDER_ID"
                     :itemText="'No AWS account required'"
                     :itemTitle="'Use For Free'"
+                    :itemType="LoginOption.BUILDER_ID"
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
                 <SelectableItem
@@ -112,6 +114,7 @@
                     :itemId="LoginOption.ENTERPRISE_SSO"
                     :itemText="''"
                     :itemTitle="'Use with Pro license'"
+                    :itemType="LoginOption.ENTERPRISE_SSO"
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
                 <SelectableItem
@@ -121,6 +124,7 @@
                     :itemId="LoginOption.ENTERPRISE_SSO"
                     :itemText="'Sign in to AWS with single sign-on'"
                     :itemTitle="'Workforce'"
+                    :itemType="LoginOption.ENTERPRISE_SSO"
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
                 <SelectableItem
@@ -130,6 +134,7 @@
                     :itemId="LoginOption.IAM_CREDENTIAL"
                     :itemText="'Store keys for use with AWS CLI tools'"
                     :itemTitle="'IAM Credentials'"
+                    :itemtype="LoginOption.IAM_CREDENTIAL"
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
                 <button
@@ -307,6 +312,7 @@ interface ExistingLogin {
     text: string
     title: string
     connectionId: string
+    type: number
 }
 
 export default defineComponent({
@@ -479,7 +485,7 @@ export default defineComponent({
         },
         async emitUpdate(cause?: string) {},
         async updateExistingConnections() {
-            // fetch existing connections of aws toolkit in Amazon Q
+            // fetch existing connections of AWS toolkit in Amazon Q
             // or fetch existing connections of Amazon Q in AWS Toolkit
             // to reuse connections in AWS Toolkit & Amazon Q
             const sharedConnections = await client.fetchConnections()
@@ -491,6 +497,7 @@ export default defineComponent({
                         ? 'AWS Builder ID'
                         : `IAM Identity Center ${connection.startUrl}`,
                     connectionId: connection.id,
+                    type: isBuilderId(connection.startUrl) ? LoginOption.BUILDER_ID : LoginOption.ENTERPRISE_SSO,
                 })
             })
             // fetch existing connections of itself
