@@ -50,10 +50,7 @@ describe('zipUtil', function () {
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.FILE),
-                new ToolkitError(
-                    `Amazon Q: The selected file exceeds the input artifact limit. Try again with a smaller file. For more information about scan limits, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security-scans.html#quotas).`,
-                    { code: 'FileSizeExceeded' }
-                )
+                new ToolkitError(`Payload size limit reached`, { code: 'FileSizeExceeded' })
             )
         })
 
@@ -73,10 +70,7 @@ describe('zipUtil', function () {
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT),
-                new ToolkitError(
-                    'Amazon Q: The selected file exceeds the input artifact limit. Try again with a smaller project. For more information about scan limits, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security-scans.html#quotas).',
-                    { code: 'ProjectSizeExceeded' }
-                )
+                new ToolkitError('Payload size limit reached', { code: 'ProjectSizeExceeded' })
             )
         })
 
@@ -85,10 +79,7 @@ describe('zipUtil', function () {
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT),
-                new ToolkitError(
-                    'Amazon Q: The selected file exceeds the input artifact limit. Try again with a smaller project. For more information about scan limits, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security-scans.html#quotas).',
-                    { code: 'ProjectSizeExceeded' }
-                )
+                new ToolkitError('Payload size limit reached', { code: 'ProjectSizeExceeded' })
             )
         })
 
