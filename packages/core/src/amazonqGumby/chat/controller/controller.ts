@@ -214,18 +214,18 @@ export class GumbyController {
                 await this.initiateTransformationOnProject(message)
                 break
             case ButtonActions.CANCEL_TRANSFORMATION_FORM:
-                this.messenger.sendJobFinishedMessage(message.tabId, CodeWhispererConstants.jobCancelledChatMessage)
+                this.messenger.sendJobFinishedMessage(message.tabID, CodeWhispererConstants.jobCancelledChatMessage)
                 break
             case ButtonActions.VIEW_TRANSFORMATION_HUB:
                 await vscode.commands.executeCommand(GumbyCommands.FOCUS_TRANSFORMATION_HUB)
-                this.messenger.sendJobSubmittedMessage(message.tabId)
+                this.messenger.sendJobSubmittedMessage(message.tabID)
                 break
             case ButtonActions.STOP_TRANSFORMATION_JOB:
                 await stopTransformByQ(transformByQState.getJobId(), CancelActionPositions.Chat)
                 break
             case ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW:
                 this.messenger.sendCommandMessage({ ...message, command: GumbyCommands.CLEAR_CHAT })
-                await this.transformInitiated({ ...message, tabID: message.tabId })
+                await this.transformInitiated(message)
                 break
         }
     }
@@ -243,10 +243,10 @@ export class GumbyController {
         const fromJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkFromForm']
 
         const projectName = path.basename(pathToProject)
-        this.messenger.sendProjectSelectionMessage(projectName, fromJDKVersion, toJDKVersion, message.tabId)
+        this.messenger.sendProjectSelectionMessage(projectName, fromJDKVersion, toJDKVersion, message.tabID)
 
         if (fromJDKVersion === JDKVersion.UNSUPPORTED) {
-            this.messenger.sendRetryableErrorResponse('unsupported-source-jdk-version', message.tabId)
+            this.messenger.sendRetryableErrorResponse('unsupported-source-jdk-version', message.tabID)
             return
         }
 
@@ -299,9 +299,9 @@ export class GumbyController {
         } catch (err: any) {
             if (err instanceof JavaHomeNotSetError) {
                 this.sessionStorage.getSession().conversationState = ConversationState.PROMPT_JAVA_HOME
-                this.messenger.sendStaticTextResponse('java-home-not-set', message.tabId)
-                this.messenger.sendChatInputEnabled(message.tabId, true)
-                this.messenger.sendUpdatePlaceholder(message.tabId, 'Enter the path to your Java installation.')
+                this.messenger.sendStaticTextResponse('java-home-not-set', message.tabID)
+                this.messenger.sendChatInputEnabled(message.tabID, true)
+                this.messenger.sendUpdatePlaceholder(message.tabID, 'Enter the path to your Java installation.')
                 return
             }
             throw err
