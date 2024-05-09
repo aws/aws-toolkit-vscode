@@ -357,6 +357,7 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
         CodeTransformTelemetryState.instance.setCodeTransformMetaDataField({
             errorMessage: err.message,
         })
+        await HumanInTheLoopManager.instance.cleanUpArtifacts()
         return true
     } finally {
         await sleep(1000)
@@ -368,7 +369,6 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
             // TODO: make a generic reason field for telemetry logging so we don't log sensitive PII data
             reason: 'Runtime error occurred',
         })
-        await HumanInTheLoopManager.instance.cleanUpArtifacts()
     }
     return false
 }
