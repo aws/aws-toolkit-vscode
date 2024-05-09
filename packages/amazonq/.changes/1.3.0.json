@@ -1,0 +1,30 @@
+{
+	"date": "2024-05-08",
+	"version": "1.3.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "modifying the root folder for /dev now modifies it"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Q chat may stop responding after processing Javascript/Typescript code"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Completion may fail unexpected if user opened many tabs"
+		},
+		{
+			"type": "Feature",
+			"description": "Inline Suggestions: Only display the 'Open Chat' CodeLens if the user is signed into Amazon Q."
+		},
+		{
+			"type": "Feature",
+			"description": "Security Scan: Scans can now be run without an open editor"
+		},
+		{
+			"type": "Feature",
+			"description": "Security Scan: Multi-root workspace support"
+		}
+	]
+}

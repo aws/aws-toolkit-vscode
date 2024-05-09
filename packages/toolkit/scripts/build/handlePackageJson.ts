@@ -16,6 +16,8 @@
 import * as fs from 'fs-extra'
 
 function main() {
+    fixNullExtensionIssue()
+
     const packageJsonFile = './package.json'
     const backupJsonFile = `${packageJsonFile}.handlePackageJson.bk`
     const coreLibPackageJsonFile = '../core/package.json'
@@ -53,6 +55,42 @@ function main() {
             ...coreLibPackageJson.engines,
         }
         fs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
+    }
+}
+
+/**
+ * HACK:
+ *
+ * During **Debug mode** the extension is not detected, this breaks things like the VS Code URI handler.
+ * A TEMPORARY fix has been narrowed down to setting `engines.vscode` to `*` temporarily in the core package.json.
+ * When this field is copied to the toolkit/amazonq package.json by this script, the error stops.
+ *
+ * Github Issue: https://github.com/aws/aws-toolkit-vscode/issues/4658
+ */
+function fixNullExtensionIssue() {
+    const corePackageJsonFile = '../core/package.json'
+    const backupJsonFile = `${corePackageJsonFile}.core.bk`
+    let restoreMode = false
+
+    const args = process.argv.slice(2)
+    if (args.includes('--restore')) {
+        restoreMode = true
+    }
+
+    if (restoreMode) {
+        try {
+            fs.copyFileSync(backupJsonFile, corePackageJsonFile)
+            fs.unlinkSync(backupJsonFile)
+        } catch (err) {
+            console.log(`Could not restore package.json. Error: ${err}`)
+        }
+    } else {
+        fs.copyFileSync(corePackageJsonFile, backupJsonFile)
+        const corePackageJson = JSON.parse(fs.readFileSync(corePackageJsonFile, { encoding: 'utf-8' }))
+
+        corePackageJson.engines.vscode = '*'
+
+        fs.writeFileSync(corePackageJsonFile, JSON.stringify(corePackageJson, undefined, '    '))
     }
 }
 

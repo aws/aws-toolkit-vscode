@@ -370,9 +370,12 @@ export class Auth implements AuthService, ConnectionManager {
      * Alternatively you can use the `getToken()` call on an SSO connection to do the same thing,
      * but it will additionally prompt for reauthentication if the connection is invalid.
      */
-    public async refreshConnectionState(connection: Pick<Connection, 'id'>): Promise<undefined> {
-        const profile = this.store.getProfile(connection.id)
+    public async refreshConnectionState(connection?: Pick<Connection, 'id'>): Promise<undefined> {
+        if (connection === undefined) {
+            return
+        }
 
+        const profile = this.store.getProfile(connection.id)
         if (profile === undefined) {
             return
         }
