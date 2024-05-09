@@ -84,7 +84,7 @@ export default defineComponent({
             // identifier to help us (internally) know that feedback came from either Amazon Q or AWS Toolkit
             // TODO: rework this and align with JetBrains?
             const resp = await client.submit({
-                comment: this.feedbackName === 'Amazon Q' ? 'Amazon Q onboarding: ' + this.comment : this.comment,
+                comment: this.feedbackName ? `${this.feedbackName} ${this.comment}` : this.comment,
                 sentiment: this.sentiment,
             })
 
