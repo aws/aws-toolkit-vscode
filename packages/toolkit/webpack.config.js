@@ -13,14 +13,14 @@ module.exports = (env, argv) => {
     const config = {
         ...baseConfigFactory(env, argv),
         entry: {
-            'src/main': './src/main.ts',
+            'src/extension': './src/extension.ts',
         },
     }
 
     const webConfig = {
         ...baseWebConfigsFactory(env, argv),
         entry: {
-            'src/mainWeb': './src/mainWeb.ts',
+            'src/extensionWeb': './src/extensionWeb.ts',
         },
     }
 
