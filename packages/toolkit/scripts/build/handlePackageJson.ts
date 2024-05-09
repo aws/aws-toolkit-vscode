@@ -11,22 +11,26 @@
  * extension when required (e.g. debugging, packaging).
  *
  * TODO: Find a better way to do this, hopefully remove the need for this in the core library.
+ *
+ * Args:
+ *   --restore : reverts the package json changes to the original state
+ *   --development: performs actions that should only be done during development and not production
  */
 
 import * as fs from 'fs-extra'
 
 function main() {
-    fixNullExtensionIssue()
+    const args = process.argv.slice(2)
+    const restoreMode = args.includes('--restore')
+
+    if (args.includes('--development')) {
+        /** When we actually package the extension the null extension does not occur, so we will skip this hack */
+        fixNullExtensionIssue(restoreMode)
+    }
 
     const packageJsonFile = './package.json'
     const backupJsonFile = `${packageJsonFile}.handlePackageJson.bk`
     const coreLibPackageJsonFile = '../core/package.json'
-    let restoreMode = false
-
-    const args = process.argv.slice(2)
-    if (args.includes('--restore')) {
-        restoreMode = true
-    }
 
     if (restoreMode) {
         try {
@@ -67,15 +71,9 @@ function main() {
  *
  * Github Issue: https://github.com/aws/aws-toolkit-vscode/issues/4658
  */
-function fixNullExtensionIssue() {
+function fixNullExtensionIssue(restoreMode: boolean) {
     const corePackageJsonFile = '../core/package.json'
     const backupJsonFile = `${corePackageJsonFile}.core.bk`
-    let restoreMode = false
-
-    const args = process.argv.slice(2)
-    if (args.includes('--restore')) {
-        restoreMode = true
-    }
 
     if (restoreMode) {
         try {
