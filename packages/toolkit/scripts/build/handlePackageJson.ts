@@ -25,7 +25,7 @@ function main() {
 
     if (args.includes('--development')) {
         /** When we actually package the extension the null extension does not occur, so we will skip this hack */
-        fixNullExtensionIssue(restoreMode)
+        // fixNullExtensionIssue(restoreMode)
     }
 
     const packageJsonFile = './package.json'
@@ -71,7 +71,7 @@ function main() {
  *
  * Github Issue: https://github.com/aws/aws-toolkit-vscode/issues/4658
  */
-function fixNullExtensionIssue(restoreMode: boolean) {
+export function fixNullExtensionIssue(restoreMode: boolean) {
     const corePackageJsonFile = '../core/package.json'
     const backupJsonFile = `${corePackageJsonFile}.core.bk`
 
