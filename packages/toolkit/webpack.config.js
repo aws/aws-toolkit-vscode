@@ -5,7 +5,6 @@
 
 const path = require('path')
 const currentDir = process.cwd()
-const { merge } = require('webpack-merge')
 
 const baseConfigFactory = require('../webpack.base.config')
 const baseWebConfigsFactory = require('../webpack.web.config')

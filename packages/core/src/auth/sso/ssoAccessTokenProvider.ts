@@ -35,10 +35,11 @@ import { AuthSSOServer } from './server'
 import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
 import OidcClientPKCE from './oidcclientpkce'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
-import { randomUUID, randomBytes, createHash } from 'crypto'
+import { randomBytes, createHash } from 'crypto'
 import { UriHandler } from '../../shared/vscode/uriHandler'
 import { DevSettings } from '../../shared/settings'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { randomUUID } from '../../common/crypto'
 
 export const authenticationPath = 'sso/authenticated'
 

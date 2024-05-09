@@ -91,6 +91,7 @@
             },
             "dependsOn": ["restorePackageJson"]
         },
+        // ---------- Start: Web Mode Tasks ----------
         {
             "label": "webRun",
             "type": "npm",
@@ -162,6 +163,7 @@
             "type": "shell",
             "dependsOn": ["restorePackageJson"]
         },
+        // ---------- End: Web Mode Tasks ----------
         {
             "type": "npm",
             "script": "lint",
