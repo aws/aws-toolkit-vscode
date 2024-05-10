@@ -243,7 +243,7 @@ export async function setupTelemetryId(extensionContext: vscode.ExtensionContext
             }
         }
     } catch (err) {
-        getLogger().error(`Erro while setting up telemetry id ${err}`)
+        getLogger().error(`Error while setting up telemetry id ${err}`)
     }
 }
 

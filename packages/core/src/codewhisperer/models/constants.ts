@@ -361,6 +361,8 @@ export const validStatesForPlanGenerated = ['PLANNED', 'TRANSFORMING', 'TRANSFOR
 
 export const failureStates = ['FAILED', 'STOPPING', 'STOPPED', 'REJECTED']
 
+export const pausedStates = ['PAUSED']
+
 // if status is COMPLETED or PARTIALLY_COMPLETED we can download artifacts
 export const validStatesForCheckingDownloadUrl = [
     'COMPLETED',
@@ -378,6 +380,9 @@ export const amazonQFeedbackKey = 'Amazon Q'
 
 export const amazonQFeedbackText = 'Submit feedback'
 
+export const jobStartedChatMessage = `I'm starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub.
+    
+If I run into any issues, I might pause the transformation to get input from you on how to proceed.`
 export const waitingForJobStartStepMessage = 'Waiting for job to start'
 
 export const buildCodeStepMessage = 'Build uploaded code in secure build environment'
@@ -408,9 +413,6 @@ export const jobCompletedMessage = 'The transformation completed.'
 export const noOngoingJobMessage = 'No ongoing job.'
 
 export const nothingToShowMessage = 'Nothing to show'
-
-export const jobStartedChatMessage =
-    "I'm starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub."
 
 export const jobStartedNotification =
     'Amazon Q is transforming your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub.'
