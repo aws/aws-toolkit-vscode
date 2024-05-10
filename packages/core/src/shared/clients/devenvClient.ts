@@ -146,9 +146,10 @@ export class DevEnvActivity implements vscode.Disposable {
     ): Promise<DevEnvActivity | undefined> {
         try {
             await client.getActivity()
+            getLogger().debug('codecatalyst: DevEnvActivity: Activity API is enabled')
         } catch (e) {
             const error = e instanceof HTTPError ? e.response.body : e
-            getLogger().error(`DevEnvActivity: Activity API failed:%s`, error)
+            getLogger().error(`codecatalyst: DevEnvActivity: Activity API failed:%s`, error)
             return undefined
         }
 
@@ -163,6 +164,7 @@ export class DevEnvActivity implements vscode.Disposable {
     /** Send activity timestamp to the Dev Env */
     async sendActivityUpdate(timestamp: number = Date.now()): Promise<number> {
         await this.client.updateActivity()
+        getLogger().debug(`codecatalyst: DevEnvActivity: heartbeat sent at ${timestamp}`)
         this.lastLocalActivity = timestamp
         this.activityUpdatedEmitter.fire(timestamp)
         return timestamp
