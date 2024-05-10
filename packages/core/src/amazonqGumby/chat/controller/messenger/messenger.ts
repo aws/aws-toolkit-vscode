@@ -33,6 +33,7 @@ export type StaticTextResponseType =
     | 'java-home-not-set'
     | 'start-transformation-confirmed'
     | 'job-transmitted'
+    | 'invalid-java-home-provided'
 
 export type ErrorTextResponseType =
     | 'no-project-found'
@@ -192,6 +193,18 @@ export class Messenger {
         messageId: string | undefined = undefined
     ) {
         this.dispatcher.sendAsyncEventProgress(new AsyncEventProgressMessage(tabID, { inProgress, message, messageId }))
+    }
+
+    public sendInvalidJavaHomeProvidedMessage(tabID: string, expectedJdkVersion: string) {
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message: MessengerUtils.createInvalidJavaHomePromptChatMessage(expectedJdkVersion),
+                    messageType: 'ai-prompt',
+                },
+                tabID
+            )
+        )
     }
 
     public sendCompilationInProgress(tabID: string) {

@@ -29,7 +29,11 @@ import {
     zipCode,
 } from '../service/transformByQ/transformApiHandler'
 import { getOpenProjects, validateOpenProjects } from '../service/transformByQ/transformProjectValidationHandler'
-import { getVersionData, prepareProjectDependencies } from '../service/transformByQ/transformMavenHandler'
+import {
+    getVersionData,
+    prepareProjectDependencies,
+    getJavaVersionUsedByMaven,
+} from '../service/transformByQ/transformMavenHandler'
 import { getStringHash } from '../../shared/utilities/textUtilities'
 import {
     CodeTransformCancelSrcComponents,
@@ -80,16 +84,7 @@ async function setMaven() {
 }
 
 async function validateJavaHome(): Promise<boolean> {
-    const versionData = await getVersionData()
-    let javaVersionUsedByMaven = versionData.javaVersion
-    if (javaVersionUsedByMaven !== undefined) {
-        javaVersionUsedByMaven = javaVersionUsedByMaven.slice(0, 3)
-        if (javaVersionUsedByMaven === '1.8') {
-            javaVersionUsedByMaven = JDKVersion.JDK8
-        } else if (javaVersionUsedByMaven === '11.') {
-            javaVersionUsedByMaven = JDKVersion.JDK11
-        }
-    }
+    const javaVersionUsedByMaven = await getJavaVersionUsedByMaven()
     if (javaVersionUsedByMaven !== transformByQState.getSourceJDKVersion()) {
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),

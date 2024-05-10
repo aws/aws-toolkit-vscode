@@ -26,25 +26,35 @@ export enum GumbyCommands {
 }
 
 export default class MessengerUtils {
-    static createJavaHomePrompt = (): string => {
-        let javaHomePrompt = `${
-            CodeWhispererConstants.enterJavaHomeChatMessage
-        } ${transformByQState.getSourceJDKVersion()}. \n`
+    static createInstructionsForFindingJavaHome = () => {
+        const jdkVersion = transformByQState.getSourceJDKVersion()
         if (os.platform() === 'win32') {
-            javaHomePrompt += CodeWhispererConstants.windowsJavaHomeHelpChatMessage.replace(
-                'JAVA_VERSION_HERE',
-                transformByQState.getSourceJDKVersion()!
-            )
+            return CodeWhispererConstants.windowsJavaHomeHelpChatMessage.replace('JAVA_VERSION_HERE', jdkVersion!)
         } else {
-            const jdkVersion = transformByQState.getSourceJDKVersion()
             if (jdkVersion === JDKVersion.JDK8) {
-                javaHomePrompt += ` ${CodeWhispererConstants.nonWindowsJava8HomeHelpChatMessage}`
+                return ` ${CodeWhispererConstants.nonWindowsJava8HomeHelpChatMessage}`
             } else if (jdkVersion === JDKVersion.JDK11) {
-                javaHomePrompt += ` ${CodeWhispererConstants.nonWindowsJava11HomeHelpChatMessage}`
+                return ` ${CodeWhispererConstants.nonWindowsJava11HomeHelpChatMessage}`
             }
         }
-        return javaHomePrompt
+        return ''
     }
+
+    static createJavaHomePrompt = (): string => {
+        return (
+            `${CodeWhispererConstants.enterJavaHomeChatMessage} ${transformByQState.getSourceJDKVersion()}.\n` +
+            this.createInstructionsForFindingJavaHome()
+        )
+    }
+
+    static createInvalidJavaHomePromptChatMessage = (expectedJdkVersion: string): string =>
+        CodeWhispererConstants.invalidJavaHomeProvidedChatMessage(
+            expectedJdkVersion,
+            this.createInstructionsForFindingJavaHome()
+        )
+
+    static createInvalidJavaHomePlaceholder = (expectedJdkVersion: string): string =>
+        CodeWhispererConstants.invalidJavaHomeProvidedPlaceholder(expectedJdkVersion)
 
     static stringToEnumValue = <T extends { [key: string]: string }, K extends keyof T & string>(
         enumObject: T,

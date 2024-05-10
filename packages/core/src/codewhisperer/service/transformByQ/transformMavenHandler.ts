@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { FolderInfo, transformByQState } from '../../models/model'
+import { FolderInfo, transformByQState, JDKVersion } from '../../models/model'
 import { getLogger } from '../../../shared/logger'
 import * as CodeWhispererConstants from '../../models/constants'
 import { spawnSync, SpawnSyncOptionsWithStringEncoding } from 'child_process' // Consider using ChildProcess once we finalize all spawnSync calls
@@ -179,6 +179,23 @@ export async function prepareProjectDependencies(dependenciesFolder: FolderInfo)
 
     throwIfCancelled()
     void vscode.window.showInformationMessage(CodeWhispererConstants.buildSucceededNotification)
+}
+
+export async function getJavaVersionStringUsedByMaven() {
+    const versionData = await getVersionData()
+    return versionData.javaVersion?.slice(0, 3)
+}
+
+export async function getJavaVersionUsedByMaven() {
+    const javaVersion = await getJavaVersionStringUsedByMaven()
+    switch (javaVersion) {
+        case '1.8':
+            return JDKVersion.JDK8
+        case '11.':
+            return JDKVersion.JDK11
+        default:
+            return JDKVersion.UNSUPPORTED
+    }
 }
 
 export async function getVersionData(): Promise<MavenVersionData> {

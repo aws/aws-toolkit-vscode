@@ -547,6 +547,12 @@ export const cleanInstallErrorNotification =
 
 export const enterJavaHomeChatMessage = 'Enter the path to JDK '
 
+export const invalidJavaHomeProvidedChatMessage = (expectedJdkVersion: string, instructions: string) =>
+    `It looks like the path you provided is not where JDK ${expectedJdkVersion} is installed. Since you're transforming Java ${expectedJdkVersion} code, I need the JDK ${expectedJdkVersion} path. To find the JDK ${expectedJdkVersion} path, run the following command in a new IDE terminal:\n ${instructions}`
+
+export const invalidJavaHomeProvidedPlaceholder = (expectedJdkVersion: string) =>
+    `Enter the JDK ${expectedJdkVersion} path`
+
 export const projectPromptChatMessage =
     'I can upgrade your JAVA_VERSION_HERE. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Transform.'
 

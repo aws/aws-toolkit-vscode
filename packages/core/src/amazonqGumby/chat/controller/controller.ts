@@ -33,7 +33,7 @@ import { telemetry } from '../../../shared/telemetry/telemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import { CodeTransformTelemetryState } from '../../telemetry/codeTransformTelemetryState'
 import { getAuthType } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
-
+import { getJavaVersionStringUsedByMaven } from '../../../codewhisperer/service/transformByQ/transformMavenHandler'
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
 export interface ChatControllerEventEmitters {
@@ -329,14 +329,25 @@ export class GumbyController {
                         await validateCanCompileProject()
                     } catch (err: any) {
                         if (err instanceof JavaHomeNotSetError) {
-                            transformByQState.unsetJavaHome()
+                            const providedJdkVersion =
+                                (await getJavaVersionStringUsedByMaven()) ?? JDKVersion.UNSUPPORTED
+                            const expectedJdkVersion = transformByQState.getSourceJDKVersion() ?? JDKVersion.UNSUPPORTED
+                            getLogger().warn(
+                                `CodeTransformation: non matching JAVA_HOME provided: ${providedJdkVersion} expected: ${expectedJdkVersion} JDK release must match`
+                            )
+                            if (transformByQState.incrementAndGetJavaHomeAttempts() > 3) {
+                                transformByQState.resetJavaHomeAttempts()
+                                transformByQState.resetJavaHome()
+                                this.messenger.sendRetryableErrorResponse('invalid-java-home', data.tabID)
+                                return
+                            }
                             this.sessionStorage.getSession().conversationState = ConversationState.PROMPT_JAVA_HOME
-                            this.messenger.sendStaticTextResponse('java-home-not-set', data.tabID)
-                            this.messenger.sendChatInputEnabled(data.tabID, true)
+                            this.messenger.sendInvalidJavaHomeProvidedMessage(data.tabID, expectedJdkVersion)
                             this.messenger.sendUpdatePlaceholder(
                                 data.tabID,
-                                `Incompatible JDK, Enter the path to your Java ${transformByQState.getSourceJDKVersion()} installation.`
+                                MessengerUtils.createInvalidJavaHomePlaceholder(expectedJdkVersion)
                             )
+                            this.messenger.sendChatInputEnabled(data.tabID, true)
                             return
                         }
                         throw err
