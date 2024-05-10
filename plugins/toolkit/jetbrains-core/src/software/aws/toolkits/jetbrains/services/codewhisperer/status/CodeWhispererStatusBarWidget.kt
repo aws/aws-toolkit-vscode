@@ -115,6 +115,8 @@ class CodeWhispererStatusBarWidget(project: Project) :
     override fun getIcon(): Icon =
         if (isQExpired(project)) {
             AllIcons.General.BalloonWarning
+        } else if (!isQConnected(project)) {
+            AllIcons.RunConfigurations.TestState.Run
         } else if (CodeWhispererInvocationStatus.getInstance().hasExistingInvocation()) {
             // AnimatedIcon can't serialize over remote host
             if (!AppMode.isRemoteDevHost()) {
@@ -123,7 +125,7 @@ class CodeWhispererStatusBarWidget(project: Project) :
                 AllIcons.Actions.Download
             }
         } else {
-            AllIcons.General.InspectionsOK
+            AllIcons.Debugger.ThreadStates.Idle
         }
 
     companion object {
