@@ -26,6 +26,10 @@ export async function saveFileMessageHandler(request: SaveFileRequestMessage, co
     const filePath = context.defaultTemplatePath
 
     await telemetry.threatcomposer_fileSaved.run(async span => {
+        span.record({
+            fileId: context.fileId,
+        })
+
         try {
             if (context.fileWatches[filePath] && context.autoSaveFileWatches[filePath]) {
                 previousAutoSaveFileContent = context.autoSaveFileWatches[filePath].fileContents
@@ -85,6 +89,10 @@ export async function autoSaveFileMessageHandler(request: SaveFileRequestMessage
     const filePath = context.defaultTemplatePath
 
     await telemetry.threatcomposer_fileAutoSaved.run(async span => {
+        span.record({
+            fileId: context.fileId,
+        })
+
         try {
             if (context.autoSaveFileWatches[filePath]) {
                 previousAutoSaveFileContent = context.autoSaveFileWatches[filePath].fileContents

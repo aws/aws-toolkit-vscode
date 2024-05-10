@@ -9,6 +9,7 @@ import * as vscode from 'vscode'
 import { handleMessage } from './handleMessage'
 import { FileWatchInfo, WebviewContext } from './types'
 import { telemetry } from '../shared/telemetry/telemetry'
+import { createHash } from 'crypto'
 import { addFileWatchMessageHandler } from './messageHandlers/addFileWatchMessageHandler'
 import { addThemeWatchMessageHandler } from './messageHandlers/addThemeWatchMessageHandler'
 import { sendThreatComposerOpenCancelled } from './messageHandlers/emitTelemetryMessageHandler'
@@ -21,6 +22,7 @@ export class ThreatComposer {
     protected readonly disposables: vscode.Disposable[] = []
     protected isPanelDisposed = false
     private readonly onVisualizationDisposeEmitter = new vscode.EventEmitter<void>()
+    private fileId: string
     public workSpacePath: string
     public defaultTemplatePath: string
     public defaultTemplateName: string
@@ -45,6 +47,12 @@ export class ThreatComposer {
         this.workSpacePath = path.dirname(textDocument.uri.fsPath)
         this.defaultTemplatePath = textDocument.uri.fsPath
         this.defaultTemplateName = path.basename(this.defaultTemplatePath)
+        this.fileId = createHash('sha1').update(textDocument.uri.fsPath).digest('hex')
+
+        telemetry.threatcomposer_opened.record({
+            fileId: this.fileId,
+        })
+
         this.setupWebviewPanel(textDocument, context)
     }
 
@@ -87,12 +95,16 @@ export class ThreatComposer {
             fileWatches: this.fileWatches,
             autoSaveFileWatches: this.autoSaveFileWatches,
             loaderNotification: undefined,
+            fileId: this.fileId,
         }
 
         async function cancelOpenInThreatComposer(reason: string) {
             await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
             await vscode.commands.executeCommand('vscode.openWith', documentUri, 'default')
-            sendThreatComposerOpenCancelled({ reason: reason })
+            sendThreatComposerOpenCancelled({
+                reason: reason,
+                fileId: contextObject.fileId,
+            })
         }
 
         void vscode.window.withProgress(
@@ -158,6 +170,9 @@ export class ThreatComposer {
                         }
 
                         await telemetry.threatcomposer_closed.run(async span => {
+                            span.record({
+                                fileId: this.fileId,
+                            })
                             this.isPanelDisposed = true
                             this.onVisualizationDisposeEmitter.fire()
                             this.disposables.forEach(disposable => {

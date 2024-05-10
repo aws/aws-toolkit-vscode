@@ -14,6 +14,7 @@ export type WebviewContext = {
     fileWatches: Record<string, FileWatchInfo>
     autoSaveFileWatches: Record<string, FileWatchInfo>
     loaderNotification: undefined | LoaderNotification
+    fileId: string
 }
 
 export type LoaderNotification = {

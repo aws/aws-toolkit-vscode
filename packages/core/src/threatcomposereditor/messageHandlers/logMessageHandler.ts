@@ -50,6 +50,7 @@ export async function logMessageHandler(message: LogMessage, context: WebviewCon
             }
             sendThreatComposerErrored({
                 reason: message.logMessage,
+                fileId: context.fileId,
             })
             return
     }

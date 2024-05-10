@@ -327,6 +327,11 @@
             "name": "region",
             "type": "string",
             "description": "An AWS region."
+        },
+        {
+            "name": "fileId",
+            "type": "string",
+            "description": "Hash value for the file path that is being accessed."
         }
     ],
     "metrics": [
@@ -1233,23 +1238,53 @@
         },
         {
             "name": "threatcomposer_opened",
-            "description": "Called after opening a threat composer file"
+            "description": "Called after opening a threat composer file",
+            "metadata": [
+                {
+                    "type": "fileId",
+                    "required": true
+                }
+            ]
         },
         {
             "name": "threatcomposer_fileSaved",
-            "description": "Called after a threat composer file has been saved"
+            "description": "Called after a threat composer file has been saved",
+            "metadata": [
+                {
+                    "type": "fileId",
+                    "required": true
+                }
+            ]
         },
         {
             "name": "threatcomposer_fileAutoSaved",
-            "description": "Called after a threat composer file has been auto saved periodically"
+            "description": "Called after a threat composer file has been auto saved periodically",
+            "metadata": [
+                {
+                    "type": "fileId",
+                    "required": true
+                }
+            ]
         },
         {
             "name": "threatcomposer_closed",
-            "description": "Called after closing a threat composer file"
+            "description": "Called after closing a threat composer file",
+            "metadata": [
+                {
+                    "type": "fileId",
+                    "required": true
+                }
+            ]
         },
         {
             "name": "threatcomposer_error",
-            "description": "Called after an error is thrown"
+            "description": "Called after an error is thrown",
+            "metadata": [
+                {
+                    "type": "fileId",
+                    "required": true
+                }
+            ]
         }
     ]
 }
