@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.core.startup
 
 import com.intellij.ide.BrowserUtil
+import com.intellij.ide.plugins.PluginManager
 import com.intellij.ide.plugins.PluginManagerConfigurable
 import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.ide.plugins.PluginManagerMain
@@ -54,7 +55,7 @@ class QMigrationActivity : StartupActivity.DumbAware {
         if (hasUsedCodeWhisperer || hasUsedQ) {
             // do auto-install
             installQPlugin(project, autoInstall = true)
-        } else {
+        } else if (!PluginManager.isPluginInstalled(PluginId.getId(AwsToolkit.Q_PLUGIN_ID))) {
             // show opt-in/install notification
             notifyInfo(
                 title = message("aws.q.migration.new_users.notify.title"),

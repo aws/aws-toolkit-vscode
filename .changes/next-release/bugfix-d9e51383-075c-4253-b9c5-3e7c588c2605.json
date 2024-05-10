@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Removed install Q notification if Q is already installed"
+}
