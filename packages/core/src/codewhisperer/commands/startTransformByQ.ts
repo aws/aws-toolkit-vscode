@@ -440,8 +440,6 @@ export async function finishHumanInTheLoop(selectedDependency?: string) {
         // 8) Once code has been uploaded we will restart the job
         await resumeTransformationJob(jobId, 'COMPLETED')
 
-        await sleep(1500)
-
         void humanInTheLoopRetryLogic(jobId)
     } catch (err: any) {
         successfulFeedbackLoop = false
