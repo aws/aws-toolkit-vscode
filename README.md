@@ -106,10 +106,10 @@ Please note that experimental features may be disabled / removed at any time.
 
 The plugin is distributed according to the terms outlined in our [LICENSE](LICENSE).
 
-[lambda-icon]: jetbrains-core/resources/icons/resources/LambdaFunction.svg
-[s3-icon]: jetbrains-core/resources/icons/resources/S3Bucket.svg
-[cloudwatch-logs-icon]: jetbrains-core/resources/icons/resources/cloudwatchlogs/CloudWatchLogs.svg
-[cloudformation-icon]: jetbrains-core/resources/icons/resources/CloudFormationStack.svg
-[redshift-icon]: jetbrains-core/resources/icons/resources/Redshift.svg
+[lambda-icon]: plugins/core/jetbrains-community/resources/icons/resources/LambdaFunction.svg
+[s3-icon]: plugins/core/jetbrains-community/resources/icons/resources/S3Bucket.svg
+[cloudwatch-logs-icon]: plugins/core/jetbrains-community/resources/icons/resources/cloudwatchlogs/CloudWatchLogs.svg
+[cloudformation-icon]: plugins/core/jetbrains-community/resources/icons/resources/CloudFormationStack.svg
+[redshift-icon]: plugins/core/jetbrains-community/resources/icons/resources/Redshift.svg
 [find-action]: https://www.jetbrains.com/help/idea/searching-everywhere.html#search_actions
 [gear-icon]: https://raw.githubusercontent.com/JetBrains/intellij-community/master/platform/icons/src/general/gear.svg
