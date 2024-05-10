@@ -28,3 +28,9 @@ intellij {
     updateSinceUntilBuild.set(false)
     instrumentCode.set(false)
 }
+
+tasks.buildPlugin {
+    doFirst {
+        throw GradleException("This project does not produce an artifact. Use project-specific command, e.g. :plugin-toolkit:intellij-standalone:runIde")
+    }
+}

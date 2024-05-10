@@ -42,6 +42,7 @@ intellijToolkit {
 
 intellij {
     type.set("RD")
+    plugins.add(project(":plugin-core"))
 }
 
 sourceSets {

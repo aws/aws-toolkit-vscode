@@ -34,9 +34,13 @@ reported the issue. Please try to include as much information as you can. Detail
 
 ### Instructions
 
-1. Clone the github repository and run `./gradlew :plugin-toolkit:intellij:buildPlugin` <br/> (This will produce a plugin zip under `plugins/toolkit/intellij/build/distributions`)
-2. In your JetBrains IDE (e.g. IntelliJ) navigate to the `Plugins` preferences and select "Install Plugin from Disk...", navigate to the zip file produced in step 1. 
-3. You will be prompted to restart your IDE.
+1. Clone the github repository.
+2. To manually build a plugin distribution, run the `buildPlugin` task on the relevant Gradle project. 
+   - For example, `./gradlew :plugin-toolkit:intellij-standalone:buildPlugin` will produce a plugin zip under `plugins/toolkit/intellij-standalone/build/distributions`.
+   - You can also run the `:plugin-core:buildPlugin` and `:plugin-amazonq:buildPlugin` tasks 
+   - Use the `-PideProfileName={JETBRAINS_VERSION}` option to build the plugin for a particular IDE version (e.g `./gradlew :plugin-toolkit:intellij-standalone:buildPlugin -PideProfileName=2024.1`)
+3. In your JetBrains IDE (e.g. IntelliJ) navigate to the `Plugins` preferences and select "Install Plugin from Disk...", navigate to the zip file(s) produced in step 2.
+4. You will be prompted to restart your IDE.
 
 ## Contributing via Pull Requests
 
@@ -84,13 +88,19 @@ If ran using the Debug feature, a debugger will be auto-attached to the sandbox 
 
   ```
   # IntelliJ IDEA Community
-  ./gradlew :plugin-toolkit:intellij:runIde -PrunIdeVariant=IC
+  ./gradlew :plugin-toolkit:intellij-standalone:runIde -PrunIdeVariant=IC
+  ./gradlew :plugin-amazonq:runIde -PrunIdeVariant=IC
+  ./gradlew :sandbox-all:runIde -PrunIdeVariant=IC
 
   # IntelliJ IDEA Ultimate
-  ./gradlew :plugin-toolkit:intellij:runIde -PrunIdeVariant=IU
+  ./gradlew :plugin-toolkit:intellij-standalone:runIde -PrunIdeVariant=IU
+  ./gradlew :plugin-amazonq:runIde -PrunIdeVariant=IU
+  ./gradlew :sandbox-all:runIde -PrunIdeVariant=IU
 
   # Rider
-  ./gradlew :plugin-toolkit:intellij:runIde -PrunIdeVariant=RD
+  ./gradlew :plugin-toolkit:intellij-standalone:runIde -PrunIdeVariant=RD
+  ./gradlew :plugin-amazonq:runIde -PrunIdeVariant=RD
+  ./gradlew :sandbox-all:runIde -PrunIdeVariant=RD
 
   # Gateway
   ./gradlew :plugin-toolkit:jetbrains-gateway:runIde
@@ -101,7 +111,7 @@ If ran using the Debug feature, a debugger will be auto-attached to the sandbox 
 
 - To run the plugin in a **specific JetBrains IDE** (and you have it installed), specify the `ALTERNATIVE_IDE` environment variable:
   ```
-  ALTERNATIVE_IDE=/path/to/ide ./gradlew :plugin-toolkit:intellij:runIde
+  ALTERNATIVE_IDE=/path/to/ide ./gradlew :plugin-toolkit:intellij-standalone:runIde
   ```
   - This is needed to run PyCharm and WebStorm.
   - See also `alternativeIdePath` option in the `runIde` tasks provided by the Gradle IntelliJ Plugin [documentation](https://github.com/JetBrains/gradle-intellij-plugin).

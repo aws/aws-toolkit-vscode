@@ -1,0 +1,7 @@
+<!-- Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude">
+    <depends>aws.toolkit.core</depends>
+    <xi:include href="/META-INF/module-amazonq.xml" />
+</idea-plugin>

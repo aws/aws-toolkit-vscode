@@ -47,7 +47,9 @@ tasks.createRelease.configure {
 }
 
 dependencies {
-    aggregateCoverage(project(":plugin-toolkit:intellij"))
+    aggregateCoverage(project(":plugin-toolkit:intellij-standalone"))
+    aggregateCoverage(project(":plugin-core"))
+    aggregateCoverage(project(":plugin-amazonq"))
 
     project.findProject(":plugin-toolkit:jetbrains-gateway")?.let {
         aggregateCoverage(it)
@@ -58,7 +60,7 @@ dependencies {
 
 tasks.register("runIde") {
     doFirst {
-        throw GradleException("Use project specific runIde command, i.e. :plugin-toolkit:intellij:runIde")
+        throw GradleException("Use project specific runIde command, i.e. :plugin-toolkit:intellij-standalone:runIde")
     }
 }
 
