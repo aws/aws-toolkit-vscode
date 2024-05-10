@@ -81,7 +81,7 @@ describe('securityScanHandler', function () {
                 mockClient,
                 'jobId',
                 'codeScanFindingsSchema',
-                'projectPath',
+                ['projectPath'],
                 CodeAnalysisScope.PROJECT
             )
 
@@ -102,7 +102,7 @@ describe('securityScanHandler', function () {
                 mockClient,
                 'jobId',
                 'codeScanFindingsSchema',
-                'projectPath',
+                ['projectPath'],
                 CodeAnalysisScope.PROJECT
             )
 

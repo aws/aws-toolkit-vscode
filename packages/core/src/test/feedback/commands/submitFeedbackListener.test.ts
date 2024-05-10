@@ -21,7 +21,7 @@ describe('submitFeedbackListener', function () {
     })
 
     const testCases = [
-        { productName: 'CodeWhisperer', expectedError: 'Expected failure' },
+        { productName: 'Amazon Q', expectedError: 'Expected failure' },
         { productName: 'AWS Toolkit', expectedError: 'Expected failure' },
     ]
     testCases.forEach(({ productName, expectedError }) => {

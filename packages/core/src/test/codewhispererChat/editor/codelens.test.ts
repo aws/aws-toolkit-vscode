@@ -14,6 +14,8 @@ import { assertTelemetry, installFakeClock, tryRegister } from '../../testUtil'
 import { InstalledClock } from '@sinonjs/fake-timers'
 import globals from '../../../shared/extensionGlobals'
 import { focusAmazonQPanel } from '../../../codewhispererChat/commands/registerCommands'
+import sinon from 'sinon'
+import { AuthState, AuthStates, AuthUtil, FeatureAuthState } from '../../../codewhisperer/util/authUtil'
 
 describe('TryChatCodeLensProvider', () => {
     let instance: TryChatCodeLensProvider = new TryChatCodeLensProvider()
@@ -39,9 +41,16 @@ describe('TryChatCodeLensProvider', () => {
         instance.dispose()
         cancellationTokenSource?.dispose()
         clock.uninstall()
+        sinon.restore()
     })
 
+    function stubConnection(state: AuthState) {
+        return sinon.stub(AuthUtil.instance, 'getChatAuthStateSync').returns({ amazonQ: state } as FeatureAuthState)
+    }
+
     it('keeps returning a code lense until it hits the max times it should show', async function () {
+        stubConnection('connected')
+
         let codeLensCount = 0
         const modifierKey = resolveModifierKey()
         while (codeLensCount < 10) {
@@ -81,6 +90,21 @@ describe('TryChatCodeLensProvider', () => {
         await assert.rejects(TryChatCodeLensProvider.register(), {
             message: `${TryChatCodeLensProvider.name} can only be registered once.`,
         })
+    })
+
+    it('does NOT show codelens if amazon Q is not connected', async function () {
+        const testConnection = async (state: AuthState) => {
+            const stub = stubConnection(state)
+
+            const emptyResult = await instance.provideCodeLenses({} as any, new vscode.CancellationTokenSource().token)
+            assert.deepStrictEqual(emptyResult, [], `codelens shown with state: ${state}`)
+            stub.restore()
+        }
+
+        const testStates = Object.values(AuthStates).filter(s => s !== AuthStates.connected)
+        for (const state of testStates) {
+            await testConnection(state)
+        }
     })
 
     it('outputs expected telemetry', async function () {

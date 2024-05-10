@@ -216,7 +216,7 @@ export const fileScanPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
 
 export const fileScanUploadIntent = 'AUTOMATIC_FILE_SECURITY_SCAN'
 
-export const projectScanPayloadSizeLimitBytes = 5 * Math.pow(2, 30) // 5 GB
+export const projectScanPayloadSizeLimitBytes = 500 * Math.pow(2, 20) // 500 MB
 
 export const projectScanUploadIntent = 'FULL_PROJECT_SECURITY_SCAN'
 
@@ -611,9 +611,9 @@ export const codeFixAppliedFailedMessage = 'Failed to apply suggested code fix.'
 export const runSecurityScanButtonTitle = 'Run security scan'
 
 export const crossFileContextConfig = {
-    numberOfChunkToFetch: 200,
-    topK: 10,
-    numberOfLinesEachChunk: 50,
+    numberOfChunkToFetch: 60,
+    topK: 3,
+    numberOfLinesEachChunk: 10,
 }
 
 export const utgConfig = {

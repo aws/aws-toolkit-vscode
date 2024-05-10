@@ -50,6 +50,7 @@ export interface SessionState {
     readonly tokenSource: CancellationTokenSource
     readonly tabID: string
     interact(action: SessionStateAction): Promise<SessionStateInteraction>
+    updateWorkspaceRoot?: (workspaceRoot: string) => void
 }
 
 export interface SessionStateConfig {
