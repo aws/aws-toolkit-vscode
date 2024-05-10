@@ -15,25 +15,32 @@ import com.intellij.openapi.vcs.changes.patch.ImportToShelfExecutor
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
+import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineBgContext
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerArtifact
+import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeTransformHilDownloadArtifact
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.TROUBLESHOOTING_URL_DOWNLOAD_DIFF
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getPathToHilArtifactDir
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.openTroubleshootingGuideNotificationAction
 import software.aws.toolkits.jetbrains.utils.notifyStickyInfo
 import software.aws.toolkits.jetbrains.utils.notifyStickyWarn
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CodeTransformApiNames
+import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
 
 data class DownloadArtifactResult(val artifact: CodeModernizerArtifact?, val zipPath: String)
+
 class ArtifactHandler(private val project: Project, private val clientAdaptor: GumbyClient) {
     private val telemetry = CodeTransformTelemetryManager.getInstance(project)
     private val downloadedArtifacts = mutableMapOf<JobId, Path>()
@@ -56,6 +63,50 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
             message("codemodernizer.notification.info.download.started.content"),
             project,
         )
+    }
+
+    private suspend fun unzipToPath(byteArrayList: List<ByteArray>, outputDirPath: Path? = null): Pair<Path, Int> {
+        val zipFilePath = withContext(getCoroutineBgContext()) {
+            if (outputDirPath == null) {
+                Files.createTempFile(null, ".zip")
+            } else {
+                Files.createTempFile(outputDirPath, null, ".zip")
+            }
+        }
+        var totalDownloadBytes = 0
+        withContext(getCoroutineBgContext()) {
+            Files.newOutputStream(zipFilePath).use {
+                for (bytes in byteArrayList) {
+                    it.write(bytes)
+                    totalDownloadBytes += bytes.size
+                }
+            }
+        }
+        return zipFilePath to totalDownloadBytes
+    }
+
+    suspend fun downloadHilArtifact(jobId: JobId, artifactId: String, tmpDir: File): CodeTransformHilDownloadArtifact? {
+        val downloadResultsResponse = try {
+            clientAdaptor.downloadExportResultArchive(jobId, artifactId)
+        } catch (e: Exception) {
+            val errorMessage = "Unexpected error when downloading hil artifact: ${e.localizedMessage}"
+            LOG.error { errorMessage }
+            telemetry.apiError(errorMessage, CodeTransformApiNames.ExportResultArchive, jobId = jobId.id)
+            throw e
+        }
+
+        return try {
+            val tmpPath = tmpDir.toPath()
+            val (downloadZipFilePath, _) = unzipToPath(downloadResultsResponse, tmpPath)
+            LOG.info { "Successfully converted the hil artifact download to a zip at ${downloadZipFilePath.toAbsolutePath()}." }
+            CodeTransformHilDownloadArtifact.create(downloadZipFilePath, getPathToHilArtifactDir(tmpPath))
+        } catch (e: Exception) {
+            // In case if unzip or file operations fail
+            val errorMessage = "Unexpected error when saving downloaded hil artifact: ${e.localizedMessage}"
+            telemetry.error(errorMessage)
+            LOG.error { errorMessage }
+            null
+        }
     }
 
     suspend fun downloadArtifact(job: JobId): DownloadArtifactResult {
@@ -83,16 +134,10 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
 
             // 3. Convert to zip
             LOG.info { "Downloaded the export result archive, about to transform to zip" }
-            val path = Files.createTempFile(null, ".zip")
-            var totalDownloadBytes = 0
-            Files.newOutputStream(path).use {
-                for (bytes in downloadResultsResponse) {
-                    it.write(bytes)
-                    totalDownloadBytes += bytes.size
-                }
-            }
-            LOG.info { "Successfully converted the download to a zip at ${path.toAbsolutePath()}." }
+
+            val (path, totalDownloadBytes) = unzipToPath(downloadResultsResponse)
             val zipPath = path.toAbsolutePath().toString()
+            LOG.info { "Successfully converted the download to a zip at $zipPath." }
 
             // 4. Deserialize zip to CodeModernizerArtifact
             var telemetryErrorMessage: String? = null

@@ -150,7 +150,7 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeT
                 chatItems: [],
             })
         },
-        onCodeTransformMessageReceived: (tabID: string, chatItem: ChatItem) => {
+        onCodeTransformMessageReceived: (tabID: string, chatItem: ChatItem, isLoading: boolean, clearPreviousItemButtons?: boolean) => {
             if (chatItem.type === ChatItemType.ANSWER_PART) {
                 mynahUI.updateLastChatAnswer(tabID, {
                     ...(chatItem.messageId !== undefined ? { messageId: chatItem.messageId } : {}),
@@ -164,11 +164,17 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeT
                     ...(chatItem.followUp !== undefined ? { followUp: chatItem.followUp} : {}),
                 })
 
+                if (!isLoading) {
+                    mynahUI.updateStore(tabID, {
+                        loadingChat: false,
+                    })
+                }
+
                 return
             }
 
             if (chatItem.type === ChatItemType.PROMPT || chatItem.type === ChatItemType.ANSWER_STREAM || chatItem.type === ChatItemType.ANSWER) {
-                if (chatItem.followUp === undefined) {
+                if (chatItem.followUp === undefined && clearPreviousItemButtons === true) {
                     mynahUI.updateLastChatAnswer(tabID, {
                         buttons: [],
                         followUp: { options: [] },
@@ -186,6 +192,9 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeT
                     tabsStorage.updateTabStatus(tabID, 'free')
                 }
             }
+        },
+        onCodeTransformMessageUpdate: (tabID: string, messageId: string, chatItem: Partial<ChatItem>) => {
+            mynahUI.updateChatAnswerWithMessageId(tabID, messageId, chatItem)
         },
         onNotification: (notification: {
             content: string;

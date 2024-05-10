@@ -38,6 +38,9 @@ private enum class CodeTransformMessageTypes(val type: String) {
     ViewSummary("codetransform-view-summary"),
     AuthFollowUpWasClicked("auth-follow-up-was-clicked"),
     BodyLinkClicked("response-body-link-click"),
+    ConfirmHilSelection("codetransform-confirm-hil-selection"),
+    RejectHilSelection("codetransform-reject-hil-selection"),
+    OpenPomFileHilClicked("codetransform-pom-file-open-click"),
 }
 
 class CodeTransformChatApp : AmazonQApp {
@@ -63,6 +66,9 @@ class CodeTransformChatApp : AmazonQApp {
             CodeTransformMessageTypes.ViewSummary.type to IncomingCodeTransformMessage.CodeTransformViewSummary::class,
             CodeTransformMessageTypes.AuthFollowUpWasClicked.type to IncomingCodeTransformMessage.AuthFollowUpWasClicked::class,
             CodeTransformMessageTypes.BodyLinkClicked.type to IncomingCodeTransformMessage.BodyLinkClicked::class,
+            CodeTransformMessageTypes.ConfirmHilSelection.type to IncomingCodeTransformMessage.ConfirmHilSelection::class,
+            CodeTransformMessageTypes.RejectHilSelection.type to IncomingCodeTransformMessage.RejectHilSelection::class,
+            CodeTransformMessageTypes.OpenPomFileHilClicked.type to IncomingCodeTransformMessage.OpenPomFileHilClicked::class,
         )
 
         scope.launch {
@@ -130,7 +136,10 @@ class CodeTransformChatApp : AmazonQApp {
             is IncomingCodeTransformMessage.TabRemoved -> inboundAppMessagesHandler.processTabRemoved(message)
             is IncomingCodeTransformMessage.AuthFollowUpWasClicked -> inboundAppMessagesHandler.processAuthFollowUpClick(message)
             is IncomingCodeTransformMessage.BodyLinkClicked -> inboundAppMessagesHandler.processBodyLinkClicked(message)
+            is IncomingCodeTransformMessage.ConfirmHilSelection -> inboundAppMessagesHandler.processConfirmHilSelection(message)
+            is IncomingCodeTransformMessage.RejectHilSelection -> inboundAppMessagesHandler.processRejectHilSelection(message)
             is CodeTransformActionMessage -> inboundAppMessagesHandler.processCodeTransformCommand(message)
+            is IncomingCodeTransformMessage.OpenPomFileHilClicked -> inboundAppMessagesHandler.processOpenPomFileHilClicked(message)
         }
     }
 

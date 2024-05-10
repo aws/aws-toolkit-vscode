@@ -191,6 +191,17 @@ class CodeTransformTelemetryManager(private val project: Project) {
         )
     }
 
+    fun logHil(jobId: String, metaData: HilTelemetryMetaData, success: Boolean, reason: String) {
+        CodetransformTelemetry.humanInTheLoop(
+            project,
+            jobId,
+            metaData.toString(),
+            sessionId,
+            reason,
+            success,
+        )
+    }
+
     fun dependenciesCopied() = CodetransformTelemetry.dependenciesCopied(codeTransformSessionId = sessionId)
     fun jobIsStartedFromChatPrompt() {
         val connection = checkBearerConnectionValidity(project, BearerTokenFeatureSet.Q)
@@ -207,3 +218,8 @@ class CodeTransformTelemetryManager(private val project: Project) {
         fun getInstance(project: Project): CodeTransformTelemetryManager = project.service()
     }
 }
+
+data class HilTelemetryMetaData(
+    val dependencyVersionSelected: String? = null,
+    val cancelledFromChat: Boolean = false,
+)

@@ -24,6 +24,7 @@ class CodeModernizerSessionState {
     var transformationPlan: TransformationPlan? = null
     var transformationSummary: TransformationSummary? = null
     var currentJobId: JobId? = null
+    var currentHilArtifactId: String? = null
 
     companion object {
         fun getInstance(project: Project): CodeModernizerSessionState = project.service()

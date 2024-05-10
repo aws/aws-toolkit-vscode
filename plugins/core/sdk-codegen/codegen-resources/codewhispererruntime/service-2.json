@@ -218,6 +218,22 @@
                 {"shape":"AccessDeniedException"}
             ]
         },
+        "ResumeTransformation":{
+            "name":"ResumeTransformation",
+            "http":{
+                "method":"POST",
+                "requestUri":"/"
+            },
+            "input":{"shape":"ResumeTransformationRequest"},
+            "output":{"shape":"ResumeTransformationResponse"},
+            "errors":[
+                {"shape":"ThrottlingException"},
+                {"shape":"ResourceNotFoundException"},
+                {"shape":"InternalServerException"},
+                {"shape":"ValidationException"},
+                {"shape":"AccessDeniedException"}
+            ]
+        },
         "SendTelemetryEvent":{
             "name":"SendTelemetryEvent",
             "http":{
@@ -309,6 +325,12 @@
                 "message":{"shape":"String"}
             },
             "exception":true
+        },
+        "ArtifactId":{
+            "type":"string",
+            "max":126,
+            "min":1,
+            "pattern":"[a-zA-Z0-9-_]+"
         },
         "ArtifactMap":{
             "type":"map",
@@ -1301,6 +1323,21 @@
             },
             "exception":true
         },
+        "ResumeTransformationRequest":{
+            "type":"structure",
+            "required":["transformationJobId"],
+            "members":{
+                "transformationJobId":{"shape":"TransformationJobId"},
+                "userActionStatus":{"shape":"TransformationUserActionStatus"}
+            }
+        },
+        "ResumeTransformationResponse":{
+            "type":"structure",
+            "required":["transformationStatus"],
+            "members":{
+                "transformationStatus":{"shape":"TransformationStatus"}
+            }
+        },
         "RuntimeDiagnostic":{
             "type":"structure",
             "required":[
@@ -1630,6 +1667,23 @@
             "min": 0
         },
         "Timestamp":{"type":"timestamp"},
+        "TransformationDownloadArtifact":{
+            "type":"structure",
+            "members":{
+                "downloadArtifactType":{"shape":"TransformationDownloadArtifactType"},
+                "downloadArtifactId":{"shape":"ArtifactId"}
+            }
+        },
+        "TransformationDownloadArtifactType":{
+            "type":"string",
+            "enum":["ClientInstructions"]
+        },
+        "TransformationDownloadArtifacts":{
+            "type":"list",
+            "member":{"shape":"TransformationDownloadArtifact"},
+            "max":10,
+            "min":0
+        },
         "TransformationJob":{
             "type":"structure",
             "members":{
@@ -1673,7 +1727,8 @@
                 "status":{"shape":"TransformationProgressUpdateStatus"},
                 "description":{"shape":"String"},
                 "startTime":{"shape":"Timestamp"},
-                "endTime":{"shape":"Timestamp"}
+                "endTime":{"shape":"Timestamp"},
+                "downloadArtifacts":{"shape":"TransformationDownloadArtifacts"}
             }
         },
         "TransformationProgressUpdateStatus":{
@@ -1681,7 +1736,8 @@
             "enum":[
                 "IN_PROGRESS",
                 "COMPLETED",
-                "FAILED"
+                "FAILED",
+                "PAUSED"
             ]
         },
         "TransformationProjectState":{
@@ -1715,7 +1771,9 @@
                 "COMPLETED",
                 "PARTIALLY_COMPLETED",
                 "STOPPING",
-                "STOPPED"
+                "STOPPED",
+                "PAUSED",
+                "RESUMED"
             ]
         },
         "TransformationStep":{
@@ -1775,6 +1833,13 @@
             "members": {
                 "conversationId": { "shape": "ConversationId" }
             }
+        },
+        "TransformationUserActionStatus":{
+            "type":"string",
+            "enum":[
+                "COMPLETED",
+                "REJECTED"
+            ]
         },
         "UUID":{
             "type":"string",

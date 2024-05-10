@@ -18,5 +18,7 @@ enum class ProgressStepId(val order: Int) {
     PLANNING(3),
     TRANSFORMING(4),
     PLAN_STEP(5),
+    PAUSED(6),
+    RESUMED(7),
     ROOT_STEP(99)
 }

@@ -73,6 +73,12 @@
             },
             "exception":true
         },
+        "ArtifactId":{
+            "type":"string",
+            "max":126,
+            "min":1,
+            "pattern":"[a-zA-Z0-9-_]+"
+        },
         "AssistantResponseEvent":{
             "type":"structure",
             "required":["content"],
@@ -271,6 +277,13 @@
                 "cursorState":{"shape":"CursorState"}
             }
         },
+        "ExportContext":{
+            "type":"structure",
+            "members":{
+                "transformationExportContext":{"shape":"TransformationExportContext"}
+            },
+            "union":true
+        },
         "ExportIntent":{
             "type":"string",
             "enum":[
@@ -286,7 +299,8 @@
             ],
             "members":{
                 "exportId":{"shape":"String"},
-                "exportIntent":{"shape":"ExportIntent"}
+                "exportIntent":{"shape":"ExportIntent"},
+                "exportContext":{"shape":"ExportContext"}
             }
         },
         "ExportResultArchiveResponse":{
@@ -641,6 +655,21 @@
             },
             "exception":true,
             "retryable":{"throttling":true}
+        },
+        "TransformationDownloadArtifactType":{
+            "type":"string",
+            "enum":["ClientInstructions"]
+        },
+        "TransformationExportContext":{
+            "type":"structure",
+            "required":[
+                "downloadArtifactId",
+                "downloadArtifactType"
+            ],
+            "members":{
+                "downloadArtifactId":{"shape":"ArtifactId"},
+                "downloadArtifactType":{"shape":"TransformationDownloadArtifactType"}
+            }
         },
         "UploadId":{
             "type":"string",

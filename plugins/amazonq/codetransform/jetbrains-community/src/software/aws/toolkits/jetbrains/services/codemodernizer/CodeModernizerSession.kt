@@ -8,12 +8,16 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.serviceContainer.AlreadyDisposedException
 import kotlinx.coroutines.delay
 import org.apache.commons.codec.digest.DigestUtils
+import software.amazon.awssdk.services.codewhispererruntime.model.ResumeTransformationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.StartTransformationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationJob
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationLanguage
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationPlan
+import software.amazon.awssdk.services.codewhispererruntime.model.TransformationProgressUpdateStatus
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationStatus
+import software.amazon.awssdk.services.codewhispererruntime.model.TransformationUserActionStatus
 import software.aws.toolkits.core.utils.error
+import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
@@ -22,14 +26,17 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModerni
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerJobCompletedResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerSessionContext
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerStartJobResult
+import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeTransformHilDownloadArtifact
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MavenCopyCommandsResult
+import software.aws.toolkits.jetbrains.services.codemodernizer.model.MavenDependencyReportCommandsResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.ZipCreationResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.plan.CodeModernizerPlanEditorProvider
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.STATES_AFTER_INITIAL_BUILD
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.STATES_AFTER_STARTED
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getModuleOrProjectNameForFile
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getPathToHilDependencyReportDir
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.pollTransformationStatusAndPlan
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.toTransformationLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanSession
@@ -38,6 +45,7 @@ import software.aws.toolkits.telemetry.CodeTransformApiNames
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
+import java.nio.file.Path
 import java.time.Instant
 import java.util.Base64
 import java.util.concurrent.CancellationException
@@ -47,12 +55,13 @@ const val ZIP_SOURCES_PATH = "sources"
 const val BUILD_LOG_PATH = "build-logs.txt"
 const val UPLOAD_ZIP_MANIFEST_VERSION = 1.0F
 const val MAX_ZIP_SIZE = 1000000000 // 1GB
+const val HIL_1P_UPGRADE_CAPABILITY = "HIL_1pDependency_VersionUpgrade"
 const val EXPLAINABILITY_V1 = "EXPLAINABILITY_V1"
 
 class CodeModernizerSession(
     val sessionContext: CodeModernizerSessionContext,
-    val initialPollingSleepDurationMillis: Long = 2000,
-    val totalPollingSleepDurationMillis: Long = 5000,
+    private val initialPollingSleepDurationMillis: Long = 2000,
+    private val totalPollingSleepDurationMillis: Long = 5000,
 ) : Disposable {
     private val clientAdaptor = GumbyClient.getInstance(sessionContext.project)
     private val state = CodeModernizerSessionState.getInstance(sessionContext.project)
@@ -63,6 +72,27 @@ class CodeModernizerSession(
     private var mvnBuildResult: MavenCopyCommandsResult? = null
     private var transformResult: CodeModernizerJobCompletedResult? = null
 
+    private var hilDownloadArtifactId: String? = null
+    private var hilTempDirectoryPath: Path? = null
+    private var hilDownloadArtifact: CodeTransformHilDownloadArtifact? = null
+
+    fun getHilDownloadArtifactId() = hilDownloadArtifactId
+
+    fun setHilDownloadArtifactId(artifactId: String) {
+        hilDownloadArtifactId = artifactId
+    }
+
+    fun getHilDownloadArtifact() = hilDownloadArtifact
+
+    fun setHilDownloadArtifact(artifact: CodeTransformHilDownloadArtifact) {
+        hilDownloadArtifact = artifact
+    }
+
+    fun getHilTempDirectoryPath() = hilTempDirectoryPath
+
+    fun setHilTempDirectoryPath(path: Path) {
+        hilTempDirectoryPath = path
+    }
     fun getLastMvnBuildResult(): MavenCopyCommandsResult? = mvnBuildResult
 
     fun setLastMvnBuildResult(result: MavenCopyCommandsResult) {
@@ -76,6 +106,18 @@ class CodeModernizerSession(
     }
 
     fun getDependenciesUsingMaven(): MavenCopyCommandsResult = sessionContext.getDependenciesUsingMaven()
+
+    fun createHilDependencyReportUsingMaven(): MavenDependencyReportCommandsResult = sessionContext.createDependencyReportUsingMaven(
+        getPathToHilDependencyReportDir(hilTempDirectoryPath as Path)
+    )
+
+    fun copyHilDependencyUsingMaven(): MavenCopyCommandsResult = sessionContext.copyHilDependencyUsingMaven(hilTempDirectoryPath as Path)
+
+    fun createHilUploadZip(selectedVersion: String) = sessionContext.createZipForHilUpload(
+        hilTempDirectoryPath as Path,
+        hilDownloadArtifact?.manifest,
+        selectedVersion
+    )
 
     /**
      * Note that this function makes network calls and needs to be run from a background thread.
@@ -197,6 +239,81 @@ class CodeModernizerSession(
      */
     fun resumeJob(startTime: Instant, jobId: JobId) = state.putJobHistory(sessionContext, TransformationStatus.STARTED, jobId.id, startTime)
 
+    fun resumeTransformFromHil() {
+        val clientAdaptor = GumbyClient.getInstance(sessionContext.project)
+        try {
+            clientAdaptor.resumeCodeTransformation(state.currentJobId as JobId, TransformationUserActionStatus.COMPLETED)
+        } catch (e: Exception) {
+            val errorMessage = "Unexpected error when resuming transformation: ${e.localizedMessage}"
+            LOG.error { errorMessage }
+            telemetry.apiError(errorMessage, CodeTransformApiNames.ResumeTransformation, jobId = state.currentJobId?.id)
+            throw e
+        }
+    }
+
+    fun rejectHilAndContinue(): ResumeTransformationResponse {
+        val clientAdaptor = GumbyClient.getInstance(sessionContext.project)
+        return try {
+            val jobId = state.currentJobId ?: throw CodeModernizerException("No Job ID found")
+            clientAdaptor.resumeCodeTransformation(jobId, TransformationUserActionStatus.REJECTED)
+        } catch (e: Exception) {
+            val errorMessage = "Unexpected error when resuming transformation: ${e.localizedMessage}"
+            LOG.error { errorMessage }
+            telemetry.apiError(errorMessage, CodeTransformApiNames.ResumeTransformation, jobId = state.currentJobId?.id)
+            throw e
+        }
+    }
+
+    fun uploadHilPayload(payload: File): String {
+        val sha256checksum: String = Base64.getEncoder().encodeToString(DigestUtils.sha256(FileInputStream(payload)))
+        if (isDisposed.get()) {
+            throw AlreadyDisposedException("Disposed when about to create upload URL")
+        }
+        val jobId = state.currentJobId ?: throw CodeModernizerException("No Job ID found")
+        val clientAdaptor = GumbyClient.getInstance(sessionContext.project)
+        val createUploadUrlResponse = try {
+            clientAdaptor.createHilUploadUrl(sha256checksum, jobId = jobId)
+        } catch (e: Exception) {
+            val errorMessage = "Unexpected error when creating upload url for HIL: ${e.localizedMessage}"
+            LOG.error { errorMessage }
+            telemetry.apiError(errorMessage, CodeTransformApiNames.CreateUploadUrl, jobId = state.currentJobId?.id)
+            throw e
+        }
+
+        LOG.info {
+            "Uploading zip with checksum $sha256checksum using uploadId: ${
+                createUploadUrlResponse.uploadId()
+            } and size ${(payload.length() / 1000).toInt()}kB"
+        }
+        if (isDisposed.get()) {
+            throw AlreadyDisposedException("Disposed when about to upload zip to s3")
+        }
+        val uploadStartTime = Instant.now()
+        try {
+            clientAdaptor.uploadArtifactToS3(
+                createUploadUrlResponse.uploadUrl(),
+                payload,
+                sha256checksum,
+                createUploadUrlResponse.kmsKeyArn().orEmpty(),
+            ) { shouldStop.get() }
+        } catch (e: Exception) {
+            val errorMessage = "Unexpected error when uploading hil artifact to S3: ${e.localizedMessage}"
+            LOG.error { errorMessage }
+            telemetry.apiError(errorMessage, CodeTransformApiNames.UploadZip, createUploadUrlResponse.uploadId())
+            throw e
+        }
+        if (!shouldStop.get()) {
+            telemetry.logApiLatency(
+                CodeTransformApiNames.UploadZip,
+                uploadStartTime,
+                payload.length().toInt(),
+                createUploadUrlResponse.responseMetadata().requestId(),
+            )
+            LOG.warn { "Upload hil artifact complete" }
+        }
+        return createUploadUrlResponse.uploadId()
+    }
+
     /**
      * Adapted from [CodeWhispererCodeScanSession]
      */
@@ -260,6 +377,7 @@ class CodeModernizerSession(
             val result = jobId.pollTransformationStatusAndPlan(
                 succeedOn = setOf(
                     TransformationStatus.COMPLETED,
+                    TransformationStatus.PAUSED,
                     TransformationStatus.STOPPED,
                     TransformationStatus.PARTIALLY_COMPLETED,
                 ),
@@ -276,6 +394,17 @@ class CodeModernizerSession(
                 // Always refresh the dev tool tree so status will be up-to-date
                 state.currentJobStatus = new
                 state.transformationPlan = plan
+
+                if (state.currentJobStatus == TransformationStatus.PAUSED) {
+                    val pausedUpdate =
+                        state.transformationPlan
+                            ?.transformationSteps()
+                            ?.flatMap { step -> step.progressUpdates() }
+                            ?.filter { update -> update.status() == TransformationProgressUpdateStatus.PAUSED }
+                    if (pausedUpdate?.isNotEmpty() == true) {
+                        state.currentHilArtifactId = pausedUpdate[0].downloadArtifacts()[0].downloadArtifactId()
+                    }
+                }
 
                 // Open the transformation plan detail panel once transformation plan is available
                 if (state.transformationPlan != null && !isTransformationPlanEditorOpened) {
@@ -303,6 +432,9 @@ class CodeModernizerSession(
             }
             return when {
                 result.state == TransformationStatus.STOPPED -> CodeModernizerJobCompletedResult.Stopped
+
+                result.state == TransformationStatus.PAUSED -> CodeModernizerJobCompletedResult.JobPaused(jobId, state.currentHilArtifactId.orEmpty())
+
                 result.state == TransformationStatus.UNKNOWN_TO_SDK_VERSION -> CodeModernizerJobCompletedResult.JobFailed(
                     jobId,
                     message("codemodernizer.notification.warn.unknown_status_response")
@@ -420,4 +552,21 @@ class CodeModernizerSession(
 
     fun getActiveJobId() = state.currentJobId
     fun fetchPlan(lastJobId: JobId) = clientAdaptor.getCodeModernizationPlan(lastJobId)
+
+    fun hilCleanup() {
+        hilDownloadArtifactId = null
+        hilDownloadArtifact = null
+        if (hilTempDirectoryPath?.exists() == true) {
+            try {
+                (hilTempDirectoryPath as Path).toFile().deleteRecursively()
+            } catch (e: Exception) {
+                val errorMessage = "Unexpected error when cleaning up HIL files: ${e.localizedMessage}"
+                LOG.error { errorMessage }
+                telemetry.error(errorMessage)
+                return
+            } finally {
+                hilTempDirectoryPath = null
+            }
+        }
+    }
 }

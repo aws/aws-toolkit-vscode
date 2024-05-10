@@ -21,6 +21,8 @@ val STATES_WHERE_PLAN_EXIST = setOf(
     TransformationStatus.TRANSFORMED,
     TransformationStatus.PARTIALLY_COMPLETED,
     TransformationStatus.COMPLETED,
+    TransformationStatus.PAUSED,
+    TransformationStatus.RESUMED,
 )
 
 val STATES_AFTER_INITIAL_BUILD = setOf(

@@ -13,6 +13,10 @@ class CodeTransformMessageListener {
     private val _messages by lazy { MutableSharedFlow<CodeTransformActionMessage>(extraBufferCapacity = 10) }
     val flow = _messages.asSharedFlow()
 
+    fun onStartingHil() {
+        _messages.tryEmit(CodeTransformActionMessage(CodeTransformCommand.StartHil))
+    }
+
     fun onStopClicked() {
         _messages.tryEmit(CodeTransformActionMessage(CodeTransformCommand.StopClicked))
     }

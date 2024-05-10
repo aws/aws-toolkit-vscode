@@ -15,29 +15,36 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.JavaSdkVersion
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.util.io.FileUtil.createTempDirectory
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.wm.ToolWindowManager
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationJob
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationPlan
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationStatus
 import software.aws.toolkits.core.utils.error
+import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
 import software.aws.toolkits.jetbrains.services.codemodernizer.commands.CodeTransformMessageListener
+import software.aws.toolkits.jetbrains.services.codemodernizer.constants.HIL_POM_FILE_NAME
+import software.aws.toolkits.jetbrains.services.codemodernizer.file.PomFileAnnotator
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerException
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerJobCompletedResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerSessionContext
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerStartJobResult
+import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeTransformHilDownloadArtifact
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CustomerSelection
+import software.aws.toolkits.jetbrains.services.codemodernizer.model.Dependency
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.InvalidTelemetryReason
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MAVEN_CONFIGURATION_FILE_NAME
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MavenCopyCommandsResult
+import software.aws.toolkits.jetbrains.services.codemodernizer.model.MavenDependencyReportCommandsResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.ValidationResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.panels.managers.CodeModernizerBottomWindowPanelManager
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState
@@ -48,25 +55,33 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.toolwindow.CodeMo
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.STATES_WHERE_PLAN_EXIST
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.TROUBLESHOOTING_URL_MAVEN_COMMANDS
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.TROUBLESHOOTING_URL_PREREQUISITES
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.createFileCopy
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.findLineNumberByString
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getModuleOrProjectNameForFile
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getPathToHilArtifactPomFile
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getPathToHilDependencyReport
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getPathToHilDependencyReportDir
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getSupportedBuildFilesWithSupportedJdk
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getSupportedJavaMappings
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getSupportedModules
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.isCodeTransformAvailable
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.isGradleProject
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.openTroubleshootingGuideNotificationAction
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.parseXmlDependenciesReport
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.setDependencyVersionInPom
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.tryGetJdk
 import software.aws.toolkits.jetbrains.ui.feedback.CodeTransformFeedbackDialog
 import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
 import software.aws.toolkits.jetbrains.utils.notifyStickyError
 import software.aws.toolkits.jetbrains.utils.notifyStickyInfo
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsToolkitBundle.message
 import software.aws.toolkits.telemetry.CodeTransformCancelSrcComponents
 import software.aws.toolkits.telemetry.CodeTransformPreValidationError
+import java.io.File
+import java.nio.file.Path
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
-
-const val AMAZON_Q_FEEDBACK_DIALOG_KEY = "Amazon Q"
+import kotlin.io.path.pathString
 
 @State(name = "codemodernizerStates", storages = [Storage("aws.xml", roamingType = RoamingType.PER_OS)])
 class CodeModernizerManager(private val project: Project) : PersistentStateComponent<CodeModernizerState>, Disposable {
@@ -214,11 +229,16 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         }
     }
 
-    fun runModernize(copyResult: MavenCopyCommandsResult): Job? {
+    fun runModernize(copyResult: MavenCopyCommandsResult) {
         initStopParameters()
         val session = codeTransformationSession as CodeModernizerSession
         initModernizationJobUI(true, project.getModuleOrProjectNameForFile(session.sessionContext.configurationFile))
-        return launchModernizationJob(session, copyResult)
+        launchModernizationJob(session, copyResult)
+    }
+
+    suspend fun resumePollingFromHil() {
+        val result = handleJobResumedFromHil(managerState.getLatestJobId(), codeTransformationSession as CodeModernizerSession)
+        postModernizationJob(result)
     }
 
     private fun initStopParameters() {
@@ -275,6 +295,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
 
     fun launchModernizationJob(session: CodeModernizerSession, copyResult: MavenCopyCommandsResult) = projectCoroutineScope(project).launch {
         val result = initModernizationJob(session, copyResult)
+
         postModernizationJob(result)
     }
 
@@ -349,9 +370,8 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         }
     }
 
-    internal suspend fun initModernizationJob(session: CodeModernizerSession, copyResult: MavenCopyCommandsResult): CodeModernizerJobCompletedResult {
-        val result = session.createModernizationJob(copyResult)
-        return when (result) {
+    internal suspend fun initModernizationJob(session: CodeModernizerSession, copyResult: MavenCopyCommandsResult): CodeModernizerJobCompletedResult =
+        when (val result = session.createModernizationJob(copyResult)) {
             is CodeModernizerStartJobResult.ZipCreationFailed -> {
                 CodeModernizerJobCompletedResult.UnableToCreateJob(
                     message("codemodernizer.notification.warn.zip_creation_failed", result.reason),
@@ -386,9 +406,17 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 CodeModernizerJobCompletedResult.JobAbortedZipTooLarge
             }
         }
+
+    private suspend fun handleJobResumedFromHil(
+        jobId: JobId,
+        session: CodeModernizerSession
+    ): CodeModernizerJobCompletedResult = session.pollUntilJobCompletion(
+        jobId
+    ) { new, plan ->
+        codeModernizerBottomWindowPanelManager.handleJobTransition(new, plan, session.sessionContext.sourceJavaVersion)
     }
 
-    suspend fun handleJobStarted(jobId: JobId, session: CodeModernizerSession): CodeModernizerJobCompletedResult {
+    private suspend fun handleJobStarted(jobId: JobId, session: CodeModernizerSession): CodeModernizerJobCompletedResult {
         setJobOngoing(jobId, session.sessionContext)
         // Init the splitter panel to show progress and progress steps
         // https://plugins.jetbrains.com/docs/intellij/general-threading-rules.html#write-access
@@ -401,10 +429,18 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         }
     }
 
-    internal fun postModernizationJob(result: CodeModernizerJobCompletedResult) {
+    private fun postModernizationJob(result: CodeModernizerJobCompletedResult) {
         codeTransformationSession?.setLastTransformResult(result)
 
         if (result is CodeModernizerJobCompletedResult.ManagerDisposed) {
+            return
+        }
+
+        if (result is CodeModernizerJobCompletedResult.JobPaused) {
+            codeTransformationSession?.setHilDownloadArtifactId(result.downloadArtifactId)
+
+            CodeTransformMessageListener.instance.onStartingHil()
+
             return
         }
 
@@ -605,6 +641,8 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 project,
                 listOf(displayFeedbackNotificationAction())
             )
+
+            is CodeModernizerJobCompletedResult.JobPaused -> return
         }
         telemetry.totalRunTime(result.toString(), jobId)
     }
@@ -626,6 +664,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
 
     fun userInitiatedStopCodeModernization() {
         notifyTransformationStartStopping()
+        codeTransformationSession?.hilCleanup()
         if (transformationStoppedByUsr.getAndSet(true)) return
         val currentId = codeTransformationSession?.getActiveJobId()
         projectCoroutineScope(project).launch {
@@ -657,6 +696,8 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
     fun getLastMvnBuildResult(): MavenCopyCommandsResult? = codeTransformationSession?.getLastMvnBuildResult()
 
     fun getLastTransformResult(): CodeModernizerJobCompletedResult? = codeTransformationSession?.getLastTransformResult()
+
+    fun getCurrentHilArtifact(): CodeTransformHilDownloadArtifact? = codeTransformationSession?.getHilDownloadArtifact()
 
     fun getBottomToolWindow() = ToolWindowManager.getInstance(project).getToolWindow(CodeModernizerBottomToolWindowFactory.id)
         ?: error(message("codemodernizer.toolwindow.problems_window_not_found"))
@@ -706,5 +747,148 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         codeTransformationSession?.dispose()
         codeModernizerBottomWindowPanelManager.reset()
         isModernizationInProgress.set(false)
+    }
+
+    suspend fun getArtifactForHil(): CodeTransformHilDownloadArtifact? {
+        if (codeTransformationSession?.getHilDownloadArtifact() != null) {
+            return codeTransformationSession?.getHilDownloadArtifact()
+        }
+
+        val jobId = codeTransformationSession?.getActiveJobId() ?: return null
+        val downloadArtifactId = codeTransformationSession?.getHilDownloadArtifactId() ?: return null
+
+        val tmpDir = try {
+            createTempDirectory("", null)
+        } catch (e: Exception) {
+            val errorMessage = "Unexpected error when creating tmp dir for HIL: ${e.localizedMessage}"
+            LOG.error { errorMessage }
+            return null
+        }
+        try {
+            val hilArtifact = artifactHandler.downloadHilArtifact(jobId, downloadArtifactId, tmpDir)
+            if (hilArtifact != null) {
+                codeTransformationSession?.setHilTempDirectoryPath(tmpDir.toPath())
+                codeTransformationSession?.setHilDownloadArtifact(hilArtifact)
+            }
+            return hilArtifact
+        } catch (e: Exception) {
+            return null
+        }
+    }
+
+    fun createDependencyReport(hilDownloadArtifact: CodeTransformHilDownloadArtifact): MavenDependencyReportCommandsResult {
+        val tmpDirPath = codeTransformationSession?.getHilTempDirectoryPath() ?: return MavenDependencyReportCommandsResult.Failure
+
+        try {
+            val copyPomForDependencyReport = createFileCopy(hilDownloadArtifact.pomFile, getPathToHilDependencyReportDir(tmpDirPath).resolve(HIL_POM_FILE_NAME))
+            setDependencyVersionInPom(copyPomForDependencyReport, hilDownloadArtifact.manifest.sourcePomVersion)
+        } catch (e: Exception) {
+            val errorMessage = "Unexpected error when preparing for HIL dependency report: ${e.localizedMessage}"
+            telemetry.error(errorMessage)
+            LOG.error { errorMessage }
+            return MavenDependencyReportCommandsResult.Failure
+        }
+
+        return codeTransformationSession?.createHilDependencyReportUsingMaven() as MavenDependencyReportCommandsResult
+    }
+
+    fun findAvailableVersionForDependency(pomGroupId: String, pomArtifactId: String): Dependency? {
+        try {
+            val hilTempDirPath = codeTransformationSession?.getHilTempDirectoryPath()
+                ?: throw CodeModernizerException("Cannot get HIL temp directory")
+
+            val report = parseXmlDependenciesReport(
+                getPathToHilDependencyReport(hilTempDirPath)
+            )
+            return report.dependencies?.first {
+                it.groupId == pomGroupId &&
+                    it.artifactId == pomArtifactId
+            }
+        } catch (e: NoSuchElementException) {
+            val errorMessage = "No available versions found when parsing HIL dependency report: ${e.localizedMessage}"
+            telemetry.error(errorMessage)
+            LOG.error { errorMessage }
+            return null
+        } catch (e: Exception) {
+            val errorMessage = "Unexpected error when parsing HIL dependency report: ${e.localizedMessage}"
+            telemetry.error(errorMessage)
+            LOG.error { errorMessage }
+            return null
+        }
+    }
+
+    fun rejectHil() {
+        try {
+            codeTransformationSession?.rejectHilAndContinue()
+        } catch (e: Exception) {
+            throw e
+        } finally {
+            // DO clean up
+            codeTransformationSession?.hilCleanup()
+        }
+    }
+
+    fun copyDependencyForHil(selectedVersion: String): MavenCopyCommandsResult {
+        try {
+            val session = codeTransformationSession ?: throw CodeModernizerException("Cannot get the current session")
+
+            val tmpDirPath = session.getHilTempDirectoryPath()
+                ?: throw CodeModernizerException("Cannot get HIL temp directory")
+
+            val downloadedPomPath = getPathToHilArtifactPomFile(tmpDirPath)
+            if (!downloadedPomPath.exists()) {
+                return MavenCopyCommandsResult.Failure
+            }
+
+            val downloadedPomFile = File(downloadedPomPath.pathString)
+            setDependencyVersionInPom(downloadedPomFile, selectedVersion)
+
+            val copyDependencyResult = session.copyHilDependencyUsingMaven()
+            return copyDependencyResult
+        } catch (e: Exception) {
+            val errorMessage = "Unexpected error when getting HIL dependency for upload: ${e.localizedMessage}"
+            telemetry.error(errorMessage)
+            LOG.error { errorMessage }
+            return MavenCopyCommandsResult.Failure
+        }
+    }
+
+    suspend fun tryResumeWithAlternativeVersion(selectedVersion: String) {
+        try {
+            val zipCreationResult = codeTransformationSession?.createHilUploadZip(selectedVersion)
+            if (zipCreationResult?.payload?.exists() == true) {
+                codeTransformationSession?.uploadHilPayload(zipCreationResult.payload)
+
+                // Add delay between upload complete and trying to resume
+                delay(500)
+
+                codeTransformationSession?.resumeTransformFromHil()
+            } else {
+                throw CodeModernizerException("Cannot create dependency zip for HIL")
+            }
+        } catch (e: Exception) {
+            val errorMessage = "Unexpected error when resuming HIL: ${e.localizedMessage}"
+            telemetry.error(errorMessage)
+            LOG.error { errorMessage }
+        } finally {
+            // DO file clean up
+            codeTransformationSession?.hilCleanup()
+        }
+    }
+
+    fun showHilPomFileAnnotation(): Boolean {
+        val sourceVersion = codeTransformationSession?.getHilDownloadArtifact()?.manifest?.sourcePomVersion as String
+        val dependencyReportDirPath = getPathToHilDependencyReportDir(codeTransformationSession?.getHilTempDirectoryPath() as Path)
+
+        val virtualFile = LocalFileSystem.getInstance().findFileByIoFile(dependencyReportDirPath.resolve(HIL_POM_FILE_NAME).toFile())
+        if (virtualFile != null) {
+            val lineNumberToHighlight = findLineNumberByString(virtualFile, "<version>$sourceVersion</version>")
+            val pomFileAnnotator = PomFileAnnotator(project, virtualFile, lineNumberToHighlight)
+            pomFileAnnotator.showCustomEditor() // opens editor using Edt thread
+        } else {
+            return false
+        }
+
+        return true
     }
 }

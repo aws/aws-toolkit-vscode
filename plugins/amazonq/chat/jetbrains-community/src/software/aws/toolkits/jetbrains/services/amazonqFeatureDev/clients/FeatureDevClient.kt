@@ -148,6 +148,7 @@ class FeatureDevClient(private val project: Project) {
     suspend fun exportTaskAssistResultArchive(conversationId: String): MutableList<ByteArray> = amazonQStreamingClient.exportResultArchive(
         conversationId,
         ExportIntent.TASK_ASSIST,
+        null,
         { e ->
             LOG.error(e) { "TaskAssist - ExportResultArchive stream exportId=$conversationId exportIntent=${ExportIntent.TASK_ASSIST} Failed: ${e.message} " }
         },

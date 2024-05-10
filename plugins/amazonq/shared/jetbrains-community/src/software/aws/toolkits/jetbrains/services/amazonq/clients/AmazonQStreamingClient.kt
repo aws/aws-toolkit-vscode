@@ -8,6 +8,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.future.await
 import software.amazon.awssdk.services.codewhispererstreaming.CodeWhispererStreamingAsyncClient
+import software.amazon.awssdk.services.codewhispererstreaming.model.ExportContext
 import software.amazon.awssdk.services.codewhispererstreaming.model.ExportIntent
 import software.amazon.awssdk.services.codewhispererstreaming.model.ExportResultArchiveResponseHandler
 import software.aws.toolkits.core.utils.getLogger
@@ -28,6 +29,7 @@ class AmazonQStreamingClient(private val project: Project) {
     suspend fun exportResultArchive(
         exportId: String,
         exportIntent: ExportIntent,
+        exportContext: ExportContext?,
         /**
          * Handler for streaming exceptions.
          *
@@ -56,6 +58,7 @@ class AmazonQStreamingClient(private val project: Project) {
                 {
                     it.exportId(exportId)
                     it.exportIntent(exportIntent)
+                    it.exportContext(exportContext)
                 },
                 ExportResultArchiveResponseHandler.builder().subscriber(
                     ExportResultArchiveResponseHandler.Visitor.builder()

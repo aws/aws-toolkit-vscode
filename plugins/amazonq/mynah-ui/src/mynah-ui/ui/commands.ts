@@ -37,6 +37,9 @@ type MessageCommand =
     | 'codetransform-open-mvn-build'
     | 'codetransform-view-diff'
     | 'codetransform-view-summary'
+    | 'codetransform-confirm-hil-selection'
+    | 'codetransform-reject-hil-selection'
+    | 'codetransform-pom-file-open-click'
     | 'file-click'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }

@@ -76,7 +76,7 @@ class AmazonQStreamingClientTest : AmazonQTestBase() {
         val requestCaptor = argumentCaptor<ExportResultArchiveRequest>()
         val handlerCaptor = argumentCaptor<ExportResultArchiveResponseHandler>()
 
-        amazonQStreamingClient.exportResultArchive("test-id", ExportIntent.TRANSFORMATION, {}, {})
+        amazonQStreamingClient.exportResultArchive("test-id", ExportIntent.TRANSFORMATION, null, {}, {})
         argumentCaptor<ExportResultArchiveRequest, ExportResultArchiveResponseHandler>().apply {
             verify(streamingBearerClient).exportResultArchive(requestCaptor.capture(), handlerCaptor.capture())
         }

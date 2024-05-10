@@ -11,30 +11,44 @@ import com.intellij.openapi.vfs.VirtualFile
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import software.aws.toolkits.core.utils.debug
+import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppInitContext
 import software.aws.toolkits.jetbrains.services.amazonq.auth.AuthController
 import software.aws.toolkits.jetbrains.services.codemodernizer.ArtifactHandler
 import software.aws.toolkits.jetbrains.services.codemodernizer.CodeModernizerManager
 import software.aws.toolkits.jetbrains.services.codemodernizer.CodeTransformTelemetryManager
+import software.aws.toolkits.jetbrains.services.codemodernizer.HilTelemetryMetaData
 import software.aws.toolkits.jetbrains.services.codemodernizer.InboundAppMessagesHandler
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
 import software.aws.toolkits.jetbrains.services.codemodernizer.commands.CodeTransformActionMessage
 import software.aws.toolkits.jetbrains.services.codemodernizer.commands.CodeTransformCommand
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.FEATURE_NAME
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildCheckingValidProjectChatContent
+import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildCompileHilAlternativeVersionContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildCompileLocalFailedChatContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildCompileLocalInProgressChatContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildCompileLocalSuccessChatContent
+import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildHilCannotResumeContent
+import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildHilErrorContent
+import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildHilInitialContent
+import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildHilRejectContent
+import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildHilResumeWithErrorContent
+import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildHilResumedContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildProjectInvalidChatContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildProjectValidChatContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildStartNewTransformFollowup
+import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildTransformAwaitUserInputChatContent
+import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildTransformBeginChatContent
+import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildTransformDependencyErrorChatContent
+import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildTransformFindingLocalAlternativeDependencyChatContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildTransformInProgressChatContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildTransformResultChatContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildTransformResumingChatContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildTransformStoppedChatContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildTransformStoppingChatContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildUserCancelledChatContent
+import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildUserHilSelection
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildUserInputChatContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildUserSelectionSummaryChatContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildUserStopTransformChatContent
@@ -43,9 +57,11 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.messages.CodeTran
 import software.aws.toolkits.jetbrains.services.codemodernizer.messages.CodeTransformCommandMessage
 import software.aws.toolkits.jetbrains.services.codemodernizer.messages.IncomingCodeTransformMessage
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerJobCompletedResult
+import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeTransformHilDownloadArtifact
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CustomerSelection
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MavenCopyCommandsResult
+import software.aws.toolkits.jetbrains.services.codemodernizer.model.MavenDependencyReportCommandsResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.session.ChatSessionStorage
 import software.aws.toolkits.jetbrains.services.codemodernizer.session.Session
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState
@@ -53,7 +69,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getModuleOr
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.toVirtualFile
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.tryGetJdk
 import software.aws.toolkits.jetbrains.services.cwc.messages.ChatMessageType
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsToolkitBundle.message
 
 class CodeTransformChatController(
     private val context: AmazonQAppInitContext,
@@ -64,6 +80,7 @@ class CodeTransformChatController(
     private val codeModernizerManager = CodeModernizerManager.getInstance(context.project)
     private val codeTransformChatHelper = CodeTransformChatHelper(context.messagesFromAppToUi, chatSessionStorage)
     private val artifactHandler = ArtifactHandler(context.project, GumbyClient.getInstance(context.project))
+    private val telemetry = CodeTransformTelemetryManager.getInstance(context.project)
 
     override suspend fun processTransformQuickAction(message: IncomingCodeTransformMessage.Transform) {
         if (!checkForAuth(message.tabId)) {
@@ -82,7 +99,7 @@ class CodeTransformChatController(
             buildCheckingValidProjectChatContent()
         )
 
-        delay(3000)
+        codeTransformChatHelper.chatDelayLong()
 
         val validationResult = codeModernizerManager.validate(context.project)
 
@@ -101,7 +118,7 @@ class CodeTransformChatController(
             buildProjectValidChatContent(validationResult)
         )
 
-        delay(500)
+        codeTransformChatHelper.chatDelayShort()
 
         CodeTransformTelemetryManager.getInstance(context.project).jobIsStartedFromChatPrompt()
 
@@ -116,6 +133,7 @@ class CodeTransformChatController(
         val isTransformationResuming = codeModernizerManager.isModernizationJobResuming()
 
         while (isTransformationResuming) {
+            // Poll until transformation is resumed
             delay(50)
         }
 
@@ -127,7 +145,9 @@ class CodeTransformChatController(
         if (isTransformOngoing) {
             if (codeModernizerManager.isJobSuccessfullyResumed()) {
                 codeTransformChatHelper.addNewMessage(buildTransformResumingChatContent())
+                codeTransformChatHelper.addNewMessage(buildTransformInProgressChatContent())
             } else {
+                codeTransformChatHelper.addNewMessage(buildTransformBeginChatContent())
                 codeTransformChatHelper.addNewMessage(buildTransformInProgressChatContent())
             }
             return true
@@ -190,7 +210,7 @@ class CodeTransformChatController(
         codeModernizerManager.runLocalMavenBuild(context.project, selection)
     }
 
-    suspend fun handleMavenBuildResult(mavenBuildResult: MavenCopyCommandsResult) {
+    private suspend fun handleMavenBuildResult(mavenBuildResult: MavenCopyCommandsResult) {
         if (mavenBuildResult == MavenCopyCommandsResult.Cancelled) {
             codeTransformChatHelper.updateLastPendingMessage(buildUserCancelledChatContent())
             codeTransformChatHelper.addNewMessage(buildStartNewTransformFollowup())
@@ -204,6 +224,7 @@ class CodeTransformChatController(
         codeTransformChatHelper.run {
             updateLastPendingMessage(buildCompileLocalSuccessChatContent())
 
+            addNewMessage(buildTransformBeginChatContent())
             addNewMessage(buildTransformInProgressChatContent())
         }
 
@@ -216,6 +237,9 @@ class CodeTransformChatController(
         if (!checkForAuth(tabId)) {
             return
         }
+
+        updatePomPreviewItem()
+
         codeTransformChatHelper.run {
             addNewMessage(buildUserStopTransformChatContent())
 
@@ -276,6 +300,9 @@ class CodeTransformChatController(
             }
             CodeTransformCommand.TransformResuming -> {
                 handleCodeTransformJobResume()
+            }
+            CodeTransformCommand.StartHil -> {
+                handleHil()
             }
             else -> {
                 processTransformQuickAction(IncomingCodeTransformMessage.Transform(tabId = activeTabId))
@@ -356,6 +383,180 @@ class CodeTransformChatController(
                 )
                 codeTransformChatHelper.addNewMessage(buildStartNewTransformFollowup())
             }
+        }
+    }
+
+    private suspend fun hilTryResumeAfterError(errorMessage: String) {
+        codeTransformChatHelper.addNewMessage(buildHilErrorContent(errorMessage))
+        codeTransformChatHelper.addNewMessage(buildHilResumeWithErrorContent())
+
+        try {
+            codeModernizerManager.rejectHil()
+            runInEdt {
+                codeModernizerManager.getBottomToolWindow().show()
+            }
+
+            codeTransformChatHelper.chatDelayLong()
+
+            codeModernizerManager.resumePollingFromHil()
+        } catch (e: Exception) {
+            telemetry.logHil(
+                CodeModernizerSessionState.getInstance(context.project).currentJobId?.id.orEmpty(),
+                HilTelemetryMetaData(
+                    cancelledFromChat = false,
+                ),
+                success = false,
+                reason = "Runtime Error when trying to resume transformation from HIL",
+            )
+            codeTransformChatHelper.updateLastPendingMessage(buildHilCannotResumeContent())
+        }
+    }
+
+    private suspend fun handleHil() {
+        codeTransformChatHelper.updateLastPendingMessage(buildHilInitialContent())
+
+        val hilDownloadArtifact = codeModernizerManager.getArtifactForHil()
+
+        if (hilDownloadArtifact == null) {
+            hilTryResumeAfterError(message("codemodernizer.chat.message.hil.error.cannot_download_artifact"))
+            return
+        }
+
+        codeTransformChatHelper.addNewMessage(buildTransformDependencyErrorChatContent(hilDownloadArtifact), codeTransformChatHelper.generateHilPomItemId())
+        codeTransformChatHelper.addNewMessage(buildTransformFindingLocalAlternativeDependencyChatContent(), clearPreviousItemButtons = false)
+        val createReportResult = codeModernizerManager.createDependencyReport(hilDownloadArtifact)
+        if (createReportResult == MavenDependencyReportCommandsResult.Cancelled) {
+            hilTryResumeAfterError(message("codemodernizer.chat.message.hil.error.cancel_dependency_search"))
+            return
+        } else if (createReportResult == MavenDependencyReportCommandsResult.Failure) {
+            hilTryResumeAfterError(message("codemodernizer.chat.message.hil.error.no_other_versions_found", hilDownloadArtifact.manifest.pomArtifactId))
+            return
+        }
+
+        val dependency = codeModernizerManager.findAvailableVersionForDependency(
+            hilDownloadArtifact.manifest.pomGroupId,
+            hilDownloadArtifact.manifest.pomArtifactId
+        )
+
+        if (dependency == null || (dependency.majors.isNullOrEmpty() && dependency.minors.isNullOrEmpty() && dependency.incrementals.isNullOrEmpty())) {
+            hilTryResumeAfterError(message("codemodernizer.chat.message.hil.error.no_other_versions_found", hilDownloadArtifact.manifest.pomArtifactId))
+            return
+        }
+        codeTransformChatHelper.updateLastPendingMessage(buildTransformAwaitUserInputChatContent(dependency))
+        runInEdt {
+            codeModernizerManager.getBottomToolWindow().show()
+        }
+    }
+
+    // Remove open file button after pom.xml is deleted
+    private suspend fun updatePomPreviewItem() {
+        val hilPomItemId = codeTransformChatHelper.getHilPomItemId() ?: return
+        val hilDownloadArtifact = codeModernizerManager.getArtifactForHil()
+        if (hilDownloadArtifact != null) {
+            codeTransformChatHelper.updateExistingMessage(
+                hilPomItemId,
+                buildTransformDependencyErrorChatContent(hilDownloadArtifact, false)
+            )
+        }
+        codeTransformChatHelper.clearHilPomItemId()
+    }
+
+    override suspend fun processConfirmHilSelection(message: IncomingCodeTransformMessage.ConfirmHilSelection) {
+        if (!checkForAuth(message.tabId)) {
+            return
+        }
+
+        updatePomPreviewItem()
+
+        val selectedVersion = message.version
+        val artifact = codeModernizerManager.getCurrentHilArtifact() as CodeTransformHilDownloadArtifact
+
+        codeTransformChatHelper.run {
+            addNewMessage(buildUserHilSelection(artifact.manifest.pomArtifactId, artifact.manifest.sourcePomVersion, selectedVersion))
+
+            addNewMessage(buildCompileHilAlternativeVersionContent())
+        }
+
+        val copyDependencyResult = codeModernizerManager.copyDependencyForHil(selectedVersion)
+        if (copyDependencyResult == MavenCopyCommandsResult.Failure) {
+            hilTryResumeAfterError(message("codemodernizer.chat.message.hil.error.cannot_upload"))
+            return
+        } else if (copyDependencyResult == MavenCopyCommandsResult.Cancelled) {
+            hilTryResumeAfterError(message("codemodernizer.chat.message.hil.error.cancel_upload"))
+            return
+        }
+
+        try {
+            codeModernizerManager.tryResumeWithAlternativeVersion(selectedVersion)
+
+            telemetry.logHil(
+                CodeModernizerSessionState.getInstance(context.project).currentJobId?.id as String,
+                HilTelemetryMetaData(
+                    dependencyVersionSelected = selectedVersion,
+                ),
+                success = true,
+                reason = "User selected version"
+            )
+
+            codeTransformChatHelper.updateLastPendingMessage(buildHilResumedContent())
+
+            runInEdt {
+                codeModernizerManager.getBottomToolWindow().show()
+            }
+            codeModernizerManager.resumePollingFromHil()
+        } catch (e: Exception) {
+            hilTryResumeAfterError(message("codemodernizer.chat.message.hil.error.cannot_upload"))
+        }
+    }
+
+    override suspend fun processRejectHilSelection(message: IncomingCodeTransformMessage.RejectHilSelection) {
+        if (!checkForAuth(message.tabId)) {
+            return
+        }
+
+        codeTransformChatHelper.addNewMessage(buildHilRejectContent())
+
+        updatePomPreviewItem()
+
+        try {
+            codeModernizerManager.rejectHil()
+
+            telemetry.logHil(
+                CodeModernizerSessionState.getInstance(context.project).currentJobId?.id.orEmpty(),
+                HilTelemetryMetaData(
+                    cancelledFromChat = true,
+                ),
+                success = false,
+                reason = "User cancelled"
+            )
+
+            runInEdt {
+                codeModernizerManager.getBottomToolWindow().show()
+            }
+            codeModernizerManager.resumePollingFromHil()
+        } catch (e: Exception) {
+            telemetry.logHil(
+                CodeModernizerSessionState.getInstance(context.project).currentJobId?.id.orEmpty(),
+                HilTelemetryMetaData(
+                    cancelledFromChat = false,
+                ),
+                success = false,
+                reason = "Runtime Error when trying to resume transformation from HIL",
+            )
+            codeTransformChatHelper.updateLastPendingMessage(buildHilCannotResumeContent())
+        }
+    }
+
+    override suspend fun processOpenPomFileHilClicked(message: IncomingCodeTransformMessage.OpenPomFileHilClicked) {
+        if (!checkForAuth(message.tabId)) {
+            return
+        }
+
+        try {
+            codeModernizerManager.showHilPomFileAnnotation()
+        } catch (e: Exception) {
+            telemetry.error("Unknown exception when trying to open hil pom file: ${e.localizedMessage}")
+            logger.error { "Unknown exception when trying to open file: ${e.localizedMessage}" }
         }
     }
 

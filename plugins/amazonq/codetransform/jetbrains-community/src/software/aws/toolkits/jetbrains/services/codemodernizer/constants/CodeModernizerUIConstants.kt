@@ -159,6 +159,7 @@ class CodeModernizerUIConstants {
 
         fun getGreenThemeFontColor(): Color = if (JBColor.isBright()) JBColor.GREEN.darker() else JBColor.GREEN
         fun getRedThemeFontColor(): Color = JBColor.RED
+        fun getLightYellowThemeBackgroundColor(): Color = JBColor.YELLOW.darker()
         fun getStepIcon() = if (JBColor.isBright()) AwsIcons.CodeTransform.TIMELINE_STEP_LIGHT else AwsIcons.CodeTransform.TIMELINE_STEP_DARK
     }
 }
