@@ -45,7 +45,7 @@ import { triggerPayloadToChatRequest } from './chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { randomUUID } from '../../../common/crypto'
-import request from '../../../common/request'
+import { Search } from '../../../amazonq/search'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -539,14 +539,9 @@ export class ChatController {
     }
     async getPrompt(triggerPayload: TriggerPayload) {
         try {
-            const resp = await request.fetch('POST', 'http://localhost:5000/getPrompt', {
-                body: JSON.stringify(triggerPayload),
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            }).response
-            const j = await resp.json()
-            return j.prompt
+            const msg = triggerPayload.message
+            if (msg) {
+            }
         } catch (e: any) {
             getLogger().error(`failed to get prompt: ${(e as Error).message}`)
         }
@@ -555,7 +550,13 @@ export class ChatController {
     private async generateResponse(triggerPayload: TriggerPayload, triggerID: string) {
         // Loop while we waiting for tabID to be set
         if (triggerPayload.message) {
-            triggerPayload.message += await this.getPrompt(triggerPayload)
+            const c = await Search.instance.query(triggerPayload.message)
+            if (c) {
+                triggerPayload.fileText =
+                    `Here are some relevant code ${c?.content} in file ${c.fileName}. 
+                PLEASE explicitly tell user that you find this relevant code in that file in your response. ` +
+                    triggerPayload.fileText
+            }
         }
 
         const triggerEvent = this.triggerEventsStorage.getTriggerEvent(triggerID)

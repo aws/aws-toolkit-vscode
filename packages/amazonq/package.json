@@ -63,7 +63,8 @@
         "createRelease": "ts-node ../../scripts/createRelease.ts"
     },
     "dependencies": {
-        "aws-core-vscode": "file:../core/"
+        "aws-core-vscode": "file:../core/",
+        "@xenova/transformers": "^2.17.1"
     },
     "devDependencies": {},
     "contributesComments": {

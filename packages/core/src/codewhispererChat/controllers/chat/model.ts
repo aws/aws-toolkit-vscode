@@ -132,7 +132,7 @@ export interface TriggerPayload {
     readonly query: string | undefined
     readonly codeSelection: Selection | undefined
     readonly trigger: ChatTriggerType
-    readonly fileText: string | undefined
+    fileText: string | undefined
     readonly fileLanguage: string | undefined
     readonly filePath: string | undefined
     message: string | undefined

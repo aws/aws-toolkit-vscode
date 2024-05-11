@@ -41,11 +41,12 @@ function isCrossFileSupported(languageId: string): languageId is CrossFileSuppor
     return Object.keys(supportedLanguageToDialects).includes(languageId)
 }
 
-interface Chunk {
+export interface Chunk {
     fileName: string
     content: string
     nextContent: string
     score?: number
+    index?: number
 }
 
 export async function fetchSupplementalContextForSrc(
@@ -204,7 +205,7 @@ export async function splitFileToChunks(filePath: string, chunkSize: number): Pr
 
     for (let i = 0; i < lines.length; i += chunkSize) {
         const chunkContent = lines.slice(i, Math.min(i + chunkSize, lines.length)).join('\n')
-        const chunk = { fileName: filePath, content: chunkContent.trimEnd(), nextContent: '' }
+        const chunk = { fileName: filePath, content: chunkContent.trimEnd(), nextContent: '', index: i }
         chunks.push(chunk)
     }
     return chunks
