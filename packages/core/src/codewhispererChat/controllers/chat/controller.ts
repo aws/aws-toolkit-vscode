@@ -552,10 +552,8 @@ export class ChatController {
         if (triggerPayload.message) {
             const c = await Search.instance.query(triggerPayload.message)
             if (c) {
-                triggerPayload.fileText =
-                    `Here are some relevant code ${c?.content} in file ${c.fileName}. 
-                PLEASE explicitly tell user that you find this relevant code in that file in your response. ` +
-                    triggerPayload.fileText
+                getLogger().info(`Relevant code ${c.content}`)
+                triggerPayload.message += `Here are some relevant code ${c?.content} in file ${c.fileName}.`
             }
         }
 
