@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Security Scan: Fixes an issue where scans fail for projects with Terraform files"
+}

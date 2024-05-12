@@ -152,10 +152,12 @@ export class ZipUtil {
                 this._totalSize += fileSize
                 this._totalLines += fileContent.split(ZipConstants.newlineRegex).length
 
-                const language = runtimeLanguageContext.getLanguageFromFileExtension(
+                const document = await vscode.workspace.openTextDocument(file.fileUri)
+                const { language } = runtimeLanguageContext.getLanguageContext(
+                    document.languageId,
                     path.extname(file.fileUri.fsPath).slice(1)
                 )
-                if (language) {
+                if (language && language !== 'plaintext') {
                     languageCount.set(language, (languageCount.get(language) || 0) + 1)
                 }
             }
