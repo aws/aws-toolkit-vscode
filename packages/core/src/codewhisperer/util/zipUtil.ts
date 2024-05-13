@@ -14,6 +14,12 @@ import { getLoggerForScope } from '../service/securityScanHandler'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
 import { CurrentWsFolders, collectFiles } from '../../shared/utilities/workspaceUtils'
+import {
+    FileSizeExceededError,
+    InvalidSourceFilesError,
+    NoWorkspaceFolderFoundError,
+    ProjectSizeExceededError,
+} from '../models/errors'
 
 export interface ZipMetadata {
     rootDir: string
@@ -56,7 +62,7 @@ export class ZipUtil {
     public getProjectPaths() {
         const workspaceFolders = vscode.workspace.workspaceFolders
         if (!workspaceFolders || workspaceFolders.length === 0) {
-            throw Error('No workspace folders found')
+            throw new NoWorkspaceFolderFoundError()
         }
         return workspaceFolders.map(folder => folder.uri.fsPath)
     }
@@ -106,7 +112,7 @@ export class ZipUtil {
         this._totalLines += content.split(ZipConstants.newlineRegex).length
 
         if (this.reachSizeLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.FILE)) {
-            throw new ToolkitError('Payload size limit reached.')
+            throw new FileSizeExceededError()
         }
 
         const zipFilePath = this.getZipDirPath() + CodeWhispererConstants.codeScanZipExt
@@ -146,16 +152,18 @@ export class ZipUtil {
                     this.reachSizeLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.PROJECT) ||
                     this.willReachSizeLimit(this._totalSize, fileSize)
                 ) {
-                    throw new ToolkitError('Payload size limit reached.')
+                    throw new ProjectSizeExceededError()
                 }
                 this._pickedSourceFiles.add(file.fileUri.fsPath)
                 this._totalSize += fileSize
                 this._totalLines += fileContent.split(ZipConstants.newlineRegex).length
 
-                const language = runtimeLanguageContext.getLanguageFromFileExtension(
+                const document = await vscode.workspace.openTextDocument(file.fileUri)
+                const { language } = runtimeLanguageContext.getLanguageContext(
+                    document.languageId,
                     path.extname(file.fileUri.fsPath).slice(1)
                 )
-                if (language) {
+                if (language && language !== 'plaintext') {
                     languageCount.set(language, (languageCount.get(language) || 0) + 1)
                 }
             }
@@ -170,7 +178,7 @@ export class ZipUtil {
         }
 
         if (languageCount.size === 0) {
-            throw new ToolkitError('Project does not contain valid files to scan')
+            throw new InvalidSourceFilesError()
         }
         this._language = [...languageCount.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0]
         const zipFilePath = this.getZipDirPath() + CodeWhispererConstants.codeScanZipExt
