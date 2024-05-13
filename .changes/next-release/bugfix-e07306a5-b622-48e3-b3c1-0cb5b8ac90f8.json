@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Amazon Q: Avoid duplicate credential expired notifications during startup"
+}

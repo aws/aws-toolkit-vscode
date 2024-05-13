@@ -49,7 +49,7 @@ class CodeWhispererProjectStartupActivity : StartupActivity.DumbAware {
         scanManager.setEditorListeners()
         //  Run Proactive Code File Scan and disabling Auto File Scan for Builder ID Users.
         if (!isUserBuilderId(project)) {
-            scanManager.debouncedRunCodeScan(CodeWhispererConstants.CodeAnalysisScope.FILE)
+            scanManager.createDebouncedRunCodeScan(CodeWhispererConstants.CodeAnalysisScope.FILE, isPluginStarting = true)
         }
 
         // ---- Everything below will be triggered once after startup ----

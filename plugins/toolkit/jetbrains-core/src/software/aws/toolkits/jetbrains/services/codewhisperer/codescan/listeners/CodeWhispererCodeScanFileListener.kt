@@ -14,7 +14,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 internal class CodeWhispererCodeScanFileListener(val project: Project) : EditorFactoryListener {
     override fun editorCreated(event: EditorFactoryEvent) {
         if (!CodeWhispererExplorerActionManager.getInstance().isMonthlyQuotaForCodeScansExceeded() && !isUserBuilderId(project)) {
-            CodeWhispererCodeScanManager.getInstance(project).debouncedRunCodeScan(CodeWhispererConstants.CodeAnalysisScope.FILE)
+            CodeWhispererCodeScanManager.getInstance(project).createDebouncedRunCodeScan(CodeWhispererConstants.CodeAnalysisScope.FILE)
         }
     }
 }
