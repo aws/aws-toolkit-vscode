@@ -203,7 +203,7 @@ export abstract class SsoAccessTokenProvider {
     }
 
     protected get registrationCacheKey() {
-        return { region: this.profile.region, scopes: this.profile.scopes }
+        return { startUrl: this.profile.startUrl, region: this.profile.region, scopes: this.profile.scopes }
     }
 
     /**
@@ -349,11 +349,14 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
 
     override async registerClient(): Promise<ClientRegistration> {
         const companyName = getIdeProperties().company
-        return this.oidc.registerClient({
-            clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
-            clientType: clientRegistrationType,
-            scopes: this.profile.scopes,
-        })
+        return this.oidc.registerClient(
+            {
+                clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
+                clientType: clientRegistrationType,
+                scopes: this.profile.scopes,
+            },
+            this.profile.startUrl
+        )
     }
 
     override async authorize(
@@ -425,6 +428,7 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
                 redirectUris: ['http://127.0.0.1/oauth/callback'],
                 issuerUrl: this.profile.startUrl,
             },
+            this.profile.startUrl,
             'auth code'
         )
     }
