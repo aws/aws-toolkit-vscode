@@ -39,6 +39,8 @@ open class GenerateSdk : DefaultTask() {
                     logger.info("Generating SDK from $this")
                     val models = C2jModels.builder()
                         .serviceModel(loadServiceModel())
+                        .endpointRuleSetModel(loadOptionalModel("endpoint-rule-set-1.json"))
+                        .endpointTestSuiteModel(loadOptionalModel("endpoint-tests-1.json"))
                         .paginatorsModel(loadOptionalModel("paginators-1.json"))
                         .customizationConfig(loadOptionalModel("customization.config") ?: CustomizationConfig.create())
                         .waitersModel(loadOptionalModel("waiters-2.json"))

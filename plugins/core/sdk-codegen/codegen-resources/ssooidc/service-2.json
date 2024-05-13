@@ -5,6 +5,7 @@
     "endpointPrefix":"oidc",
     "jsonVersion":"1.1",
     "protocol":"rest-json",
+    "protocols":["rest-json"],
     "serviceAbbreviation":"SSO OIDC",
     "serviceFullName":"AWS SSO OIDC",
     "serviceId":"SSO OIDC",
@@ -74,7 +75,8 @@
         {"shape":"InvalidScopeException"},
         {"shape":"InvalidClientMetadataException"},
         {"shape":"InternalServerException"},
-        {"shape":"InvalidRedirectUriException"}
+        {"shape":"InvalidRedirectUriException"},
+        {"shape":"UnsupportedGrantTypeException"}
       ],
       "documentation":"<p>Registers a client with IAM Identity Center. This allows clients to initiate device authorization. The output should be persisted for reuse through many authentication requests.</p>",
       "authtype":"none"
@@ -516,11 +518,11 @@
         },
         "issuerUrl":{
           "shape":"URI",
-          "documentation":"<p>This is the Identity Center Issuer URL associated with users Identity Center instance and is used for user access to resources through the client.</p>"
+          "documentation":"<p>The IAM Identity Center Issuer URL associated with an instance of IAM Identity Center. This value is needed for user access to resources through the client.</p>"
         },
         "entitledApplicationArn":{
           "shape":"ArnType",
-          "documentation":"<p>This Identity Center Application ARN is used to define administrator managed configuration for public client access to resources. At authorization, the scopes, grants, and redirect URI available to this client will be restricted by this Application resource.</p>"
+          "documentation":"<p>This IAM Identity Center application ARN is used to define administrator-managed configuration for public client access to resources. At authorization, the scopes, grants, and redirect URI available to this client will be restricted by this application resource.</p>"
         }
       }
     },

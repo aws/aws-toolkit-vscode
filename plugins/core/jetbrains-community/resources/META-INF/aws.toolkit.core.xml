@@ -67,7 +67,7 @@
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.plugin.PluginAutoUpdater"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsTelemetryPrompter"/>
 
-        <registryKey key="aws.dev.pkceAuth" description="True if new authorization requests should be using the PKCE grant flow"
+        <registryKey key="aws.dev.useDAG" description="True if DAG should be used instead of authorization_grant with PKCE"
                      defaultValue="false" restartRequired="false"/>
         <registryKey key="aws.telemetry.endpoint" description="Endpoint to use for publishing AWS client-side telemetry"
                      defaultValue="https://client-telemetry.us-east-1.amazonaws.com" restartRequired="true"/>

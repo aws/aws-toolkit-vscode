@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Improve the SSO login experience by switching to the Authorization Code with PKCE flow"
+}
