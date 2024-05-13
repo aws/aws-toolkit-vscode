@@ -23,8 +23,8 @@ import { isDevenvVscode } from './utils'
 import { codeCatalystConnectCommand, getThisDevEnv } from './model'
 import { getLogger } from '../shared/logger/logger'
 import { InactivityMessage, shouldTrackUserActivity } from './devEnv'
-import { getShowManageConnections } from '../auth/ui/vue/show'
 import { learnMoreCommand, onboardCommand, reauth } from './explorer'
+import { getShowManageConnections } from '../login/command'
 
 const localize = nls.loadMessageBundle()
 
