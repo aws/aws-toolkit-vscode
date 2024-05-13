@@ -192,10 +192,15 @@
                     "type": "object",
                     "markdownDescription": "%AWS.configuration.description.experiments%",
                     "default": {
-                        "jsonResourceModification": false
+                        "jsonResourceModification": false,
+                        "iamPolicyChecks": false
                     },
                     "properties": {
                         "jsonResourceModification": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "iamPolicyChecks": {
                             "type": "boolean",
                             "default": false
                         }
@@ -2017,7 +2022,7 @@
                 "command": "aws.accessanalyzer.iamPolicyChecks",
                 "title": "%AWS.command.accessanalyzer.iamPolicyChecks%",
                 "category": "%AWS.title%",
-                "enablement": "aws.iamPolicyChecks.enabled"
+                "enablement": "config.aws.experiments.iamPolicyChecks"
             },
             {
                 "command": "aws.launchConfigForm",
@@ -4059,7 +4064,6 @@
         "@smithy/util-retry": "^2.2.0",
         "@vscode/debugprotocol": "^1.57.0",
         "adm-zip": "^0.5.10",
-        "amazon-s3-uri": "^0.1.1",
         "amazon-states-language-service": "^1.11.0",
         "archiver": "^7.0.1",
         "async-lock": "^1.4.0",
