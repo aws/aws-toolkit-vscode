@@ -16,6 +16,7 @@ import { CurrentWsFolders } from '../types'
 import { ToolkitError } from '../../shared/errors'
 import { AmazonqCreateUpload, Metric } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from './telemetryHelper'
+import { maxRepoSizeBytes } from '../constants'
 
 const getSha256 = (file: Buffer) => createHash('sha256').update(file).digest('base64')
 
@@ -29,7 +30,7 @@ export async function prepareRepoData(
     span: Metric<AmazonqCreateUpload>
 ) {
     try {
-        const files = await collectFiles(repoRootPaths, workspaceFolders, true)
+        const files = await collectFiles(repoRootPaths, workspaceFolders, true, maxRepoSizeBytes)
         const zip = new AdmZip()
 
         let totalBytes = 0

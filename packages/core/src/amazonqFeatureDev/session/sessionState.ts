@@ -12,7 +12,7 @@ import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
-import { featureDevScheme } from '../constants'
+import { featureDevScheme, maxRepoSizeBytes } from '../constants'
 import { IllegalStateTransition, UserMessageNotFoundError } from '../errors'
 import {
     CurrentWsFolders,
@@ -380,7 +380,8 @@ export class MockCodeGenState implements SessionState {
             const files = await collectFiles(
                 this.config.workspaceFolders.map(f => path.join(f.uri.fsPath, './mock-data')),
                 this.config.workspaceFolders,
-                false
+                false,
+                maxRepoSizeBytes
             )
             const newFileContents = files.map(f => ({
                 zipFilePath: f.zipFilePath,
