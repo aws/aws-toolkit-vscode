@@ -64,6 +64,11 @@ export interface ClientRegistration {
     readonly expiresAt: Date
 
     /**
+     * The start URL used to create this registration.
+     */
+    readonly startUrl: string
+
+    /**
      * Scope of the client registration. Applies to all tokens created using this registration.
      */
     readonly scopes?: string[]
