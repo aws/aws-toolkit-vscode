@@ -50,7 +50,7 @@ describe('zipUtil', function () {
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.FILE),
-                new ToolkitError('Payload size limit reached.')
+                new ToolkitError(`Payload size limit reached`, { code: 'FileSizeExceeded' })
             )
         })
 
@@ -70,7 +70,7 @@ describe('zipUtil', function () {
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT),
-                new ToolkitError('Payload size limit reached.')
+                new ToolkitError('Payload size limit reached', { code: 'ProjectSizeExceeded' })
             )
         })
 
@@ -79,7 +79,7 @@ describe('zipUtil', function () {
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT),
-                new ToolkitError('Payload size limit reached.')
+                new ToolkitError('Payload size limit reached', { code: 'ProjectSizeExceeded' })
             )
         })
 
