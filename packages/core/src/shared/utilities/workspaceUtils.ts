@@ -267,6 +267,7 @@ export function getExcludePattern(additionalPatterns: string[] = []) {
         '**/*.pyc',
         '**/*.pdf',
         '**/*.ttf',
+        '**/*.ico',
         '**/license.txt',
         '**/License.txt',
         '**/LICENSE.txt',
