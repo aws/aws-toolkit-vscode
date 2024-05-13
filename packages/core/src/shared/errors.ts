@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { AWSError } from 'aws-sdk'
 import { ServiceException } from '@aws-sdk/smithy-client'
-import { isThrottlingError, isTransientError } from '@aws-sdk/service-error-classification'
+import { isThrottlingError, isTransientError } from '@smithy/service-error-classification'
 import { Result } from './telemetry/telemetry'
 import { CancellationError } from './utilities/timeoutUtils'
 import { isNonNullable } from './utilities/tsUtils'
