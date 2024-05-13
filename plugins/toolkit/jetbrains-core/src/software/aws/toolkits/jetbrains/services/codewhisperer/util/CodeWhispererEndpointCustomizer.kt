@@ -68,8 +68,7 @@ class CodeWhispererEndpointCustomizer : ToolkitClientCustomizer {
             if (builder is CodeWhispererStreamingAsyncClientBuilder) {
                 val proxy = CommonProxy.getInstance().select(endpoint).first()
                 val address = proxy.address()
-                val clientBuilder = NettyNioAsyncHttpClient.builder()
-                clientOverrideConfiguration.apiCallTimeout(Duration.ofMinutes(3))
+                val clientBuilder = NettyNioAsyncHttpClient.builder().readTimeout(Duration.ofMinutes(3))
 
                 // proxy.type is one of {DIRECT, HTTP, SOCKS}, and is definitely a InetSocketAddress in the HTTP/SOCKS case
                 // and is null in DIRECT case
