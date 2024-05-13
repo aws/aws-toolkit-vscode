@@ -253,9 +253,10 @@ export abstract class SsoAccessTokenProvider {
     public static create(
         profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
         cache = getCache(),
-        oidc: OidcClient = OidcClient.create(profile.region)
+        oidc: OidcClient = OidcClient.create(profile.region),
+        useDeviceFlow: () => boolean = isRemoteWorkspace
     ) {
-        if (isRemoteWorkspace()) {
+        if (useDeviceFlow()) {
             return new DeviceFlowAuthorization(profile, cache, oidc)
         }
         return new AuthFlowAuthorization(profile, cache, oidc)
