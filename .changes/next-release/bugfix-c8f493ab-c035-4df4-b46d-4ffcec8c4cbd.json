@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Amazon Q: Fix issue where items listed by Amazon Q Code Scan were duplicated or missing"
-}

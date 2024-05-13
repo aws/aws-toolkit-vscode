@@ -1,0 +1,38 @@
+{
+  "date" : "2024-05-13",
+  "version" : "3.2",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Amazon Q: Updated status bar icons including an explicit icon for an unconnected state"
+  }, {
+    "type" : "feature",
+    "description" : "Human in the loop - Adding human intervention to help update dependencies during the Amazon Q Transformation process"
+  }, {
+    "type" : "feature",
+    "description" : "Improve the SSO login experience by switching to the Authorization Code with PKCE flow"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix AWS SSO connection when authenticating with RDS using an IAM Identity Center profile (#4145)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q: Reduce frequency of automated code scans and terminate superseded file scans."
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Code Transformation: ensure chat does not freeze with /transform on an invalid project"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q: Fix issue where items listed by Amazon Q Code Scan were duplicated or missing"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Chat: Typewriter animator parts showing up in code fields inside listitems"
+  }, {
+    "type" : "bugfix",
+    "description" : "Removed install Q notification if Q is already installed"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q: Avoid duplicate credential expired notifications during startup"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q: Support disabling auto-scan for unsupported languages."
+  } ]
+}
