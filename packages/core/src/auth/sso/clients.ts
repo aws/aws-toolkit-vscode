@@ -39,7 +39,7 @@ import { toSnakeCase } from '../../shared/utilities/textUtilities'
 export class OidcClient {
     public constructor(private readonly client: SSOOIDC, private readonly clock: { Date: typeof Date }) {}
 
-    public async registerClient(request: RegisterClientRequest, flow?: AuthenticationFlow) {
+    public async registerClient(request: RegisterClientRequest, startUrl: string, flow?: AuthenticationFlow) {
         const response = await this.client.registerClient(request)
         assertHasProps(response, 'clientId', 'clientSecret', 'clientSecretExpiresAt')
 
@@ -48,6 +48,7 @@ export class OidcClient {
             clientId: response.clientId,
             clientSecret: response.clientSecret,
             expiresAt: new this.clock.Date(response.clientSecretExpiresAt * 1000),
+            startUrl,
             ...(flow ? { flow } : {}),
         }
     }
