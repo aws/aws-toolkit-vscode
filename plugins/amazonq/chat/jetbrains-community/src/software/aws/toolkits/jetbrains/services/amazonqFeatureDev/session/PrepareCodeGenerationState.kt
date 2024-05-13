@@ -36,6 +36,7 @@ class PrepareCodeGenerationState(
         var result: Result = Result.Succeeded
         var failureReason: String? = null
         var zipFileLength: Long? = null
+        val nextState: SessionState
         try {
             val repoZipResult = config.repoContext.getProjectZip()
             val zipFileChecksum = repoZipResult.checksum
@@ -49,10 +50,11 @@ class PrepareCodeGenerationState(
             )
 
             uploadArtifactToS3(uploadUrlResponse.uploadUrl(), fileToUpload, zipFileChecksum, zipFileLength, uploadUrlResponse.kmsKeyArn())
+            deleteUploadArtifact(fileToUpload)
 
             this.uploadId = uploadUrlResponse.uploadId()
 
-            val nextState = CodeGenerationState(
+            nextState = CodeGenerationState(
                 tabID = this.tabID,
                 approach = "", // No approach needed,
                 config = this.config,
@@ -61,9 +63,6 @@ class PrepareCodeGenerationState(
                 repositorySize = zipFileLength.toDouble(),
                 messenger = messenger
             )
-            deleteUploadArtifact(fileToUpload)
-
-            return nextState.interact(action)
         } catch (e: Exception) {
             result = Result.Failed
             failureReason = e.javaClass.simpleName
@@ -80,5 +79,7 @@ class PrepareCodeGenerationState(
                 credentialStartUrl = getStartUrl(config.featureDevService.project)
             )
         }
+        // It is essential to interact with the next state outside of try-catch block for  the telemetry to capture events for the states separately
+        return nextState.interact(action)
     }
 }

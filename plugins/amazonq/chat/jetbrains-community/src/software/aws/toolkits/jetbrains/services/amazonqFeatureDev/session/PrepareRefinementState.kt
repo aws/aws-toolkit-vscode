@@ -24,6 +24,7 @@ class PrepareRefinementState(
         var result: Result = Result.Succeeded
         var failureReason: String? = null
         var zipFileLength: Long? = null
+        val nextState: SessionState
         try {
             val repoZipResult = config.repoContext.getProjectZip()
             val zipFileChecksum = repoZipResult.checksum
@@ -37,11 +38,9 @@ class PrepareRefinementState(
             )
 
             uploadArtifactToS3(uploadUrlResponse.uploadUrl(), fileToUpload, zipFileChecksum, zipFileLength, uploadUrlResponse.kmsKeyArn())
-
             deleteUploadArtifact(fileToUpload)
 
-            val nextState = RefinementState(approach, tabID, config, uploadUrlResponse.uploadId(), 0)
-            return nextState.interact(action)
+            nextState = RefinementState(approach, tabID, config, uploadUrlResponse.uploadId(), 0)
         } catch (e: Exception) {
             result = Result.Failed
             failureReason = e.javaClass.simpleName
@@ -58,5 +57,7 @@ class PrepareRefinementState(
                 credentialStartUrl = getStartUrl(config.featureDevService.project)
             )
         }
+        // It is essential to interact with the next state outside of try-catch block for  the telemetry to capture events for the states separately
+        return nextState.interact(action)
     }
 }
