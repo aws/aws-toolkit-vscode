@@ -20,7 +20,6 @@ import {
     isIamConnection,
     isSsoConnection,
     isBuilderIdConnection,
-    scopesSsoAccountAccess,
     scopesCodeWhispererChat,
     scopesFeatureDev,
     scopesGumby,
@@ -36,7 +35,7 @@ import { showReauthenticateMessage } from '../../shared/utilities/messages'
 import { showAmazonQWalkthroughOnce } from '../../amazonq/onboardingPage/walkthrough'
 
 /** Backwards compatibility for connections w pre-chat scopes */
-export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
+export const codeWhispererCoreScopes = [...scopesCodeWhispererCore]
 export const codeWhispererChatScopes = [...codeWhispererCoreScopes, ...scopesCodeWhispererChat]
 export const amazonQScopes = [...codeWhispererChatScopes, ...scopesGumby, ...scopesFeatureDev]
 

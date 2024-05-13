@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including CodeCatalyst, Application Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services.",
-    "version": "3.3.0-SNAPSHOT",
+    "version": "3.4.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -48,8 +48,8 @@
         "onFileSystem:s3",
         "onFileSystem:s3-readonly"
     ],
-    "main": "./dist/src/main",
-    "browser": "./dist/src/mainWeb",
+    "main": "./dist/src/extension",
+    "browser": "./dist/src/extensionWeb",
     "engines": "This field will be autopopulated from the core module during debugging and packaging.",
     "contributes": "This field will be autopopulated from the core module during debugging and packaging.",
     "scripts": {

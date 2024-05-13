@@ -90,6 +90,7 @@
                             :itemId="LoginOption.EXISTING_LOGINS + index"
                             :itemText="existingLogin.text"
                             :itemTitle="existingLogin.title"
+                            :itemType="existingLogin.type"
                             class="selectable-item bottomMargin"
                         ></SelectableItem>
                     </div>
@@ -103,6 +104,7 @@
                     :itemId="LoginOption.BUILDER_ID"
                     :itemText="'No AWS account required'"
                     :itemTitle="'Use For Free'"
+                    :itemType="LoginOption.BUILDER_ID"
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
                 <SelectableItem
@@ -112,6 +114,7 @@
                     :itemId="LoginOption.ENTERPRISE_SSO"
                     :itemText="''"
                     :itemTitle="'Use with Pro license'"
+                    :itemType="LoginOption.ENTERPRISE_SSO"
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
                 <SelectableItem
@@ -121,6 +124,7 @@
                     :itemId="LoginOption.ENTERPRISE_SSO"
                     :itemText="'Sign in to AWS with single sign-on'"
                     :itemTitle="'Workforce'"
+                    :itemType="LoginOption.ENTERPRISE_SSO"
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
                 <SelectableItem
@@ -130,6 +134,7 @@
                     :itemId="LoginOption.IAM_CREDENTIAL"
                     :itemText="'Store keys for use with AWS CLI tools'"
                     :itemTitle="'IAM Credentials'"
+                    :itemtype="LoginOption.IAM_CREDENTIAL"
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
                 <button
@@ -179,6 +184,7 @@
                     name="startUrl"
                     @input="handleUrlInput"
                     v-model="startUrl"
+                    @keydown.enter="handleContinueClick()"
                 />
                 <h4 class="start-url-error">{{ startUrlError }}</h4>
                 <div class="title topMargin">Region</div>
@@ -196,7 +202,7 @@
                 </select>
                 <button
                     class="continue-button topMargin"
-                    :disabled="startUrl.length == 0 || startUrlError.length > 0 || !selectedRegion"
+                    :disabled="shouldDisableSsoContinue()"
                     v-on:click="handleContinueClick()"
                 >
                     Continue
@@ -240,16 +246,27 @@
                 id="profileName"
                 name="profileName"
                 v-model="profileName"
+                @keydown.enter="handleContinueClick()"
             />
             <div class="title">Access Key</div>
-            <input class="iamInput bottomMargin" type="text" id="accessKey" name="accessKey" v-model="accessKey" />
+            <input
+                class="iamInput bottomMargin"
+                type="text"
+                id="accessKey"
+                name="accessKey"
+                v-model="accessKey"
+                @keydown.enter="handleContinueClick()"
+            />
             <div class="title">Secret Key</div>
-            <input class="iamInput bottomMargin" type="text" id="secretKey" name="secretKey" v-model="secretKey" />
-            <button
-                class="continue-button"
-                :disabled="profileName.length <= 0 || accessKey.length <= 0 || secretKey.length <= 0"
-                v-on:click="handleContinueClick()"
-            >
+            <input
+                class="iamInput bottomMargin"
+                type="text"
+                id="secretKey"
+                name="secretKey"
+                v-model="secretKey"
+                @keydown.enter="handleContinueClick()"
+            />
+            <button class="continue-button" :disabled="shouldDisableIamContinue()" v-on:click="handleContinueClick()">
                 Continue
             </button>
         </template>
@@ -307,6 +324,7 @@ interface ExistingLogin {
     text: string
     title: string
     connectionId: string
+    type: number
 }
 
 export default defineComponent({
@@ -387,7 +405,6 @@ export default defineComponent({
             }
         },
         async handleContinueClick() {
-            void client.emitUiClick('auth_continueButton')
             if (this.stage === 'START') {
                 if (this.selectedLoginOption === LoginOption.BUILDER_ID) {
                     this.stage = 'AUTHENTICATING'
@@ -400,6 +417,7 @@ export default defineComponent({
                     }
                 } else if (this.selectedLoginOption === LoginOption.ENTERPRISE_SSO) {
                     this.stage = 'SSO_FORM'
+                    this.$nextTick(() => document.getElementById('startUrl')!.focus())
                     await client.storeMetricMetadata({ region: this.selectedRegion })
                 } else if (this.selectedLoginOption >= LoginOption.EXISTING_LOGINS) {
                     this.stage = 'AUTHENTICATING'
@@ -414,8 +432,12 @@ export default defineComponent({
                     }
                 } else if (this.selectedLoginOption === LoginOption.IAM_CREDENTIAL) {
                     this.stage = 'AWS_PROFILE'
+                    this.$nextTick(() => document.getElementById('profileName')!.focus())
                 }
             } else if (this.stage === 'SSO_FORM') {
+                if (this.shouldDisableSsoContinue()) {
+                    return
+                }
                 this.stage = 'AUTHENTICATING'
                 const error = await client.startEnterpriseSetup(this.startUrl, this.selectedRegion, this.app)
                 if (error) {
@@ -425,6 +447,9 @@ export default defineComponent({
                     this.stage = 'CONNECTED'
                 }
             } else if (this.stage === 'AWS_PROFILE') {
+                if (this.shouldDisableIamContinue()) {
+                    return
+                }
                 this.stage = 'AUTHENTICATING'
                 const error = await client.startIamCredentialSetup(this.profileName, this.accessKey, this.secretKey)
                 if (error) {
@@ -434,6 +459,7 @@ export default defineComponent({
                     this.stage = 'CONNECTED'
                 }
             }
+            void client.emitUiClick('auth_continueButton')
         },
         async handleCodeCatalystSignin() {
             void client.emitUiClick('auth_codeCatalystSignIn')
@@ -479,7 +505,7 @@ export default defineComponent({
         },
         async emitUpdate(cause?: string) {},
         async updateExistingConnections() {
-            // fetch existing connections of aws toolkit in Amazon Q
+            // fetch existing connections of AWS toolkit in Amazon Q
             // or fetch existing connections of Amazon Q in AWS Toolkit
             // to reuse connections in AWS Toolkit & Amazon Q
             const sharedConnections = await client.fetchConnections()
@@ -491,6 +517,7 @@ export default defineComponent({
                         ? 'AWS Builder ID'
                         : `IAM Identity Center ${connection.startUrl}`,
                     connectionId: connection.id,
+                    type: isBuilderId(connection.startUrl) ? LoginOption.BUILDER_ID : LoginOption.ENTERPRISE_SSO,
                 })
             })
             // fetch existing connections of itself
@@ -517,6 +544,12 @@ export default defineComponent({
         },
         handleHelpLinkClick() {
             void client.emitUiClick('auth_helpLink')
+        },
+        shouldDisableSsoContinue() {
+            return this.startUrl.length == 0 || this.startUrlError.length > 0 || !this.selectedRegion
+        },
+        shouldDisableIamContinue() {
+            return this.profileName.length <= 0 || this.accessKey.length <= 0 || this.secretKey.length <= 0
         },
     },
 })
