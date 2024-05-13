@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Auth: No longer request AWS account scopes during login."
-}
