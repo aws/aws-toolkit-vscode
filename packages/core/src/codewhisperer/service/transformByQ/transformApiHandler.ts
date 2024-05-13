@@ -256,7 +256,11 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
         getLogger().error(`CodeTransformation: UploadArtifactToS3 error: = ${errorMessage}`)
         throw new Error('S3 upload failed')
     }
-    transformByQState.setJobId(encodeHTML(response.uploadId))
+    // UploadContext only exists for subsequent uploads, and they will return a uploadId that is NOT
+    // the jobId. Only the initial call will uploadId be the jobId
+    if (!uploadContext) {
+        transformByQState.setJobId(encodeHTML(response.uploadId))
+    }
     updateJobHistory()
     return response.uploadId
 }
