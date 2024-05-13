@@ -129,7 +129,7 @@ export async function autoSaveFileMessageHandler(request: SaveFileRequestMessage
         } finally {
             const saveFileResponseMessage: SaveFileResponseMessage = {
                 messageType: MessageType.RESPONSE,
-                command: Command.SAVE_FILE,
+                command: Command.AUTO_SAVE_FILE,
                 filePath: filePath,
                 isSuccess: saveSuccess,
                 failureReason: errorMessage,
