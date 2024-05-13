@@ -12,106 +12,80 @@ import {
     UploadArtifactToS3ErrorMessage,
 } from './constants'
 
-export enum ErrorCodes {
-    FileSizeExceeded = 'FileSizeExceeded',
-    ProjectSizeExceeded = 'ProjectSizeExceeded',
-    NoWorkspaceFound = 'NoWorkspaceFound',
-    InvalidSourceFiles = 'InvalidSourceFiles',
-    CreateUploadUrlError = 'CreateUploadUrlError',
-    UploadArtifactToS3Error = 'UploadArtifactToS3Error',
-    DefaultError = 'DefaultError',
-    InvalidSourceZip = 'InvalidSourceZip',
-    CreateCodeScanError = 'CreateCodeScanError',
-    CreateCodeScanFailedError = 'CreateCodeScanFailedError',
-    SecurityScanTimedOutError = 'SecurityScanTimedOutError',
-    CodeScanJobFailedError = 'CodeScanJobFailedError',
-}
-
-export const mapErrorToCustomerFacingMessage: Record<ErrorCodes, string> = {
-    FileSizeExceeded: FileSizeExceededErrorMessage,
-    ProjectSizeExceeded: ProjectSizeExceededErrorMessage,
-    NoWorkspaceFound: NoWorkspaceFoundErrorMessage,
-    InvalidSourceFiles: InvalidSourceFilesErrorMessage,
-    CreateUploadUrlError: DefaultCodeScanErrorMessage,
-    UploadArtifactToS3Error: UploadArtifactToS3ErrorMessage,
-    DefaultError: DefaultCodeScanErrorMessage,
-    InvalidSourceZip: DefaultCodeScanErrorMessage,
-    CreateCodeScanError: DefaultCodeScanErrorMessage,
-    CreateCodeScanFailedError: DefaultCodeScanErrorMessage,
-    SecurityScanTimedOutError: DefaultCodeScanErrorMessage,
-    CodeScanJobFailedError: DefaultCodeScanErrorMessage,
-}
-
-export class FileSizeExceededError extends ToolkitError {
-    constructor() {
-        super('Payload size limit reached', {
-            code: ErrorCodes.FileSizeExceeded,
-        })
+export class SecurityScanError extends ToolkitError {
+    constructor(error: string, code: string, public customerFacingMessage: string) {
+        super(error, { code })
     }
 }
 
-export class ProjectSizeExceededError extends ToolkitError {
+export class FileSizeExceededError extends SecurityScanError {
     constructor() {
-        super('Payload size limit reached', { code: ErrorCodes.ProjectSizeExceeded })
+        super('Payload size limit reached', 'FileSizeExceeded', FileSizeExceededErrorMessage)
     }
 }
 
-export class DefaultError extends ToolkitError {
+export class ProjectSizeExceededError extends SecurityScanError {
     constructor() {
-        super('Security scan failed.', { code: ErrorCodes.DefaultError })
+        super('Payload size limit reached', 'ProjectSizeExceeded', ProjectSizeExceededErrorMessage)
     }
 }
 
-export class InvalidSourceZipError extends ToolkitError {
+export class DefaultError extends SecurityScanError {
     constructor() {
-        super('Failed to create valid source zip', { code: ErrorCodes.InvalidSourceZip })
+        super('Security scan failed.', 'DefaultError', DefaultCodeScanErrorMessage)
     }
 }
 
-export class NoWorkspaceFolderFoundError extends ToolkitError {
+export class InvalidSourceZipError extends SecurityScanError {
     constructor() {
-        super('No workspace folders found', { code: ErrorCodes.NoWorkspaceFound })
+        super('Failed to create valid source zip', 'InvalidSourceFiles', InvalidSourceFilesErrorMessage)
     }
 }
 
-export class InvalidSourceFilesError extends ToolkitError {
+export class NoWorkspaceFolderFoundError extends SecurityScanError {
     constructor() {
-        super('Project does not contain valid files to scan', { code: ErrorCodes.InvalidSourceFiles })
+        super('No workspace folders found', 'NoWorkspaceFound', NoWorkspaceFoundErrorMessage)
     }
 }
 
-export class CreateUploadUrlError extends ToolkitError {
+export class InvalidSourceFilesError extends SecurityScanError {
+    constructor() {
+        super('Project does not contain valid files to scan', 'InvalidSourceZip', DefaultCodeScanErrorMessage)
+    }
+}
+
+export class CreateUploadUrlError extends SecurityScanError {
     constructor(error: string) {
-        super(error, { code: ErrorCodes.CreateUploadUrlError })
+        super(error, 'CreateUploadUrlError', DefaultCodeScanErrorMessage)
     }
 }
 
-export class UploadArtifactToS3Error extends ToolkitError {
+export class UploadArtifactToS3Error extends SecurityScanError {
     constructor(error: string) {
-        super(error, { code: ErrorCodes.UploadArtifactToS3Error })
+        super(error, 'UploadArtifactToS3Error', UploadArtifactToS3ErrorMessage)
     }
 }
 
-export class CreateCodeScanError extends ToolkitError {
+export class CreateCodeScanError extends SecurityScanError {
     constructor(error: string) {
-        super(error, { code: ErrorCodes.CreateCodeScanError })
+        super(error, 'CreateCodeScanError', DefaultCodeScanErrorMessage)
     }
 }
 
-export class CreateCodeScanFailedError extends ToolkitError {
+export class CreateCodeScanFailedError extends SecurityScanError {
     constructor(error: string) {
-        super(error, { code: ErrorCodes.CreateCodeScanFailedError })
+        super(error, 'CreateCodeScanFailedError', DefaultCodeScanErrorMessage)
     }
 }
 
-export class SecurityScanTimedOutError extends ToolkitError {
+export class SecurityScanTimedOutError extends SecurityScanError {
     constructor() {
-        super('Security Scan failed. Amazon Q timed out.', { code: ErrorCodes.SecurityScanTimedOutError })
+        super('Security Scan failed. Amazon Q timed out.', 'SecurityScanTimedOutError', DefaultCodeScanErrorMessage)
     }
 }
 
-export class CodeScanJobFailedError extends ToolkitError {
+export class CodeScanJobFailedError extends SecurityScanError {
     constructor() {
-        super('Security scan job failed.', { code: ErrorCodes.CodeScanJobFailedError })
+        super('Security scan job failed.', 'CodeScanJobFailedError', DefaultCodeScanErrorMessage)
     }
 }

@@ -31,7 +31,7 @@ import {
 import { cancel, ok } from '../../shared/localizedText'
 import { getDirSize } from '../../shared/filesystemUtilities'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { ToolkitError, isAwsError } from '../../shared/errors'
+import { isAwsError } from '../../shared/errors'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { AuthUtil } from '../util/authUtil'
 import path from 'path'
@@ -40,12 +40,7 @@ import { debounce } from 'lodash'
 import { once } from '../../shared/utilities/functionUtils'
 import { randomUUID } from '../../common/crypto'
 import { CodeAnalysisScope } from '../models/constants'
-import {
-    CodeScanJobFailedError,
-    CreateCodeScanFailedError,
-    ErrorCodes,
-    mapErrorToCustomerFacingMessage,
-} from '../models/errors'
+import { CodeScanJobFailedError, CreateCodeScanFailedError, SecurityScanError } from '../models/errors'
 
 const localize = nls.loadMessageBundle()
 export const stopScanButton = localize('aws.codewhisperer.stopscan', 'Stop Scan')
@@ -234,7 +229,7 @@ export async function startSecurityScan(
         if (error instanceof CodeScanStoppedError) {
             codeScanTelemetryEntry.result = 'Cancelled'
         } else {
-            errorPromptHelper(error as ToolkitError, scope)
+            errorPromptHelper(error as SecurityScanError, scope)
             codeScanTelemetryEntry.result = 'Failed'
         }
 
@@ -255,7 +250,7 @@ export async function startSecurityScan(
                 CodeScansState.instance.setMonthlyQuotaExceeded()
             }
         }
-        codeScanTelemetryEntry.reason = (error as ToolkitError).message
+        codeScanTelemetryEntry.reason = (error as SecurityScanError).message
     } finally {
         codeScanState.setToNotStarted()
         codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime
@@ -304,10 +299,9 @@ export async function emitCodeScanTelemetry(codeScanTelemetryEntry: CodeScanTele
     })
 }
 
-export function errorPromptHelper(error: ToolkitError, scope: CodeAnalysisScope) {
+export function errorPromptHelper(error: SecurityScanError, scope: CodeAnalysisScope) {
     if (scope === CodeAnalysisScope.PROJECT) {
-        const errorMessage = mapErrorToCustomerFacingMessage[(error.code as ErrorCodes) ?? ErrorCodes.DefaultError]
-        void vscode.window.showWarningMessage(errorMessage, ok)
+        void vscode.window.showWarningMessage(error.customerFacingMessage, ok)
     }
 }
 
