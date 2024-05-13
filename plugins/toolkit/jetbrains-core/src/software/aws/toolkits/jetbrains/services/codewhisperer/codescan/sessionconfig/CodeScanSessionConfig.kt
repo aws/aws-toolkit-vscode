@@ -4,19 +4,20 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig
 
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.guessModuleDir
 import com.intellij.openapi.project.guessProjectDir
+import com.intellij.openapi.project.modules
+import com.intellij.openapi.vcs.changes.ChangeListManager
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VFileProperty
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.time.withTimeout
 import software.aws.toolkits.core.utils.createTemporaryZipFile
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.putNextEntry
-import software.aws.toolkits.jetbrains.services.amazonq.FeatureDevSessionContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.fileTooLarge
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.noFileOpenError
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.noSupportedFilesError
@@ -52,8 +53,6 @@ class CodeScanSessionConfig(
         private set
 
     private var isProjectTruncated = false
-
-    private val featureDevSessionContext = FeatureDevSessionContext(project)
 
     /**
      * Timeout for the overall job - "Run Security Scan".
@@ -149,9 +148,10 @@ class CodeScanSessionConfig(
                 if (scope == CodeAnalysisScope.FILE) {
                     totalSize = selectedFile?.length ?: 0L
                 } else {
+                    val changeListManager = ChangeListManager.getInstance(project)
                     VfsUtil.collectChildrenRecursively(projectRoot).filter {
                         !it.isDirectory && !it.`is`((VFileProperty.SYMLINK)) && (
-                            !featureDevSessionContext.ignoreFile(it, this)
+                            !changeListManager.isIgnoredFile(it)
                             )
                     }.fold(0L) { acc, next ->
                         totalSize = acc + next.length
@@ -175,39 +175,49 @@ class CodeScanSessionConfig(
 
     fun getProjectPayloadMetadata(): PayloadMetadata {
         val files = mutableSetOf<String>()
+        val traversedDirectories = mutableSetOf<VirtualFile>()
         val stack = Stack<VirtualFile>()
         var currentTotalFileSize = 0L
         var currentTotalLines = 0L
         val languageCounts = mutableMapOf<CodeWhispererProgrammingLanguage, Int>()
 
-        stack.push(projectRoot)
-        while (stack.isNotEmpty()) {
-            val current = stack.pop()
+        moduleLoop@ for (module in project.modules) {
+            val changeListManager = ChangeListManager.getInstance(module.project)
+            if (module.guessModuleDir() != null) {
+                stack.push(module.guessModuleDir())
+                while (stack.isNotEmpty()) {
+                    val current = stack.pop()
 
-            if (!current.isDirectory) {
-                if (runBlocking { !featureDevSessionContext.ignoreFile(current, this) }) {
-                    if (willExceedPayloadLimit(currentTotalFileSize, current.length)) {
-                        break
-                    } else {
-                        val language = current.programmingLanguage()
-                        if (language != CodeWhispererPlainText.INSTANCE && language != CodeWhispererUnknownLanguage.INSTANCE) {
-                            languageCounts[language] = (languageCounts[language] ?: 0) + 1
+                    if (!current.isDirectory) {
+                        if (!changeListManager.isIgnoredFile(current) && !files.contains(current.path)
+                        ) {
+                            if (willExceedPayloadLimit(currentTotalFileSize, current.length)) {
+                                break@moduleLoop
+                            } else {
+                                val language = current.programmingLanguage()
+                                if (language != CodeWhispererPlainText.INSTANCE && language != CodeWhispererUnknownLanguage.INSTANCE) {
+                                    languageCounts[language] = (languageCounts[language] ?: 0) + 1
+                                }
+
+                                files.add(current.path)
+                                currentTotalFileSize += current.length
+                                currentTotalLines += countLinesInVirtualFile(current)
+                            }
                         }
-
-                        files.add(current.path)
-                        currentTotalFileSize += current.length
-                        currentTotalLines += countLinesInVirtualFile(current)
-                    }
-                }
-            } else {
-                // Directory case: only traverse if not ignored
-                if (runBlocking { !featureDevSessionContext.ignoreFile(current, this) }) {
-                    for (child in current.children) {
-                        stack.push(child)
+                    } else {
+                        // Directory case: only traverse if not ignored
+                        if (!changeListManager.isIgnoredFile(current) && !traversedDirectories.contains(current)
+                        ) {
+                            for (child in current.children) {
+                                stack.push(child)
+                            }
+                        }
+                        traversedDirectories.add(current)
                     }
                 }
             }
         }
+
         val maxCount = languageCounts.maxByOrNull { it.value }?.value ?: 0
         val maxCountLanguage = languageCounts.filter { it.value == maxCount }.keys.firstOrNull()
 

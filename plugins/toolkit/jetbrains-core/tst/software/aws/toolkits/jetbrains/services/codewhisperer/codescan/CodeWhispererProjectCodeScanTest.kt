@@ -13,6 +13,8 @@ import org.mockito.kotlin.stub
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
+import software.aws.toolkits.jetbrains.utils.rules.addModule
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.BufferedInputStream
 import java.util.zip.ZipInputStream
@@ -130,7 +132,10 @@ class CodeWhispererProjectCodeScanTest : CodeWhispererCodeScanTestBase(PythonCod
     }
 
     private fun setupCsharpProject() {
-        testCs = projectRule.fixture.addFileToProject(
+        val testModule = projectRule.fixture.addModule("testModule")
+        val testModule2 = projectRule.fixture.addModule("testModule2")
+        testCs = projectRule.fixture.addFileToModule(
+            testModule,
             "/Test.cs",
             """
             using Utils;
@@ -147,7 +152,8 @@ class CodeWhispererProjectCodeScanTest : CodeWhispererCodeScanTestBase(PythonCod
         totalSize += testCs.length
         totalLines += testCs.toNioPath().toFile().readLines().size
 
-        utilsCs = projectRule.fixture.addFileToProject(
+        utilsCs = projectRule.fixture.addFileToModule(
+            testModule,
             "/Utils.cs",
             """
             public static class Utils
@@ -172,7 +178,8 @@ class CodeWhispererProjectCodeScanTest : CodeWhispererCodeScanTestBase(PythonCod
         totalSize += utilsCs.length
         totalLines += utilsCs.toNioPath().toFile().readLines().size
 
-        helperCs = projectRule.fixture.addFileToProject(
+        helperCs = projectRule.fixture.addFileToModule(
+            testModule,
             "/Helpers/Helper.cs",
             """
             public static class Helper
@@ -215,7 +222,8 @@ class CodeWhispererProjectCodeScanTest : CodeWhispererCodeScanTestBase(PythonCod
         totalSize += helperCs.length
         totalLines += helperCs.toNioPath().toFile().readLines().size
 
-        helpGo = projectRule.fixture.addFileToProject(
+        helpGo = projectRule.fixture.addFileToModule(
+            testModule,
             "/help.go",
             """
                 package main
@@ -230,7 +238,8 @@ class CodeWhispererProjectCodeScanTest : CodeWhispererCodeScanTestBase(PythonCod
         totalSize += helpGo.length
         totalLines += helpGo.toNioPath().toFile().readLines().size
 
-        utilsJs = projectRule.fixture.addFileToProject(
+        utilsJs = projectRule.fixture.addFileToModule(
+            testModule,
             "/utils.js",
             """
             function add(num1, num2) {
@@ -259,7 +268,8 @@ class CodeWhispererProjectCodeScanTest : CodeWhispererCodeScanTestBase(PythonCod
         totalSize += utilsJs.length
         totalLines += utilsJs.toNioPath().toFile().readLines().size
 
-        testJson = projectRule.fixture.addFileToProject(
+        testJson = projectRule.fixture.addFileToModule(
+            testModule,
             "/helpers/test3Json.json",
             """
                 {
@@ -314,7 +324,8 @@ class CodeWhispererProjectCodeScanTest : CodeWhispererCodeScanTestBase(PythonCod
         totalSize += testJson.length
         totalLines += testJson.toNioPath().toFile().readLines().size
 
-        helperPy = projectRule.fixture.addFileToProject(
+        helperPy = projectRule.fixture.addFileToModule(
+            testModule,
             "/helpers/helper.py",
             """
             from helpers import helper as h
@@ -331,11 +342,12 @@ class CodeWhispererProjectCodeScanTest : CodeWhispererCodeScanTestBase(PythonCod
         totalSize += helperPy.length
         totalLines += helperPy.toNioPath().toFile().readLines().size
 
-        readMeMd = projectRule.fixture.addFileToProject("/ReadMe.md", "### Now included").virtualFile
+        readMeMd = projectRule.fixture.addFileToModule(testModule, "/ReadMe.md", "### Now included").virtualFile
         totalSize += readMeMd.length
         totalLines += readMeMd.toNioPath().toFile().readLines().size
 
-        testTf = projectRule.fixture.addFileToProject(
+        testTf = projectRule.fixture.addFileToModule(
+            testModule2,
             "/testTf.tf",
             """
                 # Create example resource for three S3 buckets using for_each, where the bucket prefix are in variable with list containing [prod, staging, dev]
@@ -354,7 +366,8 @@ class CodeWhispererProjectCodeScanTest : CodeWhispererCodeScanTestBase(PythonCod
         totalSize += testTf.length
         totalLines += testTf.toNioPath().toFile().readLines().size
 
-        testYaml = projectRule.fixture.addFileToProject(
+        testYaml = projectRule.fixture.addFileToModule(
+            testModule2,
             "/testYaml.yaml",
             """
                 AWSTemplateFormatVersion: "2010-09-09"
@@ -378,10 +391,5 @@ class CodeWhispererProjectCodeScanTest : CodeWhispererCodeScanTestBase(PythonCod
         ).virtualFile
         totalSize += testYaml.length
         totalLines += testYaml.toNioPath().toFile().readLines().size
-
-        // Adding gitignore file and gitignore file member for testing.
-        // The tests include the markdown file but not these two files.
-        projectRule.fixture.addFileToProject("/.gitignore", "node_modules\n.idea\n.vscode\n.DS_Store").virtualFile
-        projectRule.fixture.addFileToProject("test.idea", "ref: refs/heads/main")
     }
 }

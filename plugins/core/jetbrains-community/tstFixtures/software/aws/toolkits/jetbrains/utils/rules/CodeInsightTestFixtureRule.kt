@@ -5,8 +5,10 @@ package software.aws.toolkits.jetbrains.utils.rules
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.application.runWriteAction
+import com.intellij.openapi.module.JavaModuleType
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
@@ -17,6 +19,7 @@ import com.intellij.psi.PsiManager
 import com.intellij.testFramework.ApplicationRule
 import com.intellij.testFramework.LightProjectDescriptor
 import com.intellij.testFramework.PlatformTestUtil
+import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.common.ThreadLeakTracker
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
 import com.intellij.testFramework.fixtures.IdeaTestFixtureFactory
@@ -146,6 +149,17 @@ fun CodeInsightTestFixture.openFile(relativePath: String, fileText: String): Vir
     }
 
     return file
+}
+
+fun CodeInsightTestFixture.addModule(moduleName: String): Module {
+    val root = this.tempDirFixture.findOrCreateDir(moduleName)
+    val module = PsiTestUtil.addModule(project, JavaModuleType.getModuleType(), moduleName, root)
+    runInEdtAndWait {
+        WriteAction.run<Exception> {
+            PsiTestUtil.addContentRoot(module, root)
+        }
+    }
+    return module
 }
 
 fun CodeInsightTestFixture.addFileToModule(
