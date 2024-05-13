@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import { handleMessage } from './handleMessage'
 import { FileWatchInfo, WebviewContext } from './types'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { createHash } from 'crypto'
+import { getStringHash } from '../shared/utilities/textUtilities'
 import { addFileWatchMessageHandler } from './messageHandlers/addFileWatchMessageHandler'
 import { addThemeWatchMessageHandler } from './messageHandlers/addThemeWatchMessageHandler'
 import { sendThreatComposerOpenCancelled } from './messageHandlers/emitTelemetryMessageHandler'
@@ -47,7 +47,7 @@ export class ThreatComposer {
         this.workSpacePath = path.dirname(textDocument.uri.fsPath)
         this.defaultTemplatePath = textDocument.uri.fsPath
         this.defaultTemplateName = path.basename(this.defaultTemplatePath)
-        this.fileId = createHash('sha1').update(textDocument.uri.fsPath).digest('hex')
+        this.fileId = getStringHash(textDocument.uri.fsPath)
 
         telemetry.threatcomposer_opened.record({
             fileId: this.fileId,
