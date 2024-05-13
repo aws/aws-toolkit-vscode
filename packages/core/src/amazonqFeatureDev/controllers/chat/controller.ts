@@ -194,7 +194,7 @@ export class FeatureDevController {
     // TODO add type
     private async processUserChatMessage(message: any) {
         if (message.message === undefined) {
-            this.messenger.sendErrorMessage('chatMessage should be set', message.tabID, 0, undefined)
+            this.messenger.sendErrorMessage('chatMessage should be set', message.tabID, 0, undefined, undefined)
             return
         }
 
@@ -232,7 +232,13 @@ export class FeatureDevController {
             }
         } catch (err: any) {
             if (err instanceof ContentLengthError) {
-                this.messenger.sendErrorMessage(err.message, message.tabID, this.retriesRemaining(session))
+                this.messenger.sendErrorMessage(
+                    err.message,
+                    message.tabID,
+                    this.retriesRemaining(session),
+                    undefined,
+                    session?.conversationIdUnsafe
+                )
                 this.messenger.sendAnswer({
                     type: 'system-prompt',
                     tabID: message.tabID,
@@ -247,7 +253,13 @@ export class FeatureDevController {
             } else if (err instanceof MonthlyConversationLimitError) {
                 this.messenger.sendMonthlyLimitError(message.tabID)
             } else if (err instanceof PlanIterationLimitError) {
-                this.messenger.sendErrorMessage(err.message, message.tabID, this.retriesRemaining(session))
+                this.messenger.sendErrorMessage(
+                    err.message,
+                    message.tabID,
+                    this.retriesRemaining(session),
+                    undefined,
+                    session?.conversationIdUnsafe
+                )
                 this.messenger.sendAnswer({
                     type: 'system-prompt',
                     tabID: message.tabID,
@@ -265,7 +277,13 @@ export class FeatureDevController {
                     ],
                 })
             } else if (err instanceof CodeIterationLimitError) {
-                this.messenger.sendErrorMessage(err.message, message.tabID, this.retriesRemaining(session))
+                this.messenger.sendErrorMessage(
+                    err.message,
+                    message.tabID,
+                    this.retriesRemaining(session),
+                    undefined,
+                    session?.conversationIdUnsafe
+                )
                 this.messenger.sendAnswer({
                     type: 'system-prompt',
                     tabID: message.tabID,
@@ -286,7 +304,8 @@ export class FeatureDevController {
                     errorMessage,
                     message.tabID,
                     this.retriesRemaining(session),
-                    session?.state.phase
+                    session?.state.phase,
+                    session?.conversationIdUnsafe
                 )
             }
 
@@ -447,7 +466,8 @@ export class FeatureDevController {
                 errorMessage,
                 message.tabID,
                 this.retriesRemaining(session),
-                session?.state.phase
+                session?.state.phase,
+                session?.conversationIdUnsafe
             )
         }
     }
@@ -502,7 +522,8 @@ export class FeatureDevController {
                 createUserFacingErrorMessage(`Failed to insert code changes: ${err.message}`),
                 message.tabID,
                 this.retriesRemaining(session),
-                session?.state.phase
+                session?.state.phase,
+                session?.conversationIdUnsafe
             )
         }
     }
@@ -546,7 +567,8 @@ export class FeatureDevController {
                 createUserFacingErrorMessage(`Failed to retry request: ${err.message}`),
                 message.tabID,
                 this.retriesRemaining(session),
-                session?.state.phase
+                session?.state.phase,
+                session?.conversationIdUnsafe
             )
         } finally {
             // Finish processing the event
@@ -730,7 +752,8 @@ export class FeatureDevController {
                 createUserFacingErrorMessage(err.message),
                 message.tabID,
                 this.retriesRemaining(session),
-                session?.state.phase
+                session?.state.phase,
+                session?.conversationIdUnsafe
             )
         }
     }
