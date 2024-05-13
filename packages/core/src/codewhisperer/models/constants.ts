@@ -290,9 +290,22 @@ export const freeTierLimitReached = 'You have reached the monthly fair use limit
 
 export const freeTierLimitReachedCodeScan = 'You have reached the monthly quota of code scans.'
 
-export const fileScansLimitReached = 'You have reached the monthly quota of auto-scans.'
+export const fileScansLimitReached = 'Amazon Q: You have reached the monthly limit for auto-scans.'
 
-export const projectScansLimitReached = 'You have reached the monthly quota of project scans.'
+export const projectScansLimitReached = 'Amazon Q: You have reached the monthly limit for project scans.'
+
+export const DefaultCodeScanErrorMessage =
+    'Amazon Q encountered an error while scanning for security issues. Try again later.'
+
+export const FileSizeExceededErrorMessage = `Amazon Q: The selected file exceeds the input artifact limit. Try again with a smaller file. For more information about scan limits, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security-scans.html#quotas).`
+
+export const ProjectSizeExceededErrorMessage = `Amazon Q: The selected project exceeds the input artifact limit. Try again with a smaller project. For more information about scan limits, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security-scans.html#quotas).`
+
+export const NoWorkspaceFoundErrorMessage = 'Amazon Q: No workspace folders found'
+
+export const InvalidSourceFilesErrorMessage = 'Amazon Q: Project does not contain valid files to scan'
+
+export const UploadArtifactToS3ErrorMessage = `Amazon Q is unable to upload your workspace artifacts to Amazon S3 for security scans. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security_iam_manage-access-with-policies.html#data-perimeters).`
 
 export const throttlingLearnMore = `Learn More`
 
