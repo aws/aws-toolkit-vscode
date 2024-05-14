@@ -13,9 +13,9 @@ import { getLogger } from '../shared/logger/logger'
 import { showMessageWithUrl } from '../shared/utilities/messages'
 import { onceChanged } from '../shared/utilities/functionUtils'
 
-/** Shows an error message unless it is the same as the last one shown. */
+/** Shows a warning message unless it is the same as the last one shown. */
 const warnOnce = onceChanged((s: string, url: string) => {
-    void showMessageWithUrl(s, url, undefined, 'error')
+    void showMessageWithUrl(s, url, undefined, 'warn')
 })
 
 export const scopesCodeCatalyst = ['codecatalyst:read_write']

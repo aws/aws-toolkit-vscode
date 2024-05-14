@@ -172,7 +172,7 @@ export function createFeedbackNode(): DataQuickPickItem<'sendFeedback'> {
         data: 'sendFeedback',
         label: 'Send Feedback',
         iconPath: getIcon('vscode-thumbsup'),
-        onClick: () => submitFeedback(placeholder, 'CodeWhisperer'),
+        onClick: () => submitFeedback(placeholder, 'Amazon Q'),
     } as DataQuickPickItem<'sendFeedback'>
 }
 

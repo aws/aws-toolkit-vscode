@@ -1,0 +1,30 @@
+{
+	"date": "2024-05-13",
+	"version": "1.4.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Auth: No longer request AWS account scopes during login."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Security Scan: Fixes an issue where scans fail for projects with Terraform files"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Code Transform: Show additional status messages to align with experience when JAVA_HOME set incorrectly."
+		},
+		{
+			"type": "Feature",
+			"description": "UX: Added keyboard navigation to login screen."
+		},
+		{
+			"type": "Feature",
+			"description": "New SSO Authorization Code flow for faster logins"
+		},
+		{
+			"type": "Feature",
+			"description": "Transform: Add human intervention to help update dependencies during transformation."
+		}
+	]
+}

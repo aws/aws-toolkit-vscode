@@ -35,7 +35,7 @@ import {
     validateOpenProjects,
     getOpenProjects,
 } from '../../../codewhisperer/service/transformByQ/transformProjectValidationHandler'
-import { TransformationCandidateProject } from '../../../codewhisperer/models/model'
+import { TransformationCandidateProject, ZipManifest } from '../../../codewhisperer/models/model'
 
 describe('transformByQ', function () {
     let tempDir: string
@@ -237,8 +237,13 @@ describe('transformByQ', function () {
         const tempFileName = `testfile-${Date.now()}.zip`
         transformByQState.setProjectPath(tempDir)
         return zipCode({
-            path: tempDir,
-            name: tempFileName,
+            dependenciesFolder: {
+                path: tempDir,
+                name: tempFileName,
+            },
+            humanInTheLoopFlag: false,
+            modulePath: tempDir,
+            zipManifest: new ZipManifest(),
         }).then(zipFile => {
             const zip = new AdmZip(zipFile)
             const dependenciesToUpload = zip.getEntries().filter(entry => entry.entryName.startsWith('dependencies'))
