@@ -9,8 +9,6 @@ import {
     Connection,
     isSsoConnection,
     SsoConnection,
-    isIdcSsoConnection,
-    isBuilderIdConnection,
     scopesFeatureDev,
 } from '../../../../auth/connection'
 import { AuthUtil, amazonQScopes } from '../../../../codewhisperer/util/authUtil'
@@ -25,7 +23,6 @@ import { ToolkitError } from '../../../../shared/errors'
 import { debounce } from 'lodash'
 import { AuthError, AuthFlowState, userCancelled } from '../types'
 import { builderIdStartUrl } from '../../../../auth/sso/model'
-import { isBuilderIdAuth } from '../../../../auth/ui/vue/authForms/types'
 
 export class AmazonQLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.amazonq.AmazonCommonAuth'
