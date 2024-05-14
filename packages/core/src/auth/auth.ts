@@ -526,7 +526,7 @@ export class Auth implements AuthService, ConnectionManager {
         return profile
     }
 
-    private async validateConnection<T extends Profile>(id: Connection['id'], profile: StoredProfile<T>) {
+    async validateConnection<T extends Profile>(id: Connection['id'], profile: StoredProfile<T>) {
         const runCheck = async () => {
             if (profile.type === 'sso') {
                 const provider = this.getSsoTokenProvider(id, profile)

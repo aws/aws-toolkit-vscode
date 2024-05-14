@@ -444,6 +444,22 @@ export class AuthUtil {
         }
         return undefined
     }
+
+    /**
+     * For builder id connections with 3 Q scopes ( prev 2.20.0 aws toolkit)
+     * Refresh its state
+     */
+    async refreshOldAwsBuilderIdConnection() {
+        if (
+            this.conn &&
+            isBuilderIdConnection(this.conn) &&
+            !this.conn.scopes?.includes(scopesFeatureDev[0]) &&
+            this.conn.scopes?.includes(scopesCodeWhispererChat[0]) &&
+            this.isConnectionExpired()
+        ) {
+            await this.auth.refreshConnectionState(this.conn)
+        }
+    }
 }
 
 /**

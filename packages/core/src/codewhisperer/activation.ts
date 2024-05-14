@@ -592,6 +592,7 @@ export async function activate(context: ExtContext): Promise<void> {
 
     await Commands.tryExecute('aws.amazonq.refreshConnectionCallback')
     container.ready()
+    await AuthUtil.instance.refreshOldAwsBuilderIdConnection()
 }
 
 export async function shutdown() {
