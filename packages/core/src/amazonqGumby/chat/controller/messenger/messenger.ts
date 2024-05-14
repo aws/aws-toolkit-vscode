@@ -533,7 +533,7 @@ ${codeSnippet}
 
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
 
-        message = `I recieved your target version dependency.`
+        message = `I received your target version dependency.`
         this.sendInProgressMessage(tabID, message)
     }
 
