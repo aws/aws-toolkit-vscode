@@ -10,6 +10,8 @@ import {
     isSsoConnection,
     SsoConnection,
     isIdcSsoConnection,
+    isBuilderIdConnection,
+    scopesFeatureDev,
 } from '../../../../auth/connection'
 import { AuthUtil, amazonQScopes } from '../../../../codewhisperer/util/authUtil'
 import { CommonAuthWebview } from '../backend'
@@ -23,6 +25,7 @@ import { ToolkitError } from '../../../../shared/errors'
 import { debounce } from 'lodash'
 import { AuthError, AuthFlowState, userCancelled } from '../types'
 import { builderIdStartUrl } from '../../../../auth/sso/model'
+import { isBuilderIdAuth } from '../../../../auth/ui/vue/authForms/types'
 
 export class AmazonQLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.amazonq.AmazonCommonAuth'
@@ -63,7 +66,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     /**
      * Attempts to re-use a valid connection in AWS Toolkit.
      * This logic should only apply to below users:
-     * 1. They have a invalid builder id connection in Amazon Q
+     * 1. They have a invalid builder id connection in Amazon Q that do not have all 5 scopes
      * For these users, if there is a valid builder id connection in AWS Toolkit,
      * We attempt to re-use this valid builder id connection.
      */
@@ -73,20 +76,27 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         // or fetch existing connections of Amazon Q in AWS Toolkit
         // to reuse connections in AWS Toolkit & Amazon Q
         const sharedConnections = await this.fetchConnections()
+
+        const currentConnection = AuthUtil.instance.conn
+
         // Only when Amazon Q has no valid builder id connections while Toolkit has connections
         // Auto connect Q using toolkit connection.
-        const connections = await this.listConnections()
-        let shouldReuseToolkitConnection = true
-        connections.forEach(conn => {
-            if (
-                Auth.instance.getConnectionState(conn) === 'valid' ||
-                Auth.instance.getConnectionState(conn) === 'authenticating' ||
-                isIdcSsoConnection(conn)
-            ) {
-                shouldReuseToolkitConnection = false
+        const shouldReuseToolkitConnection = () => {
+            if (currentConnection === undefined) {
+                return true
             }
-        })
-        if (shouldReuseToolkitConnection && sharedConnections && sharedConnections.length > 0) {
+            if (
+                currentConnection.type === 'sso' &&
+                AuthUtil.instance.isBuilderIdInUse() &&
+                AuthUtil.instance.isConnectionExpired() &&
+                !currentConnection.scopes?.includes(scopesFeatureDev[0]) &&
+                currentConnection.scopes?.includes(scopesCodeWhispererChat[0])
+            ) {
+                return true
+            }
+            return false
+        }
+        if (shouldReuseToolkitConnection() && sharedConnections && sharedConnections.length > 0) {
             getLogger().debug(`auth: findUsableConnection in aws toolkit`)
             const conn = await this.findUsableConnection(sharedConnections)
             if (conn) {
