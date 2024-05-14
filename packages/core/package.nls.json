@@ -108,6 +108,7 @@
     "AWS.command.amazonq.fixCode": "Fix",
     "AWS.command.amazonq.optimizeCode": "Optimize",
     "AWS.command.amazonq.sendToPrompt": "Send to prompt",
+    "AWS.command.amazonq.security.scan": "Run Project Scan",
     "AWS.command.deploySamApplication": "Deploy SAM Application",
     "AWS.command.aboutToolkit": "About",
     "AWS.command.downloadLambda": "Download...",
