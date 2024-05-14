@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Don't use `authorization_grant` when performing SSO login with legacy SSO or non-commercial AWS regions"
+}
