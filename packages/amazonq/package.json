@@ -389,6 +389,11 @@
                 "category": "%AWS.amazonq.title%"
             },
             {
+                "command": "aws.amazonq.security.scan",
+                "title": "%AWS.command.amazonq.security.scan%",
+                "category": "%AWS.amazonq.title%"
+            },
+            {
                 "command": "aws.amazonq.refactorCode",
                 "title": "%AWS.command.amazonq.refactorCode%",
                 "category": "%AWS.amazonq.title%"
