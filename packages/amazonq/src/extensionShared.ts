@@ -162,6 +162,10 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
             authEnabledConnections,
         })
     })
+    // do not block on this
+    if (authProvider.webView?.server && 'reuseConnectionFromAwsToolkit' in authProvider.webView?.server) {
+        authProvider.webView?.server.tryReuseConnectionFromAwsToolkit()
+    }
 }
 
 export async function deactivateShared() {

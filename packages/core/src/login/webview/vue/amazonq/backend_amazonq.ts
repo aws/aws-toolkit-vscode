@@ -44,6 +44,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         const importedApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
         const connections: AwsConnection[] = []
         if (importedApi && 'listConnections' in importedApi) {
+            getLogger().info(`auth: Retrieving connections from AWS Toolkit`)
             return await importedApi?.listConnections()
         }
         return connections
@@ -59,18 +60,31 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     }
 
     /**
-     * Returns a list of valid connections that is currently used by Amazon Q.
-     * @returns A list of valid connections of Q
+     * Attempts to re-use a valid connection in AWS Toolkit
      */
-    override async listConnections(): Promise<Connection[]> {
-        const connections = await Auth.instance.listConnections()
-        let validConnections: Connection[] = []
+    async tryReuseConnectionFromAwsToolkit() {
+        // fetch existing connections of AWS toolkit in Amazon Q
+        // or fetch existing connections of Amazon Q in AWS Toolkit
+        // to reuse connections in AWS Toolkit & Amazon Q
+        const sharedConnections = await this.fetchConnections()
+        // If Amazon Q has no valid connections while Toolkit has connections
+        // Auto connect Q using toolkit connection.
+        const connections = await this.listConnections()
+        let shouldReuseToolkitConnection = true
         connections.forEach(conn => {
-            if (Auth.instance.getConnectionState(conn) === 'valid') {
-                validConnections.push(conn)
+            if (
+                Auth.instance.getConnectionState(conn) === 'valid' ||
+                Auth.instance.getConnectionState(conn) === 'authenticating'
+            ) {
+                shouldReuseToolkitConnection = false
             }
         })
-        return validConnections
+        if (shouldReuseToolkitConnection && sharedConnections && sharedConnections.length > 0) {
+            const conn = await this.findUsableConnection(sharedConnections)
+            if (conn) {
+                await this.useConnection(conn.id, true)
+            }
+        }
     }
 
     async useConnection(connectionId: string, auto: boolean): Promise<AuthError | undefined> {
