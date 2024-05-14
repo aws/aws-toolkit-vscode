@@ -1,3 +1,6 @@
+# _3.3_ (2024-05-14)
+- **(Bug Fix)** Don't use `authorization_grant` when performing SSO login with legacy SSO or non-commercial AWS regions
+
 # _3.2_ (2024-05-13)
 - **(Feature)** Amazon Q: Updated status bar icons including an explicit icon for an unconnected state
 - **(Feature)** Human in the loop - Adding human intervention to help update dependencies during the Amazon Q Transformation process
