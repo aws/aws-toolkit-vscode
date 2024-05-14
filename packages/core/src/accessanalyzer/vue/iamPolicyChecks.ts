@@ -10,19 +10,24 @@ import { getLogger, Logger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { VueWebview } from '../../webviews/main'
 import { ExtContext } from '../../shared/extensions'
-// TODO: Implement Telemetry ... import { telemetry } from '../../shared/telemetry/telemetry'
-import { AccessAnalyzer } from 'aws-sdk'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { AccessAnalyzer, SharedIniFileCredentials } from 'aws-sdk'
 import { execSync } from 'child_process'
 import { ToolkitError } from '../../shared/errors'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { globals } from '../../shared'
 import {
     IamPolicyChecksConstants,
+    PolicyChecksCheckType,
     PolicyChecksDocumentType,
     PolicyChecksErrorCode,
+    PolicyChecksPolicyType,
+    PolicyChecksResult,
+    PolicyChecksUiClick,
     ValidatePolicyFindingType,
 } from './constants'
 import { DefaultS3Client, parseS3Uri } from '../../shared/clients/s3Client'
+import { ExpiredTokenException } from '@aws-sdk/client-sso-oidc'
 
 const defaultTerraformConfigPath = 'resources/policychecks-tf-default.yaml'
 // Diagnostics for Custom checks are shared
@@ -46,7 +51,7 @@ export class IamPolicyChecksWebview extends VueWebview {
 
     public constructor(
         private readonly data: IamPolicyChecksInitialData,
-        private readonly client: AccessAnalyzer,
+        private client: AccessAnalyzer,
         private readonly region: string,
         public readonly onChangeInputPath = new vscode.EventEmitter<string>(),
         public readonly onChangeCustomChecksFilePath = new vscode.EventEmitter<string>(),
@@ -74,7 +79,7 @@ export class IamPolicyChecksWebview extends VueWebview {
             const customChecksTextArea = await _readCustomChecksFile(path)
             this.onFileReadError.fire('') // Reset error message display if no error is found
             return customChecksTextArea
-        } catch (err) {
+        } catch (err: any) {
             if (err instanceof PolicyChecksError && (err.code as PolicyChecksErrorCode) === 'FileReadError') {
                 this.onFileReadError.fire(err.message)
             }
@@ -112,88 +117,113 @@ export class IamPolicyChecksWebview extends VueWebview {
         })
     }
 
+    public emitUiClick(elementId: PolicyChecksUiClick) {
+        telemetry.ui_click.emit({ elementId })
+    }
+
     /* Uses A2 SDK and Python CLI tools to call ValidatePolicy API
      * Responses are exposed in the Webview, including errors
      * Diagnostic objects are created to expose findings, which appear in the problems panel
      */
-    public async validatePolicy(documentType: PolicyChecksDocumentType, policyType: string, cfnParameterPath?: string) {
+    public async validatePolicy(
+        documentType: PolicyChecksDocumentType,
+        policyType: PolicyChecksPolicyType,
+        cfnParameterPath?: string
+    ) {
         const document = IamPolicyChecksWebview.editedDocumentFileName
         validatePolicyDiagnosticCollection.clear()
         const diagnostics: vscode.Diagnostic[] = []
         switch (documentType) {
             case 'JSON Policy Language': {
                 if (document.endsWith('.json')) {
-                    this.client.validatePolicy(
-                        {
-                            policyDocument: IamPolicyChecksWebview.editedDocument,
-                            policyType: policyType === 'Identity' ? 'IDENTITY_POLICY' : 'RESOURCE_POLICY',
-                        },
-                        (err, data) => {
-                            if (err) {
-                                if (err.message.includes('The security token included in the request is invalid')) {
-                                    this.onValidatePolicyResponse.fire([
-                                        IamPolicyChecksConstants.InvalidAwsCredentials,
-                                        'red',
-                                    ])
-                                }
-                                this.onValidatePolicyResponse.fire([err.message, 'red'])
-                            } else {
-                                if (data.findings.length > 0) {
-                                    data.findings.forEach((finding: AccessAnalyzer.ValidatePolicyFinding) => {
-                                        const message = `${finding.findingType}: ${finding.issueCode} - ${finding.findingDetails} Learn more: ${finding.learnMoreLink}`
-                                        if ((finding.findingType as ValidatePolicyFindingType) === 'ERROR') {
-                                            diagnostics.push(
-                                                new vscode.Diagnostic(
-                                                    new vscode.Range(
-                                                        finding.locations[0].span.start.line,
-                                                        finding.locations[0].span.start.offset,
-                                                        finding.locations[0].span.end.line,
-                                                        finding.locations[0].span.end.offset
-                                                    ),
-                                                    message,
-                                                    vscode.DiagnosticSeverity.Error
-                                                )
-                                            )
-                                            validatePolicyDiagnosticCollection.set(
-                                                IamPolicyChecksWebview.editedDocumentUri,
-                                                diagnostics
-                                            )
-                                        } else {
-                                            diagnostics.push(
-                                                new vscode.Diagnostic(
-                                                    new vscode.Range(
-                                                        finding.locations[0].span.start.line,
-                                                        finding.locations[0].span.start.offset,
-                                                        finding.locations[0].span.end.line,
-                                                        finding.locations[0].span.end.offset
-                                                    ),
-                                                    message,
-                                                    vscode.DiagnosticSeverity.Warning
-                                                )
-                                            )
-                                            validatePolicyDiagnosticCollection.set(
-                                                IamPolicyChecksWebview.editedDocumentUri,
-                                                diagnostics
-                                            )
-                                        }
+                    telemetry.accessanalyzer_iamPolicyChecksValidatePolicy.run(span => {
+                        span.record({
+                            documentType,
+                            inputPolicyType: policyType ? policyType : 'None',
+                        })
+                        this.client.config.credentials = new SharedIniFileCredentials() // We need to detect changes in the user's credentials
+                        this.client.validatePolicy(
+                            {
+                                policyDocument: IamPolicyChecksWebview.editedDocument,
+                                policyType: policyType === 'Identity' ? 'IDENTITY_POLICY' : 'RESOURCE_POLICY',
+                            },
+                            (err, data) => {
+                                if (err) {
+                                    span.record({
+                                        findingsCount: 0,
                                     })
-                                    this.onValidatePolicyResponse.fire([
-                                        IamPolicyChecksConstants.ValidatePolicySuccessWithFindings,
-                                        'yellow',
-                                    ])
-                                    void vscode.commands.executeCommand('workbench.actions.view.problems')
+                                    if (err instanceof ExpiredTokenException) {
+                                        this.onValidatePolicyResponse.fire([
+                                            IamPolicyChecksConstants.InvalidAwsCredentials,
+                                            getResultCssColor('Error'),
+                                        ])
+                                    } else {
+                                        this.onValidatePolicyResponse.fire([err.message, getResultCssColor('Error')])
+                                    }
                                 } else {
-                                    this.onValidatePolicyResponse.fire([
-                                        IamPolicyChecksConstants.ValidatePolicySuccessNoFindings,
-                                        'green',
-                                    ])
+                                    if (data.findings.length > 0) {
+                                        span.record({
+                                            findingsCount: data.findings.length,
+                                        })
+                                        data.findings.forEach((finding: AccessAnalyzer.ValidatePolicyFinding) => {
+                                            const message = `${finding.findingType}: ${finding.issueCode} - ${finding.findingDetails} Learn more: ${finding.learnMoreLink}`
+                                            if ((finding.findingType as ValidatePolicyFindingType) === 'ERROR') {
+                                                diagnostics.push(
+                                                    new vscode.Diagnostic(
+                                                        new vscode.Range(
+                                                            finding.locations[0].span.start.line,
+                                                            finding.locations[0].span.start.offset,
+                                                            finding.locations[0].span.end.line,
+                                                            finding.locations[0].span.end.offset
+                                                        ),
+                                                        message,
+                                                        vscode.DiagnosticSeverity.Error
+                                                    )
+                                                )
+                                                validatePolicyDiagnosticCollection.set(
+                                                    IamPolicyChecksWebview.editedDocumentUri,
+                                                    diagnostics
+                                                )
+                                            } else {
+                                                diagnostics.push(
+                                                    new vscode.Diagnostic(
+                                                        new vscode.Range(
+                                                            finding.locations[0].span.start.line,
+                                                            finding.locations[0].span.start.offset,
+                                                            finding.locations[0].span.end.line,
+                                                            finding.locations[0].span.end.offset
+                                                        ),
+                                                        message,
+                                                        vscode.DiagnosticSeverity.Warning
+                                                    )
+                                                )
+                                                validatePolicyDiagnosticCollection.set(
+                                                    IamPolicyChecksWebview.editedDocumentUri,
+                                                    diagnostics
+                                                )
+                                            }
+                                        })
+                                        this.onValidatePolicyResponse.fire([
+                                            IamPolicyChecksConstants.ValidatePolicySuccessWithFindings,
+                                            getResultCssColor('Warning'),
+                                        ])
+                                        void vscode.commands.executeCommand('workbench.actions.view.problems')
+                                    } else {
+                                        this.onValidatePolicyResponse.fire([
+                                            IamPolicyChecksConstants.ValidatePolicySuccessNoFindings,
+                                            getResultCssColor('Success'),
+                                        ])
+                                    }
                                 }
                             }
-                        }
-                    )
+                        )
+                    })
                     return
                 } else {
-                    this.onValidatePolicyResponse.fire([IamPolicyChecksConstants.IncorrectFileExtension, 'red'])
+                    this.onValidatePolicyResponse.fire([
+                        IamPolicyChecksConstants.IncorrectFileExtension,
+                        getResultCssColor('Error'),
+                    ])
                     return
                 }
             }
@@ -202,10 +232,18 @@ export class IamPolicyChecksWebview extends VueWebview {
                     const tfCommand = `tf-policy-validator validate --template-path ${document} --region ${
                         this.region
                     } --config ${globals.context.asAbsolutePath(defaultTerraformConfigPath)}`
-                    this.executeValidatePolicyCommand(tfCommand)
+                    this.executeValidatePolicyCommand(
+                        tfCommand,
+                        cfnParameterPath ? true : false,
+                        documentType,
+                        policyType
+                    )
                     return
                 } else {
-                    this.onValidatePolicyResponse.fire([IamPolicyChecksConstants.IncorrectFileExtension, 'red'])
+                    this.onValidatePolicyResponse.fire([
+                        IamPolicyChecksConstants.IncorrectFileExtension,
+                        getResultCssColor('Error'),
+                    ])
                     return
                 }
             }
@@ -215,10 +253,18 @@ export class IamPolicyChecksWebview extends VueWebview {
                         cfnParameterPath === ''
                             ? `cfn-policy-validator validate --template-path ${document} --region ${this.region}`
                             : `cfn-policy-validator validate --template-path ${document} --region ${this.region} --template-configuration-file ${cfnParameterPath}`
-                    this.executeValidatePolicyCommand(cfnCommand)
+                    this.executeValidatePolicyCommand(
+                        cfnCommand,
+                        cfnParameterPath ? true : false,
+                        documentType,
+                        policyType
+                    )
                     return
                 } else {
-                    this.onValidatePolicyResponse.fire([IamPolicyChecksConstants.IncorrectFileExtension, 'red'])
+                    this.onValidatePolicyResponse.fire([
+                        IamPolicyChecksConstants.IncorrectFileExtension,
+                        getResultCssColor('Error'),
+                    ])
                     return
                 }
             }
@@ -227,7 +273,7 @@ export class IamPolicyChecksWebview extends VueWebview {
 
     public async checkNoNewAccess(
         documentType: PolicyChecksDocumentType,
-        policyType: string,
+        policyType: PolicyChecksPolicyType,
         referenceDocument: string,
         cfnParameterPath?: string
     ) {
@@ -239,7 +285,10 @@ export class IamPolicyChecksWebview extends VueWebview {
         if (referenceDocument !== '') {
             fs.writeFileSync(tempFilePath, referenceDocument)
         } else {
-            this.onCustomPolicyCheckResponse.fire([IamPolicyChecksConstants.MissingReferenceDocError, 'red'])
+            this.onCustomPolicyCheckResponse.fire([
+                IamPolicyChecksConstants.MissingReferenceDocError,
+                getResultCssColor('Error'),
+            ])
             return
         }
 
@@ -251,10 +300,19 @@ export class IamPolicyChecksWebview extends VueWebview {
                     } --config ${globals.context.asAbsolutePath(
                         defaultTerraformConfigPath
                     )} --reference-policy ${tempFilePath} --reference-policy-type ${policyType}`
-                    this.executeCustomPolicyChecksCommand(tfCommand)
+                    this.executeCustomPolicyChecksCommand(
+                        tfCommand,
+                        cfnParameterPath ? true : false,
+                        documentType,
+                        'CheckNoNewAccess',
+                        policyType
+                    )
                     return
                 } else {
-                    this.onCustomPolicyCheckResponse.fire([IamPolicyChecksConstants.IncorrectFileExtension, 'red'])
+                    this.onCustomPolicyCheckResponse.fire([
+                        IamPolicyChecksConstants.IncorrectFileExtension,
+                        getResultCssColor('Error'),
+                    ])
                     return
                 }
             }
@@ -264,10 +322,19 @@ export class IamPolicyChecksWebview extends VueWebview {
                         cfnParameterPath === ''
                             ? `cfn-policy-validator check-no-new-access --template-path ${document} --region ${this.region} --reference-policy ${tempFilePath} --reference-policy-type ${policyType}`
                             : `cfn-policy-validator check-no-new-access --template-path ${document} --region ${this.region} --reference-policy ${tempFilePath} --reference-policy-type ${policyType} --template-configuration-file ${cfnParameterPath}`
-                    this.executeCustomPolicyChecksCommand(cfnCommand)
+                    this.executeCustomPolicyChecksCommand(
+                        cfnCommand,
+                        cfnParameterPath ? true : false,
+                        documentType,
+                        'CheckNoNewAccess',
+                        policyType
+                    )
                     return
                 } else {
-                    this.onCustomPolicyCheckResponse.fire([IamPolicyChecksConstants.IncorrectFileExtension, 'red'])
+                    this.onCustomPolicyCheckResponse.fire([
+                        IamPolicyChecksConstants.IncorrectFileExtension,
+                        getResultCssColor('Error'),
+                    ])
                     return
                 }
             }
@@ -286,7 +353,10 @@ export class IamPolicyChecksWebview extends VueWebview {
             // Remove spaces, line breaks, carriage returns, and tabs
             actions = actions.replace(/\s*|\t|\r|\n/gm, '')
         } else {
-            this.onCustomPolicyCheckResponse.fire([IamPolicyChecksConstants.MissingReferenceDocError, 'red'])
+            this.onCustomPolicyCheckResponse.fire([
+                IamPolicyChecksConstants.MissingReferenceDocError,
+                getResultCssColor('Error'),
+            ])
             return
         }
         switch (documentType) {
@@ -295,10 +365,18 @@ export class IamPolicyChecksWebview extends VueWebview {
                     const tfCommand = `tf-policy-validator check-access-not-granted --template-path ${document} --region ${
                         this.region
                     } --config ${globals.context.asAbsolutePath(defaultTerraformConfigPath)} --actions ${actions}`
-                    this.executeCustomPolicyChecksCommand(tfCommand)
+                    this.executeCustomPolicyChecksCommand(
+                        tfCommand,
+                        cfnParameterPath ? true : false,
+                        documentType,
+                        'CheckAccessNotGranted'
+                    )
                     return
                 } else {
-                    this.onCustomPolicyCheckResponse.fire([IamPolicyChecksConstants.IncorrectFileExtension, 'red'])
+                    this.onCustomPolicyCheckResponse.fire([
+                        IamPolicyChecksConstants.IncorrectFileExtension,
+                        getResultCssColor('Error'),
+                    ])
                     return
                 }
             }
@@ -308,90 +386,163 @@ export class IamPolicyChecksWebview extends VueWebview {
                         cfnParameterPath === ''
                             ? `cfn-policy-validator check-access-not-granted --template-path ${document} --region ${this.region} --actions ${actions}`
                             : `cfn-policy-validator check-access-not-granted --template-path ${document} --region ${this.region} --actions ${actions} --template-copnfiguration-file ${cfnParameterPath}`
-                    this.executeCustomPolicyChecksCommand(cfnCommand)
+                    this.executeCustomPolicyChecksCommand(
+                        cfnCommand,
+                        cfnParameterPath ? true : false,
+                        documentType,
+                        'CheckAccessNotGranted'
+                    )
                     return
                 } else {
-                    this.onCustomPolicyCheckResponse.fire([IamPolicyChecksConstants.IncorrectFileExtension, 'red'])
+                    this.onCustomPolicyCheckResponse.fire([
+                        IamPolicyChecksConstants.IncorrectFileExtension,
+                        getResultCssColor('Error'),
+                    ])
                     return
                 }
             }
         }
     }
 
-    public executeValidatePolicyCommand(command: string) {
-        try {
-            this.handleValidatePolicyCliResponse(execSync(command).toString())
-        } catch (err: any) {
-            this.onValidatePolicyResponse.fire([parseCliErrorMessage(err.message), 'red'])
-        }
+    public executeValidatePolicyCommand(
+        command: string,
+        cfnParameterPathExists: boolean,
+        documentType: PolicyChecksDocumentType,
+        policyType?: PolicyChecksPolicyType
+    ) {
+        telemetry.accessanalyzer_iamPolicyChecksValidatePolicy.run(span => {
+            try {
+                span.record({
+                    cfnParameterFileUsed: cfnParameterPathExists,
+                    documentType: documentType,
+                    inputPolicyType: policyType ? policyType : 'None',
+                })
+                const resp = execSync(command)
+                const findingsCount = this.handleValidatePolicyCliResponse(resp.toString())
+                span.record({
+                    findingsCount: findingsCount,
+                })
+            } catch (err: any) {
+                if (err.status === 2) {
+                    //CLI responds with a status code of 2 when findings are discovered
+                    const findingsCount = this.handleValidatePolicyCliResponse(err.stdout.toString())
+                    span.record({
+                        findingsCount: findingsCount,
+                    })
+                } else {
+                    span.record({
+                        findingsCount: 0,
+                    })
+                    this.onValidatePolicyResponse.fire([parseCliErrorMessage(err.message), getResultCssColor('Error')])
+                }
+            }
+        })
     }
 
-    public handleValidatePolicyCliResponse(response: string) {
+    public handleValidatePolicyCliResponse(response: string): number {
+        let findingsCount = 0
         const diagnostics: vscode.Diagnostic[] = []
         const jsonOutput = JSON.parse(response)
         if (jsonOutput.BlockingFindings.length === 0 && jsonOutput.NonBlockingFindings.length === 0) {
-            this.onValidatePolicyResponse.fire([IamPolicyChecksConstants.ValidatePolicySuccessNoFindings, 'green'])
+            this.onValidatePolicyResponse.fire([
+                IamPolicyChecksConstants.ValidatePolicySuccessNoFindings,
+                getResultCssColor('Success'),
+            ])
         } else {
             jsonOutput.BlockingFindings.forEach((finding: any) => {
                 this.pushValidatePolicyDiagnostic(diagnostics, finding, true)
+                findingsCount++
             })
             jsonOutput.NonBlockingFindings.forEach((finding: any) => {
                 this.pushValidatePolicyDiagnostic(diagnostics, finding, false)
+                findingsCount++
             })
-            this.onValidatePolicyResponse.fire([IamPolicyChecksConstants.ValidatePolicySuccessWithFindings, 'yellow'])
+            this.onValidatePolicyResponse.fire([
+                IamPolicyChecksConstants.ValidatePolicySuccessWithFindings,
+                getResultCssColor('Warning'),
+            ])
             void vscode.commands.executeCommand('workbench.actions.view.problems')
         }
+        return findingsCount
     }
 
-    public executeCustomPolicyChecksCommand(command: string) {
-        try {
-            const response = execSync(command)
-            this.handleCustomPolicyChecksCliResponse(response.toString())
-        } catch (err: any) {
-            if (err.status === 1) {
-                this.onCustomPolicyCheckResponse.fire([parseCliErrorMessage(err.message), 'red'])
-            } else if (err.status === 2) {
-                //CLI responds with a status code of 2 when findings are discovered
-                this.handleCustomPolicyChecksCliResponse(err.stdout.toString())
+    public executeCustomPolicyChecksCommand(
+        command: string,
+        cfnParameterPathExists: boolean,
+        documentType: PolicyChecksDocumentType,
+        checkType: PolicyChecksCheckType,
+        referencePolicyType?: PolicyChecksPolicyType
+    ) {
+        telemetry.accessanalyzer_iamPolicyChecksCustomChecks.run(span => {
+            try {
+                span.record({
+                    cfnParameterFileUsed: cfnParameterPathExists,
+                    checkType: checkType,
+                    documentType: documentType,
+                    inputPolicyType: 'None', // Note: This will change once JSON policy language is enabled for Custom policy checks
+                    referencePolicyType: referencePolicyType ? referencePolicyType : 'None',
+                })
+                const resp = execSync(command)
+                const findingsCount = this.handleCustomPolicyChecksCliResponse(resp.toString())
+                span.record({
+                    findingsCount: findingsCount,
+                })
+            } catch (err: any) {
+                if (err.status === 2) {
+                    //CLI responds with a status code of 2 when findings are discovered
+                    const findingsCount = this.handleCustomPolicyChecksCliResponse(err.stdout.toString())
+                    span.record({
+                        findingsCount: findingsCount,
+                    })
+                } else {
+                    span.record({
+                        findingsCount: 0,
+                    })
+                    this.onCustomPolicyCheckResponse.fire([
+                        parseCliErrorMessage(err.message),
+                        getResultCssColor('Error'),
+                    ])
+                }
             }
-        }
+        })
     }
 
-    public handleCustomPolicyChecksCliResponse(response: string) {
+    public handleCustomPolicyChecksCliResponse(response: string): number {
+        let findingsCount = 0
         const diagnostics: vscode.Diagnostic[] = []
         try {
             const jsonOutput = JSON.parse(response)
             if (jsonOutput.BlockingFindings.length === 0 && jsonOutput.NonBlockingFindings.length === 0) {
-                this.onCustomPolicyCheckResponse.fire([IamPolicyChecksConstants.CustomCheckSuccessNoFindings, 'green'])
+                this.onCustomPolicyCheckResponse.fire([
+                    IamPolicyChecksConstants.CustomCheckSuccessNoFindings,
+                    getResultCssColor('Success'),
+                ])
             } else {
                 jsonOutput.BlockingFindings.forEach((finding: any) => {
                     this.pushCustomCheckDiagnostic(diagnostics, finding, true)
+                    findingsCount++
                 })
                 jsonOutput.NonBlockingFindings.forEach((finding: any) => {
                     this.pushCustomCheckDiagnostic(diagnostics, finding, false)
+                    findingsCount++
                 })
                 this.onCustomPolicyCheckResponse.fire([
                     IamPolicyChecksConstants.CustomCheckSuccessWithFindings,
-                    'yellow',
+                    getResultCssColor('Warning'),
                 ])
                 void vscode.commands.executeCommand('workbench.actions.view.problems')
             }
         } catch (err: any) {
-            this.onCustomPolicyCheckResponse.fire([err.message, 'red'])
-            return
+            this.onCustomPolicyCheckResponse.fire([err.message, getResultCssColor('Error')])
         }
+        return findingsCount
     }
 
     public pushValidatePolicyDiagnostic(diagnostics: vscode.Diagnostic[], finding: any, isBlocking: boolean) {
         diagnostics.push(
             new vscode.Diagnostic(
-                new vscode.Range(
-                    finding.details.locations[0].span.start.line,
-                    finding.details.locations[0].span.start.offset,
-                    finding.details.locations[0].span.end.line,
-                    finding.details.locations[0].span.end.offset
-                ),
-                `${finding.findingType}: ${finding.code} - ${finding.details.findingDetails} Learn more: ${finding.details.learnMoreLink}`,
+                new vscode.Range(0, 0, 0, 0),
+                `${finding.findingType}: ${finding.code} - ${finding.details.findingDetails} Resource name: ${finding.resourceName}, Policy name: ${finding.policyName}. Learn more: ${finding.details.learnMoreLink}`,
                 isBlocking ? vscode.DiagnosticSeverity.Error : vscode.DiagnosticSeverity.Warning
             )
         )
@@ -468,7 +619,6 @@ export async function renderIamPolicyChecks(context: ExtContext): Promise<void> 
 }
 
 // Helper function to get document contents from a path
-// TODO: Use 'shared/clients/s3Client.ts' and add AmazonS3URI's algorithm as a helper function rather than a depdendency
 async function _readCustomChecksFile(input: string): Promise<string> {
     if (fs.existsSync(input)) {
         return fs.readFileSync(input).toString()
@@ -514,15 +664,17 @@ function arePythonToolsInstalled(): boolean {
 
 // Since TypeScript can only get the CLI tool's error output as a string, we have to parse and sanitize it ourselves
 function parseCliErrorMessage(message: string): string {
-    const errorMatch = message.match(/ERROR: .*/)
-    const botoMatch = message.match(/(?<=botocore\.exceptions\.).*/) // Boto errors have a different match
+    const cfnMatch = message.match(/ERROR: .*/)
+    const botoMatch = message.match(/(?<=botocore\.exceptions\.).*/) // Boto errors have a special match
     const terraformMatch = message.match(/AttributeError:.*/) // Terraform CLI responds with a different error schema... this catches invalid .json plans
-    if (errorMatch?.[0]) {
-        return errorMatch[0]
+    if (
+        message.includes('The security token included in the request is invalid') ||
+        message.includes('The security token included in the request is expired')
+    ) {
+        return IamPolicyChecksConstants.InvalidAwsCredentials
+    } else if (cfnMatch?.[0]) {
+        return cfnMatch[0]
     } else if (botoMatch?.[0]) {
-        if (botoMatch[0].includes('The security token included in the request is invalid')) {
-            return IamPolicyChecksConstants.InvalidAwsCredentials
-        }
         return botoMatch[0]
     } else if (message.includes('command not found')) {
         return 'Command not found, please install the appropriate Python CLI tool'
@@ -530,6 +682,17 @@ function parseCliErrorMessage(message: string): string {
         return 'ERROR: Unable to parse Terraform plan. Invalid Terraform plan schema detected.'
     }
     return message
+}
+
+function getResultCssColor(resultType: PolicyChecksResult): string {
+    switch (resultType) {
+        case 'Success':
+            return 'var(--vscode-terminal-ansiGreen)'
+        case 'Warning':
+            return 'var(--vscode-debugConsole-warningForeground)'
+        case 'Error':
+            return 'var(--vscode-errorForeground)'
+    }
 }
 
 export class PolicyChecksError extends ToolkitError {
