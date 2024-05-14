@@ -95,7 +95,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         }
         if (shouldReuseToolkitConnection() && sharedConnections && sharedConnections.length > 0) {
             getLogger().debug(`auth: findUsableConnection in aws toolkit`)
-            const conn = await this.findUsableConnection(sharedConnections)
+            const conn = this.findUsableConnection(sharedConnections)
             if (conn) {
                 getLogger().debug(`auth: use connection from aws toolkit ${conn.id}`)
                 await this.useConnection(conn.id, true)
