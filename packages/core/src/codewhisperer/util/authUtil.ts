@@ -434,7 +434,7 @@ export class AuthUtil {
      * From the given connections, returns a connection that works with Amazon Q.
      */
     findUsableQConnection(connections: AwsConnection[]): AwsConnection | undefined {
-        const hasQScopes = (c: AwsConnection) => amazonQScopes.every(s => c.scopes?.includes(s))
+        const hasQScopes = (c: AwsConnection) => codeWhispererChatScopes.every(s => c.scopes?.includes(s))
         const score = (c: AwsConnection) => Number(hasQScopes(c)) * 10 + Number(c.state === 'valid')
         connections.sort(function (a, b) {
             return score(b) - score(a)
