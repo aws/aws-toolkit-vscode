@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fixes an issue where the /dev chat wouldn't let customers modify the source folder when exceeding the size limit"
+}
