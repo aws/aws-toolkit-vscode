@@ -544,7 +544,7 @@ export default defineComponent({
                 })
             })
 
-            // If Amazon Q has no connections while Toolkit has connections
+            // If Amazon Q has no valid connections while Toolkit has connections
             // Auto connect Q using toolkit connection.
             const connections = await client.listConnections()
             if (connections.length === 0 && sharedConnections && sharedConnections.length > 0) {

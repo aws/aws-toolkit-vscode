@@ -58,6 +58,21 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         return AuthUtil.instance.findUsableQConnection(connections)
     }
 
+    /**
+     * Returns a list of valid connections that is currently used by Amazon Q.
+     * @returns A list of valid connections of Q
+     */
+    override async listConnections(): Promise<Connection[]> {
+        const connections = await Auth.instance.listConnections()
+        let validConnections: Connection[] = []
+        connections.forEach(conn => {
+            if (Auth.instance.getConnectionState(conn) === 'valid') {
+                validConnections.push(conn)
+            }
+        })
+        return validConnections
+    }
+
     async useConnection(connectionId: string, auto: boolean): Promise<AuthError | undefined> {
         getLogger().debug(`called useConnection() with connectionId: '${connectionId}', auto: '${auto}'`)
         return this.ssoSetup(
