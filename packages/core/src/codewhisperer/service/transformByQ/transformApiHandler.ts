@@ -174,40 +174,42 @@ export async function resumeTransformationJob(jobId: string, userActionStatus: T
 }
 
 export async function stopJob(jobId: string) {
-    if (jobId !== '') {
-        try {
-            const apiStartTime = Date.now()
-            const response = await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
-                transformationJobId: jobId,
-            })
-            if (response !== undefined) {
-                telemetry.codeTransform_logApiLatency.emit({
-                    codeTransformApiNames: 'StopTransformation',
-                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformJobId: jobId,
-                    codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-                    codeTransformRequestId: response.$response.requestId,
-                    result: MetadataResult.Pass,
-                })
-                // always store request ID, but it will only show up in a notification if an error occurs
-                if (response.$response.requestId) {
-                    transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
-                }
-            }
-        } catch (e: any) {
-            const errorMessage = (e as Error).message
-            getLogger().error(`CodeTransformation: StopTransformation error = ${errorMessage}`)
-            telemetry.codeTransform_logApiError.emit({
+    if (!jobId) {
+        throw new Error('Job ID is empty')
+    }
+
+    try {
+        const apiStartTime = Date.now()
+        const response = await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
+            transformationJobId: jobId,
+        })
+        if (response !== undefined) {
+            telemetry.codeTransform_logApiLatency.emit({
                 codeTransformApiNames: 'StopTransformation',
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformJobId: jobId,
-                codeTransformApiErrorMessage: errorMessage,
-                codeTransformRequestId: e.requestId ?? '',
-                result: MetadataResult.Fail,
-                reason: 'StopTransformationFailed',
+                codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
+                codeTransformRequestId: response.$response.requestId,
+                result: MetadataResult.Pass,
             })
-            throw new Error('Stop job failed')
+            // always store request ID, but it will only show up in a notification if an error occurs
+            if (response.$response.requestId) {
+                transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
+            }
         }
+    } catch (e: any) {
+        const errorMessage = (e as Error).message
+        getLogger().error(`CodeTransformation: StopTransformation error = ${errorMessage}`)
+        telemetry.codeTransform_logApiError.emit({
+            codeTransformApiNames: 'StopTransformation',
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformJobId: jobId,
+            codeTransformApiErrorMessage: errorMessage,
+            codeTransformRequestId: e.requestId ?? '',
+            result: MetadataResult.Fail,
+            reason: 'StopTransformationFailed',
+        })
+        throw new Error('Stop job failed')
     }
 }
 
