@@ -140,7 +140,7 @@ export async function activateShared(
     )
 
     // auth
-    await initializeAuth(context, globals.loginManager, contextPrefix, globals.uriHandler)
+    await initializeAuth(context, globals.loginManager, contextPrefix)
     await initializeAwsCredentialsStatusBarItem(globals.awsContext, context)
 
     const extContext: ExtContext = {
