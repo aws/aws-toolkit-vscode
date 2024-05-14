@@ -314,7 +314,7 @@ export async function activate(context: ExtContext): Promise<void> {
         if (
             CodeScansState.instance.isScansEnabled() &&
             !CodeScansState.instance.isMonthlyQuotaExceeded() &&
-            auth.isConnected() &&
+            auth.isConnectionValid() &&
             !auth.isBuilderIdInUse() &&
             editor &&
             securityScanLanguageContext.isLanguageSupported(editor.document.languageId) &&
@@ -335,7 +335,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 if (
                     CodeScansState.instance.isScansEnabled() &&
                     !CodeScansState.instance.isMonthlyQuotaExceeded() &&
-                    auth.isConnected() &&
+                    auth.isConnectionValid() &&
                     !auth.isBuilderIdInUse() &&
                     editor &&
                     securityScanLanguageContext.isLanguageSupported(editor.document.languageId)
@@ -366,7 +366,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 if (
                     CodeScansState.instance.isScansEnabled() &&
                     !CodeScansState.instance.isMonthlyQuotaExceeded() &&
-                    auth.isConnected() &&
+                    auth.isConnectionValid() &&
                     !auth.isBuilderIdInUse() &&
                     editor &&
                     event.document === editor.document &&
@@ -390,7 +390,7 @@ export async function activate(context: ExtContext): Promise<void> {
             if (
                 isScansEnabled &&
                 !CodeScansState.instance.isMonthlyQuotaExceeded() &&
-                auth.isConnected() &&
+                auth.isConnectionValid() &&
                 !auth.isBuilderIdInUse() &&
                 editor &&
                 securityScanLanguageContext.isLanguageSupported(editor.document.languageId) &&

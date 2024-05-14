@@ -40,7 +40,6 @@ import { AuthSSOServer } from './server'
 import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { randomBytes, createHash } from 'crypto'
-import { UriHandler } from '../../shared/vscode/uriHandler'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { randomUUID } from '../../common/crypto'
 import { isRemoteWorkspace } from '../../shared/vscode/env'
@@ -437,7 +436,7 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
         registration: ClientRegistration
     ): Promise<{ token: SsoToken; registration: ClientRegistration; region: string; startUrl: string }> {
         const state = randomUUID()
-        const authServer = new AuthSSOServer(state, UriHandler.buildUri(authenticationPath).toString())
+        const authServer = new AuthSSOServer(state)
 
         try {
             await authServer.start()
