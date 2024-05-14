@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Resume AWS Builder ID connection for users who do not have featureDev or Transform scopes"
+}
