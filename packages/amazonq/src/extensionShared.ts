@@ -162,10 +162,14 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
             authEnabledConnections,
         })
     })
-    // do not block on this
-    if (authProvider.webView?.server && 'reuseConnectionFromAwsToolkit' in authProvider.webView?.server) {
-        authProvider.webView?.server.tryReuseConnectionFromAwsToolkit()
-    }
+
+    // Hack: Wait until toolkit is ready to reuse its connections
+    // This is to fix urgent issue when old toolkit builder id connections
+    // were not transferred to Amazon Q.
+    // Should be removed in subsequent releases
+    setTimeout(async () => {
+        await authProvider.webView?.server.tryReuseConnectionFromAwsToolkit()
+    }, 3000)
 }
 
 export async function deactivateShared() {

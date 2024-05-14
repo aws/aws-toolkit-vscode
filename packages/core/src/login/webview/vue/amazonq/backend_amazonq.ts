@@ -9,6 +9,7 @@ import {
     Connection,
     isSsoConnection,
     SsoConnection,
+    isIdcSsoConnection,
 } from '../../../../auth/connection'
 import { AuthUtil, amazonQScopes } from '../../../../codewhisperer/util/authUtil'
 import { CommonAuthWebview } from '../backend'
@@ -60,28 +61,36 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     }
 
     /**
-     * Attempts to re-use a valid connection in AWS Toolkit
+     * Attempts to re-use a valid connection in AWS Toolkit.
+     * This logic should only apply to below users:
+     * 1. They have a invalid builder id connection in Amazon Q
+     * For these users, if there is a valid builder id connection in AWS Toolkit,
+     * We attempt to re-use this valid builder id connection.
      */
     async tryReuseConnectionFromAwsToolkit() {
+        getLogger().debug(`auth: try to reuse connection in aws toolkit`)
         // fetch existing connections of AWS toolkit in Amazon Q
         // or fetch existing connections of Amazon Q in AWS Toolkit
         // to reuse connections in AWS Toolkit & Amazon Q
         const sharedConnections = await this.fetchConnections()
-        // If Amazon Q has no valid connections while Toolkit has connections
+        // Only when Amazon Q has no valid builder id connections while Toolkit has connections
         // Auto connect Q using toolkit connection.
         const connections = await this.listConnections()
         let shouldReuseToolkitConnection = true
         connections.forEach(conn => {
             if (
                 Auth.instance.getConnectionState(conn) === 'valid' ||
-                Auth.instance.getConnectionState(conn) === 'authenticating'
+                Auth.instance.getConnectionState(conn) === 'authenticating' ||
+                isIdcSsoConnection(conn)
             ) {
                 shouldReuseToolkitConnection = false
             }
         })
         if (shouldReuseToolkitConnection && sharedConnections && sharedConnections.length > 0) {
+            getLogger().debug(`auth: findUsableConnection in aws toolkit`)
             const conn = await this.findUsableConnection(sharedConnections)
             if (conn) {
+                getLogger().debug(`auth: use connection from aws toolkit ${conn.id}`)
                 await this.useConnection(conn.id, true)
             }
         }

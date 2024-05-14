@@ -196,4 +196,5 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
         await this.showResourceExplorer()
     }
+    async tryReuseConnectionFromAwsToolkit() {}
 }
