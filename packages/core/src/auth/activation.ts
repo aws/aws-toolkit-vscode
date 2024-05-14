@@ -12,15 +12,12 @@ import { ExtensionUse, initAuthCommands } from './utils'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { isInDevEnv } from '../shared/vscode/env'
 import { registerCommands, getShowManageConnections } from './ui/vue/show'
-import { UriHandler } from '../shared/vscode/uriHandler'
-import { authenticationPath } from './sso/ssoAccessTokenProvider'
 import { isWeb } from '../shared/extensionGlobals'
 
 export async function initialize(
     extensionContext: vscode.ExtensionContext,
     loginManager: LoginManager,
-    contextPrefix: string,
-    uriHandler?: UriHandler
+    contextPrefix: string
 ): Promise<void> {
     Auth.instance.onDidChangeActiveConnection(async conn => {
         // This logic needs to be moved to `Auth.useConnection` to correctly record `passive`
@@ -37,11 +34,6 @@ export async function initialize(
     extensionContext.subscriptions.push(getShowManageConnections())
 
     await showManageConnectionsOnStartup()
-
-    uriHandler?.onPath(`/${authenticationPath}`, () => {
-        // TODO emit telemetry
-        getLogger().info('authenticated')
-    })
 }
 
 /**
