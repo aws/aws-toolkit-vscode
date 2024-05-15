@@ -91,7 +91,7 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
 
     await activateTelemetry(context, globals.awsContext, Settings.instance, 'Amazon Q For VS Code')
 
-    await initializeAuth(context, globals.loginManager, contextPrefix, undefined)
+    await initializeAuth(context, globals.loginManager, contextPrefix)
 
     const extContext = {
         extensionContext: context,
