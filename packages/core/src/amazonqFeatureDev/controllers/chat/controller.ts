@@ -17,6 +17,7 @@ import {
     MonthlyConversationLimitError,
     PlanIterationLimitError,
     SelectedFolderNotInWorkspaceFolderError,
+    WorkspaceFolderNotFoundError,
     createUserFacingErrorMessage,
 } from '../../errors'
 import { defaultRetryLimit } from '../../limits'
@@ -301,7 +302,7 @@ export class FeatureDevController {
     private async onApproachGeneration(session: Session, message: string, tabID: string) {
         await session.preloader(message)
 
-        getLogger().info(`Q - Dev Chat conversation id: ${session.conversationId}`)
+        getLogger().info(`${featureName} conversation id: ${session.conversationId}`)
 
         this.messenger.sendAnswer({
             type: 'answer',
@@ -421,7 +422,7 @@ export class FeatureDevController {
             if (!this.isAmazonQVisible) {
                 const open = 'Open chat'
                 const resp = await vscode.window.showInformationMessage(
-                    'Your code suggestions from Amazon Q are ready to review',
+                    'The Amazon Q Developer Agent for software development has generated code for you to review',
                     open
                 )
                 if (resp === open) {
@@ -726,12 +727,21 @@ export class FeatureDevController {
                 return
             }
         } catch (err: any) {
-            this.messenger.sendErrorMessage(
-                createUserFacingErrorMessage(err.message),
-                message.tabID,
-                this.retriesRemaining(session),
-                session?.state.phase
-            )
+            if (err instanceof WorkspaceFolderNotFoundError) {
+                this.messenger.sendAnswer({
+                    type: 'answer',
+                    tabID: message.tabID,
+                    message: err.message,
+                })
+                this.messenger.sendChatInputEnabled(message.tabID, false)
+            } else {
+                this.messenger.sendErrorMessage(
+                    createUserFacingErrorMessage(err.message),
+                    message.tabID,
+                    this.retriesRemaining(session),
+                    session?.state.phase
+                )
+            }
         }
     }
 

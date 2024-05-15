@@ -57,13 +57,11 @@ export class Messenger {
 
     public sendErrorMessage(errorMessage: string, tabID: string, retries: number, phase?: SessionStatePhase) {
         if (retries === 0) {
-            this.dispatcher.sendErrorMessage(
-                new ErrorMessage(
-                    `Sorry, we're unable to provide a response at this time. Please try again later or share feedback with our team to help us troubleshoot.`,
-                    errorMessage,
-                    tabID
-                )
-            )
+            this.sendAnswer({
+                type: 'answer',
+                tabID: tabID,
+                message: `I'm sorry, I'm having technical difficulties and can't continue at the moment. Please try again later, and share feedback to help me improve.`,
+            })
             this.sendAnswer({
                 message: undefined,
                 type: 'system-prompt',
