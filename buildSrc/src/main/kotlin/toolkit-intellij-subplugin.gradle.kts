@@ -122,7 +122,6 @@ tasks.withType<Test>().all {
     val jetbrainsCoreTestResources = project(":plugin-toolkit:jetbrains-core").projectDir.resolve("tst-resources")
     systemProperty("idea.log.config.properties.file", jetbrainsCoreTestResources.resolve("toolkit-test-log.properties"))
     systemProperty("org.gradle.project.ideProfileName", ideProfile.name)
-    systemProperty("aws.dev.useDAG", true)
 
     jvmArgs(openedPackages)
 }
