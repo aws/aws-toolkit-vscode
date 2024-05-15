@@ -1,10 +1,10 @@
 * @aws/aws-ides-team
 
-amazonq/ @aws/dexp @aws/aws-mynah
-amazonqFeatureDev/ @aws/earlybird
 
+amazonqFeatureDev/ @aws/earlybird
+chat/ @aws/dexp
 codemodernizer/ @aws/elastic-gumby
 codetransform/ @aws/elastic-gumby
 codewhisperer/ @aws/codewhisperer-team
 
-mynah-ui/ @aws/dexp @aws/aws-mynah
+mynah-ui/ @aws/dexp
