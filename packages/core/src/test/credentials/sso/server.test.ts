@@ -131,7 +131,7 @@ describe('AuthSSOServer', function () {
         server.cancelCurrentFlow()
 
         const err = await promise
-        assert.ok(isUserCancelledError(err), 'CancellationError not thrown.')
+        assert.ok(isUserCancelledError(err.inner), 'CancellationError not thrown.')
     })
 
     it('initializes and closes instances', async function () {
