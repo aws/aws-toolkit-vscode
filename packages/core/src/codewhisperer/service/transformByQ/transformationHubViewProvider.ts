@@ -6,7 +6,14 @@
 import * as vscode from 'vscode'
 import globals from '../../../shared/extensionGlobals'
 import * as CodeWhispererConstants from '../../models/constants'
-import { StepProgress, jobPlanProgress, sessionJobHistory, transformByQState } from '../../models/model'
+import {
+    StepProgress,
+    jobPlanProgress,
+    SessionJobHistory,
+    transformByQState,
+    HistoryEntry,
+    QCodeTransformHistory,
+} from '../../models/model'
 import { convertToTimeString } from '../../../shared/utilities/textUtilities'
 import { getLogger } from '../../../shared/logger'
 import { getTransformationSteps } from './transformApiHandler'
@@ -17,10 +24,15 @@ import {
 } from '../../../codewhisperer/client/codewhispereruserclient'
 import { startInterval } from '../../commands/startTransformByQ'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
+import { ExportResultArchiveStructure } from '../../../shared/utilities/download'
+import path from 'path'
+import * as fs from 'fs-extra'
 
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.transformationHub'
-    private _view?: vscode.WebviewView
+
+    // TODO revert change to public
+    public _view?: vscode.WebviewView
     private lastClickedButton: string = ''
     private _extensionUri: vscode.Uri = globals.context.extensionUri
     constructor() {}
@@ -35,7 +47,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             if (this.lastClickedButton === 'job history') {
                 clearInterval(transformByQState.getIntervalId())
                 transformByQState.setIntervalId(undefined)
-                this._view!.webview.html = this.showJobHistory()
+                this.showJobHistory()
             } else {
                 if (transformByQState.getIntervalId() === undefined && transformByQState.isRunning()) {
                     startInterval()
@@ -68,7 +80,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         }
 
         if (this.lastClickedButton === 'job history') {
-            this._view!.webview.html = this.showJobHistory()
+            this.showJobHistory()
         } else {
             this.showPlanProgress(Date.now())
                 .then(jobPlanProgress => {
@@ -80,8 +92,8 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         }
     }
 
-    private showJobHistory(): string {
-        return `<!DOCTYPE html>
+    public showJobHistory() {
+        this._view!.webview.html = `<!DOCTYPE html>
             <html lang="en">
             <head>
             <title>Transformation Hub</title>
@@ -94,15 +106,110 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             <body>
             <p><b>Job Status</b></p>
             ${
-                Object.keys(sessionJobHistory).length === 0
+                Object.keys(SessionJobHistory.Instance.get()).length === 0
                     ? `<p>${CodeWhispererConstants.nothingToShowMessage}</p>`
-                    : this.getTableMarkup(sessionJobHistory[transformByQState.getJobId()])
+                    : this.getTableMarkup(SessionJobHistory.Instance.get())
             }
+            <script>
+                const vscode = acquireVsCodeApi();
+
+                function handleViewSummaryClicked(jobId) {
+                    console.log(jobId)
+                    vscode.postMessage({
+                        command: 'viewSummary',
+                        jobId: jobId
+                    })
+                }
+
+                function handleViewPatchClicked(jobId) {
+                    console.log(jobId)
+                    vscode.postMessage({
+                        command: 'viewPatch',
+                        jobId: jobId
+                    })
+                }
+
+                function setupViewSummaryButtons() {
+                    console.log("setupViewSummaryButtons")
+                    const viewSummaryButtons = document.getElementsByClassName("view-summary")
+                    for(const item of viewSummaryButtons) {
+                        item.addEventListener("click", (event) => {
+                            handleViewSummaryClicked(item.getAttribute('data-jobid'))
+                        })
+                    }
+                }
+
+                function setupViewPatchButtons(){
+                    console.log("setupViewPatchButtons")
+                    const viewPatchButtons = document.getElementsByClassName("view-patch")
+                    for(const item of viewPatchButtons) {
+                        item.addEventListener("click", (event) => {
+                            handleViewPatchClicked(item.getAttribute('data-jobid'))
+                        })
+                    }
+                }
+                setupViewPatchButtons();
+                setupViewSummaryButtons();
+            </script>
             </body>
             </html>`
+
+        this._view!.webview.onDidReceiveMessage(message => {
+            switch (message.command) {
+                case 'alert':
+                    vscode.window.showErrorMessage(message.text).then(
+                        onSuccess => getLogger().info(`Success ${onSuccess}`),
+                        onFail => getLogger().info(`Fail ${onFail}`)
+                    )
+                    return
+                case 'viewPatch': {
+                    const patchFolder = SessionJobHistory.Instance.get()[message.jobId]?.patchFile
+                    if (patchFolder === undefined || patchFolder === '') {
+                        vscode.window.showErrorMessage('Unable to open patch file').then(
+                            onSuccess => getLogger().info(`Success ${onSuccess}`),
+                            onFail => getLogger().info(`Fail ${onFail}`)
+                        )
+                    } else {
+                        void vscode.commands.executeCommand(
+                            'vscode.open',
+                            vscode.Uri.file(path.join(patchFolder, ExportResultArchiveStructure.PathToDiffPatch))
+                        )
+                    }
+                    return
+                }
+                case 'viewSummary': {
+                    const summaryFilePath = SessionJobHistory.Instance.get()[message.jobId]?.summaryFile
+                    summaryFilePath === undefined
+                        ? ''
+                        : void vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(summaryFilePath))
+                    return
+                }
+            }
+        })
     }
 
-    private getTableMarkup(job: { startTime: string; projectName: string; status: string; duration: string }) {
+    private getTableMarkup(jobs: QCodeTransformHistory) {
+        const markup = []
+        for (const [jobId, entry] of Object.entries(jobs)) {
+            const job = entry as HistoryEntry
+            const hasPatch = job.patchFile === undefined || job.patchFile === '' || !fs.pathExistsSync(job.patchFile)
+            const hasSummary =
+                job.summaryFile === undefined || job.summaryFile === '' || !fs.pathExistsSync(job.summaryFile)
+            const patchId = hasPatch ? 'disabled' : `data-jobid="${jobId}"`
+            const summaryId = hasSummary ? 'disabled' : `data-jobid="${jobId}"`
+
+            markup.push(
+                `<tr>
+                    <td>${job.startTime}</td>
+                    <td>${job.projectName}</td>
+                    <td>${job.status || 'UNKNOWN'}</td>
+                    <td>${job.duration}</td>
+                    <td>${jobId}</td>
+                    <td><button class=view-patch ${patchId}>View Patch</button></td>
+                    <td><button class=view-summary ${summaryId}>View Summary</button></td>
+                </tr>`
+            )
+        }
         return `
             <table border="1" style="border-collapse:collapse">
                 <thead>
@@ -112,16 +219,12 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                         <th>Status</th>
                         <th>Duration</th>
                         <th>Id</th>
+                        <th>Patch</th>
+                        <th>Summary</th>
                     </tr>
                 </thead>
                 <tbody>
-                <tr>
-                    <td>${job.startTime}</td>
-                    <td>${job.projectName}</td>
-                    <td>${job.status}</td>
-                    <td>${job.duration}</td>
-                    <td>${transformByQState.getJobId()}</td>
-                </tr>
+                ${markup.join('')}
                 </tbody>
             </table>
         `

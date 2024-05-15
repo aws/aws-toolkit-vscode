@@ -16,6 +16,7 @@ import {
     jobPlanProgress,
     FolderInfo,
     TransformationCandidateProject,
+    SessionJobHistory,
 } from '../models/model'
 import { convertDateToTimestamp } from '../../shared/utilities/textUtilities'
 import {
@@ -24,7 +25,6 @@ import {
     startJob,
     stopJob,
     throwIfCancelled,
-    updateJobHistory,
     uploadPayload,
     zipCode,
 } from '../service/transformByQ/transformApiHandler'
@@ -133,7 +133,7 @@ export function startInterval() {
             'aws.amazonq.showPlanProgressInHub',
             CodeTransformTelemetryState.instance.getStartTime()
         )
-        updateJobHistory()
+        void SessionJobHistory.Instance.update()
     }, CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
     transformByQState.setIntervalId(intervalId)
 }
@@ -304,7 +304,7 @@ export async function setTransformationToRunningState() {
     jobPlanProgress['generatePlan'] = StepProgress.Pending
     jobPlanProgress['transformCode'] = StepProgress.Pending
     transformByQState.resetPlanSteps()
-    transformByQState.resetSessionJobHistory()
+    // transformByQState.resetSessionJobHistory()
     transformByQState.setJobId('') // so that details for last job are not overwritten when running one job after another
     transformByQState.setPolledJobStatus('') // so that previous job's status does not display at very beginning of this job
 
@@ -335,7 +335,7 @@ export async function setTransformationToRunningState() {
 }
 
 export async function postTransformationJob() {
-    updateJobHistory()
+    void SessionJobHistory.Instance.update()
     if (jobPlanProgress['startJob'] !== StepProgress.Succeeded) {
         jobPlanProgress['startJob'] = StepProgress.Failed
     }

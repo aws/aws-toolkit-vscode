@@ -18,6 +18,10 @@ import { autoScansEnabledKey, autoTriggerEnabledKey } from './constants'
 import { get, set } from '../util/commonUtil'
 import { ChatControllerEventEmitters } from '../../amazonqGumby/chat/controller/controller'
 import { TransformationSteps } from '../client/codewhispereruserclient'
+import { convertToTimeString } from '../../shared/utilities/textUtilities'
+import { getLogger } from '../../shared/logger'
+import { calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
+import { CodeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
 
 // unavoidable global variables
 interface VsCodeState {
@@ -338,9 +342,57 @@ export const jobPlanProgress: {
     transformCode: StepProgress.NotStarted,
 }
 
-export let sessionJobHistory: {
-    [jobId: string]: { startTime: string; projectName: string; status: string; duration: string }
-} = {}
+export interface HistoryEntry {
+    startTime: string
+    projectName: string
+    status: string
+    duration: string
+    summaryFile?: string
+    patchFile?: string
+}
+
+export interface QCodeTransformHistory {
+    [key: string]: HistoryEntry
+}
+
+export class SessionJobHistory {
+    private static _instance: SessionJobHistory
+
+    public static get Instance() {
+        return this._instance || (this._instance = new this())
+    }
+
+    private jobHistoryKey = `code-transform-job-history`
+
+    public async update() {
+        const history = this.get()
+        // The summary path may be cleared in certain circumstances (accept / revoke changes or restart)
+        // so we need to record this and reuse in case we had one
+        const oldSummaryPath = history[transformByQState.getJobId()]?.summaryFile
+        const oldPatchPath = history[transformByQState.getJobId()]?.patchFile
+        history[transformByQState.getJobId()] = {
+            startTime: transformByQState.getStartTime(),
+            projectName: transformByQState.getProjectName(),
+            status: transformByQState.getPolledJobStatus(),
+            duration: convertToTimeString(calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime())),
+            summaryFile: oldSummaryPath || transformByQState.getSummaryFilePath(),
+            patchFile: oldPatchPath || transformByQState.getResultArchiveFilePath(),
+        }
+
+        getLogger().info(
+            `Updated HistoryEntry for jobId  ${transformByQState.getJobId()} summaryFile: ${transformByQState.getSummaryFilePath()} patchFile: ${transformByQState.getResultArchiveFilePath()}`
+        )
+
+        await transformByQState.getExtensionContext()?.workspaceState.update(this.jobHistoryKey, history)
+    }
+
+    public get() {
+        const history = transformByQState
+            .getExtensionContext()
+            ?.workspaceState.get<QCodeTransformHistory>(this.jobHistoryKey)
+        return history === undefined ? {} : history
+    }
+}
 
 export class TransformByQState {
     private transformByQState: TransformByQStatus = TransformByQStatus.NotStarted
@@ -379,6 +431,8 @@ export class TransformByQState {
     private javaHome: string | undefined = undefined
 
     private chatControllers: ChatControllerEventEmitters | undefined = undefined
+
+    private extensionContext: vscode.ExtensionContext | undefined = undefined
 
     private dependencyFolderInfo: FolderInfo | undefined = undefined
 
@@ -502,6 +556,10 @@ export class TransformByQState {
         return this.intervalId
     }
 
+    public getExtensionContext() {
+        return this.extensionContext
+    }
+
     public appendToErrorLog(message: string) {
         this.errorLog += `${message}\n\n`
     }
@@ -602,6 +660,10 @@ export class TransformByQState {
         this.chatControllers = controllers
     }
 
+    public setExtensionContext(context: vscode.ExtensionContext) {
+        this.extensionContext = context
+    }
+
     public setDependencyFolderInfo(folderInfo: FolderInfo) {
         this.dependencyFolderInfo = folderInfo
     }
@@ -618,9 +680,9 @@ export class TransformByQState {
         this.planSteps = undefined
     }
 
-    public resetSessionJobHistory() {
-        sessionJobHistory = {}
-    }
+    // public resetSessionJobHistory() {
+    //     sessionJobHistory = {}
+    // }
 
     public setJobDefaults() {
         this.setToNotStarted()

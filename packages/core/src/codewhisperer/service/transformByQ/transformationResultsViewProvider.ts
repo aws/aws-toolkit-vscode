@@ -10,7 +10,7 @@ import { parsePatch, applyPatches, ParsedDiff } from 'diff'
 import path from 'path'
 import vscode from 'vscode'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
-import { TransformByQReviewStatus, transformByQState } from '../../models/model'
+import { TransformByQReviewStatus, transformByQState, SessionJobHistory } from '../../models/model'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../../shared/utilities/download'
 import { getLogger } from '../../../shared/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
@@ -396,7 +396,7 @@ export class ProposedTransformationExplorer {
                 )
                 transformByQState.setResultArchiveFilePath(pathContainingArchive)
                 await vscode.commands.executeCommand('setContext', 'gumby.isSummaryAvailable', true)
-
+                await SessionJobHistory.Instance.update()
                 // This metric is only emitted when placed before showInformationMessage
                 telemetry.codeTransform_vcsDiffViewerVisible.emit({
                     codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
@@ -410,6 +410,17 @@ export class ProposedTransformationExplorer {
                     message: CodeWhispererConstants.viewProposedChangesChatMessage,
                     tabID: ChatSessionManager.Instance.getSession().tabID,
                 })
+                // const prevValue = context.workspaceState.get<Map<string, string>>(`code-transform-job-data`) ?? new Map<string, string>()
+                // getLogger().info(`stored workspaces jobs ${prevValue}`)
+                // prevValue.set(transformByQState.getJobId(), pathContainingArchive)
+                // context.workspaceState.update(`code-transform-job-data`, pathContainingArchive)
+                // .then(onFullfilled => {
+                //     getLogger().info(`Successfully stored job ${transformByQState.getJobId()} results to workspace state: ${onFullfilled}`)
+                //     },
+                //     onRejected => {
+                //         getLogger().info(`Failed to store job ${transformByQState.getJobId()} results to workspace state: ${onRejected}`)
+                //     }
+                // )
                 await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
             } catch (e: any) {
                 deserializeErrorMessage = (e as Error).message

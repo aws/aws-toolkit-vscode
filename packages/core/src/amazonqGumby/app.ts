@@ -15,8 +15,9 @@ import { debounce } from 'lodash'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { showTransformationHub } from './commands'
 import { transformByQState } from '../codewhisperer/models/model'
+import { ExtensionContext } from 'vscode'
 
-export function init(appContext: AmazonQAppInitContext) {
+export function init(appContext: AmazonQAppInitContext, extensionContext: ExtensionContext) {
     const gumbyChatControllerEventEmitters: ChatControllerEventEmitters = {
         transformSelected: new vscode.EventEmitter<any>(),
         authClicked: new vscode.EventEmitter<any>(),
@@ -69,4 +70,5 @@ export function init(appContext: AmazonQAppInitContext) {
     showTransformationHub.register()
 
     transformByQState.setChatControllers(gumbyChatControllerEventEmitters)
+    transformByQState.setExtensionContext(extensionContext)
 }
