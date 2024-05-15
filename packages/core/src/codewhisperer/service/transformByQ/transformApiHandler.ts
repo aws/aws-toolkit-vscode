@@ -178,7 +178,7 @@ export async function stopJob(jobId: string) {
         throw new Error('Job ID is empty')
     }
 
-    if (!transformByQState.isRunning()) {
+    if (transformByQState.isNotStarted()) {
         return
     }
 
