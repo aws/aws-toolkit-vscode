@@ -13,3 +13,11 @@ export type ChatItemType =
     | 'answer-stream'
     | 'answer-part'
     | 'code-result'
+
+export interface IManifestFile {
+    pomArtifactId: string
+    pomFolderName: string
+    hilCapability: string
+    pomGroupId: string
+    sourcePomVersion: string
+}

@@ -7,6 +7,7 @@
 import * as os from 'os'
 import { transformByQState, JDKVersion } from '../../../../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../../../../codewhisperer/models/constants'
+import DependencyVersions from '../../../models/dependencies'
 
 // These enums map to string IDs
 export enum ButtonActions {
@@ -14,9 +15,12 @@ export enum ButtonActions {
     VIEW_TRANSFORMATION_HUB = 'gumbyViewTransformationHub',
     CONFIRM_TRANSFORMATION_FORM = 'gumbyTransformFormConfirm',
     CANCEL_TRANSFORMATION_FORM = 'gumbyTransformFormCancel',
+    CONFIRM_DEPENDENCY_FORM = 'gumbyTransformDependencyFormConfirm',
+    CANCEL_DEPENDENCY_FORM = 'gumbyTransformDependencyFormCancel',
     CONFIRM_JAVA_HOME_FORM = 'gumbyJavaHomeFormConfirm',
     CANCEL_JAVA_HOME_FORM = 'gumbyJavaHomeFormCancel',
     CONFIRM_START_TRANSFORMATION_FLOW = 'gumbyStartTransformation',
+    OPEN_FILE = 'gumbyOpenFile',
 }
 
 export enum GumbyCommands {
@@ -85,5 +89,25 @@ export default class MessengerUtils {
         }
 
         return CodeWhispererConstants.projectPromptChatMessage.replace('JAVA_VERSION_HERE', javaVersionString)
+    }
+
+    static createAvailableDependencyVersionString = (versions: DependencyVersions): string => {
+        let message = `I found ${versions.length} other dependency versions that are more recent than the dependency in your code that's causing an error: ${versions.currentVersion}.
+
+`
+
+        if (versions.majorVersions !== undefined && versions.majorVersions.length > 0) {
+            message = message.concat(
+                `Latest major version: ${versions.majorVersions[versions.majorVersions.length - 1]} \n`
+            )
+        }
+
+        if (versions.minorVersions !== undefined && versions.minorVersions.length > 0) {
+            message = message.concat(
+                `Latest minor version: ${versions.minorVersions[versions.minorVersions.length - 1]} \n`
+            )
+        }
+
+        return message
     }
 }

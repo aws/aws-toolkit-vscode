@@ -20,10 +20,9 @@ interface MavenVersionData {
 }
 
 // run 'install' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
-function installProjectDependencies(dependenciesFolder: FolderInfo) {
+function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: string) {
     // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
     const baseCommand = transformByQState.getMavenName()
-    const modulePath = transformByQState.getProjectPath()
 
     transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
 
@@ -89,10 +88,9 @@ function installProjectDependencies(dependenciesFolder: FolderInfo) {
     }
 }
 
-function copyProjectDependencies(dependenciesFolder: FolderInfo) {
+function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: string) {
     // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
     const baseCommand = transformByQState.getMavenName()
-    const modulePath = transformByQState.getProjectPath()
 
     transformByQState.appendToErrorLog(`Running command ${baseCommand} copy-dependencies`)
 
@@ -156,9 +154,9 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo) {
     }
 }
 
-export async function prepareProjectDependencies(dependenciesFolder: FolderInfo) {
+export async function prepareProjectDependencies(dependenciesFolder: FolderInfo, rootPomPath: string) {
     try {
-        copyProjectDependencies(dependenciesFolder)
+        copyProjectDependencies(dependenciesFolder, rootPomPath)
     } catch (err) {
         // continue in case of errors
         getLogger().info(
@@ -167,7 +165,7 @@ export async function prepareProjectDependencies(dependenciesFolder: FolderInfo)
     }
 
     try {
-        installProjectDependencies(dependenciesFolder)
+        installProjectDependencies(dependenciesFolder, rootPomPath)
     } catch (err) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.cleanInstallErrorNotification)
         // open build-logs.txt file to show user error logs
@@ -236,4 +234,39 @@ export async function getVersionData(): Promise<MavenVersionData> {
         `CodeTransformation: Ran ${baseCommand} to get Maven version = ${localMavenVersion} and Java version = ${localJavaVersion} with project JDK = ${transformByQState.getSourceJDKVersion()}`
     )
     return { mavenVersion: localMavenVersion, javaVersion: localJavaVersion }
+}
+
+// run maven 'versions:dependency-updates-aggregate-report' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
+export function runMavenDependencyUpdateCommands(dependenciesFolder: FolderInfo) {
+    // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
+    const baseCommand = transformByQState.getMavenName() // will be one of: 'mvnw.cmd', './mvnw', 'mvn'
+
+    // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
+    const args = [
+        'versions:dependency-updates-aggregate-report',
+        `-DoutputDirectory=${dependenciesFolder.path}`,
+        '-DonlyProjectDependencies=true',
+        '-DdependencyUpdatesReportFormats=xml',
+    ]
+
+    let environment = process.env
+    // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
+    if (transformByQState.getJavaHome() !== undefined) {
+        environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
+    }
+
+    const spawnResult = spawnSync(baseCommand, args, {
+        // default behavior is looks for pom.xml in this root
+        cwd: dependenciesFolder.path,
+        shell: true,
+        encoding: 'utf-8',
+        env: environment,
+        maxBuffer: CodeWhispererConstants.maxBufferSize,
+    })
+
+    if (spawnResult.status !== 0) {
+        throw new Error(spawnResult.stderr)
+    } else {
+        return spawnResult.stdout
+    }
 }

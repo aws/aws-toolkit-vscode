@@ -20,6 +20,7 @@ describe('SSO Cache', function () {
         clientId: 'dummyId',
         clientSecret: 'dummySecret',
         expiresAt: new Date(Date.now() + hourInMs),
+        startUrl,
     }
 
     const validToken = {
@@ -43,7 +44,7 @@ describe('SSO Cache', function () {
         })
 
         it('caches based off region', async function () {
-            await cache.save({ region }, validRegistration)
+            await cache.save({ startUrl, region }, validRegistration)
 
             const cachedPath = path.join(testDir, `aws-toolkit-vscode-client-id-${region}.json`)
             const contents = await fs.readFile(cachedPath, 'utf-8')
@@ -53,7 +54,7 @@ describe('SSO Cache', function () {
                 expiresAt: validRegistration.expiresAt.toISOString(),
             })
 
-            assert.deepStrictEqual(await cache.load({ region }), validRegistration)
+            assert.deepStrictEqual(await cache.load({ startUrl, region }), validRegistration)
         })
     })
 

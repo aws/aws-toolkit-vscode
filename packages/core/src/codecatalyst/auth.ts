@@ -84,6 +84,7 @@ export class CodeCatalystAuthenticationProvider {
         this.onDidChangeActiveConnection(async () => {
             if (this.activeConnection) {
                 await this.setScopeExpired(this.activeConnection, false)
+                await this.isConnectionOnboarded(this.activeConnection, true)
             }
             await setCodeCatalystConnectedContext(this.isConnectionValid())
             this.onDidChangeEmitter.fire()
@@ -91,6 +92,9 @@ export class CodeCatalystAuthenticationProvider {
 
         this.onAccessDeniedException(async (showReauthPrompt: boolean) => {
             await this.accessDeniedExceptionHandler(showReauthPrompt)
+            if (this.activeConnection) {
+                await this.isConnectionOnboarded(this.activeConnection, true)
+            }
             this.onDidChangeEmitter.fire()
         })
 
@@ -383,7 +387,7 @@ export class CodeCatalystAuthenticationProvider {
             await this.isConnectionOnboarded(conn, true)
         } else {
             getLogger().info(`auth: re-use(new scope) to connection from existing connection id ${connId}`)
-            const newConn = await this.secondaryAuth.addScopes(conn, scopesCodeCatalyst)
+            const newConn = await this.secondaryAuth.addScopes(conn, defaultScopes)
             await this.secondaryAuth.useNewConnection(newConn)
             await this.isConnectionOnboarded(newConn, true)
         }

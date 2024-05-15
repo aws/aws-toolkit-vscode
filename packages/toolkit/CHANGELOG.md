@@ -1,3 +1,8 @@
+## 3.3.0 2024-05-13
+
+- **Feature** UX: Added keyboard navigation to login screen.
+- **Feature** New SSO Authorization Code flow for faster logins
+
 ## 3.2.0 2024-05-06
 
 - **Release** No user-facing changes

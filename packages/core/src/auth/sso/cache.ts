@@ -14,6 +14,7 @@ import { SystemUtilities } from '../../shared/systemUtilities'
 import { DevSettings } from '../../shared/settings'
 
 interface RegistrationKey {
+    readonly startUrl: string
     readonly region: string
     readonly scopes?: string[]
 }
@@ -70,7 +71,7 @@ export function getTokenCache(directory = getCacheDir()): KeyedCache<SsoAccess> 
     function read(data: StoredToken): SsoAccess {
         const registration = hasProps(data, 'clientId', 'clientSecret', 'registrationExpiresAt')
             ? {
-                  ...selectFrom(data, 'clientId', 'clientSecret', 'scopes'),
+                  ...selectFrom(data, 'clientId', 'clientSecret', 'scopes', 'startUrl'),
                   expiresAt: new Date(data.registrationExpiresAt),
               }
             : undefined
@@ -130,12 +131,13 @@ function getTokenCacheFile(ssoCacheDir: string, key: string): string {
 }
 
 function getRegistrationCacheFile(ssoCacheDir: string, key: RegistrationKey): string {
-    const hashScopes = (scopes: string[]) => {
+    const hash = (startUrl: string, scopes: string[]) => {
         const shasum = crypto.createHash('sha256')
+        shasum.update(startUrl)
         scopes.forEach(s => shasum.update(s))
         return shasum.digest('hex')
     }
 
-    const suffix = `${key.region}${key.scopes && key.scopes.length > 0 ? `-${hashScopes(key.scopes)}` : ''}`
+    const suffix = `${key.region}${key.scopes && key.scopes.length > 0 ? `-${hash(key.startUrl, key.scopes)}` : ''}`
     return path.join(ssoCacheDir, `aws-toolkit-vscode-client-id-${suffix}.json`)
 }
