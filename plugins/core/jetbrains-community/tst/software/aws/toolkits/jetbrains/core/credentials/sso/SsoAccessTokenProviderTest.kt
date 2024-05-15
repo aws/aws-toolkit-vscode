@@ -294,6 +294,54 @@ class SsoAccessTokenProviderTest {
     }
 
     @Test
+    fun `PKCE refresh access token saves PKCE token`() {
+        val sut = SsoAccessTokenProvider(ssoUrl, "us-east-1", ssoCache, ssoOidcClient, scopes = listOf("dummy:scope"), clock = clock)
+
+        val expirationClientRegistration = clock.instant().plusSeconds(120)
+        setupCacheStub(expirationClientRegistration)
+
+        val accessToken = PKCEAuthorizationGrantToken(ssoUrl, ssoRegion, "dummyToken", "refreshToken", clock.instant(), clock.instant())
+        ssoCache.stub {
+            on(
+                ssoCache.loadAccessToken(any<PKCEAccessTokenCacheKey>())
+            ).thenReturn(
+                accessToken
+            )
+
+            on(
+                ssoCache.loadClientRegistration(any<PKCEClientRegistrationCacheKey>())
+            ).thenReturn(
+                PKCEClientRegistration(
+                    clientType = "public",
+                    redirectUris = listOf("uri"),
+                    grantTypes = listOf("grant"),
+                    issuerUrl = ssoUrl,
+                    region = ssoRegion,
+                    scopes = listOf("dummy:scope"),
+                    clientId = clientId,
+                    clientSecret = clientSecret,
+                    expiresAt = clock.instant()
+                )
+            )
+        }
+
+        ssoOidcClient.stub {
+            on(
+                ssoOidcClient.createToken(refreshTokenRequest())
+            ).thenReturn(
+                refreshTokenResponse()
+            )
+        }
+
+        val refreshedToken = runBlocking { sut.refreshToken(sut.accessToken()) }
+
+        verify(ssoCache).loadAccessToken(any<PKCEAccessTokenCacheKey>())
+        verify(ssoCache).loadClientRegistration(any<PKCEClientRegistrationCacheKey>())
+        verify(ssoOidcClient).createToken(any<CreateTokenRequest>())
+        verify(ssoCache).saveAccessToken(any<PKCEAccessTokenCacheKey>(), eq(refreshedToken))
+    }
+
+    @Test
     fun exceptionStopsPolling() {
         val expirationClientRegistration = clock.instant().plusSeconds(120)
 

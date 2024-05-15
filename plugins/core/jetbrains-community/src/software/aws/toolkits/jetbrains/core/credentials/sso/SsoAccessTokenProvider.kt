@@ -124,7 +124,7 @@ class SsoAccessTokenProvider(
         val registerResponse = client.registerClient {
             it.clientType(PUBLIC_CLIENT_REGISTRATION_TYPE)
             it.scopes(scopes)
-            it.clientName("AWS IDE Plugins for JetBrains")
+            it.clientName(PKCE_CLIENT_NAME)
         }
 
         val registeredClient = DeviceAuthorizationClientRegistration(
@@ -310,7 +310,11 @@ class SsoAccessTokenProvider(
             it.refreshToken(currentToken.refreshToken)
         }
 
-        val token = newToken.toDAGAccessToken(currentToken.createdAt)
+        val token = when (currentToken) {
+            is DeviceAuthorizationGrantToken -> newToken.toDAGAccessToken(currentToken.createdAt)
+            is PKCEAuthorizationGrantToken -> newToken.toPKCEAccessToken(currentToken.createdAt)
+        }
+
         saveAccessToken(token)
 
         return token
@@ -399,11 +403,24 @@ class SsoAccessTokenProvider(
         }
     }
 
-    private fun CreateTokenResponse.toDAGAccessToken(creationTime: Instant): AccessToken {
+    private fun CreateTokenResponse.toDAGAccessToken(creationTime: Instant): DeviceAuthorizationGrantToken {
         val expirationTime = Instant.now(clock).plusSeconds(expiresIn().toLong())
 
         return DeviceAuthorizationGrantToken(
             startUrl = ssoUrl,
+            region = ssoRegion,
+            accessToken = accessToken(),
+            refreshToken = refreshToken(),
+            expiresAt = expirationTime,
+            createdAt = creationTime
+        )
+    }
+
+    private fun CreateTokenResponse.toPKCEAccessToken(creationTime: Instant): PKCEAuthorizationGrantToken {
+        val expirationTime = Instant.now(clock).plusSeconds(expiresIn().toLong())
+
+        return PKCEAuthorizationGrantToken(
+            issuerUrl = ssoUrl,
             region = ssoRegion,
             accessToken = accessToken(),
             refreshToken = refreshToken(),
