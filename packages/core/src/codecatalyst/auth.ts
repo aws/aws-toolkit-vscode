@@ -84,6 +84,7 @@ export class CodeCatalystAuthenticationProvider {
         this.onDidChangeActiveConnection(async () => {
             if (this.activeConnection) {
                 await this.setScopeExpired(this.activeConnection, false)
+                await this.isConnectionOnboarded(this.activeConnection, true)
             }
             await setCodeCatalystConnectedContext(this.isConnectionValid())
             this.onDidChangeEmitter.fire()
@@ -91,6 +92,9 @@ export class CodeCatalystAuthenticationProvider {
 
         this.onAccessDeniedException(async (showReauthPrompt: boolean) => {
             await this.accessDeniedExceptionHandler(showReauthPrompt)
+            if (this.activeConnection) {
+                await this.isConnectionOnboarded(this.activeConnection, true)
+            }
             this.onDidChangeEmitter.fire()
         })
 
