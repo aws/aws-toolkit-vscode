@@ -274,21 +274,21 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
             val codeScanResponse = codeScanSessionSpy.run()
             assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
             assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
-            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererCodeScanException>()
+            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<Exception>()
         }
     }
 
     @Test
     fun `test run() - createCodeScan error`() {
         mockClient.stub {
-            onGeneric { createCodeScan(any(), any()) }.thenThrow(CodeWhispererException::class.java)
+            onGeneric { createCodeScan(any(), any()) }.thenThrow(CodeWhispererCodeScanException::class.java)
         }
 
         runBlocking {
             val codeScanResponse = codeScanSessionSpy.run()
             assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
             assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
-            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererException>()
+            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererCodeScanException>()
         }
     }
 
@@ -302,7 +302,7 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
             val codeScanResponse = codeScanSessionSpy.run()
             assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
             assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
-            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererCodeScanException>()
+            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<Exception>()
         }
     }
 

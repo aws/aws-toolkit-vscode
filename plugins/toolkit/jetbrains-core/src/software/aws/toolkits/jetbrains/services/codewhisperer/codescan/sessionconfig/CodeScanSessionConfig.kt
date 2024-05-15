@@ -31,8 +31,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.DEFAULT_PAYLOAD_LIMIT_IN_BYTES
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.FILE_SCAN_PAYLOAD_SIZE_LIMIT_IN_BYTES
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.FILE_SCAN_TIMEOUT_IN_SECONDS
-import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.TOTAL_BYTES_IN_KB
-import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.TOTAL_BYTES_IN_MB
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.File
 import java.nio.file.Files
@@ -87,7 +85,7 @@ class CodeScanSessionConfig(
 
         // Fail fast if the selected file size is greater than the payload limit.
         if (selectedFile != null && selectedFile.length > getPayloadLimitInBytes()) {
-            fileTooLarge(getPresentablePayloadLimit())
+            fileTooLarge()
         }
 
         val start = Instant.now().toEpochMilli()
@@ -130,11 +128,6 @@ class CodeScanSessionConfig(
      * Timeout for creating the payload [createPayload]
      */
     fun createPayloadTimeoutInSeconds(): Long = CODE_SCAN_CREATE_PAYLOAD_TIMEOUT_IN_SECONDS
-
-    fun getPresentablePayloadLimit(): String = when (getPayloadLimitInBytes() >= TOTAL_BYTES_IN_MB) {
-        true -> "${getPayloadLimitInBytes() / TOTAL_BYTES_IN_MB}MB"
-        false -> "${getPayloadLimitInBytes() / TOTAL_BYTES_IN_KB}KB"
-    }
 
     private fun countLinesInVirtualFile(virtualFile: VirtualFile): Int {
         val bufferedReader = virtualFile.inputStream.bufferedReader()

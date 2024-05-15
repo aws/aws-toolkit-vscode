@@ -10,6 +10,7 @@ import org.apache.commons.codec.digest.DigestUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.internal.verification.Times
 import org.mockito.kotlin.any
@@ -113,6 +114,15 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsigh
     }
 
     @Test
+    fun `test createUploadUrlAndUpload() with invalid source zip file`() {
+        val invalidZipFile = File("/path/file.zip")
+
+        assertThrows<CodeWhispererCodeScanException> {
+            codeScanSessionSpy.createUploadUrlAndUpload(invalidZipFile, "artifactType", codeScanName)
+        }
+    }
+
+    @Test
     fun `test createUploadUrl()`() {
         val response = codeScanSessionSpy.createUploadUrl("md5", "type", codeScanName)
 
@@ -205,21 +215,21 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsigh
             val codeScanResponse = codeScanSessionSpy.run()
             assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
             assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
-            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererCodeScanException>()
+            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<Exception>()
         }
     }
 
     @Test
     fun `test run() - createCodeScan error`() {
         mockClient.stub {
-            onGeneric { createCodeScan(any(), any()) }.thenThrow(CodeWhispererException::class.java)
+            onGeneric { createCodeScan(any(), any()) }.thenThrow(CodeWhispererCodeScanException::class.java)
         }
 
         runBlocking {
             val codeScanResponse = codeScanSessionSpy.run()
             assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
             assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
-            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererException>()
+            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererCodeScanException>()
         }
     }
 
@@ -233,7 +243,7 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsigh
             val codeScanResponse = codeScanSessionSpy.run()
             assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
             assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
-            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererCodeScanException>()
+            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<Exception>()
         }
     }
 

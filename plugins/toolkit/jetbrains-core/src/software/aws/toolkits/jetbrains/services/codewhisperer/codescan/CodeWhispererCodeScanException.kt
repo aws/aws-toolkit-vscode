@@ -7,11 +7,13 @@ import software.aws.toolkits.resources.message
 
 open class CodeWhispererCodeScanException(override val message: String?) : RuntimeException()
 
+open class UploadCodeScanException(override val message: String?) : Exception()
+
 internal fun noFileOpenError(): Nothing =
     throw CodeWhispererCodeScanException(message("codewhisperer.codescan.no_file_open"))
 
-internal fun codeScanFailed(): Nothing =
-    throw CodeWhispererCodeScanException(message("codewhisperer.codescan.service_error"))
+internal fun codeScanFailed(errorMessage: String): Nothing =
+    throw Exception(errorMessage)
 
 internal fun cannotFindFile(file: String?): Nothing =
     error(message("codewhisperer.codescan.file_not_found", file ?: ""))
@@ -22,11 +24,14 @@ internal fun cannotFindBuildArtifacts(): Nothing =
 internal fun fileFormatNotSupported(format: String): Nothing =
     throw CodeWhispererCodeScanException(message("codewhisperer.codescan.file_ext_not_supported", format))
 
-internal fun fileTooLarge(presentableSize: String): Nothing =
-    throw CodeWhispererCodeScanException(message("codewhisperer.codescan.file_too_large", presentableSize))
+internal fun fileTooLarge(): Nothing =
+    throw CodeWhispererCodeScanException(message("codewhisperer.codescan.file_too_large"))
 
-internal fun uploadArtifactFailedError(): Nothing =
-    throw CodeWhispererCodeScanException(message("codewhisperer.codescan.upload_to_s3_failed"))
+internal fun uploadArtifactFailedError(errorMessage: String): Nothing =
+    throw UploadCodeScanException(errorMessage)
+
+internal fun invalidSourceZipError(): Nothing =
+    throw CodeWhispererCodeScanException(message("codewhisperer.codescan.invalid_source_zip_telemetry"))
 
 internal fun noSupportedFilesError(): Nothing =
     throw CodeWhispererCodeScanException(message("codewhisperer.codescan.unsupported_language_error"))
