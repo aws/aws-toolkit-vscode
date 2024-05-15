@@ -251,6 +251,7 @@
     "AWS.codewhisperer.customization.notification.new_customizations.select": "Select Customization",
     "AWS.codewhisperer.customization.notification.new_customizations.learn_more": "Learn More",
     "AWS.amazonq.title": "Amazon Q",
+    "AWS.amazonq.title.cn": "Amazon Q",
     "AWS.amazonq.chat": "Chat",
     "AWS.amazonq.login": "Login",
     "AWS.amazonq.learnMore": "Learn More About Amazon Q",
