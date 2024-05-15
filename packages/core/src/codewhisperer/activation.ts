@@ -308,18 +308,22 @@ export async function activate(context: ExtContext): Promise<void> {
      */
     setSubscriptionsForAutoScans()
 
-    function setSubscriptionsForAutoScans() {
-        // Initial scan when the editor opens for the first time
-        const editor = vscode.window.activeTextEditor
-        if (
-            CodeScansState.instance.isScansEnabled() &&
+    function shouldRunAutoScan(editor: vscode.TextEditor | undefined, isScansEnabled?: boolean) {
+        return (
+            (isScansEnabled ?? CodeScansState.instance.isScansEnabled()) &&
             !CodeScansState.instance.isMonthlyQuotaExceeded() &&
             auth.isConnectionValid() &&
             !auth.isBuilderIdInUse() &&
             editor &&
-            securityScanLanguageContext.isLanguageSupported(editor.document.languageId) &&
-            editor.document.getText().length > 0
-        ) {
+            vscode.workspace.getWorkspaceFolder(editor.document.uri) &&
+            securityScanLanguageContext.isLanguageSupported(editor.document.languageId)
+        )
+    }
+
+    function setSubscriptionsForAutoScans() {
+        // Initial scan when the editor opens for the first time
+        const editor = vscode.window.activeTextEditor
+        if (editor && shouldRunAutoScan(editor) && editor.document.getText().length > 0) {
             void debounceStartSecurityScan(
                 securityPanelViewProvider,
                 editor,
@@ -332,45 +336,34 @@ export async function activate(context: ExtContext): Promise<void> {
         context.extensionContext.subscriptions.push(
             // Trigger scan if focus switches to a different file
             vscode.window.onDidChangeActiveTextEditor(editor => {
-                if (
-                    CodeScansState.instance.isScansEnabled() &&
-                    !CodeScansState.instance.isMonthlyQuotaExceeded() &&
-                    auth.isConnectionValid() &&
-                    !auth.isBuilderIdInUse() &&
-                    editor &&
-                    securityScanLanguageContext.isLanguageSupported(editor.document.languageId)
-                ) {
-                    const codewhispererDiagnostics = securityScanRender.securityDiagnosticCollection
-                        ?.get(editor.document.uri)
-                        ?.filter(({ source }) => source === CodeWhispererConstants.codewhispererDiagnosticSourceLabel)
+                const codewhispererDiagnostics = editor
+                    ? securityScanRender.securityDiagnosticCollection
+                          ?.get(editor.document.uri)
+                          ?.filter(({ source }) => source === CodeWhispererConstants.codewhispererDiagnosticSourceLabel)
+                    : undefined
 
-                    if (
-                        (codewhispererDiagnostics && codewhispererDiagnostics.length > 0) ||
-                        editor.document.getText().length === 0
-                    ) {
-                        // Do nothing since we already have diagnostics for this file, or the file contents are empty.
-                    } else {
-                        void debounceStartSecurityScan(
-                            securityPanelViewProvider,
-                            editor,
-                            client,
-                            context.extensionContext,
-                            CodeWhispererConstants.CodeAnalysisScope.FILE
-                        )
-                    }
+                if (
+                    editor &&
+                    shouldRunAutoScan(editor) &&
+                    editor.document.getText().length > 0 &&
+                    (!codewhispererDiagnostics || codewhispererDiagnostics?.length === 0)
+                ) {
+                    void debounceStartSecurityScan(
+                        securityPanelViewProvider,
+                        editor,
+                        client,
+                        context.extensionContext,
+                        CodeWhispererConstants.CodeAnalysisScope.FILE
+                    )
                 }
             }),
             // Trigger scan if the file contents change
             vscode.workspace.onDidChangeTextDocument(async event => {
                 const editor = vscode.window.activeTextEditor
                 if (
-                    CodeScansState.instance.isScansEnabled() &&
-                    !CodeScansState.instance.isMonthlyQuotaExceeded() &&
-                    auth.isConnectionValid() &&
-                    !auth.isBuilderIdInUse() &&
                     editor &&
+                    shouldRunAutoScan(editor) &&
                     event.document === editor.document &&
-                    securityScanLanguageContext.isLanguageSupported(editor.document.languageId) &&
                     event.contentChanges.length > 0
                 ) {
                     void debounceStartSecurityScan(
@@ -387,15 +380,7 @@ export async function activate(context: ExtContext): Promise<void> {
         // Trigger scan if the toggle has just been enabled
         CodeScansState.instance.onDidChangeState(isScansEnabled => {
             const editor = vscode.window.activeTextEditor
-            if (
-                isScansEnabled &&
-                !CodeScansState.instance.isMonthlyQuotaExceeded() &&
-                auth.isConnectionValid() &&
-                !auth.isBuilderIdInUse() &&
-                editor &&
-                securityScanLanguageContext.isLanguageSupported(editor.document.languageId) &&
-                editor.document.getText().length > 0
-            ) {
+            if (editor && shouldRunAutoScan(editor, isScansEnabled) && editor.document.getText().length > 0) {
                 void debounceStartSecurityScan(
                     securityPanelViewProvider,
                     editor,
