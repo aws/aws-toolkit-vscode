@@ -370,7 +370,14 @@ export class SessionJobHistory {
         // so we need to record this and reuse in case we had one
         const oldSummaryPath = history[transformByQState.getJobId()]?.summaryFile
         const oldPatchPath = history[transformByQState.getJobId()]?.patchFile
+
+        // TODOs before PR
+        // Find out where vscode stores this
+        // https://stackoverflow.com/questions/57760451/where-does-visual-studio-code-store-information-about-enabled-extensions-per-wor
+        // Add expireOn + cleanup on extension start if > expiry
+        // Extract overall functionality to self contained class
         history[transformByQState.getJobId()] = {
+            // TODO expireOn: transformByQState.getStartTime() + timedelta(days=7),
             startTime: transformByQState.getStartTime(),
             projectName: transformByQState.getProjectName(),
             status: transformByQState.getPolledJobStatus(),
