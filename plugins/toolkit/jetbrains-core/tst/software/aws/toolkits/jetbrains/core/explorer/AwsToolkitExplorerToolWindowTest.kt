@@ -40,22 +40,23 @@ class AwsToolkitExplorerToolWindowTest {
         (ToolWindowManager.getInstance(projectExtension.project) as ToolWindowHeadlessManagerImpl)
             .doRegisterToolWindow(AwsToolkitExplorerFactory.TOOLWINDOW_ID)
         val sut = runInEdtAndGet { AwsToolkitExplorerToolWindow(projectExtension.project) }
+        runInEdt {
+            sut.loadState(
+                AwsToolkitExplorerToolWindowState().apply {
+                    selectedTab =
+                        AwsToolkitExplorerToolWindow.EXPLORER_TAB_ID
+                }
+            )
+            assertThat(sut.state.selectedTab).isEqualTo(AwsToolkitExplorerToolWindow.Q_TAB_ID)
 
-        sut.loadState(
-            AwsToolkitExplorerToolWindowState().apply {
-                selectedTab =
-                    AwsToolkitExplorerToolWindow.EXPLORER_TAB_ID
-            }
-        )
-        assertThat(sut.state.selectedTab).isEqualTo(AwsToolkitExplorerToolWindow.Q_TAB_ID)
-
-        sut.loadState(
-            AwsToolkitExplorerToolWindowState().apply {
-                selectedTab =
-                    AwsToolkitExplorerToolWindow.DEVTOOLS_TAB_ID
-            }
-        )
-        assertThat(sut.state.selectedTab).isEqualTo(AwsToolkitExplorerToolWindow.Q_TAB_ID)
+            sut.loadState(
+                AwsToolkitExplorerToolWindowState().apply {
+                    selectedTab =
+                        AwsToolkitExplorerToolWindow.DEVTOOLS_TAB_ID
+                }
+            )
+            assertThat(sut.state.selectedTab).isEqualTo(AwsToolkitExplorerToolWindow.Q_TAB_ID)
+        }
     }
 
     @Test
