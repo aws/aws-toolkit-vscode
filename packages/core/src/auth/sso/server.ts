@@ -11,6 +11,7 @@ import { Socket } from 'net'
 import globals from '../../shared/extensionGlobals'
 import { Result } from '../../shared/utilities/result'
 import { FileSystemCommon } from '../../srcShared/fs'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
 
 export class MissingPortError extends ToolkitError {
     constructor() {
@@ -47,6 +48,12 @@ export class AuthError extends ToolkitError {
  * back to VSCode
  */
 export class AuthSSOServer {
+    // Last initialized instance of the Auth Server
+    static #lastInstance: AuthSSOServer | undefined
+    public static get lastInstance() {
+        return AuthSSOServer.#lastInstance
+    }
+
     private baseUrl = `http://127.0.0.1`
     private oauthCallback = '/oauth/callback'
     private authenticationFlowTimeoutInMs = 600000
@@ -57,7 +64,10 @@ export class AuthSSOServer {
     private server: http.Server
     private connections: Socket[]
 
-    constructor(private readonly state: string) {
+    private cancelPromiseRejectFunc: ((reason?: any) => void) | undefined
+    private _closed: boolean = false
+
+    private constructor(private readonly state: string) {
         this.authenticationPromise = new Promise<Result<string>>(resolve => {
             this.deferred = { resolve }
         })
@@ -99,6 +109,22 @@ export class AuthSSOServer {
         })
     }
 
+    public static init(state: string) {
+        const lastInstance = AuthSSOServer.#lastInstance
+        if (lastInstance !== undefined && !lastInstance.closed) {
+            lastInstance
+                .close()!
+                .catch(err =>
+                    getLogger().error('Failed to close already existing auth sever in AuthSSOServer.init(): %s', err)
+                )
+        }
+
+        getLogger().debug('AuthSSOServer: Initialized new auth server.')
+        const instance = new AuthSSOServer(state)
+        AuthSSOServer.#lastInstance = instance
+        return instance
+    }
+
     start() {
         if (this.server.listening) {
             throw new ToolkitError('AuthSSOServer: Server already started')
@@ -127,9 +153,16 @@ export class AuthSSOServer {
 
     close() {
         return new Promise<void>((resolve, reject) => {
+            if (this._closed) {
+                resolve()
+                return
+            }
+
             if (!this.server.listening) {
                 reject(new ToolkitError('AuthSSOServer: Server not started'))
             }
+
+            getLogger().debug('AuthSSOServer: Attempting to close server.')
 
             this.connections.forEach(connection => {
                 connection.destroy()
@@ -139,6 +172,8 @@ export class AuthSSOServer {
                 if (err) {
                     reject(err)
                 }
+                this._closed = true
+                getLogger().debug('AuthSSOServer: Server closed successfully.')
                 resolve()
             })
         })
@@ -150,6 +185,10 @@ export class AuthSSOServer {
 
     private get baseLocation(): string {
         return `${this.baseUrl}:${this.getPort()}`
+    }
+
+    public get closed() {
+        return this._closed
     }
 
     public getAddress() {
@@ -228,8 +267,21 @@ export class AuthSSOServer {
         this.deferred?.resolve(Result.err(error))
     }
 
+    public cancelCurrentFlow() {
+        if (this.cancelPromiseRejectFunc !== undefined) {
+            getLogger().debug('AuthSSOServer: Cancelling current login flow')
+            this.cancelPromiseRejectFunc(new CancellationError('user'))
+            this.cancelPromiseRejectFunc = undefined
+        }
+    }
+
     public waitForAuthorization(): Promise<Result<string>> {
+        // For user cancellations
+        const cancellationPromise = new Promise<Result<string>>((_, reject) => {
+            this.cancelPromiseRejectFunc = reject
+        })
         return Promise.race([
+            cancellationPromise,
             this.authenticationPromise,
             new Promise<Result<string>>((_, reject) => {
                 globals.clock.setTimeout(() => {
@@ -245,6 +297,9 @@ export class AuthSSOServer {
                 }, this.authenticationWarningTimeoutInMs)
 
                 void this.authenticationPromise.then(() => {
+                    clearTimeout(warningTimeout)
+                })
+                void cancellationPromise.then(() => {
                     clearTimeout(warningTimeout)
                 })
             }),
