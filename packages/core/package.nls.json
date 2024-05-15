@@ -4,7 +4,6 @@
     "AWS.productName": "AWS Toolkit",
     "AWS.productName.cn": "Amazon Toolkit",
     "AWS.amazonq.productName": "Amazon Q",
-    "AWS.amazonq.productName.cn": "Amazon Q",
     "AWS.codecatalyst.submenu.title": "Manage CodeCatalyst",
     "AWS.configuration.profileDescription": "The name of the credential profile to obtain credentials from.",
     "AWS.configuration.description.lambda.recentlyUploaded": "Recently selected Lambda upload targets.",
