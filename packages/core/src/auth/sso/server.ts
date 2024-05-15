@@ -64,7 +64,6 @@ export class AuthSSOServer {
     private server: http.Server
     private connections: Socket[]
 
-    private cancelPromiseRejectFunc: ((reason?: any) => void) | undefined
     private _closed: boolean = false
 
     private constructor(private readonly state: string) {
@@ -268,20 +267,12 @@ export class AuthSSOServer {
     }
 
     public cancelCurrentFlow() {
-        if (this.cancelPromiseRejectFunc !== undefined) {
-            getLogger().debug('AuthSSOServer: Cancelling current login flow')
-            this.cancelPromiseRejectFunc(new CancellationError('user'))
-            this.cancelPromiseRejectFunc = undefined
-        }
+        getLogger().debug('AuthSSOServer: Cancelling current login flow')
+        this.deferred?.resolve(Result.err(new CancellationError('user')))
     }
 
     public waitForAuthorization(): Promise<Result<string>> {
-        // For user cancellations
-        const cancellationPromise = new Promise<Result<string>>((_, reject) => {
-            this.cancelPromiseRejectFunc = reject
-        })
         return Promise.race([
-            cancellationPromise,
             this.authenticationPromise,
             new Promise<Result<string>>((_, reject) => {
                 globals.clock.setTimeout(() => {
@@ -296,10 +287,7 @@ export class AuthSSOServer {
                     getLogger().warn('AuthSSOServer: Authentication is taking a long time')
                 }, this.authenticationWarningTimeoutInMs)
 
-                void this.authenticationPromise.then(() => {
-                    clearTimeout(warningTimeout)
-                })
-                void cancellationPromise.then(() => {
+                void this.authenticationPromise.finally(() => {
                     clearTimeout(warningTimeout)
                 })
             }),
