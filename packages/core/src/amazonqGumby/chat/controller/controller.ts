@@ -66,7 +66,7 @@ export class GumbyController {
     private readonly messenger: Messenger
     private readonly sessionStorage: ChatSessionManager
     private authController: AuthController
-    private readonly MAXIMUM_JAVA_HOME_RETRIES = 3
+    private readonly MaximumJavaHomeRetries = 3
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerEventEmitters,
         messenger: Messenger,
@@ -389,7 +389,7 @@ export class GumbyController {
                             getLogger().warn(
                                 `CodeTransformation: non matching JAVA_HOME provided: ${providedJdkVersion} expected: ${expectedJdkVersion} JDK release must match`
                             )
-                            if (transformByQState.incrementAndGetJavaHomeAttempts() > this.MAXIMUM_JAVA_HOME_RETRIES) {
+                            if (transformByQState.incrementAndGetJavaHomeAttempts() > this.MaximumJavaHomeRetries) {
                                 transformByQState.resetJavaHomeAttempts()
                                 transformByQState.resetJavaHome()
                                 this.messenger.sendUnrecoverableErrorResponse('invalid-java-home', data.tabID)
