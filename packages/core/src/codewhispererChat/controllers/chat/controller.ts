@@ -554,6 +554,8 @@ export class ChatController {
             if (c) {
                 getLogger().info(`Relevant code ${c.content}`)
                 triggerPayload.message += `Here are some relevant code ${c?.content} in file ${c.fileName}.`
+            } else {
+                getLogger().info(`No Relevant code`)
             }
         }
 

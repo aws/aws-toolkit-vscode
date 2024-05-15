@@ -300,7 +300,8 @@ export async function collectFiles(
     sourcePaths: string[],
     workspaceFolders: CurrentWsFolders,
     respectGitIgnore: boolean = true,
-    maxSize = 200 * 1024 * 1024 // 200 MB
+    maxSize = 200 * 1024 * 1024, // 200 MB,,
+    readFileContent = true
 ): Promise<
     {
         workspaceFolder: vscode.WorkspaceFolder
@@ -355,7 +356,10 @@ export async function collectFiles(
                 )
             }
 
-            const fileContent = await readFile(file)
+            let fileContent = undefined
+            if (readFileContent) {
+                fileContent = await readFile(file)
+            }
             if (fileContent === undefined) {
                 continue
             }

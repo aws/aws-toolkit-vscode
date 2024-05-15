@@ -8,7 +8,7 @@ import { getLogger } from '../shared/logger/logger'
 import { CurrentWsFolders, collectFiles } from '../shared/utilities/workspaceUtils'
 
 import * as CodeWhispererConstants from '../codewhisperer/models/constants'
-import { Chunk, splitFileToChunks } from '../codewhisperer/util/supplementalContext/crossFileContextUtil'
+import { Chunk } from '../codewhisperer/util/supplementalContext/crossFileContextUtil'
 import { isExtensionInstalled, isExtensionActive } from '../shared/utilities'
 
 function getProjectPaths() {
@@ -25,25 +25,33 @@ export class Search {
     public static get instance() {
         return (this.#instance ??= new this())
     }
+    constructor() {}
 
-    constructor() {
-        this.store = new Map<string, number[]>()
-        this.chunkStore = new Map<string, Chunk>()
-    }
-
-    task = 'feature-extraction'
-    model = 'Xenova/sentence_bert'
-
-    private store: Map<string, number[]>
-    private chunkStore: Map<string, Chunk>
-
-    async encode(s: string) {
+    async indexFiles(filePaths: string[]) {
         const eid = 'x.encoder'
         if (isExtensionInstalled(eid) && isExtensionActive(eid)) {
             const ext = vscode.extensions.getExtension(eid)
-            return ext?.exports.encode(s)
+            return ext?.exports.indexFiles(filePaths)
         } else {
-            getLogger().info(`NEW: get encoder `)
+            getLogger().info(`NEW: index failed. encode not found`)
+        }
+    }
+    async clear() {
+        const eid = 'x.encoder'
+        if (isExtensionInstalled(eid) && isExtensionActive(eid)) {
+            const ext = vscode.extensions.getExtension(eid)
+            return ext?.exports.clear()
+        } else {
+            getLogger().info(`NEW:  encode not found `)
+        }
+    }
+    async findBest(s: string) {
+        const eid = 'x.encoder'
+        if (isExtensionInstalled(eid) && isExtensionActive(eid)) {
+            const ext = vscode.extensions.getExtension(eid)
+            return ext?.exports.findBest(s)
+        } else {
+            getLogger().info(`NEW:  encode not found `)
         }
     }
 
@@ -55,67 +63,26 @@ export class Search {
             true,
             CodeWhispererConstants.projectScanPayloadSizeLimitBytes
         )
-
         getLogger().info(`NEW: Found ${files.length} files in current project ${getProjectPaths()}`)
-        for (const file of files) {
-            const chunks = await splitFileToChunks(file.fileUri.fsPath, 50)
-            for (const c of chunks) {
-                try {
-                    const result = await this.encode(c.content)
-                    const key = c.fileName + '|' + c.index
-                    this.store.set(key, result[0] as number[])
-                    this.chunkStore.set(key, c)
-                } catch (e) {}
-            }
-        }
-
-        getLogger().info(`NEW: Finish building vector index of project`)
-    }
-
-    prevK(k: string) {
-        const i = Number(k.split('|')[0])
-        const f = k.split('|')[1]
-        return `${f}|${i - 1}`
-    }
-    nextK(k: string) {
-        const i = Number(k.split('|')[0])
-        const f = k.split('|')[1]
-        return `${f}|${i + 1}`
+        this.indexFiles(files.map(f => f.fileUri.fsPath)).then(() => {
+            getLogger().info(`NEW: Finish building vector index of project`)
+        })
     }
 
     async query(input: string): Promise<Chunk | undefined> {
         try {
-            const i = await this.encode(input)
-            let best_k = ''
-            let best_s = 0
-            for (const [k, v] of this.store.entries()) {
-                const s = cos_sim(v, i[0])
-                if (s > best_s) {
-                    best_s = s
-                    best_k = k
+            const c = await this.findBest(input)
+            if (c) {
+                return {
+                    fileName: c.fileName,
+                    content: c.content,
+                    nextContent: '',
                 }
             }
-
-            const pk = this.prevK(best_k)
-            const ps = this.chunkStore.get(pk)
-            const nk = this.nextK(best_k)
-            const ns = this.chunkStore.get(nk)
-            let rcode = ''
-            if (ps) {
-                rcode += ps.content
-            }
-            rcode += this.chunkStore.get(best_k)?.content
-            if (ns) {
-                rcode += ns.content
-            }
-            getLogger().info(`Found relevant code ${rcode}`)
-            const r = this.chunkStore.get(best_k)
-            if (r) {
-                r.content = rcode
-                return r
-            }
-            return r
-        } catch (e) {}
+        } catch (e) {
+            return undefined
+        }
+        return undefined
     }
 }
 
