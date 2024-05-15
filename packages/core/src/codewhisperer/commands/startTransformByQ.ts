@@ -756,8 +756,6 @@ export async function stopTransformByQ(
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 result: MetadataResult.Pass,
             })
-            await postTransformationJob()
-            await cleanupTransformationJob()
         }
     }
 }

@@ -16,10 +16,12 @@ import { getLogger } from '../../../shared/logger'
 import { featureName } from '../../models/constants'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import {
+    cleanupTransformationJob,
     compileProject,
     finishHumanInTheLoop,
     getValidCandidateProjects,
     openHilPomFile,
+    postTransformationJob,
     processTransformFormInput,
     startTransformByQ,
     stopTransformByQ,
@@ -252,6 +254,8 @@ export class GumbyController {
                 break
             case ButtonActions.STOP_TRANSFORMATION_JOB:
                 await stopTransformByQ(transformByQState.getJobId(), CancelActionPositions.Chat)
+                await postTransformationJob()
+                await cleanupTransformationJob()
                 break
             case ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW:
                 this.messenger.sendCommandMessage({ ...message, command: GumbyCommands.CLEAR_CHAT })

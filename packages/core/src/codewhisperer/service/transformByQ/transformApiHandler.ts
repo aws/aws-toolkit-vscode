@@ -178,6 +178,10 @@ export async function stopJob(jobId: string) {
         throw new Error('Job ID is empty')
     }
 
+    if (!transformByQState.isRunning()) {
+        return
+    }
+
     try {
         const apiStartTime = Date.now()
         const response = await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
