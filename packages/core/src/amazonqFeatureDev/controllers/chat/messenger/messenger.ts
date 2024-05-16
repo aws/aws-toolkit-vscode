@@ -55,7 +55,15 @@ export class Messenger {
         this.sendUpdatePlaceholder(tabID, 'Chat input is disabled')
     }
 
-    public sendErrorMessage(errorMessage: string, tabID: string, retries: number, phase?: SessionStatePhase) {
+    public sendErrorMessage(
+        errorMessage: string,
+        tabID: string,
+        retries: number,
+        phase?: SessionStatePhase,
+        conversationId?: string
+    ) {
+        const conversationIdText = conversationId ? `\n\nConversation ID: **${conversationId}**` : ''
+
         if (retries === 0) {
             this.sendAnswer({
                 type: 'answer',
@@ -82,7 +90,7 @@ export class Messenger {
                 this.dispatcher.sendErrorMessage(
                     new ErrorMessage(
                         `Sorry, we're experiencing an issue on our side. Would you like to try again?`,
-                        errorMessage,
+                        errorMessage + conversationIdText,
                         tabID
                     )
                 )
@@ -91,7 +99,7 @@ export class Messenger {
                 this.dispatcher.sendErrorMessage(
                     new ErrorMessage(
                         `Sorry, we're experiencing an issue on our side. Would you like to try again?`,
-                        errorMessage,
+                        errorMessage + conversationIdText,
                         tabID
                     )
                 )
@@ -101,7 +109,7 @@ export class Messenger {
                 this.dispatcher.sendErrorMessage(
                     new ErrorMessage(
                         `Sorry, we encountered a problem when processing your request.`,
-                        errorMessage,
+                        errorMessage + conversationIdText,
                         tabID
                     )
                 )
