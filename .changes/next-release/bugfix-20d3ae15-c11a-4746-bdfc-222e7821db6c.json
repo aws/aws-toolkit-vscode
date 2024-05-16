@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Amazon Q Chat: Prompt input field in Q Chat tabs doesn't stop after it reaches to the given maxLength"
+}

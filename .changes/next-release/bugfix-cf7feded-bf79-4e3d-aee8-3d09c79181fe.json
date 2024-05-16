@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Amazon Q Chat: Inside chat body, if there is a code block inside a list item it shows <br/> tags"
+}
