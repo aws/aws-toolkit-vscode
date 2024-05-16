@@ -20,7 +20,7 @@ const localize = nls.loadMessageBundle()
 // const localize = nls.loadMessageBundle()
 
 // Change this to true for local dev
-const isLocalDev = true
+const isLocalDev = false
 const localhost = 'http://127.0.0.1:3000'
 const cdn = 'https://ide-toolkits.threat-composer.aws.dev'
 
