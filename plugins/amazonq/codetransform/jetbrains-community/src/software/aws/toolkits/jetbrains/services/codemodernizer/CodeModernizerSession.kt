@@ -326,7 +326,7 @@ class CodeModernizerSession(
         val createUploadUrlResponse = clientAdaptor.createGumbyUploadUrl(sha256checksum)
 
         LOG.info {
-            "Uploading zip with checksum $sha256checksum using uploadId: ${
+            "Uploading zip at ${payload.path} with checksum $sha256checksum using uploadId: ${
                 createUploadUrlResponse.uploadId()
             } and size ${(payload.length() / 1000).toInt()}kB"
         }
