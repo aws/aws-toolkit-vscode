@@ -90,7 +90,7 @@ export const toggleCodeScans = Commands.declare(
                     : CodeWhispererConstants.autoScansConfig.deactivated,
             })
 
-            await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+            await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
         })
     }
 )
