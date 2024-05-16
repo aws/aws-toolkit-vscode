@@ -614,6 +614,8 @@ export class FeatureDevController {
             canSelectFiles: false,
         }).prompt()
 
+        let metricData: { result: 'Succeeded' } | { result: 'Failed'; reason: string } | undefined
+
         if (!(uri instanceof vscode.Uri)) {
             this.messenger.sendAnswer({
                 tabID: message.tabID,
@@ -626,10 +628,8 @@ export class FeatureDevController {
                     },
                 ],
             })
-            return
-        }
-
-        if (uri instanceof vscode.Uri && !vscode.workspace.getWorkspaceFolder(uri)) {
+            metricData = { result: 'Failed', reason: 'ClosedBeforeSelection' }
+        } else if (!vscode.workspace.getWorkspaceFolder(uri)) {
             this.messenger.sendAnswer({
                 tabID: message.tabID,
                 type: 'answer',
@@ -646,17 +646,22 @@ export class FeatureDevController {
                     },
                 ],
             })
-            return
-        }
-
-        if (uri && uri instanceof vscode.Uri) {
+            metricData = { result: 'Failed', reason: 'NotInWorkspaceFolder' }
+        } else {
             session.updateWorkspaceRoot(uri.fsPath)
+            metricData = { result: 'Succeeded' }
             this.messenger.sendAnswer({
                 message: `Changed source root to: ${uri.fsPath}`,
                 type: 'answer',
                 tabID: message.tabID,
             })
         }
+
+        telemetry.amazonq_modifySourceFolder.emit({
+            credentialStartUrl: AuthUtil.instance.startUrl,
+            amazonqConversationId: session.conversationId,
+            ...metricData,
+        })
     }
 
     private initialExamples(message: any) {
