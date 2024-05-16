@@ -109,9 +109,13 @@ export async function uploadArtifactToS3(
 ) {
     throwIfCancelled()
     try {
+        const uploadFileByteSize = (await fs.promises.stat(fileName)).size
         getLogger().info(
-            `Uploading zip at ${fileName} with checksum ${sha256} using uploadId: ${resp.uploadId}
-             and size ${Math.round((await fs.promises.stat(fileName)).size / 1000)}kB`
+            `Uploading zip at %s with checksum %s using uploadId: %s and size %s kB`,
+            fileName,
+            sha256,
+            resp.uploadId,
+            Math.round(uploadFileByteSize / 1000)
         )
 
         const apiStartTime = Date.now()
@@ -124,7 +128,7 @@ export async function uploadArtifactToS3(
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformUploadId: resp.uploadId,
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-            codeTransformTotalByteSize: (await fs.promises.stat(fileName)).size,
+            codeTransformTotalByteSize: uploadFileByteSize,
             result: MetadataResult.Pass,
         })
         getLogger().info(`CodeTransformation: Status from S3 Upload = ${response.status}`)
