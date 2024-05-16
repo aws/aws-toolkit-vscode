@@ -25,8 +25,8 @@ import { AccountStatus } from '../shared/telemetry/telemetryClient'
 import { CreateDevEnvironmentRequest, UpdateDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
 import { Auth } from '../auth/auth'
 import { SsoConnection } from '../auth/connection'
-import { getShowManageConnections } from '../auth/ui/vue/show'
 import { isInDevEnv, isRemoteWorkspace } from '../shared/vscode/env'
+import { getShowManageConnections } from '../login/command'
 
 /** "List CodeCatalyst Commands" command. */
 export async function listCommands(): Promise<void> {

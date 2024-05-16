@@ -77,6 +77,7 @@ describe('DevEnvActivity', function () {
 
         it('when vscode user activity event is emitted', async () => {
             assert.strictEqual(activitySubscriber.callCount, 0)
+            devEnvActivity.setUpdateActivityOnIdeActivity(true)
             await triggerUserActivityEvent({})
             assert.strictEqual(activitySubscriber.callCount, 1)
         })
