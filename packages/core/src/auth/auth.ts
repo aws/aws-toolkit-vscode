@@ -654,7 +654,7 @@ export class Auth implements AuthService, ConnectionManager {
 
         return startUrl === builderIdStartUrl
             ? [identifier, createBuilderIdProfile(scopesCodeCatalyst)]
-            : [identifier, createSsoProfile(region, startUrl, scopesCodeCatalyst)]
+            : [identifier, createSsoProfile(startUrl, region, scopesCodeCatalyst)]
     }
 
     private getSsoTokenProvider(id: Connection['id'], profile: StoredProfile<SsoProfile>) {
