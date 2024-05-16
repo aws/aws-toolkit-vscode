@@ -501,7 +501,7 @@ class FeatureDevController(
     private suspend fun onApproachGeneration(session: Session, message: String, tabId: String) {
         session.preloader(message, messenger)
 
-        logger.info { "Q - Dev chat conversation id: ${session.conversationId}" }
+        logger.info { "$FEATURE_NAME conversation id: ${session.conversationId}" }
 
         messenger.sendAnswer(
             tabId = tabId,
