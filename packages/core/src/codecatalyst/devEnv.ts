@@ -7,10 +7,123 @@ import { DevEnvironment } from '../shared/clients/codecatalystClient'
 import { DevEnvActivity } from '../shared/clients/devenvClient'
 import globals from '../shared/extensionGlobals'
 import * as vscode from 'vscode'
-import { Timeout } from '../shared/utilities/timeoutUtils'
+import { Timeout, waitUntil } from '../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../shared/utilities/messages'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { getLogger } from '../shared/logger'
+import { CodeCatalystAuthenticationProvider } from './auth'
+import { getThisDevEnv } from './model'
+import { isInDevEnv } from '../shared/vscode/env'
+import { shared } from '../shared/utilities/functionUtils'
+
+/**
+ * This class exists due to complexities with starting the {@link DevEnvActivity} Hearbeat mechanism.
+ * All logic to start it is contained within this class.
+ */
+export class DevEnvActivityStarter {
+    /**
+     * Trys to start the Dev Env Activity Heartbeat mechanism.
+     * This mechanism keeps the Dev Env from timing out.
+     */
+    public static register(authProvider: CodeCatalystAuthenticationProvider) {
+        if (!isInDevEnv()) {
+            getLogger().debug('codecatalyst: not in a devenv, not registering DevEnvActivityHeartbeatStarter')
+            return
+        }
+
+        DevEnvActivityStarter.authProvider = authProvider
+        void DevEnvActivityStarter.instance.tryStartDevEnvActivityHeartbeatWithRetry()
+    }
+
+    /** If true, the Activity Heartbeat is running */
+    private didStart: boolean = false
+
+    protected constructor(private readonly authProvider: CodeCatalystAuthenticationProvider) {}
+
+    private static _instance: DevEnvActivityStarter | undefined = undefined
+    private static get instance(): DevEnvActivityStarter {
+        return (DevEnvActivityStarter._instance ??= new DevEnvActivityStarter(DevEnvActivityStarter.getAuthProvider()))
+    }
+
+    /**
+     * Keeps executing {@link DevEnvActivityStarter.tryStartDevEnvActivityHeartbeat} on an interval until it succeeds.
+     * After a certain amount of time this will stop retrying.
+     */
+    private async tryStartDevEnvActivityHeartbeatWithRetry() {
+        return waitUntil(
+            async () => {
+                await this.tryStartDevEnvActivityHeartbeat()
+                return this.didStart
+            },
+            { interval: 20_000, timeout: 60_000 * 5 }
+        )
+    }
+
+    /** Trys to start the Activity Heartbeat mechanism */
+    private tryStartDevEnvActivityHeartbeat = shared(async () => {
+        if (this.didStart) {
+            return
+        }
+
+        const thisDevenv = (await getThisDevEnv(this.authProvider))?.unwrapOrElse(err => {
+            getLogger().warn('codecatalyst: failed to get current Dev Enviroment: %s', err)
+            return undefined
+        })
+
+        if (!thisDevenv) {
+            const connection = this.authProvider.activeConnection
+            if (connection) {
+                void vscode.window
+                    .showErrorMessage(
+                        'CodeCatalyst: Reauthenticate your connection or the Dev Environment will time out.',
+                        'Reauthenticate'
+                    )
+                    .then(async res => {
+                        if (res !== 'Reauthenticate') {
+                            return
+                        }
+                        await this.authProvider.auth.reauthenticate(connection)
+                        void this.tryStartDevEnvActivityHeartbeat()
+                    })
+
+                getLogger().warn('codecatalyst: dev env needs reauth to not time out')
+            } else {
+                getLogger().warn(`codecatalyst: dev env needs a connection to not time out`)
+            }
+            return
+        }
+
+        const maxInactivityMinutes = thisDevenv.summary.inactivityTimeoutMinutes
+        if (!shouldTrackUserActivity(maxInactivityMinutes)) {
+            getLogger().debug(
+                `codecatalyst: not tracking user inactivity due to inactivity minutes being: ${maxInactivityMinutes}`
+            )
+            return
+        }
+
+        const devEnvActivity = await DevEnvActivity.instanceIfActivityTrackingEnabled(thisDevenv.devenvClient)
+        if (!devEnvActivity) {
+            getLogger().debug(`codecatalyst: not tracking user inactivity since activity api is not enabled`)
+            return
+        }
+
+        // Everything is good, we can start the activity heartbeat now
+        devEnvActivity.setUpdateActivityOnIdeActivity(true)
+        const inactivityMessage = new InactivityMessage()
+        await inactivityMessage.setupMessage(maxInactivityMinutes, devEnvActivity)
+
+        globals.context.subscriptions.push(inactivityMessage, devEnvActivity)
+        this.didStart = true
+    })
+
+    private static authProvider: CodeCatalystAuthenticationProvider | undefined = undefined
+    private static getAuthProvider() {
+        if (!this.authProvider) {
+            throw new Error('DevEnvActivityHeartbeatStarter authProvider is not set')
+        }
+        return this.authProvider
+    }
+}
 
 /** If we should be sending the dev env activity timestamps to track user activity */
 export function shouldTrackUserActivity(maxInactivityMinutes: DevEnvironment['inactivityTimeoutMinutes']): boolean {
