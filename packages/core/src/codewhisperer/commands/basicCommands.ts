@@ -325,9 +325,17 @@ export const installAmazonQExtension = Commands.declare(
     }
 )
 
+// Temporary workaround to avoid errors when pressing "Fix" multiple times from hover.
+// There doesn't seem to be a way to close the hover or update the hover after interacting inside it.
+// Keep track of which findingIds have already been fixed and exit early.
+const fixedFindingIds = new Set()
+
 export const applySecurityFix = Commands.declare(
     'aws.amazonq.applySecurityFix',
     () => async (issue: CodeScanIssue, filePath: string, source: Component) => {
+        if (fixedFindingIds.has(issue.findingId)) {
+            return
+        }
         const [suggestedFix] = issue.suggestedFixes
         if (!suggestedFix || !filePath) {
             return
@@ -371,6 +379,7 @@ export const applySecurityFix = Commands.declare(
             }
 
             await closeSecurityIssueWebview(issue.findingId)
+            fixedFindingIds.add(issue.findingId)
         } catch (err) {
             getLogger().error(`Apply fix command failed. ${err}`)
             applyFixTelemetryEntry.result = 'Failed'
