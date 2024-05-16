@@ -109,6 +109,11 @@ export async function uploadArtifactToS3(
 ) {
     throwIfCancelled()
     try {
+        getLogger().info(
+            `Uploading zip at ${fileName} with checksum ${sha256} using uploadId: ${resp.uploadId}
+             and size ${Math.round((await fs.promises.stat(fileName)).size / 1000)}kB`
+        )
+
         const apiStartTime = Date.now()
         const response = await request.fetch('PUT', resp.uploadUrl, {
             body: buffer,
@@ -125,7 +130,7 @@ export async function uploadArtifactToS3(
         getLogger().info(`CodeTransformation: Status from S3 Upload = ${response.status}`)
     } catch (e: any) {
         const errorMessage = (e as Error).message
-        getLogger().error(`CodeTransformation: UploadZip error = ${errorMessage}`)
+        getLogger().error(`CodeTransformation: UploadZip error = ${e}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'UploadZip',
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
