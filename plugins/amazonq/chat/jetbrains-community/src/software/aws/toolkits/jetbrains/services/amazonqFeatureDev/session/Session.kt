@@ -152,6 +152,9 @@ class Session(val tabID: String, val project: Project) {
             }
         }
 
+    val conversationIdUnsafe: String?
+        get() = _conversationId
+
     val sessionState: SessionState
         get() {
             if (_state == null) {

@@ -118,12 +118,14 @@ suspend fun MessagePublisher.sendChatInputEnabledMessage(tabId: String, enabled:
     this.publish(chatInputEnabledMessage)
 }
 
-suspend fun MessagePublisher.sendError(tabId: String, errMessage: String, retries: Int, phase: SessionStatePhase? = null) {
+suspend fun MessagePublisher.sendError(tabId: String, errMessage: String, retries: Int, phase: SessionStatePhase? = null, conversationId: String? = null) {
+    val conversationIdText = if (conversationId == null) "" else "\n\nConversation ID: **$conversationId**"
+
     if (retries == 0) {
         this.sendAnswer(
             tabId = tabId,
             messageType = FeatureDevMessageType.Answer,
-            message = message("amazonqFeatureDev.no_retries.error_text"),
+            message = message("amazonqFeatureDev.no_retries.error_text") + conversationIdText,
         )
 
         this.sendAnswer(
@@ -145,14 +147,14 @@ suspend fun MessagePublisher.sendError(tabId: String, errMessage: String, retrie
             this.sendErrorMessage(
                 tabId = tabId,
                 title = message("amazonqFeatureDev.approach_gen.error_text"),
-                message = errMessage,
+                message = errMessage + conversationIdText,
             )
         }
         else -> {
             this.sendErrorMessage(
                 tabId = tabId,
                 title = message("amazonqFeatureDev.error_text"),
-                message = errMessage,
+                message = errMessage + conversationIdText,
             )
         }
     }
