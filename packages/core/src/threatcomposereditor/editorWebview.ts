@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import { handleMessage } from './handleMessage'
 import { FileWatchInfo, WebviewContext } from './types'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { getStringHash } from '../shared/utilities/textUtilities'
+// import { getStringHash } from '../shared/utilities/textUtilities'
 import { addFileWatchMessageHandler } from './messageHandlers/addFileWatchMessageHandler'
 import { addThemeWatchMessageHandler } from './messageHandlers/addThemeWatchMessageHandler'
 import { sendThreatComposerOpenCancelled } from './messageHandlers/emitTelemetryMessageHandler'
@@ -47,7 +47,7 @@ export class ThreatComposer {
         this.workSpacePath = path.dirname(textDocument.uri.fsPath)
         this.defaultTemplatePath = textDocument.uri.fsPath
         this.defaultTemplateName = path.basename(this.defaultTemplatePath)
-        this.fileId = getStringHash(textDocument.uri.fsPath)
+        this.fileId = '' //getStringHash(textDocument.uri.fsPath)
 
         telemetry.threatcomposer_opened.record({
             fileId: this.fileId,
@@ -130,9 +130,9 @@ export class ThreatComposer {
                 return new Promise<void>(resolve => {
                     autoCloseNotificationTimeoutID = setTimeout(async () => {
                         resolve()
-                        // const errorMessage = "ThreatComposer took too long to open"
-                        // await cancelOpenInThreatComposer(errorMessage)
-                        // await vscode.window.showErrorMessage(errorMessage)
+                        const errorMessage = 'ThreatComposer took too long to open'
+                        await cancelOpenInThreatComposer(errorMessage)
+                        void vscode.window.showErrorMessage(errorMessage)
                     }, 10000)
 
                     contextObject.loaderNotification = {

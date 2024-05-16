@@ -20,7 +20,7 @@ const localize = nls.loadMessageBundle()
 // const localize = nls.loadMessageBundle()
 
 // Change this to true for local dev
-const isLocalDev = false
+const isLocalDev = true
 const localhost = 'http://127.0.0.1:3000'
 const cdn = 'https://ide-toolkits.threat-composer.aws.dev'
 
@@ -39,7 +39,10 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
             ThreatComposerEditorProvider.viewType,
             provider,
             {
-                webviewOptions: { retainContextWhenHidden: false }, // Set to false to re-render on tab switch
+                webviewOptions: {
+                    enableFindWidget: true,
+                    retainContextWhenHidden: true, // Set to false to re-render on tab switch
+                },
             }
         )
         return providerRegistration
