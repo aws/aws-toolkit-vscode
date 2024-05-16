@@ -43,12 +43,15 @@ export type UnrecoverableErrorType =
     | 'could-not-compile-project'
     | 'invalid-java-home'
     | 'unsupported-source-jdk-version'
+    | 'upload-to-s3-failed'
+    | 'job-start-failed'
 
-export type ErrorResponseType = 'no-alternate-dependencies-found' | 'upload-to-s3-failed'
+export type ErrorResponseType = 'no-alternate-dependencies-found'
 
 export enum GumbyNamedMessages {
     COMPILATION_PROGRESS_MESSAGE = 'gumbyProjectCompilationMessage',
     JOB_SUBMISSION_STATUS_MESSAGE = 'gumbyJobSubmissionMessage',
+    JOB_SUBMISSION_WITH_DEPENDENCY_STATUS_MESSAGE = 'gumbyJobSubmissionWithDependencyMessage',
 }
 
 export class Messenger {
@@ -227,7 +230,8 @@ export class Messenger {
     public sendJobSubmittedMessage(
         tabID: string,
         disableJobActions: boolean = false,
-        message = CodeWhispererConstants.jobStartedChatMessage
+        message: string = CodeWhispererConstants.jobStartedChatMessage,
+        messageID: string = GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
     ) {
         const buttons: ChatItemButton[] = []
 
@@ -251,7 +255,7 @@ export class Messenger {
             {
                 message,
                 messageType: 'ai-prompt',
-                messageId: GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE,
+                messageId: messageID,
                 buttons,
             },
             tabID
@@ -322,6 +326,13 @@ export class Messenger {
                 break
             case 'unsupported-source-jdk-version':
                 message = CodeWhispererConstants.unsupportedJavaVersionChatMessage
+                break
+            case 'upload-to-s3-failed':
+                message = `I was not able to upload your module to be transformed. Please try again later.`
+                break
+            case 'job-start-failed':
+                message = CodeWhispererConstants.failedToStartJobTooManyJobsChatMessage
+                break
         }
 
         const buttons: ChatItemButton[] = []
@@ -355,9 +366,6 @@ export class Messenger {
         switch (type) {
             case 'no-alternate-dependencies-found':
                 message = `I could not find any other versions of this dependency in your local Maven repository. Try transforming the dependency to make it compatible with Java 17, and then try transforming this module again.`
-                break
-            case 'upload-to-s3-failed':
-                message = `I was not able to upload your module to be transformed. Please try again later.`
                 break
         }
 
@@ -533,12 +541,23 @@ ${codeSnippet}
 
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
 
-        message = `I recieved your target version dependency.`
+        message = `I received your target version dependency.`
         this.sendInProgressMessage(tabID, message)
     }
 
     public sendHILResumeMessage(tabID: string) {
         const message = `I will continue transforming your code. You can monitor progress in the Transformation Hub.`
-        this.sendJobSubmittedMessage(tabID, false, message)
+        this.sendAsyncEventProgress(
+            tabID,
+            true,
+            undefined,
+            GumbyNamedMessages.JOB_SUBMISSION_WITH_DEPENDENCY_STATUS_MESSAGE
+        )
+        this.sendJobSubmittedMessage(
+            tabID,
+            false,
+            message,
+            GumbyNamedMessages.JOB_SUBMISSION_WITH_DEPENDENCY_STATUS_MESSAGE
+        )
     }
 }

@@ -53,3 +53,15 @@ export class ModuleUploadError extends Error {
         super('Failed to upload module to S3')
     }
 }
+
+export class JobStartError extends Error {
+    constructor() {
+        super('Failed to start job')
+    }
+}
+
+export class PollJobError extends Error {
+    constructor() {
+        super('Poll job failed')
+    }
+}
