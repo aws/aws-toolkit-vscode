@@ -32,10 +32,8 @@ import com.intellij.ui.content.ContentManagerListener
 import com.intellij.ui.treeStructure.Tree
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
@@ -220,7 +218,6 @@ class CodeWhispererCodeScanManager(val project: Project) {
         var codeScanStatus: Result = Result.Failed
         val startTime = Instant.now().toEpochMilli()
         var codeScanResponseContext = defaultCodeScanResponseContext()
-        var getProjectSize: Deferred<Long?> = async { null }
         val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
         var codeScanJobId: String? = null
         var language: CodeWhispererProgrammingLanguage = CodeWhispererUnknownLanguage.INSTANCE
@@ -270,9 +267,6 @@ class CodeWhispererCodeScanManager(val project: Project) {
                     }
                     LOG.info { "Security scan completed for jobID: $codeScanJobId." }
                 }
-                getProjectSize = async {
-                    codeScanSessionConfig.getTotalProjectSizeInBytes()
-                }
             }
         } catch (e: Error) {
             if (scope == CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
@@ -292,7 +286,14 @@ class CodeWhispererCodeScanManager(val project: Project) {
             launch {
                 val duration = (Instant.now().toEpochMilli() - startTime).toDouble()
                 CodeWhispererTelemetryService.getInstance().sendSecurityScanEvent(
-                    CodeScanTelemetryEvent(codeScanResponseContext, duration, codeScanStatus, getProjectSize.await()?.toDouble(), connection, scope)
+                    CodeScanTelemetryEvent(
+                        codeScanResponseContext,
+                        duration,
+                        codeScanStatus,
+                        codeScanResponseContext.payloadContext.srcPayloadSize.toDouble() ?: 0.0,
+                        connection,
+                        scope
+                    )
                 )
                 sendCodeScanTelemetryToServiceAPI(project, language, codeScanJobId, scope)
             }

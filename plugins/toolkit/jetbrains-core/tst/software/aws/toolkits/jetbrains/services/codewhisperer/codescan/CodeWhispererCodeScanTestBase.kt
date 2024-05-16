@@ -226,10 +226,6 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
         ]                
     """
 
-    internal fun getTotalProjectSizeInBytes(sessionConfigSpy: CodeScanSessionConfig, totalSize: Long) = runBlocking {
-        assertThat(sessionConfigSpy.getTotalProjectSizeInBytes()).isEqualTo(totalSize)
-    }
-
     internal fun selectedFileLargerThanPayloadSizeThrowsException(sessionConfigSpy: CodeScanSessionConfig) {
         sessionConfigSpy.stub {
             onGeneric { getPayloadLimitInBytes() }.thenReturn(100)

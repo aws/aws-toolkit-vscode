@@ -87,11 +87,6 @@ class CodeWhispererProjectCodeScanTest : CodeWhispererCodeScanTestBase(PythonCod
     }
 
     @Test
-    fun `test getTotalProjectSizeInBytes()`() {
-        getTotalProjectSizeInBytes(sessionConfigSpy, this.totalSize)
-    }
-
-    @Test
     fun `selected file larger than payload limit throws exception`() {
         selectedFileLargerThanPayloadSizeThrowsException(sessionConfigSpy)
     }
