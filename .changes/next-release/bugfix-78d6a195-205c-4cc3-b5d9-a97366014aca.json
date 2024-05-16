@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Amazon Q Chat: When window gets focus, even though the autoFocus property is set to true, input field doesn't get focus"
-}

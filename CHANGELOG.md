@@ -1,3 +1,9 @@
+# _3.4_ (2024-05-16)
+- **(Bug Fix)** Amazon Q Chat: Prompt input field in Q Chat tabs doesn't stop after it reaches to the given maxLength
+- **(Bug Fix)** Amazon Q Chat: When window gets focus, even though the autoFocus property is set to true, input field doesn't get focus
+- **(Bug Fix)** Amazon Q Chat: Inside chat body, if there is a code block inside a list item it shows <br/> tags
+- **(Bug Fix)** Security Scan: Improved error notifications
+
 # _3.3_ (2024-05-14)
 - **(Bug Fix)** Don't use `authorization_grant` when performing SSO login with legacy SSO or non-commercial AWS regions
 
