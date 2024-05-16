@@ -2,12 +2,16 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import * as vscode from 'vscode'
 import assert from 'assert'
 import { prepareRepoData } from '../../../amazonqFeatureDev/util/files'
 import { createTestWorkspace } from '../../testUtil'
 import { TelemetryHelper } from '../../../amazonqFeatureDev/util/telemetryHelper'
 import { AmazonqCreateUpload, Metric } from '../../../shared/telemetry/telemetry'
+import { ContentLengthError } from '../../../amazonqFeatureDev/errors'
+import { maxRepoSizeBytes } from '../../../amazonqFeatureDev/constants'
+import sinon from 'sinon'
+import { fsCommon } from '../../../srcShared/fs'
 
 describe('file utils', () => {
     describe('prepareRepoData', function () {
@@ -27,6 +31,21 @@ describe('file utils', () => {
             // checksum is not the same across different test executions because some unique random folder names are generated
             assert.strictEqual(result.zipFileChecksum.length, 44)
             assert.strictEqual(telemetry.repositorySize, 24)
+        })
+
+        // Test the logic that allows the customer to modify root source folder
+        it('prepareRepoData throws a ContentLengthError code when repo is too big', async function () {
+            const workspace = await createTestWorkspace(1, {})
+            const telemetry = new TelemetryHelper()
+
+            sinon.stub(fsCommon, 'stat').resolves({ size: 2 * maxRepoSizeBytes } as vscode.FileStat)
+            await assert.rejects(
+                () =>
+                    prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {
+                        record: () => {},
+                    } as unknown as Metric<AmazonqCreateUpload>),
+                ContentLengthError
+            )
         })
     })
 })
