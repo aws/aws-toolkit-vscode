@@ -45,7 +45,6 @@ describe('transformByQ', function () {
     const testStartTime = '05/03/24, 11:35 AM'
     const testSummaryPath = '/test/summary/path'
     const testPatchPath = '/test/patch/path'
-
     let tempDir: string
 
     const addHistoryItem = async (summary = false, patch = false, jobId = testJobId) => {
@@ -61,7 +60,13 @@ describe('transformByQ', function () {
     beforeEach(async function () {
         tempDir = await makeTemporaryToolkitFolder()
         transformByQState.setToNotStarted()
-        transformByQState.setExtensionContext(await FakeExtensionContext.create())
+        transformByQState.setExtensionContext(await FakeExtensionContext.create({ workspaceState: {} }))
+        transformByQState.setJobId('')
+        transformByQState.setProjectName('')
+        transformByQState.setPolledJobStatus('')
+        transformByQState.setStartTime('')
+        transformByQState.setSummaryFilePath('')
+        transformByQState.setResultArchiveFilePath('')
     })
 
     afterEach(async function () {
@@ -210,8 +215,8 @@ describe('transformByQ', function () {
         assert.strictEqual(actual[testJobId].projectName, testProjectName)
         assert.strictEqual(actual[testJobId].status, testStatus)
         assert.strictEqual(actual[testJobId].startTime, testStartTime)
-        assert.strictEqual(actual[testJobId]?.summaryFile, '')
-        assert.strictEqual(actual[testJobId]?.patchFile, '')
+        assert.strictEqual(actual[testJobId].summaryFile, '')
+        assert.strictEqual(actual[testJobId].patchFile, '')
         assert.ok(actual[testJobId].expireOn)
     })
 
