@@ -133,7 +133,7 @@ export function startInterval() {
             'aws.amazonq.showPlanProgressInHub',
             CodeTransformTelemetryState.instance.getStartTime()
         )
-        void SessionJobHistory.Instance.update()
+        void SessionJobHistory.update()
     }, CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
     transformByQState.setIntervalId(intervalId)
 }
@@ -335,7 +335,7 @@ export async function setTransformationToRunningState() {
 }
 
 export async function postTransformationJob() {
-    void SessionJobHistory.Instance.update()
+    void SessionJobHistory.update()
     if (jobPlanProgress['startJob'] !== StepProgress.Succeeded) {
         jobPlanProgress['startJob'] = StepProgress.Failed
     }

@@ -14,8 +14,9 @@ import { UIMessageListener } from './chat/views/actions/uiMessageListener'
 import { debounce } from 'lodash'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { showTransformationHub } from './commands'
-import { transformByQState } from '../codewhisperer/models/model'
+import { SessionJobHistory, transformByQState } from '../codewhisperer/models/model'
 import { ExtensionContext } from 'vscode'
+import { getLogger } from '../shared/logger'
 
 export function init(appContext: AmazonQAppInitContext, extensionContext: ExtensionContext) {
     const gumbyChatControllerEventEmitters: ChatControllerEventEmitters = {
@@ -71,4 +72,11 @@ export function init(appContext: AmazonQAppInitContext, extensionContext: Extens
 
     transformByQState.setChatControllers(gumbyChatControllerEventEmitters)
     transformByQState.setExtensionContext(extensionContext)
+    SessionJobHistory.evictExpired().then(
+        _ => {},
+        _ => {
+            getLogger().error('Unable to evict expired jobs')
+        }
+    )
+    await SessionJobHistory.setAllToExpireNow()
 }
