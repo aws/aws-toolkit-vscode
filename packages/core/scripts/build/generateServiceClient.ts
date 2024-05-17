@@ -245,10 +245,6 @@ void (async () => {
             serviceJsonPath: 'src/amazonqFeatureDev/client/codewhispererruntime-2022-11-11.json',
             serviceName: 'FeatureDevProxyClient',
         },
-        {
-            serviceJsonPath: 'src/auth/sso/service-2.json',
-            serviceName: 'OidcClientPKCE',
-        },
     ]
     await generateServiceClients(serviceClientDefinitions)
 })()

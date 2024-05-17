@@ -134,7 +134,7 @@
                     :itemId="LoginOption.IAM_CREDENTIAL"
                     :itemText="'Store keys for use with AWS CLI tools'"
                     :itemTitle="'IAM Credentials'"
-                    :itemtype="LoginOption.IAM_CREDENTIAL"
+                    :itemType="LoginOption.IAM_CREDENTIAL"
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
                 <button
@@ -275,7 +275,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import SelectableItem from './selectableItem.vue'
-import { LoginOption } from './types'
+import { LoginOption, AuthError } from './types'
 import { CommonAuthWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { Region } from '../../../shared/regions/endpoints'
@@ -325,6 +325,10 @@ interface ExistingLogin {
     title: string
     connectionId: string
     type: number
+
+    // used internally
+    startUrl: string
+    region: string
 }
 
 export default defineComponent({
@@ -355,7 +359,6 @@ export default defineComponent({
             profileName: '',
             accessKey: '',
             secretKey: '',
-            existingConnectionStartUrls: [] as string[],
         }
     },
     async created() {
@@ -439,7 +442,17 @@ export default defineComponent({
                     return
                 }
                 this.stage = 'AUTHENTICATING'
-                const error = await client.startEnterpriseSetup(this.startUrl, this.selectedRegion, this.app)
+
+                // First check if the user tried submitting a connection that was already displayed as existing.
+                const existingConn = this.existingLogins.find(conn => conn.startUrl === this.startUrl)
+
+                let error: AuthError | undefined
+                if (existingConn !== undefined) {
+                    error = await client.useConnection(existingConn.connectionId, false)
+                } else {
+                    error = await client.startEnterpriseSetup(this.startUrl, this.selectedRegion, this.app)
+                }
+
                 if (error) {
                     this.stage = 'START'
                     void client.errorNotification(error)
@@ -476,7 +489,14 @@ export default defineComponent({
             if (this.startUrl && !validateSsoUrlFormat(this.startUrl)) {
                 this.startUrlError =
                     'URLs must start with http:// or https://. Example: https://d-xxxxxxxxxx.awsapps.com/start'
-            } else if (this.startUrl && this.existingConnectionStartUrls.includes(this.startUrl)) {
+            } else if (
+                this.startUrl &&
+                this.existingLogins.some(conn => conn.startUrl === this.startUrl && conn.region !== this.selectedRegion)
+            ) {
+                // Here, the user provided a startUrl that is already displayed as an existing option (in the previous screen).
+                // If the selectedRegion differs from the region in the existing connection, then we can display this error.
+                // Otherwise, we would have skipped this codepath and we will just re-use the existing connection since it is the same
+                // as what the user provided.
                 this.startUrlError =
                     'A connection for this start URL already exists. Sign out before creating a new one.'
             } else {
@@ -487,6 +507,7 @@ export default defineComponent({
             }
         },
         handleRegionInput(event: any) {
+            this.handleUrlInput() // startUrl validity depends on region, see handleUriInput() for details
             void client.storeMetricMetadata({
                 region: event.target.value,
             })
@@ -518,18 +539,14 @@ export default defineComponent({
                         : `IAM Identity Center ${connection.startUrl}`,
                     connectionId: connection.id,
                     type: isBuilderId(connection.startUrl) ? LoginOption.BUILDER_ID : LoginOption.ENTERPRISE_SSO,
+                    startUrl: connection.startUrl,
+                    region: connection.ssoRegion,
                 })
-            })
-            // fetch existing connections of itself
-            const connections = await client.listConnections()
-            connections.forEach(connection => {
-                if ('startUrl' in connection) {
-                    this.existingConnectionStartUrls.push(connection.startUrl)
-                }
             })
 
             // If Amazon Q has no connections while Toolkit has connections
             // Auto connect Q using toolkit connection.
+            const connections = await client.listConnections()
             if (connections.length === 0 && sharedConnections && sharedConnections.length > 0) {
                 const conn = await client.findUsableConnection(sharedConnections)
                 if (conn) {
