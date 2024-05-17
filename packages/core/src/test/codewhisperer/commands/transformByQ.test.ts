@@ -192,7 +192,7 @@ describe('transformByQ', function () {
     })
 
     it(`WHEN update job history called THEN returns details of last run job with patch and summary if available`, async function () {
-        await addHistoryItem()
+        await addHistoryItem(true, true)
         const actual = SessionJobHistory.get()
 
         assert.strictEqual(actual[testJobId].projectName, testProjectName)
