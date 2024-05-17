@@ -143,38 +143,41 @@ describe('AuthUtil', async function () {
         assert.strictEqual(auth.getConnectionState(conn), 'valid')
     })
 
-    it('reauthenticate does NOT add missing CodeWhisperer scopes if not required to', async function () {
-        const conn = await auth.createConnection(createBuilderIdProfile({ scopes: codeWhispererCoreScopes }))
+    it('reauthenticates SSO connection that already has all scopes', async function () {
+        const conn = await auth.createInvalidSsoConnection(createBuilderIdProfile({ scopes: amazonQScopes }))
         await auth.useConnection(conn)
 
         await authUtil.reauthenticate()
 
         assert.strictEqual(authUtil.conn?.type, 'sso')
-        assert.deepStrictEqual(authUtil.conn?.scopes, codeWhispererCoreScopes)
+        assert.deepStrictEqual(authUtil.conn?.scopes, amazonQScopes)
+        assert.strictEqual(auth.getConnectionState(conn), 'valid')
     })
 
     it('reauthenticate adds missing Builder ID scopes when explicitly required', async function () {
-        const conn = await auth.createConnection(createBuilderIdProfile({ scopes: codeWhispererCoreScopes }))
+        const conn = await auth.createInvalidSsoConnection(createBuilderIdProfile({ scopes: codeWhispererCoreScopes }))
         await auth.useConnection(conn)
 
         // method under test
-        await authUtil.reauthenticate(true)
+        await authUtil.reauthenticate()
 
         assert.strictEqual(authUtil.conn?.type, 'sso')
         assert.deepStrictEqual(authUtil.conn?.scopes, amazonQScopes)
+        assert.strictEqual(auth.getConnectionState(conn), 'valid')
     })
 
     it('reauthenticate adds missing Amazon Q IdC scopes when explicitly required', async function () {
-        const conn = await auth.createConnection(
+        const conn = await auth.createInvalidSsoConnection(
             createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: codeWhispererCoreScopes })
         )
         await auth.useConnection(conn)
 
         // method under test
-        await authUtil.reauthenticate(true)
+        await authUtil.reauthenticate()
 
         assert.strictEqual(authUtil.conn?.type, 'sso')
         assert.deepStrictEqual(authUtil.conn?.scopes, amazonQScopes)
+        assert.strictEqual(auth.getConnectionState(conn), 'valid')
     })
 
     it('CodeWhisperer uses fallback connection when switching to an unsupported connection', async function () {
