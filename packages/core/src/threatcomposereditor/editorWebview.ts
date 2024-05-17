@@ -9,7 +9,6 @@ import * as vscode from 'vscode'
 import { handleMessage } from './handleMessage'
 import { FileWatchInfo, WebviewContext } from './types'
 import { telemetry } from '../shared/telemetry/telemetry'
-// import { getStringHash } from '../shared/utilities/textUtilities'
 import { addFileWatchMessageHandler } from './messageHandlers/addFileWatchMessageHandler'
 import { addThemeWatchMessageHandler } from './messageHandlers/addThemeWatchMessageHandler'
 import { sendThreatComposerOpenCancelled } from './messageHandlers/emitTelemetryMessageHandler'
@@ -37,6 +36,7 @@ export class ThreatComposer {
         textDocument: vscode.TextDocument,
         webviewPanel: vscode.WebviewPanel,
         context: vscode.ExtensionContext,
+        fileId: string,
         getWebviewContent: () => string
     ) {
         this.getWebviewContent = getWebviewContent
@@ -47,7 +47,7 @@ export class ThreatComposer {
         this.workSpacePath = path.dirname(textDocument.uri.fsPath)
         this.defaultTemplatePath = textDocument.uri.fsPath
         this.defaultTemplateName = path.basename(this.defaultTemplatePath)
-        this.fileId = '' //getStringHash(textDocument.uri.fsPath)
+        this.fileId = fileId
 
         telemetry.threatcomposer_opened.record({
             fileId: this.fileId,

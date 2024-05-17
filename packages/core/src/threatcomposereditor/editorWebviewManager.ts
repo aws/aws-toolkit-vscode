@@ -12,6 +12,9 @@ import { getLogger } from '../shared/logger'
 import { ThreatComposer } from './editorWebview'
 import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
+import { getClientId } from '../shared/telemetry/util'
+import { getStringHash } from '../shared/utilities/textUtilities'
+import globals from '../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -23,6 +26,7 @@ const localize = nls.loadMessageBundle()
 const isLocalDev = false
 const localhost = 'http://127.0.0.1:3000'
 const cdn = 'https://ide-toolkits.threat-composer.aws.dev'
+let clientId = ''
 
 /**
  * Provider for ThreatComposer editors.
@@ -127,24 +131,29 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
 
         if (threatComposerSettings.defaultEditor) {
             await telemetry.threatcomposer_opened.run(async span => {
+                if (clientId === '') {
+                    clientId = await getClientId(globals.context.globalState)
+                }
                 // Attempt to retrieve existing visualization if it exists.
                 const existingVisualization = this.getExistingVisualization(document.uri.fsPath)
                 if (existingVisualization) {
                     existingVisualization.showPanel()
-                }
-
-                // Existing visualization does not exist, construct new visualization
-                try {
-                    const newVisualization = new ThreatComposer(
-                        document,
-                        webviewPanel,
-                        this.extensionContext,
-                        this.getWebviewContent
-                    )
-                    this.handleNewVisualization(document.uri.fsPath, newVisualization)
-                } catch (err) {
-                    this.handleErr(err as Error)
-                    throw new ToolkitError((err as Error).message, { code: 'Failed to Open Threat Composer' })
+                } else {
+                    // Existing visualization does not exist, construct new visualization
+                    try {
+                        const fileId = getStringHash(document.uri.fsPath + clientId)
+                        const newVisualization = new ThreatComposer(
+                            document,
+                            webviewPanel,
+                            this.extensionContext,
+                            fileId,
+                            this.getWebviewContent
+                        )
+                        this.handleNewVisualization(document.uri.fsPath, newVisualization)
+                    } catch (err) {
+                        this.handleErr(err as Error)
+                        throw new ToolkitError((err as Error).message, { code: 'Failed to Open Threat Composer' })
+                    }
                 }
             })
         } else {
