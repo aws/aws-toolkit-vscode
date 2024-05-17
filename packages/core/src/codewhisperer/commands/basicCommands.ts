@@ -139,13 +139,7 @@ export const selectCustomizationPrompt = Commands.declare(
 
 export const reconnect = Commands.declare(
     { id: 'aws.amazonq.reconnect', compositeKey: { 1: 'source' } },
-    () =>
-        async (_: VsCodeCommandArg, source: CodeWhispererSource, addMissingScopes: boolean = false) => {
-            if (typeof addMissingScopes !== 'boolean') {
-                addMissingScopes = false
-            }
-            await AuthUtil.instance.reauthenticate(addMissingScopes)
-        }
+    () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => await AuthUtil.instance.reauthenticate()
 )
 
 /** @deprecated in favor of the `Add Connection` page */
