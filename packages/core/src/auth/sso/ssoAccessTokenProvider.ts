@@ -19,7 +19,6 @@ import {
     builderIdStartUrl,
     openSsoPortalLink,
     isDeprecatedAuth,
-    openSsoUrl,
 } from './model'
 import { getCache } from './cache'
 import { hasProps, hasStringProps, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
@@ -436,7 +435,7 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
         registration: ClientRegistration
     ): Promise<{ token: SsoToken; registration: ClientRegistration; region: string; startUrl: string }> {
         const state = randomUUID()
-        const authServer = new AuthSSOServer(state)
+        const authServer = AuthSSOServer.init(state)
 
         try {
             await authServer.start()
@@ -457,9 +456,7 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
                     codeChallengeMethod: 'S256',
                 })
 
-                if (!(await openSsoUrl(vscode.Uri.parse(location)))) {
-                    throw new CancellationError('user')
-                }
+                await vscode.env.openExternal(vscode.Uri.parse(location))
 
                 const authorizationCode = await authServer.waitForAuthorization()
                 if (authorizationCode.isErr()) {
