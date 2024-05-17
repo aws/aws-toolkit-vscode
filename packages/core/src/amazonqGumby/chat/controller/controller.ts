@@ -210,11 +210,6 @@ export class GumbyController {
                     return
             }
 
-            // TODO if we choose to send a message we need to add a form and listeners to the buttons in the form + possibly state
-            // if(transformByQState.getResultArchiveFilePath() !== ''){
-            //     this.messenger.sendOverwriteConfirmation(message.tabID)
-            //     return
-            // }
             this.messenger.sendTransformationIntroduction(message.tabID)
 
             // start /transform chat flow

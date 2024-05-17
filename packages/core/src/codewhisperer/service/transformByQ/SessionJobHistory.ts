@@ -13,8 +13,7 @@ import * as fs from 'fs-extra'
 
 export class SessionJobHistory {
     static readonly jobHistoryKey = `code-transform-job-history`
-    // private static readonly jobExpiryOffset = 7 * 24 * 60 * 60 * 1000 // 7 days in ms
-    private static readonly jobExpiryOffset = 15 * 60 * 1000 // 15 min in ms
+    private static readonly jobExpiryOffset = 7 * 24 * 60 * 60 * 1000 // 7 days in ms
 
     public static async update() {
         const history = this.get()

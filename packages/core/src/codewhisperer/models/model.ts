@@ -661,10 +661,6 @@ export class TransformByQState {
         this.planSteps = undefined
     }
 
-    // public resetSessionJobHistory() {
-    //     sessionJobHistory = {}
-    // }
-
     public setJobDefaults() {
         this.setToNotStarted()
         this.jobFailureErrorNotification = undefined

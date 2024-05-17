@@ -412,17 +412,7 @@ export class ProposedTransformationExplorer {
                     message: CodeWhispererConstants.viewProposedChangesChatMessage,
                     tabID: ChatSessionManager.Instance.getSession().tabID,
                 })
-                // const prevValue = context.workspaceState.get<Map<string, string>>(`code-transform-job-data`) ?? new Map<string, string>()
-                // getLogger().info(`stored workspaces jobs ${prevValue}`)
-                // prevValue.set(transformByQState.getJobId(), pathContainingArchive)
-                // context.workspaceState.update(`code-transform-job-data`, pathContainingArchive)
-                // .then(onFullfilled => {
-                //     getLogger().info(`Successfully stored job ${transformByQState.getJobId()} results to workspace state: ${onFullfilled}`)
-                //     },
-                //     onRejected => {
-                //         getLogger().info(`Failed to store job ${transformByQState.getJobId()} results to workspace state: ${onRejected}`)
-                //     }
-                // )
+
                 await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
             } catch (e: any) {
                 deserializeErrorMessage = (e as Error).message

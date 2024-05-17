@@ -581,7 +581,6 @@ export async function setTransformationToRunningState() {
     jobPlanProgress['generatePlan'] = StepProgress.Pending
     jobPlanProgress['transformCode'] = StepProgress.Pending
     transformByQState.resetPlanSteps()
-    // transformByQState.resetSessionJobHistory()
     transformByQState.setJobId('') // so that details for last job are not overwritten when running one job after another
     transformByQState.setPolledJobStatus('') // so that previous job's status does not display at very beginning of this job
 

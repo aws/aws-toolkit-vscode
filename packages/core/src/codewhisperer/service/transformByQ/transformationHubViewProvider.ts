@@ -31,7 +31,6 @@ import * as fs from 'fs-extra'
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.transformationHub'
 
-    // TODO revert change to public
     public _view?: vscode.WebviewView
     private lastClickedButton: string = ''
     private _extensionUri: vscode.Uri = globals.context.extensionUri
@@ -92,7 +91,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         }
     }
 
-    public showJobHistory() {
+    private showJobHistory() {
         this._view!.webview.html = `<!DOCTYPE html>
             <html lang="en">
             <head>
