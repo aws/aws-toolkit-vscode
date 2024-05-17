@@ -59,6 +59,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     }
 
     async useConnection(connectionId: string, auto: boolean): Promise<AuthError | undefined> {
+        getLogger().debug(`called useConnection() with connectionId: '${connectionId}', auto: '${auto}'`)
         return this.ssoSetup(
             'useConnection',
             async () => {
@@ -140,6 +141,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     }
 
     async startBuilderIdSetup(): Promise<AuthError | undefined> {
+        getLogger().debug(`called startBuilderIdSetup()`)
         return await this.ssoSetup('startCodeWhispererBuilderIdSetup', async () => {
             this.storeMetricMetadata({
                 credentialSourceId: 'awsId',
@@ -153,6 +155,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     }
 
     async startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
+        getLogger().debug(`called useConnection() with startUrl: '${startUrl}', region: '${region}'`)
         return await this.ssoSetup('startCodeWhispererEnterpriseSetup', async () => {
             this.storeMetricMetadata({
                 credentialStartUrl: startUrl,

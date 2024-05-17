@@ -5,7 +5,7 @@
  * This module sets up the necessary components
  * for the webview to be shown.
  */
-import globals, { isWeb } from '../../../shared/extensionGlobals'
+import globals from '../../../shared/extensionGlobals'
 import { getIdeProperties, isCloud9 } from '../../../shared/extensionUtilities'
 import { VueWebview } from '../../../webviews/main'
 import * as vscode from 'vscode'
@@ -35,26 +35,24 @@ import {
     hasSso,
     BuilderIdKind,
     findSsoConnections,
-    authCommands,
 } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { validateSsoUrl, validateSsoUrlFormat } from '../../sso/validation'
-import { awsIdSignIn, showCodeWhispererConnectionPrompt } from '../../../codewhisperer/util/showSsoPrompt'
-import { AuthError, ServiceItemId, isServiceItemId, authFormTelemetryMapping, userCancelled } from './types'
+import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
+import { AuthError, ServiceItemId, authFormTelemetryMapping, userCancelled } from './types'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { trustedDomainCancellation } from '../../sso/model'
 import { CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
 import { AuthFormId } from './authForms/types'
 import { handleWebviewError } from '../../../webviews/server'
-import { Commands, RegisteredCommand, VsCodeCommandArg, placeholder } from '../../../shared/vscode/commands2'
+import { placeholder } from '../../../shared/vscode/commands2'
 import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
 import { debounce } from 'lodash'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
 import { ExtStartUpSources } from '../../../shared/telemetry'
-import { CommonAuthWebview } from '../../../login/webview/vue/backend'
-import { AuthSource, AuthSources } from '../../../login/webview/util'
+import { AuthSource } from '../../../login/webview/util'
 import { focusAmazonQPanel } from '../../../codewhispererChat/commands/registerCommands'
 
 // This file has some used functions, but most of it should be removed soon. We have a new
@@ -713,47 +711,6 @@ export function buildCommaDelimitedString(strings: Iterable<string>): string {
 const Panel = VueWebview.compilePanel(AuthWebview)
 let activePanel: InstanceType<typeof Panel> | undefined
 let subscriptions: vscode.Disposable[] | undefined
-
-let showManageConnections: RegisteredCommand<any> | undefined
-export function getShowManageConnections(): RegisteredCommand<any> {
-    if (!showManageConnections) {
-        throw new Error('showManageConnections not registered')
-    }
-    return showManageConnections
-}
-
-export function registerCommands(context: vscode.ExtensionContext, prefix: string) {
-    showManageConnections = Commands.register(
-        { id: `aws.${prefix}.auth.manageConnections`, compositeKey: { 1: 'source' } },
-        async (_: VsCodeCommandArg, source: AuthSource, serviceToShow?: ServiceItemId) => {
-            if (_ !== placeholder) {
-                source = AuthSources.vscodeComponent
-            }
-
-            // The auth webview page does not make sense to use in C9,
-            // so show the auth quick pick instead.
-            if (isCloud9('any') || isWeb()) {
-                if (source.toLowerCase().includes('codewhisperer')) {
-                    // Show CW specific quick pick for CW connections
-                    return showCodeWhispererConnectionPrompt()
-                }
-                return authCommands().addConnection.execute()
-            }
-
-            if (!isServiceItemId(serviceToShow)) {
-                serviceToShow = undefined
-            }
-
-            // TODO: hack
-            if (prefix === 'toolkit') {
-                CommonAuthWebview.authSource = source
-                await vscode.commands.executeCommand('aws.explorer.setLoginService', serviceToShow)
-                await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', true)
-                await vscode.commands.executeCommand('aws.toolkit.AmazonCommonAuth.focus')
-            }
-        }
-    )
-}
 
 //todo: delete?
 export async function showAuthWebview(

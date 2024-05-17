@@ -34,13 +34,14 @@ import {
     validateOpenProjects,
     getOpenProjects,
 } from '../../../codewhisperer/service/transformByQ/transformProjectValidationHandler'
-import { TransformationCandidateProject } from '../../../codewhisperer/models/model'
+import { TransformationCandidateProject, ZipManifest } from '../../../codewhisperer/models/model'
 
 describe('transformByQ', function () {
     let tempDir: string
 
     beforeEach(async function () {
         tempDir = await makeTemporaryToolkitFolder()
+        transformByQState.setToNotStarted()
     })
 
     afterEach(async function () {
@@ -129,7 +130,14 @@ describe('transformByQ', function () {
         }, NoOpenProjectsError)
     })
 
+    it('WHEN stop job called with invalid jobId THEN throws error', async function () {
+        await assert.rejects(async () => {
+            await stopJob('')
+        }, Error)
+    })
+
     it('WHEN stop job called with valid jobId THEN stop API called', async function () {
+        transformByQState.setToRunning()
         const stopJobStub = sinon.stub(codeWhisperer.codeWhispererClient, 'codeModernizerStopCodeTransformation')
         await stopJob('dummyId')
         sinon.assert.calledWithExactly(stopJobStub, { transformationJobId: 'dummyId' })
@@ -137,7 +145,7 @@ describe('transformByQ', function () {
 
     it('WHEN stop job that has not been started THEN stop API not called', async function () {
         const stopJobStub = sinon.stub(codeWhisperer.codeWhispererClient, 'codeModernizerStopCodeTransformation')
-        await stopJob('')
+        await stopJob('dummyId')
         sinon.assert.notCalled(stopJobStub)
     })
 
@@ -237,8 +245,13 @@ describe('transformByQ', function () {
         const tempFileName = `testfile-${Date.now()}.zip`
         transformByQState.setProjectPath(tempDir)
         return zipCode({
-            path: tempDir,
-            name: tempFileName,
+            dependenciesFolder: {
+                path: tempDir,
+                name: tempFileName,
+            },
+            humanInTheLoopFlag: false,
+            modulePath: tempDir,
+            zipManifest: new ZipManifest(),
         }).then(zipFile => {
             const zip = new AdmZip(zipFile)
             const dependenciesToUpload = zip.getEntries().filter(entry => entry.entryName.startsWith('dependencies'))

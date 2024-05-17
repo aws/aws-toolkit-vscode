@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q Code Transform: Show additional status messages to align with experience when JAVA_HOME set incorrectly."
-}

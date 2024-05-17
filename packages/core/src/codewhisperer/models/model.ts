@@ -283,9 +283,10 @@ export class CodeScanStoppedError extends ToolkitError {
 }
 
 // for internal use; store status of job
-enum TransformByQStatus {
+export enum TransformByQStatus {
     NotStarted = 'Not Started',
     Running = 'Running', // includes creating job, uploading code, analyzing, testing, transforming, etc.
+    WaitingUserInput = 'WaitingForUserInput', // The human in the loop, this period is waiting for user input to continue
     Cancelled = 'Cancelled', // if user manually cancels
     Failed = 'Failed', // if job is rejected or if any other error experienced; user will receive specific error message
     Succeeded = 'Succeeded',
@@ -323,7 +324,29 @@ export class ZipManifest {
     dependenciesRoot: string | undefined = 'dependencies/'
     buildLogs: string = 'build-logs.txt'
     version: string = '1.0'
+    hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
     transformCapabilities: string[] = ['EXPLAINABILITY_V1']
+}
+
+export interface IHilZipManifestParams {
+    pomGroupId: string
+    pomArtifactId: string
+    targetPomVersion: string
+    dependenciesRoot?: string
+}
+export class HilZipManifest {
+    hilCapability: string = 'HIL_1pDependency_VersionUpgrade'
+    hilInput: IHilZipManifestParams = {
+        pomGroupId: '',
+        pomArtifactId: '',
+        targetPomVersion: '',
+        dependenciesRoot: 'dependencies/',
+    }
+    constructor({ pomGroupId, pomArtifactId, targetPomVersion }: IHilZipManifestParams) {
+        this.hilInput.pomGroupId = pomGroupId
+        this.hilInput.pomArtifactId = pomArtifactId
+        this.hilInput.targetPomVersion = targetPomVersion
+    }
 }
 
 export enum DropdownStep {
