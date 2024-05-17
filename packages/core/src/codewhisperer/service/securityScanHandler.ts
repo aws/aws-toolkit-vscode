@@ -59,7 +59,7 @@ export async function listScanResults(
     })
     codeScanIssueMap.forEach((issues, key) => {
         projectPaths.forEach(projectPath => {
-            const filePath = path.join(projectPath, '..', key)
+            const filePath = path.join(projectPath, key.split('/').slice(1).join('/'))
             if (existsSync(filePath) && statSync(filePath).isFile()) {
                 const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
                     filePath: filePath,
