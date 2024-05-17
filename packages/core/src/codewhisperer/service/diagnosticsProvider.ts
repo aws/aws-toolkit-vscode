@@ -128,12 +128,13 @@ export function removeDiagnostic(uri: vscode.Uri, issue: CodeScanIssue) {
     const currentSecurityDiagnostics = securityScanRender.securityDiagnosticCollection?.get(uri)
     if (currentSecurityDiagnostics) {
         const newSecurityDiagnostics = currentSecurityDiagnostics.filter(diagnostic => {
-            return (
+            return !(
                 typeof diagnostic.code !== 'string' &&
                 typeof diagnostic.code !== 'number' &&
-                diagnostic.code?.value !== issue.detectorId &&
-                diagnostic.message !== issue.title &&
-                diagnostic.range !== new vscode.Range(issue.startLine, 0, issue.endLine, 0)
+                diagnostic.code?.value === issue.detectorId &&
+                diagnostic.message === issue.title &&
+                diagnostic.range.start.line === issue.startLine &&
+                diagnostic.range.end.line === issue.endLine
             )
         })
         securityScanRender.securityDiagnosticCollection?.set(uri, newSecurityDiagnostics)
