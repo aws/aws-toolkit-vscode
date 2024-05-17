@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "CodeCatalyst: No longer display a prompt to 'Onboard' if re-using an existing connection from Amazon Q and it is already onboarded."
-}
