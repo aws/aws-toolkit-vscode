@@ -234,6 +234,11 @@ export class Session {
         return this._conversationId
     }
 
+    // Used for cases where it is not needed to have conversationId
+    get conversationIdUnsafe() {
+        return this._conversationId
+    }
+
     get latestMessage() {
         return this._latestMessage
     }

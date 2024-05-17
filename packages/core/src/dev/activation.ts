@@ -21,6 +21,7 @@ import { isAnySsoConnection } from '../auth/connection'
 import { Auth } from '../auth/auth'
 import { getLogger } from '../shared/logger'
 import { entries } from '../shared/utilities/tsUtils'
+import { getEnvironmentSpecificMemento } from '../shared/utilities/mementos'
 
 interface MenuOption {
     readonly label: string
@@ -38,6 +39,7 @@ export type DevFunction =
     | 'showEnvVars'
     | 'deleteSsoConnections'
     | 'expireSsoConnections'
+    | 'editAuthConnections'
 
 let targetContext: vscode.ExtensionContext
 
@@ -88,6 +90,11 @@ const menuOptions: Record<DevFunction, MenuOption> = {
         label: 'Auth: Expire SSO Connections',
         detail: 'Force expires all SSO Connections, in to a "needs reauthentication" state.',
         executor: expireSsoConnections,
+    },
+    editAuthConnections: {
+        label: 'Auth: Edit Connections',
+        detail: 'Opens editor to all Auth Connections the extension is using.',
+        executor: editSsoConnections,
     },
 }
 
@@ -199,14 +206,25 @@ function isSecrets(obj: vscode.Memento | vscode.SecretStorage): obj is vscode.Se
 }
 
 class VirtualObjectFile implements FileProvider {
+    private mTime = 0
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChange = this.onDidChangeEmitter.event
 
     public constructor(private readonly storage: vscode.Memento | vscode.SecretStorage, private readonly key: string) {}
 
+    /** Emits an event indicating this file's content has changed */
+    public refresh() {
+        /**
+         * Per {@link vscode.FileSystemProvider.onDidChangeFile}, if the mTime does not change, new file content may
+         * not be retrieved. Without this, when we emit a change the text editor did not update.
+         */
+        this.mTime++
+        this.onDidChangeEmitter.fire()
+    }
+
     public stat(): { ctime: number; mtime: number; size: number } {
         // This would need to be filled out to track conflicts
-        return { ctime: 0, mtime: 0, size: 0 }
+        return { ctime: 0, mtime: this.mTime, size: 0 }
     }
 
     public async read(): Promise<Uint8Array> {
@@ -220,6 +238,7 @@ class VirtualObjectFile implements FileProvider {
         const value = JSON.parse(decoder.decode(content))
 
         await this.updateStore(this.key, value)
+        this.refresh()
     }
 
     private async readStore(key: string): Promise<string> {
@@ -246,6 +265,7 @@ class VirtualObjectFile implements FileProvider {
 
 interface Tab {
     readonly editor: vscode.TextEditor
+    readonly virtualFile: VirtualObjectFile
     dispose(): void
 }
 
@@ -265,7 +285,7 @@ class ObjectEditor {
         vscode.workspace.registerFileSystemProvider(ObjectEditor.scheme, this.fs)
     }
 
-    public async openStorage(type: 'globalsView' | 'globals' | 'secrets', key: string): Promise<void> {
+    public async openStorage(type: 'globalsView' | 'globals' | 'secrets' | 'auth', key: string): Promise<void> {
         switch (type) {
             case 'globalsView':
                 return showState('globalstate')
@@ -273,6 +293,9 @@ class ObjectEditor {
                 return this.openState(targetContext.globalState, key)
             case 'secrets':
                 return this.openState(targetContext.secrets, key)
+            case 'auth':
+                // Auth memento is determined in a different way
+                return this.openState(getEnvironmentSpecificMemento(), key)
         }
     }
 
@@ -281,6 +304,7 @@ class ObjectEditor {
         const tab = this.tabs.get(this.fs.uriToKey(uri))
 
         if (tab) {
+            tab.virtualFile.refresh()
             await vscode.window.showTextDocument(tab.editor.document)
         } else {
             const newTab = await this.createTab(storage, key)
@@ -308,6 +332,7 @@ class ObjectEditor {
 
         return {
             editor: await vscode.window.showTextDocument(withLanguage),
+            virtualFile,
             dispose: () => disposable.dispose(),
         }
     }
@@ -373,6 +398,10 @@ async function openStorageFromInput() {
     if (response) {
         return openStorageCommand.execute(response.target, response.key)
     }
+}
+
+async function editSsoConnections() {
+    void openStorageCommand.execute('auth', 'auth.profiles')
 }
 
 async function deleteSsoConnections() {

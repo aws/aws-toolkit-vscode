@@ -192,10 +192,15 @@
                     "type": "object",
                     "markdownDescription": "%AWS.configuration.description.experiments%",
                     "default": {
-                        "jsonResourceModification": false
+                        "jsonResourceModification": false,
+                        "iamPolicyChecks": false
                     },
                     "properties": {
                         "jsonResourceModification": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "iamPolicyChecks": {
                             "type": "boolean",
                             "default": false
                         }
@@ -2031,7 +2036,7 @@
                 "command": "aws.accessanalyzer.iamPolicyChecks",
                 "title": "%AWS.command.accessanalyzer.iamPolicyChecks%",
                 "category": "%AWS.title%",
-                "enablement": "aws.iamPolicyChecks.enabled"
+                "enablement": "config.aws.experiments.iamPolicyChecks"
             },
             {
                 "command": "aws.launchConfigForm",
@@ -4030,7 +4035,7 @@
     },
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",
-        "@aws-toolkits/telemetry": "^1.0.203",
+        "@aws-toolkits/telemetry": "^1.0.208",
         "@aws/fully-qualified-names": "^2.1.4",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
@@ -4093,7 +4098,7 @@
         "@aws-sdk/client-cognito-identity": "3.490.0",
         "@aws-sdk/client-lambda": "3.385.0",
         "@aws-sdk/client-sso": "^3.342.0",
-        "@aws-sdk/client-sso-oidc": "^3.181.0",
+        "@aws-sdk/client-sso-oidc": "^3.574.0",
         "@aws-sdk/credential-provider-ini": "3.46.0",
         "@aws-sdk/credential-provider-process": "3.37.0",
         "@aws-sdk/credential-provider-sso": "^3.345.0",
@@ -4103,10 +4108,13 @@
         "@aws/mynah-ui": "^4.8.0",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
+        "@smithy/middleware-retry": "^2.3.1",
+        "@smithy/protocol-http": "^3.3.0",
+        "@smithy/service-error-classification": "^2.1.5",
         "@smithy/shared-ini-file-loader": "^2.2.8",
+        "@smithy/util-retry": "^2.2.0",
         "@vscode/debugprotocol": "^1.57.0",
         "adm-zip": "^0.5.10",
-        "amazon-s3-uri": "^0.1.1",
         "amazon-states-language-service": "^1.11.0",
         "archiver": "^7.0.1",
         "async-lock": "^1.4.0",

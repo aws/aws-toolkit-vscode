@@ -232,7 +232,7 @@ export const codeFileScanJobTimeoutSeconds = 60 //1 minute
 
 export const projectSizeCalculateTimeoutSeconds = 10
 
-export const codeScanJobPollingIntervalSeconds = 5
+export const codeScanJobPollingIntervalSeconds = 1
 
 export const fileScanPollingDelaySeconds = 10
 
@@ -290,9 +290,22 @@ export const freeTierLimitReached = 'You have reached the monthly fair use limit
 
 export const freeTierLimitReachedCodeScan = 'You have reached the monthly quota of code scans.'
 
-export const fileScansLimitReached = 'You have reached the monthly quota of auto-scans.'
+export const fileScansLimitReached = 'Amazon Q: You have reached the monthly limit for auto-scans.'
 
-export const projectScansLimitReached = 'You have reached the monthly quota of project scans.'
+export const projectScansLimitReached = 'Amazon Q: You have reached the monthly limit for project scans.'
+
+export const DefaultCodeScanErrorMessage =
+    'Amazon Q encountered an error while scanning for security issues. Try again later.'
+
+export const FileSizeExceededErrorMessage = `Amazon Q: The selected file exceeds the input artifact limit. Try again with a smaller file. For more information about scan limits, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security-scans.html#quotas).`
+
+export const ProjectSizeExceededErrorMessage = `Amazon Q: The selected project exceeds the input artifact limit. Try again with a smaller project. For more information about scan limits, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security-scans.html#quotas).`
+
+export const NoWorkspaceFoundErrorMessage = 'Amazon Q: No workspace folders found'
+
+export const InvalidSourceFilesErrorMessage = 'Amazon Q: Project does not contain valid files to scan'
+
+export const UploadArtifactToS3ErrorMessage = `Amazon Q is unable to upload your workspace artifacts to Amazon S3 for security scans. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security_iam_manage-access-with-policies.html#data-perimeters).`
 
 export const throttlingLearnMore = `Learn More`
 
@@ -361,6 +374,8 @@ export const validStatesForPlanGenerated = ['PLANNED', 'TRANSFORMING', 'TRANSFOR
 
 export const failureStates = ['FAILED', 'STOPPING', 'STOPPED', 'REJECTED']
 
+export const pausedStates = ['PAUSED']
+
 // if status is COMPLETED or PARTIALLY_COMPLETED we can download artifacts
 export const validStatesForCheckingDownloadUrl = [
     'COMPLETED',
@@ -378,6 +393,9 @@ export const amazonQFeedbackKey = 'Amazon Q'
 
 export const amazonQFeedbackText = 'Submit feedback'
 
+export const jobStartedChatMessage = `I'm starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub.
+    
+If I run into any issues, I might pause the transformation to get input from you on how to proceed.`
 export const waitingForJobStartStepMessage = 'Waiting for job to start'
 
 export const buildCodeStepMessage = 'Build uploaded code in secure build environment'
@@ -408,9 +426,6 @@ export const jobCompletedMessage = 'The transformation completed.'
 export const noOngoingJobMessage = 'No ongoing job.'
 
 export const nothingToShowMessage = 'Nothing to show'
-
-export const jobStartedChatMessage =
-    "I'm starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub."
 
 export const jobStartedNotification =
     'Amazon Q is transforming your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub.'

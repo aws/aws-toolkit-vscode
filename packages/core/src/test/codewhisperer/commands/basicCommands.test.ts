@@ -49,13 +49,14 @@ import {
 } from '../../../codewhisperer/ui/codeWhispererNodes'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { listCodeWhispererCommands } from '../../../codewhisperer/ui/statusBarMenu'
-import { CodeScansState, CodeSuggestionsState, codeScanState } from '../../../codewhisperer/models/model'
+import { CodeScanIssue, CodeScansState, CodeSuggestionsState, codeScanState } from '../../../codewhisperer/models/model'
 import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
 import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
 import { focusAmazonQPanel } from '../../../codewhispererChat/commands/registerCommands'
 import * as diagnosticsProvider from '../../../codewhisperer/service/diagnosticsProvider'
 import { SecurityIssueHoverProvider } from '../../../codewhisperer/service/securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from '../../../codewhisperer/service/securityIssueCodeActionProvider'
+import { randomUUID } from '../../../common/crypto'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
@@ -414,6 +415,7 @@ describe('CodeWhisperer-basicCommands', function () {
         let applyEditMock: sinon.SinonStub
         let removeDiagnosticMock: sinon.SinonStub
         let removeIssueMock: sinon.SinonStub
+        let codeScanIssue: CodeScanIssue
 
         beforeEach(function () {
             sandbox = sinon.createSandbox()
@@ -422,6 +424,9 @@ describe('CodeWhisperer-basicCommands', function () {
             applyEditMock = sinon.stub()
             removeDiagnosticMock = sinon.stub()
             removeIssueMock = sinon.stub()
+            codeScanIssue = createCodeScanIssue({
+                findingId: randomUUID(),
+            })
         })
 
         afterEach(function () {
@@ -443,14 +448,12 @@ describe('CodeWhisperer-basicCommands', function () {
             sandbox.stub(SecurityIssueCodeActionProvider.instance, 'removeIssue').value(removeIssueMock)
 
             targetCommand = testCommand(applySecurityFix)
-            const codeScanIssue = createCodeScanIssue({
-                suggestedFixes: [
-                    {
-                        description: 'fix',
-                        code: '@@ -1,3 +1,3 @@\n first line\n- second line\n+ third line\n  fourth line',
-                    },
-                ],
-            })
+            codeScanIssue.suggestedFixes = [
+                {
+                    description: 'fix',
+                    code: '@@ -1,3 +1,3 @@\n first line\n- second line\n+ third line\n  fourth line',
+                },
+            ]
             await targetCommand.execute(codeScanIssue, fileName, 'hover')
             assert.ok(
                 replaceMock.calledOnceWith(
@@ -487,14 +490,12 @@ describe('CodeWhisperer-basicCommands', function () {
             await CodeScansState.instance.setScansEnabled(false)
 
             targetCommand = testCommand(applySecurityFix)
-            const codeScanIssue = createCodeScanIssue({
-                suggestedFixes: [
-                    {
-                        description: 'fix',
-                        code: '@@ -1,3 +1,3 @@\n first line\n- second line\n+ third line\n  fourth line',
-                    },
-                ],
-            })
+            codeScanIssue.suggestedFixes = [
+                {
+                    description: 'fix',
+                    code: '@@ -1,3 +1,3 @@\n first line\n- second line\n+ third line\n  fourth line',
+                },
+            ]
             await targetCommand.execute(codeScanIssue, fileName, 'hover')
             assert.ok(
                 replaceMock.calledOnceWith(
@@ -523,14 +524,12 @@ describe('CodeWhisperer-basicCommands', function () {
             sandbox.stub(vscode.workspace, 'openTextDocument').value(openTextDocumentMock)
 
             targetCommand = testCommand(applySecurityFix)
-            const codeScanIssue = createCodeScanIssue({
-                suggestedFixes: [
-                    {
-                        code: '@@ -1,1 -1,1 @@\n-mock\n+line5',
-                        description: 'dummy',
-                    },
-                ],
-            })
+            codeScanIssue.suggestedFixes = [
+                {
+                    code: '@@ -1,1 -1,1 @@\n-mock\n+line5',
+                    description: 'dummy',
+                },
+            ]
             await targetCommand.execute(codeScanIssue, 'test.py', 'webview')
 
             assert.strictEqual(getTestWindow().shownMessages[0].message, 'Failed to apply suggested code fix.')
@@ -557,14 +556,12 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(vscode.workspace, 'applyEdit').value(applyEditMock)
 
             targetCommand = testCommand(applySecurityFix)
-            const codeScanIssue = createCodeScanIssue({
-                suggestedFixes: [
-                    {
-                        description: 'fix',
-                        code: '@@ -1,3 +1,3 @@\n first line\n- second line\n+ third line\n  fourth line',
-                    },
-                ],
-            })
+            codeScanIssue.suggestedFixes = [
+                {
+                    description: 'fix',
+                    code: '@@ -1,3 +1,3 @@\n first line\n- second line\n+ third line\n  fourth line',
+                },
+            ]
             await targetCommand.execute(codeScanIssue, fileName, 'quickfix')
 
             assert.ok(replaceMock.calledOnce)

@@ -57,7 +57,7 @@ export class AuthSSOServer {
     private server: http.Server
     private connections: Socket[]
 
-    constructor(private readonly state: string, private readonly vscodeUriPath: string) {
+    constructor(private readonly state: string) {
         this.authenticationPromise = new Promise<Result<string>>(resolve => {
             this.deferred = { resolve }
         })
@@ -167,17 +167,12 @@ export class AuthSSOServer {
         }
     }
 
-    private redirect(
-        res: http.ServerResponse,
-        params:
-            | {
-                  redirectUri: string
-              }
-            | {
-                  error: string
-              }
-    ) {
-        const redirectUrl = `${this.baseLocation}/index.html?${new URLSearchParams(params).toString()}`
+    private redirect(res: http.ServerResponse, error?: string) {
+        let redirectUrl = `${this.baseLocation}/index.html`
+        if (error) {
+            redirectUrl += `?${new URLSearchParams({ error }).toString()}`
+        }
+
         res.setHeader('Location', redirectUrl)
         res.writeHead(302)
         res.end()
@@ -222,16 +217,12 @@ export class AuthSSOServer {
 
         this.deferred?.resolve(Result.ok(code))
 
-        this.redirect(res, {
-            redirectUri: this.vscodeUriPath,
-        })
+        this.redirect(res)
     }
 
     private handleRequestRejection(res: http.ServerResponse, error: ToolkitError) {
         // Notify the user
-        this.redirect(res, {
-            error: error.message,
-        })
+        this.redirect(res, error.message)
 
         // Send the response back to the editor
         this.deferred?.resolve(Result.err(error))
