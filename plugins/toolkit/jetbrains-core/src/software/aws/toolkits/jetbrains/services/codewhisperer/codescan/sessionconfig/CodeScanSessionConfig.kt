@@ -96,7 +96,7 @@ class CodeScanSessionConfig(
         }
 
         // Copy all the included source files to the source zip
-        val srcZip = zipFiles(payloadMetadata.sourceFiles.map { Path.of(it) })
+        val srcZip = zipFiles(payloadMetadata.sourceFiles.map { Path.of(it) }, scope)
         val payloadContext = PayloadContext(
             payloadMetadata.language,
             payloadMetadata.linesScanned,
@@ -129,9 +129,12 @@ class CodeScanSessionConfig(
         return bufferedReader.useLines { lines -> lines.count() }
     }
 
-    private fun zipFiles(files: List<Path>): File = createTemporaryZipFile {
+    private fun zipFiles(files: List<Path>, scope: CodeAnalysisScope): File = createTemporaryZipFile {
         files.forEach { file ->
-            val relativePath = file.relativeTo(projectRoot.toNioPath())
+            val relativePath = when (scope) {
+                CodeAnalysisScope.PROJECT -> file.relativeTo(projectRoot.toNioPath())
+                else -> file
+            }
             LOG.debug { "Selected file for truncation: $file" }
             it.putNextEntry(relativePath.toString(), file)
         }
