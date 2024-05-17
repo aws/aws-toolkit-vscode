@@ -16,9 +16,9 @@ import {
     jobPlanProgress,
     FolderInfo,
     TransformationCandidateProject,
-    SessionJobHistory,
     ZipManifest,
 } from '../models/model'
+import { SessionJobHistory } from '../service/transformByQ/SessionJobHistory'
 import { convertDateToTimestamp, getStringHash } from '../../shared/utilities/textUtilities'
 import {
     createZipManifest,

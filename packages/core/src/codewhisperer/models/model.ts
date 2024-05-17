@@ -18,11 +18,6 @@ import { autoScansEnabledKey, autoTriggerEnabledKey } from './constants'
 import { get, set } from '../util/commonUtil'
 import { ChatControllerEventEmitters } from '../../amazonqGumby/chat/controller/controller'
 import { TransformationSteps } from '../client/codewhispereruserclient'
-import { convertToTimeString } from '../../shared/utilities/textUtilities'
-import { getLogger } from '../../shared/logger'
-import { calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
-import { CodeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import * as fs from 'fs-extra'
 
 // unavoidable global variables
 interface VsCodeState {
@@ -378,79 +373,6 @@ export interface HistoryEntry {
 
 export interface QCodeTransformHistory {
     [key: string]: HistoryEntry
-}
-
-export class SessionJobHistory {
-    private static readonly jobHistoryKey = `code-transform-job-history`
-    private static readonly jobExpiryOffset = 7 // days
-
-    public static async setAllToExpireNow() {
-        const history = this.get()
-        // set expireOn to every entry in history
-        Object.keys(history).forEach(jobId => {
-            history[jobId].expireOn = new Date().getDate() - 1
-        })
-        getLogger().info('Set expire on all jobEntries')
-    }
-
-    public static async update() {
-        const history = this.get()
-        // The summary path may be cleared in certain circumstances (accept / revoke changes or restart)
-        // so we need to record this and reuse in case we had one
-        const oldSummaryPath = history[transformByQState.getJobId()]?.summaryFile
-        const oldPatchPath = history[transformByQState.getJobId()]?.patchFile
-
-        // TODOs before PR
-        // Find out where vscode stores this
-        // https://stackoverflow.com/questions/57760451/where-does-visual-studio-code-store-information-about-enabled-extensions-per-wor
-        // Add expireOn + cleanup on extension start if > expiry
-        // Extract overall functionality to self contained class
-        history[transformByQState.getJobId()] = {
-            expireOn: new Date(transformByQState.getStartTime()).getDate() + this.jobExpiryOffset,
-            startTime: transformByQState.getStartTime(),
-            projectName: transformByQState.getProjectName(),
-            status: transformByQState.getPolledJobStatus(),
-            duration: convertToTimeString(calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime())),
-            summaryFile: oldSummaryPath || transformByQState.getSummaryFilePath(),
-            patchFile: oldPatchPath || transformByQState.getResultArchiveFilePath(),
-        }
-
-        getLogger().info(
-            `Updated HistoryEntry for jobId  ${transformByQState.getJobId()} summaryFile: ${transformByQState.getSummaryFilePath()} patchFile: ${transformByQState.getResultArchiveFilePath()}`
-        )
-
-        await transformByQState.getExtensionContext()?.workspaceState.update(this.jobHistoryKey, history)
-    }
-
-    public static get() {
-        const history = transformByQState
-            .getExtensionContext()
-            ?.workspaceState.get<QCodeTransformHistory>(this.jobHistoryKey)
-        return history === undefined ? {} : history
-    }
-
-    public static async evictExpired() {
-        const history = this.get()
-        const now = new Date().getDate()
-        Object.keys(history).forEach(jobId => {
-            if (history[jobId].expireOn < now) {
-                const path = history[jobId]?.patchFile
-                if (path !== undefined) {
-                    this.deleteFolder(path)
-                }
-                delete history[jobId]
-            }
-        })
-        await transformByQState.getExtensionContext()?.workspaceState.update(this.jobHistoryKey, history)
-    }
-
-    private static deleteFolder(path: string) {
-        try {
-            fs.rmSync(path, { recursive: true })
-        } catch (e) {
-            getLogger().error(`Failed to deleting expired artifact on path ${path}`)
-        }
-    }
 }
 
 export class TransformByQState {

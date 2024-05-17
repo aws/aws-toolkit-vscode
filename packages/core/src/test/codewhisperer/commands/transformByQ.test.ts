@@ -35,13 +35,33 @@ import {
     getOpenProjects,
 } from '../../../codewhisperer/service/transformByQ/transformProjectValidationHandler'
 import { TransformationCandidateProject, ZipManifest } from '../../../codewhisperer/models/model'
+import { SessionJobHistory } from '../../../codewhisperer/service/transformByQ/SessionJobHistory'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 describe('transformByQ', function () {
+    const testJobId = 'abc-123'
+    const testProjectName = 'test-project'
+    const testStatus = 'COMPLETED'
+    const testStartTime = '05/03/24, 11:35 AM'
+    const testSummaryPath = '/test/summary/path'
+    const testPatchPath = '/test/patch/path'
+
     let tempDir: string
+
+    const addHistoryItem = async (summary = false, patch = false, jobId = testJobId) => {
+        transformByQState.setJobId(jobId)
+        transformByQState.setProjectName(testProjectName)
+        transformByQState.setPolledJobStatus(testStatus)
+        transformByQState.setStartTime(testStartTime)
+        summary ? transformByQState.setSummaryFilePath(testSummaryPath) : ''
+        patch ? transformByQState.setResultArchiveFilePath(testPatchPath) : ''
+        await SessionJobHistory.update()
+    }
 
     beforeEach(async function () {
         tempDir = await makeTemporaryToolkitFolder()
         transformByQState.setToNotStarted()
+        transformByQState.setExtensionContext(await FakeExtensionContext.create())
     })
 
     afterEach(async function () {
@@ -171,23 +191,52 @@ describe('transformByQ', function () {
         assert.strictEqual(status, 'COMPLETED')
     })
 
-    // it(`WHEN update job history called THEN returns details of last run job`, async function () {
-    //     transformByQState.setJobId('abc-123')
-    //     transformByQState.setProjectName('test-project')
-    //     transformByQState.setPolledJobStatus('COMPLETED')
-    //     transformByQState.setStartTime('05/03/24, 11:35 AM')
+    it(`WHEN update job history called THEN returns details of last run job with patch and summary if available`, async function () {
+        await addHistoryItem()
+        const actual = SessionJobHistory.get()
 
-    //     const actual = SessionJobHistory()
-    //     const expected = {
-    //         'abc-123': {
-    //             duration: '0 sec',
-    //             projectName: 'test-project',
-    //             startTime: '05/03/24, 11:35 AM',
-    //             status: 'COMPLETED',
-    //         },
-    //     }
-    //     assert.deepStrictEqual(actual, expected)
-    // })
+        assert.strictEqual(actual[testJobId].projectName, testProjectName)
+        assert.strictEqual(actual[testJobId].status, testStatus)
+        assert.strictEqual(actual[testJobId].startTime, testStartTime)
+        assert.strictEqual(actual[testJobId].summaryFile, testSummaryPath)
+        assert.strictEqual(actual[testJobId].patchFile, testPatchPath)
+        assert.ok(actual[testJobId].expireOn)
+    })
+
+    it(`WHEN update job history called THEN returns details of last run job`, async function () {
+        await addHistoryItem(false, false)
+        const actual = SessionJobHistory.get()
+
+        assert.strictEqual(actual[testJobId].projectName, testProjectName)
+        assert.strictEqual(actual[testJobId].status, testStatus)
+        assert.strictEqual(actual[testJobId].startTime, testStartTime)
+        assert.strictEqual(actual[testJobId]?.summaryFile, '')
+        assert.strictEqual(actual[testJobId]?.patchFile, '')
+        assert.ok(actual[testJobId].expireOn)
+    })
+
+    it(`WHEN job history expire THEN removed from context`, async function () {
+        await addHistoryItem(false, false, 'second job id')
+        const expectedToRemain = SessionJobHistory.get()
+
+        await addHistoryItem(false, false, testJobId)
+        const actualBeforeEvict = SessionJobHistory.get()
+
+        actualBeforeEvict[testJobId].expireOn = Date.now() - 1000 * 60 * 60 * 24 // yesterday
+        await transformByQState
+            .getExtensionContext()
+            ?.workspaceState.update(SessionJobHistory.jobHistoryKey, actualBeforeEvict)
+        await SessionJobHistory.evictExpired()
+        const actualAfterEvict = SessionJobHistory.get()
+        assert.deepStrictEqual(actualAfterEvict, expectedToRemain)
+    })
+
+    it(`WHEN job history not expired THEN not removed from context`, async function () {
+        await addHistoryItem()
+        await SessionJobHistory.evictExpired()
+        const actualAfterEvict = SessionJobHistory.get()
+        assert.notDeepStrictEqual(actualAfterEvict, {})
+    })
 
     it(`WHEN get headers for upload artifact to S3 THEN returns correct header with kms key arn`, function () {
         const actual = getHeadersObj('dummy-sha-256', 'dummy-kms-key-arn')

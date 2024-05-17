@@ -19,8 +19,8 @@ import {
     TransformByQStatus,
     TransformByQStoppedError,
     ZipManifest,
-    SessionJobHistory,
 } from '../../models/model'
+import { SessionJobHistory } from '../../service/transformByQ/SessionJobHistory'
 import { getLogger } from '../../../shared/logger'
 import {
     CreateUploadUrlResponse,

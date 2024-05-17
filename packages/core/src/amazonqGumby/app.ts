@@ -14,7 +14,8 @@ import { UIMessageListener } from './chat/views/actions/uiMessageListener'
 import { debounce } from 'lodash'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { showTransformationHub } from './commands'
-import { SessionJobHistory, transformByQState } from '../codewhisperer/models/model'
+import { transformByQState } from '../codewhisperer/models/model'
+import { SessionJobHistory } from '../codewhisperer/service/transformByQ/SessionJobHistory'
 import { ExtensionContext } from 'vscode'
 import { getLogger } from '../shared/logger'
 
@@ -82,5 +83,5 @@ export function init(appContext: AmazonQAppInitContext, extensionContext: Extens
             getLogger().error('Unable to evict expired jobs')
         }
     )
-    await SessionJobHistory.setAllToExpireNow()
+    // SessionJobHistory.setAllToExpireNow().then(_=>{}, _=>{})
 }

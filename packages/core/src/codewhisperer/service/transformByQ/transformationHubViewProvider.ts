@@ -9,11 +9,11 @@ import * as CodeWhispererConstants from '../../models/constants'
 import {
     StepProgress,
     jobPlanProgress,
-    SessionJobHistory,
     transformByQState,
     HistoryEntry,
     QCodeTransformHistory,
 } from '../../models/model'
+import { SessionJobHistory } from '../../service/transformByQ/SessionJobHistory'
 import { convertToTimeString } from '../../../shared/utilities/textUtilities'
 import { getLogger } from '../../../shared/logger'
 import { getTransformationSteps } from './transformApiHandler'
@@ -106,9 +106,9 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             <body>
             <p><b>Job Status</b></p>
             ${
-                Object.keys(SessionJobHistory.Instance.get()).length === 0
+                Object.keys(SessionJobHistory.get()).length === 0
                     ? `<p>${CodeWhispererConstants.nothingToShowMessage}</p>`
-                    : this.getTableMarkup(SessionJobHistory.Instance.get())
+                    : this.getTableMarkup(SessionJobHistory.get())
             }
             <script>
                 const vscode = acquireVsCodeApi();
@@ -163,7 +163,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     )
                     return
                 case 'viewPatch': {
-                    const patchFolder = SessionJobHistory.Instance.get()[message.jobId]?.patchFile
+                    const patchFolder = SessionJobHistory.get()[message.jobId]?.patchFile
                     if (patchFolder === undefined || patchFolder === '') {
                         vscode.window.showErrorMessage('Unable to open patch file').then(
                             onSuccess => getLogger().info(`Success ${onSuccess}`),
@@ -178,7 +178,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     return
                 }
                 case 'viewSummary': {
-                    const summaryFilePath = SessionJobHistory.Instance.get()[message.jobId]?.summaryFile
+                    const summaryFilePath = SessionJobHistory.get()[message.jobId]?.summaryFile
                     summaryFilePath === undefined
                         ? ''
                         : void vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(summaryFilePath))
@@ -202,7 +202,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 `<tr>
                     <td>${job.startTime}</td>
                     <td>${job.projectName}</td>
-                    <td>${job.status || 'UNKNOWN'}</td>
+                    <td>${job.status}</td>
                     <td>${job.duration}</td>
                     <td>${jobId}</td>
                     <td><button class=view-patch ${patchId}>View Patch</button></td>

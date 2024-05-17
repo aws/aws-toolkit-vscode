@@ -10,7 +10,8 @@ import { parsePatch, applyPatches, ParsedDiff } from 'diff'
 import path from 'path'
 import vscode from 'vscode'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
-import { TransformByQReviewStatus, transformByQState, SessionJobHistory } from '../../models/model'
+import { TransformByQReviewStatus, transformByQState } from '../../models/model'
+import { SessionJobHistory } from '../../service/transformByQ/SessionJobHistory'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../../shared/utilities/download'
 import { getLogger } from '../../../shared/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
@@ -397,7 +398,7 @@ export class ProposedTransformationExplorer {
                 )
                 transformByQState.setResultArchiveFilePath(pathContainingArchive)
                 await vscode.commands.executeCommand('setContext', 'gumby.isSummaryAvailable', true)
-                await SessionJobHistory.Instance.update()
+                await SessionJobHistory.update()
                 // This metric is only emitted when placed before showInformationMessage
                 telemetry.codeTransform_vcsDiffViewerVisible.emit({
                     codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
