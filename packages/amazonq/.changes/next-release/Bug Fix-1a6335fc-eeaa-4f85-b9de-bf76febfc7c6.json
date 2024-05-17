@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Security Scan: Fixes an issue when scanning projects with binary files"
-}
