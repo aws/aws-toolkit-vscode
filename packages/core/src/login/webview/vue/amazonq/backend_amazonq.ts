@@ -3,13 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import {
-    scopesCodeWhispererChat,
-    AwsConnection,
-    Connection,
-    isSsoConnection,
-    SsoConnection,
-} from '../../../../auth/connection'
+import { AwsConnection, Connection, isSsoConnection, SsoConnection, hasScopes } from '../../../../auth/connection'
 import { AuthUtil, amazonQScopes } from '../../../../codewhisperer/util/authUtil'
 import { CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
@@ -85,7 +79,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                                     })
                                 }
                                 let newConn: SsoConnection
-                                if (conn.scopes?.includes(scopesCodeWhispererChat[0])) {
+                                if (hasScopes(conn.scopes ?? [], amazonQScopes)) {
                                     getLogger().info(
                                         `auth: re-use connection from existing connection id ${connectionId}`
                                     )
