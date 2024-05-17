@@ -53,7 +53,9 @@ export function updateSecurityDiagnosticCollection(securityRecommendation: Aggre
     const filePath = securityRecommendation.filePath
     const uri = vscode.Uri.file(filePath)
     const securityDiagnosticCollection = createSecurityDiagnosticCollection()
-    const securityDiagnostics: vscode.Diagnostic[] = vscode.languages.getDiagnostics(uri)
+    const securityDiagnostics: vscode.Diagnostic[] = vscode.languages
+        .getDiagnostics(uri)
+        .filter(diagnostic => diagnostic.source === codewhispererDiagnosticSourceLabel)
     securityRecommendation.issues.forEach(securityIssue => {
         securityDiagnostics.push(createSecurityDiagnostic(securityIssue))
     })
