@@ -58,7 +58,11 @@ export async function listScanResults(
         mapToAggregatedList(codeScanIssueMap, issue)
     })
     codeScanIssueMap.forEach((issues, key) => {
+        // Project path example: /Users/username/project
+        // Key example: project/src/main/java/com/example/App.java
         projectPaths.forEach(projectPath => {
+            // We need to remove the project path from the key to get the absolute path to the file
+            // Do not use .. in between because there could be multiple project paths in the same parent dir.
             const filePath = path.join(projectPath, key.split('/').slice(1).join('/'))
             if (existsSync(filePath) && statSync(filePath).isFile()) {
                 const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
