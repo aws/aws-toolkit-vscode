@@ -53,7 +53,9 @@ export async function activate(context: ExtensionContext) {
 
     await activateBadge()
 
-    Search.instance.buildIndex()
+    Search.instance.installCodeSearch().then(() => {
+        Search.instance.buildIndex()
+    })
 }
 
 function registerApps(appInitContext: AmazonQAppInitContext) {

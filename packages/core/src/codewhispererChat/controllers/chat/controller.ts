@@ -553,7 +553,7 @@ export class ChatController {
             const c = await Search.instance.query(triggerPayload.message)
             if (c) {
                 getLogger().info(`Relevant code ${c.content}`)
-                triggerPayload.message += `Here are some relevant code ${c?.content} in file ${c.fileName}.`
+                triggerPayload.message += `Here are some relevant code ${c?.content} in file ${c.fileName}. Use it only if my questions is relevant to this code. `
             } else {
                 getLogger().info(`No Relevant code`)
             }

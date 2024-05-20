@@ -4,12 +4,15 @@
  */
 
 import * as vscode from 'vscode'
+import * as path from 'path'
+import * as fs from 'fs-extra'
 import { getLogger } from '../shared/logger/logger'
-import { CurrentWsFolders, collectFiles } from '../shared/utilities/workspaceUtils'
-
+import { CurrentWsFolders, collectFilesForIndex } from '../shared/utilities/workspaceUtils'
 import * as CodeWhispererConstants from '../codewhisperer/models/constants'
 import { Chunk } from '../codewhisperer/util/supplementalContext/crossFileContextUtil'
 import { isExtensionInstalled, isExtensionActive } from '../shared/utilities'
+import { makeTemporaryToolkitFolder } from '../shared/filesystemUtilities'
+import fetch from 'node-fetch'
 
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -27,28 +30,72 @@ export class Search {
     }
     constructor() {}
 
-    async indexFiles(filePaths: string[]) {
-        const eid = 'x.encoder'
-        if (isExtensionInstalled(eid) && isExtensionActive(eid)) {
-            const ext = vscode.extensions.getExtension(eid)
-            return ext?.exports.indexFiles(filePaths)
+    private extId: string = 'amazonwebservices.code-search'
+
+    async _download(localFile: string, remoteUrl: string) {
+        const res = await fetch(remoteUrl, {
+            headers: {
+                'User-Agent': 'curl/7.68.0',
+            },
+        })
+        if (!res.ok) {
+            throw new Error(`Failed to download. Error: ${JSON.stringify(res)}`)
+        }
+        return new Promise((resolve, reject) => {
+            const file = fs.createWriteStream(localFile)
+            res.body.pipe(file)
+            res.body.on('error', err => {
+                reject(err)
+            })
+            file.on('finish', () => {
+                file.close(resolve)
+            })
+        })
+    }
+
+    async downloadCodeSearch() {
+        const fname = `code-search-0.1.10-${process.platform}-${process.arch}.vsix`
+        const s3Path = `https://github.com/leigaol/code-test-release/releases/download/0.1.10/${fname}`
+        const tempFolder = await makeTemporaryToolkitFolder()
+        const localFile = path.join(tempFolder, fname)
+        await this._download(localFile, s3Path)
+        return localFile
+    }
+
+    async installCodeSearch() {
+        if (!isExtensionInstalled(this.extId)) {
+            try {
+                const localFile = await this.downloadCodeSearch()
+                await vscode.commands.executeCommand(
+                    'workbench.extensions.installExtension',
+                    vscode.Uri.file(localFile)
+                )
+                await fs.removeSync(localFile)
+            } catch (e) {
+                console.log(e)
+            }
+        }
+    }
+
+    async indexFiles(filePaths: string[], projectRoot: string, refresh: boolean) {
+        if (isExtensionInstalled(this.extId) && isExtensionActive(this.extId)) {
+            const ext = vscode.extensions.getExtension(this.extId)
+            return ext?.exports.indexFiles(filePaths, projectRoot, refresh)
         } else {
             getLogger().info(`NEW: index failed. encode not found`)
         }
     }
     async clear() {
-        const eid = 'x.encoder'
-        if (isExtensionInstalled(eid) && isExtensionActive(eid)) {
-            const ext = vscode.extensions.getExtension(eid)
+        if (isExtensionInstalled(this.extId) && isExtensionActive(this.extId)) {
+            const ext = vscode.extensions.getExtension(this.extId)
             return ext?.exports.clear()
         } else {
             getLogger().info(`NEW:  encode not found `)
         }
     }
     async findBest(s: string) {
-        const eid = 'x.encoder'
-        if (isExtensionInstalled(eid) && isExtensionActive(eid)) {
-            const ext = vscode.extensions.getExtension(eid)
+        if (isExtensionInstalled(this.extId) && isExtensionActive(this.extId)) {
+            const ext = vscode.extensions.getExtension(this.extId)
             return ext?.exports.findBest(s)
         } else {
             getLogger().info(`NEW:  encode not found `)
@@ -57,16 +104,25 @@ export class Search {
 
     async buildIndex() {
         getLogger().info(`NEW: Starting to build vector index of project`)
-        const files = await collectFiles(
-            getProjectPaths(),
-            vscode.workspace.workspaceFolders as CurrentWsFolders,
-            true,
-            CodeWhispererConstants.projectScanPayloadSizeLimitBytes
-        )
-        getLogger().info(`NEW: Found ${files.length} files in current project ${getProjectPaths()}`)
-        this.indexFiles(files.map(f => f.fileUri.fsPath)).then(() => {
-            getLogger().info(`NEW: Finish building vector index of project`)
-        })
+        const projPaths = getProjectPaths()
+        projPaths.sort()
+        if (projPaths.length > 0) {
+            const projRoot = projPaths[0]
+            const files = await collectFilesForIndex(
+                projPaths,
+                vscode.workspace.workspaceFolders as CurrentWsFolders,
+                true,
+                CodeWhispererConstants.projectIndexSizeLimitBytes
+            )
+            getLogger().info(`NEW: Found ${files.length} files in current project ${getProjectPaths()}`)
+            this.indexFiles(
+                files.map(f => f.fileUri.fsPath),
+                projRoot,
+                false
+            ).then(() => {
+                getLogger().info(`NEW: Finish building vector index of project`)
+            })
+        }
     }
 
     async query(input: string): Promise<Chunk | undefined> {
@@ -84,50 +140,4 @@ export class Search {
         }
         return undefined
     }
-}
-
-/**
- * Calculates the dot product of two arrays.
- * @param {number[]} arr1 The first array.
- * @param {number[]} arr2 The second array.
- * @returns {number} The dot product of arr1 and arr2.
- */
-export function dot(arr1: number[], arr2: number[]) {
-    let result = 0
-    for (let i = 0; i < arr1.length; ++i) {
-        result += arr1[i] * arr2[i]
-    }
-    return result
-}
-
-/**
- * Calculates the magnitude of a given array.
- * @param {number[]} arr The array to calculate the magnitude of.
- * @returns {number} The magnitude of the array.
- */
-export function magnitude(arr: number[]) {
-    return Math.sqrt(arr.reduce((acc, val) => acc + val * val, 0))
-}
-
-/**
- * Computes the cosine similarity between two arrays.
- *
- * @param {number[]} arr1 The first array.
- * @param {number[]} arr2 The second array.
- * @returns {number} The cosine similarity between the two arrays.
- */
-export function cos_sim(arr1: number[], arr2: number[]) {
-    // Calculate dot product of the two arrays
-    const dotProduct = dot(arr1, arr2)
-
-    // Calculate the magnitude of the first array
-    const magnitudeA = magnitude(arr1)
-
-    // Calculate the magnitude of the second array
-    const magnitudeB = magnitude(arr2)
-
-    // Calculate the cosine similarity
-    const cosineSimilarity = dotProduct / (magnitudeA * magnitudeB)
-
-    return cosineSimilarity
 }
