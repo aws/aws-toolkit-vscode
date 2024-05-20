@@ -15,7 +15,7 @@ import { CodeScanIssue, CodeScansState, codeScanState, CodeSuggestionsState, vsC
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showCodeWhispererConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
-import { AuthUtil } from '../util/authUtil'
+import { amazonQScopes, AuthUtil } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { getLogger } from '../../shared/logger'
 import { isExtensionActive, isExtensionInstalled, openUrl } from '../../shared/utilities/vsCodeUtils'
@@ -41,6 +41,7 @@ import { SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import { ToolkitError } from '../../shared/errors'
 import { isRemoteWorkspace } from '../../shared/vscode/env'
+import { hasScopes } from '../../auth/connection'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.amazonq.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -270,6 +271,13 @@ export const notifyNewCustomizationsCmd = Commands.declare(
     }
 )
 
+function focusQAfterDelay() {
+    // this command won't work without a small delay after install
+    setTimeout(() => {
+        void focusAmazonQPanel.execute(placeholder, 'startDelay')
+    }, 1000)
+}
+
 export const fetchFeatureConfigsCmd = Commands.declare(
     { id: 'aws.amazonq.fetchFeatureConfigs', logging: false },
     () => async () => {
@@ -312,10 +320,7 @@ export const installAmazonQExtension = Commands.declare(
         await vscode.commands.executeCommand('workbench.extensions.installExtension', VSCODE_EXTENSION_ID.amazonq)
 
         // jump to Amazon Q extension view after install.
-        // this command won't work without a small delay after install
-        setTimeout(() => {
-            void vscode.commands.executeCommand('workbench.view.extension.amazonq')
-        }, 1000)
+        focusQAfterDelay()
     }
 )
 
@@ -436,21 +441,35 @@ const registerToolkitApiCallbackOnce = once(async () => {
         }
     })
 
-    // when toolkit connection changes
-    if (_toolkitApi && 'onDidChangeConnection' in _toolkitApi) {
-        _toolkitApi.onDidChangeConnection(
-            async (connection: AwsConnection) => {
-                getLogger().info(`toolkitApi: connection change callback ${connection.id}`)
-                await AuthUtil.instance.onUpdateConnection(connection)
-            },
+    if (_toolkitApi) {
+        // when toolkit connection changes
+        if ('onDidChangeConnection' in _toolkitApi) {
+            _toolkitApi.onDidChangeConnection(
+                async (connection: AwsConnection) => {
+                    getLogger().info(`toolkitApi: connection change callback ${connection.id}`)
+                    await AuthUtil.instance.onUpdateConnection(connection)
+                },
 
-            async (id: string) => {
-                getLogger().info(`toolkitApi: connection delete callback ${id}`)
-                await AuthUtil.instance.onDeleteConnection(id)
+                async (id: string) => {
+                    getLogger().info(`toolkitApi: connection delete callback ${id}`)
+                    await AuthUtil.instance.onDeleteConnection(id)
+                }
+            )
+        }
+
+        // HACK
+        // If the user has an old 3 scope Amazon Q connection, we will use it and expire it to
+        // bring the user to the new 5 scope connection. The code for this lives in the webview,
+        // so we will force show the webview if we have a connection that fits this criteria.
+        if (!AuthUtil.instance.isConnected()) {
+            const conn = AuthUtil.instance.findMinimalQConnection(await _toolkitApi.listConnections())
+            if (conn !== undefined && !hasScopes(conn.scopes!, amazonQScopes)) {
+                focusQAfterDelay()
             }
-        )
+        }
     }
 })
+
 export const registerToolkitApiCallback = Commands.declare(
     { id: 'aws.amazonq.refreshConnectionCallback' },
     () => async (toolkitApi?: any) => {

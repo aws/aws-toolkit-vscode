@@ -279,6 +279,7 @@ import { LoginOption, AuthError } from './types'
 import { CommonAuthWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { Region } from '../../../shared/regions/endpoints'
+import { SsoConnection } from '../../../auth/connection'
 
 const client = WebviewClientFactory.create<CommonAuthWebview>()
 
@@ -546,10 +547,9 @@ export default defineComponent({
                 })
             })
 
-            // If Amazon Q has no connections while Toolkit has connections
-            // Auto connect Q using toolkit connection.
-            const connections = await client.listConnections()
-            if (connections.length === 0 && sharedConnections && sharedConnections.length > 0) {
+            // If Toolkit has usable connections, instead auto connect Q using toolkit connection.
+            // Keep in mind that a "usable" connection is one with at least the CW core scopes (inline, ...)
+            if (sharedConnections && sharedConnections.length > 0) {
                 const conn = await client.findUsableConnection(sharedConnections)
                 if (conn) {
                     await client.useConnection(conn.id, true)
