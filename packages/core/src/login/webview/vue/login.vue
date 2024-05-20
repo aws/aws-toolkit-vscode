@@ -421,7 +421,7 @@ export default defineComponent({
                 } else if (this.selectedLoginOption === LoginOption.ENTERPRISE_SSO) {
                     this.stage = 'SSO_FORM'
                     this.$nextTick(() => document.getElementById('startUrl')!.focus())
-                    await client.storeMetricMetadata({ region: this.selectedRegion })
+                    await client.storeMetricMetadata({ awsRegion: this.selectedRegion })
                 } else if (this.selectedLoginOption >= LoginOption.EXISTING_LOGINS) {
                     this.stage = 'AUTHENTICATING'
                     const selectedConnection =
@@ -509,7 +509,7 @@ export default defineComponent({
         handleRegionInput(event: any) {
             this.handleUrlInput() // startUrl validity depends on region, see handleUriInput() for details
             void client.storeMetricMetadata({
-                region: event.target.value,
+                awsRegion: event.target.value,
             })
             void client.emitUiClick('auth_regionSelection')
         },

@@ -275,7 +275,8 @@ export class DefaultTelemetryService {
             commonMetadata.push({ Key: computeRegionKey, Value: this.computeRegion })
         }
         if (!event?.Metadata?.some((m: any) => m?.Key === regionKey)) {
-            commonMetadata.push({ Key: regionKey, Value: globals.regionProvider.guessDefaultRegion() })
+            const guessedRegion = globals.regionProvider.guessDefaultRegion()
+            commonMetadata.push({ Key: regionKey, Value: guessedRegion ?? AccountStatus.NotSet })
         }
 
         if (event.Metadata) {

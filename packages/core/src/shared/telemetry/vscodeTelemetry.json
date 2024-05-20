@@ -363,7 +363,7 @@
             "description": "Comma-delimited list of scopes that user has."
         },
         {
-            "name": "region",
+            "name": "awsRegion",
             "type": "string",
             "description": "An AWS region."
         }
@@ -1249,7 +1249,7 @@
                     "required": false
                 },
                 {
-                    "type": "region",
+                    "type": "awsRegion",
                     "required": false
                 },
                 {
