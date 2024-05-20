@@ -39,7 +39,7 @@ import java.nio.file.Path
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
 
-data class DownloadArtifactResult(val artifact: CodeModernizerArtifact?, val zipPath: String)
+data class DownloadArtifactResult(val artifact: CodeModernizerArtifact?, val zipPath: String, val errorMessage: String = "")
 
 class ArtifactHandler(private val project: Project, private val clientAdaptor: GumbyClient) {
     private val telemetry = CodeTransformTelemetryManager.getInstance(project)
@@ -51,7 +51,7 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
         if (isCurrentlyDownloading.get()) return
         val result = downloadArtifact(job)
         if (result.artifact == null) {
-            notifyUnableToApplyPatch(result.zipPath)
+            notifyUnableToApplyPatch(result.zipPath, result.errorMessage)
         } else {
             displayDiffUsingPatch(result.artifact.patch, job)
         }
@@ -123,7 +123,7 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
                     DownloadArtifactResult(artifact, zipPath)
                 } catch (e: RuntimeException) {
                     LOG.error { e.message.toString() }
-                    DownloadArtifactResult(null, zipPath)
+                    DownloadArtifactResult(null, zipPath, e.message.orEmpty())
                 }
             }
 
@@ -148,7 +148,7 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
             } catch (e: RuntimeException) {
                 LOG.error { e.message.toString() }
                 telemetryErrorMessage = "Unexpected error when downloading result ${e.localizedMessage}"
-                DownloadArtifactResult(null, zipPath)
+                DownloadArtifactResult(null, zipPath, e.message.orEmpty())
             } finally {
                 telemetry.jobArtifactDownloadAndDeserializeTime(
                     downloadStartTime,
@@ -158,7 +158,7 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
                 )
             }
         } catch (e: Exception) {
-            return DownloadArtifactResult(null, "")
+            return DownloadArtifactResult(null, "", e.message.orEmpty())
         } finally {
             isCurrentlyDownloading.set(false)
         }
@@ -194,11 +194,11 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
         }
     }
 
-    fun notifyUnableToApplyPatch(patchPath: String) {
+    fun notifyUnableToApplyPatch(patchPath: String, errorMessage: String) {
         LOG.error { "Unable to find patch for file: $patchPath" }
         notifyStickyWarn(
             message("codemodernizer.notification.warn.view_diff_failed.title"),
-            message("codemodernizer.notification.warn.view_diff_failed.content"),
+            message("codemodernizer.notification.warn.view_diff_failed.content", errorMessage),
             project,
             listOf(
                 openTroubleshootingGuideNotificationAction(

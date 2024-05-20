@@ -342,7 +342,7 @@ class CodeModernizerSession(
                 createUploadUrlResponse.kmsKeyArn().orEmpty(),
             ) { shouldStop.get() }
         } catch (e: Exception) {
-            val errorMessage = "Unexpected error when uploading artifact to S3: ${e.localizedMessage}"
+            val errorMessage = "Unexpected error when uploading artifact to S3: ${e.message}"
             LOG.error { errorMessage }
             // emit this metric here manually since we don't use callApi(), which emits its own metric
             telemetry.apiError(errorMessage, CodeTransformApiNames.UploadZip, createUploadUrlResponse.uploadId())
@@ -461,7 +461,7 @@ class CodeModernizerSession(
                 result.succeeded -> CodeModernizerJobCompletedResult.JobCompletedSuccessfully(jobId)
 
                 // Should not happen
-                else -> CodeModernizerJobCompletedResult.JobFailed(jobId, result.jobDetails?.reason())
+                else -> CodeModernizerJobCompletedResult.JobFailed(jobId, result.jobDetails?.reason().orEmpty())
             }
         } catch (e: Exception) {
             return when (e) {
@@ -474,7 +474,7 @@ class CodeModernizerSession(
                     LOG.error(e) { e.message.toString() }
                     CodeModernizerJobCompletedResult.RetryableFailure(
                         jobId,
-                        message("codemodernizer.notification.info.modernize_failed.connection_failed", e.localizedMessage),
+                        message("codemodernizer.notification.info.modernize_failed.connection_failed", e.message.orEmpty()),
                     )
                 }
             }

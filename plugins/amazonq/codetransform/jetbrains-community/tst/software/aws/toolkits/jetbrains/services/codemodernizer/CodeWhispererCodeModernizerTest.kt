@@ -39,11 +39,11 @@ class CodeWhispererCodeModernizerTest : CodeWhispererCodeModernizerTestBase() {
     fun `ArtifactHandler notifies users if patch does not exist`() = runBlocking {
         val handler = spy(ArtifactHandler(project, clientAdaptorSpy))
         val path = testCodeModernizerArtifact.zipPath
-        doNothing().whenever(handler).notifyUnableToApplyPatch(path)
+        doNothing().whenever(handler).notifyUnableToApplyPatch(path, "")
         val result = DownloadArtifactResult(null, path)
         doReturn(result).whenever(handler).downloadArtifact(any())
         handler.displayDiff(jobId)
-        verify(handler, times(1)).notifyUnableToApplyPatch(path)
+        verify(handler, times(1)).notifyUnableToApplyPatch(path, "")
     }
 
     @Test
@@ -54,7 +54,7 @@ class CodeWhispererCodeModernizerTest : CodeWhispererCodeModernizerTestBase() {
         doReturn(result).whenever(handler).downloadArtifact(any())
         doNothing().whenever(handler).displayDiffUsingPatch(any(), any())
         handler.displayDiff(jobId)
-        verify(handler, never()).notifyUnableToApplyPatch(path)
+        verify(handler, never()).notifyUnableToApplyPatch(path, "")
         verify(handler, times(1)).displayDiffUsingPatch(testCodeModernizerArtifact.patch, jobId)
     }
 

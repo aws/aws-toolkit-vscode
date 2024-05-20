@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Amazon Q Code Transformation: show exact error messages in chat when job fails"
+}

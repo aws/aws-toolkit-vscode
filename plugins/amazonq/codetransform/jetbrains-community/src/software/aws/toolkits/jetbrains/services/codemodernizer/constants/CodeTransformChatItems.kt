@@ -268,7 +268,13 @@ fun buildTransformResultChatContent(result: CodeModernizerJobCompletedResult): C
             message("codemodernizer.chat.message.result.partially_success")
         }
         is CodeModernizerJobCompletedResult.JobFailed -> {
-            message("codemodernizer.chat.message.result.fail_with_known_reason", result.failureReason.orEmpty())
+            message("codemodernizer.chat.message.result.fail_with_known_reason", result.failureReason)
+        }
+        is CodeModernizerJobCompletedResult.UnableToCreateJob -> {
+            result.failureReason
+        }
+        is CodeModernizerJobCompletedResult.RetryableFailure -> {
+            result.failureReason
         }
         else -> {
             message("codemodernizer.chat.message.result.fail")
