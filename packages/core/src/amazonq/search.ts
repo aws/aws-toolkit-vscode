@@ -13,6 +13,7 @@ import { Chunk } from '../codewhisperer/util/supplementalContext/crossFileContex
 import { isExtensionInstalled, isExtensionActive } from '../shared/utilities'
 import { makeTemporaryToolkitFolder } from '../shared/filesystemUtilities'
 import fetch from 'node-fetch'
+import { activateExtension } from '../shared'
 
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -52,10 +53,9 @@ export class Search {
             })
         })
     }
-
     async downloadCodeSearch() {
-        const fname = `code-search-0.1.10-${process.platform}-${process.arch}.vsix`
-        const s3Path = `https://github.com/leigaol/code-test-release/releases/download/0.1.10/${fname}`
+        const fname = `code-search-0.1.18-${process.platform}-${process.arch}.vsix`
+        const s3Path = `https://github.com/leigaol/code-test-release/releases/download/0.1.18/${fname}`
         const tempFolder = await makeTemporaryToolkitFolder()
         const localFile = path.join(tempFolder, fname)
         await this._download(localFile, s3Path)
@@ -115,6 +115,7 @@ export class Search {
                 CodeWhispererConstants.projectIndexSizeLimitBytes
             )
             getLogger().info(`NEW: Found ${files.length} files in current project ${getProjectPaths()}`)
+            await activateExtension(this.extId)
             this.indexFiles(
                 files.map(f => f.fileUri.fsPath),
                 projRoot,

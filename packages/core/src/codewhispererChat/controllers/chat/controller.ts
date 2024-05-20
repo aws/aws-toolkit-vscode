@@ -549,7 +549,8 @@ export class ChatController {
 
     private async generateResponse(triggerPayload: TriggerPayload, triggerID: string) {
         // Loop while we waiting for tabID to be set
-        if (triggerPayload.message) {
+        if (triggerPayload.message && triggerPayload.message.startsWith('#')) {
+            triggerPayload.message = triggerPayload.message.slice(1)
             const c = await Search.instance.query(triggerPayload.message)
             if (c) {
                 getLogger().info(`Relevant code ${c.content}`)
