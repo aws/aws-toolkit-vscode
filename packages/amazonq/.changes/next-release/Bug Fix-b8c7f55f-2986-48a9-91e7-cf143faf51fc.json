@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Amazon Q Chat: Prompt input field not getting focus when chat window opens"
+}
