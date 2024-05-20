@@ -1,6 +1,40 @@
 {
     "types": [
         {
+            "name": "cfnParameterFileUsed",
+            "type": "boolean",
+            "description": "Boolean value of whether or not a Cfn parameter file is provided."
+        },
+        {
+            "name": "documentType",
+            "type": "string",
+            "allowedValues": ["CloudFormation", "Terraform Plan", "JSON Policy Language"],
+            "description": "Document type of the edited file in IAM Policy Checks"
+        },
+        {
+            "name": "inputPolicyType",
+            "type": "string",
+            "allowedValues": ["Identity", "Resource", "None"],
+            "description": "User inputted policy type of the edited file. Applicable to only JSON Policy Language."
+        },
+        {
+            "name": "checkType",
+            "type": "string",
+            "allowedValues": ["CheckNoNewAccess", "CheckAccessNotGranted"],
+            "description": "User inputted check type to denote which custom check to run."
+        },
+        {
+            "name": "referencePolicyType",
+            "type": "string",
+            "allowedValues": ["Identity", "Resource", "None"],
+            "description": "User inputted policy type of the reference file. Applicable to only CheckNoNewAccess check type."
+        },
+        {
+            "name": "findingsCount",
+            "type": "int",
+            "description": "Number of findings discovered after execution"
+        },
+        {
             "name": "amazonGenerateApproachLatency",
             "type": "double",
             "description": "The time it takes to generate approach response"
@@ -1241,6 +1275,62 @@
                 {
                     "type": "source",
                     "required": true
+                }
+            ]
+        },
+        {
+            "name": "accessanalyzer_iamPolicyChecksCustomChecks",
+            "description": "Execution of Custom Policy Checks in IAM Policy Checks",
+            "metadata": [
+                {
+                    "type": "cfnParameterFileUsed"
+                },
+                {
+                    "type": "checkType"
+                },
+                {
+                    "type": "documentType"
+                },
+                {
+                    "type": "findingsCount"
+                },
+                {
+                    "type": "inputPolicyType"
+                },
+                {
+                    "type": "referencePolicyType"
+                },
+                {
+                    "type": "reason",
+                    "required": false
+                },
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "accessanalyzer_iamPolicyChecksValidatePolicy",
+            "description": "Execution of Validate Policy in IAM Policy Checks",
+            "metadata": [
+                {
+                    "type": "cfnParameterFileUsed"
+                },
+                {
+                    "type": "documentType"
+                },
+                {
+                    "type": "findingsCount"
+                },
+                {
+                    "type": "inputPolicyType"
+                },
+                {
+                    "type": "reason",
+                    "required": false
+                },
+                {
+                    "type": "result"
                 }
             ]
         }

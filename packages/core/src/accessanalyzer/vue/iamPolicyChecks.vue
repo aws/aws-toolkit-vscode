@@ -197,7 +197,7 @@
                     />
                 </div>
                 <div style="margin-top: 5px" v-if="initialData.customChecksFileErrorMessage">
-                    <p style="color: red">
+                    <p style="color: var(--vscode-errorForeground)">
                         {{ initialData.customChecksFileErrorMessage }}
                     </p>
                 </div>
@@ -245,7 +245,7 @@ import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../webviews/client'
 import saveData from '../../webviews/mixins/saveData'
 import { IamPolicyChecksWebview } from './iamPolicyChecks'
-import { PolicyChecksDocumentType } from './constants'
+import { PolicyChecksDocumentType, PolicyChecksPolicyType } from './constants'
 import '@../../../resources/css/base.css'
 import '@../../../resources/css/securityIssue.css'
 
@@ -269,9 +269,9 @@ export default defineComponent({
         customChecksPathPlaceholder: 'Reference policy file path',
         customChecksTextAreaPlaceholder: 'Enter reference policy document',
         validatePolicyResponse: '',
-        validatePolicyResponseColor: 'red',
+        validatePolicyResponseColor: 'var(--vscode-errorForeground)',
         customPolicyCheckResponse: '',
-        customPolicyCheckResponseColor: 'red',
+        customPolicyCheckResponseColor: 'var(--vscode-errorForeground)',
         validateButtonDisabled: false,
         customCheckButtonDisabled: false,
     }),
@@ -306,15 +306,19 @@ export default defineComponent({
     },
     methods: {
         setDocumentType: function (event: any) {
+            client.emitUiClick('accessanalyzer_selectDocumentType')
             this.documentType = event.target.value
         },
         setValidatePolicyType: function (event: any) {
+            client.emitUiClick('accessanalyzer_selectInputPolicyType')
             this.validatePolicyType = event.target.value
         },
         setCustomChecksPolicyType: function (event: any) {
+            client.emitUiClick('accessanalyzer_selectReferencePolicyType')
             this.customChecksPolicyType = event.target.value
         },
         setCheckType: function (event: any) {
+            client.emitUiClick('accessanalyzer_selectCustomCheckType')
             this.checkType = event.target.value
             if (this.checkType == 'CheckNoNewAccess') {
                 this.customChecksPathPlaceholder = 'Reference policy file path'
@@ -325,6 +329,7 @@ export default defineComponent({
             }
         },
         setCustomChecksFilePath: function (event: any) {
+            client.emitUiClick('accessanalyzer_selectCustomChecksFilePath')
             this.initialData.customChecksFilePath = event.target.value
             client
                 .readCustomChecksFile(this.initialData.customChecksFilePath)
@@ -334,23 +339,26 @@ export default defineComponent({
                 .catch(err => console.log(err))
         },
         setCfnParameterFilePath: function (event: any) {
+            client.emitUiClick('accessanalyzer_selectCfnParameterFilePath')
             this.initialData.cfnParameterPath = event.target.value
         },
         runValidator: async function () {
             this.validateButtonDisabled = true
+            client.emitUiClick('accessanalyzer_runValidatePolicy')
             await client.validatePolicy(
                 this.documentType as PolicyChecksDocumentType,
-                this.validatePolicyType,
+                this.validatePolicyType as PolicyChecksPolicyType,
                 this.initialData.cfnParameterPath
             )
             this.validateButtonDisabled = false
         },
         runCustomPolicyCheck: async function () {
             this.customCheckButtonDisabled = true
+            client.emitUiClick('accessanalyzer_runCustomPolicyCheck')
             if (this.checkType == 'CheckNoNewAccess') {
                 await client.checkNoNewAccess(
                     this.documentType as PolicyChecksDocumentType,
-                    this.customChecksPolicyType,
+                    this.customChecksPolicyType as PolicyChecksPolicyType,
                     this.initialData.customChecksTextArea,
                     this.initialData.cfnParameterPath
                 )
