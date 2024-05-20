@@ -324,23 +324,16 @@ export class AuthUtil {
         AuthUtil.logIfChanged(logStr)
     }
 
-    public async reauthenticate(addMissingScopes: boolean = false) {
+    public async reauthenticate() {
         try {
             if (this.conn?.type !== 'sso') {
                 return
             }
 
-            // Edge Case: With the addition of Amazon Q/Chat scopes we may need to add
-            // the new scopes to existing pre-chat connections.
-            if (addMissingScopes) {
-                if (
-                    (isBuilderIdConnection(this.conn) || isIdcSsoConnection(this.conn)) &&
-                    !isValidAmazonQConnection(this.conn)
-                ) {
-                    const conn = await this.secondaryAuth.addScopes(this.conn, amazonQScopes)
-                    await this.secondaryAuth.useNewConnection(conn)
-                    return
-                }
+            if (!isValidAmazonQConnection(this.conn)) {
+                const conn = await this.secondaryAuth.addScopes(this.conn, amazonQScopes)
+                await this.secondaryAuth.useNewConnection(conn)
+                return
             }
 
             await this.auth.reauthenticate(this.conn)
