@@ -71,6 +71,7 @@ export class Search {
                     vscode.Uri.file(localFile)
                 )
                 await fs.removeSync(localFile)
+                await vscode.commands.executeCommand('workbench.action.reloadWindow')
             } catch (e) {
                 console.log(e)
             }
