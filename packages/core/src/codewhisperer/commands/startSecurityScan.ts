@@ -279,7 +279,7 @@ export function showSecurityScanResults(
     }
     if (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
         populateCodeScanLogStream(zipMetadata.scannedFiles)
-        showScanCompletedNotification(totalIssues, zipMetadata.scannedFiles, false)
+        showScanCompletedNotification(totalIssues, zipMetadata.scannedFiles)
     }
 }
 
@@ -331,20 +331,13 @@ export async function confirmStopSecurityScan() {
     }
 }
 
-function showScanCompletedNotification(total: number, scannedFiles: Set<string>, isProjectTruncated: boolean) {
+function showScanCompletedNotification(total: number, scannedFiles: Set<string>) {
     const totalFiles = `${scannedFiles.size} ${scannedFiles.size === 1 ? 'file' : 'files'}`
     const totalIssues = `${total} ${total === 1 ? 'issue was' : 'issues were'}`
-    const fileSizeLimitReached = isProjectTruncated ? 'File size limit reached.' : ''
     const learnMore = 'Learn More'
     const items = [CodeWhispererConstants.showScannedFilesMessage]
-    if (isProjectTruncated) {
-        items.push(learnMore)
-    }
     void vscode.window
-        .showInformationMessage(
-            `Security scan completed for ${totalFiles}. ${totalIssues} found. ${fileSizeLimitReached}`,
-            ...items
-        )
+        .showInformationMessage(`Security scan completed for ${totalFiles}. ${totalIssues} found.`, ...items)
         .then(value => {
             if (value === CodeWhispererConstants.showScannedFilesMessage) {
                 const [, codeScanOutpuChan] = getLogOutputChan()

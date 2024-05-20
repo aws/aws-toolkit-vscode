@@ -16,14 +16,20 @@ import { getTestWorkspaceFolder } from '../../../testInteg/integrationTestsUtili
 import { join } from 'path'
 import { assertTelemetry, closeAllEditors } from '../../testUtil'
 import { stub } from '../../utilities/stubber'
-import { HttpResponse } from 'aws-sdk'
+import { AWSError, HttpResponse } from 'aws-sdk'
 import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { cancel } from '../../../shared/localizedText'
-import { showScannedFilesMessage, stopScanMessage, CodeAnalysisScope } from '../../../codewhisperer/models/constants'
+import {
+    showScannedFilesMessage,
+    stopScanMessage,
+    CodeAnalysisScope,
+    projectScansLimitReached,
+} from '../../../codewhisperer/models/constants'
 import * as model from '../../../codewhisperer/models/model'
 import { CodewhispererSecurityScan } from '../../../shared/telemetry/telemetry.gen'
 import { getFetchStubWithResponse } from '../../common/request.test'
+import * as errors from '../../../shared/errors'
 
 const mockCreateCodeScanResponse = {
     $response: {
@@ -355,5 +361,85 @@ describe('startSecurityScan', function () {
                 codewhispererCodeScanScope: 'PROJECT',
             },
         ])
+    })
+
+    it('Should handle failed scan job status', async function () {
+        getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
+
+        const mockClient = createClient()
+        mockClient.getCodeScan.resolves({
+            ...mockGetCodeScanResponse,
+            status: 'Failed',
+        })
+        await startSecurityScan.startSecurityScan(
+            mockSecurityPanelViewProvider,
+            editor,
+            mockClient,
+            extensionContext,
+            CodeAnalysisScope.PROJECT
+        )
+        assertTelemetry('codewhisperer_securityScan', {
+            codewhispererCodeScanScope: 'PROJECT',
+            result: 'Failed',
+            reason: 'Security scan job failed.',
+            passive: false,
+        })
+    })
+
+    it('Should show notification when throttled for project scans', async function () {
+        getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
+        const mockClient = createClient()
+        mockClient.createCodeScan.throws({
+            code: 'ThrottlingException',
+            time: new Date(),
+            name: 'error name',
+            message: 'Maximum project scan count reached for this month.',
+        } satisfies AWSError)
+        sinon.stub(errors, 'isAwsError').returns(true)
+        const testWindow = getTestWindow()
+        await startSecurityScan.startSecurityScan(
+            mockSecurityPanelViewProvider,
+            editor,
+            mockClient,
+            extensionContext,
+            CodeAnalysisScope.PROJECT
+        )
+        assert.ok(testWindow.shownMessages.map(m => m.message).includes(projectScansLimitReached))
+        assertTelemetry('codewhisperer_securityScan', {
+            codewhispererCodeScanScope: 'PROJECT',
+            result: 'Failed',
+            reason: 'Maximum project scan count reached for this month.',
+            passive: false,
+        } as CodewhispererSecurityScan)
+    })
+
+    it('Should set monthly quota exceeded when throttled for file scans', async function () {
+        getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
+        await model.CodeScansState.instance.setScansEnabled(true)
+        const mockClient = createClient()
+        mockClient.createCodeScan.throws({
+            code: 'ThrottlingException',
+            time: new Date(),
+            name: 'error name',
+            message: 'Maximum auto-scans count reached for this month.',
+        } satisfies AWSError)
+        sinon.stub(errors, 'isAwsError').returns(true)
+        assert.equal(model.CodeScansState.instance.isMonthlyQuotaExceeded(), false)
+        await startSecurityScan.startSecurityScan(
+            mockSecurityPanelViewProvider,
+            editor,
+            mockClient,
+            extensionContext,
+            CodeAnalysisScope.FILE
+        )
+        assert.equal(model.CodeScansState.instance.isMonthlyQuotaExceeded(), true)
+        const warnings = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Warning)
+        assert.strictEqual(warnings.length, 0)
+        assertTelemetry('codewhisperer_securityScan', {
+            codewhispererCodeScanScope: 'FILE',
+            result: 'Failed',
+            reason: 'Maximum auto-scans count reached for this month.',
+            passive: true,
+        } as CodewhispererSecurityScan)
     })
 })
