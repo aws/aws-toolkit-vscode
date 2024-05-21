@@ -42,6 +42,7 @@ import { SystemUtilities } from '../../shared/systemUtilities'
 import { ToolkitError } from '../../shared/errors'
 import { isRemoteWorkspace } from '../../shared/vscode/env'
 import { hasScopes } from '../../auth/connection'
+import globals from '../../shared/extensionGlobals'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.amazonq.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -273,7 +274,7 @@ export const notifyNewCustomizationsCmd = Commands.declare(
 
 function focusQAfterDelay() {
     // this command won't work without a small delay after install
-    setTimeout(() => {
+    globals.clock.setTimeout(() => {
         void focusAmazonQPanel.execute(placeholder, 'startDelay')
     }, 1000)
 }
@@ -461,7 +462,7 @@ const registerToolkitApiCallbackOnce = once(async () => {
         // If the user has an old 3 scope Amazon Q connection, we will use it and expire it to
         // bring the user to the new 5 scope connection. The code for this lives in the webview,
         // so we will force show the webview if we have a connection that fits this criteria.
-        if (!AuthUtil.instance.isConnected()) {
+        if ('listConnections' in _toolkitApi && !AuthUtil.instance.isConnected()) {
             const conn = AuthUtil.instance.findMinimalQConnection(await _toolkitApi.listConnections())
             if (conn !== undefined && !hasScopes(conn.scopes!, amazonQScopes)) {
                 focusQAfterDelay()

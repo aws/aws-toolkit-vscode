@@ -4,12 +4,12 @@
  */
 import * as vscode from 'vscode'
 import {
-    scopesCodeWhispererChat,
     AwsConnection,
     Connection,
     isSsoConnection,
     SsoConnection,
     hasScopes,
+    scopesCodeWhispererCore,
 } from '../../../../auth/connection'
 import { AuthUtil, amazonQScopes } from '../../../../codewhisperer/util/authUtil'
 import { CommonAuthWebview } from '../backend'
@@ -86,7 +86,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                                     })
                                 }
                                 let newConn: SsoConnection
-                                if (conn.scopes?.includes(scopesCodeWhispererChat[0])) {
+                                if (conn.scopes && hasScopes(conn.scopes, scopesCodeWhispererCore)) {
                                     getLogger().info(
                                         `auth: re-use connection from existing connection id ${connectionId}`
                                     )

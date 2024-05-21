@@ -258,7 +258,8 @@ export class AuthUtil {
         if (conn.type !== 'sso') {
             return
         }
-        await this.auth.updateConnection(conn, conn, true)
+        await this.auth.expireConnection(conn)
+        await this.notifyReauthenticate()
     }
 
     public static get instance() {
