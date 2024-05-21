@@ -220,7 +220,7 @@ describe('codewhisperer status bar', function () {
         const actualStatusBar = statusBar.getStatusBar()
         assert.strictEqual(actualStatusBar.text, '$(chrome-close) Amazon Q')
         assert.strictEqual(actualStatusBar.command, listCodeWhispererCommandsId)
-        assert.deepStrictEqual(actualStatusBar.backgroundColor, undefined)
+        assert.deepStrictEqual(actualStatusBar.backgroundColor, new vscode.ThemeColor('statusBarItem.errorBackground'))
     })
 
     it('shows correct status bar when auth is connected', async function () {
