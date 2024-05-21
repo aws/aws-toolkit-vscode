@@ -24,6 +24,13 @@ import { TelemetryHelper } from '../util/telemetryHelper'
 import request from '../../common/request'
 import { ZipMetadata } from '../util/zipUtil'
 import { getNullLogger } from '../../shared/logger/logger'
+import {
+    CreateCodeScanError,
+    CreateUploadUrlError,
+    InvalidSourceZipError,
+    SecurityScanTimedOutError,
+    UploadArtifactToS3Error,
+} from '../models/errors'
 
 export async function listScanResults(
     client: DefaultCodeWhispererClient,
@@ -51,8 +58,12 @@ export async function listScanResults(
         mapToAggregatedList(codeScanIssueMap, issue)
     })
     codeScanIssueMap.forEach((issues, key) => {
+        // Project path example: /Users/username/project
+        // Key example: project/src/main/java/com/example/App.java
         projectPaths.forEach(projectPath => {
-            const filePath = path.join(projectPath, '..', key)
+            // We need to remove the project path from the key to get the absolute path to the file
+            // Do not use .. in between because there could be multiple project paths in the same parent dir.
+            const filePath = path.join(projectPath, key.split('/').slice(1).join('/'))
             if (existsSync(filePath) && statSync(filePath).isFile()) {
                 const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
                     filePath: filePath,
@@ -133,8 +144,8 @@ export async function pollScanJobStatus(
                 : CodeWhispererConstants.codeScanJobTimeoutSeconds
         if (timer > timeoutSeconds) {
             logger.verbose(`Scan job status: ${status}`)
-            logger.verbose(`Scan job timeout.`)
-            throw new Error('Scan job timeout.')
+            logger.verbose(`Security Scan failed. Amazon Q timed out.`)
+            throw new SecurityScanTimedOutError()
         }
     }
     return status
@@ -159,7 +170,7 @@ export async function createScanJob(
     }
     const resp = await client.createCodeScan(req).catch(err => {
         getLogger().error(`Failed creating scan job. Request id: ${err.requestId}`)
-        throw err
+        throw new CreateCodeScanError(err)
     })
     logger.verbose(`Request id: ${resp.$response.requestId}`)
     TelemetryHelper.instance.sendCodeScanEvent(languageId, resp.$response.requestId)
@@ -174,7 +185,8 @@ export async function getPresignedUrlAndUpload(
 ) {
     const logger = getLoggerForScope(scope)
     if (zipMetadata.zipFilePath === '') {
-        throw new Error("Zip failure: can't find valid source zip.")
+        getLogger().error('Failed to create valid source zip')
+        throw new InvalidSourceZipError()
     }
     const srcReq: CreateUploadUrlRequest = {
         contentMd5: getMd5(zipMetadata.zipFilePath),
@@ -189,7 +201,7 @@ export async function getPresignedUrlAndUpload(
     logger.verbose(`Prepare for uploading src context...`)
     const srcResp = await client.createUploadUrl(srcReq).catch(err => {
         getLogger().error(`Failed getting presigned url for uploading src context. Request id: ${err.requestId}`)
-        throw err
+        throw new CreateUploadUrlError(err)
     })
     logger.verbose(`Request id: ${srcResp.$response.requestId}`)
     logger.verbose(`Complete Getting presigned Url for uploading src context.`)
@@ -265,9 +277,8 @@ export async function uploadArtifactToS3(
         getLogger().error(
             `Amazon Q is unable to upload workspace artifacts to Amazon S3 for security scans. For more information, see the Amazon Q documentation or contact your network or organization administrator.`
         )
-        throw new Error(
-            `Amazon Q is unable to upload workspace artifacts to Amazon S3 for security scans. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/security_iam_manage-access-with-policies.html) or contact your network or organization administrator.`
-        )
+        const errorMessage = (error as Error).message
+        throw new UploadArtifactToS3Error(errorMessage)
     }
 }
 

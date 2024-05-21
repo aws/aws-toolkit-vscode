@@ -46,6 +46,7 @@ import { ExtStartUpSources } from './shared/telemetry/util'
 import { ExtensionUse, getAuthFormIdsFromConnection } from './auth/utils'
 import { Auth } from './auth'
 import { AuthFormId } from './auth/ui/vue/authForms/types'
+import { isSsoConnection } from './auth/connection'
 
 // In web mode everything must be in a single file, so things like the endpoints file will not be available.
 // The following imports the endpoints file, which causes webpack to bundle it in the final output file
@@ -140,7 +141,7 @@ export async function activateShared(
     )
 
     // auth
-    await initializeAuth(context, globals.loginManager, contextPrefix, globals.uriHandler)
+    await initializeAuth(context, globals.loginManager, contextPrefix)
     await initializeAwsCredentialsStatusBarItem(globals.awsContext, context)
 
     const extContext: ExtContext = {
@@ -256,6 +257,7 @@ export async function emitUserState() {
 
         let authStatus: AuthStatus = 'notConnected'
         const enabledConnections: Set<AuthFormId> = new Set()
+        const enabledScopes: Set<string> = new Set()
         if (Auth.instance.hasConnections) {
             authStatus = 'expired'
             ;(await Auth.instance.listConnections()).forEach(conn => {
@@ -265,11 +267,15 @@ export async function emitUserState() {
                 }
 
                 getAuthFormIdsFromConnection(conn).forEach(id => enabledConnections.add(id))
+                if (isSsoConnection(conn)) {
+                    conn.scopes?.forEach(s => enabledScopes.add(s))
+                }
             })
         }
         telemetry.record({
             authStatus,
             authEnabledConnections: [...enabledConnections].join(','),
+            authScopes: [...enabledScopes].join(','),
         })
     })
 }

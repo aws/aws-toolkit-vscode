@@ -29,7 +29,7 @@
                 <div style="display: flex">
                     <div style="display: block; margin-right: 25px">
                         <label for="select-document-type" style="display: block; margin-top: 5px; margin-bottom: 3px"
-                            >Document Type</label
+                            >Select a Document Type</label
                         >
                         <select id="select-document-type" v-on:change="setDocumentType" v-model="documentType">
                             <option value="CloudFormation">CloudFormation</option>
@@ -117,7 +117,13 @@
                 </p>
                 <div style="display: grid">
                     <div>
-                        <button class="button-theme-primary" v-on:click="runValidator">Run Policy Validation</button>
+                        <button
+                            class="button-theme-primary"
+                            v-on:click="runValidator"
+                            :disabled="validateButtonDisabled"
+                        >
+                            Run Policy Validation
+                        </button>
                         <div style="margin-top: 5px">
                             <p :style="{ color: validatePolicyResponseColor }">
                                 {{ validatePolicyResponse }}
@@ -143,7 +149,7 @@
                     <div style="display: flex">
                         <div style="display: block; margin-right: 25px">
                             <label for="select-check-type" style="display: block; margin-top: 15px; margin-bottom: 3px"
-                                >Check Type</label
+                                >Select a Check Type</label
                             >
                             <select id="select-check-type" style="margin-bottom: 5px" v-on:change="setCheckType">
                                 <option value="CheckNoNewAccess">CheckNoNewAccess</option>
@@ -160,7 +166,7 @@
                             <label
                                 for="select-reference-type"
                                 style="display: block; margin-top: 15px; margin-bottom: 3px"
-                                >Reference Policy Type</label
+                                >Select a Reference Policy Type</label
                             >
                             <select
                                 id="select-reference-type"
@@ -174,7 +180,7 @@
                     </div>
                 </div>
                 <div>
-                    <label for="input-path" style="display: block; margin-bottom: 3px">Reference File</label>
+                    <label for="input-path" style="display: block; margin-bottom: 3px">Provide a Reference File</label>
                     <input
                         type="text"
                         style="
@@ -191,7 +197,7 @@
                     />
                 </div>
                 <div style="margin-top: 5px" v-if="initialData.customChecksFileErrorMessage">
-                    <p style="color: red">
+                    <p style="color: var(--vscode-errorForeground)">
                         {{ initialData.customChecksFileErrorMessage }}
                     </p>
                 </div>
@@ -218,6 +224,7 @@
                             class="button-theme-primary"
                             style="margin-bottom: 5px"
                             v-on:click="runCustomPolicyCheck"
+                            :disabled="customCheckButtonDisabled"
                         >
                             Run Custom Policy Check
                         </button>
@@ -238,6 +245,7 @@ import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../webviews/client'
 import saveData from '../../webviews/mixins/saveData'
 import { IamPolicyChecksWebview } from './iamPolicyChecks'
+import { PolicyChecksDocumentType, PolicyChecksPolicyType } from './constants'
 import '@../../../resources/css/base.css'
 import '@../../../resources/css/securityIssue.css'
 
@@ -261,9 +269,11 @@ export default defineComponent({
         customChecksPathPlaceholder: 'Reference policy file path',
         customChecksTextAreaPlaceholder: 'Enter reference policy document',
         validatePolicyResponse: '',
-        validatePolicyResponseColor: 'red',
+        validatePolicyResponseColor: 'var(--vscode-errorForeground)',
         customPolicyCheckResponse: '',
-        customPolicyCheckResponseColor: 'red',
+        customPolicyCheckResponseColor: 'var(--vscode-errorForeground)',
+        validateButtonDisabled: false,
+        customCheckButtonDisabled: false,
     }),
     async created() {
         this.initialData = (await client.init()) ?? this.initialData
@@ -296,15 +306,19 @@ export default defineComponent({
     },
     methods: {
         setDocumentType: function (event: any) {
+            client.emitUiClick('accessanalyzer_selectDocumentType')
             this.documentType = event.target.value
         },
         setValidatePolicyType: function (event: any) {
+            client.emitUiClick('accessanalyzer_selectInputPolicyType')
             this.validatePolicyType = event.target.value
         },
         setCustomChecksPolicyType: function (event: any) {
+            client.emitUiClick('accessanalyzer_selectReferencePolicyType')
             this.customChecksPolicyType = event.target.value
         },
         setCheckType: function (event: any) {
+            client.emitUiClick('accessanalyzer_selectCustomCheckType')
             this.checkType = event.target.value
             if (this.checkType == 'CheckNoNewAccess') {
                 this.customChecksPathPlaceholder = 'Reference policy file path'
@@ -315,6 +329,7 @@ export default defineComponent({
             }
         },
         setCustomChecksFilePath: function (event: any) {
+            client.emitUiClick('accessanalyzer_selectCustomChecksFilePath')
             this.initialData.customChecksFilePath = event.target.value
             client
                 .readCustomChecksFile(this.initialData.customChecksFilePath)
@@ -324,26 +339,37 @@ export default defineComponent({
                 .catch(err => console.log(err))
         },
         setCfnParameterFilePath: function (event: any) {
+            client.emitUiClick('accessanalyzer_selectCfnParameterFilePath')
             this.initialData.cfnParameterPath = event.target.value
         },
-        runValidator: function () {
-            client.validatePolicy(this.documentType, this.validatePolicyType, this.initialData.cfnParameterPath)
+        runValidator: async function () {
+            this.validateButtonDisabled = true
+            client.emitUiClick('accessanalyzer_runValidatePolicy')
+            await client.validatePolicy(
+                this.documentType as PolicyChecksDocumentType,
+                this.validatePolicyType as PolicyChecksPolicyType,
+                this.initialData.cfnParameterPath
+            )
+            this.validateButtonDisabled = false
         },
-        runCustomPolicyCheck: function () {
+        runCustomPolicyCheck: async function () {
+            this.customCheckButtonDisabled = true
+            client.emitUiClick('accessanalyzer_runCustomPolicyCheck')
             if (this.checkType == 'CheckNoNewAccess') {
-                client.checkNoNewAccess(
-                    this.documentType,
-                    this.customChecksPolicyType,
+                await client.checkNoNewAccess(
+                    this.documentType as PolicyChecksDocumentType,
+                    this.customChecksPolicyType as PolicyChecksPolicyType,
                     this.initialData.customChecksTextArea,
                     this.initialData.cfnParameterPath
                 )
             } else if (this.checkType == 'CheckAccessNotGranted') {
-                client.checkAccessNotGranted(
-                    this.documentType,
+                await client.checkAccessNotGranted(
+                    this.documentType as PolicyChecksDocumentType,
                     this.initialData.customChecksTextArea,
                     this.initialData.cfnParameterPath
                 )
             }
+            this.customCheckButtonDisabled = false
         },
     },
     computed: {},

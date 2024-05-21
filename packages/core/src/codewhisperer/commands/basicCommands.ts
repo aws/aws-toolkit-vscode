@@ -90,7 +90,7 @@ export const toggleCodeScans = Commands.declare(
                     : CodeWhispererConstants.autoScansConfig.deactivated,
             })
 
-            await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+            await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
         })
     }
 )
@@ -139,13 +139,7 @@ export const selectCustomizationPrompt = Commands.declare(
 
 export const reconnect = Commands.declare(
     { id: 'aws.amazonq.reconnect', compositeKey: { 1: 'source' } },
-    () =>
-        async (_: VsCodeCommandArg, source: CodeWhispererSource, addMissingScopes: boolean = false) => {
-            if (typeof addMissingScopes !== 'boolean') {
-                addMissingScopes = false
-            }
-            await AuthUtil.instance.reauthenticate(addMissingScopes)
-        }
+    () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => await AuthUtil.instance.reauthenticate()
 )
 
 /** @deprecated in favor of the `Add Connection` page */
@@ -325,9 +319,17 @@ export const installAmazonQExtension = Commands.declare(
     }
 )
 
+// Temporary workaround to avoid errors when pressing "Fix" multiple times from hover.
+// There doesn't seem to be a way to close the hover or update the hover after interacting inside it.
+// Keep track of which findingIds have already been fixed and exit early.
+const fixedFindingIds = new Set()
+
 export const applySecurityFix = Commands.declare(
     'aws.amazonq.applySecurityFix',
     () => async (issue: CodeScanIssue, filePath: string, source: Component) => {
+        if (fixedFindingIds.has(issue.findingId)) {
+            return
+        }
         const [suggestedFix] = issue.suggestedFixes
         if (!suggestedFix || !filePath) {
             return
@@ -371,6 +373,7 @@ export const applySecurityFix = Commands.declare(
             }
 
             await closeSecurityIssueWebview(issue.findingId)
+            fixedFindingIds.add(issue.findingId)
         } catch (err) {
             getLogger().error(`Apply fix command failed. ${err}`)
             applyFixTelemetryEntry.result = 'Failed'

@@ -92,8 +92,6 @@ interface AuthService {
     /**
      * Replaces the profile for a connection with a new one.
      *
-     * This will invalidate the connection, potentially requiring a re-authentication.
-     *
      * **IAM connections are not implemented**
      */
     updateConnection(connection: Pick<Connection, 'id'>, profile: Profile): Promise<Connection>
@@ -166,9 +164,10 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
-    public async reauthenticate({ id }: Pick<SsoConnection, 'id'>): Promise<SsoConnection>
-    public async reauthenticate({ id }: Pick<IamConnection, 'id'>): Promise<IamConnection>
-    public async reauthenticate({ id }: Pick<Connection, 'id'>): Promise<Connection> {
+    public async reauthenticate({ id }: Pick<SsoConnection, 'id'>, invalidate?: boolean): Promise<SsoConnection>
+    public async reauthenticate({ id }: Pick<IamConnection, 'id'>, invalidate?: boolean): Promise<IamConnection>
+    public async reauthenticate({ id }: Pick<Connection, 'id'>, invalidate?: boolean): Promise<Connection> {
+        const shouldInvalidate = invalidate ?? true
         const profile = this.store.getProfileOrThrow(id)
         if (profile.type === 'sso') {
             const provider = this.getSsoTokenProvider(id, profile)
@@ -177,13 +176,13 @@ export class Auth implements AuthService, ConnectionManager {
             // so we need to set it here.
             await telemetry.aws_loginWithBrowser.run(async span => {
                 span.record({ isReAuth: true, credentialStartUrl: profile.startUrl })
-                await this.authenticate(id, () => provider.createToken())
+                await this.authenticate(id, () => provider.createToken(), shouldInvalidate)
             })
 
             return this.getSsoConnection(id, profile)
         } else {
             const provider = await this.getCredentialsProvider(id, profile)
-            await this.authenticate(id, () => this.createCachedCredentials(provider))
+            await this.authenticate(id, () => this.createCachedCredentials(provider), shouldInvalidate)
 
             return this.getIamConnection(id, profile)
         }
@@ -370,9 +369,12 @@ export class Auth implements AuthService, ConnectionManager {
      * Alternatively you can use the `getToken()` call on an SSO connection to do the same thing,
      * but it will additionally prompt for reauthentication if the connection is invalid.
      */
-    public async refreshConnectionState(connection: Pick<Connection, 'id'>): Promise<undefined> {
-        const profile = this.store.getProfile(connection.id)
+    public async refreshConnectionState(connection?: Pick<Connection, 'id'>): Promise<undefined> {
+        if (connection === undefined) {
+            return
+        }
 
+        const profile = this.store.getProfile(connection.id)
         if (profile === undefined) {
             return
         }
@@ -380,14 +382,24 @@ export class Auth implements AuthService, ConnectionManager {
         await this.validateConnection(connection.id, profile)
     }
 
-    public async updateConnection(connection: Pick<SsoConnection, 'id'>, profile: SsoProfile): Promise<SsoConnection>
-    public async updateConnection(connection: Pick<Connection, 'id'>, profile: Profile): Promise<Connection> {
+    public async updateConnection(
+        connection: Pick<SsoConnection, 'id'>,
+        profile: SsoProfile,
+        invalidate?: boolean
+    ): Promise<SsoConnection>
+    public async updateConnection(
+        connection: Pick<Connection, 'id'>,
+        profile: Profile,
+        invalidate?: boolean
+    ): Promise<Connection> {
         getLogger().info(`auth: Updating connection ${connection.id}`)
         if (profile.type === 'iam') {
             throw new Error('Updating IAM connections is not supported')
         }
 
-        await this.invalidateConnection(connection.id, { skipGlobalLogout: true })
+        if (invalidate ?? false) {
+            await this.invalidateConnection(connection.id, { skipGlobalLogout: true })
+        }
 
         const newProfile = await this.store.updateProfile(connection.id, profile)
         const updatedConn = this.getSsoConnection(connection.id, newProfile as StoredProfile<SsoProfile>)
@@ -551,7 +563,10 @@ export class Auth implements AuthService, ConnectionManager {
             }
         }
 
-        return runCheck().catch(err => this.handleSsoTokenError(id, err))
+        return runCheck().catch(async err => {
+            await this.handleSsoTokenError(id, err) // may throw without setting state to invalid - this is intended.
+            await this.updateConnectionState(id, 'invalid')
+        })
     }
 
     private async handleSsoTokenError(id: Connection['id'], err: unknown) {
@@ -559,7 +574,6 @@ export class Auth implements AuthService, ConnectionManager {
 
         this.#validationErrors.set(id, UnknownError.cast(err))
         getLogger().info(`auth: Handling validation error of connection: ${id}`)
-        return this.updateConnectionState(id, 'invalid')
     }
 
     private async getConnectionFromStoreEntry([id, profile]: readonly [Connection['id'], StoredProfile<Profile>]) {
@@ -640,7 +654,7 @@ export class Auth implements AuthService, ConnectionManager {
 
         return startUrl === builderIdStartUrl
             ? [identifier, createBuilderIdProfile(scopesCodeCatalyst)]
-            : [identifier, createSsoProfile(region, startUrl, scopesCodeCatalyst)]
+            : [identifier, createSsoProfile(startUrl, region, scopesCodeCatalyst)]
     }
 
     private getSsoTokenProvider(id: Connection['id'], profile: StoredProfile<SsoProfile>) {
@@ -696,7 +710,8 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private readonly authenticate = keyedDebounce(this._authenticate.bind(this))
-    private async _authenticate<T>(id: Connection['id'], callback: () => Promise<T>): Promise<T> {
+    private async _authenticate<T>(id: Connection['id'], callback: () => Promise<T>, invalidate?: boolean): Promise<T> {
+        const originalState = this.getConnectionState({ id }) ?? 'unauthenticated'
         await this.updateConnectionState(id, 'authenticating')
 
         try {
@@ -706,6 +721,7 @@ export class Auth implements AuthService, ConnectionManager {
             return result
         } catch (err) {
             await this.handleSsoTokenError(id, err)
+            await this.updateConnectionState(id, invalidate ? 'invalid' : originalState)
             throw err
         }
     }

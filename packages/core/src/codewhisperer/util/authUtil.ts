@@ -20,7 +20,6 @@ import {
     isIamConnection,
     isSsoConnection,
     isBuilderIdConnection,
-    scopesSsoAccountAccess,
     scopesCodeWhispererChat,
     scopesFeatureDev,
     scopesGumby,
@@ -36,7 +35,7 @@ import { showReauthenticateMessage } from '../../shared/utilities/messages'
 import { showAmazonQWalkthroughOnce } from '../../amazonq/onboardingPage/walkthrough'
 
 /** Backwards compatibility for connections w pre-chat scopes */
-export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
+export const codeWhispererCoreScopes = [...scopesCodeWhispererCore]
 export const codeWhispererChatScopes = [...codeWhispererCoreScopes, ...scopesCodeWhispererChat]
 export const amazonQScopes = [...codeWhispererChatScopes, ...scopesGumby, ...scopesFeatureDev]
 
@@ -325,23 +324,16 @@ export class AuthUtil {
         AuthUtil.logIfChanged(logStr)
     }
 
-    public async reauthenticate(addMissingScopes: boolean = false) {
+    public async reauthenticate() {
         try {
             if (this.conn?.type !== 'sso') {
                 return
             }
 
-            // Edge Case: With the addition of Amazon Q/Chat scopes we may need to add
-            // the new scopes to existing pre-chat connections.
-            if (addMissingScopes) {
-                if (
-                    (isBuilderIdConnection(this.conn) || isIdcSsoConnection(this.conn)) &&
-                    !isValidAmazonQConnection(this.conn)
-                ) {
-                    const conn = await this.secondaryAuth.addScopes(this.conn, amazonQScopes)
-                    await this.secondaryAuth.useNewConnection(conn)
-                    return
-                }
+            if (!isValidAmazonQConnection(this.conn)) {
+                const conn = await this.secondaryAuth.addScopes(this.conn, amazonQScopes)
+                await this.secondaryAuth.useNewConnection(conn)
+                return
             }
 
             await this.auth.reauthenticate(this.conn)
@@ -387,28 +379,29 @@ export class AuthUtil {
     }
 
     /**
-     * Returns a snapshot of the overall auth state of CodeWhisperer + Chat features.
-     *
-     * @param shouldRefresh (default true) validate and update the current connection state.
-     * If this setting is set to false, there is a risk that the evaluated state is outdated,
-     * but it is safe from modifying the state of the connection.
+     * Asynchronously returns a snapshot of the overall auth state of CodeWhisperer + Chat features.
+     * It guarantees the latest state is correct at the risk of modifying connection state.
+     * If this guarantee is not required, use sync method getChatAuthStateSync()
      */
-    public async getChatAuthState(shouldRefresh: boolean = true): Promise<FeatureAuthState> {
-        const currentConnection = this.conn
-
-        if (currentConnection === undefined) {
-            return buildFeatureAuthState(AuthStates.disconnected)
-        }
-        if (!isSsoConnection(currentConnection)) {
-            throw new ToolkitError(
-                `Connection "${currentConnection.id}" is not a valid type: ${currentConnection.type}`
-            )
-        }
-
+    public async getChatAuthState(): Promise<FeatureAuthState> {
         // The state of the connection may not have been properly validated
         // and the current state we see may be stale, so refresh for latest state.
-        if (shouldRefresh) {
-            await this.auth.refreshConnectionState(currentConnection)
+        await this.auth.refreshConnectionState(this.conn)
+        return this.getChatAuthStateSync(this.conn)
+    }
+
+    /**
+     * Synchronously returns a snapshot of the overall auth state of CodeWhisperer + Chat features without
+     * validating or modifying the connection state. It is possible that the connection
+     * is invalid/valid, but the current state displays something else. To guarantee the true state,
+     * use async method getChatAuthState()
+     */
+    public getChatAuthStateSync(conn = this.conn): FeatureAuthState {
+        if (conn === undefined) {
+            return buildFeatureAuthState(AuthStates.disconnected)
+        }
+        if (!isSsoConnection(conn)) {
+            throw new ToolkitError(`Connection "${conn.id}" is not a valid type: ${conn.type}`)
         }
 
         // default to expired to indicate reauth is needed if unmodified
@@ -418,11 +411,11 @@ export class AuthUtil {
             return state
         }
 
-        if (isBuilderIdConnection(currentConnection) || isIdcSsoConnection(currentConnection)) {
-            if (isValidCodeWhispererCoreConnection(currentConnection)) {
+        if (isBuilderIdConnection(conn) || isIdcSsoConnection(conn)) {
+            if (isValidCodeWhispererCoreConnection(conn)) {
                 state[Features.codewhispererCore] = AuthStates.connected
             }
-            if (isValidAmazonQConnection(currentConnection)) {
+            if (isValidAmazonQConnection(conn)) {
                 Object.values(Features).forEach(v => (state[v as Feature] = AuthStates.connected))
             }
         }

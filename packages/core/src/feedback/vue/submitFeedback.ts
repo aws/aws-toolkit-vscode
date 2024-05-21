@@ -67,8 +67,7 @@ export class FeedbackWebview extends VueWebview {
     }
 }
 
-// TODO: remove CodeWhisperer from here?
-type FeedbackId = 'AWS Toolkit' | 'CodeWhisperer' | 'Amazon Q' | 'Application Composer'
+type FeedbackId = 'AWS Toolkit' | 'Amazon Q' | 'Application Composer'
 
 let _submitFeedback: RegisteredCommand<(_: VsCodeCommandArg, id: FeedbackId) => Promise<void>> | undefined
 export function submitFeedback(_: VsCodeCommandArg, id: FeedbackId) {

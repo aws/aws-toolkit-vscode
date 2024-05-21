@@ -14,10 +14,11 @@ import {
 import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { createBuilderIdProfile, createSsoProfile, createTestAuth } from '../../credentials/testUtil'
-import { captureEventOnce, tryRegister } from '../../testUtil'
+import { assertTelemetry, captureEventOnce, tryRegister } from '../../testUtil'
 import { Connection, isAnySsoConnection, isBuilderIdConnection } from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
 import { openAmazonQWalkthrough } from '../../../amazonq/onboardingPage/walkthrough'
+import { vscodeComponent } from '../../../shared/vscode/commands2'
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
 
@@ -125,6 +126,18 @@ describe('AuthUtil', async function () {
         const warningMessage = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Information)
         assert.strictEqual(warningMessage.length, 1)
         assert.strictEqual(warningMessage[0].message, `Your Amazon Q connection has expired. Please re-authenticate.`)
+        warningMessage[0].close()
+        assertTelemetry('toolkit_showNotification', {
+            id: 'codeWhispererConnectionExpired',
+            result: 'Succeeded',
+            source: vscodeComponent,
+        })
+        assertTelemetry('toolkit_invokeAction', {
+            id: 'codeWhispererConnectionExpired',
+            action: 'dismiss',
+            result: 'Succeeded',
+            source: vscodeComponent,
+        })
     })
 
     it('reauthenticate prompt reauthenticates invalid connection', async function () {
@@ -135,46 +148,76 @@ describe('AuthUtil', async function () {
         getTestWindow().onDidShowMessage(m => {
             m.selectItem('Re-authenticate')
         })
+
         assert.strictEqual(auth.getConnectionState(conn), 'invalid')
 
         await authUtil.showReauthenticatePrompt()
 
         assert.strictEqual(authUtil.conn?.type, 'sso')
         assert.strictEqual(auth.getConnectionState(conn), 'valid')
+        assertTelemetry('toolkit_showNotification', {
+            id: 'codeWhispererConnectionExpired',
+            result: 'Succeeded',
+            source: vscodeComponent,
+        })
+        assertTelemetry('toolkit_invokeAction', {
+            id: 'codeWhispererConnectionExpired',
+            action: 'connect',
+            result: 'Succeeded',
+            source: vscodeComponent,
+        })
     })
 
-    it('reauthenticate does NOT add missing CodeWhisperer scopes if not required to', async function () {
-        const conn = await auth.createConnection(createBuilderIdProfile({ scopes: codeWhispererCoreScopes }))
-        await auth.useConnection(conn)
-
-        await authUtil.reauthenticate()
-
-        assert.strictEqual(authUtil.conn?.type, 'sso')
-        assert.deepStrictEqual(authUtil.conn?.scopes, codeWhispererCoreScopes)
-    })
-
-    it('reauthenticate adds missing Builder ID scopes when explicitly required', async function () {
-        const conn = await auth.createConnection(createBuilderIdProfile({ scopes: codeWhispererCoreScopes }))
+    it('reauthenticates Builder ID connection that already has all scopes', async function () {
+        const conn = await auth.createInvalidSsoConnection(createBuilderIdProfile({ scopes: amazonQScopes }))
         await auth.useConnection(conn)
 
         // method under test
-        await authUtil.reauthenticate(true)
+        await authUtil.reauthenticate()
 
         assert.strictEqual(authUtil.conn?.type, 'sso')
         assert.deepStrictEqual(authUtil.conn?.scopes, amazonQScopes)
+        assert.strictEqual(auth.getConnectionState(conn), 'valid')
     })
 
-    it('reauthenticate adds missing Amazon Q IdC scopes when explicitly required', async function () {
-        const conn = await auth.createConnection(
+    it('reauthenticates IdC connection that already has all scopes', async function () {
+        const conn = await auth.createInvalidSsoConnection(
             createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: codeWhispererCoreScopes })
         )
         await auth.useConnection(conn)
 
         // method under test
-        await authUtil.reauthenticate(true)
+        await authUtil.reauthenticate()
 
         assert.strictEqual(authUtil.conn?.type, 'sso')
         assert.deepStrictEqual(authUtil.conn?.scopes, amazonQScopes)
+        assert.strictEqual(auth.getConnectionState(conn), 'valid')
+    })
+
+    it('reauthenticate adds missing Builder ID scopes', async function () {
+        const conn = await auth.createInvalidSsoConnection(createBuilderIdProfile({ scopes: codeWhispererCoreScopes }))
+        await auth.useConnection(conn)
+
+        // method under test
+        await authUtil.reauthenticate()
+
+        assert.strictEqual(authUtil.conn?.type, 'sso')
+        assert.deepStrictEqual(authUtil.conn?.scopes, amazonQScopes)
+        assert.strictEqual(auth.getConnectionState(conn), 'valid')
+    })
+
+    it('reauthenticate adds missing Amazon Q IdC scopes', async function () {
+        const conn = await auth.createInvalidSsoConnection(
+            createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: codeWhispererCoreScopes })
+        )
+        await auth.useConnection(conn)
+
+        // method under test
+        await authUtil.reauthenticate()
+
+        assert.strictEqual(authUtil.conn?.type, 'sso')
+        assert.deepStrictEqual(authUtil.conn?.scopes, amazonQScopes)
+        assert.strictEqual(auth.getConnectionState(conn), 'valid')
     })
 
     it('CodeWhisperer uses fallback connection when switching to an unsupported connection', async function () {

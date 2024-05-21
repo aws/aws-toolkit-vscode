@@ -40,6 +40,7 @@ import { debounce } from 'lodash'
 import { once } from '../../shared/utilities/functionUtils'
 import { randomUUID } from '../../common/crypto'
 import { CodeAnalysisScope } from '../models/constants'
+import { CodeScanJobFailedError, CreateCodeScanFailedError, SecurityScanError } from '../models/errors'
 
 const localize = nls.loadMessageBundle()
 export const stopScanButton = localize('aws.codewhisperer.stopscan', 'Stop Scan')
@@ -172,7 +173,9 @@ export async function startSecurityScan(
             scanName
         )
         if (scanJob.status === 'Failed') {
-            throw new Error(scanJob.errorMessage)
+            logger.verbose(`${scanJob.errorMessage}`)
+            const errorMessage = scanJob.errorMessage ?? 'CreateCodeScanFailed'
+            throw new CreateCodeScanFailedError(errorMessage)
         }
         logger.verbose(`Created security scan job.`)
         codeScanTelemetryEntry.codewhispererCodeScanJobId = scanJob.jobId
@@ -183,7 +186,8 @@ export async function startSecurityScan(
         throwIfCancelled(scope, codeScanStartTime)
         const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scope, codeScanStartTime)
         if (jobStatus === 'Failed') {
-            throw new Error('Security scan job failed.')
+            logger.verbose(`Security scan job failed.`)
+            throw new CodeScanJobFailedError()
         }
 
         /**
@@ -225,7 +229,7 @@ export async function startSecurityScan(
         if (error instanceof CodeScanStoppedError) {
             codeScanTelemetryEntry.result = 'Cancelled'
         } else {
-            errorPromptHelper(error as Error, scope)
+            errorPromptHelper(error as SecurityScanError, scope)
             codeScanTelemetryEntry.result = 'Failed'
         }
 
@@ -234,6 +238,7 @@ export async function startSecurityScan(
                 scope === CodeAnalysisScope.PROJECT &&
                 error.message.includes(CodeWhispererConstants.projectScansThrottlingMessage)
             ) {
+                getLogger().error(CodeWhispererConstants.projectScansLimitReached)
                 void vscode.window.showErrorMessage(CodeWhispererConstants.projectScansLimitReached)
                 // TODO: Should we set a graphical state?
                 // We shouldn't set vsCodeState.isFreeTierLimitReached here because it will hide CW and Q chat options.
@@ -245,7 +250,7 @@ export async function startSecurityScan(
                 CodeScansState.instance.setMonthlyQuotaExceeded()
             }
         }
-        codeScanTelemetryEntry.reason = (error as Error).message
+        codeScanTelemetryEntry.reason = (error as SecurityScanError).message
     } finally {
         codeScanState.setToNotStarted()
         codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime
@@ -294,9 +299,9 @@ export async function emitCodeScanTelemetry(codeScanTelemetryEntry: CodeScanTele
     })
 }
 
-export function errorPromptHelper(error: Error, scope: CodeAnalysisScope) {
+export function errorPromptHelper(error: SecurityScanError, scope: CodeAnalysisScope) {
     if (scope === CodeAnalysisScope.PROJECT) {
-        void vscode.window.showWarningMessage(`Security scan failed. ${error}`, ok)
+        void vscode.window.showWarningMessage(error.customerFacingMessage, ok)
     }
 }
 
