@@ -33,4 +33,10 @@ describe('tech debt', function () {
             'with node16+, we can now use AbortController to cancel Node things (child processes, HTTP requests, etc.)'
         )
     })
+
+    it('remove missing Amazon Q scopes edge case handling', async function () {
+        const now = Date.now()
+        const cutoffDate = Date.parse('2024-06-30')
+        assert.ok(now <= cutoffDate, 'Remove the edge case code from the commit that this test is a part of.')
+    })
 })
