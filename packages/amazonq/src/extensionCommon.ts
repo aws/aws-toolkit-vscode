@@ -38,7 +38,7 @@ import { getAuthStatus } from './auth/util'
 import { registerCommands } from './commands'
 import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode/common'
 
-export async function activateShared(context: vscode.ExtensionContext, isWeb: boolean) {
+export async function activateCommon(context: vscode.ExtensionContext, isWeb: boolean) {
     initialize(context, isWeb)
     await initializeComputeRegion()
 
@@ -61,9 +61,7 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
                     () =>
                         vscode.window
                             .showInformationMessage(
-                                `The Amazon Q extension is incompatible with AWS Toolkit ${
-                                    toolkitVersion as any
-                                } and older. Your AWS Toolkit was updated to version 3.0 or later.`,
+                                `The Amazon Q extension is incompatible with AWS Toolkit ${toolkitVersion} and older. Your AWS Toolkit was updated to version 3.0 or later.`,
                                 'Reload Now'
                             )
                             .then(async resp => {
@@ -175,6 +173,6 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
     })
 }
 
-export async function deactivateShared() {
+export async function deactivateCommon() {
     await codewhispererShutdown()
 }
