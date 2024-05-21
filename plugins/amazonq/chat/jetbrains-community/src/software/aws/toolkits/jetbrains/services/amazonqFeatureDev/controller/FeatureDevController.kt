@@ -66,6 +66,7 @@ import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.ge
 import software.aws.toolkits.jetbrains.ui.feedback.FeatureDevFeedbackDialog
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AmazonqTelemetry
+import software.aws.toolkits.telemetry.Result
 import java.util.UUID
 
 class FeatureDevController(
@@ -613,8 +614,13 @@ class FeatureDevController(
             status = FollowUpStatusType.Info,
         )
 
+        var result: Result = Result.Failed
+        var reason: String? = null
+
         withContext(EDT) {
             val selectedFolder = FileChooser.chooseFile(fileChooserDescriptor, context.project, uri)
+
+            // No folder was selected
             if (selectedFolder == null) {
                 logger.info { "Cancelled dialog and not selected any folder" }
 
@@ -622,9 +628,12 @@ class FeatureDevController(
                     tabId = tabId,
                     followUp = listOf(modifyFolderFollowUp),
                 )
+
+                reason = "ClosedBeforeSelection"
                 return@withContext
             }
 
+            // The folder is not in the workspace
             if (selectedFolder.parent.path != uri.path) {
                 logger.info { "Selected folder not in workspace: ${selectedFolder.path}" }
 
@@ -638,12 +647,15 @@ class FeatureDevController(
                     tabId = tabId,
                     followUp = listOf(modifyFolderFollowUp),
                 )
+
+                reason = "NotInWorkspaceFolder"
                 return@withContext
             }
 
             logger.info { "Selected correct folder inside workspace: ${selectedFolder.path}" }
 
             session.context.projectRoot = selectedFolder
+            result = Result.Succeeded
 
             messenger.sendAnswer(
                 tabId = tabId,
@@ -651,6 +663,13 @@ class FeatureDevController(
                 message = message("amazonqFeatureDev.follow_up.modified_source_folder", selectedFolder.path),
             )
         }
+
+        AmazonqTelemetry.modifySourceFolder(
+            amazonqConversationId = session.conversationId,
+            credentialStartUrl = getStartUrl(project = context.project),
+            result = result,
+            reason = reason
+        )
     }
 
     private fun sendFeedback() {
