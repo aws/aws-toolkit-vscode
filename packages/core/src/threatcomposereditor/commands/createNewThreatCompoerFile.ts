@@ -17,7 +17,7 @@ const createNewThreatComposerFile = async () => {
             prompt: 'Enter name for file',
             validateInput: text => {
                 if (text && fs.existsSync(path.join(rootFolder, text + '.tc.json'))) {
-                    return 'The specified file exists already'
+                    return 'The specified file already exists'
                 }
             },
         })
