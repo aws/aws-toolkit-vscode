@@ -83,6 +83,7 @@ class CodeTransformChatController(
     private val telemetry = CodeTransformTelemetryManager.getInstance(context.project)
 
     override suspend fun processTransformQuickAction(message: IncomingCodeTransformMessage.Transform) {
+        telemetry.prepareForNewJobSubmission()
         if (!checkForAuth(message.tabId)) {
             return
         }
@@ -120,7 +121,7 @@ class CodeTransformChatController(
 
         codeTransformChatHelper.chatDelayShort()
 
-        CodeTransformTelemetryManager.getInstance(context.project).jobIsStartedFromChatPrompt()
+        telemetry.jobIsStartedFromChatPrompt()
 
         codeTransformChatHelper.addNewMessage(
             buildUserInputChatContent(context.project, validationResult)

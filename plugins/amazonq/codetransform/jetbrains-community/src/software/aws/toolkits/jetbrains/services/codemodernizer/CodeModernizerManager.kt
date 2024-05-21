@@ -184,6 +184,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         }
 
         val result = validateCore(project)
+
         telemetry.sendValidationResult(result)
 
         return result
