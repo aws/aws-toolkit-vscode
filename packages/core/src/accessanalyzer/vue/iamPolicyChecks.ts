@@ -144,7 +144,7 @@ export class IamPolicyChecksWebview extends VueWebview {
         const diagnostics: vscode.Diagnostic[] = []
         switch (documentType) {
             case 'JSON Policy Language': {
-                if (document.endsWith('.json')) {
+                if (isJsonPolicyLanguage(document)) {
                     telemetry.accessanalyzer_iamPolicyChecksValidatePolicy.run(span => {
                         span.record({
                             documentType,
@@ -237,7 +237,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                 }
             }
             case 'Terraform Plan': {
-                if (document.endsWith('.json')) {
+                if (isTerraformPlan(document)) {
                     const tfCommand = `tf-policy-validator validate --template-path ${document} --region ${
                         this.region
                     } --config ${globals.context.asAbsolutePath(defaultTerraformConfigPath)}`
@@ -257,7 +257,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                 }
             }
             case 'CloudFormation': {
-                if (document.endsWith('.yaml') || document.endsWith('.yml') || document.endsWith('.json')) {
+                if (isCloudFormationTemplate(document)) {
                     const cfnCommand =
                         cfnParameterPath === ''
                             ? `cfn-policy-validator validate --template-path ${document} --region ${this.region}`
@@ -303,7 +303,7 @@ export class IamPolicyChecksWebview extends VueWebview {
 
         switch (documentType) {
             case 'Terraform Plan': {
-                if (document.endsWith('.json')) {
+                if (isTerraformPlan(document)) {
                     const tfCommand = `tf-policy-validator check-no-new-access --template-path ${document} --region ${
                         this.region
                     } --config ${globals.context.asAbsolutePath(
@@ -326,7 +326,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                 }
             }
             case 'CloudFormation': {
-                if (document.endsWith('.yaml') || document.endsWith('.yml') || document.endsWith('.json')) {
+                if (isCloudFormationTemplate(document)) {
                     const cfnCommand =
                         cfnParameterPath === ''
                             ? `cfn-policy-validator check-no-new-access --template-path ${document} --region ${this.region} --reference-policy ${tempFilePath} --reference-policy-type ${policyType}`
@@ -370,7 +370,7 @@ export class IamPolicyChecksWebview extends VueWebview {
         }
         switch (documentType) {
             case 'Terraform Plan': {
-                if (document.endsWith('.json')) {
+                if (isTerraformPlan(document)) {
                     const tfCommand = `tf-policy-validator check-access-not-granted --template-path ${document} --region ${
                         this.region
                     } --config ${globals.context.asAbsolutePath(defaultTerraformConfigPath)} --actions ${actions}`
@@ -390,7 +390,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                 }
             }
             case 'CloudFormation': {
-                if (document.endsWith('.yaml') || document.endsWith('.yml') || document.endsWith('.json')) {
+                if (isCloudFormationTemplate(document)) {
                     const cfnCommand =
                         cfnParameterPath === ''
                             ? `cfn-policy-validator check-access-not-granted --template-path ${document} --region ${this.region} --actions ${actions}`
@@ -533,16 +533,7 @@ export class IamPolicyChecksWebview extends VueWebview {
             } else {
                 jsonOutput.BlockingFindings.forEach((finding: any) => {
                     this.pushCustomCheckDiagnostic(diagnostics, finding, true)
-                    if (finding.findingType === 'ERROR') {
-                        if (
-                            finding.message.includes(
-                                'The policy in existingPolicyDocument is invalid. Principal is a prohibited policy element.'
-                            )
-                        ) {
-                            errorMessage =
-                                "ERROR: The policy in reference document is invalid. Principal is a prohibited policy element. Review the reference document's policy type and try again."
-                        }
-                    }
+                    errorMessage = getCheckNoNewAccessErrorMessage(finding)
                     findingsCount++
                 })
                 jsonOutput.NonBlockingFindings.forEach((finding: any) => {
@@ -731,6 +722,18 @@ function parseCliErrorMessage(message: string, documentType: PolicyChecksDocumen
     return message
 }
 
+function getCheckNoNewAccessErrorMessage(finding: any) {
+    if (finding.findingType === 'ERROR') {
+        if (
+            finding.message.includes(
+                'The policy in existingPolicyDocument is invalid. Principal is a prohibited policy element.'
+            )
+        ) {
+            return "ERROR: The policy in reference document is invalid. Principal is a prohibited policy element. Review the reference document's policy type and try again."
+        }
+    }
+}
+
 function getResultCssColor(resultType: PolicyChecksResult): string {
     switch (resultType) {
         case 'Success':
@@ -739,6 +742,30 @@ function getResultCssColor(resultType: PolicyChecksResult): string {
             return 'var(--vscode-debugConsole-warningForeground)'
         case 'Error':
             return 'var(--vscode-errorForeground)'
+    }
+}
+
+function isCloudFormationTemplate(document: string): boolean {
+    if (document.endsWith('.yaml') || document.endsWith('.yml') || document.endsWith('.json')) {
+        return true
+    } else {
+        return false
+    }
+}
+
+function isTerraformPlan(document: string) {
+    if (document.endsWith('.json')) {
+        return true
+    } else {
+        return false
+    }
+}
+
+function isJsonPolicyLanguage(document: string) {
+    if (document.endsWith('.json')) {
+        return true
+    } else {
+        return false
     }
 }
 
