@@ -746,27 +746,18 @@ function getResultCssColor(resultType: PolicyChecksResult): string {
 }
 
 function isCloudFormationTemplate(document: string): boolean {
-    if (document.endsWith('.yaml') || document.endsWith('.yml') || document.endsWith('.json')) {
-        return true
-    } else {
-        return false
-    }
+    const cfnFileTypes = ['.yaml', '.yml', '.json']
+    return cfnFileTypes.some(t => document.endsWith(t))
 }
 
 function isTerraformPlan(document: string) {
-    if (document.endsWith('.json')) {
-        return true
-    } else {
-        return false
-    }
+    const terraformPlanFileTypes = ['.json']
+    return terraformPlanFileTypes.some(t => document.endsWith(t))
 }
 
 function isJsonPolicyLanguage(document: string) {
-    if (document.endsWith('.json')) {
-        return true
-    } else {
-        return false
-    }
+    const policyLanguageFileTypes = ['.json']
+    return policyLanguageFileTypes.some(t => document.endsWith(t))
 }
 
 export class PolicyChecksError extends ToolkitError {

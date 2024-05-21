@@ -15,10 +15,10 @@
                         <p>Install Python 3.6+</p>
                     </li>
                     <li>
-                        <code> pip install cfn-policy-validator==0.0.31 </code>
+                        <code> pip install cfn-policy-validator==0.0.32 </code>
                     </li>
                     <li>
-                        <code> pip install tf-policy-validator==0.0.6 </code>
+                        <code> pip install tf-policy-validator==0.0.7 </code>
                     </li>
                     <li>
                         <p>Provide IAM Roles Credentials</p>
