@@ -415,6 +415,93 @@
             ]
         },
         {
+            "name": "codewhisperer_clientComponentLatency",
+            "description": "The latency from each CodeWhisperer components in milliseconds",
+            "passive": true,
+            "metadata": [
+                {
+                    "type": "codewhispererAllCompletionsLatency"
+                },
+                {
+                    "type": "codewhispererCompletionType"
+                },
+                {
+                    "type": "codewhispererCredentialFetchingLatency"
+                },
+                {
+                    "type": "codewhispererCustomizationArn",
+                    "required": false
+                },
+                {
+                    "type": "codewhispererEndToEndLatency"
+                },
+                {
+                    "type": "codewhispererFirstCompletionLatency"
+                },
+                {
+                    "type": "codewhispererLanguage"
+                },
+                {
+                    "type": "codewhispererPostprocessingLatency"
+                },
+                {
+                    "type": "codewhispererPreprocessingLatency"
+                },
+                {
+                    "type": "codewhispererRequestId"
+                },
+                {
+                    "type": "codewhispererSessionId"
+                },
+                {
+                    "type": "codewhispererTriggerType"
+                },
+                {
+                    "type": "codewhispererUserGroup"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "codewhisperer_perceivedLatency",
+            "description": "The duration from user last modification to the first recommendation shown in milliseconds",
+            "metadata": [
+                {
+                    "type": "codewhispererCompletionType"
+                },
+                {
+                    "type": "codewhispererCustomizationArn",
+                    "required": false
+                },
+                {
+                    "type": "codewhispererLanguage"
+                },
+                {
+                    "type": "codewhispererRequestId"
+                },
+                {
+                    "type": "codewhispererSessionId",
+                    "required": false
+                },
+                {
+                    "type": "codewhispererTriggerType"
+                },
+                {
+                    "type": "codewhispererUserGroup"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "duration"
+                }
+            ]
+        },
+        {
             "name": "ssm_createDocument",
             "description": "An SSM Document is created locally",
             "unit": "None",
