@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { getLogger } from './shared/logger'
-import { activateShared, deactivateShared } from './extensionShared'
+import { activateCommon, deactivateCommon } from './extensionCommon'
 import os from 'os'
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -18,7 +18,7 @@ export async function activate(context: vscode.ExtensionContext) {
         // it is web mode specific activation code.
         // This should happen as early as possible, as initialize() must be called before
         // isWeb() calls will work.
-        await activateShared(context, contextPrefix, true)
+        await activateCommon(context, contextPrefix, true)
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
         // truncate if the stacktrace is unusually long
@@ -38,5 +38,5 @@ function patchOsVersion() {
 }
 
 export async function deactivate() {
-    await deactivateShared()
+    await deactivateCommon()
 }

@@ -29,6 +29,7 @@
     "exports": {
         ".": "./dist/src/extension.js",
         "./web": "./dist/src/extensionWeb.js",
+        "./common": "./dist/src/extensionCommon.js",
         "./amazonq": "./dist/src/amazonq/index.js",
         "./codewhisperer": "./dist/src/codewhisperer/index.js",
         "./shared": "./dist/src/shared/index.js",

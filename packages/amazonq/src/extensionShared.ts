@@ -27,7 +27,6 @@ import {
     getMachineId,
 } from 'aws-core-vscode/shared'
 import { initializeAuth, CredentialsStore, LoginManager, AuthUtils } from 'aws-core-vscode/auth'
-import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode'
 import { DefaultAmazonQAppInitContext, activate as activateCWChat } from 'aws-core-vscode/amazonq'
 import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
 import { CommonAuthViewProvider, CommonAuthWebview } from 'aws-core-vscode/login'
@@ -37,6 +36,7 @@ import { telemetry, ExtStartUpSources } from 'aws-core-vscode/telemetry'
 import { DevFunction, updateDevMode } from 'aws-core-vscode/dev'
 import { getAuthStatus } from './auth/util'
 import { registerCommands } from './commands'
+import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode/common'
 
 export async function activateShared(context: vscode.ExtensionContext, isWeb: boolean) {
     initialize(context, isWeb)
