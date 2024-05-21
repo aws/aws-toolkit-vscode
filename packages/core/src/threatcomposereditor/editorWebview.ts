@@ -99,7 +99,7 @@ export class ThreatComposer {
         }
 
         async function cancelOpenInThreatComposer(reason: string) {
-            await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+            contextObject.panel.dispose()
             await vscode.commands.executeCommand('vscode.openWith', documentUri, 'default')
             sendThreatComposerOpenCancelled({
                 reason: reason,
@@ -114,13 +114,7 @@ export class ThreatComposer {
                 cancellable: true,
             },
             (progress, token) => {
-                let autoCloseNotificationTimeoutID: NodeJS.Timeout
-
                 token.onCancellationRequested(async () => {
-                    if (autoCloseNotificationTimeoutID) {
-                        clearTimeout(autoCloseNotificationTimeoutID)
-                    }
-
                     console.log('User canceled opening in TC operation')
                     await cancelOpenInThreatComposer('User canceled opening in THreatComposer operation')
                 })
@@ -128,18 +122,10 @@ export class ThreatComposer {
                 progress.report({ increment: 0 })
 
                 return new Promise<void>(resolve => {
-                    autoCloseNotificationTimeoutID = setTimeout(async () => {
-                        resolve()
-                        const errorMessage = 'ThreatComposer took too long to open'
-                        await cancelOpenInThreatComposer(errorMessage)
-                        void vscode.window.showErrorMessage(errorMessage)
-                    }, 10000)
-
                     contextObject.loaderNotification = {
                         progress: progress,
                         cancellationToken: token,
                         promiseResolve: () => {
-                            clearTimeout(autoCloseNotificationTimeoutID)
                             resolve()
                         },
                     }
@@ -174,6 +160,7 @@ export class ThreatComposer {
                                 fileId: this.fileId,
                             })
                             this.isPanelDisposed = true
+                            contextObject.loaderNotification?.promiseResolve()
                             this.onVisualizationDisposeEmitter.fire()
                             this.disposables.forEach(disposable => {
                                 disposable.dispose()

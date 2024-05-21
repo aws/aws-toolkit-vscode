@@ -10,17 +10,23 @@ import { ThreatComposerEditorProvider } from '../editorWebviewManager'
 import * as fs from 'fs-extra'
 
 const createNewThreatComposerFile = async () => {
-    const title = await vscode.window.showInputBox({
-        prompt: 'Enter name for file',
-    })
-
-    if (!title) {
-        return
-    }
-
-    const fileContent = '' //Empty content would be accepted by TC which will save default structure automatically
     if (vscode.workspace.workspaceFolders) {
         const rootFolder = vscode.workspace.workspaceFolders[0].uri.fsPath
+
+        const title = await vscode.window.showInputBox({
+            prompt: 'Enter name for file',
+            validateInput: text => {
+                if (text && fs.existsSync(path.join(rootFolder, text + '.tc.json'))) {
+                    return 'The specified file exists already'
+                }
+            },
+        })
+
+        if (!title) {
+            return
+        }
+
+        const fileContent = '' //Empty content would be accepted by TC which will save default structure automatically
         const filePath = path.join(rootFolder, title + '.tc.json')
         fs.writeFileSync(filePath, fileContent, 'utf8')
 
@@ -30,7 +36,7 @@ const createNewThreatComposerFile = async () => {
             ThreatComposerEditorProvider.viewType
         )
     } else {
-        await vscode.window.showErrorMessage('Workspace folder not defined')
+        void vscode.window.showErrorMessage('Workspace folder not defined')
     }
 }
 

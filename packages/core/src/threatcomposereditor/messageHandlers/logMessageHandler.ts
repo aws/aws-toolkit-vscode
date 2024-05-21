@@ -14,13 +14,13 @@ export async function logMessageHandler(message: LogMessage, context: WebviewCon
         case 'INFO':
             logger.info(message.logMessage)
             if (message.showNotification) {
-                await vscode.window.showInformationMessage(message.logMessage)
+                void vscode.window.showInformationMessage(message.logMessage)
             }
             return
         case 'WARNING':
             logger.warn(message.logMessage)
             if (message.showNotification) {
-                await vscode.window.showWarningMessage(message.logMessage)
+                void vscode.window.showWarningMessage(message.logMessage)
             }
             return
         case 'ERROR':
@@ -35,7 +35,7 @@ export async function logMessageHandler(message: LogMessage, context: WebviewCon
                     )
 
                     if (selection === 'Open in default editor') {
-                        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+                        context.panel.dispose()
                         await vscode.commands.executeCommand('vscode.openWith', context.textDocument.uri, 'default')
                     } else if (selection === 'Overwrite') {
                         const broadcastMessage: Message = {
@@ -45,7 +45,7 @@ export async function logMessageHandler(message: LogMessage, context: WebviewCon
                         await context.panel.webview.postMessage(broadcastMessage)
                     }
                 } else {
-                    await vscode.window.showErrorMessage(message.logMessage)
+                    void vscode.window.showErrorMessage(message.logMessage)
                 }
             }
             sendThreatComposerErrored({

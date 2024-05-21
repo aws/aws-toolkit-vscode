@@ -157,7 +157,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
                 }
             })
         } else {
-            await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+            webviewPanel.dispose()
             await vscode.commands.executeCommand('vscode.openWith', document.uri, 'default')
         }
     }
