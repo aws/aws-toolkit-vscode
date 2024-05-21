@@ -2,7 +2,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import { WritableStreamBuffer } from 'stream-buffers'
 import crypto from 'crypto'
 import { readFileAsString } from '../filesystemUtilities'
@@ -56,27 +55,22 @@ export class ZipStream {
     private _filesToZip: [string, string][] = []
     private _filesBeingZipped: number = 0
     private _maxNumberOfFileStreams: number
+    boundFileCompletionCallback: (progress: number, total: number) => void
+    boundFileStartCallback: (totalBytes: number) => void
 
     constructor(props: Partial<ZipStreamProps> = {}) {
         // Allow any user-provided values to override default values
         const mergedProps = { ...defaultProps, ...props }
         const { hashAlgorithm, compressionLevel, maxNumberOfFileStreams } = mergedProps
 
+        this.boundFileCompletionCallback = this.onFinishedCompressingFile.bind(this)
+        this.boundFileStartCallback = this.onStartCompressingFile.bind(this)
+
         this._zipWriter = new ZipWriter(
             new WritableStream({
                 write: chunk => {
                     this._streamBuffer.write(chunk)
                     this._hasher.update(chunk)
-                    this._numberOfFilesSucceeded++
-                    this._filesBeingZipped--
-
-                    if (this._filesToZip.length > 0 && this._filesBeingZipped < maxNumberOfFileStreams) {
-                        this._filesBeingZipped++
-                        const [fileToZip, path] = this._filesToZip.shift()!
-                        void readFileAsString(fileToZip).then(content => {
-                            return this._zipWriter.add(path, new TextReader(content))
-                        })
-                    }
                 },
             }),
             { level: compressionLevel }
@@ -86,6 +80,25 @@ export class ZipStream {
         this._streamBuffer = new WritableStreamBuffer()
 
         this._hasher = crypto.createHash(hashAlgorithm)
+    }
+
+    public onStartCompressingFile(totalBytes: number) {
+        this._filesBeingZipped++
+    }
+
+    public onFinishedCompressingFile(computedsize: number) {
+        this._numberOfFilesSucceeded++
+        this._filesBeingZipped--
+
+        if (this._filesToZip.length > 0 && this._filesBeingZipped < this._maxNumberOfFileStreams) {
+            const [fileToZip, path] = this._filesToZip.shift()!
+            void readFileAsString(fileToZip).then(content => {
+                return this._zipWriter.add(path, new TextReader(content), {
+                    onend: this.boundFileCompletionCallback,
+                    onstart: this.boundFileStartCallback,
+                })
+            })
+        }
     }
 
     public writeString(data: string, path: string) {
@@ -99,12 +112,15 @@ export class ZipStream {
         // because files can be added to the queue faster
         // than the progress event is fired
         this._numberOfFilesToStream++
+        // console.log('this._numberOfFilesToStream is now', this._numberOfFilesToStream)
         // We only start zipping another file if we're under our limit
         // of concurrent file streams
         if (this._filesBeingZipped < this._maxNumberOfFileStreams) {
-            this._filesBeingZipped++
             void readFileAsString(file).then(content => {
-                return this._zipWriter.add(path, new TextReader(content))
+                return this._zipWriter.add(path, new TextReader(content), {
+                    onend: this.boundFileCompletionCallback,
+                    onstart: this.boundFileStartCallback,
+                })
             })
         } else {
             // Queue it for later (see "write" event)
