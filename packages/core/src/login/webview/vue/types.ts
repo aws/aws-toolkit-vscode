@@ -48,6 +48,7 @@ export enum LoginOption {
 export type AuthUiClick =
     | 'auth_backButton'
     | 'auth_cancelButton'
+    | 'auth_reauthCancelButton'
     | 'auth_continueButton'
     | 'auth_idcOption'
     | 'auth_builderIdOption'

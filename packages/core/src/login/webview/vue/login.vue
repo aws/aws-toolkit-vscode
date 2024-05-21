@@ -279,7 +279,6 @@ import { LoginOption, AuthError } from './types'
 import { CommonAuthWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { Region } from '../../../shared/regions/endpoints'
-import { SsoConnection } from '../../../auth/connection'
 
 const client = WebviewClientFactory.create<CommonAuthWebview>()
 
