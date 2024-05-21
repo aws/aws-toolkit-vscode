@@ -68,7 +68,16 @@ and the final results are retrieved by the frontend. For this Component to updat
                 <button id="signout" v-on:click="signout">Sign Out</button>
             </template>
             <template v-else-if="state === 'REAUTHENTICATING'">
-                <div>Re-authentication in progress</div>
+                <div>
+                    <div>Re-authentication in progress</div>
+                    <button
+                        id="cancel"
+                        style="color: #6f6f6f; background-color: var(--vscode-input-background)"
+                        v-on:click="cancel"
+                    >
+                        Cancel
+                    </button>
+                </div>
             </template>
         </div>
     </div>
@@ -129,6 +138,10 @@ export default defineComponent({
         async signout() {
             client.emitUiClick('auth_signout')
             await client.signout()
+        },
+        async cancel() {
+            void client.emitUiClick('auth_reauthCancelButton')
+            await client.cancelAuthFlow()
         },
     },
 })
@@ -198,6 +211,18 @@ button#signout {
     border: none;
     background: none;
     user-select: none;
+}
+
+button#cancel {
+    background-color: var(--vscode-button-background);
+    color: white;
+    border-radius: 3px;
+    border: none;
+    padding: 0.3rem;
+    width: 80%;
+    font-weight: bold;
+    margin-top: 15px;
+    cursor: pointer;
 }
 
 #title {
