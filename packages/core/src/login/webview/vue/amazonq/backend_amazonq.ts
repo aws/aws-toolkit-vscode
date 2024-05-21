@@ -194,7 +194,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                     isReAuth: true,
                     ...this.getMetadataForExistingConn(),
                 })
-                await AuthUtil.instance.reauthenticate(true)
+                await AuthUtil.instance.reauthenticate()
             })
         } finally {
             this.isReauthenticating = false
