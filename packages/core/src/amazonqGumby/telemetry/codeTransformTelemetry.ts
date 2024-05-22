@@ -9,8 +9,23 @@
 import {
     CodeTransformJavaSourceVersionsAllowed,
     CodeTransformJavaTargetVersionsAllowed,
+    CodeTransformApiNames,
+    telemetry,
 } from '../../shared/telemetry/telemetry'
-import { JDKVersion } from '../../codewhisperer/models/model'
+import { CodeTransformTelemetryState } from '../telemetry/codeTransformTelemetryState'
+import { JDKVersion, transformByQState } from '../../codewhisperer/models/model'
+import { CreateUploadUrlResponse } from '../../codewhisperer/client/codewhisperer'
+import {
+    ResumeTransformationResponse,
+    StopTransformationResponse,
+    StartTransformationResponse,
+    GetTransformationPlanResponse,
+    GetTransformationResponse,
+} from '../../codewhisperer/client/codewhispereruserclient'
+import { PromiseResult } from 'aws-sdk/lib/request'
+import { AWSError } from 'aws-sdk'
+import { MetadataResult } from '../../shared/telemetry/telemetryClient'
+import { getLogger } from '../../shared/logger'
 
 export const telemetryUndefined = 'undefined'
 
@@ -90,3 +105,79 @@ export const javapOutputToTelemetryValue = (javapCommandLineOutput: string) => {
 }
 
 export const calculateTotalLatency = (startTime: number): number => Date.now() - startTime
+
+type GumbyAPIresponse =
+    | CreateUploadUrlResponse
+    | ResumeTransformationResponse
+    | StopTransformationResponse
+    | GetTransformationPlanResponse
+    | StartTransformationResponse
+    | GetTransformationResponse
+
+export class telemetryHelper {
+    private static get sessionId() {
+        return CodeTransformTelemetryState.instance.getSessionId()
+    }
+
+    static async callApi<T extends GumbyAPIresponse>(parameters: {
+        apiCall: () => Promise<PromiseResult<T, AWSError>>
+        apiName: CodeTransformApiNames
+        errorReason: string
+        uploadId?: string
+        jobId?: string
+        uploadFileByteSize?: number
+        setJobFailureMetadata: boolean
+        shouldAttachJobFailureMetadataOnError: boolean
+    }) {
+        const apiStartTime = Date.now()
+        let result = undefined
+        try {
+            result = await parameters.apiCall()
+            if (parameters.setJobFailureMetadata && result?.$response.requestId !== undefined) {
+                transformByQState.setJobFailureMetadata(` (request ID: ${result.$response.requestId})`)
+            }
+            return result
+        } catch (e: any) {
+            let errorMessage = (e as Error).message
+            getLogger().error(`CodeTransformation: ${parameters.apiName} error: = ${errorMessage}`)
+            if (parameters.shouldAttachJobFailureMetadataOnError) {
+                errorMessage += ` -- ${transformByQState.getJobFailureMetadata()}`
+            }
+            telemetry.codeTransform_logApiError.emit({
+                codeTransformApiNames: parameters.apiName,
+                codeTransformSessionId: this.sessionId,
+                codeTransformApiErrorMessage: errorMessage,
+                codeTransformRequestId: e?.requestId ?? telemetryUndefined,
+                codeTransformJobId: parameters.jobId ?? telemetryUndefined,
+                result: MetadataResult.Fail,
+                reason: parameters.errorReason,
+            })
+            throw e // pass along error to callee
+        } finally {
+            let uploadId = parameters.uploadId
+            try {
+                uploadId = (result as CreateUploadUrlResponse).uploadId
+            } catch (_) {
+                //noop
+            }
+
+            let requestId = telemetryUndefined
+            try {
+                requestId = (result as PromiseResult<GumbyAPIresponse, AWSError>).$response.requestId
+            } catch (_) {
+                // noop
+            }
+
+            telemetry.codeTransform_logApiLatency.emit({
+                codeTransformApiNames: parameters.apiName,
+                codeTransformSessionId: this.sessionId,
+                codeTransformUploadId: uploadId,
+                codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
+                codeTransformJobId: parameters.jobId,
+                codeTransformTotalByteSize: parameters.uploadFileByteSize,
+                codeTransformRequestId: requestId,
+                result: MetadataResult.Pass,
+            })
+        }
+    }
+}
