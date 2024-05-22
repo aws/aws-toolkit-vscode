@@ -5,10 +5,13 @@
 
 import assert from 'assert'
 import { RegionProvider } from '../../../shared/regions/regionProvider'
-import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { createRegionPrompter } from '../../../shared/ui/common/region'
 import { FakeMemento } from '../../fakeExtensionContext'
 import { createQuickPickPrompterTester } from '../ui/testUtils'
+import { createSsoProfile, createTestAuth } from '../../credentials/testUtil'
+import { Auth } from '../../../auth/auth'
+import * as extUtils from '../../../shared/extensionUtilities'
+import sinon from 'sinon'
 
 const regionCode = 'someRegion'
 const serviceId = 'someService'
@@ -162,6 +165,10 @@ describe('RegionProvider', async function () {
     })
 
     describe('guessDefaultRegion', function () {
+        afterEach(() => {
+            sinon.restore()
+        })
+
         it('sets default region to last region from prompter', async function () {
             const regionProvider = new RegionProvider()
             const originalRegion = regionProvider.guessDefaultRegion()
@@ -198,19 +205,28 @@ describe('RegionProvider', async function () {
             assert.strictEqual(regionProvider.guessDefaultRegion(), 'us-east-2')
         })
 
-        it('chooses AWS node region when more than one exists in explorer', async function () {
+        it('returns undefined when unable to determine last used region', function () {
             const regionProvider = new RegionProvider(endpoints, new FakeMemento())
-            await regionProvider.updateExplorerRegions(['us-east-1', 'us-east-2'])
-            regionProvider.setLastTouchedRegion('us-west-1')
+            assert.strictEqual(regionProvider.guessDefaultRegion(), undefined)
+        })
 
-            const node = new (class extends AWSTreeNodeBase {
-                public override readonly regionCode = 'us-west-2'
-                public constructor() {
-                    super('')
-                }
-            })()
+        it('returns undefined when no active amazon Q connection', function () {
+            const regionProvider = new RegionProvider(endpoints, new FakeMemento())
+            sinon.stub(extUtils, 'isAmazonQ').returns(true)
 
-            assert.strictEqual(regionProvider.guessDefaultRegion(node), 'us-west-2')
+            assert.strictEqual(regionProvider.guessDefaultRegion(), undefined)
+        })
+
+        it('returns connection region with active amazon Q connection', async function () {
+            const region = 'us-west-2'
+            const regionProvider = new RegionProvider(endpoints, new FakeMemento())
+            const auth = createTestAuth()
+            await auth.useConnection(await auth.createConnection(createSsoProfile({ ssoRegion: region })))
+
+            sinon.stub(Auth, 'instance').value(auth)
+            sinon.stub(extUtils, 'isAmazonQ').returns(true)
+
+            assert.strictEqual(regionProvider.guessDefaultRegion(), region)
         })
     })
 })

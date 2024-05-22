@@ -40,7 +40,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         const metadata: TelemetryMetadata = {
             credentialSourceId: 'iamIdentityCenter',
             credentialStartUrl: startUrl,
-            region,
+            awsRegion: region,
         }
 
         if (this.isCodeCatalystLogin) {
