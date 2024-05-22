@@ -4,6 +4,7 @@
  */
 
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
+import { getLogger } from '../../shared'
 import globals, { isWeb } from '../../shared/extensionGlobals'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
@@ -17,14 +18,17 @@ export async function showAmazonQWalkthroughOnce(
     state = globals.context.globalState,
     showWalkthrough = () => openAmazonQWalkthrough.execute()
 ) {
-    if (isWeb()) {
-        return
-    }
     const hasShownWalkthroughId = 'aws.amazonq.hasShownWalkthrough'
     const hasShownWalkthrough = state.get(hasShownWalkthroughId, false)
     if (hasShownWalkthrough) {
         return
     }
+
+    if (isWeb()) {
+        getLogger().debug(`amazonq: Not showing walkthrough since we are in web mode`)
+        return
+    }
+
     await state.update(hasShownWalkthroughId, true)
     await showWalkthrough()
 }
