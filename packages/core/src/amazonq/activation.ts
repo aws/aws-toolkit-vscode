@@ -17,7 +17,6 @@ import { listCodeWhispererCommandsWalkthrough } from '../codewhisperer/ui/status
 import { Commands } from '../shared/vscode/commands2'
 import { focusAmazonQPanel, focusAmazonQPanelKeybinding } from '../codewhispererChat/commands/registerCommands'
 import { TryChatCodeLensProvider, tryChatCodeLensCommand } from '../codewhispererChat/editor/codelens'
-import { Search } from './search'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = DefaultAmazonQAppInitContext.instance
@@ -52,10 +51,6 @@ export async function activate(context: ExtensionContext) {
     })
 
     await activateBadge()
-
-    Search.instance.installCodeSearch().then(() => {
-        Search.instance.buildIndex()
-    })
 }
 
 function registerApps(appInitContext: AmazonQAppInitContext) {

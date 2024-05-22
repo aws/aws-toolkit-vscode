@@ -36,6 +36,7 @@ import { registerSubmitFeedback } from 'aws-core-vscode/feedback'
 import { telemetry, ExtStartUpSources } from 'aws-core-vscode/telemetry'
 import { DevFunction, updateDevMode } from 'aws-core-vscode/dev'
 import { getAuthStatus } from './auth/util'
+import { activate as activateLsp, index } from './lsp/lspClient'
 
 export async function activateShared(context: vscode.ExtensionContext, isWeb: boolean) {
     initialize(context, isWeb)
@@ -162,6 +163,13 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
             authEnabledConnections,
         })
     })
+
+    // LSP init
+    setImmediate(() =>
+        activateLsp(context).then(() => {
+            index('123')
+        })
+    )
 }
 
 export async function deactivateShared() {
