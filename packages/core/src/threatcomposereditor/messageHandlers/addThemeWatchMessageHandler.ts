@@ -9,8 +9,6 @@ import vscode from 'vscode'
 export function addThemeWatchMessageHandler(context: WebviewContext) {
     context.disposables.push(
         vscode.window.onDidChangeActiveColorTheme(async data => {
-            console.log('ThemeChanged')
-            console.log(data)
             const newTheme =
                 data.kind === vscode.ColorThemeKind.Dark || data.kind === vscode.ColorThemeKind.HighContrast
                     ? 'dark'
