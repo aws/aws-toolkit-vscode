@@ -9,7 +9,7 @@ import { join } from 'path'
 import {
     CodeSuggestionsState,
     activate as activateCodeWhisperer,
-    shutdown as codewhispererShutdown,
+    shutdown as shutdownCodeWhisperer,
     amazonQDismissedKey,
 } from 'aws-core-vscode/codewhisperer'
 import {
@@ -27,22 +27,22 @@ import {
     getMachineId,
 } from 'aws-core-vscode/shared'
 import { initializeAuth, CredentialsStore, LoginManager, AuthUtils } from 'aws-core-vscode/auth'
-import { DefaultAmazonQAppInitContext, activate as activateCWChat } from 'aws-core-vscode/amazonq'
-import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
-import { CommonAuthViewProvider, CommonAuthWebview } from 'aws-core-vscode/login'
-import { isExtensionActive, VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
-import { registerSubmitFeedback } from 'aws-core-vscode/feedback'
+import { CommonAuthWebview } from 'aws-core-vscode/login'
+import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 import { telemetry, ExtStartUpSources } from 'aws-core-vscode/telemetry'
-import { DevFunction, updateDevMode } from 'aws-core-vscode/dev'
 import { getAuthStatus } from './auth/util'
-import { registerCommands } from './commands'
 import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode/common'
+import { registerCommands } from './commands'
 
-export async function activateCommon(context: vscode.ExtensionContext, isWeb: boolean) {
+export const amazonQContextPrefix = 'amazonq'
+
+/**
+ * Activation code for Amazon Q that will we want in all environments (eg Node.js, web mode)
+ */
+export async function activateAmazonQCommon(context: vscode.ExtensionContext, isWeb: boolean) {
     initialize(context, isWeb)
     await initializeComputeRegion()
 
-    const contextPrefix = 'amazonq'
     globals.contextPrefix = 'amazonq.' //todo: disconnect from above line
 
     // Avoid activation if older toolkit is installed
@@ -61,7 +61,7 @@ export async function activateCommon(context: vscode.ExtensionContext, isWeb: bo
                     () =>
                         vscode.window
                             .showInformationMessage(
-                                `The Amazon Q extension is incompatible with AWS Toolkit ${toolkitVersion} and older. Your AWS Toolkit was updated to version 3.0 or later.`,
+                                `The Amazon Q extension is incompatible with AWS Toolkit ${toolkitVersion as any} and older. Your AWS Toolkit was updated to version 3.0 or later.`,
                                 'Reload Now'
                             )
                             .then(async resp => {
@@ -85,7 +85,7 @@ export async function activateCommon(context: vscode.ExtensionContext, isWeb: bo
 
     const qOutputChannel = vscode.window.createOutputChannel('Amazon Q', { log: true })
     const qLogChannel = vscode.window.createOutputChannel('Amazon Q Logs', { log: true })
-    await activateLogger(context, contextPrefix, qOutputChannel, qLogChannel)
+    await activateLogger(context, amazonQContextPrefix, qOutputChannel, qLogChannel)
     globals.outputChannel = qOutputChannel
     globals.logOutputChannel = qLogChannel
     globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
@@ -98,43 +98,12 @@ export async function activateCommon(context: vscode.ExtensionContext, isWeb: bo
         extensionContext: context,
     }
     await activateCodeWhisperer(extContext as ExtContext)
-    await activateCWChat(context)
-    await activateQGumby(extContext as ExtContext)
 
     // Generic extension commands
-    registerGenericCommands(context, contextPrefix)
+    registerGenericCommands(context, amazonQContextPrefix)
 
     // Amazon Q specific commands
     registerCommands(context)
-
-    const authProvider = new CommonAuthViewProvider(
-        context,
-        contextPrefix,
-        DefaultAmazonQAppInitContext.instance.onDidChangeAmazonQVisibility
-    )
-    context.subscriptions.push(
-        vscode.commands.registerCommand('amazonq.dev.openMenu', async () => {
-            if (!isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
-                void vscode.window.showErrorMessage('AWS Toolkit must be installed to access the Developer Menu.')
-                return
-            }
-            await vscode.commands.executeCommand('_aws.dev.invokeMenu', context, [
-                'editStorage',
-                'showEnvVars',
-                'deleteSsoConnections',
-                'expireSsoConnections',
-            ] as DevFunction[])
-        }),
-        vscode.window.registerWebviewViewProvider(authProvider.viewType, authProvider, {
-            webviewOptions: {
-                retainContextWhenHidden: true,
-            },
-        }),
-        registerSubmitFeedback(context, 'Amazon Q', contextPrefix)
-    )
-
-    // Check for dev mode
-    await updateDevMode()
 
     // Hide the Amazon Q tree in toolkit explorer
     await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)
@@ -174,5 +143,5 @@ export async function activateCommon(context: vscode.ExtensionContext, isWeb: bo
 }
 
 export async function deactivateCommon() {
-    await codewhispererShutdown()
+    await shutdownCodeWhisperer()
 }

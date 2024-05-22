@@ -6,14 +6,14 @@
 import * as vscode from 'vscode'
 import { getLogger } from './shared/logger'
 import { activateCommon, deactivateCommon } from './extensionCommon'
-import os from 'os'
+import { activateWebShared } from './extensionWebShared'
 
 export async function activate(context: vscode.ExtensionContext) {
     const contextPrefix = 'toolkit'
 
-    try {
-        patchOsVersion()
+    await activateWebShared(context)
 
+    try {
         // IMPORTANT: Any new activation code should be done in the function below unless
         // it is web mode specific activation code.
         // This should happen as early as possible, as initialize() must be called before
@@ -27,14 +27,6 @@ export async function activate(context: vscode.ExtensionContext) {
         }
         getLogger().error(`Failed to activate extension`, error)
     }
-}
-
-/**
- * The browserfied version of os does not have a `version()` method,
- * so we patch it.
- */
-function patchOsVersion() {
-    ;(os.version as any) = () => '1.0.0'
 }
 
 export async function deactivate() {

@@ -4,7 +4,7 @@
  */
 
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
-import globals from '../../shared/extensionGlobals'
+import globals, { isWeb } from '../../shared/extensionGlobals'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 import vscode from 'vscode'
@@ -17,6 +17,9 @@ export async function showAmazonQWalkthroughOnce(
     state = globals.context.globalState,
     showWalkthrough = () => openAmazonQWalkthrough.execute()
 ) {
+    if (isWeb()) {
+        return
+    }
     const hasShownWalkthroughId = 'aws.amazonq.hasShownWalkthrough'
     const hasShownWalkthrough = state.get(hasShownWalkthroughId, false)
     if (hasShownWalkthrough) {

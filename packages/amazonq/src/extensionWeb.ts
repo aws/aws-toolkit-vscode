@@ -4,12 +4,14 @@
  */
 
 import type { ExtensionContext } from 'vscode'
-import { activate as activateWeb, deactivate as deactivateWeb } from 'aws-core-vscode/web'
+import { activateWebShared } from 'aws-core-vscode/webShared'
+import { activateAmazonQCommon, deactivateCommon } from './extensionCommon'
 
 export async function activate(context: ExtensionContext) {
-    return activateWeb(context)
+    await activateWebShared(context)
+    await activateAmazonQCommon(context, true)
 }
 
 export async function deactivate() {
-    await deactivateWeb()
+    await deactivateCommon()
 }
