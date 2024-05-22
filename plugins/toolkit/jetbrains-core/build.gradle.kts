@@ -48,6 +48,11 @@ tasks.jar {
     }
 }
 
+tasks.integrationTest {
+    // cant run tests under authorization_grant with PKCE yet
+    systemProperty("aws.dev.useDAG", true)
+}
+
 val gatewayPluginXml = tasks.create<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXmlForGateway") {
     pluginXmlFiles.set(tasks.patchPluginXml.map { it.pluginXmlFiles }.get())
     destinationDir.set(project.buildDir.resolve("patchedPluginXmlFilesGW"))
