@@ -514,6 +514,8 @@ export default defineComponent({
             void client.emitUiClick('auth_regionSelection')
         },
         async handleCancelButton() {
+            void client.cancelAuthFlow()
+
             await client.storeMetricMetadata({ isReAuth: false, result: 'Cancelled' })
             void client.emitAuthMetric()
             void client.emitUiClick('auth_cancelButton')
@@ -544,10 +546,9 @@ export default defineComponent({
                 })
             })
 
-            // If Amazon Q has no connections while Toolkit has connections
-            // Auto connect Q using toolkit connection.
-            const connections = await client.listConnections()
-            if (connections.length === 0 && sharedConnections && sharedConnections.length > 0) {
+            // If Toolkit has usable connections, instead auto connect Q using toolkit connection.
+            // Keep in mind that a "usable" connection is one with at least the CW core scopes (inline, ...)
+            if (sharedConnections && sharedConnections.length > 0) {
                 const conn = await client.findUsableConnection(sharedConnections)
                 if (conn) {
                     await client.useConnection(conn.id, true)

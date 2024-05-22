@@ -16,10 +16,12 @@ import { getLogger } from '../../../shared/logger'
 import { featureName } from '../../models/constants'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import {
+    cleanupTransformationJob,
     compileProject,
     finishHumanInTheLoop,
     getValidCandidateProjects,
     openHilPomFile,
+    postTransformationJob,
     processTransformFormInput,
     startTransformByQ,
     stopTransformByQ,
@@ -29,6 +31,7 @@ import { JDKVersion, TransformationCandidateProject, transformByQState } from '.
 import {
     AlternateDependencyVersionsNotFoundError,
     JavaHomeNotSetError,
+    JobStartError,
     ModuleUploadError,
     NoJavaProjectsFoundError,
     NoMavenJavaProjectsFoundError,
@@ -251,17 +254,19 @@ export class GumbyController {
                 break
             case ButtonActions.STOP_TRANSFORMATION_JOB:
                 await stopTransformByQ(transformByQState.getJobId(), CancelActionPositions.Chat)
+                await postTransformationJob()
+                await cleanupTransformationJob()
                 break
             case ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW:
                 this.messenger.sendCommandMessage({ ...message, command: GumbyCommands.CLEAR_CHAT })
                 await this.transformInitiated(message)
                 break
             case ButtonActions.CONFIRM_DEPENDENCY_FORM:
-                await this.continueJobWithSelectedDependency({ ...message, tabID: message.tabId })
+                await this.continueJobWithSelectedDependency(message)
                 break
             case ButtonActions.CANCEL_DEPENDENCY_FORM:
-                this.messenger.sendUserPrompt('Cancel', message.tabId)
-                await this.continueTransformationWithoutHIL({ tabID: message.tabId })
+                this.messenger.sendUserPrompt('Cancel', message.tabID)
+                await this.continueTransformationWithoutHIL(message)
                 break
             case ButtonActions.OPEN_FILE:
                 await openHilPomFile()
@@ -349,10 +354,14 @@ export class GumbyController {
         await this.prepareProjectForSubmission(message)
     }
 
-    private async transformationFinished(data: { message?: string; tabID: string }) {
-        this.sessionStorage.getSession().conversationState = ConversationState.IDLE
+    private transformationFinished(data: { message?: string; tabID: string }) {
+        this.resetTransformationChatFlow()
         // at this point job is either completed, partially_completed, cancelled, or failed
         this.messenger.sendJobFinishedMessage(data.tabID, data.message)
+    }
+
+    private resetTransformationChatFlow() {
+        this.sessionStorage.getSession().conversationState = ConversationState.IDLE
     }
 
     private startHILIntervention(data: { tabID: string; codeSnippet: string }) {
@@ -406,10 +415,11 @@ export class GumbyController {
             this.messenger.sendKnownErrorResponse('no-alternate-dependencies-found', message.tabID)
             await this.continueTransformationWithoutHIL(message)
         } else if (message.error instanceof ModuleUploadError) {
-            this.messenger.sendKnownErrorResponse('upload-to-s3-failed', message.tabID)
-            await this.transformationFinished(message)
-        } else {
-            this.messenger.sendErrorMessage(message.error.message, message.tabID)
+            this.messenger.sendUnrecoverableErrorResponse('upload-to-s3-failed', message.tabID)
+            this.resetTransformationChatFlow()
+        } else if (message.error instanceof JobStartError) {
+            this.messenger.sendUnrecoverableErrorResponse('job-start-failed', message.tabID)
+            this.resetTransformationChatFlow()
         }
     }
 
@@ -421,7 +431,7 @@ export class GumbyController {
         try {
             await finishHumanInTheLoop()
         } catch (err: any) {
-            await this.transformationFinished({ tabID: message.tabID })
+            this.transformationFinished({ tabID: message.tabID })
         }
 
         this.messenger.sendStaticTextResponse('end-HIL-early', message.tabID)

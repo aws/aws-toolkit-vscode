@@ -60,7 +60,9 @@ import { placeholder } from '../../shared/vscode/commands2'
 import {
     AlternateDependencyVersionsNotFoundError,
     JavaHomeNotSetError,
+    JobStartError,
     ModuleUploadError,
+    PollJobError,
 } from '../../amazonqGumby/errors'
 import { ChatSessionManager } from '../../amazonqGumby/chat/storages/chatSession'
 import {
@@ -425,6 +427,7 @@ export async function finishHumanInTheLoop(selectedDependency?: string) {
                 },
             }),
         })
+
         await uploadPayload(uploadPayloadFilePath, {
             transformationUploadContext: {
                 jobId,
@@ -486,7 +489,7 @@ export async function startTransformationJob(uploadId: string) {
             transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToStartJobNotification)
             transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToStartJobChatMessage)
         }
-        throw new Error('Start job failed')
+        throw new JobStartError()
     }
 
     await sleep(2000) // sleep before polling job to prevent ThrottlingException
@@ -506,7 +509,7 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
         if (!transformByQState.getJobFailureErrorChatMessage()) {
             transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToCompleteJobChatMessage)
         }
-        throw new Error('Poll job failed')
+        throw new PollJobError()
     }
     let plan = undefined
     try {
@@ -542,7 +545,7 @@ export async function pollTransformationStatusUntilComplete(jobId: string) {
         if (!transformByQState.getJobFailureErrorChatMessage()) {
             transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToCompleteJobChatMessage)
         }
-        throw new Error('Poll job failed')
+        throw new PollJobError()
     }
 
     return status
@@ -695,9 +698,13 @@ export async function transformationJobErrorHandler(error: any) {
     } else {
         transformByQState.setToCancelled()
         transformByQState.setPolledJobStatus('CANCELLED')
-        transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.jobCancelledChatMessage)
     }
     getLogger().error(`CodeTransformation: ${error.message}`)
+
+    transformByQState.getChatControllers()?.errorThrown.fire({
+        error,
+        tabID: ChatSessionManager.Instance.getSession().tabID,
+    })
 }
 
 export async function cleanupTransformationJob() {
@@ -743,12 +750,13 @@ export async function stopTransformByQ(
                         void submitFeedback(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
                     }
                 })
+        } finally {
+            telemetry.codeTransform_jobIsCancelledByUser.emit({
+                codeTransformCancelSrcComponents: cancelSrc as CodeTransformCancelSrcComponents,
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                result: MetadataResult.Pass,
+            })
         }
-        telemetry.codeTransform_jobIsCancelledByUser.emit({
-            codeTransformCancelSrcComponents: cancelSrc as CodeTransformCancelSrcComponents,
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            result: MetadataResult.Pass,
-        })
     }
 }
 

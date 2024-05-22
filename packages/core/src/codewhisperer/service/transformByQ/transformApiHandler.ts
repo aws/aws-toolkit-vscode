@@ -109,6 +109,15 @@ export async function uploadArtifactToS3(
 ) {
     throwIfCancelled()
     try {
+        const uploadFileByteSize = (await fs.promises.stat(fileName)).size
+        getLogger().info(
+            `Uploading zip at %s with checksum %s using uploadId: %s and size %s kB`,
+            fileName,
+            sha256,
+            resp.uploadId,
+            Math.round(uploadFileByteSize / 1000)
+        )
+
         const apiStartTime = Date.now()
         const response = await request.fetch('PUT', resp.uploadUrl, {
             body: buffer,
@@ -119,13 +128,13 @@ export async function uploadArtifactToS3(
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformUploadId: resp.uploadId,
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-            codeTransformTotalByteSize: (await fs.promises.stat(fileName)).size,
+            codeTransformTotalByteSize: uploadFileByteSize,
             result: MetadataResult.Pass,
         })
         getLogger().info(`CodeTransformation: Status from S3 Upload = ${response.status}`)
     } catch (e: any) {
         const errorMessage = (e as Error).message
-        getLogger().error(`CodeTransformation: UploadZip error = ${errorMessage}`)
+        getLogger().error(`CodeTransformation: UploadZip error = ${e}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'UploadZip',
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
@@ -174,40 +183,46 @@ export async function resumeTransformationJob(jobId: string, userActionStatus: T
 }
 
 export async function stopJob(jobId: string) {
-    if (jobId !== '') {
-        try {
-            const apiStartTime = Date.now()
-            const response = await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
-                transformationJobId: jobId,
-            })
-            if (response !== undefined) {
-                telemetry.codeTransform_logApiLatency.emit({
-                    codeTransformApiNames: 'StopTransformation',
-                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformJobId: jobId,
-                    codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-                    codeTransformRequestId: response.$response.requestId,
-                    result: MetadataResult.Pass,
-                })
-                // always store request ID, but it will only show up in a notification if an error occurs
-                if (response.$response.requestId) {
-                    transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
-                }
-            }
-        } catch (e: any) {
-            const errorMessage = (e as Error).message
-            getLogger().error(`CodeTransformation: StopTransformation error = ${errorMessage}`)
-            telemetry.codeTransform_logApiError.emit({
+    if (!jobId) {
+        throw new Error('Job ID is empty')
+    }
+
+    if (transformByQState.isNotStarted()) {
+        return
+    }
+
+    try {
+        const apiStartTime = Date.now()
+        const response = await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
+            transformationJobId: jobId,
+        })
+        if (response !== undefined) {
+            telemetry.codeTransform_logApiLatency.emit({
                 codeTransformApiNames: 'StopTransformation',
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformJobId: jobId,
-                codeTransformApiErrorMessage: errorMessage,
-                codeTransformRequestId: e.requestId ?? '',
-                result: MetadataResult.Fail,
-                reason: 'StopTransformationFailed',
+                codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
+                codeTransformRequestId: response.$response.requestId,
+                result: MetadataResult.Pass,
             })
-            throw new Error('Stop job failed')
+            // always store request ID, but it will only show up in a notification if an error occurs
+            if (response.$response.requestId) {
+                transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
+            }
         }
+    } catch (e: any) {
+        const errorMessage = (e as Error).message
+        getLogger().error(`CodeTransformation: StopTransformation error = ${errorMessage}`)
+        telemetry.codeTransform_logApiError.emit({
+            codeTransformApiNames: 'StopTransformation',
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformJobId: jobId,
+            codeTransformApiErrorMessage: errorMessage,
+            codeTransformRequestId: e.requestId ?? '',
+            result: MetadataResult.Fail,
+            reason: 'StopTransformationFailed',
+        })
+        throw new Error('Stop job failed')
     }
 }
 
@@ -256,7 +271,11 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
         getLogger().error(`CodeTransformation: UploadArtifactToS3 error: = ${errorMessage}`)
         throw new Error('S3 upload failed')
     }
-    transformByQState.setJobId(encodeHTML(response.uploadId))
+    // UploadContext only exists for subsequent uploads, and they will return a uploadId that is NOT
+    // the jobId. Only the initial call will uploadId be the jobId
+    if (!uploadContext) {
+        transformByQState.setJobId(encodeHTML(response.uploadId))
+    }
     updateJobHistory()
     return response.uploadId
 }

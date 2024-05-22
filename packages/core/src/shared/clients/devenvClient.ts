@@ -134,6 +134,7 @@ export class DevEnvActivity implements vscode.Disposable {
     /** The last known activity timestamp, but there could be a newer one on the server. */
     private lastLocalActivity: number | undefined
     private extensionUserActivity: ExtensionUserActivity
+    private static _defaultExtensionUserActivity: ExtensionUserActivity | undefined
 
     static readonly activityUpdateDelay = 10_000
 
@@ -146,9 +147,10 @@ export class DevEnvActivity implements vscode.Disposable {
     ): Promise<DevEnvActivity | undefined> {
         try {
             await client.getActivity()
+            getLogger().debug('codecatalyst: DevEnvActivity: Activity API is enabled')
         } catch (e) {
             const error = e instanceof HTTPError ? e.response.body : e
-            getLogger().error(`DevEnvActivity: Activity API failed:%s`, error)
+            getLogger().error(`codecatalyst: DevEnvActivity: Activity API failed:%s`, error)
             return undefined
         }
 
@@ -156,13 +158,19 @@ export class DevEnvActivity implements vscode.Disposable {
     }
 
     private constructor(private readonly client: DevEnvClient, extensionUserActivity?: ExtensionUserActivity) {
-        this.extensionUserActivity =
-            extensionUserActivity ?? new ExtensionUserActivity(DevEnvActivity.activityUpdateDelay)
+        this.extensionUserActivity = extensionUserActivity ?? this.defaultExtensionUserActivity
+    }
+
+    private get defaultExtensionUserActivity(): ExtensionUserActivity {
+        return (DevEnvActivity._defaultExtensionUserActivity ??= new ExtensionUserActivity(
+            DevEnvActivity.activityUpdateDelay
+        ))
     }
 
     /** Send activity timestamp to the Dev Env */
     async sendActivityUpdate(timestamp: number = Date.now()): Promise<number> {
         await this.client.updateActivity()
+        getLogger().debug(`codecatalyst: DevEnvActivity: heartbeat sent at ${timestamp}`)
         this.lastLocalActivity = timestamp
         this.activityUpdatedEmitter.fire(timestamp)
         return timestamp
@@ -190,20 +198,21 @@ export class DevEnvActivity implements vscode.Disposable {
 
     /** Runs the given callback when the activity is updated */
     onActivityUpdate(callback: (timestamp: number) => any) {
-        this.updateActivityOnIdeActivity()
         this.activityUpdatedEmitter.event(callback)
-    }
-
-    /** Stops sending activity timestamps to the dev env on user ide activity. */
-    stopUpdatingActivityOnIdeActivity() {
-        this.ideActivityListener?.dispose()
-        this.ideActivityListener = undefined
     }
 
     /**
      * Sends an activity timestamp to Dev Env when there is user activity, throttled to once every {@link DevEnvActivity.activityUpdateDelay}.
      */
-    private updateActivityOnIdeActivity() {
+    setUpdateActivityOnIdeActivity(doUpdate: boolean) {
+        this.ideActivityListener?.dispose()
+        this.ideActivityListener = undefined
+
+        if (!doUpdate) {
+            // Stop updating the activity heartbeat
+            return
+        }
+
         if (this.ideActivityListener) {
             return
         }
@@ -214,7 +223,7 @@ export class DevEnvActivity implements vscode.Disposable {
     }
 
     dispose() {
-        this.stopUpdatingActivityOnIdeActivity()
+        this.setUpdateActivityOnIdeActivity(false)
     }
 }
 

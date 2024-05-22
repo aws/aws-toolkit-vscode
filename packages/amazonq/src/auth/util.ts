@@ -5,7 +5,7 @@
 
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { AuthStatus } from 'aws-core-vscode/telemetry'
-import { AwsConnection, Connection, AuthUtils } from 'aws-core-vscode/auth'
+import { AwsConnection, Connection, SsoConnection, AuthUtils } from 'aws-core-vscode/auth'
 import { activateExtension, getLogger } from 'aws-core-vscode/shared'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 
@@ -15,6 +15,7 @@ export async function getAuthStatus() {
     const authState = (await AuthUtil.instance.getChatAuthState()).codewhispererChat
     let authEnabledConnections = AuthUtils.getAuthFormIdsFromConnection(AuthUtil.instance.conn)
     let authStatus: AuthStatus = authState === 'connected' || authState === 'expired' ? authState : 'notConnected'
+    let authScopes: string[] = (AuthUtil.instance.conn as SsoConnection)?.scopes ?? []
 
     // If the Q extension does not have its own connection, it will fallback and check
     // if the Toolkit extension can provide a connection that works with Q
@@ -33,10 +34,11 @@ export async function getAuthStatus() {
             // Though TS won't say it, AwsConnection sufficiently overlaps with Connection for the purposes
             // of `getAuthFormIdsFromConnection`
             authEnabledConnections = AuthUtils.getAuthFormIdsFromConnection(autoConnectConn as unknown as Connection)
+            authScopes = autoConnectConn.scopes ?? []
         }
     }
 
-    return { authStatus, authEnabledConnections: authEnabledConnections.join(',') }
+    return { authStatus, authEnabledConnections: authEnabledConnections.join(','), authScopes: authScopes.join(',') }
 }
 
 /**
@@ -62,5 +64,5 @@ async function getAutoConnectableConnection(): Promise<AwsConnection | undefined
         return undefined
     }
 
-    return AuthUtil.instance.findUsableQConnection(await listConnections())
+    return AuthUtil.instance.findMinimalQConnection(await listConnections())
 }

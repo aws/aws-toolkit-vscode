@@ -16,7 +16,7 @@ import * as codecatalyst from './model'
 import { getLogger } from '../shared/logger'
 import { Connection } from '../auth/connection'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
-import { getShowManageConnections } from '../auth/ui/vue/show'
+import { getShowManageConnections } from '../login/command'
 
 export const learnMoreCommand = Commands.declare('aws.learnMore', () => async (docsUrl: vscode.Uri) => {
     return openUrl(docsUrl)

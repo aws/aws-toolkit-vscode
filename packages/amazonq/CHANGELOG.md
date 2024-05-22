@@ -1,3 +1,17 @@
+## 1.6.0 2024-05-21
+
+- **Bug Fix** Amazon Q Chat: Inside chat body, if there is a code block inside a list item it shows <br/> tags
+- **Bug Fix** Amazon Q Chat: Prompt input field allows additional input beyond the character limit
+- **Bug Fix** Amazon Q Chat: Prompt input field not getting focus when chat window opens
+
+## 1.5.0 2024-05-17
+
+- **Bug Fix** Security Scan: Fixes an issue when scanning projects with binary files
+- **Bug Fix** Fixes an issue where the /dev chat wouldn't let customers modify the source folder when exceeding the size limit
+- **Bug Fix** Security Scan: Improved error notifications
+- **Feature** Security Scan: Added custom command to run the security scan.
+- **Feature** Security Scan: "View details" and "Explain" options can now be accessed from the problems panel
+
 ## 1.4.0 2024-05-13
 
 - **Bug Fix** Auth: No longer request AWS account scopes during login.

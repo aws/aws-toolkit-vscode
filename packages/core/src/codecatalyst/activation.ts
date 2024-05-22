@@ -12,7 +12,7 @@ import { CodeCatalystCommands } from './commands'
 import { GitExtension } from '../shared/extensions/git'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { registerDevfileWatcher, updateDevfileCommand } from './devfile'
-import { DevEnvClient, DevEnvActivity } from '../shared/clients/devenvClient'
+import { DevEnvClient } from '../shared/clients/devenvClient'
 import { watchRestartingDevEnvs } from './reconnect'
 import { ToolkitPromptSettings } from '../shared/settings'
 import { dontShow } from '../shared/localizedText'
@@ -22,9 +22,9 @@ import { createClient, getCodeCatalystConfig } from '../shared/clients/codecatal
 import { isDevenvVscode } from './utils'
 import { codeCatalystConnectCommand, getThisDevEnv } from './model'
 import { getLogger } from '../shared/logger/logger'
-import { InactivityMessage, shouldTrackUserActivity } from './devEnv'
-import { getShowManageConnections } from '../auth/ui/vue/show'
+import { DevEnvActivityStarter } from './devEnv'
 import { learnMoreCommand, onboardCommand, reauth } from './explorer'
+import { getShowManageConnections } from '../login/command'
 
 const localize = nls.loadMessageBundle()
 
@@ -123,17 +123,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
                 }
             })
         }
-
-        const maxInactivityMinutes = thisDevenv.summary.inactivityTimeoutMinutes
-        const devEnvClient = thisDevenv.devenvClient
-        const devEnvActivity = await DevEnvActivity.instanceIfActivityTrackingEnabled(devEnvClient)
-        if (shouldTrackUserActivity(maxInactivityMinutes) && devEnvActivity) {
-            const inactivityMessage = new InactivityMessage()
-            await inactivityMessage.setupMessage(maxInactivityMinutes, devEnvActivity)
-
-            ctx.extensionContext.subscriptions.push(inactivityMessage, devEnvActivity)
-        }
     }
+
+    // This must always be called on activation
+    DevEnvActivityStarter.register(authProvider)
 }
 
 async function showReadmeFileOnFirstLoad(workspaceState: vscode.ExtensionContext['workspaceState']): Promise<void> {

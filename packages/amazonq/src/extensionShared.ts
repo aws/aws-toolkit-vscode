@@ -156,10 +156,11 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
             telemetry.record({ source: ExtStartUpSources.reload })
         }
 
-        const { authStatus, authEnabledConnections } = await getAuthStatus()
+        const { authStatus, authEnabledConnections, authScopes } = await getAuthStatus()
         telemetry.record({
             authStatus,
             authEnabledConnections,
+            authScopes,
         })
     })
 }
