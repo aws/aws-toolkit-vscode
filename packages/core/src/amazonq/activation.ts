@@ -17,7 +17,7 @@ import { listCodeWhispererCommandsWalkthrough } from '../codewhisperer/ui/status
 import { Commands } from '../shared/vscode/commands2'
 import { focusAmazonQPanel, focusAmazonQPanelKeybinding } from '../codewhispererChat/commands/registerCommands'
 import { TryChatCodeLensProvider, tryChatCodeLensCommand } from '../codewhispererChat/editor/codelens'
-
+import { activate as activateLsp, index } from './lsp/lspClient'
 export async function activate(context: ExtensionContext) {
     const appInitContext = DefaultAmazonQAppInitContext.instance
 
@@ -51,6 +51,8 @@ export async function activate(context: ExtensionContext) {
     })
 
     await activateBadge()
+
+    setImmediate(() => activateLsp(context).then(() => index('go')))
 }
 
 function registerApps(appInitContext: AmazonQAppInitContext) {

@@ -7,14 +7,8 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  */
-import {
-    createConnection,
-    IConnection,
-    InitializeParams,
-    InitializeResult,
-    ServerCapabilities,
-} from 'vscode-languageserver'
-
+import { createConnection, InitializeParams, InitializeResult, ServerCapabilities } from 'vscode-languageserver/node'
+import { ProposedFeatures } from 'vscode-languageserver/node'
 import { IndexRequestType } from './types'
 
 export function formatError(message: string, err: any): string {
@@ -32,7 +26,7 @@ export function formatError(message: string, err: any): string {
 }
 
 // Create a connection for the server
-const connection: IConnection = createConnection()
+const connection = createConnection(ProposedFeatures.all)
 process.on('unhandledRejection', (e: any) => {
     console.error(formatError('Unhandled exception', e))
 })
@@ -50,11 +44,10 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
     return { capabilities }
 })
 
-connection.onRequest(IndexRequestType, async ([request]) => {
-    console.log(request)
+connection.onRequest(IndexRequestType, async () => {
     const e = require('/Users/leigaol/workplace/onnx/local/dist/extension.js')
-    e.start('/Users/leigaol/workplace/onnx/local')
-    e.indexFiles('/Users/leigaol/workplace/vscode-extension-samples/lsp-sample')
+    const lib = await e.start('/Users/leigaol/workplace/onnx/local')
+    await lib.indexFiles(['/Users/leigaol/workplace/vscode-extension-samples/lsp-sample/README.md'])
     console.log(`g`)
     return ''
 })

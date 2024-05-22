@@ -31,7 +31,9 @@ export async function activate(extensionContext: ExtensionContext) {
 
     let rangeFormatting: Disposable | undefined
     // The server is implemented in node
-    let serverModule = extensionContext.asAbsolutePath(path.join('dist/src/lsp/', 'lspServer.js'))
+    let pkg = path.dirname(extensionContext.extensionPath)
+
+    let serverModule = path.join(pkg, 'qserver/out/lspServer.js')
     console.log(serverModule)
     // The debug options for the server
     // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
