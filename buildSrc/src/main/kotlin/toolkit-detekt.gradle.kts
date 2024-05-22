@@ -21,9 +21,14 @@ dependencies {
     detektPlugins(project(":detekt-rules"))
 }
 
+private val detektFiles = fileTree(projectDir).asFileTree.matching {
+    include("**/*.kt", "**/*.kts")
+    exclude("**/build/**")
+}
+
 detekt {
     val rulesProject = project(":detekt-rules").projectDir
-    source.setFrom(projectDir)
+    source.setFrom(detektFiles)
     buildUponDefaultConfig = true
     parallel = true
     allRules = false
@@ -40,5 +45,5 @@ tasks.withType<Detekt> {
 
 tasks.withType<DetektCreateBaselineTask> {
     // weird issue where the baseline tasks can't find the source code
-    source.plus(projectDir)
+    source.plus(detektFiles)
 }
