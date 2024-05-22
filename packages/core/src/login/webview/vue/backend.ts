@@ -201,8 +201,8 @@ export abstract class CommonAuthWebview extends VueWebview {
     emitAuthMetric() {
         // We shouldn't report startUrl or region if we aren't reporting IdC
         if (this.metricMetadata.credentialSourceId !== 'iamIdentityCenter') {
-            this.metricMetadata.region = undefined
-            this.metricMetadata.credentialStartUrl = undefined
+            delete this.metricMetadata.awsRegion
+            delete this.metricMetadata.credentialStartUrl
         }
         telemetry.auth_addConnection.emit({
             ...this.metricMetadata,
@@ -248,15 +248,19 @@ export abstract class CommonAuthWebview extends VueWebview {
      * Get metadata about the current auth for reauthentication telemetry.
      */
     getMetadataForExistingConn(conn = AuthUtil.instance.conn): TelemetryMetadata {
-        if (isBuilderIdConnection(conn)) {
-            return {
-                credentialSourceId: 'awsId',
-            }
-        } else if (isIdcSsoConnection(conn)) {
+        if (conn === undefined) {
+            return {}
+        }
+
+        if (isIdcSsoConnection(conn)) {
             return {
                 credentialSourceId: 'iamIdentityCenter',
-                credentialStartUrl: (conn as SsoConnection).startUrl,
-                region: (conn as SsoConnection).ssoRegion,
+                credentialStartUrl: conn?.startUrl,
+                awsRegion: conn?.ssoRegion,
+            }
+        } else if (isBuilderIdConnection(conn)) {
+            return {
+                credentialSourceId: 'awsId',
             }
         } else if (isIamConnection(conn)) {
             return {
