@@ -7,9 +7,10 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  */
+import * as path from 'path'
 import { createConnection, InitializeParams, InitializeResult, ServerCapabilities } from 'vscode-languageserver/node'
 import { ProposedFeatures } from 'vscode-languageserver/node'
-import { IndexRequestType } from './types'
+import { IndexRequest, IndexRequestType } from './types'
 
 export function formatError(message: string, err: any): string {
     if (err instanceof Error) {
@@ -44,11 +45,13 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
     return { capabilities }
 })
 
-connection.onRequest(IndexRequestType, async () => {
-    const e = require('/Users/leigaol/workplace/onnx/local/dist/extension.js')
-    const lib = await e.start('/Users/leigaol/workplace/onnx/local')
-    await lib.indexFiles(['/Users/leigaol/workplace/vscode-extension-samples/lsp-sample/README.md'])
-    console.log(`g`)
+connection.onRequest(IndexRequestType, async (r: IndexRequest) => {
+    const e = require('./dist/extension.js')
+    console.log(__dirname)
+    const modelPath = __dirname
+    const lib = await e.start(modelPath)
+    await lib.indexFiles([r], '', false)
+    console.log(`index done`)
     return ''
 })
 
@@ -56,3 +59,19 @@ connection.onShutdown(() => {})
 
 // Listen on the connection
 connection.listen()
+
+// copy this qserver folder to ~/.vscode/extensions/qserver
+/**
+ * qserver---
+ *  .out/
+ *     ./dist
+ *           ./bin
+ *           ./build
+ *           ./extension.js
+ *     ./models
+ *     ./lspServer.js
+ *
+ */
+
+// also copy the dist/extension.js with model to qserver folder
+// also copy models to

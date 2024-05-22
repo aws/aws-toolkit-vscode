@@ -5,6 +5,6 @@
 
 import { RequestType } from 'vscode-languageserver'
 
-export type IndexRequest = [string]
+export type IndexRequest = string
 
 export const IndexRequestType: RequestType<IndexRequest, any, any> = new RequestType('lsp/index')

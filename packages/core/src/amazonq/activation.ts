@@ -52,7 +52,9 @@ export async function activate(context: ExtensionContext) {
 
     await activateBadge()
 
-    setImmediate(() => activateLsp(context).then(() => index('go')))
+    setImmediate(() =>
+        activateLsp(context).then(() => index('/Users/leigaol/workplace/vscode-extension-samples/lsp-sample/README.md'))
+    )
 }
 
 function registerApps(appInitContext: AmazonQAppInitContext) {

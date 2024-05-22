@@ -21,7 +21,7 @@ let client: LanguageClient | undefined = undefined
 
 export async function index(request: string) {
     if (client) {
-        const resp = await client.sendRequest(IndexRequestType, [request])
+        const resp = await client.sendRequest(IndexRequestType, request)
         return resp
     }
 }
