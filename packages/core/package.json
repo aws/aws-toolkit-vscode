@@ -192,15 +192,10 @@
                     "type": "object",
                     "markdownDescription": "%AWS.configuration.description.experiments%",
                     "default": {
-                        "jsonResourceModification": false,
-                        "iamPolicyChecks": false
+                        "jsonResourceModification": false
                     },
                     "properties": {
                         "jsonResourceModification": {
-                            "type": "boolean",
-                            "default": false
-                        },
-                        "iamPolicyChecks": {
                             "type": "boolean",
                             "default": false
                         }
@@ -219,16 +214,22 @@
                     "description": "%AWS.configuration.description.lambda.recentlyUploaded%",
                     "default": []
                 },
-                "aws.accessAnalyzer.policyChecks.customChecksFilePath": {
+                "aws.accessAnalyzer.policyChecks.checkNoNewAccessFilePath": {
                     "type": "string",
                     "default": "",
-                    "description": "File path or S3 path to a text document for Custom Policy Checks.",
+                    "description": "File path or S3 path to a text document for CheckNoNewAccess custom check.",
+                    "scope": "window"
+                },
+                "aws.accessAnalyzer.policyChecks.checkAccessNotGrantedFilePath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "File path or S3 path to a text document for CheckAccessNotGranted custom check.",
                     "scope": "window"
                 },
                 "aws.accessAnalyzer.policyChecks.cloudFormationParameterFilePath": {
                     "type": "string",
                     "default": "",
-                    "description": "Keys and values for CloudFormation template parameters. Only parameters that are referenced by IAM policies in the template are required.",
+                    "description": "A JSON formatted file that specifies template parameter values, a stack policy, and tags. Only parameters are used from this file.",
                     "scope": "machine-overridable"
                 },
                 "amazonQ.telemetry": {
@@ -2021,8 +2022,7 @@
             {
                 "command": "aws.accessanalyzer.iamPolicyChecks",
                 "title": "%AWS.command.accessanalyzer.iamPolicyChecks%",
-                "category": "%AWS.title%",
-                "enablement": "config.aws.experiments.iamPolicyChecks"
+                "category": "%AWS.title%"
             },
             {
                 "command": "aws.launchConfigForm",
@@ -3984,7 +3984,7 @@
     },
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",
-        "@aws-toolkits/telemetry": "^1.0.208",
+        "@aws-toolkits/telemetry": "^1.0.211",
         "@aws/fully-qualified-names": "^2.1.4",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
