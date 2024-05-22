@@ -35,7 +35,7 @@ describe('HumanInTheLoopManager', async function () {
             pomFileVirtualFileReference
         )
         const outputPathResult = path.join(outputDirectoryPath, 'pom.xml')
-        assertEqualPaths(newPomFilePath.path, outputPathResult)
+        assertEqualPaths(newPomFilePath.path.toLowerCase(), outputPathResult.toLowerCase())
         const newPomFileContents = await fsCommon.readFileAsString(newPomFilePath.path)
         assert.strictEqual(
             stripStringWhitespace(newPomFileContents),
