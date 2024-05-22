@@ -81,7 +81,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                                         credentialSourceId:
                                             conn.startUrl === builderIdStartUrl ? 'awsId' : 'iamIdentityCenter',
                                         credentialStartUrl: conn.startUrl,
-                                        region: conn.ssoRegion,
+                                        awsRegion: conn.ssoRegion,
                                         authEnabledFeatures: this.getAuthEnabledFeatures(conn),
                                     })
                                 }
@@ -135,7 +135,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                                 if (!auto) {
                                     this.storeMetricMetadata({
                                         credentialStartUrl: conn.startUrl,
-                                        region: conn.ssoRegion,
+                                        awsRegion: conn.ssoRegion,
                                         authEnabledFeatures: this.getAuthEnabledFeatures(newConn),
                                     })
                                 }
@@ -171,7 +171,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         return await this.ssoSetup('startCodeWhispererEnterpriseSetup', async () => {
             this.storeMetricMetadata({
                 credentialStartUrl: startUrl,
-                region,
+                awsRegion: region,
                 credentialSourceId: 'iamIdentityCenter',
                 authEnabledFeatures: 'codewhisperer',
                 isReAuth: false,
