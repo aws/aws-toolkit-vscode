@@ -7,7 +7,7 @@ import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.roots.ModuleRootManagerEx
 import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.testFramework.IdeaTestUtil
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
@@ -60,8 +60,10 @@ class JavaLambdaBuilderTest {
         assertThat(baseDir.toAbsolutePath()).isEqualTo(Paths.get(moduleRoot, SamCommon.SAM_BUILD_DIR, "build"))
     }
 
+    // Using runBlocking instead runTest because there is issue with runTest and the fix is in a later version of coroutines-test
+    // [#3800] (https://github.com/Kotlin/kotlinx.coroutines/issues/3800)
     @Test
-    fun mavenRootPomHandlerBaseDirIsCorrect() = runTest {
+    fun mavenRootPomHandlerBaseDirIsCorrect(): Unit = runBlocking {
         val psiClass = projectRule.setUpMavenProject()
 
         val module = ModuleManager.getInstance(projectRule.project).modules.first()
@@ -71,7 +73,7 @@ class JavaLambdaBuilderTest {
     }
 
     @Test
-    fun mavenRootPomBuildDirectoryIsCorrect() = runTest {
+    fun mavenRootPomBuildDirectoryIsCorrect(): Unit = runBlocking {
         projectRule.setUpMavenProject()
 
         val module = ModuleManager.getInstance(projectRule.project).modules.first()
