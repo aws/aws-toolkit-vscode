@@ -8,7 +8,6 @@ import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 import software.aws.toolkits.gradle.intellij.IdeVersions
-import java.io.IOException
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion as KotlinVersionEnum
 
 /**
@@ -55,7 +54,7 @@ fun Project.buildMetadata() =
                 append(".modified")
             }
         }
-    } catch(e: IOException) {
+    } catch(e: Exception) {
         logger.warn("Could not determine current commit", e)
 
         "unknownCommit"
