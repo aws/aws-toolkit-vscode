@@ -16,7 +16,6 @@ phases:
         commands:
             # Check for implicit env vars passed from the release pipeline.
             - test -n "${VS_MARKETPLACE_PAT}"
-            - test -n "${OVSX_PAT}"
             - test -n "${TARGET_EXTENSION}"
 
     build:
