@@ -209,7 +209,7 @@ export class GumbyController {
                     this.messenger.sendCompilationInProgress(message.tabID)
                     return
             }
-
+            CodeTransformTelemetryState.instance.setSessionId()
             this.messenger.sendTransformationIntroduction(message.tabID)
 
             // start /transform chat flow
