@@ -16,6 +16,7 @@ import { SchemaService } from './schemas'
 import { TelemetryLogger } from './telemetry/telemetryLogger'
 import { TelemetryService } from './telemetry/telemetryService'
 import { UriHandler } from './vscode/uriHandler'
+import vscode from 'vscode'
 
 type Clock = Pick<
     typeof globalThis,
@@ -148,6 +149,7 @@ export function initialize(context: ExtensionContext, isWeb: boolean = false): T
         visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],
         isWeb,
     })
+    void vscode.commands.executeCommand('setContext', 'aws.isWebExtHost', isWeb)
 
     initialized = true
 
