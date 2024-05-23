@@ -40,7 +40,7 @@ import AdmZip from 'adm-zip'
 import globals from '../../../shared/extensionGlobals'
 import { CredentialSourceId, telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { calculateTotalLatency, telemetryHelper } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
+import { calculateTotalLatency, TelemetryHelper } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import request from '../../../common/request'
 import { JobStoppedError, ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
@@ -115,8 +115,9 @@ export async function uploadArtifactToS3(
     throwIfCancelled()
     const apiStartTime = Date.now()
     let response = undefined
-    const uploadFileByteSize = (await fs.promises.stat(fileName)).size
+    let uploadFileByteSize = undefined
     try {
+        uploadFileByteSize = (await fs.promises.stat(fileName)).size
         getLogger().info(
             `Uploading zip at %s with checksum %s using uploadId: %s and size %s kB`,
             fileName,
@@ -155,7 +156,7 @@ export async function uploadArtifactToS3(
 
 export async function resumeTransformationJob(jobId: string, userActionStatus: TransformationUserActionStatus) {
     try {
-        const response = await telemetryHelper.callApi<ResumeTransformationResponse>({
+        const response = await TelemetryHelper.callApi<ResumeTransformationResponse>({
             apiCall: async () => {
                 return await codeWhisperer.codeWhispererClient.codeModernizerResumeTransformation({
                     transformationJobId: jobId,
@@ -164,11 +165,10 @@ export async function resumeTransformationJob(jobId: string, userActionStatus: T
             },
             apiName: 'ResumeTransformation',
             errorReason: 'ResumeTransformationFailed',
-            setJobFailureMetadata: false,
+            setJobFailureMetadata: true,
             shouldAttachJobFailureMetadataOnError: false,
         })
         if (response) {
-            // always store request ID, but it will only show up in a notification if an error occurs
             return response.transformationStatus
         }
     } catch (e: any) {
@@ -185,7 +185,7 @@ export async function stopJob(jobId: string) {
         return
     }
     try {
-        const response = await telemetryHelper.callApi<StopTransformationResponse>({
+        await TelemetryHelper.callApi<StopTransformationResponse>({
             apiCall: async () => {
                 return await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
                     transformationJobId: jobId,
@@ -196,12 +196,6 @@ export async function stopJob(jobId: string) {
             setJobFailureMetadata: true,
             shouldAttachJobFailureMetadataOnError: false,
         })
-        if (response !== undefined) {
-            // always store request ID, but it will only show up in a notification if an error occurs
-            if (response.$response.requestId) {
-                transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
-            }
-        }
     } catch (_: any) {
         throw new Error('Stop job failed')
     }
@@ -214,7 +208,7 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
     throwIfCancelled()
     let response = undefined
     try {
-        response = await telemetryHelper.callApi<CreateUploadUrlResponse>({
+        response = await TelemetryHelper.callApi<CreateUploadUrlResponse>({
             apiCall: async () => {
                 return await codeWhisperer.codeWhispererClient.createUploadUrl({
                     contentChecksum: sha256,
@@ -417,7 +411,7 @@ export async function startJob(uploadId: string) {
     const sourceLanguageVersion = `JAVA_${transformByQState.getSourceJDKVersion()}`
     const targetLanguageVersion = `JAVA_${transformByQState.getTargetJDKVersion()}`
     try {
-        const response = await telemetryHelper.callApi<StartTransformationResponse>({
+        const response = await TelemetryHelper.callApi<StartTransformationResponse>({
             apiCall: async () => {
                 return await codeWhisperer.codeWhispererClient.codeModernizerStartCodeTransformation({
                     workspaceState: {
@@ -548,7 +542,7 @@ export function getJobStatisticsHtml(jobStatistics: any) {
 export async function getTransformationPlan(jobId: string) {
     let response = undefined
     try {
-        response = await telemetryHelper.callApi<GetTransformationPlanResponse>({
+        response = await TelemetryHelper.callApi<GetTransformationPlanResponse>({
             apiCall: async () => {
                 return await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
                     transformationJobId: jobId,
@@ -606,7 +600,7 @@ export async function getTransformationSteps(jobId: string, handleThrottleFlag: 
     if (handleThrottleFlag) {
         await sleep(2000)
     }
-    const response = await telemetryHelper.callApi<GetTransformationPlanResponse>({
+    const response = await TelemetryHelper.callApi<GetTransformationPlanResponse>({
         apiCall: async () => {
             return await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
                 transformationJobId: jobId,
@@ -626,7 +620,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
     while (true) {
         throwIfCancelled()
         try {
-            const response = await telemetryHelper.callApi<GetTransformationResponse>({
+            const response = await TelemetryHelper.callApi<GetTransformationResponse>({
                 apiCall: async () => {
                     return await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformation({
                         transformationJobId: jobId,

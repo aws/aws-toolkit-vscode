@@ -114,7 +114,7 @@ type GumbyAPIresponse =
     | StartTransformationResponse
     | GetTransformationResponse
 
-export class telemetryHelper {
+export class TelemetryHelper {
     private static get sessionId() {
         return CodeTransformTelemetryState.instance.getSessionId()
     }
