@@ -361,11 +361,7 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
             return
         }
         val offset = e.offset
-        val file = FileDocumentManager.getInstance().getFile(e.editor.document)
-        if (file == null) {
-            LOG.error { "Cannot find file for the document ${e.editor.document}" }
-            return
-        }
+        val file = FileDocumentManager.getInstance().getFile(e.editor.document) ?: return
         val issuesInRange = scanManager.getScanNodesInRange(file, offset).map {
             it.userObject as CodeWhispererCodeScanIssue
         }
