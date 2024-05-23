@@ -16,6 +16,7 @@ phases:
         commands:
             # Check for implicit env vars passed from the release pipeline.
             - test -n "${VS_MARKETPLACE_PAT}"
+            - test -n "${OVSX_PAT}"
             - test -n "${TARGET_EXTENSION}"
 
     build:
@@ -25,9 +26,17 @@ phases:
             - cp -r ${CODEBUILD_SRC_DIR_buildPipeline}/* .
             - |
                 UPLOAD_TARGET=$(ls *.vsix)
-                echo "Publishing: $UPLOAD_TARGET"
+            - |
+                echo "Publishing to vscode marketplace: $UPLOAD_TARGET"
                 if [ "$STAGE" != "prod" ]; then
-                  echo "Stage is not production, skipping publish step"
-                  exit 0
+                  echo "skipped (stage=${STAGE})"
+                else
+                  npx vsce publish --pat "$VS_MARKETPLACE_PAT" --packagePath "$UPLOAD_TARGET"
                 fi
-                npx vsce publish --pat "$VS_MARKETPLACE_PAT" --packagePath "$UPLOAD_TARGET"
+            - |
+                echo "Publishing to openvsx marketplace: $UPLOAD_TARGET"
+                if [ "$STAGE" != "prod" ]; then
+                  echo "skipped (stage=${STAGE})"
+                else
+                  npx --yes ovsx publish "$UPLOAD_TARGET" -p "$OVSX_PAT"
+                fi
