@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "IAM Policy Checks: validate IAM policies within VS Code"
+}
