@@ -17,7 +17,8 @@ import { listCodeWhispererCommandsWalkthrough } from '../codewhisperer/ui/status
 import { Commands } from '../shared/vscode/commands2'
 import { focusAmazonQPanel, focusAmazonQPanelKeybinding } from '../codewhispererChat/commands/registerCommands'
 import { TryChatCodeLensProvider, tryChatCodeLensCommand } from '../codewhispererChat/editor/codelens'
-import { activate as activateLsp, index } from './lsp/lspClient'
+import { activate as activateLsp } from './lsp/lspClient'
+import { Search } from './search'
 export async function activate(context: ExtensionContext) {
     const appInitContext = DefaultAmazonQAppInitContext.instance
 
@@ -53,7 +54,10 @@ export async function activate(context: ExtensionContext) {
     await activateBadge()
 
     setImmediate(() =>
-        activateLsp(context).then(() => index('/Users/leigaol/workplace/vscode-extension-samples/lsp-sample/README.md'))
+        activateLsp(context).then(() => {
+            console.log('LSP activated')
+            Search.instance.buildIndex()
+        })
     )
 }
 

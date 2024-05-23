@@ -9,11 +9,9 @@ import * as fs from 'fs-extra'
 import { getLogger } from '../shared/logger/logger'
 import { CurrentWsFolders, collectFilesForIndex } from '../shared/utilities/workspaceUtils'
 import * as CodeWhispererConstants from '../codewhisperer/models/constants'
-import { Chunk } from '../codewhisperer/util/supplementalContext/crossFileContextUtil'
-import { isExtensionInstalled, isExtensionActive } from '../shared/utilities'
 import { makeTemporaryToolkitFolder } from '../shared/filesystemUtilities'
 import fetch from 'node-fetch'
-import { activateExtension } from '../shared'
+import { clear, indexFiles, query } from './lsp/lspClient'
 
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -30,8 +28,6 @@ export class Search {
         return (this.#instance ??= new this())
     }
     constructor() {}
-
-    private extId: string = 'amazonwebservices.code-search'
 
     async _download(localFile: string, remoteUrl: string) {
         const res = await fetch(remoteUrl, {
@@ -54,52 +50,27 @@ export class Search {
         })
     }
     async downloadCodeSearch() {
-        const fname = `code-search-0.1.18-${process.platform}-${process.arch}.vsix`
-        const s3Path = `https://github.com/leigaol/code-test-release/releases/download/0.1.18/${fname}`
+        const fname = `code-search-0.1.18-${process.platform}-${process.arch}.zip`
+        const s3Path = `https://github.com/leigaol/code-test-release/${fname}`
         const tempFolder = await makeTemporaryToolkitFolder()
         const localFile = path.join(tempFolder, fname)
         await this._download(localFile, s3Path)
         return localFile
     }
 
-    async installCodeSearch() {
-        if (!isExtensionInstalled(this.extId)) {
-            try {
-                const localFile = await this.downloadCodeSearch()
-                await vscode.commands.executeCommand(
-                    'workbench.extensions.installExtension',
-                    vscode.Uri.file(localFile)
-                )
-                await fs.removeSync(localFile)
-                await vscode.commands.executeCommand('workbench.action.reloadWindow')
-            } catch (e) {
-                console.log(e)
-            }
-        }
-    }
+    async installCodeSearch() {}
 
-    async indexFiles(filePaths: string[], projectRoot: string, refresh: boolean) {
-        if (isExtensionInstalled(this.extId) && isExtensionActive(this.extId)) {
-            const ext = vscode.extensions.getExtension(this.extId)
-            return ext?.exports.indexFiles(filePaths, projectRoot, refresh)
-        } else {
-            getLogger().info(`NEW: index failed. encode not found`)
-        }
-    }
     async clear() {
-        if (isExtensionInstalled(this.extId) && isExtensionActive(this.extId)) {
-            const ext = vscode.extensions.getExtension(this.extId)
-            return ext?.exports.clear()
-        } else {
-            getLogger().info(`NEW:  encode not found `)
-        }
+        clear('')
     }
-    async findBest(s: string) {
-        if (isExtensionInstalled(this.extId) && isExtensionActive(this.extId)) {
-            const ext = vscode.extensions.getExtension(this.extId)
-            return ext?.exports.findBest(s)
-        } else {
-            getLogger().info(`NEW:  encode not found `)
+    async query(s: string) {
+        const c = await query(s)
+        if (c) {
+            return {
+                fileName: c.fileName,
+                content: c.content,
+                nextContent: '',
+            }
         }
     }
 
@@ -116,30 +87,12 @@ export class Search {
                 CodeWhispererConstants.projectIndexSizeLimitBytes
             )
             getLogger().info(`NEW: Found ${files.length} files in current project ${getProjectPaths()}`)
-            await activateExtension(this.extId)
-            this.indexFiles(
+            await indexFiles(
                 files.map(f => f.fileUri.fsPath),
                 projRoot,
                 false
-            ).then(() => {
-                getLogger().info(`NEW: Finish building vector index of project`)
-            })
+            )
+            getLogger().info(`NEW: Finish building vector index of project`)
         }
-    }
-
-    async query(input: string): Promise<Chunk | undefined> {
-        try {
-            const c = await this.findBest(input)
-            if (c) {
-                return {
-                    fileName: c.fileName,
-                    content: c.content,
-                    nextContent: '',
-                }
-            }
-        } catch (e) {
-            return undefined
-        }
-        return undefined
     }
 }

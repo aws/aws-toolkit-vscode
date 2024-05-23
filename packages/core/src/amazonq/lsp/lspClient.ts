@@ -14,14 +14,32 @@ import * as nls from 'vscode-nls'
 import { Disposable, ExtensionContext } from 'vscode'
 
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient'
-import { IndexRequestType } from './types'
+import { ClearRequestType, IndexRequestType, QueryRequestType } from './types'
 
 const localize = nls.loadMessageBundle()
 let client: LanguageClient | undefined = undefined
 
-export async function index(request: string) {
+export async function indexFiles(request: string[], rootPath: string, refresh: boolean) {
     if (client) {
-        const resp = await client.sendRequest(IndexRequestType, request)
+        const resp = await client.sendRequest(IndexRequestType, {
+            filePaths: request,
+            rootPath: rootPath,
+            refresh: refresh,
+        })
+        return resp
+    }
+}
+
+export async function query(request: string) {
+    if (client) {
+        const resp = await client.sendRequest(QueryRequestType, request)
+        return resp
+    }
+}
+
+export async function clear(request: string) {
+    if (client) {
+        const resp = await client.sendRequest(ClearRequestType, request)
         return resp
     }
 }
@@ -34,7 +52,6 @@ export async function activate(extensionContext: ExtensionContext) {
     let pkg = path.dirname(extensionContext.extensionPath)
 
     let serverModule = path.join(pkg, 'qserver/out/lspServer.js')
-    console.log(serverModule)
     // The debug options for the server
     // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
     const debugOptions = { execArgv: ['--nolazy', '--inspect=6009', '--preserve-symlinks'] }
