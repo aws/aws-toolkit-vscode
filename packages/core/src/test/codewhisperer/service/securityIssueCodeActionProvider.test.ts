@@ -62,4 +62,24 @@ describe('securityIssueCodeActionProvider', () => {
         assert.strictEqual(actual[1].title, 'Amazon Q: Explain "issue 1"')
         assert.strictEqual(actual[1].kind, vscode.CodeActionKind.QuickFix)
     })
+
+    it('should skip issues not in the current file', () => {
+        securityIssueCodeActionProvider.issues = [
+            {
+                filePath: 'some/path',
+                issues: [createCodeScanIssue({ title: 'issue 1' })],
+            },
+            {
+                filePath: mockDocument.fileName,
+                issues: [createCodeScanIssue({ title: 'issue 2' })],
+            },
+        ]
+        const range = new vscode.Range(0, 0, 0, 0)
+        const actual = securityIssueCodeActionProvider.provideCodeActions(mockDocument, range, context, token.token)
+
+        assert.strictEqual(actual.length, 3)
+        assert.strictEqual(actual[0].title, 'Amazon Q: Fix "issue 2"')
+        assert.strictEqual(actual[1].title, 'Amazon Q: View details for "issue 2"')
+        assert.strictEqual(actual[2].title, 'Amazon Q: Explain "issue 2"')
+    })
 })
