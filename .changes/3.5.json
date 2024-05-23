@@ -1,0 +1,8 @@
+{
+  "date" : "2024-05-23",
+  "version" : "3.5",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Amazon Q Code Transformation: show exact error messages in chat when job fails"
+  } ]
+}

@@ -1,3 +1,6 @@
+# _3.5_ (2024-05-23)
+- **(Bug Fix)** Amazon Q Code Transformation: show exact error messages in chat when job fails
+
 # _3.4_ (2024-05-16)
 - **(Bug Fix)** Amazon Q Chat: Prompt input field in Q Chat tabs doesn't stop after it reaches to the given maxLength
 - **(Bug Fix)** Amazon Q Chat: When window gets focus, even though the autoFocus property is set to true, input field doesn't get focus
