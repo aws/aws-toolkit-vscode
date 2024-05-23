@@ -1,3 +1,8 @@
+## 3.7.0 2024-05-23
+
+- **Feature** AWS Toolkit now publishes to Open VSX: https://open-vsx.org/namespace/amazonwebservices
+- **Feature** IAM Policy Checks: validate IAM policies within VS Code
+
 ## 3.6.0 2024-05-23
 
 - **Feature** IAM Policy Checks: add feature to validate IAM policies within VS Code
