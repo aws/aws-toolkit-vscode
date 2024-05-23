@@ -31,7 +31,7 @@ import {
 } from '../../shared/telemetry/telemetry'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
 import { invalidCustomizationMessage } from '../models/constants'
-import { switchToBaseCustomizationAndNotify } from '../util/customizationUtil'
+import { getSelectedCustomization, switchToBaseCustomizationAndNotify } from '../util/customizationUtil'
 import { session } from '../util/codeWhispererSession'
 import { Commands } from '../../shared/vscode/commands2'
 import globals from '../../shared/extensionGlobals'
@@ -694,6 +694,7 @@ export class RecommendationHandler {
                 codewhispererSessionId: session.sessionId,
                 codewhispererTriggerType: session.triggerType,
                 codewhispererCompletionType: session.getCompletionType(0),
+                codewhispererCustomizationArn: getSelectedCustomization().arn,
                 codewhispererLanguage: languageContext.language,
                 duration: performance.now() - this.lastInvocationTime,
                 passive: true,
