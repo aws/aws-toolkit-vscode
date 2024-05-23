@@ -58,4 +58,68 @@ describe('securityIssueProvider', () => {
         assert.strictEqual(mockProvider.issues[0].issues[0].startLine, 0)
         assert.strictEqual(mockProvider.issues[0].issues[0].endLine, 1)
     })
+
+    it('should do nothing if no content changes', () => {
+        mockProvider.issues = [
+            { filePath: mockDocument.fileName, issues: [createCodeScanIssue({ startLine: 1, endLine: 2 })] },
+        ]
+
+        assert.strictEqual(mockProvider.issues[0].issues[0].startLine, 1)
+        assert.strictEqual(mockProvider.issues[0].issues[0].endLine, 2)
+
+        const changeEvent = createTextDocumentChangeEvent(mockDocument, new vscode.Range(0, 0, 0, 0), '')
+        changeEvent.contentChanges = []
+        mockProvider.handleDocumentChange(changeEvent)
+
+        assert.strictEqual(mockProvider.issues[0].issues[0].startLine, 1)
+        assert.strictEqual(mockProvider.issues[0].issues[0].endLine, 2)
+    })
+
+    it('should do nothing if file path does not match', () => {
+        mockProvider.issues = [{ filePath: 'some/path', issues: [createCodeScanIssue({ startLine: 1, endLine: 2 })] }]
+        assert.strictEqual(mockProvider.issues[0].issues[0].startLine, 1)
+        assert.strictEqual(mockProvider.issues[0].issues[0].endLine, 2)
+
+        const changeEvent = createTextDocumentChangeEvent(mockDocument, new vscode.Range(0, 0, 0, 0), '\n')
+        mockProvider.handleDocumentChange(changeEvent)
+
+        assert.strictEqual(mockProvider.issues[0].issues[0].startLine, 1)
+        assert.strictEqual(mockProvider.issues[0].issues[0].endLine, 2)
+    })
+
+    describe('removeIssue', () => {
+        it('should remove an issue from the issue list', () => {
+            mockProvider.issues = [
+                {
+                    filePath: mockDocument.fileName,
+                    issues: [
+                        createCodeScanIssue({ findingId: 'finding-1' }),
+                        createCodeScanIssue({ findingId: 'finding-2' }),
+                    ],
+                },
+            ]
+            mockProvider.removeIssue(
+                vscode.Uri.file(mockDocument.fileName),
+                createCodeScanIssue({ findingId: 'finding-1' })
+            )
+
+            assert.strictEqual(mockProvider.issues[0].issues.length, 1)
+            assert.strictEqual(mockProvider.issues[0].issues[0].findingId, 'finding-2')
+        })
+
+        it('should not remove an issue if file path does not match', () => {
+            mockProvider.issues = [
+                {
+                    filePath: mockDocument.fileName,
+                    issues: [
+                        createCodeScanIssue({ findingId: 'finding-1' }),
+                        createCodeScanIssue({ findingId: 'finding-2' }),
+                    ],
+                },
+            ]
+            mockProvider.removeIssue(vscode.Uri.file('some/path'), createCodeScanIssue({ findingId: 'finding-1' }))
+
+            assert.strictEqual(mockProvider.issues[0].issues.length, 2)
+        })
+    })
 })
