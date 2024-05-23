@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { createToolView, ToolView } from './toolView'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { CdkRootNode } from '../cdk/explorer/rootNode'
-import { once } from '../shared/utilities/functionUtils'
 
 /**
  * Activates vscode Views (eg tree view) that work in any vscode environment (nodejs or browser).
@@ -25,8 +24,7 @@ export function registerToolView(viewNode: ToolView, context: vscode.ExtensionCo
     toolView.onDidExpandElement(e => {
         if (e.element.resource instanceof CdkRootNode) {
             // Legacy CDK metric, remove this when we add something generic
-            const recordExpandCdkOnce = once(() => telemetry.cdk_appExpanded.emit())
-            recordExpandCdkOnce()
+            telemetry.cdk_appExpanded.emit()
         }
     })
 }
