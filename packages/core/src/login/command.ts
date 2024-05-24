@@ -4,7 +4,7 @@
  */
 import vscode from 'vscode'
 import { Commands, RegisteredCommand, VsCodeCommandArg, placeholder } from '../shared/vscode/commands2'
-import { ServiceItemId, isServiceItemId } from '../auth/ui/vue/types'
+import { ServiceItemId, isServiceItemId } from './webview/vue/types'
 import { authCommands } from '../auth/utils'
 import { showCodeWhispererConnectionPrompt } from '../codewhisperer/util/showSsoPrompt'
 import { AuthSource, AuthSources } from './webview/util'
