@@ -45,6 +45,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.util.Base64
 import java.util.UUID
+import java.util.zip.ZipFile
 import kotlin.io.path.relativeTo
 import kotlin.test.assertNotNull
 
@@ -52,10 +53,13 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
     private lateinit var psifile: PsiFile
     private lateinit var psifile2: PsiFile
     private lateinit var psifile3: PsiFile
+    private lateinit var psifile4: PsiFile
     private lateinit var file: File
     private lateinit var file2: File
     private lateinit var file3: File
+    private lateinit var file4: File
     private lateinit var virtualFile3: VirtualFile
+    private lateinit var virtualFile4: VirtualFile
     private lateinit var sessionConfigSpy: CodeScanSessionConfig
     private lateinit var sessionConfigSpy2: CodeScanSessionConfig
     private val payloadContext = PayloadContext(CodewhispererLanguage.Python, 1, 1, 10, listOf(), 600, 200)
@@ -111,6 +115,22 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
         virtualFile3 = psifile3.virtualFile
         file3 = virtualFile3.toNioPath().toFile()
 
+        psifile4 = projectRule.fixture.addFileToProject(
+            "../test.java",
+            """
+                public class Addition {
+                    public static void main(String[] args) {
+                        int a = 1;
+                        int b = 2;
+                        int c = a + b;
+                        System.out.println(c);
+                    }
+                }
+                """
+        )
+        virtualFile4 = psifile4.virtualFile
+        file4 = virtualFile4.toNioPath().toFile()
+
         sessionConfigSpy = spy(
             CodeScanSessionConfig.create(
                 psifile.virtualFile,
@@ -121,7 +141,7 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
 
         sessionConfigSpy2 = spy(
             CodeScanSessionConfig.create(
-                virtualFile3,
+                virtualFile4,
                 project,
                 CodeWhispererConstants.CodeAnalysisScope.FILE
             )
@@ -207,6 +227,16 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
         inOrder.verify(codeScanSessionSpy, Times(1)).createCodeScan(eq(CodewhispererLanguage.Python.toString()), anyString())
         inOrder.verify(codeScanSessionSpy, Times(1)).getCodeScan(any())
         inOrder.verify(codeScanSessionSpy, Times(1)).listCodeScanFindings(eq("jobId"), eq(null))
+    }
+
+    @Test
+    fun `test createPayload for files outside Project Root`() {
+        val payload = sessionConfigSpy2.createPayload()
+        assertNotNull(payload)
+        val payloadZipFile = ZipFile(payload.srcZip)
+        for (entry in payloadZipFile.entries()) {
+            assertThat(!entry.name.startsWith(".."))
+        }
     }
 
     @Test
