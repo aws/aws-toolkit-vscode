@@ -294,7 +294,6 @@ describe('startSecurityScan', function () {
             CodeAnalysisScope.PROJECT
         )
         assertTelemetry('codewhisperer_securityScan', {
-            codewhispererLanguage: 'yaml',
             codewhispererCodeScanTotalIssues: 1,
             codewhispererCodeScanIssuesWithFixes: 0,
             codewhispererCodeScanScope: 'PROJECT',

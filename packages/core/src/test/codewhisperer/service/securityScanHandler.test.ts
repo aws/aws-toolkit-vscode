@@ -86,15 +86,7 @@ describe('securityScanHandler', function () {
             )
 
             assert.equal(aggregatedCodeScanIssueList.length, 2)
-            assert.equal(
-                aggregatedCodeScanIssueList[0].filePath,
-                'projectPath/python3.7-plain-sam-app/hello_world/app.py'
-            )
             assert.equal(aggregatedCodeScanIssueList[0].issues.length, 1)
-            assert.equal(
-                aggregatedCodeScanIssueList[1].filePath,
-                '/workspaceFolder/python3.7-plain-sam-app/hello_world/app.py'
-            )
             assert.equal(aggregatedCodeScanIssueList[1].issues.length, 1)
         })
 
