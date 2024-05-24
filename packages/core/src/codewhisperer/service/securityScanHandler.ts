@@ -115,13 +115,13 @@ export async function pollScanJobStatus(
     scope: CodeWhispererConstants.CodeAnalysisScope,
     codeScanStartTime: number
 ) {
+    const pollingStartTime = performance.now()
     // We don't expect to get results immediately, so sleep for some time initially to not make unnecessary calls
-    await sleep(getPollingDelayForScope(scope))
+    await sleep(getPollingDelayMsForScope(scope))
 
     const logger = getLoggerForScope(scope)
     logger.verbose(`Polling scan job status...`)
     let status: string = 'Pending'
-    let timer: number = 0
     while (true) {
         throwIfCancelled(scope, codeScanStartTime)
         const req: codewhispererClient.GetCodeScanRequest = {
@@ -137,12 +137,8 @@ export async function pollScanJobStatus(
         }
         throwIfCancelled(scope, codeScanStartTime)
         await sleep(CodeWhispererConstants.codeScanJobPollingIntervalSeconds * 1000)
-        timer += CodeWhispererConstants.codeScanJobPollingIntervalSeconds
-        const timeoutSeconds =
-            scope === CodeWhispererConstants.CodeAnalysisScope.FILE
-                ? CodeWhispererConstants.codeFileScanJobTimeoutSeconds
-                : CodeWhispererConstants.codeScanJobTimeoutSeconds
-        if (timer > timeoutSeconds) {
+        const elapsedTime = performance.now() - pollingStartTime
+        if (elapsedTime > getPollingTimeoutMsForScope(scope)) {
             logger.verbose(`Scan job status: ${status}`)
             logger.verbose(`Security Scan failed. Amazon Q timed out.`)
             throw new SecurityScanTimedOutError()
@@ -286,8 +282,18 @@ export function getLoggerForScope(scope: CodeWhispererConstants.CodeAnalysisScop
     return scope === CodeWhispererConstants.CodeAnalysisScope.FILE ? getNullLogger() : getLogger()
 }
 
-function getPollingDelayForScope(scope: CodeWhispererConstants.CodeAnalysisScope) {
-    return scope === CodeWhispererConstants.CodeAnalysisScope.FILE
-        ? CodeWhispererConstants.fileScanPollingDelaySeconds
-        : CodeWhispererConstants.projectScanPollingDelaySeconds
+function getPollingDelayMsForScope(scope: CodeWhispererConstants.CodeAnalysisScope) {
+    return (
+        (scope === CodeWhispererConstants.CodeAnalysisScope.FILE
+            ? CodeWhispererConstants.fileScanPollingDelaySeconds
+            : CodeWhispererConstants.projectScanPollingDelaySeconds) * 1000
+    )
+}
+
+function getPollingTimeoutMsForScope(scope: CodeWhispererConstants.CodeAnalysisScope) {
+    return (
+        (scope === CodeWhispererConstants.CodeAnalysisScope.FILE
+            ? CodeWhispererConstants.codeFileScanJobTimeoutSeconds
+            : CodeWhispererConstants.codeScanJobTimeoutSeconds) * 1000
+    )
 }
