@@ -94,6 +94,9 @@ module.exports = {
         // This is off because prettier takes care of it
         'no-extra-semi': 'off',
         '@typescript-eslint/no-empty-function': 'off',
+        // Disallows returning e.g. Promise<…|never> which signals that an exception may be thrown.
+        // https://stackoverflow.com/q/64230626/152142
+        '@typescript-eslint/no-redundant-type-constituents': 'off',
         '@typescript-eslint/no-unused-vars': 'off',
         '@typescript-eslint/no-floating-promises': 'error', // Promises must catch errors or be awaited.
         '@typescript-eslint/no-var-requires': 'off', // Should be able to remove with the full migration of SDK v3
