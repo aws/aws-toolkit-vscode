@@ -28,14 +28,14 @@ phases:
             - |
                 echo "Publishing to vscode marketplace: $UPLOAD_TARGET"
                 if [ "$STAGE" != "prod" ]; then
-                  echo "skipped (stage=${STAGE})"
+                  echo "SKIPPED (stage=${STAGE}): 'npx vsce publish --pat xxx --packagePath ${UPLOAD_TARGET}'"
                 else
                   npx vsce publish --pat "$VS_MARKETPLACE_PAT" --packagePath "$UPLOAD_TARGET"
                 fi
             - |
                 echo "Publishing to openvsx marketplace: $UPLOAD_TARGET"
                 if [ "$STAGE" != "prod" ]; then
-                  echo "skipped (stage=${STAGE})"
+                  echo "SKIPPED (stage=${STAGE}): 'npx --yes ovsx publish --pat xxx "${UPLOAD_TARGET}"'"
                 else
-                  npx --yes ovsx publish "$UPLOAD_TARGET" -p "$OVSX_PAT"
+                  npx --yes ovsx publish --pat "$OVSX_PAT" "$UPLOAD_TARGET"
                 fi
