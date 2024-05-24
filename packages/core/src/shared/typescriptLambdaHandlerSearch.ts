@@ -303,6 +303,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
     private static isNodeExported(node: ts.Node): boolean {
         const flags: ts.ModifierFlags = ts.getCombinedModifierFlags(node as ts.Declaration)
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
         return (flags & ts.ModifierFlags.Export) === ts.ModifierFlags.Export
     }
 

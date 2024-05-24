@@ -26,7 +26,7 @@ describe('S3BucketNode', function () {
     let config: TestSettings
 
     function assertBucketNode(node: LoadMoreNode): void {
-        assert.ok(node instanceof S3BucketNode, `Node ${node} should be a Bucket Node`)
+        assert.ok(node instanceof S3BucketNode, `Node ${String(node)} should be a Bucket Node`)
         assert.deepStrictEqual((node as S3BucketNode).bucket, bucket)
     }
 
