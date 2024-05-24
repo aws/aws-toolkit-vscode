@@ -485,7 +485,8 @@ class CodeWhispererTelemetryService {
             duration = latency,
             passive = true,
             credentialStartUrl = startUrl,
-            codewhispererUserGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup().name
+            codewhispererUserGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup().name,
+            codewhispererCustomizationArn = requestContext.customizationArn,
         )
     }
 
@@ -508,7 +509,8 @@ class CodeWhispererTelemetryService {
             codewhispererCompletionType = CodewhispererCompletionType.Line,
             codewhispererLanguage = codewhispererLanguage,
             credentialStartUrl = startUrl,
-            codewhispererUserGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup().name
+            codewhispererUserGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup().name,
+            codewhispererCustomizationArn = requestContext.customizationArn,
         )
     }
 
