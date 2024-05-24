@@ -230,7 +230,12 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
         onMessageReceived: (tabID: string, messageData: MynahUIDataModel) => {
             mynahUI.updateStore(tabID, messageData)
         },
-        onFileComponentUpdate: (tabID: string, filePaths: DiffTreeFileInfo[], deletedFiles: DiffTreeFileInfo[]) => {
+        onFileComponentUpdate: (
+            tabID: string,
+            filePaths: DiffTreeFileInfo[],
+            deletedFiles: DiffTreeFileInfo[],
+            messageId: string
+        ) => {
             const updateWith: Partial<ChatItem> = {
                 type: ChatItemType.ANSWER,
                 fileList: {
@@ -241,7 +246,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                     actions: getActions([...filePaths, ...deletedFiles]),
                 },
             }
-            mynahUI.updateLastChatAnswer(tabID, updateWith)
+            mynahUI.updateChatAnswerWithMessageId(tabID, messageId, updateWith)
         },
         onWarning: (tabID: string, message: string, title: string) => {
             mynahUI.notify({
