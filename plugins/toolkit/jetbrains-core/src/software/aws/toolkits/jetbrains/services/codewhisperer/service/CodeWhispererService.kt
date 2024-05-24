@@ -105,9 +105,16 @@ class CodeWhispererService {
             return
         }
 
-        if (promptReAuth(project)) return
+        if (isQExpired(project)) {
+            // The purpose to execute in the background is to hide the progress indicator UI
+            val shouldReauth = ApplicationManager.getApplication().executeOnPooledThread<Boolean> {
+                promptReAuth(project)
+            }.get()
 
-        if (isQExpired(project)) return
+            if (shouldReauth) {
+                return
+            }
+        }
 
         latencyContext.credentialFetchingEnd = System.nanoTime()
         val psiFile = runReadAction { PsiDocumentManager.getInstance(project).getPsiFile(editor.document) }

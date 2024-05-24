@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix recurring popup \"refreshing token\" whne users're typing in the IDE and Q connection expires"
+}
