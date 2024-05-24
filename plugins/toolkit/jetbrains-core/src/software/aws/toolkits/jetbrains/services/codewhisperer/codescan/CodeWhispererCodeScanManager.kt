@@ -252,7 +252,6 @@ class CodeWhispererCodeScanManager(val project: Project) {
                             renderResponseOnUIThread(
                                 issues,
                                 codeScanResponse.responseContext.payloadContext.scannedFiles,
-                                codeScanSessionConfig.isProjectTruncated(),
                                 scope
                             )
                             codeScanStatus = Result.Succeeded
@@ -631,7 +630,6 @@ class CodeWhispererCodeScanManager(val project: Project) {
     suspend fun renderResponseOnUIThread(
         issues: List<CodeWhispererCodeScanIssue>,
         scannedFiles: List<VirtualFile>,
-        isProjectTruncated: Boolean,
         scope: CodeWhispererConstants.CodeAnalysisScope
     ) {
         withContext(getCoroutineUiContext()) {
@@ -650,14 +648,14 @@ class CodeWhispererCodeScanManager(val project: Project) {
                 codeScanIssuesContent.displayName =
                     message("codewhisperer.codescan.scan_display_with_issues", totalIssuesCount, INACTIVE_TEXT_COLOR)
             }
-            codeScanResultsPanel.updateAndDisplayScanResults(codeScanTreeModel, scannedFiles, isProjectTruncated, scope)
+            codeScanResultsPanel.updateAndDisplayScanResults(codeScanTreeModel, scannedFiles, scope)
         }
     }
 
     @TestOnly
-    suspend fun testRenderResponseOnUIThread(issues: List<CodeWhispererCodeScanIssue>, scannedFiles: List<VirtualFile>, isProjectTruncated: Boolean) {
+    suspend fun testRenderResponseOnUIThread(issues: List<CodeWhispererCodeScanIssue>, scannedFiles: List<VirtualFile>) {
         assert(ApplicationManager.getApplication().isUnitTestMode)
-        renderResponseOnUIThread(issues, scannedFiles, isProjectTruncated, CodeWhispererConstants.CodeAnalysisScope.PROJECT)
+        renderResponseOnUIThread(issues, scannedFiles, CodeWhispererConstants.CodeAnalysisScope.PROJECT)
     }
 
     companion object {

@@ -45,8 +45,6 @@ class CodeScanSessionConfig(
     }
         private set
 
-    private var isProjectTruncated = false
-
     /**
      * Timeout for the overall job - "Run Security Scan".
      */
@@ -60,11 +58,8 @@ class CodeScanSessionConfig(
         else -> (DEFAULT_PAYLOAD_LIMIT_IN_BYTES)
     }
 
-    private fun willExceedPayloadLimit(currentTotalFileSize: Long, currentFileSize: Long): Boolean {
-        val exceedsLimit = currentTotalFileSize > getPayloadLimitInBytes() - currentFileSize
-        isProjectTruncated = isProjectTruncated || exceedsLimit
-        return exceedsLimit
-    }
+    private fun willExceedPayloadLimit(currentTotalFileSize: Long, currentFileSize: Long): Boolean =
+        currentTotalFileSize.let { totalSize -> totalSize > (getPayloadLimitInBytes() - currentFileSize) }
 
     private var programmingLanguage: CodeWhispererProgrammingLanguage = selectedFile?.programmingLanguage() ?: CodeWhispererUnknownLanguage.INSTANCE
 
@@ -159,7 +154,7 @@ class CodeScanSessionConfig(
                         if (!changeListManager.isIgnoredFile(current) && !files.contains(current.path)
                         ) {
                             if (willExceedPayloadLimit(currentTotalFileSize, current.length)) {
-                                break@moduleLoop
+                                fileTooLarge()
                             } else {
                                 val language = current.programmingLanguage()
                                 if (language != CodeWhispererPlainText.INSTANCE && language != CodeWhispererUnknownLanguage.INSTANCE) {
@@ -195,8 +190,6 @@ class CodeScanSessionConfig(
         programmingLanguage = maxCountLanguage
         return PayloadMetadata(files, currentTotalFileSize, currentTotalLines, maxCountLanguage.toTelemetryType())
     }
-
-    fun isProjectTruncated() = isProjectTruncated
 
     fun getPath(root: String, relativePath: String = ""): Path? = try {
         Path.of(root, relativePath).normalize()

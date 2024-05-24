@@ -7,6 +7,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
@@ -92,33 +93,13 @@ class CodeWhispererProjectCodeScanTest : CodeWhispererCodeScanTestBase(PythonCod
     }
 
     @Test
-    fun `test createPayload with custom payload limit`() {
+    fun `test createPayload should throw CodeWhispererCodeScanException if project size is more than Payload Limit`() {
         sessionConfigSpy.stub {
             onGeneric { getPayloadLimitInBytes() }.thenReturn(900)
         }
-        val payload = sessionConfigSpy.createPayload()
-        assertNotNull(payload)
-        assertThat(sessionConfigSpy.isProjectTruncated()).isTrue
-
-        assertThat(payload.context.totalFiles).isEqualTo(3)
-
-        assertThat(payload.context.scannedFiles.size).isEqualTo(3)
-        assertThat(payload.context.scannedFiles).containsExactly(testYaml, testTf, readMeMd)
-
-        // Adding 16 Bytes for read me Markdown file across all tests.
-        assertThat(payload.context.srcPayloadSize).isEqualTo(651)
-        assertThat(payload.context.language).isEqualTo(CodewhispererLanguage.Yaml)
-        assertThat(payload.context.totalLines).isEqualTo(29)
-        assertNotNull(payload.srcZip)
-
-        val bufferedInputStream = BufferedInputStream(payload.srcZip.inputStream())
-        val zis = ZipInputStream(bufferedInputStream)
-        var filesInZip = 0
-        while (zis.nextEntry != null) {
-            filesInZip += 1
+        assertThrows<CodeWhispererCodeScanException> {
+            sessionConfigSpy.createPayload()
         }
-
-        assertThat(filesInZip).isEqualTo(3)
     }
 
     @Test
