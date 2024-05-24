@@ -30,6 +30,7 @@ import * as model from '../../../codewhisperer/models/model'
 import { CodewhispererSecurityScan } from '../../../shared/telemetry/telemetry.gen'
 import { getFetchStubWithResponse } from '../../common/request.test'
 import * as errors from '../../../shared/errors'
+import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
 
 const mockCreateCodeScanResponse = {
     $response: {
@@ -140,6 +141,7 @@ describe('startSecurityScan', function () {
         appCodePath = join(appRoot, 'hello_world', 'app.py')
         editor = await openTestFile(appCodePath)
         await model.CodeScansState.instance.setScansEnabled(false)
+        sinon.stub(timeoutUtils, 'sleep')
     })
     afterEach(function () {
         sinon.restore()
