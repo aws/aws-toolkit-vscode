@@ -219,7 +219,7 @@ export async function makeDotnetDebugConfiguration(
     codeUri: string
 ): Promise<DotNetDebugConfiguration> {
     if (config.noDebug) {
-        throw Error(`SAM debug: invalid config ${config}`)
+        throw Error(`SAM debug: invalid config: ${config.name}`)
     }
     const pipeArgs = ['-c', `docker exec -i $(docker ps -q -f publish=${config.debugPort}) \${debuggerCommand}`]
     config.debuggerPath = pathutil.normalize(getDebuggerPath(codeUri))

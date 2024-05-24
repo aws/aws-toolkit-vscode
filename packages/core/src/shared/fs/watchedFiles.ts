@@ -389,7 +389,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     }
 
     private outputPatterns(): string {
-        const watch = this.globs.map(cur => cur.toString())
+        const watch = this.globs.map(cur => (typeof cur === 'string' ? cur.toString() : cur.pattern))
         if (this.watchingUntitledFiles) {
             watch.push('Untitled Files')
         }

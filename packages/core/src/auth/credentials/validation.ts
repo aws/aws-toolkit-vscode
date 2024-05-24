@@ -114,7 +114,7 @@ export async function throwOnInvalidCredentials(profileName: SectionName, data: 
 
     const credentialsDataErrors = getCredentialsErrors(data)
     if (credentialsDataErrors !== undefined) {
-        throw new ToolkitError(`Errors in credentials data: ${credentialsDataErrors}`, {
+        throw new ToolkitError(`Errors in credentials data: ${String(credentialsDataErrors)}`, {
             code: 'InvalidCredentialsData',
             details: credentialsDataErrors,
         })
