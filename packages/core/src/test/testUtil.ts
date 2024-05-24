@@ -230,7 +230,7 @@ export function partialDeepCompare<T>(actual: unknown, expected: T, message?: st
 export function assertTelemetry<K extends MetricName>(
     name: K,
     expected: MetricShapes[K] | MetricShapes[K][]
-): void | never
+): void | never // eslint-disable no-redundant-type-constituents
 export function assertTelemetry<K extends MetricName>(
     name: K,
     expected: MetricShapes[MetricName] | MetricShapes[MetricName][]

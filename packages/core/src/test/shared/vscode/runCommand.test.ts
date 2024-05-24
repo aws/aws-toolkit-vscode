@@ -13,7 +13,9 @@ import { Commands, defaultTelemetryThrottleMs, unsetSource } from '../../../shar
 import { assertTelemetry, installFakeClock } from '../../testUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 
-async function throwMe(error?: unknown): Promise<void | never> {
+async function throwMe(
+    error?: unknown
+): Promise<void | never /* eslint-disable @typescript-eslint/no-redundant-type-constituents */> {
     if (error) {
         throw error
     }
