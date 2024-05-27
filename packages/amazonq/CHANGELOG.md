@@ -3,7 +3,7 @@
 - **Bug Fix** Amazon Q Chat: Inside chat body, if there is a code block inside a list item it shows <br/> tags
 - **Bug Fix** Amazon Q Chat: Prompt input field allows additional input beyond the character limit
 - **Bug Fix** Amazon Q Chat: Prompt input field not getting focus when chat window opens
-- **Bug Fix** Amazon Q Chat: File rejection is not rejecting a file when code is generated
+- **Bug Fix** Amazon Q Chat: File rejection is not rejecting a file when code is generated.
 
 ## 1.5.0 2024-05-17
 
