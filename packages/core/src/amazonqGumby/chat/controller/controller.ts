@@ -354,10 +354,12 @@ export class GumbyController {
         await this.prepareProjectForSubmission(message)
     }
 
-    private transformationFinished(data: { message?: string; tabID: string }) {
+    private transformationFinished(data: { message: string | undefined; tabID: string }) {
         this.resetTransformationChatFlow()
         // at this point job is either completed, partially_completed, cancelled, or failed
-        this.messenger.sendJobFinishedMessage(data.tabID, data.message)
+        if (data.message) {
+            this.messenger.sendJobFinishedMessage(data.tabID, data.message)
+        }
     }
 
     private resetTransformationChatFlow() {
@@ -431,7 +433,7 @@ export class GumbyController {
         try {
             await finishHumanInTheLoop()
         } catch (err: any) {
-            this.transformationFinished({ tabID: message.tabID })
+            this.transformationFinished({ tabID: message.tabID, message: (err as Error).message })
         }
 
         this.messenger.sendStaticTextResponse('end-HIL-early', message.tabID)

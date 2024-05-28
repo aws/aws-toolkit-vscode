@@ -187,10 +187,8 @@ export async function startTransformByQ() {
     } catch (error: any) {
         await transformationJobErrorHandler(error)
     } finally {
-        if (transformByQState.isCancelled()) {
-            await postTransformationJob()
-            await cleanupTransformationJob()
-        }
+        await postTransformationJob()
+        await cleanupTransformationJob()
     }
 }
 
@@ -202,8 +200,9 @@ export async function startTransformByQ() {
  *  state ever engaged or we have reached our max amount of HIL retries.
  */
 export async function humanInTheLoopRetryLogic(jobId: string) {
+    let status = ''
     try {
-        const status = await pollTransformationStatusUntilComplete(jobId)
+        status = await pollTransformationStatusUntilComplete(jobId)
         if (status === 'PAUSED') {
             const hilStatusFailure = await initiateHumanInTheLoopPrompt(jobId)
             if (hilStatusFailure) {
@@ -215,6 +214,7 @@ export async function humanInTheLoopRetryLogic(jobId: string) {
             await finalizeTransformByQ(status)
         }
     } catch (error) {
+        status = 'FAILED'
         // TODO if we encounter error in HIL, do we stop job?
         await finalizeTransformByQ(status)
         // bubble up error to callee function
@@ -251,8 +251,13 @@ export async function preTransformationUploadCode() {
         transformByQState.setPayloadFilePath(payloadFilePath)
         uploadId = await uploadPayload(payloadFilePath)
     } catch (err) {
-        const errorMessage = `Failed to upload code due to ${(err as Error).message}`
-        transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToUploadProjectNotification)
+        const errorMessage = (err as Error).message
+        transformByQState.setJobFailureErrorNotification(
+            `${CodeWhispererConstants.failedToUploadProjectNotification} ${errorMessage}`
+        )
+        transformByQState.setJobFailureErrorChatMessage(
+            `${CodeWhispererConstants.failedToUploadProjectChatMessage} ${errorMessage}`
+        )
 
         transformByQState.getChatControllers()?.errorThrown.fire({
             error: new ModuleUploadError(),
@@ -262,8 +267,8 @@ export async function preTransformationUploadCode() {
         throw err
     }
 
-    await sleep(2000) // sleep before starting job to prevent ThrottlingException
     throwIfCancelled()
+    await sleep(2000) // sleep before starting job to prevent ThrottlingException
 
     return uploadId
 }
@@ -276,7 +281,7 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
         const { transformationStep, progressUpdate } = findDownloadArtifactStep(transformationSteps)
 
         if (!transformationStep || !progressUpdate) {
-            throw new Error('No HIL Transformation Step found')
+            throw new Error('Transformation step or progress update is undefined')
         }
 
         const { artifactId, artifactType } = getArtifactsFromProgressUpdate(progressUpdate)
@@ -396,7 +401,7 @@ export async function finishHumanInTheLoop(selectedDependency?: string) {
     let hilResult: MetadataResult = MetadataResult.Pass
     try {
         if (!selectedDependency) {
-            throw new Error('No user action')
+            throw new Error('No dependency selected')
         }
         const humanInTheLoopManager = HumanInTheLoopManager.instance
         const manifestFileValues = humanInTheLoopManager.getManifestFileValues()
@@ -478,16 +483,28 @@ export async function startTransformationJob(uploadId: string) {
         getLogger().info(`CodeTransformation: jobId: ${jobId}`)
     } catch (error) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToStartJobNotification}`, error)
-        if ((error as Error).message.includes('too many active running jobs')) {
+        let errorMessage = (error as Error).message
+        if (errorMessage.includes('too many active running jobs')) {
             transformByQState.setJobFailureErrorNotification(
                 CodeWhispererConstants.failedToStartJobTooManyJobsNotification
             )
             transformByQState.setJobFailureErrorChatMessage(
                 CodeWhispererConstants.failedToStartJobTooManyJobsChatMessage
             )
+        } else if (errorMessage.includes('Lines of Code limit breached')) {
+            transformByQState.setJobFailureErrorNotification(
+                CodeWhispererConstants.failedToStartJobLinesOfCodeLimitNotification
+            )
+            transformByQState.setJobFailureErrorChatMessage(
+                CodeWhispererConstants.failedToStartJobLinesOfCodeLimitChatMessage
+            )
         } else {
-            transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToStartJobNotification)
-            transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToStartJobChatMessage)
+            transformByQState.setJobFailureErrorNotification(
+                `${CodeWhispererConstants.failedToStartJobNotification} ${errorMessage}`
+            )
+            transformByQState.setJobFailureErrorChatMessage(
+                `${CodeWhispererConstants.failedToStartJobChatMessage} ${errorMessage}`
+            )
         }
         throw new JobStartError()
     }
@@ -576,7 +593,7 @@ export async function setTransformationToRunningState() {
     await setContextVariables()
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.reset')
     transformByQState.setToRunning()
-    jobPlanProgress['startJob'] = StepProgress.Pending
+    jobPlanProgress['uploadCode'] = StepProgress.Pending
     jobPlanProgress['buildCode'] = StepProgress.Pending
     jobPlanProgress['generatePlan'] = StepProgress.Pending
     jobPlanProgress['transformCode'] = StepProgress.Pending
@@ -613,8 +630,8 @@ export async function setTransformationToRunningState() {
 
 export async function postTransformationJob() {
     updateJobHistory()
-    if (jobPlanProgress['startJob'] !== StepProgress.Succeeded) {
-        jobPlanProgress['startJob'] = StepProgress.Failed
+    if (jobPlanProgress['uploadCode'] !== StepProgress.Succeeded) {
+        jobPlanProgress['uploadCode'] = StepProgress.Failed
     }
     if (jobPlanProgress['buildCode'] !== StepProgress.Succeeded) {
         jobPlanProgress['buildCode'] = StepProgress.Failed
@@ -739,7 +756,7 @@ export async function stopTransformByQ(
                         void submitFeedback(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
                     }
                 })
-        } catch {
+        } catch (err) {
             void vscode.window
                 .showErrorMessage(
                     CodeWhispererConstants.errorStoppingJobNotification,
@@ -750,6 +767,7 @@ export async function stopTransformByQ(
                         void submitFeedback(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
                     }
                 })
+            getLogger().error(`CodeTransformation: Error stopping transformation ${err}`)
         } finally {
             telemetry.codeTransform_jobIsCancelledByUser.emit({
                 codeTransformCancelSrcComponents: cancelSrc as CodeTransformCancelSrcComponents,
