@@ -324,7 +324,12 @@
             "description": "Comma-delimited list of enabled auths."
         },
         {
-            "name": "region",
+            "name": "authScopes",
+            "type": "string",
+            "description": "Comma-delimited list of scopes that user has."
+        },
+        {
+            "name": "awsRegion",
             "type": "string",
             "description": "An AWS region."
         }
@@ -1117,6 +1122,10 @@
                     "required": true
                 },
                 {
+                    "type": "authScopes",
+                    "required": false
+                },
+                {
                     "type": "authEnabledConnections",
                     "required": true
                 }
@@ -1206,7 +1215,7 @@
                     "required": false
                 },
                 {
-                    "type": "region",
+                    "type": "awsRegion",
                     "required": false
                 },
                 {
@@ -1215,6 +1224,10 @@
                 },
                 {
                     "type": "authEnabledFeatures",
+                    "required": false
+                },
+                {
+                    "type": "authScopes",
                     "required": false
                 },
                 {

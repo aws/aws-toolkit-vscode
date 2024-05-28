@@ -2,7 +2,7 @@
     "name": "amazon-q-vscode",
     "displayName": "Amazon Q",
     "description": "Amazon Q is your generative AI-powered assistant across the software development lifecycle.",
-    "version": "1.9.3-LSP",
+    "version": "1.9.4-LSP",
     "extensionKind": [
         "workspace"
     ],
@@ -76,11 +76,6 @@
         "configuration": {
             "type": "object",
             "title": "%AWS.amazonq.productName%",
-            "cloud9": {
-                "cn": {
-                    "title": "%AWS.amazonq.productName.cn%"
-                }
-            },
             "properties": {
                 "amazonQ.telemetry": {
                     "type": "boolean",
@@ -156,13 +151,13 @@
                     "type": "webview",
                     "id": "aws.amazonq.AmazonCommonAuth",
                     "name": "%AWS.amazonq.login%",
-                    "when": "!isCloud9 && !aws.isSageMaker && aws.amazonq.showLoginView"
+                    "when": "!aws.isSageMaker && aws.amazonq.showLoginView"
                 },
                 {
                     "type": "webview",
                     "id": "aws.AmazonQChatView",
                     "name": "%AWS.amazonq.chat%",
-                    "when": "!isCloud9 && !aws.isSageMaker && !aws.amazonq.showLoginView"
+                    "when": "!aws.isSageMaker && !aws.amazonq.showLoginView"
                 },
                 {
                     "id": "aws.AmazonQNeverShowBadge",
@@ -253,7 +248,7 @@
                 },
                 {
                     "command": "amazonq.dev.openMenu",
-                    "when": "aws.isDevMode || isCloud9"
+                    "when": "aws.isDevMode"
                 },
                 {
                     "command": "aws.amazonq.learnMore",
@@ -390,6 +385,11 @@
                 "category": "%AWS.amazonq.title%"
             },
             {
+                "command": "aws.amazonq.security.scan",
+                "title": "%AWS.command.amazonq.security.scan%",
+                "category": "%AWS.amazonq.title%"
+            },
+            {
                 "command": "aws.amazonq.refactorCode",
                 "title": "%AWS.command.amazonq.refactorCode%",
                 "category": "%AWS.amazonq.title%"
@@ -413,45 +413,24 @@
                 "command": "aws.amazonq.login",
                 "title": "%AWS.command.login%",
                 "category": "%AWS.amazonq.title%",
-                "cloud9": {
-                    "cn": {
-                        "title": "%AWS.command.login.cn%",
-                        "category": "%AWS.amazonq.title.cn%"
-                    }
-                },
                 "enablement": "false"
             },
             {
                 "command": "aws.amazonq.credentials.profile.create",
                 "title": "%AWS.command.credentials.profile.create%",
                 "category": "%AWS.amazonq.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.amazonq.title.cn%"
-                    }
-                },
                 "enablement": "false"
             },
             {
                 "command": "aws.amazonq.credentials.edit",
                 "title": "%AWS.command.credentials.edit%",
                 "category": "%AWS.amazonq.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.amazonq.title.cn%"
-                    }
-                },
                 "enablement": "false"
             },
             {
                 "command": "aws.amazonq.logout",
                 "title": "%AWS.command.logout%",
                 "category": "%AWS.amazonq.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.amazonq.title.cn%"
-                    }
-                },
                 "enablement": "false"
             },
             {
@@ -505,8 +484,7 @@
             {
                 "command": "aws.amazonq.auth.signout",
                 "title": "%AWS.command.auth.signout%",
-                "category": "%AWS.amazonq.title%",
-                "enablement": "!isCloud9"
+                "category": "%AWS.amazonq.title%"
             },
             {
                 "command": "aws.amazonq.auth.help",
@@ -517,24 +495,14 @@
             {
                 "command": "aws.amazonq.createIssueOnGitHub",
                 "title": "%AWS.command.createIssueOnGitHub%",
-                "category": "%AWS.amazonq.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.amazonq.title.cn%"
-                    }
-                }
+                "category": "%AWS.amazonq.title%"
             },
             {
                 "command": "aws.amazonq.submitFeedback",
                 "title": "%AWS.command.submitFeedback%",
                 "enablement": "!aws.isWebExtHost",
                 "category": "%AWS.amazonq.title%",
-                "icon": "$(comment)",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.amazonq.title.cn%"
-                    }
-                }
+                "icon": "$(comment)"
             },
             {
                 "command": "aws.amazonq.viewLogs",
@@ -544,12 +512,7 @@
             {
                 "command": "aws.amazonq.github",
                 "title": "%AWS.command.github%",
-                "category": "%AWS.amazonq.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.amazonq.title.cn%"
-                    }
-                }
+                "category": "%AWS.amazonq.title%"
             },
             {
                 "command": "aws.amazonq.aboutExtension",
@@ -565,23 +528,13 @@
                 "command": "aws.amazonq.configure",
                 "title": "%AWS.command.codewhisperer.configure%",
                 "category": "%AWS.amazonq.title%",
-                "icon": "$(gear)",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.amazonq.title.cn%"
-                    }
-                }
+                "icon": "$(gear)"
             },
             {
                 "command": "aws.amazonq.introduction",
                 "title": "%AWS.command.codewhisperer.introduction%",
                 "category": "%AWS.amazonq.title%",
-                "icon": "$(question)",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.amazonq.productName.cn%"
-                    }
-                }
+                "icon": "$(question)"
             },
             {
                 "command": "aws.amazonq.signout",
@@ -658,13 +611,13 @@
                 "command": "aws.amazonq.invokeInlineCompletion",
                 "key": "alt+c",
                 "mac": "alt+c",
-                "when": "editorTextFocus && aws.codewhisperer.connected || isCloud9 && editorTextFocus"
+                "when": "editorTextFocus && aws.codewhisperer.connected"
             },
             {
                 "command": "aws.amazonq.rejectCodeSuggestion",
                 "key": "escape",
                 "mac": "escape",
-                "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected || isCloud9 && suggestWidgetVisible && !editorReadonly"
+                "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected"
             },
             {
                 "command": "aws.amazonq.dismissTutorial",

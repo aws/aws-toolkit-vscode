@@ -31,7 +31,7 @@ import {
 } from '../../shared/telemetry/telemetry'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
 import { invalidCustomizationMessage } from '../models/constants'
-import { switchToBaseCustomizationAndNotify } from '../util/customizationUtil'
+import { getSelectedCustomization, switchToBaseCustomizationAndNotify } from '../util/customizationUtil'
 import { session } from '../util/codeWhispererSession'
 import { Commands } from '../../shared/vscode/commands2'
 import globals from '../../shared/extensionGlobals'
@@ -633,12 +633,14 @@ export class RecommendationHandler {
     }
 
     async onCursorChange(e: vscode.TextEditorSelectionChangeEvent) {
-        // e.kind will be 1 for keyboard cursor change events
         // we do not want to reset the states for keyboard events because they can be typeahead
-        if (e.kind !== 1 && vscode.window.activeTextEditor === e.textEditor) {
+        if (
+            e.kind !== vscode.TextEditorSelectionChangeKind.Keyboard &&
+            vscode.window.activeTextEditor === e.textEditor
+        ) {
             application()._clearCodeWhispererUIListener.fire()
             // when cursor change due to mouse movement we need to reset the active item index for inline
-            if (e.kind === 2) {
+            if (e.kind === vscode.TextEditorSelectionChangeKind.Mouse) {
                 this.inlineCompletionProvider?.clearActiveItemIndex()
             }
         }
@@ -694,6 +696,7 @@ export class RecommendationHandler {
                 codewhispererSessionId: session.sessionId,
                 codewhispererTriggerType: session.triggerType,
                 codewhispererCompletionType: session.getCompletionType(0),
+                codewhispererCustomizationArn: getSelectedCustomization().arn,
                 codewhispererLanguage: languageContext.language,
                 duration: performance.now() - this.lastInvocationTime,
                 passive: true,

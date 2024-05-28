@@ -16,23 +16,35 @@ import { getLogger } from '../../../shared/logger'
 import { featureName } from '../../models/constants'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import {
+    cleanupTransformationJob,
     compileProject,
+    finishHumanInTheLoop,
     getValidCandidateProjects,
+    openHilPomFile,
+    postTransformationJob,
     processTransformFormInput,
     startTransformByQ,
     stopTransformByQ,
     validateCanCompileProject,
 } from '../../../codewhisperer/commands/startTransformByQ'
 import { JDKVersion, TransformationCandidateProject, transformByQState } from '../../../codewhisperer/models/model'
+import {
+    AlternateDependencyVersionsNotFoundError,
+    JavaHomeNotSetError,
+    JobStartError,
+    ModuleUploadError,
+    NoJavaProjectsFoundError,
+    NoMavenJavaProjectsFoundError,
+} from '../../errors'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
-import { JavaHomeNotSetError, NoJavaProjectsFoundError, NoMavenJavaProjectsFoundError } from '../../errors'
 import MessengerUtils, { ButtonActions, GumbyCommands } from './messenger/messengerUtils'
-import { CancelActionPositions } from '../../telemetry/codeTransformTelemetry'
+import { CancelActionPositions, JDKToTelemetryValue } from '../../telemetry/codeTransformTelemetry'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
-import { telemetry } from '../../../shared/telemetry/telemetry'
+import { telemetry, CodeTransformJavaSourceVersionsAllowed } from '../../../shared/telemetry/telemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import { CodeTransformTelemetryState } from '../../telemetry/codeTransformTelemetryState'
 import { getAuthType } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
+import DependencyVersions from '../../models/dependencies'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -46,6 +58,10 @@ export interface ChatControllerEventEmitters {
     readonly transformationFinished: vscode.EventEmitter<any>
     readonly processHumanChatMessage: vscode.EventEmitter<any>
     readonly linkClicked: vscode.EventEmitter<any>
+    readonly humanInTheLoopStartIntervention: vscode.EventEmitter<any>
+    readonly humanInTheLoopPromptUserForDependency: vscode.EventEmitter<any>
+    readonly humanInTheLoopSelectionUploaded: vscode.EventEmitter<any>
+    readonly errorThrown: vscode.EventEmitter<any>
 }
 
 export class GumbyController {
@@ -97,6 +113,22 @@ export class GumbyController {
         this.chatControllerMessageListeners.linkClicked.event(data => {
             this.openLink(data)
         })
+
+        this.chatControllerMessageListeners.humanInTheLoopStartIntervention.event(data => {
+            return this.startHILIntervention(data)
+        })
+
+        this.chatControllerMessageListeners.humanInTheLoopPromptUserForDependency.event(data => {
+            return this.HILPromptForDependency(data)
+        })
+
+        this.chatControllerMessageListeners.humanInTheLoopSelectionUploaded.event(data => {
+            return this.HILDependencySelectionUploaded(data)
+        })
+
+        this.chatControllerMessageListeners.errorThrown.event(data => {
+            return this.handleError(data)
+        })
     }
 
     private async tabOpened(message: any) {
@@ -143,7 +175,7 @@ export class GumbyController {
         // check that a project is open
         const workspaceFolders = vscode.workspace.workspaceFolders
         if (workspaceFolders === undefined || workspaceFolders.length === 0) {
-            this.messenger.sendRetryableErrorResponse('no-project-found', message.tabID)
+            this.messenger.sendUnrecoverableErrorResponse('no-project-found', message.tabID)
             return
         }
 
@@ -177,7 +209,7 @@ export class GumbyController {
                     this.messenger.sendCompilationInProgress(message.tabID)
                     return
             }
-
+            CodeTransformTelemetryState.instance.setSessionId()
             this.messenger.sendTransformationIntroduction(message.tabID)
 
             // start /transform chat flow
@@ -193,16 +225,34 @@ export class GumbyController {
     }
 
     private async validateProjectsWithReplyOnError(message: any): Promise<TransformationCandidateProject[]> {
+        let telemetryJavaVersion = JDKToTelemetryValue(JDKVersion.UNSUPPORTED) as CodeTransformJavaSourceVersionsAllowed
+        let errorCode = undefined
         try {
-            return await getValidCandidateProjects()
+            const validProjects = await getValidCandidateProjects()
+            if (validProjects.length > 0) {
+                // validProjects[0].JDKVersion will be undefined if javap errors out or no .class files found, so call it UNSUPPORTED
+                const javaVersion = validProjects[0].JDKVersion ?? JDKVersion.UNSUPPORTED
+                telemetryJavaVersion = JDKToTelemetryValue(javaVersion) as CodeTransformJavaSourceVersionsAllowed
+            }
+            return validProjects
         } catch (err: any) {
             if (err instanceof NoJavaProjectsFoundError) {
-                this.messenger.sendRetryableErrorResponse('no-java-project-found', message.tabID)
+                this.messenger.sendUnrecoverableErrorResponse('no-java-project-found', message.tabID)
             } else if (err instanceof NoMavenJavaProjectsFoundError) {
-                this.messenger.sendRetryableErrorResponse('no-maven-java-project-found', message.tabID)
+                this.messenger.sendUnrecoverableErrorResponse('no-maven-java-project-found', message.tabID)
             } else {
-                this.messenger.sendRetryableErrorResponse('no-project-found', message.tabID)
+                this.messenger.sendUnrecoverableErrorResponse('no-project-found', message.tabID)
             }
+            errorCode = err.code
+        } finally {
+            // New projectDetails metric should always be fired whether the project was valid or invalid
+            telemetry.codeTransform_projectDetails.emit({
+                passive: true,
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                codeTransformLocalJavaVersion: telemetryJavaVersion,
+                result: errorCode ? MetadataResult.Fail : MetadataResult.Pass,
+                reason: errorCode,
+            })
         }
         return []
     }
@@ -222,10 +272,22 @@ export class GumbyController {
                 break
             case ButtonActions.STOP_TRANSFORMATION_JOB:
                 await stopTransformByQ(transformByQState.getJobId(), CancelActionPositions.Chat)
+                await postTransformationJob()
+                await cleanupTransformationJob()
                 break
             case ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW:
                 this.messenger.sendCommandMessage({ ...message, command: GumbyCommands.CLEAR_CHAT })
                 await this.transformInitiated(message)
+                break
+            case ButtonActions.CONFIRM_DEPENDENCY_FORM:
+                await this.continueJobWithSelectedDependency(message)
+                break
+            case ButtonActions.CANCEL_DEPENDENCY_FORM:
+                this.messenger.sendUserPrompt('Cancel', message.tabID)
+                await this.continueTransformationWithoutHIL(message)
+                break
+            case ButtonActions.OPEN_FILE:
+                await openHilPomFile()
                 break
         }
     }
@@ -246,7 +308,7 @@ export class GumbyController {
         this.messenger.sendProjectSelectionMessage(projectName, fromJDKVersion, toJDKVersion, message.tabID)
 
         if (fromJDKVersion === JDKVersion.UNSUPPORTED) {
-            this.messenger.sendRetryableErrorResponse('unsupported-source-jdk-version', message.tabID)
+            this.messenger.sendUnrecoverableErrorResponse('unsupported-source-jdk-version', message.tabID)
             return
         }
 
@@ -267,7 +329,7 @@ export class GumbyController {
             this.messenger.sendCompilationInProgress(message.tabID)
             await compileProject()
         } catch (err: any) {
-            this.messenger.sendRetryableErrorResponse('could-not-compile-project', message.tabID)
+            this.messenger.sendUnrecoverableErrorResponse('could-not-compile-project', message.tabID)
             // reset state to allow "Start a new transformation" button to work
             this.sessionStorage.getSession().conversationState = ConversationState.IDLE
             throw err
@@ -310,10 +372,28 @@ export class GumbyController {
         await this.prepareProjectForSubmission(message)
     }
 
-    private async transformationFinished(data: { message: string; tabID: string }) {
-        this.sessionStorage.getSession().conversationState = ConversationState.IDLE
+    private transformationFinished(data: { message?: string; tabID: string }) {
+        this.resetTransformationChatFlow()
         // at this point job is either completed, partially_completed, cancelled, or failed
         this.messenger.sendJobFinishedMessage(data.tabID, data.message)
+    }
+
+    private resetTransformationChatFlow() {
+        this.sessionStorage.getSession().conversationState = ConversationState.IDLE
+    }
+
+    private startHILIntervention(data: { tabID: string; codeSnippet: string }) {
+        this.sessionStorage.getSession().conversationState = ConversationState.WAITING_FOR_INPUT
+        this.messenger.sendHumanInTheLoopInitialMessage(data.tabID, data.codeSnippet)
+    }
+
+    private HILPromptForDependency(data: { tabID: string; dependencies: DependencyVersions }) {
+        this.messenger.sendDependencyVersionsFoundMessage(data.dependencies, data.tabID)
+    }
+
+    private HILDependencySelectionUploaded(data: { tabID: string }) {
+        this.sessionStorage.getSession().conversationState = ConversationState.JOB_SUBMITTED
+        this.messenger.sendHILResumeMessage(data.tabID)
     }
 
     private async processHumanChatMessage(data: { message: string; tabID: string }) {
@@ -332,14 +412,47 @@ export class GumbyController {
                         tabID: data.tabID,
                     })
                 } else {
-                    this.messenger.sendRetryableErrorResponse('invalid-java-home', data.tabID)
+                    this.messenger.sendUnrecoverableErrorResponse('invalid-java-home', data.tabID)
                 }
             }
         }
     }
 
+    private async continueJobWithSelectedDependency(message: { tabID: string; formSelectedValues: any }) {
+        const selectedDependency = message.formSelectedValues['GumbyTransformDependencyForm']
+        this.messenger.sendHILContinueMessage(message.tabID, selectedDependency)
+        await finishHumanInTheLoop(selectedDependency)
+    }
+
     private openLink(message: { link: string }) {
         void openUrl(vscode.Uri.parse(message.link))
+    }
+
+    private async handleError(message: { error: Error; tabID: string }) {
+        if (message.error instanceof AlternateDependencyVersionsNotFoundError) {
+            this.messenger.sendKnownErrorResponse('no-alternate-dependencies-found', message.tabID)
+            await this.continueTransformationWithoutHIL(message)
+        } else if (message.error instanceof ModuleUploadError) {
+            this.messenger.sendUnrecoverableErrorResponse('upload-to-s3-failed', message.tabID)
+            this.resetTransformationChatFlow()
+        } else if (message.error instanceof JobStartError) {
+            this.messenger.sendUnrecoverableErrorResponse('job-start-failed', message.tabID)
+            this.resetTransformationChatFlow()
+        }
+    }
+
+    private async continueTransformationWithoutHIL(message: { tabID: string }) {
+        this.sessionStorage.getSession().conversationState = ConversationState.JOB_SUBMITTED
+        CodeTransformTelemetryState.instance.setCodeTransformMetaDataField({
+            canceledFromChat: true,
+        })
+        try {
+            await finishHumanInTheLoop()
+        } catch (err: any) {
+            this.transformationFinished({ tabID: message.tabID })
+        }
+
+        this.messenger.sendStaticTextResponse('end-HIL-early', message.tabID)
     }
 }
 

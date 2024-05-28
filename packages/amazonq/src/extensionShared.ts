@@ -60,7 +60,9 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
                     () =>
                         vscode.window
                             .showInformationMessage(
-                                `The Amazon Q extension is incompatible with AWS Toolkit ${toolkitVersion} and older. Your AWS Toolkit was updated to version 3.0 or later.`,
+                                `The Amazon Q extension is incompatible with AWS Toolkit ${
+                                    toolkitVersion as any
+                                } and older. Your AWS Toolkit was updated to version 3.0 or later.`,
                                 'Reload Now'
                             )
                             .then(async resp => {
@@ -91,7 +93,7 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
 
     await activateTelemetry(context, globals.awsContext, Settings.instance, 'Amazon Q For VS Code')
 
-    await initializeAuth(context, globals.loginManager, contextPrefix, undefined)
+    await initializeAuth(context, globals.loginManager, contextPrefix)
 
     const extContext = {
         extensionContext: context,
@@ -156,10 +158,11 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
             telemetry.record({ source: ExtStartUpSources.reload })
         }
 
-        const { authStatus, authEnabledConnections } = await getAuthStatus()
+        const { authStatus, authEnabledConnections, authScopes } = await getAuthStatus()
         telemetry.record({
             authStatus,
             authEnabledConnections,
+            authScopes,
         })
     })
 }

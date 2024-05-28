@@ -184,6 +184,7 @@ describe('Controller', () => {
         }
 
         it('fails if selected folder is not under a workspace folder', async () => {
+            sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
             sinon.stub(vscode.workspace, 'getWorkspaceFolder').returns(undefined)
             const messengerSpy = sinon.spy(controllerSetup.messenger, 'sendAnswer')
             await modifyDefaultSourceFolder('../../')

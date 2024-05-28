@@ -1,3 +1,22 @@
+## 3.7.0 2024-05-23
+
+- **Feature** AWS Toolkit now publishes to Open VSX: https://open-vsx.org/namespace/amazonwebservices
+- **Feature** IAM Policy Checks: validate IAM policies within VS Code
+
+## 3.6.0 2024-05-23
+
+- **Feature** IAM Policy Checks: add feature to validate IAM policies within VS Code
+- **Feature** AWS Toolkit now publishes to Open VSX: https://open-vsx.org/namespace/amazonwebservices
+
+## 3.4.0 2024-05-17
+
+- **Bug Fix** CodeCatalyst: No longer display a prompt to 'Onboard' if re-using an existing connection from Amazon Q and it is already onboarded.
+
+## 3.3.0 2024-05-13
+
+- **Feature** UX: Added keyboard navigation to login screen.
+- **Feature** New SSO Authorization Code flow for faster logins
+
 ## 3.2.0 2024-05-06
 
 - **Release** No user-facing changes

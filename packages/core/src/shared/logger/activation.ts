@@ -63,7 +63,7 @@ export async function activate(
         'debugConsole'
     )
 
-    getLogger().debug(`Logging started: ${logUri}`)
+    getLogger().debug(`Logging started: ${logUri ?? '(no file)'}`)
 
     Logging.init(logUri, mainLogger, contextPrefix)
     extensionContext.subscriptions.push(Logging.instance.viewLogs, Logging.instance.viewLogsAtMessage)

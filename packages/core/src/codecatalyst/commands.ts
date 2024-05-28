@@ -12,7 +12,7 @@ import * as vscode from 'vscode'
 import { selectCodeCatalystRepository, selectCodeCatalystResource } from './wizards/selectResource'
 import { openCodeCatalystUrl } from './utils'
 import { CodeCatalystAuthenticationProvider } from './auth'
-import { Commands, placeholder } from '../shared/vscode/commands2'
+import { Commands, VsCodeCommandArg, placeholder } from '../shared/vscode/commands2'
 import { CodeCatalystClient, CodeCatalystResource, createClient } from '../shared/clients/codecatalystClient'
 import { DevEnvironmentId, getConnectedDevEnv, openDevEnv } from './model'
 import { showConfigureDevEnv } from './vue/configure/backend'
@@ -25,8 +25,8 @@ import { AccountStatus } from '../shared/telemetry/telemetryClient'
 import { CreateDevEnvironmentRequest, UpdateDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
 import { Auth } from '../auth/auth'
 import { SsoConnection } from '../auth/connection'
-import { getShowManageConnections } from '../auth/ui/vue/show'
 import { isInDevEnv, isRemoteWorkspace } from '../shared/vscode/env'
+import { getShowManageConnections } from '../login/command'
 
 /** "List CodeCatalyst Commands" command. */
 export async function listCommands(): Promise<void> {
@@ -226,11 +226,11 @@ export class CodeCatalystCommands {
         return listCommands()
     }
 
-    public cloneRepository(...args: WithClient<typeof cloneCodeCatalystRepo>) {
+    public cloneRepo(_?: VsCodeCommandArg, ...args: WithClient<typeof cloneCodeCatalystRepo>) {
         return this.withClient(cloneCodeCatalystRepo, ...args)
     }
 
-    public createDevEnv(): Promise<void> {
+    public createDevEnv(_?: VsCodeCommandArg): Promise<void> {
         if (isRemoteWorkspace() && isInDevEnv()) {
             throw new RemoteContextError()
         }
@@ -276,6 +276,7 @@ export class CodeCatalystCommands {
     }
 
     public async openDevEnv(
+        _?: VsCodeCommandArg,
         id?: DevEnvironmentId,
         targetPath?: string,
         connection?: { startUrl: string; region: string }
@@ -337,7 +338,7 @@ export class CodeCatalystCommands {
         deleteDevEnv: Commands.from(this).declareDeleteDevEnv('aws.codecatalyst.deleteDevEnv'),
         openDevEnvSettings: Commands.from(this).declareOpenDevEnvSettings('aws.codecatalyst.openDevEnvSettings'),
         openDevfile: Commands.from(this).declareOpenDevfile('aws.codecatalyst.openDevfile'),
-        cloneRepo: Commands.from(this).declareCloneRepository({
+        cloneRepo: Commands.from(this).declareCloneRepo({
             id: 'aws.codecatalyst.cloneRepo',
             telemetryName: 'codecatalyst_localClone',
         }),

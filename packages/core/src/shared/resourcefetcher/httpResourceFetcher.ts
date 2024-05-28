@@ -181,9 +181,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
             promise.cancel(new CancellationError(event.agent).message)
         })
 
-        promise.finally(() => cancelListener?.dispose())
-
-        return promise
+        return promise.finally(() => cancelListener?.dispose())
     }
 
     private buildRequestHeaders(requestHeaders?: RequestHeaders): Headers {

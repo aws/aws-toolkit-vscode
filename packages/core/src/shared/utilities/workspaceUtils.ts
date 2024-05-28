@@ -16,6 +16,7 @@ import { getGlobDirExcludedPatterns } from '../fs/watchedFiles'
 import { sanitizeFilename } from './textUtilities'
 import { GitIgnoreAcceptor } from '@gerhobbelt/gitignore-parser'
 import * as parser from '@gerhobbelt/gitignore-parser'
+import { fsCommon } from '../../srcShared/fs'
 
 type GitIgnoreRelativeAcceptor = {
     folderPath: string
@@ -259,11 +260,15 @@ export function getExcludePattern(additionalPatterns: string[] = []) {
         '**/package-lock.json',
         '**/yarn.lock',
         '**/*.zip',
+        '**/*.tar.gz',
         '**/*.bin',
         '**/*.png',
         '**/*.jpg',
         '**/*.svg',
         '**/*.pyc',
+        '**/*.pdf',
+        '**/*.ttf',
+        '**/*.ico',
         '**/license.txt',
         '**/License.txt',
         '**/LICENSE.txt',
@@ -347,7 +352,7 @@ export async function collectFiles(
                 continue
             }
 
-            const fileStat = await vscode.workspace.fs.stat(file)
+            const fileStat = await fsCommon.stat(file)
             if (totalSizeBytes + fileStat.size > maxSize) {
                 throw new ToolkitError(
                     'The project you have selected for source code is too large to use as context. Please select a different folder to use',

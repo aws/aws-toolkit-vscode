@@ -11,6 +11,10 @@ export abstract class AWSTreeNodeBase extends TreeItem {
     /** Service id as defined in the service model. May be undefined for child nodes. */
     public serviceId: string | undefined
 
+    public override toString(): string {
+        return `TreeItem(serviceId=${this.serviceId}, label=${this.label})`
+    }
+
     public constructor(label: string, collapsibleState?: TreeItemCollapsibleState) {
         super(label, collapsibleState)
     }

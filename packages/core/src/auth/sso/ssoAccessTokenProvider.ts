@@ -5,7 +5,12 @@
 
 import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
-import { AuthorizationPendingException, SSOOIDCServiceException, SlowDownException } from '@aws-sdk/client-sso-oidc'
+import {
+    AuthorizationPendingException,
+    CreateTokenRequest,
+    SSOOIDCServiceException,
+    SlowDownException,
+} from '@aws-sdk/client-sso-oidc'
 import {
     SsoToken,
     ClientRegistration,
@@ -14,11 +19,10 @@ import {
     builderIdStartUrl,
     openSsoPortalLink,
     isDeprecatedAuth,
-    openSsoUrl,
 } from './model'
 import { getCache } from './cache'
 import { hasProps, hasStringProps, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
-import { OidcClient, OidcClientV2 } from './clients'
+import { OidcClient } from './clients'
 import { loadOr } from '../../shared/utilities/cacheUtils'
 import {
     ToolkitError,
@@ -33,13 +37,11 @@ import { AwsLoginWithBrowser, AwsRefreshCredentials, Metric, telemetry } from '.
 import { indent } from '../../shared/utilities/textUtilities'
 import { AuthSSOServer } from './server'
 import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
-import OidcClientPKCE from './oidcclientpkce'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { randomBytes, createHash } from 'crypto'
-import { UriHandler } from '../../shared/vscode/uriHandler'
-import { DevSettings } from '../../shared/settings'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { randomUUID } from '../../common/crypto'
+import { isRemoteWorkspace } from '../../shared/vscode/env'
 
 export const authenticationPath = 'sso/authenticated'
 
@@ -98,7 +100,7 @@ export abstract class SsoAccessTokenProvider {
     public constructor(
         protected readonly profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
         protected readonly cache = getCache(),
-        protected readonly oidc: OidcClient | OidcClientV2 = OidcClient.create(profile.region)
+        protected readonly oidc: OidcClient = OidcClient.create(profile.region)
     ) {}
 
     public async invalidate(): Promise<void> {
@@ -199,7 +201,7 @@ export abstract class SsoAccessTokenProvider {
     }
 
     protected get registrationCacheKey() {
-        return { region: this.profile.region, scopes: this.profile.scopes }
+        return { startUrl: this.profile.startUrl, region: this.profile.region, scopes: this.profile.scopes }
     }
 
     /**
@@ -249,12 +251,13 @@ export abstract class SsoAccessTokenProvider {
     public static create(
         profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
         cache = getCache(),
-        oidc: OidcClient = OidcClient.create(profile.region)
+        oidc: OidcClient = OidcClient.create(profile.region),
+        useDeviceFlow: () => boolean = isRemoteWorkspace
     ) {
-        if (!DevSettings.instance.get('pkceAuth', false)) {
+        if (useDeviceFlow()) {
             return new DeviceFlowAuthorization(profile, cache, oidc)
         }
-        return new AuthFlowAuthorization(profile, cache, OidcClientV2.create(profile.region))
+        return new AuthFlowAuthorization(profile, cache, oidc)
     }
 }
 
@@ -344,11 +347,14 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
 
     override async registerClient(): Promise<ClientRegistration> {
         const companyName = getIdeProperties().company
-        return this.oidc.registerClient({
-            clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
-            clientType: clientRegistrationType,
-            scopes: this.profile.scopes,
-        })
+        return this.oidc.registerClient(
+            {
+                clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
+                clientType: clientRegistrationType,
+                scopes: this.profile.scopes,
+            },
+            this.profile.startUrl
+        )
     }
 
     override async authorize(
@@ -403,29 +409,33 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
     constructor(
         profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
         cache = getCache(),
-        protected override readonly oidc: OidcClientV2
+        oidc: OidcClient
     ) {
         super(profile, cache, oidc)
     }
 
     override async registerClient(): Promise<ClientRegistration> {
         const companyName = getIdeProperties().company
-        return this.oidc.registerClient({
-            // All AWS extensions (Q, Toolkit) for a given IDE use the same client name.
-            clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
-            clientType: clientRegistrationType,
-            scopes: this.profile.scopes,
-            grantTypes: [authorizationGrantType, refreshGrantType],
-            redirectUris: ['http://127.0.0.1/oauth/callback'],
-            issuerUrl: this.profile.startUrl,
-        })
+        return this.oidc.registerClient(
+            {
+                // All AWS extensions (Q, Toolkit) for a given IDE use the same client name.
+                clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
+                clientType: clientRegistrationType,
+                scopes: this.profile.scopes,
+                grantTypes: [authorizationGrantType, refreshGrantType],
+                redirectUris: ['http://127.0.0.1/oauth/callback'],
+                issuerUrl: this.profile.startUrl,
+            },
+            this.profile.startUrl,
+            'auth code'
+        )
     }
 
     override async authorize(
         registration: ClientRegistration
     ): Promise<{ token: SsoToken; registration: ClientRegistration; region: string; startUrl: string }> {
         const state = randomUUID()
-        const authServer = new AuthSSOServer(state, UriHandler.buildUri(authenticationPath).toString())
+        const authServer = AuthSSOServer.init(state)
 
         try {
             await authServer.start()
@@ -446,16 +456,14 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
                     codeChallengeMethod: 'S256',
                 })
 
-                if (!(await openSsoUrl(vscode.Uri.parse(location)))) {
-                    throw new CancellationError('user')
-                }
+                await vscode.env.openExternal(vscode.Uri.parse(location))
 
                 const authorizationCode = await authServer.waitForAuthorization()
                 if (authorizationCode.isErr()) {
                     throw authorizationCode.err()
                 }
 
-                const tokenRequest: OidcClientPKCE.CreateTokenRequest = {
+                const tokenRequest: CreateTokenRequest = {
                     clientId: registration.clientId,
                     clientSecret: registration.clientSecret,
                     grantType: authorizationGrantType,

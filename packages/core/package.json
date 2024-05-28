@@ -214,16 +214,22 @@
                     "description": "%AWS.configuration.description.lambda.recentlyUploaded%",
                     "default": []
                 },
-                "aws.accessAnalyzer.policyChecks.customChecksFilePath": {
+                "aws.accessAnalyzer.policyChecks.checkNoNewAccessFilePath": {
                     "type": "string",
                     "default": "",
-                    "description": "File path or S3 path to a text document for Custom Policy Checks.",
+                    "description": "File path or S3 path to a text document for CheckNoNewAccess custom check.",
+                    "scope": "window"
+                },
+                "aws.accessAnalyzer.policyChecks.checkAccessNotGrantedFilePath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "File path or S3 path to a text document for CheckAccessNotGranted custom check.",
                     "scope": "window"
                 },
                 "aws.accessAnalyzer.policyChecks.cloudFormationParameterFilePath": {
                     "type": "string",
                     "default": "",
-                    "description": "Keys and values for CloudFormation template parameters. Only parameters that are referenced by IAM policies in the template are required.",
+                    "description": "A JSON formatted file that specifies template parameter values, a stack policy, and tags. Only parameters are used from this file.",
                     "scope": "machine-overridable"
                 },
                 "amazonQ.telemetry": {
@@ -2016,8 +2022,7 @@
             {
                 "command": "aws.accessanalyzer.iamPolicyChecks",
                 "title": "%AWS.command.accessanalyzer.iamPolicyChecks%",
-                "category": "%AWS.title%",
-                "enablement": "aws.iamPolicyChecks.enabled"
+                "category": "%AWS.title%"
             },
             {
                 "command": "aws.launchConfigForm",
@@ -3979,7 +3984,7 @@
     },
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",
-        "@aws-toolkits/telemetry": "^1.0.203",
+        "@aws-toolkits/telemetry": "^1.0.212",
         "@aws/fully-qualified-names": "^2.1.4",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
@@ -4010,8 +4015,8 @@
         "@types/uuid": "^9.0.1",
         "@types/whatwg-url": "^11.0.4",
         "@types/xml2js": "^0.4.11",
-        "@typescript-eslint/eslint-plugin": "^5.59.0",
-        "@typescript-eslint/parser": "^5.59.1",
+        "@typescript-eslint/eslint-plugin": "^7.10.0",
+        "@typescript-eslint/parser": "^7.10.0",
         "@vue/compiler-sfc": "^3.3.2",
         "c8": "^9.0.0",
         "circular-dependency-plugin": "^5.2.2",
@@ -4042,20 +4047,23 @@
         "@aws-sdk/client-cognito-identity": "3.490.0",
         "@aws-sdk/client-lambda": "3.385.0",
         "@aws-sdk/client-sso": "^3.342.0",
-        "@aws-sdk/client-sso-oidc": "^3.181.0",
+        "@aws-sdk/client-sso-oidc": "^3.574.0",
         "@aws-sdk/credential-provider-ini": "3.46.0",
         "@aws-sdk/credential-provider-process": "3.37.0",
         "@aws-sdk/credential-provider-sso": "^3.345.0",
         "@aws-sdk/property-provider": "3.46.0",
         "@aws-sdk/smithy-client": "^3.46.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
-        "@aws/mynah-ui": "^4.8.0",
+        "@aws/mynah-ui": "^4.9.1",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
+        "@smithy/middleware-retry": "^2.3.1",
+        "@smithy/protocol-http": "^3.3.0",
+        "@smithy/service-error-classification": "^2.1.5",
         "@smithy/shared-ini-file-loader": "^2.2.8",
+        "@smithy/util-retry": "^2.2.0",
         "@vscode/debugprotocol": "^1.57.0",
         "adm-zip": "^0.5.10",
-        "amazon-s3-uri": "^0.1.1",
         "amazon-states-language-service": "^1.11.0",
         "archiver": "^7.0.1",
         "async-lock": "^1.4.0",

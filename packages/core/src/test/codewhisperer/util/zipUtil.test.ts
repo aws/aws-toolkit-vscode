@@ -50,7 +50,7 @@ describe('zipUtil', function () {
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.FILE),
-                new ToolkitError('Payload size limit reached.')
+                new ToolkitError(`Payload size limit reached`, { code: 'FileSizeExceeded' })
             )
         })
 
@@ -70,7 +70,7 @@ describe('zipUtil', function () {
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT),
-                new ToolkitError('Payload size limit reached.')
+                new ToolkitError('Payload size limit reached', { code: 'ProjectSizeExceeded' })
             )
         })
 
@@ -79,29 +79,8 @@ describe('zipUtil', function () {
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT),
-                new ToolkitError('Payload size limit reached.')
+                new ToolkitError('Payload size limit reached', { code: 'ProjectSizeExceeded' })
             )
-        })
-
-        it('Should include java .class files', async function () {
-            const isClassFileStub = sinon
-                .stub(zipUtil, 'isJavaClassFile')
-                .onFirstCall()
-                .returns(true)
-                .onSecondCall()
-                .callsFake((...args) => {
-                    isClassFileStub.restore()
-                    return zipUtil.isJavaClassFile(...args)
-                })
-
-            const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT)
-            assert.ok(zipMetadata.lines > 0)
-            assert.ok(zipMetadata.rootDir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
-            assert.ok(zipMetadata.srcPayloadSizeInBytes > 0)
-            assert.ok(zipMetadata.scannedFiles.size > 0)
-            assert.ok(zipMetadata.buildPayloadSizeInBytes > 0)
-            assert.ok(zipMetadata.zipFileSizeInBytes > 0)
-            assert.ok(zipMetadata.zipFilePath.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
         })
 
         it('Should throw error if scan type is invalid', async function () {

@@ -166,8 +166,13 @@ export class Session {
         return resp.interaction
     }
 
-    public async updateFilesPaths(tabID: string, filePaths: NewFileInfo[], deletedFiles: DeletedFileInfo[]) {
-        this.messenger.updateFileComponent(tabID, filePaths, deletedFiles)
+    public async updateFilesPaths(
+        tabID: string,
+        filePaths: NewFileInfo[],
+        deletedFiles: DeletedFileInfo[],
+        messageId: string
+    ) {
+        this.messenger.updateFileComponent(tabID, filePaths, deletedFiles, messageId)
     }
 
     public async insertChanges() {
@@ -231,6 +236,11 @@ export class Session {
         if (!this._conversationId) {
             throw new ConversationIdNotFoundError()
         }
+        return this._conversationId
+    }
+
+    // Used for cases where it is not needed to have conversationId
+    get conversationIdUnsafe() {
         return this._conversationId
     }
 

@@ -16,6 +16,8 @@ import { getIcon, codicon } from '../icons'
 import globals from '../extensionGlobals'
 import { openUrl } from './vsCodeUtils'
 import { AmazonQPromptSettings, ToolkitPromptSettings } from '../../shared/settings'
+import { telemetry } from '../telemetry/telemetry'
+import { vscodeComponent } from '../vscode/commands2'
 
 export const messages = {
     editCredentials(icon: boolean) {
@@ -154,24 +156,37 @@ export async function showReauthenticateMessage({
     suppressId,
     settings,
     reauthFunc,
+    source = vscodeComponent,
 }: {
     message: string
     connect: string
     suppressId: string // Parameters<PromptSettings['isPromptEnabled']>[0]
     settings: AmazonQPromptSettings | ToolkitPromptSettings
     reauthFunc: () => Promise<void>
+    source?: string
 }) {
     const shouldShow = await settings.isPromptEnabled(suppressId as any)
     if (!shouldShow) {
         return
     }
 
-    await vscode.window.showInformationMessage(message, connect, localizedText.dontShow).then(async resp => {
-        if (resp === connect) {
-            await reauthFunc()
-        } else if (resp === localizedText.dontShow) {
-            await settings.disablePrompt(suppressId as any)
-        }
+    await telemetry.toolkit_showNotification.run(async () => {
+        telemetry.record({ id: suppressId, source })
+        await vscode.window.showInformationMessage(message, connect, localizedText.dontShow).then(async resp => {
+            await telemetry.toolkit_invokeAction.run(async () => {
+                telemetry.record({ id: suppressId, source })
+
+                if (resp === connect) {
+                    telemetry.record({ action: 'connect' })
+                    await reauthFunc()
+                } else if (resp === localizedText.dontShow) {
+                    telemetry.record({ action: 'suppress' })
+                    await settings.disablePrompt(suppressId as any)
+                } else {
+                    telemetry.record({ action: 'dismiss' })
+                }
+            })
+        })
     })
 }
 

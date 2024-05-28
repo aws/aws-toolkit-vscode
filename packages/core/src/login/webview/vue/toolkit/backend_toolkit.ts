@@ -36,10 +36,12 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
     }
 
     async startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
+        getLogger().debug(`called useConnection() with startUrl: '${startUrl}', region: '${region}'`)
         const metadata: TelemetryMetadata = {
             credentialSourceId: 'iamIdentityCenter',
             credentialStartUrl: startUrl,
-            region,
+            awsRegion: region,
+            isReAuth: false,
         }
 
         if (this.isCodeCatalystLogin) {
@@ -75,6 +77,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         accessKey: string,
         secretKey: string
     ): Promise<AuthError | undefined> {
+        getLogger().debug(`called startIamCredentialSetup()`)
         // See submitData() in manageCredentials.vue
         const runAuth = async () => {
             const data = { aws_access_key_id: accessKey, aws_secret_access_key: secretKey }
@@ -104,8 +107,13 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
     }
 
     async startBuilderIdSetup(): Promise<AuthError | undefined> {
+        getLogger().debug(`called startBuilderIdSetup()`)
         return this.ssoSetup('startCodeCatalystBuilderIdSetup', async () => {
-            this.storeMetricMetadata({ credentialSourceId: 'awsId', authEnabledFeatures: 'codecatalyst' })
+            this.storeMetricMetadata({
+                credentialSourceId: 'awsId',
+                authEnabledFeatures: 'codecatalyst',
+                isReAuth: false,
+            })
 
             await this.codeCatalystAuth.connectToAwsBuilderId()
             await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
@@ -139,6 +147,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
      * Re-use connection that is pushed from Amazon Q to Toolkit.
      */
     async useConnection(connectionId: string, auto: boolean): Promise<AuthError | undefined> {
+        getLogger().debug(`called useConnection() with connectionId: '${connectionId}', auto: '${auto}'`)
         return this.ssoSetup('useConnection', async () => {
             let conn = await Auth.instance.getConnection({ id: connectionId })
             if (conn === undefined || conn.type !== 'sso') {
@@ -190,5 +199,6 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
 
     async quitLoginScreen() {
         await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
+        await this.showResourceExplorer()
     }
 }

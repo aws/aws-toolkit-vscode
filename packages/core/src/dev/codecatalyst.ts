@@ -107,13 +107,7 @@ async function promptVsix(
 ): Promise<vscode.Uri | undefined> {
     const folders = (vscode.workspace.workspaceFolders ?? []).map(f => f.uri).concat(vscode.Uri.file(ctx.extensionPath))
 
-    enum ExtensionMode {
-        Production = 1,
-        Development = 2,
-        Test = 3,
-    }
-
-    const isDevelopmentWindow = ctx.extensionMode === ExtensionMode.Development
+    const isDevelopmentWindow = ctx.extensionMode === vscode.ExtensionMode.Development
     const extPath = isDevelopmentWindow ? ctx.extensionPath : folders[0].fsPath
 
     const packageNew = {
