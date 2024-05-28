@@ -26,7 +26,6 @@ import { CreateDevEnvironmentRequest, UpdateDevEnvironmentRequest } from 'aws-sd
 import { Auth } from '../auth/auth'
 import { SsoConnection } from '../auth/connection'
 import { isInDevEnv, isRemoteWorkspace } from '../shared/vscode/env'
-import { getShowManageConnections } from '../login/command'
 
 /** "List CodeCatalyst Commands" command. */
 export async function listCommands(): Promise<void> {
@@ -214,6 +213,17 @@ class RemoteContextError extends ToolkitError {
     }
 }
 
+export const codecatalystConnectionsCmd = Commands.declare(
+    'aws.codecatalyst.manageConnections',
+    () => () =>
+        void vscode.commands.executeCommand(
+            'aws.toolkit.auth.manageConnections',
+            placeholder,
+            'codecatalystDeveloperTools',
+            'codecatalyst'
+        )
+)
+
 export class CodeCatalystCommands {
     public readonly withClient: ClientInjector
     public readonly bindClient = createCommandDecorator(this)
@@ -299,7 +309,7 @@ export class CodeCatalystCommands {
         if (connection !== undefined) {
             await this.authProvider.tryConnectTo(connection)
         } else if (!this.authProvider.isConnectionValid()) {
-            void getShowManageConnections().execute(placeholder, 'codecatalystDeveloperTools', 'codecatalyst')
+            void codecatalystConnectionsCmd.execute()
             return
         }
 
