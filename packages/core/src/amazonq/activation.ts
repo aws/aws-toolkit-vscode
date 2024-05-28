@@ -30,7 +30,7 @@ export async function activate(context: ExtensionContext) {
         appInitContext.onDidChangeAmazonQVisibility
     )
 
-    await TryChatCodeLensProvider.register()
+    await TryChatCodeLensProvider.register(appInitContext.onDidChangeAmazonQVisibility.event)
 
     context.subscriptions.push(
         window.registerWebviewViewProvider(AmazonQChatViewProvider.viewType, provider, {
