@@ -465,10 +465,10 @@ export const failedToStartJobTooManyJobsChatMessage =
 export const failedToStartJobTooManyJobsNotification =
     'Amazon Q could not begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed.'
 
-export const failedToStartJobLinesOfCodeLimitNotification =
+export const failedToStartJobLinesLimitNotification =
     'Amazon Q could not begin the transformation. Your code exceeds the lines of code limit. Please try again with a smaller project.'
 
-export const failedToStartJobLinesOfCodeLimitChatMessage =
+export const failedToStartJobLinesLimitChatMessage =
     "Sorry, I couldn't begin the transformation. Your code exceeds the lines of code limit. Please try again with a smaller project."
 
 export const failedToUploadProjectChatMessage =

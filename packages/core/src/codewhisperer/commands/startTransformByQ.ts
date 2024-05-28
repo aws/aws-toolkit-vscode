@@ -483,7 +483,7 @@ export async function startTransformationJob(uploadId: string) {
         getLogger().info(`CodeTransformation: jobId: ${jobId}`)
     } catch (error) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToStartJobNotification}`, error)
-        let errorMessage = (error as Error).message
+        const errorMessage = (error as Error).message
         if (errorMessage.includes('too many active running jobs')) {
             transformByQState.setJobFailureErrorNotification(
                 CodeWhispererConstants.failedToStartJobTooManyJobsNotification
@@ -493,10 +493,10 @@ export async function startTransformationJob(uploadId: string) {
             )
         } else if (errorMessage.includes('Lines of Code limit breached')) {
             transformByQState.setJobFailureErrorNotification(
-                CodeWhispererConstants.failedToStartJobLinesOfCodeLimitNotification
+                CodeWhispererConstants.failedToStartJobLinesLimitNotification
             )
             transformByQState.setJobFailureErrorChatMessage(
-                CodeWhispererConstants.failedToStartJobLinesOfCodeLimitChatMessage
+                CodeWhispererConstants.failedToStartJobLinesLimitChatMessage
             )
         } else {
             transformByQState.setJobFailureErrorNotification(
