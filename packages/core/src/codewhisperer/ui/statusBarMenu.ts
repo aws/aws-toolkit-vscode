@@ -29,7 +29,6 @@ import { CodeScansState, CodeSuggestionsState, vsCodeState } from '../models/mod
 import { Commands } from '../../shared/vscode/commands2'
 import { createExitButton } from '../../shared/ui/buttons'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { once } from '../../shared/utilities/functionUtils'
 import { getLogger } from '../../shared/logger'
 
 function getAmazonQCodeWhispererNodes() {
@@ -101,7 +100,7 @@ export function getQuickPickItems(): DataQuickPickItem<string>[] {
 
 export const listCodeWhispererCommandsId = 'aws.amazonq.listCommands'
 export const listCodeWhispererCommands = Commands.declare({ id: listCodeWhispererCommandsId }, () => () => {
-    once(() => telemetry.ui_click.emit({ elementId: 'cw_statusBarMenu' }))()
+    telemetry.ui_click.emit({ elementId: 'cw_statusBarMenu' })
     Commands.tryExecute('aws.amazonq.refreshAnnotation', true)
         .then()
         .catch(e => {
