@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Feature Development: File rejection is not rejecting a file when code is generated"
+}
