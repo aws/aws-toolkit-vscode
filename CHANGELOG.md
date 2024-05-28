@@ -1,3 +1,6 @@
+# _3.6_ (2024-05-28)
+- **(Bug Fix)** Fix recurring popup "refreshing token" whne users're typing in the IDE and Q connection expires
+
 # _3.5_ (2024-05-23)
 - **(Bug Fix)** Amazon Q Code Transformation: show exact error messages in chat when job fails
 
