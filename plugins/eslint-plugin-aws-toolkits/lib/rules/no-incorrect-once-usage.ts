@@ -47,9 +47,8 @@
  * once() instance is being created each time.
  */
 
-import { ESLintUtils } from '@typescript-eslint/utils'
+import { ESLintUtils, TSESTree } from '@typescript-eslint/utils'
 import { AST_NODE_TYPES } from '@typescript-eslint/types'
-import { Node, Identifier } from '@typescript-eslint/types/dist/generated/ast-spec'
 import { Rule } from 'eslint'
 
 export const oneOffErr =
@@ -63,7 +62,7 @@ export default ESLintUtils.RuleCreator.withoutDocs({
     meta: {
         docs: {
             description: 'disallow usages of once() where the function can be called multiple times',
-            recommended: 'error',
+            recommended: 'recommended',
         },
         messages: {
             oneOffErr,
@@ -124,7 +123,9 @@ export default ESLintUtils.RuleCreator.withoutDocs({
                         declaration.init.callee.name === 'once'
                     ) {
                         const scope = context.getScope()
-                        const variable = scope.variables.find(v => v.name === (declaration.id as Identifier).name) // we already confirmed the type in the if statement... why is TS mad?
+                        const variable = scope.variables.find(
+                            v => v.name === (declaration.id as TSESTree.Identifier).name
+                        ) // we already confirmed the type in the if statement... why is TS mad?
                         let isUsedInLoopScope = false
 
                         if (variable) {
@@ -138,7 +139,7 @@ export default ESLintUtils.RuleCreator.withoutDocs({
 
                             // Check if it is being referenced once, but inside a loop.
                             refs.forEach(ref => {
-                                let currNode: Node | undefined = ref.identifier
+                                let currNode: TSESTree.Node | undefined = ref.identifier
 
                                 while (currNode && currNode !== scope.block) {
                                     if (
