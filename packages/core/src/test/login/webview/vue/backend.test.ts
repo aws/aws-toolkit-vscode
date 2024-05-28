@@ -51,7 +51,7 @@ describe('Amazon Q Login', function () {
         })
     })
 
-    it('runs setup and emits success and recorded metrics', async function () {
+    it('runs setup and emits failed and recorded metrics', async function () {
         const metadata: TelemetryMetadata = {
             credentialSourceId: 'iamIdentityCenter',
             credentialStartUrl: startUrl,

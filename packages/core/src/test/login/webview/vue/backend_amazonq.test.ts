@@ -43,7 +43,7 @@ describe('Amazon Q Login', function () {
         sandbox.restore()
     })
 
-    it('successfully signs into builder ID and emits telemetry', async function () {
+    it('signs into builder ID and emits telemetry', async function () {
         await backend.startBuilderIdSetup()
 
         assert.ok(isBuilderIdConnection(auth.activeConnection))
@@ -58,7 +58,7 @@ describe('Amazon Q Login', function () {
         })
     })
 
-    it('successfully signs into IdC and emits telemetry', async function () {
+    it('signs into IdC and emits telemetry', async function () {
         await backend.startEnterpriseSetup(startUrl, region)
 
         assert.ok(isIdcSsoConnection(auth.activeConnection))
@@ -77,7 +77,7 @@ describe('Amazon Q Login', function () {
         })
     })
 
-    it('successfully reauths builder ID and emits telemetry', async function () {
+    it('reauths builder ID and emits telemetry', async function () {
         const conn = await auth.createInvalidSsoConnection(createBuilderIdProfile({ scopes: amazonQScopes }))
         await auth.useConnection(conn)
 
@@ -94,7 +94,7 @@ describe('Amazon Q Login', function () {
         })
     })
 
-    it('successfully reauths IdC and emits telemetry', async function () {
+    it('reauths IdC and emits telemetry', async function () {
         const conn = await auth.createInvalidSsoConnection(
             createSsoProfile({ scopes: amazonQScopes, startUrl, ssoRegion: region })
         )
@@ -115,7 +115,7 @@ describe('Amazon Q Login', function () {
         })
     })
 
-    it('successfully signs out of reauth and emits telemetry', async function () {
+    it('signs out of reauth and emits telemetry', async function () {
         const conn = await auth.createInvalidSsoConnection(
             createSsoProfile({ scopes: amazonQScopes, startUrl, ssoRegion: region })
         )

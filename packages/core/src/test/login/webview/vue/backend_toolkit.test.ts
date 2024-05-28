@@ -55,7 +55,7 @@ describe('Toolkit Login', function () {
         sandbox.restore()
     })
 
-    it('successfully signs into builder ID and emits telemetry', async function () {
+    it('signs into builder ID and emits telemetry', async function () {
         sandbox.stub(codecatalystAuth, 'isConnectionOnboarded').resolves(true)
 
         await backend.startBuilderIdSetup()
@@ -72,7 +72,7 @@ describe('Toolkit Login', function () {
         })
     })
 
-    it('successfully signs into account IdC and emits telemetry', async function () {
+    it('signs into account IdC and emits telemetry', async function () {
         await backend.startEnterpriseSetup(startUrl, region)
 
         assert.ok(isIdcSsoConnection(auth.activeConnection))
@@ -91,7 +91,7 @@ describe('Toolkit Login', function () {
         })
     })
 
-    it('successfully signs into codecatalyst IdC and emits telemetry', async function () {
+    it('signs into codecatalyst IdC and emits telemetry', async function () {
         sandbox.stub(codecatalystAuth, 'isConnectionOnboarded').resolves(true)
         backend.setLoginService('codecatalyst')
 
@@ -113,7 +113,7 @@ describe('Toolkit Login', function () {
         })
     })
 
-    it('successfully signs in with Iam credentials and emits telemetry', async function () {
+    it('signs in with Iam credentials and emits telemetry', async function () {
         sandbox.stub(auth, 'authenticateData').resolves()
         const stub = sandbox.stub(authUtils, 'tryAddCredentials').resolves()
         await backend.startIamCredentialSetup(profileName, accessKey, secretKey)
