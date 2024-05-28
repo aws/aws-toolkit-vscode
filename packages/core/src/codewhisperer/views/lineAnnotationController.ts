@@ -19,6 +19,7 @@ import { getLogger } from '../../shared/logger/logger'
 import { Commands } from '../../shared/vscode/commands2'
 import { session } from '../util/codeWhispererSession'
 import { RecommendationHandler } from '../service/recommendationHandler'
+import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 
 const case3TimeWindow = 30000 // 30 seconds
 
@@ -61,7 +62,7 @@ interface AnnotationState {
  *  User accepts 1 suggestion
  *
  */
-class AutotriggerState implements AnnotationState {
+export class AutotriggerState implements AnnotationState {
     static id = 'codewhisperer_learnmore_case_1'
     id = AutotriggerState.id
 
@@ -93,7 +94,7 @@ class AutotriggerState implements AnnotationState {
  * Exit criteria:
  *  User accepts 1 suggestion
  */
-class PressTabState implements AnnotationState {
+export class PressTabState implements AnnotationState {
     static id = 'codewhisperer_learnmore_case_1a'
     id = PressTabState.id
 
@@ -119,7 +120,7 @@ class PressTabState implements AnnotationState {
  * Exit criteria:
  *  User inokes manual trigger shortcut
  */
-class ManualtriggerState implements AnnotationState {
+export class ManualtriggerState implements AnnotationState {
     static id = 'codewhisperer_learnmore_case_2'
     id = ManualtriggerState.id
 
@@ -161,7 +162,7 @@ class ManualtriggerState implements AnnotationState {
  * Exit criteria:
  *  User accepts or rejects the suggestion
  */
-class TryMoreExState implements AnnotationState {
+export class TryMoreExState implements AnnotationState {
     static id = 'codewhisperer_learnmore_case_3'
     id = TryMoreExState.id
 
@@ -183,7 +184,7 @@ class TryMoreExState implements AnnotationState {
     static learnmoeCount: number = 0
 }
 
-class EndState implements AnnotationState {
+export class EndState implements AnnotationState {
     static id = 'codewhisperer_learnmore_end'
     id = EndState.id
 
@@ -376,6 +377,11 @@ export class LineAnnotationController implements vscode.Disposable {
 
         if (!this.container.auth.isConnectionValid()) {
             this.clear()
+            return
+        }
+
+        // Disable Tips when language is not supported by Amazon Q.
+        if (!runtimeLanguageContext.isLanguageSupported(editor.document.languageId)) {
             return
         }
 
