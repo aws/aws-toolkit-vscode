@@ -1,0 +1,8 @@
+{
+  "date" : "2024-05-28",
+  "version" : "3.6",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Fix recurring popup \"refreshing token\" whne users're typing in the IDE and Q connection expires"
+  } ]
+}
