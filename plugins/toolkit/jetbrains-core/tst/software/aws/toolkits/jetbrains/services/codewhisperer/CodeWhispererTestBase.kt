@@ -156,6 +156,9 @@ open class CodeWhispererTestBase {
         stateManager.loadState(originalExplorerActionState)
         settingsManager.loadState(originalSettings)
         popupManagerSpy.reset()
+        runInEdtAndWait {
+            popupManagerSpy.closePopup()
+        }
     }
 
     fun withCodeWhispererServiceInvokedAndWait(runnable: (InvocationContext) -> Unit) {

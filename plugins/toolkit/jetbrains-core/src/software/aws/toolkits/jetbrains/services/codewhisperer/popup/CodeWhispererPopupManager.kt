@@ -89,6 +89,8 @@ class CodeWhispererPopupManager {
     var sessionContext = SessionContext()
         private set
 
+    private var myPopup: JBPopup? = null
+
     init {
         // Listen for global scheme changes
         ApplicationManager.getApplication().messageBus.connect().subscribe(
@@ -268,6 +270,10 @@ class CodeWhispererPopupManager {
         popup.closeOk(null)
     }
 
+    fun closePopup() {
+        myPopup?.closeOk(null)
+    }
+
     fun showPopup(
         states: InvocationContext,
         sessionContext: SessionContext,
@@ -384,7 +390,9 @@ class CodeWhispererPopupManager {
         .setCancelOnOtherWindowOpen(true)
         .setCancelKeyEnabled(true)
         .setCancelOnWindowDeactivation(true)
-        .createPopup()
+        .createPopup().also {
+            myPopup = it
+        }
 
     fun getReformattedRecommendation(detailContext: DetailContext, userInput: String) =
         detailContext.reformatted.content().substring(userInput.length)
