@@ -249,9 +249,14 @@ To send a pull request:
 
 ### Changelog
 
-Pull requests that change **customer-impacting behavior** must include a changelog item(s). Run this command:
+Pull requests that change **customer-impacting behavior** must include a changelog item(s). Run one
+or both of the following commands:
 
-    npm run newChange
+    # For changes relevant to Amazon Q:
+    npm run newChange -w packages/amazonq
+
+    # For changes relevant to AWS Toolkit:
+    npm run newChange -w packages/toolkit
 
 > [!TIP]
 >
