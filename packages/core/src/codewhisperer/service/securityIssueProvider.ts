@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { AggregatedCodeScanIssue, CodeScanIssue, CodeScansState } from '../models/model'
+import { AggregatedCodeScanIssue, CodeScanIssue, CodeScansState, SuggestedFix } from '../models/model'
 export abstract class SecurityIssueProvider {
     private _issues: AggregatedCodeScanIssue[] = []
     public get issues() {
@@ -20,9 +20,18 @@ export abstract class SecurityIssueProvider {
         if (!event.contentChanges || event.contentChanges.length === 0) {
             return
         }
-        const changedRange = event.contentChanges[0].range
-        const changedText = event.contentChanges[0].text
-        const lineOffset = this._getLineOffset(changedRange, changedText)
+        const { changedRange, changedText, lineOffset } = event.contentChanges.reduce(
+            (acc, change) => ({
+                changedRange: acc.changedRange.union(change.range),
+                changedText: acc.changedText + change.text,
+                lineOffset: acc.lineOffset + this._getLineOffset(change.range, change.text),
+            }),
+            {
+                changedRange: event.contentChanges[0].range,
+                changedText: '',
+                lineOffset: 0,
+            }
+        )
 
         this._issues = this._issues.map(group => {
             if (group.filePath !== event.document.fileName) {
@@ -53,6 +62,7 @@ export abstract class SecurityIssueProvider {
                             ...issue,
                             startLine: issue.startLine + lineOffset,
                             endLine: issue.endLine + lineOffset,
+                            suggestedFixes: issue.suggestedFixes.map(fix => this._offsetSuggestedFix(fix, lineOffset)),
                         }
                     }),
             }
@@ -63,6 +73,24 @@ export abstract class SecurityIssueProvider {
         const originLines = range.end.line - range.start.line + 1
         const changedLines = text.split('\n').length
         return changedLines - originLines
+    }
+
+    private _offsetSuggestedFix(suggestedFix: SuggestedFix, lines: number): SuggestedFix {
+        return {
+            ...suggestedFix,
+            code: suggestedFix.code.replace(
+                /^(@@ -)(\d+)(,\d+ \+)(\d+)(,\d+ @@)/,
+                function (_fullMatch, ...groups: string[]) {
+                    return (
+                        groups[0] +
+                        String(parseInt(groups[1]) + lines) +
+                        groups[2] +
+                        String(parseInt(groups[3]) + lines) +
+                        groups[4]
+                    )
+                }
+            ),
+        }
     }
 
     public removeIssue(uri: vscode.Uri, issue: CodeScanIssue) {
