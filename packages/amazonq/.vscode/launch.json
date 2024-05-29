@@ -55,7 +55,7 @@
                 "--disable-extension=amazonwebservices.aws-toolkit-vscode",
                 "${workspaceFolder}/../core/dist/src/testFixtures/workspaceFolder",
                 "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/testE2E/index.js"
+                "--extensionTestsPath=${workspaceFolder}/dist/test/e2e/index.js"
             ],
             "env": {
                 "TEST_FILE": "${relativeFile}",
