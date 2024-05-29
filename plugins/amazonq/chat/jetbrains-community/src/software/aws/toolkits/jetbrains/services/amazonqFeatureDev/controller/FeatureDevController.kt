@@ -231,7 +231,6 @@ class FeatureDevController(
     override suspend fun processFileClicked(message: IncomingFeatureDevMessage.FileClicked) {
         val fileToUpdate = message.filePath
         val session = getSessionInfo(message.tabId)
-        val messageId = message.messageId
 
         var filePaths: List<NewFileZipInfo> = emptyList()
         var deletedFiles: List<DeletedFileInfo> = emptyList()
@@ -246,7 +245,7 @@ class FeatureDevController(
         filePaths.find { it.zipFilePath == fileToUpdate }?.let { it.rejected = !it.rejected }
         deletedFiles.find { it.zipFilePath == fileToUpdate }?.let { it.rejected = !it.rejected }
 
-        messenger.updateFileComponent(message.tabId, filePaths, deletedFiles, messageId)
+        messenger.updateFileComponent(message.tabId, filePaths, deletedFiles)
     }
 
     private suspend fun newTabOpened(tabId: String) {

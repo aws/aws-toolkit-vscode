@@ -274,7 +274,7 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeT
         onMessageReceived: (tabID: string, messageData: MynahUIDataModel) => {
             mynahUI.updateStore(tabID, messageData)
         },
-        onFileComponentUpdate: (tabID: string, filePaths: DiffTreeFileInfo[], deletedFiles: DiffTreeFileInfo[], messageId: string) => {
+        onFileComponentUpdate: (tabID: string, filePaths: DiffTreeFileInfo[], deletedFiles: DiffTreeFileInfo[]) => {
             const updateWith: Partial<ChatItem> = {
                 type: ChatItemType.ANSWER,
                 fileList: {
@@ -285,7 +285,7 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeT
                     actions: getActions([...filePaths, ...deletedFiles]),
                 },
             }
-            mynahUI.updateChatAnswerWithMessageId(tabID, messageId, updateWith)
+            mynahUI.updateLastChatAnswer(tabID, updateWith)
         },
         onWarning: (tabID: string, message: string, title: string) => {
             mynahUI.notify({

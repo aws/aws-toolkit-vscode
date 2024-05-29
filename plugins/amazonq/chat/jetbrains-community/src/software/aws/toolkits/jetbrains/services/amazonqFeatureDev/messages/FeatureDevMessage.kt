@@ -133,8 +133,7 @@ data class UpdatePlaceholderMessage(
 data class FileComponent(
     @JsonProperty("tabID") override val tabId: String,
     val filePaths: List<NewFileZipInfo>,
-    val deletedFiles: List<DeletedFileInfo>,
-    val messageId: String
+    val deletedFiles: List<DeletedFileInfo>
 ) : UiMessage(
     tabId = tabId,
     type = "updateFileComponent"
