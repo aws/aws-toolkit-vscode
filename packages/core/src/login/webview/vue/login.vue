@@ -603,14 +603,11 @@ export default defineComponent({
 }
 
 .auth-container {
-    display: flex;
-    flex-direction: column;
-    /* Stretches our overall container to the whole screen */
-    height: 100%;
-    width: 260px;
-    /* Centers all content in to middle of page since the height is the whole screen*/
-    justify-content: center;
+    height: auto;
     margin: auto;
+    position: absolute;
+    top: var(--auth-container-top);
+    width: 260px;
 }
 
 .header {
