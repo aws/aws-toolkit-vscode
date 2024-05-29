@@ -38,7 +38,7 @@ export class ZipExceedsSizeLimitError extends ToolkitError {
 
 export class AlternateDependencyVersionsNotFoundError extends Error {
     constructor() {
-        super('No available versions for update')
+        super('No available versions for dependency update')
     }
 }
 
