@@ -23,12 +23,7 @@ export interface ConnectorProps {
     sendFeedback?: (tabId: string, feedbackPayload: FeedbackPayload) => void | undefined
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
-    onFileComponentUpdate: (
-        tabID: string,
-        filePaths: DiffTreeFileInfo[],
-        deletedFiles: DiffTreeFileInfo[],
-        messageId: string
-    ) => void
+    onFileComponentUpdate: (tabID: string, filePaths: DiffTreeFileInfo[], deletedFiles: DiffTreeFileInfo[]) => void
     onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
@@ -203,12 +198,7 @@ export class Connector {
 
     handleMessageReceive = async (messageData: any): Promise<void> => {
         if (messageData.type === 'updateFileComponent') {
-            this.onFileComponentUpdate(
-                messageData.tabID,
-                messageData.filePaths,
-                messageData.deletedFiles,
-                messageData.messageId
-            )
+            this.onFileComponentUpdate(messageData.tabID, messageData.filePaths, messageData.deletedFiles)
             return
         }
         if (messageData.type === 'errorMessage') {

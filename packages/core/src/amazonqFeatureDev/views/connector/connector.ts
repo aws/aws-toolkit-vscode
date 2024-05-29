@@ -83,13 +83,11 @@ export class FileComponent extends UiMessage {
     readonly filePaths: NewFileInfo[]
     readonly deletedFiles: DeletedFileInfo[]
     override type = 'updateFileComponent'
-    readonly messageId: string
 
-    constructor(tabID: string, filePaths: NewFileInfo[], deletedFiles: DeletedFileInfo[], messageId: string) {
+    constructor(tabID: string, filePaths: NewFileInfo[], deletedFiles: DeletedFileInfo[]) {
         super(tabID)
         this.filePaths = filePaths
         this.deletedFiles = deletedFiles
-        this.messageId = messageId
     }
 }
 

@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "(featureDev): Revert fix for file rejection. Reason: The plan disappears after clicking generate Code"
+}

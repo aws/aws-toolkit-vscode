@@ -144,13 +144,8 @@ export class Messenger {
         this.dispatcher.sendAsyncEventProgress(new AsyncEventProgressMessage(tabID, inProgress, message))
     }
 
-    public updateFileComponent(
-        tabID: string,
-        filePaths: NewFileInfo[],
-        deletedFiles: DeletedFileInfo[],
-        messageId: string
-    ) {
-        this.dispatcher.updateFileComponent(new FileComponent(tabID, filePaths, deletedFiles, messageId))
+    public updateFileComponent(tabID: string, filePaths: NewFileInfo[], deletedFiles: DeletedFileInfo[]) {
+        this.dispatcher.updateFileComponent(new FileComponent(tabID, filePaths, deletedFiles))
     }
 
     public sendUpdatePlaceholder(tabID: string, newPlaceholder: string) {
