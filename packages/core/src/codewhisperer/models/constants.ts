@@ -460,16 +460,22 @@ export const failedToStartJobNotification =
     'Amazon Q could not begin the transformation. Please try starting the transformation again.'
 
 export const failedToStartJobTooManyJobsChatMessage =
-    'Sorry, I couldn’t begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed.'
+    'Sorry, I could not begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed.'
 
 export const failedToStartJobTooManyJobsNotification =
     'Amazon Q could not begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed.'
 
+export const failedToStartJobMonthlyLimitNotification =
+    'Amazon Q cannot transform your project because it will exceed the free tier limit of 2000 lines of code per month. Try transforming a smaller project.'
+
+export const failedToStartJobMonthlyLimitChatMessage =
+    'I am sorry, I cannot transform your project because it will exceed the free tier limit of 2000 lines of code per month. You can try again with a smaller project.'
+
 export const failedToStartJobLinesLimitNotification =
-    'Amazon Q could not begin the transformation. Your code exceeds the lines of code limit. Please try again with a smaller project.'
+    'Your project exceeds the free tier limit of 1000 lines of code per transformation. Try transforming a smaller project.'
 
 export const failedToStartJobLinesLimitChatMessage =
-    "Sorry, I couldn't begin the transformation. Your code exceeds the lines of code limit. Please try again with a smaller project."
+    'I am sorry, your project exceeds the free tier limit of 1000 lines of code per transformation. You can try again with a smaller project.'
 
 export const failedToUploadProjectChatMessage =
     'Sorry, I could not upload your project. Please try starting the transformation again.'

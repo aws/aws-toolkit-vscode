@@ -228,9 +228,6 @@ export async function finalizeTransformByQ(status: string) {
         await finalizeTransformationJob(status)
     } catch (error: any) {
         await transformationJobErrorHandler(error)
-    } finally {
-        await postTransformationJob()
-        await cleanupTransformationJob()
     }
 }
 
@@ -490,6 +487,13 @@ export async function startTransformationJob(uploadId: string) {
             )
             transformByQState.setJobFailureErrorChatMessage(
                 CodeWhispererConstants.failedToStartJobTooManyJobsChatMessage
+            )
+        } else if (errorMessage.includes('Monthly aggregated Lines of Code limit breached')) {
+            transformByQState.setJobFailureErrorNotification(
+                CodeWhispererConstants.failedToStartJobMonthlyLimitNotification
+            )
+            transformByQState.setJobFailureErrorChatMessage(
+                CodeWhispererConstants.failedToStartJobMonthlyLimitChatMessage
             )
         } else if (errorMessage.includes('Lines of Code limit breached')) {
             transformByQState.setJobFailureErrorNotification(
