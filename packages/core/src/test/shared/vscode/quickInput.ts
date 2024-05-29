@@ -132,7 +132,7 @@ function findButtonOrThrow(
 ) {
     const target = typeof button === 'string' ? input.buttons.filter(b => b.tooltip === button)[0] : button
     if (target === undefined) {
-        throwError(`Unable to find button: ${button}`)
+        throwError(`Unable to find button: ${String(button)}`)
     }
 
     return target

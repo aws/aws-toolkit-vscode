@@ -9,6 +9,8 @@ import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { platform } from 'os'
 import { focusAmazonQPanel } from '../commands/registerCommands'
 import { AuthStates, AuthUtil } from '../../codewhisperer/util/authUtil'
+import { inlinehintKey } from '../../codewhisperer/models/constants'
+import { EndState } from '../../codewhisperer/views/lineAnnotationController'
 
 /** When the user clicks the CodeLens that prompts user to try Amazon Q chat */
 export const tryChatCodeLensCommand = Commands.declare(`_aws.amazonq.tryChatCodeLens`, () => async () => {
@@ -36,15 +38,25 @@ export class TryChatCodeLensProvider implements vscode.CodeLensProvider {
     private static providerDisposable: vscode.Disposable | undefined = undefined
     private disposables: vscode.Disposable[] = []
 
-    constructor(private readonly cursorPositionIfValid = () => TryChatCodeLensProvider._resolveCursorPosition()) {
+    private isAmazonQVisible: boolean = false
+
+    constructor(
+        isAmazonQVisibleEvent: vscode.Event<boolean>,
+        private readonly cursorPositionIfValid = () => TryChatCodeLensProvider._resolveCursorPosition()
+    ) {
         // when we want to recalculate the codelens
         this.disposables.push(
             vscode.window.onDidChangeActiveTextEditor(() => this._onDidChangeCodeLenses.fire()),
             vscode.window.onDidChangeTextEditorSelection(() => this._onDidChangeCodeLenses.fire())
         )
+
+        isAmazonQVisibleEvent(visible => {
+            this.isAmazonQVisible = visible
+            this._onDidChangeCodeLenses.fire()
+        })
     }
 
-    static async register(): Promise<boolean> {
+    static async register(isAmazonQVisible: vscode.Event<boolean>): Promise<boolean> {
         const shouldShow = globals.context.globalState.get(this.showCodeLensId, true)
         if (!shouldShow) {
             return false
@@ -54,7 +66,7 @@ export class TryChatCodeLensProvider implements vscode.CodeLensProvider {
             throw new ToolkitError(`${this.name} can only be registered once.`)
         }
 
-        const provider = new TryChatCodeLensProvider()
+        const provider = new TryChatCodeLensProvider(isAmazonQVisible)
         this.providerDisposable = vscode.languages.registerCodeLensProvider({ scheme: 'file' }, provider)
         globals.context.subscriptions.push(provider)
         return true
@@ -66,6 +78,16 @@ export class TryChatCodeLensProvider implements vscode.CodeLensProvider {
     ): vscode.ProviderResult<vscode.CodeLens[]> {
         return new Promise(resolve => {
             token.onCancellationRequested(() => resolve([]))
+
+            /**
+             * Disable Codelens if
+             * - lineAnnotationController is visible (i.e not in end state)
+             * - Amazon Q chat is visible
+             */
+            const isLineAnnotationVisible = globals.context.globalState.get<string>(inlinehintKey)
+            if ((isLineAnnotationVisible && isLineAnnotationVisible !== EndState.id) || this.isAmazonQVisible) {
+                return resolve([])
+            }
 
             if (AuthUtil.instance.getChatAuthStateSync().amazonQ !== AuthStates.connected) {
                 return resolve([])

@@ -7,12 +7,15 @@ types/*.d.ts
 
 # Duplicate entries because prettier can be ran from root or within the workspace/subpackage.
 # TODO: Avoid this.
+resources/js/graphStateMachine.js
 src/shared/telemetry/clienttelemetry.d.ts
 src/codewhisperer/client/codewhispererclient.d.ts
 src/codewhisperer/client/codewhispereruserclient.d.ts
 src/amazonqFeatureDev/client/featuredevproxyclient.d.ts
 src/auth/sso/oidcclientpkce.d.ts
 src/testFixtures/**
+
+packages/core/resources/js/graphStateMachine.js
 packages/core/src/shared/telemetry/clienttelemetry.d.ts
 packages/core/src/codewhisperer/client/codewhispererclient.d.ts
 packages/core/src/codewhisperer/client/codewhispereruserclient.d.ts

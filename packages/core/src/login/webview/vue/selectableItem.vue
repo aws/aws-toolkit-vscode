@@ -117,21 +117,20 @@ export default defineComponent({
 }
 
 .title {
-    font-size: 12px;
-    font-weight: bold;
+    font-size: var(--font-size-base);
 }
 
 .text {
     display: flex;
     flex-direction: column;
-    font-size: 12px;
+    font-size: var(--font-size-sm);
     justify-content: center;
 }
 
-.text.vscode-dark {
+.vscode-dark .text {
     color: white;
 }
-.text.vscode-light {
+.vscode-light .text {
     color: black;
 }
 .icon {

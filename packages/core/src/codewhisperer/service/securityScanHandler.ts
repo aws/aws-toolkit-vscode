@@ -5,7 +5,13 @@
 
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { getLogger } from '../../shared/logger'
-import { AggregatedCodeScanIssue, CodeScansState, codeScanState, CodeScanStoppedError } from '../models/model'
+import {
+    AggregatedCodeScanIssue,
+    CodeScanIssue,
+    CodeScansState,
+    codeScanState,
+    CodeScanStoppedError,
+} from '../models/model'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
@@ -67,29 +73,39 @@ export async function listScanResults(
             if (existsSync(filePath) && statSync(filePath).isFile()) {
                 const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
                     filePath: filePath,
-                    issues: issues.map(issue => {
-                        return {
-                            startLine: issue.startLine - 1 >= 0 ? issue.startLine - 1 : 0,
-                            endLine: issue.endLine,
-                            comment: `${issue.title.trim()}: ${issue.description.text.trim()}`,
-                            title: issue.title,
-                            description: issue.description,
-                            detectorId: issue.detectorId,
-                            detectorName: issue.detectorName,
-                            findingId: issue.findingId,
-                            ruleId: issue.ruleId,
-                            relatedVulnerabilities: issue.relatedVulnerabilities,
-                            severity: issue.severity,
-                            recommendation: issue.remediation.recommendation,
-                            suggestedFixes: issue.remediation.suggestedFixes,
-                        }
-                    }),
+                    issues: issues.map(mapRawToCodeScanIssue),
                 }
                 aggregatedCodeScanIssueList.push(aggregatedCodeScanIssue)
             }
         })
+        const maybeAbsolutePath = `/${key}`
+        if (existsSync(maybeAbsolutePath) && statSync(maybeAbsolutePath).isFile()) {
+            const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
+                filePath: maybeAbsolutePath,
+                issues: issues.map(mapRawToCodeScanIssue),
+            }
+            aggregatedCodeScanIssueList.push(aggregatedCodeScanIssue)
+        }
     })
     return aggregatedCodeScanIssueList
+}
+
+function mapRawToCodeScanIssue(issue: RawCodeScanIssue): CodeScanIssue {
+    return {
+        startLine: issue.startLine - 1 >= 0 ? issue.startLine - 1 : 0,
+        endLine: issue.endLine,
+        comment: `${issue.title.trim()}: ${issue.description.text.trim()}`,
+        title: issue.title,
+        description: issue.description,
+        detectorId: issue.detectorId,
+        detectorName: issue.detectorName,
+        findingId: issue.findingId,
+        ruleId: issue.ruleId,
+        relatedVulnerabilities: issue.relatedVulnerabilities,
+        severity: issue.severity,
+        recommendation: issue.remediation.recommendation,
+        suggestedFixes: issue.remediation.suggestedFixes,
+    }
 }
 
 function mapToAggregatedList(codeScanIssueMap: Map<string, RawCodeScanIssue[]>, json: string) {
@@ -115,13 +131,13 @@ export async function pollScanJobStatus(
     scope: CodeWhispererConstants.CodeAnalysisScope,
     codeScanStartTime: number
 ) {
+    const pollingStartTime = performance.now()
     // We don't expect to get results immediately, so sleep for some time initially to not make unnecessary calls
-    await sleep(getPollingDelayForScope(scope))
+    await sleep(getPollingDelayMsForScope(scope))
 
     const logger = getLoggerForScope(scope)
     logger.verbose(`Polling scan job status...`)
     let status: string = 'Pending'
-    let timer: number = 0
     while (true) {
         throwIfCancelled(scope, codeScanStartTime)
         const req: codewhispererClient.GetCodeScanRequest = {
@@ -137,12 +153,8 @@ export async function pollScanJobStatus(
         }
         throwIfCancelled(scope, codeScanStartTime)
         await sleep(CodeWhispererConstants.codeScanJobPollingIntervalSeconds * 1000)
-        timer += CodeWhispererConstants.codeScanJobPollingIntervalSeconds
-        const timeoutSeconds =
-            scope === CodeWhispererConstants.CodeAnalysisScope.FILE
-                ? CodeWhispererConstants.codeFileScanJobTimeoutSeconds
-                : CodeWhispererConstants.codeScanJobTimeoutSeconds
-        if (timer > timeoutSeconds) {
+        const elapsedTime = performance.now() - pollingStartTime
+        if (elapsedTime > getPollingTimeoutMsForScope(scope)) {
             logger.verbose(`Scan job status: ${status}`)
             logger.verbose(`Security Scan failed. Amazon Q timed out.`)
             throw new SecurityScanTimedOutError()
@@ -286,8 +298,18 @@ export function getLoggerForScope(scope: CodeWhispererConstants.CodeAnalysisScop
     return scope === CodeWhispererConstants.CodeAnalysisScope.FILE ? getNullLogger() : getLogger()
 }
 
-function getPollingDelayForScope(scope: CodeWhispererConstants.CodeAnalysisScope) {
-    return scope === CodeWhispererConstants.CodeAnalysisScope.FILE
-        ? CodeWhispererConstants.fileScanPollingDelaySeconds
-        : CodeWhispererConstants.projectScanPollingDelaySeconds
+function getPollingDelayMsForScope(scope: CodeWhispererConstants.CodeAnalysisScope) {
+    return (
+        (scope === CodeWhispererConstants.CodeAnalysisScope.FILE
+            ? CodeWhispererConstants.fileScanPollingDelaySeconds
+            : CodeWhispererConstants.projectScanPollingDelaySeconds) * 1000
+    )
+}
+
+function getPollingTimeoutMsForScope(scope: CodeWhispererConstants.CodeAnalysisScope) {
+    return (
+        (scope === CodeWhispererConstants.CodeAnalysisScope.FILE
+            ? CodeWhispererConstants.codeFileScanJobTimeoutSeconds
+            : CodeWhispererConstants.codeScanJobTimeoutSeconds) * 1000
+    )
 }

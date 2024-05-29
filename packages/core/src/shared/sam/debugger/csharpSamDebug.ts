@@ -77,9 +77,10 @@ export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchReque
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([waitForDebuggerMessages.DOTNET])
     // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = waitForPort
+    const platformArchitecture = os.arch()
 
     if (!config.noDebug) {
-        if (config.architecture === 'arm64') {
+        if ([config.architecture, platformArchitecture].includes('arm64')) {
             void vscode.window.showWarningMessage(
                 localize(
                     'AWS.sam.noArm.dotnet.debug',
@@ -219,7 +220,7 @@ export async function makeDotnetDebugConfiguration(
     codeUri: string
 ): Promise<DotNetDebugConfiguration> {
     if (config.noDebug) {
-        throw Error(`SAM debug: invalid config ${config}`)
+        throw Error(`SAM debug: invalid config: ${config.name}`)
     }
     const pipeArgs = ['-c', `docker exec -i $(docker ps -q -f publish=${config.debugPort}) \${debuggerCommand}`]
     config.debuggerPath = pathutil.normalize(getDebuggerPath(codeUri))

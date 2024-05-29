@@ -574,6 +574,8 @@ export default defineComponent({
 </script>
 
 <style>
+@import './base.css';
+
 .selectable-item {
     margin-bottom: 10px;
     margin-top: 10px;
@@ -590,7 +592,7 @@ export default defineComponent({
     color: #c6c6c6;
     margin-bottom: 5px;
     margin-top: 5px;
-    font-size: 10px;
+    font-size: var(--font-size-sm);
     font-weight: 500;
 }
 .vscode-light .hint {
@@ -608,34 +610,36 @@ export default defineComponent({
     width: 260px;
     /* Centers all content in to middle of page since the height is the whole screen*/
     justify-content: center;
+    margin: auto;
 }
 
 .header {
-    font-size: 12px;
+    font-size: var(--font-size-base);
     font-weight: bold;
 }
-.header.vscode-dark {
+
+.vscode-dark .header {
     color: white;
 }
-.header.vscode-light {
+.vscode-light .header {
     color: black;
 }
 
 .title {
     margin-bottom: 3px;
     margin-top: 3px;
-    font-size: 11px;
+    font-size: var(--font-size-base);
     font-weight: 500;
 }
-.title.vscode-dark {
+.vscode-dark .title {
     color: white;
 }
-.title.vscode-light {
+.vscode-light .title {
     color: black;
 }
 
 .subHeader {
-    font-size: 10px;
+    font-size: var(--font-size-sm);
 }
 .continue-button {
     background-color: var(--vscode-button-background);
@@ -648,6 +652,7 @@ export default defineComponent({
     margin-bottom: 3px;
     margin-top: 3px;
     cursor: pointer;
+    font-size: var(--font-size-base);
 }
 .back-button {
     background: none;
@@ -677,7 +682,7 @@ export default defineComponent({
     padding-right: 8px;
     padding-top: 6px;
     padding-bottom: 6px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     font-weight: 400;
 }
 body.vscode-light .urlInput {
@@ -696,7 +701,7 @@ body.vscode-dark .urlInput {
     padding-right: 8px;
     padding-top: 6px;
     padding-bottom: 6px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     font-weight: 400;
 }
 body.vscode-light .iamInput {
@@ -714,18 +719,18 @@ body.vscode-dark .iamInput {
     padding-right: 8px;
     padding-top: 6px;
     padding-bottom: 6px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     font-weight: 400;
 }
 body.vscode-light .regionSelect {
     color: black;
 }
 body.vscode-dark .regionSelect {
-    color: #cccccc;
+    color: white;
 }
 .start-url-error {
     color: #ff0000;
-    font-size: 8px;
+    font-size: var(--font-size-sm);
 }
 #logo {
     fill: var(--vscode-button-foreground);
