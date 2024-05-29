@@ -361,9 +361,19 @@ export const jobPlanProgress: {
     transformCode: StepProgress.NotStarted,
 }
 
-export let sessionJobHistory: {
-    [jobId: string]: { startTime: string; projectName: string; status: string; duration: string }
-} = {}
+export interface HistoryEntry {
+    expireOn: number
+    startTime: string
+    projectName: string
+    status: string
+    duration: string
+    summaryFile?: string
+    patchFile?: string
+}
+
+export interface QCodeTransformHistory {
+    [key: string]: HistoryEntry
+}
 
 export class TransformByQState {
     private transformByQState: TransformByQStatus = TransformByQStatus.NotStarted
@@ -402,6 +412,8 @@ export class TransformByQState {
     private javaHome: string | undefined = undefined
 
     private chatControllers: ChatControllerEventEmitters | undefined = undefined
+
+    private extensionContext: vscode.ExtensionContext | undefined = undefined
 
     private dependencyFolderInfo: FolderInfo | undefined = undefined
 
@@ -525,6 +537,10 @@ export class TransformByQState {
         return this.intervalId
     }
 
+    public getExtensionContext() {
+        return this.extensionContext
+    }
+
     public appendToErrorLog(message: string) {
         this.errorLog += `${message}\n\n`
     }
@@ -625,6 +641,10 @@ export class TransformByQState {
         this.chatControllers = controllers
     }
 
+    public setExtensionContext(context: vscode.ExtensionContext) {
+        this.extensionContext = context
+    }
+
     public setDependencyFolderInfo(folderInfo: FolderInfo) {
         this.dependencyFolderInfo = folderInfo
     }
@@ -639,10 +659,6 @@ export class TransformByQState {
 
     public resetPlanSteps() {
         this.planSteps = undefined
-    }
-
-    public resetSessionJobHistory() {
-        sessionJobHistory = {}
     }
 
     public setJobDefaults() {

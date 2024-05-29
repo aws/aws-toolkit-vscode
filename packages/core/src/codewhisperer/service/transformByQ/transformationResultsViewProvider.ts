@@ -11,6 +11,7 @@ import path from 'path'
 import vscode from 'vscode'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
 import { TransformByQReviewStatus, transformByQState } from '../../models/model'
+import { SessionJobHistory } from '../../service/transformByQ/SessionJobHistory'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../../shared/utilities/download'
 import { getLogger } from '../../../shared/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
@@ -397,7 +398,7 @@ export class ProposedTransformationExplorer {
                 )
                 transformByQState.setResultArchiveFilePath(pathContainingArchive)
                 await vscode.commands.executeCommand('setContext', 'gumby.isSummaryAvailable', true)
-
+                await SessionJobHistory.update()
                 // This metric is only emitted when placed before showInformationMessage
                 telemetry.codeTransform_vcsDiffViewerVisible.emit({
                     codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
@@ -411,6 +412,7 @@ export class ProposedTransformationExplorer {
                     message: CodeWhispererConstants.viewProposedChangesChatMessage,
                     tabID: ChatSessionManager.Instance.getSession().tabID,
                 })
+
                 await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
             } catch (e: any) {
                 deserializeErrorMessage = (e as Error).message

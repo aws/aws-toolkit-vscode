@@ -21,7 +21,7 @@ import { TryChatCodeLensProvider, tryChatCodeLensCommand } from '../codewhispere
 export async function activate(context: ExtensionContext) {
     const appInitContext = DefaultAmazonQAppInitContext.instance
 
-    registerApps(appInitContext)
+    registerApps(appInitContext, context)
 
     const provider = new AmazonQChatViewProvider(
         context,
@@ -53,8 +53,8 @@ export async function activate(context: ExtensionContext) {
     await activateBadge()
 }
 
-function registerApps(appInitContext: AmazonQAppInitContext) {
+function registerApps(appInitContext: AmazonQAppInitContext, context: ExtensionContext) {
     cwChatAppInit(appInitContext)
     featureDevChatAppInit(appInitContext)
-    gumbyChatAppInit(appInitContext)
+    gumbyChatAppInit(appInitContext, context)
 }

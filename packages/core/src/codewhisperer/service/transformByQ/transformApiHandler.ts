@@ -14,13 +14,13 @@ import {
     HilZipManifest,
     IHilZipManifestParams,
     jobPlanProgress,
-    sessionJobHistory,
     StepProgress,
     transformByQState,
     TransformByQStatus,
     TransformByQStoppedError,
     ZipManifest,
 } from '../../models/model'
+import { SessionJobHistory } from '../../service/transformByQ/SessionJobHistory'
 import { getLogger } from '../../../shared/logger'
 import {
     CreateUploadUrlResponse,
@@ -46,7 +46,7 @@ import { downloadExportResultArchive } from '../../../shared/utilities/download'
 import { ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhisperer-streaming'
 import { fsCommon } from '../../../srcShared/fs'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
-import { convertToTimeString, encodeHTML } from '../../../shared/utilities/textUtilities'
+import { encodeHTML } from '../../../shared/utilities/textUtilities'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -68,18 +68,6 @@ export function throwIfCancelled() {
     if (transformByQState.isCancelled()) {
         throw new TransformByQStoppedError()
     }
-}
-
-export function updateJobHistory() {
-    if (transformByQState.getJobId() !== '') {
-        sessionJobHistory[transformByQState.getJobId()] = {
-            startTime: transformByQState.getStartTime(),
-            projectName: transformByQState.getProjectName(),
-            status: transformByQState.getPolledJobStatus(),
-            duration: convertToTimeString(calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime())),
-        }
-    }
-    return sessionJobHistory
 }
 
 export function getHeadersObj(sha256: string, kmsKeyArn: string | undefined) {
@@ -271,12 +259,15 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
         getLogger().error(`CodeTransformation: UploadArtifactToS3 error: = ${errorMessage}`)
         throw new Error('S3 upload failed')
     }
+
+    transformByQState.setJobId(encodeHTML(response.uploadId))
+
     // UploadContext only exists for subsequent uploads, and they will return a uploadId that is NOT
     // the jobId. Only the initial call will uploadId be the jobId
     if (!uploadContext) {
         transformByQState.setJobId(encodeHTML(response.uploadId))
     }
-    updateJobHistory()
+    await SessionJobHistory.update()
     return response.uploadId
 }
 

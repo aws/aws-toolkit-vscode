@@ -15,8 +15,11 @@ import { debounce } from 'lodash'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { showTransformationHub } from './commands'
 import { transformByQState } from '../codewhisperer/models/model'
+import { SessionJobHistory } from '../codewhisperer/service/transformByQ/SessionJobHistory'
+import { ExtensionContext } from 'vscode'
+import { getLogger } from '../shared/logger'
 
-export function init(appContext: AmazonQAppInitContext) {
+export function init(appContext: AmazonQAppInitContext, extensionContext: ExtensionContext) {
     const gumbyChatControllerEventEmitters: ChatControllerEventEmitters = {
         transformSelected: new vscode.EventEmitter<any>(),
         authClicked: new vscode.EventEmitter<any>(),
@@ -73,4 +76,12 @@ export function init(appContext: AmazonQAppInitContext) {
     showTransformationHub.register()
 
     transformByQState.setChatControllers(gumbyChatControllerEventEmitters)
+    transformByQState.setExtensionContext(extensionContext)
+    SessionJobHistory.evictExpired().then(
+        _ => {},
+        _ => {
+            getLogger().error('Unable to evict expired jobs')
+        }
+    )
+    // SessionJobHistory.setAllToExpireNow().then(_=>{}, _=>{})
 }
