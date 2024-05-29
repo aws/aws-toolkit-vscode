@@ -92,23 +92,24 @@ class AppRunnerCreateServiceDialogTest {
     @Test
     fun `Repository Deployment builds request properly`() {
         val repoUrl = RuleUtils.randomName()
-
-        val dialog = runInEdtAndGet { CreationDialog(projectRule.project) }
-        val panel = CreationPanel(projectRule.project).apply {
-            repo.isSelected = true
-            repoConfigFromSettings.isSelected = true
-            repository = repoUrl
-            runtime = Runtime.NODEJS_12
+        runInEdtAndGet {
+            val dialog = CreationDialog(projectRule.project)
+            val panel = CreationPanel(projectRule.project).apply {
+                repo.isSelected = true
+                repoConfigFromSettings.isSelected = true
+                repository = repoUrl
+                runtime = Runtime.NODEJS_12
+            }
+            panel.component.apply()
+            val request = dialog.buildRequest(panel)
+            assertThat(request.sourceConfiguration().autoDeploymentsEnabled()).isTrue
+            assertThat(request.sourceConfiguration().codeRepository().codeConfiguration().configurationSource()).isEqualTo(ConfigurationSource.API)
+            assertThat(request.sourceConfiguration().codeRepository().repositoryUrl()).isEqualTo(repoUrl)
+            assertThat(request.sourceConfiguration().codeRepository().codeConfiguration().codeConfigurationValues().port()).isEqualTo("80")
+            assertThat(request.sourceConfiguration().codeRepository().codeConfiguration().codeConfigurationValues().runtime()).isEqualTo(Runtime.NODEJS_12)
+            assertThat(request.sourceConfiguration().codeRepository().sourceCodeVersion().type()).isEqualTo(SourceCodeVersionType.BRANCH)
+            assertThat(request.sourceConfiguration().authenticationConfiguration().connectionArn()).isEqualTo(connectionArn)
         }
-        panel.component.apply()
-        val request = dialog.buildRequest(panel)
-        assertThat(request.sourceConfiguration().autoDeploymentsEnabled()).isTrue
-        assertThat(request.sourceConfiguration().codeRepository().codeConfiguration().configurationSource()).isEqualTo(ConfigurationSource.API)
-        assertThat(request.sourceConfiguration().codeRepository().repositoryUrl()).isEqualTo(repoUrl)
-        assertThat(request.sourceConfiguration().codeRepository().codeConfiguration().codeConfigurationValues().port()).isEqualTo("80")
-        assertThat(request.sourceConfiguration().codeRepository().codeConfiguration().codeConfigurationValues().runtime()).isEqualTo(Runtime.NODEJS_12)
-        assertThat(request.sourceConfiguration().codeRepository().sourceCodeVersion().type()).isEqualTo(SourceCodeVersionType.BRANCH)
-        assertThat(request.sourceConfiguration().authenticationConfiguration().connectionArn()).isEqualTo(connectionArn)
     }
 
     @Test
