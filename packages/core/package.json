@@ -1155,11 +1155,11 @@
                 },
                 {
                     "command": "aws.ec2.stopInstance",
-                    "whem": "aws.isDevMode"
+                    "when": "aws.isDevMode"
                 },
                 {
                     "command": "aws.ec2.rebootInstance",
-                    "whem": "aws.isDevMode"
+                    "when": "aws.isDevMode"
                 },
                 {
                     "command": "aws.dev.openMenu",
