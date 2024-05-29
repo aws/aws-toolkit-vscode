@@ -86,12 +86,17 @@ class CodeScanSessionConfig(
             null -> getProjectPayloadMetadata()
             else -> when (scope) {
                 CodeAnalysisScope.PROJECT -> getProjectPayloadMetadata()
-                CodeAnalysisScope.FILE -> getFilePayloadMetadata(selectedFile)
+                CodeAnalysisScope.FILE -> if (selectedFile.path.startsWith(projectRoot.path)) {
+                    getFilePayloadMetadata(selectedFile)
+                } else {
+                    projectRoot = selectedFile.parent
+                    getFilePayloadMetadata(selectedFile)
+                }
             }
         }
 
         // Copy all the included source files to the source zip
-        val srcZip = zipFiles(payloadMetadata.sourceFiles.map { Path.of(it) }, scope)
+        val srcZip = zipFiles(payloadMetadata.sourceFiles.map { Path.of(it) })
         val payloadContext = PayloadContext(
             payloadMetadata.language,
             payloadMetadata.linesScanned,
@@ -106,7 +111,6 @@ class CodeScanSessionConfig(
     }
 
     fun getFilePayloadMetadata(file: VirtualFile): PayloadMetadata =
-        // Handle the case where the selected file is outside the project root.
         PayloadMetadata(
             setOf(file.path),
             file.length,
@@ -124,12 +128,9 @@ class CodeScanSessionConfig(
         return bufferedReader.useLines { lines -> lines.count() }
     }
 
-    private fun zipFiles(files: List<Path>, scope: CodeAnalysisScope): File = createTemporaryZipFile {
+    private fun zipFiles(files: List<Path>): File = createTemporaryZipFile {
         files.forEach { file ->
-            val relativePath = when (scope) {
-                CodeAnalysisScope.PROJECT -> file.relativeTo(projectRoot.toNioPath())
-                else -> file
-            }
+            val relativePath = file.relativeTo(projectRoot.toNioPath())
             LOG.debug { "Selected file for truncation: $file" }
             it.putNextEntry(relativePath.toString(), file)
         }
