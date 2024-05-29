@@ -7,13 +7,12 @@ import assert from 'assert'
 import { qTestingFramework } from './framework/framework'
 import sinon from 'sinon'
 import { verifyTextOrder } from './framework/text'
-import { registerAuthHook, using } from '../../test/setupUtil'
+import { registerAuthHook, using } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
 import { Messenger } from './framework/messenger'
-import { FollowUpTypes } from '../../amazonqFeatureDev/types'
-import { examples, newTaskChanges, sessionClosed } from '../../amazonqFeatureDev/userFacingText'
+import { FollowUpTypes, examples, newTaskChanges, sessionClosed } from 'aws-core-vscode/amazonqFeatureDev'
 import { ChatItem } from '@aws/mynah-ui'
-import { sleep } from '../../shared/utilities/timeoutUtils'
+import { sleep } from 'aws-core-vscode/shared'
 
 describe('Amazon Q Feature Dev', function () {
     let framework: qTestingFramework
@@ -31,7 +30,8 @@ describe('Amazon Q Feature Dev', function () {
          *
          * TODO: Re-enable for all versions once the backend can handle them
          */
-        if (process.env['VSCODE_TEST_VERSION'] !== 'stable') {
+        const testVersion = process.env['VSCODE_TEST_VERSION']
+        if (testVersion && testVersion !== 'stable') {
             this.skip()
         }
 
