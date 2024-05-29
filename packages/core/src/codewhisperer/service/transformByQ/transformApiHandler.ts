@@ -745,12 +745,28 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
 
             const errorMessage = response.transformationJob.reason
             if (errorMessage !== undefined) {
-                transformByQState.setJobFailureErrorChatMessage(
-                    `${CodeWhispererConstants.failedToCompleteJobGenericChatMessage} ${errorMessage}`
-                )
-                transformByQState.setJobFailureErrorNotification(
-                    `${CodeWhispererConstants.failedToCompleteJobGenericNotification} ${errorMessage}`
-                )
+                if (errorMessage.includes('Monthly aggregated Lines of Code limit breached')) {
+                    transformByQState.setJobFailureErrorNotification(
+                        CodeWhispererConstants.failedToStartJobMonthlyLimitNotification
+                    )
+                    transformByQState.setJobFailureErrorChatMessage(
+                        CodeWhispererConstants.failedToStartJobMonthlyLimitChatMessage
+                    )
+                } else if (errorMessage.includes('Lines of Code limit breached for job')) {
+                    transformByQState.setJobFailureErrorNotification(
+                        CodeWhispererConstants.failedToStartJobLinesLimitNotification
+                    )
+                    transformByQState.setJobFailureErrorChatMessage(
+                        CodeWhispererConstants.failedToStartJobLinesLimitChatMessage
+                    )
+                } else {
+                    transformByQState.setJobFailureErrorChatMessage(
+                        `${CodeWhispererConstants.failedToCompleteJobGenericChatMessage} ${errorMessage}`
+                    )
+                    transformByQState.setJobFailureErrorNotification(
+                        `${CodeWhispererConstants.failedToCompleteJobGenericNotification} ${errorMessage}`
+                    )
+                }
                 transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
             }
             if (validStates.includes(status)) {

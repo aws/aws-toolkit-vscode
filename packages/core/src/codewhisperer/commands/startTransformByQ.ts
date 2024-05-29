@@ -488,20 +488,6 @@ export async function startTransformationJob(uploadId: string) {
             transformByQState.setJobFailureErrorChatMessage(
                 CodeWhispererConstants.failedToStartJobTooManyJobsChatMessage
             )
-        } else if (errorMessage.includes('Monthly aggregated Lines of Code limit breached')) {
-            transformByQState.setJobFailureErrorNotification(
-                CodeWhispererConstants.failedToStartJobMonthlyLimitNotification
-            )
-            transformByQState.setJobFailureErrorChatMessage(
-                CodeWhispererConstants.failedToStartJobMonthlyLimitChatMessage
-            )
-        } else if (errorMessage.includes('Lines of Code limit breached')) {
-            transformByQState.setJobFailureErrorNotification(
-                CodeWhispererConstants.failedToStartJobLinesLimitNotification
-            )
-            transformByQState.setJobFailureErrorChatMessage(
-                CodeWhispererConstants.failedToStartJobLinesLimitChatMessage
-            )
         } else {
             transformByQState.setJobFailureErrorNotification(
                 `${CodeWhispererConstants.failedToStartJobNotification} ${errorMessage}`
