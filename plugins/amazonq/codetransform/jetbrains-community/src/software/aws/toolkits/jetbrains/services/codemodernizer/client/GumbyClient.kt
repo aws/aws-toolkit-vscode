@@ -206,7 +206,7 @@ class GumbyClient(private val project: Project) {
             .connect { request -> // default connect timeout is 10s
                 val connection = request.connection as HttpURLConnection
                 connection.setFixedLengthStreamingMode(fileToUpload.length())
-                connection.readTimeout = 30 * 60 * 1000 // since pre-signed URL expiration was increased to 30 minutes
+                connection.readTimeout = 32 * 60 * 1000 // pre-signed URL expires in 30 minutes. Includes some buffer for connection.
                 fileToUpload.inputStream().use { inputStream ->
                     connection.outputStream.use {
                         val bufferSize = 4096

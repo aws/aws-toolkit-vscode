@@ -29,6 +29,10 @@ class CodeTransformMessageListener {
         _messages.tryEmit(CodeTransformActionMessage(CodeTransformCommand.MavenBuildComplete, mavenBuildResult = result))
     }
 
+    fun onUploadResult() {
+        _messages.tryEmit(CodeTransformActionMessage(CodeTransformCommand.UploadComplete))
+    }
+
     fun onTransformResult(result: CodeModernizerJobCompletedResult) {
         _messages.tryEmit(CodeTransformActionMessage(CodeTransformCommand.TransformComplete, transformResult = result))
     }

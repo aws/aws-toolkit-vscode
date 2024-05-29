@@ -37,13 +37,6 @@ val STATES_AFTER_STARTED = setOf(
     *STATES_AFTER_INITIAL_BUILD.toTypedArray(),
 )
 
-const val TROUBLESHOOTING_URL_DOWNLOAD_DIFF =
-    "https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#w24aac14c20c19c11"
-const val TROUBLESHOOTING_URL_MAVEN_COMMANDS =
-    "https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#w24aac14c20c19b7"
-const val TROUBLESHOOTING_URL_PREREQUISITES =
-    "https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites"
-
 fun refreshToken(project: Project) {
     val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(QConnection.getInstance())
     val provider = (connection?.getConnectionSettings() as TokenConnectionSettings).tokenProvider.delegate as BearerTokenProvider

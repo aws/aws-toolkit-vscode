@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.codemodernizer.model
 
 sealed class CodeModernizerStartJobResult {
     data class ZipCreationFailed(val reason: String) : CodeModernizerStartJobResult()
+    data class ZipUploadFailed(val reason: UploadFailureReason) : CodeModernizerStartJobResult()
     data class Started(val jobId: JobId) : CodeModernizerStartJobResult()
     data class UnableToStartJob(val exception: String) : CodeModernizerStartJobResult()
     object Cancelled : CodeModernizerStartJobResult()

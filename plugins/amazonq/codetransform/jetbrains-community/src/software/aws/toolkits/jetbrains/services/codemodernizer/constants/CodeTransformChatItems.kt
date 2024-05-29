@@ -5,7 +5,9 @@ package software.aws.toolkits.jetbrains.services.codemodernizer.constants
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
-import software.aws.toolkits.jetbrains.services.amazonq.CODE_TRANSFORM_TROUBLESHOOT_DOC
+import software.aws.toolkits.jetbrains.services.amazonq.CODE_TRANSFORM_PREREQUISITES
+import software.aws.toolkits.jetbrains.services.amazonq.CODE_TRANSFORM_TROUBLESHOOT_DOC_MVN_FAILURE
+import software.aws.toolkits.jetbrains.services.amazonq.CODE_TRANSFORM_TROUBLESHOOT_DOC_PROJECT_SIZE
 import software.aws.toolkits.jetbrains.services.codemodernizer.messages.Button
 import software.aws.toolkits.jetbrains.services.codemodernizer.messages.CodeTransformButtonId
 import software.aws.toolkits.jetbrains.services.codemodernizer.messages.CodeTransformChatMessageContent
@@ -16,6 +18,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.messages.FormItem
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerJobCompletedResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeTransformHilDownloadArtifact
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.Dependency
+import software.aws.toolkits.jetbrains.services.codemodernizer.model.UploadFailureReason
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.ValidationResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getModuleOrProjectNameForFile
 import software.aws.toolkits.jetbrains.services.cwc.clients.chat.model.FollowUpType
@@ -155,7 +158,7 @@ fun buildProjectInvalidChatContent(validationResult: ValidationResult): CodeTran
     }
 
     return CodeTransformChatMessageContent(
-        message = "$errorMessage\n\n${message("codemodernizer.chat.message.validation.error.more_info", CODE_TRANSFORM_TROUBLESHOOT_DOC)}",
+        message = "$errorMessage\n\n${message("codemodernizer.chat.message.validation.error.more_info", CODE_TRANSFORM_PREREQUISITES)}",
         type = CodeTransformChatMessageType.FinalizedAnswer,
     )
 }
@@ -223,9 +226,27 @@ fun buildCompileLocalFailedChatContent() = CodeTransformChatMessageContent(
         "codemodernizer.chat.message.local_build_failed"
     )}\n\n${message(
         "codemodernizer.chat.message.validation.error.more_info",
-        CODE_TRANSFORM_TROUBLESHOOT_DOC
+        CODE_TRANSFORM_TROUBLESHOOT_DOC_MVN_FAILURE
     )}",
 )
+
+fun buildZipUploadFailedChatMessage(failureReason: UploadFailureReason): String {
+    val resultMessage = when (failureReason) {
+        is UploadFailureReason.PRESIGNED_URL_EXPIRED -> {
+            message("codemodernizer.chat.message.upload_failed_url_expired")
+        }
+        is UploadFailureReason.HTTP_ERROR -> {
+            message("codemodernizer.chat.message.upload_failed_http_error", failureReason.statusCode)
+        }
+        is UploadFailureReason.CONNECTION_REFUSED -> {
+            message("codemodernizer.chat.message.upload_failed_connection_refused")
+        }
+        is UploadFailureReason.OTHER -> {
+            message("codemodernizer.chat.message.upload_failed_other", failureReason.errorMessage)
+        }
+    }
+    return resultMessage
+}
 
 fun buildCompileLocalSuccessChatContent() = CodeTransformChatMessageContent(
     type = CodeTransformChatMessageType.FinalizedAnswer,
@@ -258,8 +279,11 @@ fun buildTransformResultChatContent(result: CodeModernizerJobCompletedResult): C
                 "codemodernizer.chat.message.result.zip_too_large"
             )}\n\n${message(
                 "codemodernizer.chat.message.validation.error.more_info",
-                CODE_TRANSFORM_TROUBLESHOOT_DOC
+                CODE_TRANSFORM_TROUBLESHOOT_DOC_PROJECT_SIZE
             )}"
+        }
+        is CodeModernizerJobCompletedResult.ZipUploadFailed -> {
+            buildZipUploadFailedChatMessage(result.failureReason)
         }
         is CodeModernizerJobCompletedResult.JobCompletedSuccessfully -> {
             message("codemodernizer.chat.message.result.success")

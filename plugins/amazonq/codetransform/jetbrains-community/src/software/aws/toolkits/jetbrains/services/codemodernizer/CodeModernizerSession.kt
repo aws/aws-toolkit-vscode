@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.codemodernizer
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.runInEdt
 import com.intellij.serviceContainer.AlreadyDisposedException
+import com.intellij.util.io.HttpRequests
 import kotlinx.coroutines.delay
 import org.apache.commons.codec.digest.DigestUtils
 import software.amazon.awssdk.services.codewhispererruntime.model.ResumeTransformationResponse
@@ -22,6 +23,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
+import software.aws.toolkits.jetbrains.services.codemodernizer.commands.CodeTransformMessageListener
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerException
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerJobCompletedResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerSessionContext
@@ -30,6 +32,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeTransfo
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MavenCopyCommandsResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MavenDependencyReportCommandsResult
+import software.aws.toolkits.jetbrains.services.codemodernizer.model.UploadFailureReason
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.ZipCreationResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.plan.CodeModernizerPlanEditorProvider
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState
@@ -45,6 +48,7 @@ import software.aws.toolkits.telemetry.CodeTransformApiNames
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
+import java.net.ConnectException
 import java.nio.file.Path
 import java.time.Instant
 import java.util.Base64
@@ -133,6 +137,7 @@ class CodeModernizerSession(
         LOG.info { "Starting Modernization Job" }
         val payload: File?
 
+        // Generate zip file
         try {
             if (isDisposed.get()) {
                 LOG.warn { "Disposed when about to create zip to upload" }
@@ -165,12 +170,52 @@ class CodeModernizerSession(
             }
         }
 
-        return try {
+        // Create upload url and upload zip
+        var uploadId = ""
+        try {
             if (shouldStop.get()) {
                 LOG.warn { "Job was cancelled by user before upload was called" }
                 return CodeModernizerStartJobResult.Cancelled
             }
-            val uploadId = uploadPayload(payload)
+            uploadId = uploadPayload(payload)
+        } catch (e: AlreadyDisposedException) {
+            LOG.warn { e.localizedMessage }
+            return CodeModernizerStartJobResult.Disposed
+        } catch (e: ConnectException) {
+            state.putJobHistory(sessionContext, TransformationStatus.FAILED)
+            state.currentJobStatus = TransformationStatus.FAILED
+            return CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.CONNECTION_REFUSED)
+        } catch (e: HttpRequests.HttpStatusException) {
+            state.putJobHistory(sessionContext, TransformationStatus.FAILED)
+            state.currentJobStatus = TransformationStatus.FAILED
+            return if (e.statusCode == 403) {
+                CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.PRESIGNED_URL_EXPIRED)
+            } else {
+                CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.HTTP_ERROR(e.statusCode))
+            }
+        } catch (e: IOException) {
+            if (shouldStop.get()) {
+                // Cancelling during S3 upload will cause IOException of "not enough data written",
+                // so no need to show an IDE error for it
+                LOG.warn { "Job was cancelled by user before start job was called" }
+                return CodeModernizerStartJobResult.Cancelled
+            } else {
+                state.putJobHistory(sessionContext, TransformationStatus.FAILED)
+                state.currentJobStatus = TransformationStatus.FAILED
+                return CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.OTHER(e.localizedMessage.toString()))
+            }
+        } catch (e: Exception) {
+            state.putJobHistory(sessionContext, TransformationStatus.FAILED)
+            state.currentJobStatus = TransformationStatus.FAILED
+            return CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.OTHER(e.localizedMessage.toString()))
+        } finally {
+            deleteUploadArtifact(payload)
+        }
+
+        // Send upload completion message to chat (only if successful)
+        CodeTransformMessageListener.instance.onUploadResult()
+
+        return try {
             if (shouldStop.get()) {
                 LOG.warn { "Job was cancelled by user before start job was called" }
                 return CodeModernizerStartJobResult.Cancelled
@@ -179,26 +224,10 @@ class CodeModernizerSession(
             state.putJobHistory(sessionContext, TransformationStatus.STARTED, startJobResponse.transformationJobId())
             state.currentJobStatus = TransformationStatus.STARTED
             CodeModernizerStartJobResult.Started(JobId(startJobResponse.transformationJobId()))
-        } catch (e: AlreadyDisposedException) {
-            LOG.warn { e.localizedMessage }
-            return CodeModernizerStartJobResult.Disposed
-        } catch (e: IOException) {
-            if (shouldStop.get()) {
-                // Cancelling during S3 upload will cause IOException of "not enough data written",
-                // so no need to show an IDE error for it
-                LOG.warn { "Job was cancelled by user before start job was called" }
-                CodeModernizerStartJobResult.Cancelled
-            } else {
-                state.putJobHistory(sessionContext, TransformationStatus.FAILED)
-                state.currentJobStatus = TransformationStatus.FAILED
-                CodeModernizerStartJobResult.UnableToStartJob(e.message.toString())
-            }
         } catch (e: Exception) {
             state.putJobHistory(sessionContext, TransformationStatus.FAILED)
             state.currentJobStatus = TransformationStatus.FAILED
             CodeModernizerStartJobResult.UnableToStartJob(e.message.toString())
-        } finally {
-            deleteUploadArtifact(payload)
         }
     }
 
@@ -342,7 +371,7 @@ class CodeModernizerSession(
                 createUploadUrlResponse.kmsKeyArn().orEmpty(),
             ) { shouldStop.get() }
         } catch (e: Exception) {
-            val errorMessage = "Unexpected error when uploading artifact to S3: ${e.message}"
+            val errorMessage = "Unexpected error when uploading artifact to S3: $e"
             LOG.error { errorMessage }
             // emit this metric here manually since we don't use callApi(), which emits its own metric
             telemetry.apiError(errorMessage, CodeTransformApiNames.UploadZip, createUploadUrlResponse.uploadId())

@@ -11,10 +11,12 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.projectRoots.JavaSdkVersion
 import com.intellij.openapi.roots.ModuleRootManager
+import com.intellij.serviceContainer.AlreadyDisposedException
 import com.intellij.testFramework.common.ThreadLeakTracker
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.testFramework.utils.io.createFile
+import com.intellij.util.io.HttpRequests
 import com.intellij.util.io.delete
 import kotlinx.coroutines.runBlocking
 import org.apache.commons.codec.digest.DigestUtils
@@ -34,6 +36,7 @@ import org.mockito.Mockito.mock
 import org.mockito.Mockito.spy
 import org.mockito.kotlin.any
 import org.mockito.kotlin.atLeastOnce
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
@@ -53,12 +56,15 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModerni
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerStartJobResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeTransformHilDownloadArtifact
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MavenCopyCommandsResult
+import software.aws.toolkits.jetbrains.services.codemodernizer.model.UploadFailureReason
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.ZipCreationResult
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
 import java.io.File
 import java.io.FileInputStream
+import java.io.IOException
+import java.net.ConnectException
 import java.util.Base64
 import java.util.zip.ZipFile
 import kotlin.io.path.Path
@@ -401,6 +407,66 @@ class CodeWhispererCodeModernizerSessionTest : CodeWhispererCodeModernizerTestBa
         verify(clientAdaptorSpy, times(1)).startCodeModernization(any(), any(), any())
         verify(clientAdaptorSpy, times(1)).uploadArtifactToS3(any(), any(), any(), any(), any())
         verifyNoMoreInteractions(clientAdaptorSpy)
+    }
+
+    @Test
+    fun `CodeModernizer cannot upload payload due to already disposed`() {
+        doReturn(ZipCreationResult.Succeeded(File("./tst-resources/codemodernizer/test.txt")))
+            .whenever(testSessionContextSpy).createZipWithModuleFiles(any())
+        doReturn(exampleCreateUploadUrlResponse).whenever(clientAdaptorSpy).createGumbyUploadUrl(any())
+        doAnswer { throw AlreadyDisposedException("mock exception") }.whenever(clientAdaptorSpy).uploadArtifactToS3(any(), any(), any(), any(), any())
+        val result = testSessionSpy.createModernizationJob(MavenCopyCommandsResult.Success(File("./mock/path/")))
+        assertEquals(CodeModernizerStartJobResult.Disposed, result)
+    }
+
+    @Test
+    fun `CodeModernizer cannot upload payload due to presigned url issue`() {
+        doReturn(ZipCreationResult.Succeeded(File("./tst-resources/codemodernizer/test.txt")))
+            .whenever(testSessionContextSpy).createZipWithModuleFiles(any())
+        doReturn(exampleCreateUploadUrlResponse).whenever(clientAdaptorSpy).createGumbyUploadUrl(any())
+        doAnswer { throw HttpRequests.HttpStatusException("mock error", 403, "mock url") }
+            .whenever(clientAdaptorSpy).uploadArtifactToS3(any(), any(), any(), any(), any())
+        val result = testSessionSpy.createModernizationJob(MavenCopyCommandsResult.Success(File("./mock/path/")))
+        assertEquals(CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.PRESIGNED_URL_EXPIRED), result)
+        verify(testSessionStateSpy, times(1)).putJobHistory(any(), eq(TransformationStatus.FAILED), any(), any())
+        assertEquals(testSessionStateSpy.currentJobStatus, TransformationStatus.FAILED)
+    }
+
+    @Test
+    fun `CodeModernizer cannot upload payload due to other status code`() {
+        doReturn(ZipCreationResult.Succeeded(File("./tst-resources/codemodernizer/test.txt")))
+            .whenever(testSessionContextSpy).createZipWithModuleFiles(any())
+        doReturn(exampleCreateUploadUrlResponse).whenever(clientAdaptorSpy).createGumbyUploadUrl(any())
+        doAnswer { throw HttpRequests.HttpStatusException("mock error", 407, "mock url") }
+            .whenever(clientAdaptorSpy).uploadArtifactToS3(any(), any(), any(), any(), any())
+        val result = testSessionSpy.createModernizationJob(MavenCopyCommandsResult.Success(File("./mock/path/")))
+        assertEquals(CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.HTTP_ERROR(407)), result)
+        verify(testSessionStateSpy, times(1)).putJobHistory(any(), eq(TransformationStatus.FAILED), any(), any())
+        assertEquals(testSessionStateSpy.currentJobStatus, TransformationStatus.FAILED)
+    }
+
+    @Test
+    fun `CodeModernizer cannot upload payload due to unknown issue`() {
+        doReturn(ZipCreationResult.Succeeded(File("./tst-resources/codemodernizer/test.txt")))
+            .whenever(testSessionContextSpy).createZipWithModuleFiles(any())
+        doReturn(exampleCreateUploadUrlResponse).whenever(clientAdaptorSpy).createGumbyUploadUrl(any())
+        doAnswer { throw IOException("mock exception") }.whenever(clientAdaptorSpy).uploadArtifactToS3(any(), any(), any(), any(), any())
+        val result = testSessionSpy.createModernizationJob(MavenCopyCommandsResult.Success(File("./mock/path/")))
+        assertEquals(CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.OTHER("mock exception")), result)
+        verify(testSessionStateSpy, times(1)).putJobHistory(any(), eq(TransformationStatus.FAILED), any(), any())
+        assertEquals(testSessionStateSpy.currentJobStatus, TransformationStatus.FAILED)
+    }
+
+    @Test
+    fun `CodeModernizer cannot upload payload due to connection refused`() {
+        doReturn(ZipCreationResult.Succeeded(File("./tst-resources/codemodernizer/test.txt")))
+            .whenever(testSessionContextSpy).createZipWithModuleFiles(any())
+        doReturn(exampleCreateUploadUrlResponse).whenever(clientAdaptorSpy).createGumbyUploadUrl(any())
+        doAnswer { throw ConnectException("mock exception") }.whenever(clientAdaptorSpy).uploadArtifactToS3(any(), any(), any(), any(), any())
+        val result = testSessionSpy.createModernizationJob(MavenCopyCommandsResult.Success(File("./mock/path/")))
+        assertEquals(CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.CONNECTION_REFUSED), result)
+        verify(testSessionStateSpy, times(1)).putJobHistory(any(), eq(TransformationStatus.FAILED), any(), any())
+        assertEquals(testSessionStateSpy.currentJobStatus, TransformationStatus.FAILED)
     }
 
     @Test

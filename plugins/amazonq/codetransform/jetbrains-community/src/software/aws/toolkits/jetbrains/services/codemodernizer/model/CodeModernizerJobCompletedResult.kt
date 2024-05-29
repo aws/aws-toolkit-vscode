@@ -9,7 +9,7 @@ sealed class CodeModernizerJobCompletedResult {
     data class RetryableFailure(val jobId: JobId, val failureReason: String) : CodeModernizerJobCompletedResult()
     data class UnableToCreateJob(val failureReason: String, val retryable: Boolean = false) : CodeModernizerJobCompletedResult()
     data class JobFailed(val jobId: JobId, val failureReason: String) : CodeModernizerJobCompletedResult()
-
+    data class ZipUploadFailed(val failureReason: UploadFailureReason) : CodeModernizerJobCompletedResult()
     data class JobCompletedSuccessfully(val jobId: JobId) : CodeModernizerJobCompletedResult()
     data class JobPartiallySucceeded(val jobId: JobId, val targetJavaVersion: JavaSdkVersion) : CodeModernizerJobCompletedResult()
 
