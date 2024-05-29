@@ -45,6 +45,25 @@
             "resolveSourceMapLocations": ["!**/node_modules/**", "!**/vs/**", "!**/extensions/**"],
             "preLaunchTask": "webRun",
             "postDebugTask": "webRunTerminate"
+        },
+        {
+            "name": "E2E Test (current file)",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--disable-extension=amazonwebservices.aws-toolkit-vscode",
+                "${workspaceFolder}/../core/dist/src/testFixtures/workspaceFolder",
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--extensionTestsPath=${workspaceFolder}/dist/src/testE2E/index.js"
+            ],
+            "env": {
+                "TEST_FILE": "${relativeFile}",
+                "DEVELOPMENT_PATH": "${workspaceFolder}",
+                "AWS_TOOLKIT_AUTOMATION": "local"
+            },
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "preLaunchTask": "watch"
         }
     ]
 }

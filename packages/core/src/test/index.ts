@@ -8,3 +8,6 @@ import { runTests } from './testRunner'
 export function run(): Promise<void> {
     return runTests(process.env.TEST_DIR ?? 'src/test', ['src/test/globalSetup.test.ts'])
 }
+
+export { registerAuthHook, using } from './setupUtil'
+export { runTests } from './testRunner'

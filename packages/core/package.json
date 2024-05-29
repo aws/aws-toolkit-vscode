@@ -34,6 +34,8 @@
         "./shared": "./dist/src/shared/index.js",
         "./auth": "./dist/src/auth/index.js",
         "./amazonqGumby": "./dist/src/amazonqGumby/index.js",
+        "./amazonqFeatureDev": "./dist/src/amazonqFeatureDev/index.js",
+        "./test": "./dist/src/test/index.js",
         "./login": "./dist/src/login/webview/index.js",
         "./utils": "./dist/src/shared/utilities/index.js",
         "./feedback": "./dist/src/feedback/index.js",
