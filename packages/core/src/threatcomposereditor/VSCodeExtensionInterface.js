@@ -6,6 +6,9 @@
 /* eslint-disable no-undef */
 /* eslint-disable no-case-declarations */
 
+const autoSaveIntervalTimeout = 1000
+const checkThreatComposerAPITimeout = 50
+
 const vscode = acquireVsCodeApi()
 const instanceMapper = {}
 let disableAutoSave = false
@@ -68,7 +71,7 @@ function updateContent(/** @type {string} */ text) {
 
 async function checkThreatComposerAPI() {
     while (!window.threatcomposer || !window.threatcomposer.setCurrentWorkspaceData) {
-        await new Promise(r => setTimeout(r, 50))
+        await new Promise(r => setTimeout(r, checkThreatComposerAPITimeout))
     }
 }
 
@@ -143,7 +146,7 @@ async function render(/** @type {string} */ text) {
             messageType: 'REQUEST',
             fileContents: stringyfiedData,
         })
-    }, 1000)
+    }, autoSaveIntervalTimeout)
 
     vscode.postMessage({
         command: 'LOAD_STAGE',
