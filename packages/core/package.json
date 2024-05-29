@@ -1133,10 +1133,6 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.toolkit.auth.signout",
-                    "when": "false"
-                },
-                {
                     "command": "aws.toolkit.auth.help",
                     "when": "false"
                 },
@@ -2151,16 +2147,6 @@
                 "category": "AWS",
                 "icon": "$(debug-disconnect)",
                 "enablement": "isCloud9 || !aws.isWebExtHost"
-            },
-            {
-                "command": "aws.toolkit.logout",
-                "title": "%AWS.command.logout%",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
             },
             {
                 "command": "aws.toolkit.auth.addConnection",

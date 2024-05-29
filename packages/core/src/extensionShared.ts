@@ -47,6 +47,7 @@ import { ExtensionUse, getAuthFormIdsFromConnection } from './auth/utils'
 import { Auth } from './auth'
 import { AuthFormId } from './login/webview/vue/types'
 import { isSsoConnection } from './auth/connection'
+import { registerCommands } from './commands'
 
 // In web mode everything must be in a single file, so things like the endpoints file will not be available.
 // The following imports the endpoints file, which causes webpack to bundle it in the final output file
@@ -123,9 +124,10 @@ export async function activateShared(
     globals.uriHandler = new UriHandler()
 
     // Generic extension commands
-    registerCommands(context, contextPrefix)
+    registerGenericCommands(context, contextPrefix)
 
     // Toolkit specific commands
+    registerCommands(context)
     context.subscriptions.push(
         // No-op command used for decoration-only codelenses.
         vscode.commands.registerCommand('aws.doNothingCommand', () => {}),
@@ -141,7 +143,7 @@ export async function activateShared(
     )
 
     // auth
-    await initializeAuth(context, globals.loginManager, contextPrefix)
+    await initializeAuth(globals.loginManager)
     await initializeAwsCredentialsStatusBarItem(globals.awsContext, context)
 
     const extContext: ExtContext = {
@@ -167,7 +169,7 @@ export async function deactivateShared() {
 /**
  * Registers generic commands used by both web and node versions of the toolkit.
  */
-export function registerCommands(extensionContext: vscode.ExtensionContext, contextPrefix: string) {
+export function registerGenericCommands(extensionContext: vscode.ExtensionContext, contextPrefix: string) {
     extensionContext.subscriptions.push(
         // register URLs in extension menu
         Commands.register(`aws.${contextPrefix}.github`, async () => {
