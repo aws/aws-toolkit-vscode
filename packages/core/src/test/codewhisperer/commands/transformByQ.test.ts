@@ -131,23 +131,16 @@ describe('transformByQ', function () {
         }, NoOpenProjectsError)
     })
 
-    it('WHEN stop job called with invalid jobId THEN throws error', async function () {
-        await assert.rejects(async () => {
-            await stopJob('')
-        }, Error)
+    it('WHEN stop job called with invalid jobId THEN stop API not called', async function () {
+        const stopJobStub = sinon.stub(codeWhisperer.codeWhispererClient, 'codeModernizerStopCodeTransformation')
+        await stopJob('')
+        sinon.assert.notCalled(stopJobStub)
     })
 
     it('WHEN stop job called with valid jobId THEN stop API called', async function () {
-        transformByQState.setToRunning()
         const stopJobStub = sinon.stub(codeWhisperer.codeWhispererClient, 'codeModernizerStopCodeTransformation')
         await stopJob('dummyId')
         sinon.assert.calledWithExactly(stopJobStub, { transformationJobId: 'dummyId' })
-    })
-
-    it('WHEN stop job that has not been started THEN stop API not called', async function () {
-        const stopJobStub = sinon.stub(codeWhisperer.codeWhispererClient, 'codeModernizerStopCodeTransformation')
-        await stopJob('dummyId')
-        sinon.assert.notCalled(stopJobStub)
     })
 
     it('WHEN polling completed job THEN returns status as completed', async function () {
