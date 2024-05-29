@@ -102,7 +102,7 @@ export function buildMissingExtensionMessage(
     feat = `${getIdeProperties().company} Toolkit`
 ): string {
     const minV = semver.coerce(minVersion)
-    const expectedVersionMsg = isNonNullable(minV) ? ` of version >=${minV}` : ''
+    const expectedVersionMsg = isNonNullable(minV) ? ` of version >=${minV.version}` : ''
 
     return localize(
         'AWS.missingExtension',

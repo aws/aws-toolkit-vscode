@@ -8,6 +8,7 @@ import * as path from 'path'
 import Mocha from 'mocha'
 import { glob } from 'glob'
 import * as fs from 'fs-extra'
+import { VSCODE_EXTENSION_ID } from '../shared/utilities'
 
 // Set explicit timezone to ensure that tests run locally do not use the user's actual timezone, otherwise
 // the test can pass on one persons machine but not anothers.
@@ -18,7 +19,12 @@ process.env.TZ = 'US/Pacific'
 /**
  * @param initTests List of relative paths to test files containing root hooks: https://mochajs.org/#available-root-hooks
  */
-export async function runTests(testFolder: string, initTests: string[] = [], testFiles?: string[]): Promise<void> {
+export async function runTests(
+    testFolder: string,
+    initTests: string[] = [],
+    extensionId: string = VSCODE_EXTENSION_ID.awstoolkitcore,
+    testFiles?: string[]
+): Promise<void> {
     if (!process.env['AWS_TOOLKIT_AUTOMATION']) {
         throw new Error('Expected the "AWS_TOOLKIT_AUTOMATION" environment variable to be set for tests.')
     }
@@ -78,7 +84,7 @@ export async function runTests(testFolder: string, initTests: string[] = [], tes
 
         const pluginFile = require(fullPath)
         if (pluginFile.mochaGlobalSetup) {
-            mocha.globalSetup(pluginFile.mochaGlobalSetup)
+            mocha.globalSetup(pluginFile.mochaGlobalSetup(extensionId))
         }
         if (pluginFile.mochaGlobalTeardown) {
             mocha.globalTeardown(pluginFile.mochaGlobalTeardown)

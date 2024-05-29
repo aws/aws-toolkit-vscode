@@ -1,0 +1,14 @@
+{
+	"date": "2024-05-23",
+	"version": "3.7.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "AWS Toolkit now publishes to Open VSX: https://open-vsx.org/namespace/amazonwebservices"
+		},
+		{
+			"type": "Feature",
+			"description": "IAM Policy Checks: validate IAM policies within VS Code"
+		}
+	]
+}

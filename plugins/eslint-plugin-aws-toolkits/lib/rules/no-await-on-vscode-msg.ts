@@ -10,9 +10,8 @@
  * Awaiting without assigning or otherwise using the response could keep code blocked and cause subtle issues.
  */
 
-import { ESLintUtils } from '@typescript-eslint/utils'
+import { ESLintUtils, TSESTree } from '@typescript-eslint/utils'
 import { AST_NODE_TYPES } from '@typescript-eslint/types'
-import { Node, Identifier } from '@typescript-eslint/types/dist/generated/ast-spec'
 import { Rule } from 'eslint'
 
 export const errMsg =
@@ -20,7 +19,7 @@ export const errMsg =
 
 const notificationFuncNames = ['showInformationMessage', 'showWarningMessage', 'showErrorMessage']
 
-function isVariableAssignment(node: Node) {
+function isVariableAssignment(node: TSESTree.Node) {
     while (node.parent) {
         if (node.parent.type === AST_NODE_TYPES.VariableDeclarator) {
             return true // we are assigning the response, i.e. its being used.
@@ -37,7 +36,7 @@ export default ESLintUtils.RuleCreator.withoutDocs({
     meta: {
         docs: {
             description: 'disallow awaiting on vscode notifications if the response is unused',
-            recommended: 'error',
+            recommended: 'recommended',
         },
         messages: {
             errMsg,
@@ -66,9 +65,9 @@ export default ESLintUtils.RuleCreator.withoutDocs({
                 const expr = node.argument.callee
                 let property
                 if (expr.type === AST_NODE_TYPES.MemberExpression) {
-                    property = expr.property as Identifier
+                    property = expr.property as TSESTree.Identifier
                 } else if (expr.type === AST_NODE_TYPES.Identifier) {
-                    property = expr as Identifier
+                    property = expr as TSESTree.Identifier
                 } else {
                     return
                 }

@@ -166,8 +166,13 @@ export class Session {
         return resp.interaction
     }
 
-    public async updateFilesPaths(tabID: string, filePaths: NewFileInfo[], deletedFiles: DeletedFileInfo[]) {
-        this.messenger.updateFileComponent(tabID, filePaths, deletedFiles)
+    public async updateFilesPaths(
+        tabID: string,
+        filePaths: NewFileInfo[],
+        deletedFiles: DeletedFileInfo[],
+        messageId: string
+    ) {
+        this.messenger.updateFileComponent(tabID, filePaths, deletedFiles, messageId)
     }
 
     public async insertChanges() {

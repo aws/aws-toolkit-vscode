@@ -17,6 +17,7 @@ import {
     selectCustomizationPrompt,
     reconnect,
     signoutCodeWhisperer,
+    toggleCodeScans,
 } from '../../../codewhisperer/commands/basicCommands'
 import { FakeMemento, FakeExtensionContext } from '../../fakeExtensionContext'
 import { testCommand } from '../../shared/vscode/testUtils'
@@ -186,6 +187,98 @@ describe('CodeWhisperer-basicCommands', function () {
 
         it('includes the "source" in the command execution metric', async function () {
             targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
+            await targetCommand.execute(placeholder, cwQuickPickSource)
+            assertTelemetry('vscode_executeCommand', { source: cwQuickPickSource, command: targetCommand.id })
+        })
+    })
+
+    describe('toggleCodeScans', function () {
+        class TestCodeScansState extends CodeScansState {
+            public constructor(initialState?: boolean) {
+                super(new FakeMemento(), initialState)
+            }
+        }
+
+        let codeScansState: CodeScansState
+
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
+            codeScansState = new TestCodeScansState()
+        })
+
+        it('has auto scans enabled by default', async function () {
+            targetCommand = testCommand(toggleCodeScans, codeScansState)
+            assert.strictEqual(codeScansState.isScansEnabled(), true)
+        })
+
+        it('toggles states as expected', async function () {
+            targetCommand = testCommand(toggleCodeScans, codeScansState)
+            assert.strictEqual(codeScansState.isScansEnabled(), true)
+            await targetCommand.execute(placeholder, cwQuickPickSource)
+            assert.strictEqual(codeScansState.isScansEnabled(), false)
+            await targetCommand.execute(placeholder, cwQuickPickSource)
+            assert.strictEqual(codeScansState.isScansEnabled(), true)
+            await targetCommand.execute(placeholder, cwQuickPickSource)
+            assert.strictEqual(codeScansState.isScansEnabled(), false)
+        })
+
+        it('setScansEnabled() works as expected', async function () {
+            // initially true
+            assert.strictEqual(codeScansState.isScansEnabled(), true)
+
+            await codeScansState.setScansEnabled(false)
+            assert.strictEqual(codeScansState.isScansEnabled(), false)
+
+            // set new state to current state
+            await codeScansState.setScansEnabled(false)
+            assert.strictEqual(codeScansState.isScansEnabled(), false)
+
+            // set to opposite state
+            await codeScansState.setScansEnabled(true)
+            assert.strictEqual(codeScansState.isScansEnabled(), true)
+        })
+
+        it('triggers event listener when toggled', async function () {
+            const eventListener = sinon.stub()
+            codeScansState.onDidChangeState(() => {
+                eventListener()
+            })
+            assert.strictEqual(eventListener.callCount, 0)
+
+            targetCommand = testCommand(toggleCodeScans, codeScansState)
+            await targetCommand.execute(placeholder, cwQuickPickSource)
+
+            await waitUntil(async () => eventListener.callCount === 1, { timeout: 1000, interval: 1 })
+            assert.strictEqual(eventListener.callCount, 1)
+        })
+
+        it('emits aws_modifySetting event on user toggling autoScans - deactivate', async function () {
+            targetCommand = testCommand(toggleCodeScans, codeScansState)
+            await targetCommand.execute(placeholder, cwQuickPickSource)
+
+            assert.strictEqual(codeScansState.isScansEnabled(), false)
+            assertTelemetryCurried('aws_modifySetting')({
+                settingId: CodeWhispererConstants.autoScansConfig.settingId,
+                settingState: CodeWhispererConstants.autoScansConfig.deactivated,
+            })
+        })
+
+        it('emits aws_modifySetting event on user toggling autoScans -- activate', async function () {
+            codeScansState = new TestCodeScansState(false)
+            assert.strictEqual(codeScansState.isScansEnabled(), false)
+
+            targetCommand = testCommand(toggleCodeScans, codeScansState)
+            await targetCommand.execute(placeholder, cwQuickPickSource)
+
+            assert.strictEqual(codeScansState.isScansEnabled(), true)
+            assertTelemetryCurried('aws_modifySetting')({
+                settingId: CodeWhispererConstants.autoScansConfig.settingId,
+                settingState: CodeWhispererConstants.autoScansConfig.activated,
+            })
+        })
+
+        it('includes the "source" in the command execution metric', async function () {
+            targetCommand = testCommand(toggleCodeScans, codeScansState)
             await targetCommand.execute(placeholder, cwQuickPickSource)
             assertTelemetry('vscode_executeCommand', { source: cwQuickPickSource, command: targetCommand.id })
         })
@@ -517,7 +610,7 @@ describe('CodeWhisperer-basicCommands', function () {
         })
 
         it('handles patch failure', async function () {
-            const textDocumentMock = createMockDocument()
+            const textDocumentMock = createMockDocument('first line\nsecond line\nthird line\nfourth line\nfifth line')
 
             openTextDocumentMock.resolves(textDocumentMock)
 
@@ -526,7 +619,7 @@ describe('CodeWhisperer-basicCommands', function () {
             targetCommand = testCommand(applySecurityFix)
             codeScanIssue.suggestedFixes = [
                 {
-                    code: '@@ -1,1 -1,1 @@\n-mock\n+line5',
+                    code: "@@ -3,1 +3,1 @@\n fix\n that\n-doesn't\n+match\n the\n document",
                     description: 'dummy',
                 },
             ]
@@ -539,6 +632,30 @@ describe('CodeWhisperer-basicCommands', function () {
                 component: 'webview',
                 result: 'Failed',
                 reason: 'Error: Failed to get updated content from applying diff patch',
+            })
+        })
+
+        it('should allow up to 4 differing lines', async function () {
+            const textDocumentMock = createMockDocument('first line\nsecond line\nthird line\nfourth line\nfifth line')
+            openTextDocumentMock.resolves(textDocumentMock)
+            sandbox.stub(vscode.workspace, 'openTextDocument').value(openTextDocumentMock)
+            sandbox.stub(vscode.WorkspaceEdit.prototype, 'replace').value(replaceMock)
+            applyEditMock.resolves(true)
+            sandbox.stub(vscode.workspace, 'applyEdit').value(applyEditMock)
+            sandbox.stub(diagnosticsProvider, 'removeDiagnostic').value(removeDiagnosticMock)
+            sandbox.stub(SecurityIssueHoverProvider.instance, 'removeIssue').value(removeIssueMock)
+            sandbox.stub(SecurityIssueCodeActionProvider.instance, 'removeIssue').value(removeIssueMock)
+
+            targetCommand = testCommand(applySecurityFix)
+            codeScanIssue.suggestedFixes = [
+                {
+                    code: '@@ -1,1 +1,1 @@\n first line\n changed\n-third line\n+changed\n foobar\n fifth line',
+                    description: 'dummy',
+                },
+            ]
+            await targetCommand.execute(codeScanIssue, 'test.py', 'webview')
+            assertTelemetry('codewhisperer_codeScanIssueApplyFix', {
+                result: 'Succeeded',
             })
         })
 

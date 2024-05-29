@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as child_process from 'child_process'
+import * as proc from 'child_process'
 import packageJson from '../../package.json'
 import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath } from '@vscode/test-electron'
 import { join, resolve } from 'path'
@@ -168,7 +168,7 @@ async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string[]): Pr
     }
 
     console.log(`Invoking vscode CLI command:\n    "${cli}" ${JSON.stringify(cmdArgs)}`)
-    const spawnResult = child_process.spawnSync(cli, cmdArgs, {
+    const spawnResult = proc.spawnSync(cli, cmdArgs, {
         encoding: 'utf-8',
         stdio: 'pipe',
     })
