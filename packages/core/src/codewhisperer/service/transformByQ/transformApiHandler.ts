@@ -133,17 +133,21 @@ export async function uploadArtifactToS3(
         })
         getLogger().info(`CodeTransformation: Status from S3 Upload = ${response.status}`)
     } catch (e: any) {
-        const errorMessage = (e as Error).message
+        let errorMessage = `The upload failed due to: ${(e as Error).message}`
+        if (errorMessage.includes('Request has expired')) {
+            errorMessage = CodeWhispererConstants.errorUploadingWithExpiredUrl
+        }
         getLogger().error(`CodeTransformation: UploadZip error = ${e}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'UploadZip',
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e.requestId ?? '',
+            codeTransformTotalByteSize: (await fs.promises.stat(fileName)).size,
             result: MetadataResult.Fail,
             reason: 'UploadToS3Failed',
         })
-        throw new Error('Upload PUT request failed')
+        throw new Error(errorMessage)
     }
 }
 
@@ -167,7 +171,7 @@ export async function resumeTransformationJob(jobId: string, userActionStatus: T
             return response.transformationStatus
         }
     } catch (e: any) {
-        const errorMessage = (e as Error).message
+        const errorMessage = `Resuming the job failed due to: ${(e as Error).message}`
         getLogger().error(`CodeTransformation: ResumeTransformation error = ${errorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'ResumeTransformation',
@@ -178,16 +182,12 @@ export async function resumeTransformationJob(jobId: string, userActionStatus: T
             result: MetadataResult.Fail,
             reason: 'ResumeTransformationFailed',
         })
-        throw new Error('Resume transformation job failed')
+        throw new Error(errorMessage)
     }
 }
 
 export async function stopJob(jobId: string) {
     if (!jobId) {
-        throw new Error('Job ID is empty')
-    }
-
-    if (transformByQState.isNotStarted()) {
         return
     }
 
@@ -252,8 +252,8 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
             result: MetadataResult.Pass,
         })
     } catch (e: any) {
-        const errorMessage = (e as Error).message
-        getLogger().error(`CodeTransformation: CreateUploadUrl error: = ${errorMessage}`)
+        const errorMessage = `The upload failed due to: ${(e as Error).message}`
+        getLogger().error(`CodeTransformation: CreateUploadUrl error: = ${e}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'CreateUploadUrl',
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
@@ -262,20 +262,21 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
             result: MetadataResult.Fail,
             reason: 'CreateUploadUrlFailed',
         })
-        throw new Error('Create upload URL failed')
+        throw new Error(errorMessage)
     }
     try {
         await uploadArtifactToS3(payloadFileName, response, sha256, buffer)
     } catch (e: any) {
         const errorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: UploadArtifactToS3 error: = ${errorMessage}`)
-        throw new Error('S3 upload failed')
+        throw new Error(errorMessage)
     }
     // UploadContext only exists for subsequent uploads, and they will return a uploadId that is NOT
     // the jobId. Only the initial call will uploadId be the jobId
     if (!uploadContext) {
         transformByQState.setJobId(encodeHTML(response.uploadId))
     }
+    jobPlanProgress['uploadCode'] = StepProgress.Succeeded
     updateJobHistory()
     return response.uploadId
 }
@@ -357,11 +358,14 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
         // NOTE: We only upload dependencies for human in the loop work
         if (modulePath) {
             const sourceFiles = getFilesRecursively(modulePath, false)
+            let sourceFilesSize = 0
             for (const file of sourceFiles) {
                 const relativePath = path.relative(modulePath, file)
                 const paddedPath = path.join('sources', relativePath)
                 zip.addLocalFile(file, path.dirname(paddedPath))
+                sourceFilesSize += (await fs.promises.stat(file)).size
             }
+            getLogger().info(`CodeTransformation: source code files size = ${sourceFilesSize}`)
         }
 
         throwIfCancelled()
@@ -372,6 +376,7 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
         }
 
         if (dependencyFiles.length > 0) {
+            let dependencyFilesSize = 0
             for (const file of dependencyFiles) {
                 if (isExcludedDependencyFile(file)) {
                     continue
@@ -380,7 +385,9 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
                 // const paddedPath = path.join(`dependencies/${dependenciesFolder.name}`, relativePath)
                 const paddedPath = path.join(`dependencies/`, relativePath)
                 zip.addLocalFile(file, path.dirname(paddedPath))
+                dependencyFilesSize += (await fs.promises.stat(file)).size
             }
+            getLogger().info(`CodeTransformation: dependency files size = ${dependencyFilesSize}`)
             telemetry.codeTransform_dependenciesCopied.emit({
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 result: MetadataResult.Pass,
@@ -434,6 +441,8 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
         result: exceedsLimit ? MetadataResult.Fail : MetadataResult.Pass,
     })
 
+    getLogger().info(`CodeTransformation: created ZIP of size ${zipSize} at ${tempFilePath}`)
+
     if (exceedsLimit) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.projectSizeTooLargeNotification)
         transformByQState.getChatControllers()?.transformationFinished.fire({
@@ -442,7 +451,6 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
         })
         throw new ZipExceedsSizeLimitError()
     }
-
     return tempFilePath
 }
 
@@ -475,7 +483,7 @@ export async function startJob(uploadId: string) {
         })
         return response.transformationJobId
     } catch (e: any) {
-        const errorMessage = (e as Error).message
+        const errorMessage = `Starting the job failed due to: ${(e as Error).message}`
         getLogger().error(`CodeTransformation: StartTransformation error = ${errorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'StartTransformation',
@@ -485,7 +493,7 @@ export async function startJob(uploadId: string) {
             result: MetadataResult.Fail,
             reason: 'StartTransformationFailed',
         })
-        throw new Error(`Start job failed: ${errorMessage}`)
+        throw new Error(errorMessage)
     }
 }
 
@@ -720,10 +728,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 result: MetadataResult.Pass,
             })
             status = response.transformationJob.status!
-            // must be series of ifs, not else ifs
-            if (CodeWhispererConstants.validStatesForJobStarted.includes(status)) {
-                jobPlanProgress['startJob'] = StepProgress.Succeeded
-            }
             if (CodeWhispererConstants.validStatesForBuildSucceeded.includes(status)) {
                 jobPlanProgress['buildCode'] = StepProgress.Succeeded
             }
@@ -741,8 +745,28 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
 
             const errorMessage = response.transformationJob.reason
             if (errorMessage !== undefined) {
-                transformByQState.setJobFailureErrorChatMessage(errorMessage)
-                transformByQState.setJobFailureErrorNotification(errorMessage)
+                if (errorMessage.includes('Monthly aggregated Lines of Code limit breached')) {
+                    transformByQState.setJobFailureErrorNotification(
+                        CodeWhispererConstants.failedToStartJobMonthlyLimitNotification
+                    )
+                    transformByQState.setJobFailureErrorChatMessage(
+                        CodeWhispererConstants.failedToStartJobMonthlyLimitChatMessage
+                    )
+                } else if (errorMessage.includes('Lines of Code limit breached for job')) {
+                    transformByQState.setJobFailureErrorNotification(
+                        CodeWhispererConstants.failedToStartJobLinesLimitNotification
+                    )
+                    transformByQState.setJobFailureErrorChatMessage(
+                        CodeWhispererConstants.failedToStartJobLinesLimitChatMessage
+                    )
+                } else {
+                    transformByQState.setJobFailureErrorChatMessage(
+                        `${CodeWhispererConstants.failedToCompleteJobGenericChatMessage} ${errorMessage}`
+                    )
+                    transformByQState.setJobFailureErrorNotification(
+                        `${CodeWhispererConstants.failedToCompleteJobGenericNotification} ${errorMessage}`
+                    )
+                }
                 transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
             }
             if (validStates.includes(status)) {
@@ -761,9 +785,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
              * is called, we break above on validStatesForCheckingDownloadUrl and check final status in finalizeTransformationJob
              */
             if (CodeWhispererConstants.failureStates.includes(status)) {
-                transformByQState.setJobFailureMetadata(
-                    `${response.transformationJob.reason} (request ID: ${response.$response.requestId})`
-                )
+                transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
                 throw new JobStoppedError(response.$response.requestId)
             }
             await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
