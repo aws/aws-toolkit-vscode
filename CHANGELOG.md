@@ -1,3 +1,7 @@
+# _3.7_ (2024-05-29)
+- **(Bug Fix)** (featureDev): Revert fix for file rejection. Reason: The plan disappears after clicking generate Code
+- **(Bug Fix)** Amazon Q Code Transformation: show more specific error messages on failure cases
+
 # _3.6_ (2024-05-28)
 - **(Bug Fix)** Fix recurring popup "refreshing token" whne users're typing in the IDE and Q connection expires
 

@@ -1,0 +1,11 @@
+{
+  "date" : "2024-05-29",
+  "version" : "3.7",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "(featureDev): Revert fix for file rejection. Reason: The plan disappears after clicking generate Code"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Code Transformation: show more specific error messages on failure cases"
+  } ]
+}
