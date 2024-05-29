@@ -277,6 +277,63 @@ Commands and events are defined on the backend via sub-classes of `VueWebview`. 
     client.init(data => (this.data = data ?? this.data))
     ```
 
+## Webviews (non Vue)
+
+Some webviews (amazon q chat view, codewhisperer security panel) rely on the native vscode webview implementation using the `vscode.WebviewViewProvider` and the `vscode.window.registerWebviewViewProvider(viewType, panel)` extension APIs. They follow the standard structure given by the webview documentation: https://code.visualstudio.com/api/extension-guides/webview.
+
+### Importing css
+
+css imports for non vue webviews should be imported when generating the webview provider html, rather than loaded inside of the javascript. This allows the javascript to be used in e2e tests:
+
+e.g. when creating the html do:
+
+```ts
+// foo.js
+export function foo() {
+    // some javascript actions
+}
+
+// webview.ts
+const myCSS = webviewView.webview.asWebviewUri(
+    vscode.Uri.joinPath(globals.context.extensionUri, 'resources', 'mycss.css')
+)
+
+webviewView.webview.html = `
+<html>
+    <head>
+        <link rel="stylesheet" href="${myCSS.toString()}">
+    </head>
+    <body>
+        <script src="./foo.js">
+            foo()
+        </script>
+    </body>
+</html>
+`
+```
+
+rather than:
+
+```ts
+// foo.js
+import 'resources/mycss.css'
+
+export function foo() {
+    // some javascript actions
+}
+
+// webview.ts
+webviewView.webview.html = `
+<html>
+    <body>
+        <script src="./foo.js">
+            foo()
+        </script>
+    </body>
+</html>
+`
+```
+
 ### Testing
 
 Currently only manual testing is done. Future work will include setting up some basic unit testing capacity via `JSDOM` and `Vue Testing Library`. Strict type-checking may also be enforced on SFCs; currently the type-checking only exists locally due to gaps in the type definitions for the DOM provided by Vue/TypeScript.
