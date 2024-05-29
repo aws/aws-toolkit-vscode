@@ -3,9 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { overrideRequire, resetRequire } from './framework/setup'
-overrideRequire()
-
 import assert from 'assert'
 import { qTestingFramework } from './framework/framework'
 import sinon from 'sinon'
@@ -53,10 +50,6 @@ describe('Amazon Q Feature Dev', function () {
         framework.removeTab(tab.tabID)
         framework.dispose()
         sinon.restore()
-    })
-
-    after(() => {
-        resetRequire()
     })
 
     describe('quick action availability', () => {
