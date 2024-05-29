@@ -21,9 +21,10 @@
         "theme": "dark"
     },
     "categories": [
+        "AI",
+        "Chat",
         "Programming Languages",
         "Education",
-        "Snippets",
         "Machine Learning"
     ],
     "keywords": [
