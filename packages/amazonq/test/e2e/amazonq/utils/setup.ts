@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 
 export async function loginToIdC() {
     const authState = await AuthUtil.instance.getChatAuthState()

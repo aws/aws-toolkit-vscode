@@ -9,10 +9,8 @@ import { injectJSDOM } from './jsdomInjector'
 injectJSDOM()
 
 import * as vscode from 'vscode'
-import { createMynahUI } from '../../../amazonq/webview/ui/main'
 import { MynahUI, MynahUIProps } from '@aws/mynah-ui'
-import { DefaultAmazonQAppInitContext } from '../../../amazonq/apps/initContext'
-import { TabType } from '../../../amazonq/webview/ui/storages/tabsStorage'
+import { DefaultAmazonQAppInitContext, TabType, createMynahUI } from 'aws-core-vscode/amazonq'
 import { Messenger, MessengerOptions } from './messenger'
 
 /**
