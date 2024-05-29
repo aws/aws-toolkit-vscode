@@ -17,6 +17,7 @@ import {
     FolderInfo,
     TransformationCandidateProject,
     ZipManifest,
+    TransformByQStatus,
 } from '../models/model'
 import { convertDateToTimestamp, getStringHash } from '../../shared/utilities/textUtilities'
 import {
@@ -650,7 +651,7 @@ export async function postTransformationJob() {
         codeTransformRunTimeLatency: durationInMs,
         codeTransformLocalMavenVersion: mavenVersionInfoMessage,
         codeTransformLocalJavaVersion: javaVersionInfoMessage,
-        result: resultStatusMessage === 'Succeeded' ? MetadataResult.Pass : MetadataResult.Fail,
+        result: resultStatusMessage === TransformByQStatus.Succeeded ? MetadataResult.Pass : MetadataResult.Fail,
         reason: resultStatusMessage,
     })
 

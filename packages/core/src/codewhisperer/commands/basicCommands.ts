@@ -325,17 +325,9 @@ export const installAmazonQExtension = Commands.declare(
     }
 )
 
-// Temporary workaround to avoid errors when pressing "Fix" multiple times from hover.
-// There doesn't seem to be a way to close the hover or update the hover after interacting inside it.
-// Keep track of which findingIds have already been fixed and exit early.
-const fixedFindingIds = new Set()
-
 export const applySecurityFix = Commands.declare(
     'aws.amazonq.applySecurityFix',
     () => async (issue: CodeScanIssue, filePath: string, source: Component) => {
-        if (fixedFindingIds.has(issue.findingId)) {
-            return
-        }
         const [suggestedFix] = issue.suggestedFixes
         if (!suggestedFix || !filePath) {
             return
@@ -355,7 +347,7 @@ export const applySecurityFix = Commands.declare(
             const document = await vscode.workspace.openTextDocument(filePath)
             const fileContent = document.getText()
             languageId = document.languageId
-            const updatedContent = applyPatch(fileContent, patch)
+            const updatedContent = applyPatch(fileContent, patch, { fuzzFactor: 4 })
             if (!updatedContent) {
                 void vscode.window.showErrorMessage(CodeWhispererConstants.codeFixAppliedFailedMessage)
                 throw Error('Failed to get updated content from applying diff patch')
@@ -379,7 +371,6 @@ export const applySecurityFix = Commands.declare(
             }
 
             await closeSecurityIssueWebview(issue.findingId)
-            fixedFindingIds.add(issue.findingId)
         } catch (err) {
             getLogger().error(`Apply fix command failed. ${err}`)
             applyFixTelemetryEntry.result = 'Failed'

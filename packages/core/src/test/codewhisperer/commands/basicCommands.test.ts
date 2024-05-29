@@ -610,7 +610,7 @@ describe('CodeWhisperer-basicCommands', function () {
         })
 
         it('handles patch failure', async function () {
-            const textDocumentMock = createMockDocument()
+            const textDocumentMock = createMockDocument('first line\nsecond line\nthird line\nfourth line\nfifth line')
 
             openTextDocumentMock.resolves(textDocumentMock)
 
@@ -619,7 +619,7 @@ describe('CodeWhisperer-basicCommands', function () {
             targetCommand = testCommand(applySecurityFix)
             codeScanIssue.suggestedFixes = [
                 {
-                    code: '@@ -1,1 -1,1 @@\n-mock\n+line5',
+                    code: "@@ -3,1 +3,1 @@\n fix\n that\n-doesn't\n+match\n the\n document",
                     description: 'dummy',
                 },
             ]
@@ -632,6 +632,30 @@ describe('CodeWhisperer-basicCommands', function () {
                 component: 'webview',
                 result: 'Failed',
                 reason: 'Error: Failed to get updated content from applying diff patch',
+            })
+        })
+
+        it('should allow up to 4 differing lines', async function () {
+            const textDocumentMock = createMockDocument('first line\nsecond line\nthird line\nfourth line\nfifth line')
+            openTextDocumentMock.resolves(textDocumentMock)
+            sandbox.stub(vscode.workspace, 'openTextDocument').value(openTextDocumentMock)
+            sandbox.stub(vscode.WorkspaceEdit.prototype, 'replace').value(replaceMock)
+            applyEditMock.resolves(true)
+            sandbox.stub(vscode.workspace, 'applyEdit').value(applyEditMock)
+            sandbox.stub(diagnosticsProvider, 'removeDiagnostic').value(removeDiagnosticMock)
+            sandbox.stub(SecurityIssueHoverProvider.instance, 'removeIssue').value(removeIssueMock)
+            sandbox.stub(SecurityIssueCodeActionProvider.instance, 'removeIssue').value(removeIssueMock)
+
+            targetCommand = testCommand(applySecurityFix)
+            codeScanIssue.suggestedFixes = [
+                {
+                    code: '@@ -1,1 +1,1 @@\n first line\n changed\n-third line\n+changed\n foobar\n fifth line',
+                    description: 'dummy',
+                },
+            ]
+            await targetCommand.execute(codeScanIssue, 'test.py', 'webview')
+            assertTelemetry('codewhisperer_codeScanIssueApplyFix', {
+                result: 'Succeeded',
             })
         })
 

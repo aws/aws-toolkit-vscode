@@ -1,0 +1,8 @@
+:root {
+    /* Font-sizes */
+    --font-size-sm: calc(0.75 * var(--font-size-base));
+    --font-size-base: var(--vscode-font-size);
+    --font-size-md: calc(1.25 * var(--font-size-base));
+    --font-size-lg: calc(1.5 * var(--font-size-base));
+    --font-size-xl: calc(1.75 * var(--font-size-base));
+}

@@ -694,6 +694,7 @@ export class FeatureDevController {
     private async fileClicked(message: fileClickedMessage) {
         // TODO: add Telemetry here
         const tabId: string = message.tabID
+        const messageId = message.messageId
         const filePathToUpdate: string = message.filePath
 
         const session = await this.sessionStorage.getSession(tabId)
@@ -709,7 +710,12 @@ export class FeatureDevController {
                 !session.state.deletedFiles[deletedFilePathIndex].rejected
         }
 
-        await session.updateFilesPaths(tabId, session.state.filePaths ?? [], session.state.deletedFiles ?? [])
+        await session.updateFilesPaths(
+            tabId,
+            session.state.filePaths ?? [],
+            session.state.deletedFiles ?? [],
+            messageId
+        )
     }
 
     private async openDiff(message: OpenDiffMessage) {

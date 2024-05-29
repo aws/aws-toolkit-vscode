@@ -633,12 +633,14 @@ export class RecommendationHandler {
     }
 
     async onCursorChange(e: vscode.TextEditorSelectionChangeEvent) {
-        // e.kind will be 1 for keyboard cursor change events
         // we do not want to reset the states for keyboard events because they can be typeahead
-        if (e.kind !== 1 && vscode.window.activeTextEditor === e.textEditor) {
+        if (
+            e.kind !== vscode.TextEditorSelectionChangeKind.Keyboard &&
+            vscode.window.activeTextEditor === e.textEditor
+        ) {
             application()._clearCodeWhispererUIListener.fire()
             // when cursor change due to mouse movement we need to reset the active item index for inline
-            if (e.kind === 2) {
+            if (e.kind === vscode.TextEditorSelectionChangeKind.Mouse) {
                 this.inlineCompletionProvider?.clearActiveItemIndex()
             }
         }

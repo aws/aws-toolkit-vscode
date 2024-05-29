@@ -657,6 +657,8 @@ async function _readCustomChecksFile(input: string): Promise<string> {
             const [region, bucket, key] = parseS3Uri(input)
             const s3Client = new DefaultS3Client(region)
             const resp = await s3Client.getObject({ bucketName: bucket, key })
+            // Lint warning: this may evaluate to '[object Object]'. @typescript-eslint/no-base-to-string
+            // eslint-disable-next-line @typescript-eslint/no-base-to-string
             return resp.objectBody.toString()
         } catch (e: any) {
             if (e.message.includes('Invalid S3 URI')) {

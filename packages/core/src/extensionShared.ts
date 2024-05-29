@@ -45,7 +45,7 @@ import { ResourceFetcher } from './shared/resourcefetcher/resourcefetcher'
 import { ExtStartUpSources } from './shared/telemetry/util'
 import { ExtensionUse, getAuthFormIdsFromConnection } from './auth/utils'
 import { Auth } from './auth'
-import { AuthFormId } from './auth/ui/vue/authForms/types'
+import { AuthFormId } from './login/webview/vue/types'
 import { isSsoConnection } from './auth/connection'
 
 // In web mode everything must be in a single file, so things like the endpoints file will not be available.
