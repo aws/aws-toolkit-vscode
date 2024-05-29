@@ -549,14 +549,23 @@ export class ChatController {
 
     private async generateResponse(triggerPayload: TriggerPayload, triggerID: string) {
         // Loop while we waiting for tabID to be set
-        if (triggerPayload.message && triggerPayload.message.startsWith('#')) {
-            triggerPayload.message = triggerPayload.message.slice(1)
-            const c = await Search.instance.query(triggerPayload.message)
-            if (c) {
-                getLogger().info(`Relevant code ${c.content}`)
-                triggerPayload.message += `Here are some relevant code ${c?.content} in file ${c.fileName}. Use it only if my questions is relevant to this code. `
-            } else {
-                getLogger().info(`No Relevant code`)
+        if (triggerPayload.message) {
+            let enableProjectContext = false
+            if (triggerPayload.message.startsWith('@p ')) {
+                enableProjectContext = true
+                triggerPayload.message = triggerPayload.message.slice(3)
+            } else if (triggerPayload.message.startsWith('@project ')) {
+                enableProjectContext = true
+                triggerPayload.message = triggerPayload.message.slice(9)
+            }
+            if (enableProjectContext) {
+                const c = await Search.instance.query(triggerPayload.message)
+                if (c) {
+                    getLogger().info(`Relevant code ${c.content}`)
+                    triggerPayload.message += `Here are some relevant code ${c?.content} in file ${c.fileName}. Use it only if my questions is relevant to this code. `
+                } else {
+                    getLogger().info(`No Relevant code`)
+                }
             }
         }
 
