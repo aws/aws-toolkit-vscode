@@ -21,9 +21,10 @@
         "theme": "dark"
     },
     "categories": [
+        "AI",
+        "Chat",
         "Programming Languages",
         "Education",
-        "Snippets",
         "Machine Learning"
     ],
     "keywords": [
@@ -233,26 +234,6 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.amazonq.auth.addConnection",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.amazonq.auth.switchConnections",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.amazonq.auth.signout",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.amazonq.auth.help",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.amazonq.auth.manageConnections",
-                    "when": "false"
-                },
-                {
                     "command": "amazonq.dev.openMenu",
                     "when": "aws.isDevMode"
                 },
@@ -416,40 +397,6 @@
                 "category": "%AWS.amazonq.title%"
             },
             {
-                "command": "aws.amazonq.login",
-                "title": "%AWS.command.login%",
-                "category": "%AWS.amazonq.title%",
-                "enablement": "false"
-            },
-            {
-                "command": "aws.amazonq.credentials.profile.create",
-                "title": "%AWS.command.credentials.profile.create%",
-                "category": "%AWS.amazonq.title%",
-                "enablement": "false"
-            },
-            {
-                "command": "aws.amazonq.credentials.edit",
-                "title": "%AWS.command.credentials.edit%",
-                "category": "%AWS.amazonq.title%",
-                "enablement": "false"
-            },
-            {
-                "command": "aws.amazonq.logout",
-                "title": "%AWS.command.logout%",
-                "category": "%AWS.amazonq.title%",
-                "enablement": "false"
-            },
-            {
-                "command": "aws.amazonq.auth.addConnection",
-                "title": "%AWS.command.auth.addConnection%",
-                "category": "%AWS.amazonq.title%"
-            },
-            {
-                "command": "aws.amazonq.auth.manageConnections",
-                "title": "%AWS.command.auth.showConnectionsPage%",
-                "category": "%AWS.amazonq.title%"
-            },
-            {
                 "command": "aws.amazonq.reconnect",
                 "title": "%AWS.command.codewhisperer.reconnect%",
                 "category": "%AWS.amazonq.title%"
@@ -481,22 +428,6 @@
                 "command": "aws.amazonq.showTransformationPlanInHub",
                 "title": "%AWS.command.q.transform.showTransformationPlan%",
                 "enablement": "gumby.isPlanAvailable"
-            },
-            {
-                "command": "aws.amazonq.auth.switchConnections",
-                "title": "%AWS.command.auth.switchConnections%",
-                "category": "%AWS.amazonq.title%"
-            },
-            {
-                "command": "aws.amazonq.auth.signout",
-                "title": "%AWS.command.auth.signout%",
-                "category": "%AWS.amazonq.title%"
-            },
-            {
-                "command": "aws.amazonq.auth.help",
-                "title": "%AWS.generic.viewDocs%",
-                "category": "%AWS.amazonq.title%",
-                "icon": "$(question)"
             },
             {
                 "command": "aws.amazonq.createIssueOnGitHub",

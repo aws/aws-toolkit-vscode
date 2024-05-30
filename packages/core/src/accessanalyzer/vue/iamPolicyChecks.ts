@@ -12,7 +12,7 @@ import { VueWebview } from '../../webviews/main'
 import { ExtContext } from '../../shared/extensions'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { AccessAnalyzer, SharedIniFileCredentials } from 'aws-sdk'
-import { execSync } from 'child_process'
+import { execFileSync } from 'child_process'
 import { ToolkitError } from '../../shared/errors'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { globals } from '../../shared'
@@ -42,6 +42,13 @@ export interface IamPolicyChecksInitialData {
     customChecksFileErrorMessage: string
     cfnParameterPath: string
     pythonToolsInstalled: boolean
+}
+
+type PolicyCommandOpts = {
+    command: string
+    args: string[]
+    cfnParameterPathExists: boolean
+    documentType: PolicyChecksDocumentType
 }
 
 export class IamPolicyChecksWebview extends VueWebview {
@@ -238,15 +245,23 @@ export class IamPolicyChecksWebview extends VueWebview {
             }
             case 'Terraform Plan': {
                 if (isTerraformPlan(document)) {
-                    const tfCommand = `tf-policy-validator validate --template-path ${document} --region ${
-                        this.region
-                    } --config ${globals.context.asAbsolutePath(defaultTerraformConfigPath)}`
-                    this.executeValidatePolicyCommand(
-                        tfCommand,
-                        cfnParameterPath ? true : false,
+                    const command = 'tf-policy-validator'
+                    const args = [
+                        'validate',
+                        '--template-path',
+                        `${document}`,
+                        '--region',
+                        `${this.region}`,
+                        '--config',
+                        `${globals.context.asAbsolutePath(defaultTerraformConfigPath)}`,
+                    ]
+                    this.executeValidatePolicyCommand({
+                        command,
+                        args,
+                        cfnParameterPathExists: !!cfnParameterPath,
                         documentType,
-                        policyType
-                    )
+                        policyType,
+                    })
                     return
                 } else {
                     this.onValidatePolicyResponse.fire([
@@ -258,16 +273,18 @@ export class IamPolicyChecksWebview extends VueWebview {
             }
             case 'CloudFormation': {
                 if (isCloudFormationTemplate(document)) {
-                    const cfnCommand =
-                        cfnParameterPath === ''
-                            ? `cfn-policy-validator validate --template-path ${document} --region ${this.region}`
-                            : `cfn-policy-validator validate --template-path ${document} --region ${this.region} --template-configuration-file ${cfnParameterPath}`
-                    this.executeValidatePolicyCommand(
-                        cfnCommand,
-                        cfnParameterPath ? true : false,
+                    const command = 'cfn-policy-validator'
+                    const args = ['validate', '--template-path', `${document}`, '--region', `${this.region}`]
+                    if (cfnParameterPath !== '') {
+                        args.push('--template-configuration-file', `${cfnParameterPath}`)
+                    }
+                    this.executeValidatePolicyCommand({
+                        command,
+                        args,
+                        cfnParameterPathExists: !!cfnParameterPath,
                         documentType,
-                        policyType
-                    )
+                        policyType,
+                    })
                     return
                 } else {
                     this.onValidatePolicyResponse.fire([
@@ -304,18 +321,28 @@ export class IamPolicyChecksWebview extends VueWebview {
         switch (documentType) {
             case 'Terraform Plan': {
                 if (isTerraformPlan(document)) {
-                    const tfCommand = `tf-policy-validator check-no-new-access --template-path ${document} --region ${
-                        this.region
-                    } --config ${globals.context.asAbsolutePath(
-                        defaultTerraformConfigPath
-                    )} --reference-policy ${tempFilePath} --reference-policy-type ${policyType}`
-                    this.executeCustomPolicyChecksCommand(
-                        tfCommand,
-                        cfnParameterPath ? true : false,
+                    const command = 'tf-policy-validator'
+                    const args = [
+                        'check-no-new-access',
+                        '--template-path',
+                        `${document}`,
+                        '--region',
+                        `${this.region}`,
+                        '--config',
+                        `${globals.context.asAbsolutePath(defaultTerraformConfigPath)}`,
+                        '--reference-policy',
+                        `${tempFilePath}`,
+                        '--reference-policy-type',
+                        `${policyType}`,
+                    ]
+                    this.executeCustomPolicyChecksCommand({
+                        command,
+                        args,
+                        cfnParameterPathExists: !!cfnParameterPath,
                         documentType,
-                        'CheckNoNewAccess',
-                        policyType
-                    )
+                        checkType: 'CheckNoNewAccess',
+                        referencePolicyType: policyType,
+                    })
                     return
                 } else {
                     this.onCustomPolicyCheckResponse.fire([
@@ -327,17 +354,29 @@ export class IamPolicyChecksWebview extends VueWebview {
             }
             case 'CloudFormation': {
                 if (isCloudFormationTemplate(document)) {
-                    const cfnCommand =
-                        cfnParameterPath === ''
-                            ? `cfn-policy-validator check-no-new-access --template-path ${document} --region ${this.region} --reference-policy ${tempFilePath} --reference-policy-type ${policyType}`
-                            : `cfn-policy-validator check-no-new-access --template-path ${document} --region ${this.region} --reference-policy ${tempFilePath} --reference-policy-type ${policyType} --template-configuration-file ${cfnParameterPath}`
-                    this.executeCustomPolicyChecksCommand(
-                        cfnCommand,
-                        cfnParameterPath ? true : false,
+                    const command = 'cfn-policy-validator'
+                    const args = [
+                        'check-no-new-access',
+                        '--template-path',
+                        `${document}`,
+                        '--region',
+                        `${this.region}`,
+                        '--reference-policy',
+                        `${tempFilePath}`,
+                        '--reference-policy-type',
+                        `${policyType}`,
+                    ]
+                    if (cfnParameterPath !== '') {
+                        args.push('--template-configuration-file', `${cfnParameterPath}`)
+                    }
+                    this.executeCustomPolicyChecksCommand({
+                        command,
+                        args,
+                        cfnParameterPathExists: !!cfnParameterPath,
                         documentType,
-                        'CheckNoNewAccess',
-                        policyType
-                    )
+                        checkType: 'CheckNoNewAccess',
+                        referencePolicyType: policyType,
+                    })
                     return
                 } else {
                     this.onCustomPolicyCheckResponse.fire([
@@ -371,15 +410,25 @@ export class IamPolicyChecksWebview extends VueWebview {
         switch (documentType) {
             case 'Terraform Plan': {
                 if (isTerraformPlan(document)) {
-                    const tfCommand = `tf-policy-validator check-access-not-granted --template-path ${document} --region ${
-                        this.region
-                    } --config ${globals.context.asAbsolutePath(defaultTerraformConfigPath)} --actions ${actions}`
-                    this.executeCustomPolicyChecksCommand(
-                        tfCommand,
-                        cfnParameterPath ? true : false,
+                    const command = 'tf-policy-validator'
+                    const args = [
+                        'check-access-not-granted',
+                        '--template-path',
+                        `${document}`,
+                        '--region',
+                        `${this.region}`,
+                        '--config',
+                        `${globals.context.asAbsolutePath(defaultTerraformConfigPath)}`,
+                        '--actions',
+                        `${actions}`,
+                    ]
+                    this.executeCustomPolicyChecksCommand({
+                        command,
+                        args,
+                        cfnParameterPathExists: !!cfnParameterPath,
                         documentType,
-                        'CheckAccessNotGranted'
-                    )
+                        checkType: 'CheckAccessNotGranted',
+                    })
                     return
                 } else {
                     this.onCustomPolicyCheckResponse.fire([
@@ -391,16 +440,26 @@ export class IamPolicyChecksWebview extends VueWebview {
             }
             case 'CloudFormation': {
                 if (isCloudFormationTemplate(document)) {
-                    const cfnCommand =
-                        cfnParameterPath === ''
-                            ? `cfn-policy-validator check-access-not-granted --template-path ${document} --region ${this.region} --actions ${actions}`
-                            : `cfn-policy-validator check-access-not-granted --template-path ${document} --region ${this.region} --actions ${actions} --template-copnfiguration-file ${cfnParameterPath}`
-                    this.executeCustomPolicyChecksCommand(
-                        cfnCommand,
-                        cfnParameterPath ? true : false,
+                    const command = 'cfn-policy-validator'
+                    const args = [
+                        'check-access-not-granted',
+                        '--template-path',
+                        `${document}`,
+                        '--region',
+                        `${this.region}`,
+                        '--actions',
+                        `${actions}`,
+                    ]
+                    if (cfnParameterPath !== '') {
+                        args.push('--template-configuration-file', `${cfnParameterPath}`)
+                    }
+                    this.executeCustomPolicyChecksCommand({
+                        command,
+                        args,
+                        cfnParameterPathExists: !!cfnParameterPath,
                         documentType,
-                        'CheckAccessNotGranted'
-                    )
+                        checkType: 'CheckAccessNotGranted',
+                    })
                     return
                 } else {
                     this.onCustomPolicyCheckResponse.fire([
@@ -413,20 +472,15 @@ export class IamPolicyChecksWebview extends VueWebview {
         }
     }
 
-    public executeValidatePolicyCommand(
-        command: string,
-        cfnParameterPathExists: boolean,
-        documentType: PolicyChecksDocumentType,
-        policyType?: PolicyChecksPolicyType
-    ) {
+    public executeValidatePolicyCommand(opts: PolicyCommandOpts & { policyType?: PolicyChecksPolicyType }) {
         telemetry.accessanalyzer_iamPolicyChecksValidatePolicy.run(span => {
             try {
                 span.record({
-                    cfnParameterFileUsed: cfnParameterPathExists,
-                    documentType: documentType,
-                    inputPolicyType: policyType ? policyType : 'None',
+                    cfnParameterFileUsed: opts.cfnParameterPathExists,
+                    documentType: opts.documentType,
+                    inputPolicyType: opts.policyType ?? 'None',
                 })
-                const resp = execSync(command)
+                const resp = execFileSync(opts.command, opts.args)
                 const findingsCount = this.handleValidatePolicyCliResponse(resp.toString())
                 span.record({
                     findingsCount: findingsCount,
@@ -443,7 +497,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                         findingsCount: 0,
                     })
                     this.onValidatePolicyResponse.fire([
-                        parseCliErrorMessage(err.message, documentType),
+                        parseCliErrorMessage(err.message, opts.documentType),
                         getResultCssColor('Error'),
                     ])
                 }
@@ -479,22 +533,18 @@ export class IamPolicyChecksWebview extends VueWebview {
     }
 
     public executeCustomPolicyChecksCommand(
-        command: string,
-        cfnParameterPathExists: boolean,
-        documentType: PolicyChecksDocumentType,
-        checkType: PolicyChecksCheckType,
-        referencePolicyType?: PolicyChecksPolicyType
+        opts: PolicyCommandOpts & { checkType: PolicyChecksCheckType; referencePolicyType?: PolicyChecksPolicyType }
     ) {
         telemetry.accessanalyzer_iamPolicyChecksCustomChecks.run(span => {
             try {
                 span.record({
-                    cfnParameterFileUsed: cfnParameterPathExists,
-                    checkType: checkType,
-                    documentType: documentType,
+                    cfnParameterFileUsed: opts.cfnParameterPathExists,
+                    checkType: opts.checkType,
+                    documentType: opts.documentType,
                     inputPolicyType: 'None', // Note: This will change once JSON policy language is enabled for Custom policy checks
-                    referencePolicyType: referencePolicyType ? referencePolicyType : 'None',
+                    referencePolicyType: opts.referencePolicyType ?? 'None',
                 })
-                const resp = execSync(command)
+                const resp = execFileSync(opts.command, opts.args)
                 const findingsCount = this.handleCustomPolicyChecksCliResponse(resp.toString())
                 span.record({
                     findingsCount: findingsCount,
@@ -511,7 +561,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                         findingsCount: 0,
                     })
                     this.onCustomPolicyCheckResponse.fire([
-                        parseCliErrorMessage(err.message, documentType),
+                        parseCliErrorMessage(err.message, opts.documentType),
                         getResultCssColor('Error'),
                     ])
                 }
@@ -676,22 +726,26 @@ function arePythonToolsInstalled(): boolean {
     let cfnToolInstalled = true
     let tfToolInstalled = true
     try {
-        execSync('tf-policy-validator')
+        execFileSync('tf-policy-validator')
     } catch (err: any) {
-        if (err.message.includes('command not found')) {
+        if (isProcessNotFoundErr(err.message)) {
             tfToolInstalled = false
             logger.error('Terraform Policy Validator is not found')
         }
     }
     try {
-        execSync('cfn-policy-validator')
+        execFileSync('cfn-policy-validator')
     } catch (err: any) {
-        if (err.message.includes('command not found')) {
+        if (isProcessNotFoundErr(err.message)) {
             cfnToolInstalled = false
             logger.error('Cloudformation Policy Validator is not found')
         }
     }
     return cfnToolInstalled && tfToolInstalled
+}
+
+function isProcessNotFoundErr(errMsg: string) {
+    return errMsg.includes('command not found') || errMsg.includes('ENOENT')
 }
 
 // Since TypeScript can only get the CLI tool's error output as a string, we have to parse and sanitize it ourselves
@@ -714,7 +768,7 @@ function parseCliErrorMessage(message: string, documentType: PolicyChecksDocumen
         return cfnMatch[0]
     } else if (botoMatch?.[0]) {
         return botoMatch[0]
-    } else if (message.includes('command not found')) {
+    } else if (isProcessNotFoundErr(message)) {
         return `Command not found, please install the ${documentType} Python CLI tool`
     } else if (terraformMatch?.[0]) {
         return 'ERROR: Unable to parse Terraform plan. Invalid Terraform plan schema detected.'
