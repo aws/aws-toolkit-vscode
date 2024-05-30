@@ -1,3 +1,7 @@
+## 3.8.0 2024-05-30
+
+- **Bug Fix** auth: use device code auth when running in a web browser
+
 ## 3.7.0 2024-05-23
 
 - **Feature** AWS Toolkit now publishes to Open VSX: https://open-vsx.org/namespace/amazonwebservices
