@@ -147,13 +147,13 @@ export default defineComponent({
 })
 </script>
 <style>
+@import './base.css';
+
 #reauthenticate-container {
-    display: flex;
-    flex-direction: column;
-    /* All items are centered vertically */
-    justify-content: center;
-    /* The full height of the screen */
-    height: 100%;
+    height: auto;
+    margin: auto;
+    position: absolute;
+    top: var(--auth-container-top);
     width: 100%;
 }
 

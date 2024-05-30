@@ -5,4 +5,7 @@
     --font-size-md: calc(1.25 * var(--font-size-base));
     --font-size-lg: calc(1.5 * var(--font-size-base));
     --font-size-xl: calc(1.75 * var(--font-size-base));
+
+    /* Alignment */
+    --auth-container-top: 15%;
 }
