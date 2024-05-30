@@ -5,8 +5,8 @@
 
 import assert from 'assert'
 import { MynahUI, MynahUIProps, MynahUIDataModel } from '@aws/mynah-ui'
-import { waitUntil } from '../../../shared/utilities/timeoutUtils'
-import { FollowUpTypes } from '../../../amazonqFeatureDev/types'
+import { waitUntil } from 'aws-core-vscode/shared'
+import { FollowUpTypes } from 'aws-core-vscode/amazonqFeatureDev'
 
 export interface MessengerOptions {
     waitIntervalInMs?: number

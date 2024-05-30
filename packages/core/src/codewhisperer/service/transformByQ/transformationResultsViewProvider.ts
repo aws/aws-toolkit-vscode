@@ -339,9 +339,14 @@ export class ProposedTransformationExplorer {
             } catch (e: any) {
                 downloadErrorMessage = (e as Error).message
                 // This allows the customer to retry the download
-                void vscode.window.showErrorMessage(CodeWhispererConstants.errorDownloadingDiffNotification)
+                if (downloadErrorMessage.includes('Encountered an unexpected error when processing the request')) {
+                    downloadErrorMessage = CodeWhispererConstants.errorDownloadingExpiredDiff
+                }
+                void vscode.window.showErrorMessage(
+                    `${CodeWhispererConstants.errorDownloadingDiffNotification} The download failed due to: ${downloadErrorMessage}`
+                )
                 transformByQState.getChatControllers()?.transformationFinished.fire({
-                    message: CodeWhispererConstants.errorDownloadingDiffChatMessage,
+                    message: `${CodeWhispererConstants.errorDownloadingDiffChatMessage} The download failed due to: ${downloadErrorMessage}`,
                     tabID: ChatSessionManager.Instance.getSession().tabID,
                 })
                 await vscode.commands.executeCommand(

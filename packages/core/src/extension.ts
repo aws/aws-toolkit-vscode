@@ -59,8 +59,9 @@ import { amazonQInstallDismissedKey } from './codewhisperer/models/constants'
 import { ExtensionUse } from './auth/utils'
 import { ExtStartUpSources } from './shared/telemetry'
 
-export { makeEndpointsProvider, registerCommands } from './extensionShared'
+export { makeEndpointsProvider, registerGenericCommands } from './extensionShared'
 import { activate as activateThreatComposerEditor } from './threatcomposereditor/activation'
+
 
 let localize: nls.LocalizeFunc
 

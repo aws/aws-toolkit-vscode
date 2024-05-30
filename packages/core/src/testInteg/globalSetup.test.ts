@@ -7,7 +7,6 @@
  * Before/After hooks for all integration tests.
  */
 import vscode from 'vscode'
-import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
 import { activateExtension } from '../shared/utilities/vsCodeUtils'
@@ -19,26 +18,28 @@ import { getTestWindow, resetTestWindow } from '../test/shared/vscode/window'
 let windowPatch: vscode.Disposable
 const maxTestDuration = 300_000
 
-export async function mochaGlobalSetup(this: Mocha.Runner) {
-    console.log('globalSetup: before()')
+export async function mochaGlobalSetup(extensionId: string) {
+    return async function (this: Mocha.Runner) {
+        console.log('globalSetup: before()')
 
-    // Prevent CI from hanging by forcing a timeout on both hooks and tests
-    this.on('hook', hook => setRunnableTimeout(hook, maxTestDuration))
-    this.on('test', test => setRunnableTimeout(test, maxTestDuration))
+        // Prevent CI from hanging by forcing a timeout on both hooks and tests
+        this.on('hook', hook => setRunnableTimeout(hook, maxTestDuration))
+        this.on('test', test => setRunnableTimeout(test, maxTestDuration))
 
-    // Shows the full error chain when tests fail
-    mapTestErrors(this, normalizeError)
+        // Shows the full error chain when tests fail
+        mapTestErrors(this, normalizeError)
 
-    // Set up a listener for proxying login requests
-    patchWindow()
+        // Set up a listener for proxying login requests
+        patchWindow()
 
-    // Needed for getLogger().
-    await activateExtension(VSCODE_EXTENSION_ID.awstoolkitcore, false)
+        // Needed for getLogger().
+        await activateExtension(extensionId, false)
 
-    // Log as much as possible, useful for debugging integration tests.
-    getLogger().setLogLevel('debug')
-    if (getLogger() instanceof WinstonToolkitLogger) {
-        ;(getLogger() as WinstonToolkitLogger).logToConsole()
+        // Log as much as possible, useful for debugging integration tests.
+        getLogger().setLogLevel('debug')
+        if (getLogger() instanceof WinstonToolkitLogger) {
+            ;(getLogger() as WinstonToolkitLogger).logToConsole()
+        }
     }
 }
 

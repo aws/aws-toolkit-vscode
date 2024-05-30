@@ -56,6 +56,7 @@
         "eslint-plugin-aws-toolkits": "file:plugins/eslint-plugin-aws-toolkits",
         "eslint-plugin-header": "^3.1.1",
         "eslint-plugin-unicorn": "^50.0.1",
+        "eslint-plugin-security-node": "^1.1.4",
         "husky": "^9.0.7",
         "prettier": "^2.8.8",
         "prettier-plugin-sh": "^0.12.8",

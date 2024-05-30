@@ -34,6 +34,8 @@
         "./shared": "./dist/src/shared/index.js",
         "./auth": "./dist/src/auth/index.js",
         "./amazonqGumby": "./dist/src/amazonqGumby/index.js",
+        "./amazonqFeatureDev": "./dist/src/amazonqFeatureDev/index.js",
+        "./test": "./dist/src/test/index.js",
         "./login": "./dist/src/login/webview/index.js",
         "./utils": "./dist/src/shared/utilities/index.js",
         "./feedback": "./dist/src/feedback/index.js",
@@ -1136,10 +1138,6 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.toolkit.auth.signout",
-                    "when": "false"
-                },
-                {
                     "command": "aws.toolkit.auth.help",
                     "when": "false"
                 },
@@ -1160,11 +1158,11 @@
                 },
                 {
                     "command": "aws.ec2.stopInstance",
-                    "whem": "aws.isDevMode"
+                    "when": "aws.isDevMode"
                 },
                 {
                     "command": "aws.ec2.rebootInstance",
-                    "whem": "aws.isDevMode"
+                    "when": "aws.isDevMode"
                 },
                 {
                     "command": "aws.dev.openMenu",
@@ -2163,16 +2161,6 @@
                 "category": "AWS",
                 "icon": "$(debug-disconnect)",
                 "enablement": "isCloud9 || !aws.isWebExtHost"
-            },
-            {
-                "command": "aws.toolkit.logout",
-                "title": "%AWS.command.logout%",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
             },
             {
                 "command": "aws.toolkit.auth.addConnection",

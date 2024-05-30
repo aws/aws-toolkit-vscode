@@ -27,7 +27,7 @@ import {
     getMachineId,
 } from 'aws-core-vscode/shared'
 import { initializeAuth, CredentialsStore, LoginManager, AuthUtils } from 'aws-core-vscode/auth'
-import { makeEndpointsProvider, registerCommands } from 'aws-core-vscode'
+import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode'
 import { activate as activateCWChat } from 'aws-core-vscode/amazonq'
 import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
 import { CommonAuthViewProvider, CommonAuthWebview } from 'aws-core-vscode/login'
@@ -93,7 +93,7 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
 
     await activateTelemetry(context, globals.awsContext, Settings.instance, 'Amazon Q For VS Code')
 
-    await initializeAuth(context, globals.loginManager, contextPrefix)
+    await initializeAuth(globals.loginManager)
 
     const extContext = {
         extensionContext: context,
@@ -103,7 +103,10 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
     await activateQGumby(extContext as ExtContext)
 
     // Generic extension commands
-    registerCommands(context, contextPrefix)
+    registerGenericCommands(context, contextPrefix)
+
+    // Amazon Q specific commands
+    registerCommands(context)
 
     const authProvider = new CommonAuthViewProvider(context, contextPrefix)
     context.subscriptions.push(
