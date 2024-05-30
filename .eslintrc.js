@@ -158,6 +158,7 @@ module.exports = {
         'aws-toolkits/no-await-on-vscode-msg': 'error',
         'aws-toolkits/no-incorrect-once-usage': 'error',
         'aws-toolkits/no-string-exec-for-child-process': 'error',
+        'aws-toolkits/no-console-log': 'error',
 
         'no-restricted-imports': [
             'error',
