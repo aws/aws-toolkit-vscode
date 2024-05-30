@@ -1151,15 +1151,15 @@
                 },
                 {
                     "command": "aws.ec2.startInstance",
-                    "when": "aws.isDevMode"
+                    "when": "aws.true"
                 },
                 {
                     "command": "aws.ec2.stopInstance",
-                    "when": "aws.isDevMode"
+                    "when": "aws.true"
                 },
                 {
                     "command": "aws.ec2.rebootInstance",
-                    "when": "aws.isDevMode"
+                    "when": "aws.true"
                 },
                 {
                     "command": "aws.dev.openMenu",
