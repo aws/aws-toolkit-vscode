@@ -15,9 +15,9 @@ let disableAutoSave = false
 let theme = 'unknown'
 
 // Handle messages sent from the extension to the webview
-window.addEventListener('message', handelMessage)
+window.addEventListener('message', handleMessage)
 
-function handelMessage(event) {
+function handleMessage(event) {
     const message = event.data // The json data that the extension sent
 
     if (message.messageType === 'BROADCAST') {
