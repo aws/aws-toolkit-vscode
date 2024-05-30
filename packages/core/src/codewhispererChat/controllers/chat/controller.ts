@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import * as vscode from 'vscode'
 import { Event as VSCodeEvent, Uri } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
@@ -551,22 +551,38 @@ export class ChatController {
     private async generateResponse(triggerPayload: TriggerPayload, triggerID: string) {
         // Loop while we waiting for tabID to be set
         if (triggerPayload.message) {
-            let enableProjectContext = false
+            let userIntentEnableProjectContext = false
             if (triggerPayload.message.startsWith('@ws')) {
-                enableProjectContext = true
+                userIntentEnableProjectContext = true
                 triggerPayload.message = triggerPayload.message.slice(3)
             } else if (triggerPayload.message.startsWith('@workspace')) {
-                enableProjectContext = true
+                userIntentEnableProjectContext = true
                 triggerPayload.message = triggerPayload.message.slice(10)
             }
-            if (enableProjectContext && CodeWhispererSettings.instance.isLocalIndexEnabled()) {
-                const c = await Search.instance.query(triggerPayload.message)
-                if (c) {
-                    getLogger().info(`Relevant code ${c.content}`)
-                    triggerPayload.message += `Here are some relevant code ${c?.content} in file ${c.fileName}. Use it only if my questions is relevant to this code. `
-                    triggerPayload.hasProjectLevelContext = true
+            if (userIntentEnableProjectContext) {
+                if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
+                    const c = await Search.instance.query(triggerPayload.message)
+                    if (c) {
+                        getLogger().info(`Relevant code ${c.content}`)
+                        triggerPayload.message += `Here are some relevant code ${c?.content} in file ${c.fileName}. Use it only if my questions is relevant to this code. `
+                        triggerPayload.hasProjectLevelContext = true
+                    } else {
+                        getLogger().info(`No Relevant code`)
+                    }
                 } else {
-                    getLogger().info(`No Relevant code`)
+                    void vscode.window
+                        .showInformationMessage(
+                            'Please enable local indexing in Amazon Q settings and then restart or reload VS Code.',
+                            'Open Settings'
+                        )
+                        .then(resp => {
+                            if (resp === 'Open Settings') {
+                                void vscode.commands.executeCommand(
+                                    'workbench.action.openSettings',
+                                    `@id:amazonQ.localWorkspaceIndex`
+                                )
+                            }
+                        })
                 }
             }
         }
