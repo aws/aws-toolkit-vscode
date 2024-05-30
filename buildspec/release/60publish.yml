@@ -7,7 +7,7 @@ version: 0.2
 phases:
     install:
         runtime-versions:
-            nodejs: 16
+            nodejs: 20
         commands:
             - apt-get update
             - apt-get install -y libsecret-1-dev
