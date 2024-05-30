@@ -9,7 +9,7 @@ import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import * as path from 'path'
 import * as testutil from '../../test/testUtil'
-import { setValidConnection, skiptTestIfNoValidConn } from '../util/codewhispererUtil'
+import { setValidConnection, skipTestIfNoValidConn } from '../util/connection'
 import { resetCodeWhispererGlobalVariables } from '../../test/codewhisperer/testUtil'
 import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
 import { closeAllEditors } from '../../test/testUtil'
@@ -59,7 +59,7 @@ describe('CodeWhisperer security scan', async function () {
     beforeEach(function () {
         void resetCodeWhispererGlobalVariables()
         //valid connection required to run tests
-        skiptTestIfNoValidConn(validConnection, this)
+        skipTestIfNoValidConn(validConnection, this)
     })
 
     afterEach(async function () {
