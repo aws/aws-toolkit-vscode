@@ -535,7 +535,7 @@ export async function collectFilesForIndex(
 
     const isLanguageSupported = (filename: string) => {
         const k =
-            /\.(js|ts|java|py|rb|cpp|tsx|jsx|cc|c|h|html|json|css|md|php|swift|rs|scala|yaml|tf|sql|sh|go|yml|kt)$/i
+            /\.(js|ts|java|py|rb|cpp|tsx|jsx|cc|c|h|html|json|css|md|php|swift|rs|scala|yaml|tf|sql|sh|go|yml|kt|smithy|config|kts|gradle)$/i
         return k.test(filename)
     }
 
