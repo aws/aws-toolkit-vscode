@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Always show device code prompt when performing device code grant through a legacy SSO configuration"
-}

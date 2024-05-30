@@ -1,3 +1,8 @@
+# _3.8_ (2024-05-30)
+- **(Bug Fix)** fix(featureDev): File Rejection stopped working
+- **(Bug Fix)** Amazon Q Feature Development: Update error message when repo size larger than 200 megabytes
+- **(Bug Fix)** Always show device code prompt when performing device code grant through a legacy SSO configuration
+
 # _3.7_ (2024-05-29)
 - **(Bug Fix)** (featureDev): Revert fix for file rejection. Reason: The plan disappears after clicking generate Code
 - **(Bug Fix)** Amazon Q Code Transformation: show more specific error messages on failure cases
