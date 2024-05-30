@@ -283,7 +283,7 @@ Some webviews (amazon q chat view, codewhisperer security panel) rely on the nat
 
 ### Importing css
 
-css imports for non vue webviews should be imported when generating the webview provider html, rather than loaded inside of the javascript. This allows the javascript to be used in e2e tests:
+css imports for non vue webviews should be imported when generating the webview provider html, rather than loaded inside of the javascript otherwise you will get "Error: Cannot find module 'some/path/to/my.css'" when running the e2e tests:
 
 e.g. when creating the html do:
 
