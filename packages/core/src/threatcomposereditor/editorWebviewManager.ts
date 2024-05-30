@@ -174,11 +174,11 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
     protected handleErr(err: Error): void {
         void vscode.window.showInformationMessage(
             localize(
-                'AWS.applicationComposer.visualisation.errors.rendering',
-                'There was an error rendering Application Composer, check logs for details.'
+                'AWS.threatComposer.visualisation.errors.rendering',
+                'There was an error rendering Threat Composer, check logs for details.'
             )
         )
-        this.logger.error(`${this.name}: Unable to show App Composer webview: ${err}`)
+        this.logger.error(`${this.name}: Unable to open in ThreatComposer view: ${err}`)
     }
 
     protected handleNewVisualization(key: string, visualization: ThreatComposer): void {
