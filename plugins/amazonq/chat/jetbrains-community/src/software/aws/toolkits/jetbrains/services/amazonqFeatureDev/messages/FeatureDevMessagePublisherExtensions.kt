@@ -58,11 +58,12 @@ suspend fun MessagePublisher.sendSystemPrompt(
     )
 }
 
-suspend fun MessagePublisher.updateFileComponent(tabId: String, filePaths: List<NewFileZipInfo>, deletedFiles: List<DeletedFileInfo>) {
+suspend fun MessagePublisher.updateFileComponent(tabId: String, filePaths: List<NewFileZipInfo>, deletedFiles: List<DeletedFileInfo>, messageId: String) {
     val fileComponentMessage = FileComponent(
         tabId = tabId,
         filePaths = filePaths,
         deletedFiles = deletedFiles,
+        messageId = messageId,
     )
     this.publish(fileComponentMessage)
 }

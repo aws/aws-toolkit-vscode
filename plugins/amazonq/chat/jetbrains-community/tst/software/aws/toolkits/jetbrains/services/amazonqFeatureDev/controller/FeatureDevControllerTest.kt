@@ -388,6 +388,6 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
 
         val newFileContentsCopy = newFileContents.toList()
         newFileContentsCopy[0].rejected = !newFileContentsCopy[0].rejected
-        coVerify { messenger.updateFileComponent(testTabId, newFileContentsCopy, deletedFiles) }
+        coVerify { messenger.updateFileComponent(testTabId, newFileContentsCopy, deletedFiles, "") }
     }
 }
