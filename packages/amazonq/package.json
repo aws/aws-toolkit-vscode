@@ -46,7 +46,7 @@
     "browser": "./dist/src/extensionWeb",
     "scripts": {
         "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production",
-        "buildScripts": "npm run generateNonCodeFiles && npm run copyFiles && npm run syncPackageJson",
+        "buildScripts": "npm run generateNonCodeFiles && npm run copyFiles && npm run syncPackageJson && tsc -p ./ --noEmit",
         "generateNonCodeFiles": "ts-node ../../scripts/generateNonCodeFiles.ts",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "syncPackageJson": "ts-node ./scripts/build/syncPackageJson.ts",
