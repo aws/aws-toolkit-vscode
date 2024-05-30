@@ -330,6 +330,8 @@ export class FeatureDevController {
             message: approachCreation,
         })
 
+        this.messenger.sendUpdatePlaceholder(tabID, 'Generating plan ...')
+
         const interactions = await session.send(message)
         this.messenger.sendUpdatePlaceholder(tabID, 'How can this plan be improved?')
 
