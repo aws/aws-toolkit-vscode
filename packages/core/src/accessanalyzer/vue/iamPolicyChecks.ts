@@ -728,7 +728,7 @@ function arePythonToolsInstalled(): boolean {
     try {
         execFileSync('tf-policy-validator')
     } catch (err: any) {
-        if (err.message.includes('command not found')) {
+        if (isProcessNotFoundErr(err.message)) {
             tfToolInstalled = false
             logger.error('Terraform Policy Validator is not found')
         }
@@ -736,12 +736,16 @@ function arePythonToolsInstalled(): boolean {
     try {
         execFileSync('cfn-policy-validator')
     } catch (err: any) {
-        if (err.message.includes('command not found')) {
+        if (isProcessNotFoundErr(err.message)) {
             cfnToolInstalled = false
             logger.error('Cloudformation Policy Validator is not found')
         }
     }
     return cfnToolInstalled && tfToolInstalled
+}
+
+function isProcessNotFoundErr(errMsg: string) {
+    return errMsg.includes('command not found') || errMsg.includes('ENOENT')
 }
 
 // Since TypeScript can only get the CLI tool's error output as a string, we have to parse and sanitize it ourselves
@@ -764,7 +768,7 @@ function parseCliErrorMessage(message: string, documentType: PolicyChecksDocumen
         return cfnMatch[0]
     } else if (botoMatch?.[0]) {
         return botoMatch[0]
-    } else if (message.includes('command not found')) {
+    } else if (isProcessNotFoundErr(message)) {
         return `Command not found, please install the ${documentType} Python CLI tool`
     } else if (terraformMatch?.[0]) {
         return 'ERROR: Unable to parse Terraform plan. Invalid Terraform plan schema detected.'
