@@ -10,10 +10,12 @@ import com.intellij.openapi.project.modules
 import com.intellij.openapi.vcs.changes.ChangeListManager
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
+import kotlinx.coroutines.runBlocking
 import software.aws.toolkits.core.utils.createTemporaryZipFile
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.putNextEntry
+import software.aws.toolkits.jetbrains.services.amazonq.FeatureDevSessionContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.fileTooLarge
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.noFileOpenError
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.noSupportedFilesError
@@ -44,6 +46,8 @@ class CodeScanSessionConfig(
         project.guessProjectDir() ?: error("Cannot guess base directory for project ${project.name}")
     }
         private set
+
+    private val featureDevSessionContext = FeatureDevSessionContext(project)
 
     /**
      * Timeout for the overall job - "Run Security Scan".
@@ -152,7 +156,9 @@ class CodeScanSessionConfig(
                     val current = stack.pop()
 
                     if (!current.isDirectory) {
-                        if (!changeListManager.isIgnoredFile(current) && !files.contains(current.path)
+                        if (!changeListManager.isIgnoredFile(current) &&
+                            runBlocking { !featureDevSessionContext.ignoreFile(current, this) } &&
+                            !files.contains(current.path)
                         ) {
                             if (willExceedPayloadLimit(currentTotalFileSize, current.length)) {
                                 fileTooLarge()
@@ -169,7 +175,9 @@ class CodeScanSessionConfig(
                         }
                     } else {
                         // Directory case: only traverse if not ignored
-                        if (!changeListManager.isIgnoredFile(current) && !traversedDirectories.contains(current)
+                        if (!changeListManager.isIgnoredFile(current) &&
+                            runBlocking { !featureDevSessionContext.ignoreFile(current, this) } &&
+                            !traversedDirectories.contains(current)
                         ) {
                             for (child in current.children) {
                                 stack.push(child)
