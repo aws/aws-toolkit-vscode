@@ -33,7 +33,6 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.utils.openTrouble
 import software.aws.toolkits.jetbrains.utils.notifyStickyInfo
 import software.aws.toolkits.jetbrains.utils.notifyStickyWarn
 import software.aws.toolkits.resources.message
-import software.aws.toolkits.telemetry.CodeTransformApiNames
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -90,14 +89,7 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
     }
 
     suspend fun downloadHilArtifact(jobId: JobId, artifactId: String, tmpDir: File): CodeTransformHilDownloadArtifact? {
-        val downloadResultsResponse = try {
-            clientAdaptor.downloadExportResultArchive(jobId, artifactId)
-        } catch (e: Exception) {
-            val errorMessage = "Unexpected error when downloading hil artifact: ${e.localizedMessage}"
-            LOG.error { errorMessage }
-            telemetry.apiError(errorMessage, CodeTransformApiNames.ExportResultArchive, jobId = jobId.id)
-            throw e
-        }
+        val downloadResultsResponse = clientAdaptor.downloadExportResultArchive(jobId, artifactId)
 
         return try {
             val tmpPath = tmpDir.toPath()

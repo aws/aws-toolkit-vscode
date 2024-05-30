@@ -270,27 +270,13 @@ class CodeModernizerSession(
 
     fun resumeTransformFromHil() {
         val clientAdaptor = GumbyClient.getInstance(sessionContext.project)
-        try {
-            clientAdaptor.resumeCodeTransformation(state.currentJobId as JobId, TransformationUserActionStatus.COMPLETED)
-        } catch (e: Exception) {
-            val errorMessage = "Unexpected error when resuming transformation: ${e.localizedMessage}"
-            LOG.error { errorMessage }
-            telemetry.apiError(errorMessage, CodeTransformApiNames.ResumeTransformation, jobId = state.currentJobId?.id)
-            throw e
-        }
+        clientAdaptor.resumeCodeTransformation(state.currentJobId as JobId, TransformationUserActionStatus.COMPLETED)
     }
 
     fun rejectHilAndContinue(): ResumeTransformationResponse {
         val clientAdaptor = GumbyClient.getInstance(sessionContext.project)
-        return try {
-            val jobId = state.currentJobId ?: throw CodeModernizerException("No Job ID found")
-            clientAdaptor.resumeCodeTransformation(jobId, TransformationUserActionStatus.REJECTED)
-        } catch (e: Exception) {
-            val errorMessage = "Unexpected error when resuming transformation: ${e.localizedMessage}"
-            LOG.error { errorMessage }
-            telemetry.apiError(errorMessage, CodeTransformApiNames.ResumeTransformation, jobId = state.currentJobId?.id)
-            throw e
-        }
+        val jobId = state.currentJobId ?: throw CodeModernizerException("No Job ID found")
+        return clientAdaptor.resumeCodeTransformation(jobId, TransformationUserActionStatus.REJECTED)
     }
 
     fun uploadHilPayload(payload: File): String {
@@ -300,14 +286,7 @@ class CodeModernizerSession(
         }
         val jobId = state.currentJobId ?: throw CodeModernizerException("No Job ID found")
         val clientAdaptor = GumbyClient.getInstance(sessionContext.project)
-        val createUploadUrlResponse = try {
-            clientAdaptor.createHilUploadUrl(sha256checksum, jobId = jobId)
-        } catch (e: Exception) {
-            val errorMessage = "Unexpected error when creating upload url for HIL: ${e.localizedMessage}"
-            LOG.error { errorMessage }
-            telemetry.apiError(errorMessage, CodeTransformApiNames.CreateUploadUrl, jobId = state.currentJobId?.id)
-            throw e
-        }
+        val createUploadUrlResponse = clientAdaptor.createHilUploadUrl(sha256checksum, jobId = jobId)
 
         LOG.info {
             "Uploading zip with checksum $sha256checksum using uploadId: ${
