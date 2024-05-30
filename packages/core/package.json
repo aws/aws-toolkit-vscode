@@ -276,6 +276,12 @@
                     "markdownDescription": "%AWS.configuration.description.amazonq.shareContentWithAWS%",
                     "default": true,
                     "scope": "application"
+                },
+                "amazonQ.localWorkspaceIndex": {
+                    "type": "boolean",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.localWorkspaceIndex%",
+                    "default": true,
+                    "scope": "application"
                 }
             }
         },

@@ -46,6 +46,7 @@ import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { randomUUID } from '../../../common/crypto'
 import { Search } from '../../../amazonq/search'
+import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -551,14 +552,14 @@ export class ChatController {
         // Loop while we waiting for tabID to be set
         if (triggerPayload.message) {
             let enableProjectContext = false
-            if (triggerPayload.message.startsWith('@p ')) {
+            if (triggerPayload.message.startsWith('@ws')) {
                 enableProjectContext = true
                 triggerPayload.message = triggerPayload.message.slice(3)
-            } else if (triggerPayload.message.startsWith('@project ')) {
+            } else if (triggerPayload.message.startsWith('@workspace')) {
                 enableProjectContext = true
-                triggerPayload.message = triggerPayload.message.slice(9)
+                triggerPayload.message = triggerPayload.message.slice(10)
             }
-            if (enableProjectContext) {
+            if (enableProjectContext && CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                 const c = await Search.instance.query(triggerPayload.message)
                 if (c) {
                     getLogger().info(`Relevant code ${c.content}`)
