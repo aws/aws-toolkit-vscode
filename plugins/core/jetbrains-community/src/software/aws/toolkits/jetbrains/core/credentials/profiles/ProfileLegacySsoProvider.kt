@@ -33,7 +33,8 @@ class ProfileLegacySsoProvider(ssoCache: SsoCache, profile: Profile) : AwsCreden
             profile.requiredProperty(ProfileProperty.SSO_START_URL),
             ssoRegion,
             ssoCache,
-            ssoOidcClient
+            ssoOidcClient,
+            isAlwaysShowDeviceCode = true,
         )
 
         credentialsProvider = SsoCredentialProvider(

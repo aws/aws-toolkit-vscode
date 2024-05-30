@@ -6,5 +6,5 @@ package migration.software.aws.toolkits.jetbrains.core.credentials.sso
 import software.aws.toolkits.jetbrains.core.credentials.sso.SsoLoginCallback
 
 interface SsoLoginCallbackProvider {
-    fun getProvider(ssoUrl: String): SsoLoginCallback
+    fun getProvider(isAlwaysShowDeviceCode: Boolean, ssoUrl: String): SsoLoginCallback
 }

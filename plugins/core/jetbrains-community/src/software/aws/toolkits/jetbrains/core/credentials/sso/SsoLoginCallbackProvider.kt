@@ -18,16 +18,21 @@ import software.aws.toolkits.telemetry.Result
 typealias SsoLoginCallbackProvider = migration.software.aws.toolkits.jetbrains.core.credentials.sso.SsoLoginCallbackProvider
 
 class DefaultSsoLoginCallbackProvider : SsoLoginCallbackProvider {
-    override fun getProvider(ssoUrl: String): SsoLoginCallback = when {
-        JBCefApp.isSupported() -> {
-            if (ssoUrl == SONO_URL) {
-                BearerTokenPromptWithBrowserSupport
-            } else {
-                SsoPromptWithBrowserSupport
-            }
+    override fun getProvider(isAlwaysShowDeviceCode: Boolean, ssoUrl: String): SsoLoginCallback {
+        val deviceCodeProvider = if (ssoUrl == SONO_URL) {
+            DefaultBearerTokenPrompt
+        } else {
+            DefaultSsoPrompt
         }
-        ssoUrl == SONO_URL -> DefaultBearerTokenPrompt
-        else -> DefaultSsoPrompt
+
+        if (isAlwaysShowDeviceCode) {
+            return deviceCodeProvider
+        }
+
+        return when {
+            JBCefApp.isSupported() -> SsoPromptWithBrowserSupport
+            else -> deviceCodeProvider
+        }
     }
 }
 
@@ -93,14 +98,6 @@ object DefaultBearerTokenPrompt : BearerTokenPrompt {
             } else {
                 AwsTelemetry.loginWithBrowser(project = null, result = Result.Cancelled, credentialType = CredentialType.BearerToken)
             }
-        }
-    }
-}
-
-object BearerTokenPromptWithBrowserSupport : BearerTokenPrompt {
-    override fun tokenPending(authorization: Authorization) {
-        computeOnEdt {
-            BrowserUtil.browse(authorization.verificationUriComplete)
         }
     }
 }

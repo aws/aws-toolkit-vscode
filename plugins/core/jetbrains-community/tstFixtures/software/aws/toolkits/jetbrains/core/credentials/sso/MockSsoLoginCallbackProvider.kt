@@ -28,7 +28,7 @@ internal class MockSsoLoginCallbackProvider : SsoLoginCallbackProvider {
         override fun tokenRetrievalFailure(e: Exception) {}
     }
 
-    override fun getProvider(ssoUrl: String): SsoLoginCallback =
+    override fun getProvider(isAlwaysShowDeviceCode: Boolean, ssoUrl: String): SsoLoginCallback =
         provider ?: ErrorSsoLoginCallback
 
     companion object {

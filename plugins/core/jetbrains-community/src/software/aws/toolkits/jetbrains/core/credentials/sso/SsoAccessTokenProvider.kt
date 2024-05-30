@@ -48,6 +48,7 @@ class SsoAccessTokenProvider(
     private val ssoRegion: String,
     private val cache: SsoCache,
     private val client: SsoOidcClient,
+    private val isAlwaysShowDeviceCode: Boolean = false,
     private val scopes: List<String> = emptyList(),
     private val clock: Clock = Clock.systemUTC()
 ) : SdkTokenProvider {
@@ -207,7 +208,7 @@ class SsoAccessTokenProvider(
 
     @Deprecated("Device authorization grant flow is deprecated")
     private fun pollForDAGToken(): AccessToken {
-        val onPendingToken = service<SsoLoginCallbackProvider>().getProvider(ssoUrl)
+        val onPendingToken = service<SsoLoginCallbackProvider>().getProvider(isAlwaysShowDeviceCode, ssoUrl)
         val progressIndicator = progressIndicator()
         val registration = registerDAGClient()
         val authorization = authorizeDAGClient(registration)
