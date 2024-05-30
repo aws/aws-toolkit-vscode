@@ -477,6 +477,8 @@ The package.json 'devDependencies' includes `eslint-plugin-aws-toolkits`. This i
 3. Register your rule in `plugins/eslint-plugin-aws-toolkits/index.ts`.
 4. Enable your rule in `.eslintrc`.
 
+Writing lint rules can be tricky if you are unfamiliar with the process. Use an AST viewer such as https://astexplorer.net/
+
 ### AWS SDK generator
 
 When the AWS SDK does not (yet) support a service but you have an API
