@@ -19,6 +19,8 @@ import { focusAmazonQPanel, focusAmazonQPanelKeybinding } from '../codewhisperer
 import { TryChatCodeLensProvider, tryChatCodeLensCommand } from '../codewhispererChat/editor/codelens'
 import { activate as activateLsp } from './lsp/lspClient'
 import { Search } from './search'
+import { CodeWhispererSettings } from '../codewhisperer/util/codewhispererSettings'
+import { getLogger } from '../shared'
 export async function activate(context: ExtensionContext) {
     const appInitContext = DefaultAmazonQAppInitContext.instance
 
@@ -53,12 +55,14 @@ export async function activate(context: ExtensionContext) {
 
     await activateBadge()
 
-    setImmediate(() =>
-        activateLsp(context).then(() => {
-            console.log('LSP activated')
-            Search.instance.buildIndex()
-        })
-    )
+    if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
+        setImmediate(() =>
+            activateLsp(context).then(() => {
+                getLogger().info('LSP activated')
+                Search.instance.buildIndex()
+            })
+        )
+    }
 }
 
 function registerApps(appInitContext: AmazonQAppInitContext) {

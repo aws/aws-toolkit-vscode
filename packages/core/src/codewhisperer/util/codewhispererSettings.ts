@@ -40,8 +40,7 @@ export class CodeWhispererSettings extends fromExtensionManifest('amazonQ', desc
         return !value
     }
     public isLocalIndexEnabled(): boolean {
-        const value = this.get('localWorkspaceIndex', true)
-        return !value
+        return this.get('localWorkspaceIndex', true)
     }
 
     static #instance: CodeWhispererSettings
