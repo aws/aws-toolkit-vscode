@@ -1,0 +1,10 @@
+{
+	"date": "2024-05-30",
+	"version": "3.8.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "auth: use device code auth when running in a web browser"
+		}
+	]
+}

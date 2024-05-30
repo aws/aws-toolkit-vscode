@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "auth: use device code auth when running in a web browser"
-}
