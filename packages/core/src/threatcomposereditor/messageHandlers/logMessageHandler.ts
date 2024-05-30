@@ -32,8 +32,7 @@ export async function logMessageHandler(message: LogMessage, context: WebviewCon
             if (message.showNotification) {
                 if (message.notifitonType === 'INVALD_JSON') {
                     const selection = await vscode.window.showErrorMessage(
-                        message.logMessage +
-                            '. Please re-open the file in a text editor or overwrite the contents of the file with Threat Composer JSON.',
+                        `${message.logMessage}. Please re-open the file in a text editor or overwrite the contents of the file with Threat Composer JSON.`,
                         'Open in default editor',
                         'Overwrite'
                     )

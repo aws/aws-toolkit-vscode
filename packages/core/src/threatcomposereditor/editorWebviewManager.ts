@@ -82,7 +82,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
 
         // Set asset source to CDN
         const source = isLocalDev ? localhost : cdn
-        const baseTag = '<base href="' + source + '/" >'
+        const baseTag = `<base href="${source}"/>`
 
         // Set dark mode, locale, and feature flags
         const locale = vscode.env.language
@@ -90,19 +90,28 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         const theme = vscode.window.activeColorTheme.kind
         const isDarkMode = theme === vscode.ColorThemeKind.Dark || theme === vscode.ColorThemeKind.HighContrast
         const darkModeTag = `<meta name="dark-mode" content="${isDarkMode}">`
-        let html = htmlFileSplit[0] + '<head>' + baseTag + localeTag + darkModeTag + htmlFileSplit[1]
+        let html = `${htmlFileSplit[0]} <head> ${baseTag}' ${localeTag} ${darkModeTag} ${htmlFileSplit[1]}`
 
         const nonce = getNonce()
         htmlFileSplit = html.split("script-src 'self'")
 
         let localDevURL = ''
         if (isLocalDev) {
-            localDevURL = ' ' + localhost + ''
+            localDevURL = ` ${localhost}`
         }
 
-        html = htmlFileSplit[0] + "script-src 'self' 'nonce-" + nonce + "'" + localDevURL + htmlFileSplit[1]
+        html = `${htmlFileSplit[0]} script-src 'self' 'nonce-${nonce}' ${localDevURL} ${htmlFileSplit[1]}`
 
         htmlFileSplit = html.split('<body>')
+        const script = await fsCommon.readFileAsString(
+            vscode.Uri.joinPath(
+                this.extensionContext.extensionUri,
+                'dist',
+                'src',
+                'threatcomposereditor',
+                'VSCodeExtensionInterface.js'
+            )
+        )
 
         const script = fs.readFileSync(
             vscode.Uri.joinPath(
@@ -157,8 +166,8 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
                 }
             })
         } else {
-            webviewPanel.dispose()
             await vscode.commands.executeCommand('vscode.openWith', document.uri, 'default')
+            webviewPanel.dispose()
         }
     }
 

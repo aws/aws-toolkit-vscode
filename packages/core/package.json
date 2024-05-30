@@ -3992,8 +3992,7 @@
                     {
                         "filenamePattern": "*.tc.json"
                     }
-                ],
-                "when": "config.aws.threatComposer.defaultEditor"
+                ]
             }
         ],
         "configurationDefaults": {
