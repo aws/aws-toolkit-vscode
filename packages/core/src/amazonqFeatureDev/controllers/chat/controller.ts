@@ -323,24 +323,20 @@ export class FeatureDevController {
 
         getLogger().info(`${featureName} conversation id: ${session.conversationId}`)
 
+        // This is a loading animation
         this.messenger.sendAnswer({
-            type: 'answer',
+            type: 'answer-stream',
             tabID,
             message: approachCreation,
         })
 
-        // Ensure that the loading icon stays showing
-        this.messenger.sendAsyncEventProgress(tabID, true, undefined)
-
-        this.messenger.sendUpdatePlaceholder(tabID, 'Generating plan ...')
-
         const interactions = await session.send(message)
         this.messenger.sendUpdatePlaceholder(tabID, 'How can this plan be improved?')
 
-        // Resolve the "..." with the content
+        // This is were we get the plan fully and add it to the chat.
         this.messenger.sendAnswer({
             message: interactions.content,
-            type: 'answer-part',
+            type: 'answer',
             tabID: tabID,
             canBeVoted: true,
         })
