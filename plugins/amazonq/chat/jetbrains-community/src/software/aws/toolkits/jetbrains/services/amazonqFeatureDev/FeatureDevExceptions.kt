@@ -3,11 +3,12 @@
 
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev
 
+import software.aws.toolkits.jetbrains.services.amazonq.RepoSizeError
 import software.aws.toolkits.resources.message
 
 open class FeatureDevException(override val message: String?, override val cause: Throwable? = null) : RuntimeException()
 
-class ContentLengthError(override val message: String, override val cause: Throwable?) : RuntimeException()
+class ContentLengthError(override val message: String, override val cause: Throwable?) : RepoSizeError, RuntimeException()
 
 class PlanIterationLimitError(override val message: String, override val cause: Throwable?) : RuntimeException()
 

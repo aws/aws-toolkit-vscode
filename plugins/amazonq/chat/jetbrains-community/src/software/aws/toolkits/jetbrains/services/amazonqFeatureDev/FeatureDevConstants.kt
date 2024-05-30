@@ -13,3 +13,6 @@ const val CODE_GENERATION_RETRY_LIMIT = 3
 
 // The default retry limit used when the session could not be found
 const val DEFAULT_RETRY_LIMIT = 0
+
+// Max allowed size for a repository in bytes
+const val MAX_PROJECT_SIZE_BYTES: Long = 200 * 1024 * 1024

@@ -31,7 +31,12 @@ import java.util.zip.ZipOutputStream
 import kotlin.io.path.Path
 import kotlin.io.path.relativeTo
 
-class FeatureDevSessionContext(val project: Project) {
+interface RepoSizeError {
+    val message: String
+}
+class RepoSizeLimitError(override val message: String) : RuntimeException(), RepoSizeError
+
+class FeatureDevSessionContext(val project: Project, val maxProjectSizeBytes: Long? = null) {
     // TODO: Need to correct this class location in the modules going further to support both amazonq and codescan.
 
     private val ignorePatterns = setOf(
@@ -92,16 +97,23 @@ class FeatureDevSessionContext(val project: Project) {
 
     suspend fun zipFiles(projectRoot: VirtualFile): File = withContext(getCoroutineBgContext()) {
         val files = mutableListOf<VirtualFile>()
+        var totalSize: Long = 0
+
         VfsUtil.visitChildrenRecursively(
             projectRoot,
             object : VirtualFileVisitor<Unit>() {
                 override fun visitFile(file: VirtualFile): Boolean {
-                    if (file.isFile) {
+                    val isFileIgnored = runBlocking { ignoreFile(file, this) }
+                    if (file.isFile && !isFileIgnored) {
+                        totalSize += file.length
                         files.add(file)
+
+                        if (maxProjectSizeBytes != null && totalSize > maxProjectSizeBytes) {
+                            throw RepoSizeLimitError(message("amazonqFeatureDev.content_length.error_text"))
+                        }
                         return true
-                    }
-                    return runBlocking {
-                        !ignoreFile(file, this)
+                    } else {
+                        return !isFileIgnored
                     }
                 }
             }
@@ -113,9 +125,7 @@ class FeatureDevSessionContext(val project: Project) {
             files.chunked(50).forEach { chunk ->
                 launch {
                     for (file in chunk) {
-                        if (file.isFile && !ignoreFile(file, this)) {
-                            send(file)
-                        }
+                        send(file)
                     }
                 }
             }
