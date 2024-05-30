@@ -30,14 +30,14 @@ export class ThreatComposer {
 
     // autoSaveFileWatches is used to monitor local file changes and achieve bi-direction sync
     public autoSaveFileWatches: Record<string, FileWatchInfo>
-    private getWebviewContent: () => string
+    private getWebviewContent: () => Promise<string>
 
     public constructor(
         textDocument: vscode.TextDocument,
         webviewPanel: vscode.WebviewPanel,
         context: vscode.ExtensionContext,
         fileId: string,
-        getWebviewContent: () => string
+        getWebviewContent: () => Promise<string>
     ) {
         this.getWebviewContent = getWebviewContent
         this.documentUri = textDocument.uri
@@ -121,7 +121,7 @@ export class ThreatComposer {
 
                 progress.report({ increment: 0 })
 
-                return new Promise<void>(resolve => {
+                return new Promise<void>(async resolve => {
                     contextObject.loaderNotification = {
                         progress: progress,
                         cancellationToken: token,
@@ -178,7 +178,7 @@ export class ThreatComposer {
                     progress.report({ increment: 10 })
 
                     // Set the initial html for the webpage
-                    this.webviewPanel.webview.html = this.getWebviewContent()
+                    this.webviewPanel.webview.html = await this.getWebviewContent()
 
                     progress.report({ increment: 20 })
                 })
@@ -198,15 +198,5 @@ export class ThreatComposer {
             '{0} (Threat Composer)',
             path.basename(documentUri.fsPath)
         )
-
-        if (vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Light) {
-            this.webviewPanel.iconPath = vscode.Uri.file(
-                context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'applicationcomposer', 'icon.svg'))
-            )
-        } else {
-            this.webviewPanel.iconPath = vscode.Uri.file(
-                context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'applicationcomposer', 'icon-dark.svg'))
-            )
-        }
     }
 }

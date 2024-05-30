@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { getNonce } from './util'
 import * as nls from 'vscode-nls'
-import * as fs from 'fs'
+import { fsCommon } from '../srcShared/fs'
 import request from '../common/request'
 import { getLogger } from '../shared/logger'
 import { ThreatComposer } from './editorWebview'
@@ -17,10 +17,6 @@ import { getStringHash } from '../shared/utilities/textUtilities'
 import globals from '../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
-
-// let writeToFileInProgress = false;
-
-// const localize = nls.loadMessageBundle()
 
 // Change this to true for local dev
 const isLocalDev = false
@@ -73,7 +69,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         }
     }
 
-    private getWebviewContent = () => {
+    private getWebviewContent = async () => {
         if (!this.webviewHtml) {
             void this.fetchWebviewHtml()
             return ''
@@ -113,19 +109,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
             )
         )
 
-        const script = fs.readFileSync(
-            vscode.Uri.joinPath(
-                this.extensionContext.extensionUri,
-                'dist',
-                'src',
-                'threatcomposereditor',
-                'VSCodeExtensionInterface.js'
-            ).fsPath,
-            'utf8'
-        )
-        const scriptTag = `<script nonce="${nonce}">${script}</script>`
-
-        return htmlFileSplit[0] + '<body>' + scriptTag + htmlFileSplit[1]
+        return `${htmlFileSplit[0]} <body> <script nonce="${nonce}">${script}</script> ${htmlFileSplit[1]}`
     }
 
     /**

@@ -5,6 +5,7 @@
 
 import { MessageType, FileChangedMessage, Command, WebviewContext } from '../types'
 import vscode from 'vscode'
+import { fsCommon } from '../../srcShared/fs'
 
 export function addFileWatchMessageHandler(context: WebviewContext) {
     const filePath = context.defaultTemplatePath
@@ -12,7 +13,7 @@ export function addFileWatchMessageHandler(context: WebviewContext) {
 
     context.disposables.push(
         vscode.workspace.onDidChangeTextDocument(async e => {
-            const fileContents = (await vscode.workspace.fs.readFile(vscode.Uri.file(filePath))).toString()
+            const fileContents = await fsCommon.readFileAsString(filePath)
 
             if (fileContents !== context.fileWatches[filePath].fileContents) {
                 if (fileContents === context.autoSaveFileWatches[filePath].fileContents) {
