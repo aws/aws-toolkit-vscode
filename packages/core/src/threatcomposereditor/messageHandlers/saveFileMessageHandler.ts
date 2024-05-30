@@ -27,7 +27,8 @@ export async function saveFileMessageHandler(request: SaveFileRequestMessage, co
 
     await telemetry.threatcomposer_fileSaved.run(async span => {
         span.record({
-            fileId: context.fileId,
+            id: context.fileId,
+            saveType: 'MANUAL_SAVE',
         })
 
         try {
@@ -45,7 +46,7 @@ export async function saveFileMessageHandler(request: SaveFileRequestMessage, co
                         throw new Error('Document has been modified externally')
                     }
 
-                    await vscode.window.showInformationMessage('Threat Composer JSON has bees saved')
+                    void vscode.window.showInformationMessage('Threat Composer JSON has bees saved')
 
                     saveCompleteSubType = SaveCompleteSubType.SAVED
                 } else {
@@ -63,7 +64,7 @@ export async function saveFileMessageHandler(request: SaveFileRequestMessage, co
             errorMessage = (e as Error).message
             saveSuccess = false
             saveCompleteSubType = SaveCompleteSubType.SAVE_FAILED
-            await vscode.window.showErrorMessage(errorMessage)
+            void vscode.window.showErrorMessage(errorMessage)
             throw new ToolkitError(errorMessage, { code: 'Failed to Save' })
         } finally {
             const saveFileResponseMessage: SaveFileResponseMessage = {
@@ -88,56 +89,57 @@ export async function autoSaveFileMessageHandler(request: SaveFileRequestMessage
     // If filePath is empty, save contents in default template file
     const filePath = context.defaultTemplatePath
 
-    await telemetry.threatcomposer_fileAutoSaved.run(async span => {
-        span.record({
-            fileId: context.fileId,
-        })
+    try {
+        if (context.autoSaveFileWatches[filePath]) {
+            previousAutoSaveFileContent = context.autoSaveFileWatches[filePath].fileContents
 
-        try {
-            if (context.autoSaveFileWatches[filePath]) {
-                previousAutoSaveFileContent = context.autoSaveFileWatches[filePath].fileContents
+            if (previousAutoSaveFileContent !== request.fileContents) {
+                let previousState
 
-                if (previousAutoSaveFileContent !== request.fileContents) {
-                    const previousState = previousAutoSaveFileContent ? JSON.parse(previousAutoSaveFileContent) : {}
-                    const currentState = JSON.parse(request.fileContents)
-
-                    if (!_.isEqual(previousState, currentState)) {
-                        context.autoSaveFileWatches[filePath] = { fileContents: request.fileContents }
-
-                        await saveWorkspace(context, request.fileContents)
-                        saveCompleteSubType = SaveCompleteSubType.SAVED
-                    } else {
-                        saveCompleteSubType = SaveCompleteSubType.SAVE_SKIPPED_SAME_JSON
-                    }
-                } else {
-                    saveCompleteSubType = SaveCompleteSubType.SAVE_SKIPPED_SAME_CONTENT
+                try {
+                    previousState = JSON.parse(previousAutoSaveFileContent)
+                } catch (e) {
+                    previousState = {}
                 }
-                saveSuccess = true
-            } else {
-                throw new Error('Previous state of file not found')
-            }
-        } catch (e) {
-            if (previousAutoSaveFileContent !== undefined) {
-                context.autoSaveFileWatches[filePath] = { fileContents: previousAutoSaveFileContent }
-            }
 
-            errorMessage = (e as Error).message
-            saveSuccess = false
-            saveCompleteSubType = SaveCompleteSubType.SAVE_FAILED
-            await vscode.window.showErrorMessage(errorMessage)
-            throw new ToolkitError(errorMessage, { code: 'Failed to Auto Save' })
-        } finally {
-            const saveFileResponseMessage: SaveFileResponseMessage = {
-                messageType: MessageType.RESPONSE,
-                command: Command.AUTO_SAVE_FILE,
-                filePath: filePath,
-                isSuccess: saveSuccess,
-                failureReason: errorMessage,
-                saveCompleteSubType: saveCompleteSubType,
+                const currentState = JSON.parse(request.fileContents)
+
+                if (!_.isEqual(previousState, currentState)) {
+                    context.autoSaveFileWatches[filePath] = { fileContents: request.fileContents }
+
+                    await saveWorkspace(context, request.fileContents)
+                    saveCompleteSubType = SaveCompleteSubType.SAVED
+                } else {
+                    saveCompleteSubType = SaveCompleteSubType.SAVE_SKIPPED_SAME_JSON
+                }
+            } else {
+                saveCompleteSubType = SaveCompleteSubType.SAVE_SKIPPED_SAME_CONTENT
             }
-            await context.panel.webview.postMessage(saveFileResponseMessage)
+            saveSuccess = true
+        } else {
+            throw new Error('Previous state of file not found')
         }
-    })
+    } catch (e) {
+        if (previousAutoSaveFileContent !== undefined) {
+            context.autoSaveFileWatches[filePath] = { fileContents: previousAutoSaveFileContent }
+        }
+
+        errorMessage = (e as Error).message
+        saveSuccess = false
+        saveCompleteSubType = SaveCompleteSubType.SAVE_FAILED
+        void vscode.window.showErrorMessage(errorMessage)
+        throw new ToolkitError(errorMessage, { code: 'Failed to Auto Save' })
+    } finally {
+        const saveFileResponseMessage: SaveFileResponseMessage = {
+            messageType: MessageType.RESPONSE,
+            command: Command.AUTO_SAVE_FILE,
+            filePath: filePath,
+            isSuccess: saveSuccess,
+            failureReason: errorMessage,
+            saveCompleteSubType: saveCompleteSubType,
+        }
+        await context.panel.webview.postMessage(saveFileResponseMessage)
+    }
 }
 
 async function saveWorkspace(context: WebviewContext, fileContents: string) {

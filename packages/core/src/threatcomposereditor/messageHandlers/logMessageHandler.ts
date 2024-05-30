@@ -25,6 +25,10 @@ export async function logMessageHandler(message: LogMessage, context: WebviewCon
             return
         case 'ERROR':
             logger.error(message.logMessage)
+            sendThreatComposerErrored({
+                reason: message.logMessage,
+                id: context.fileId,
+            })
             if (message.showNotification) {
                 if (message.notifitonType === 'INVALD_JSON') {
                     const selection = await vscode.window.showErrorMessage(
@@ -48,10 +52,6 @@ export async function logMessageHandler(message: LogMessage, context: WebviewCon
                     void vscode.window.showErrorMessage(message.logMessage)
                 }
             }
-            sendThreatComposerErrored({
-                reason: message.logMessage,
-                fileId: context.fileId,
-            })
             return
     }
 }

@@ -9,7 +9,7 @@ export function sendThreatComposerErrored(metadata: ThreatcomposerError) {
     telemetry.threatcomposer_error.emit({
         result: metadata.result ?? 'Succeeded',
         reason: metadata.reason ?? '',
-        fileId: metadata.fileId,
+        id: metadata.id,
     })
 }
 
@@ -17,6 +17,6 @@ export function sendThreatComposerOpenCancelled(metadata: ThreatcomposerClosed) 
     telemetry.threatcomposer_closed.emit({
         result: metadata.result ?? 'Succeeded',
         reason: metadata.reason ?? '',
-        fileId: metadata.fileId,
+        id: metadata.id,
     })
 }

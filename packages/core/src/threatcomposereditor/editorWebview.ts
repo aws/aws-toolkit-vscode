@@ -50,7 +50,7 @@ export class ThreatComposer {
         this.fileId = fileId
 
         telemetry.threatcomposer_opened.record({
-            fileId: this.fileId,
+            id: this.fileId,
         })
 
         this.setupWebviewPanel(textDocument, context)
@@ -103,7 +103,7 @@ export class ThreatComposer {
             await vscode.commands.executeCommand('vscode.openWith', documentUri, 'default')
             sendThreatComposerOpenCancelled({
                 reason: reason,
-                fileId: contextObject.fileId,
+                id: contextObject.fileId,
             })
         }
 
@@ -157,7 +157,7 @@ export class ThreatComposer {
 
                         await telemetry.threatcomposer_closed.run(async span => {
                             span.record({
-                                fileId: this.fileId,
+                                id: this.fileId,
                             })
                             this.isPanelDisposed = true
                             contextObject.loaderNotification?.promiseResolve()

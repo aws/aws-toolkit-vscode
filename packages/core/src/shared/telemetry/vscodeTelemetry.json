@@ -334,9 +334,10 @@
             "description": "An AWS region."
         },
         {
-            "name": "fileId",
+            "name": "saveType",
             "type": "string",
-            "description": "Hash value for the file path that is being accessed."
+            "allowedValues": ["MANUAL_SAVE", "AUTO_SAVE"],
+            "description": "Type of save executed"
         }
     ],
     "metrics": [
@@ -1254,7 +1255,7 @@
             "description": "Called after opening a threat composer file",
             "metadata": [
                 {
-                    "type": "fileId",
+                    "type": "id",
                     "required": true
                 }
             ]
@@ -1264,17 +1265,11 @@
             "description": "Called after a threat composer file has been saved",
             "metadata": [
                 {
-                    "type": "fileId",
+                    "type": "id",
                     "required": true
-                }
-            ]
-        },
-        {
-            "name": "threatcomposer_fileAutoSaved",
-            "description": "Called after a threat composer file has been auto saved periodically",
-            "metadata": [
+                },
                 {
-                    "type": "fileId",
+                    "type": "saveType",
                     "required": true
                 }
             ]
@@ -1284,7 +1279,7 @@
             "description": "Called after closing a threat composer file",
             "metadata": [
                 {
-                    "type": "fileId",
+                    "type": "id",
                     "required": true
                 }
             ]
@@ -1294,7 +1289,7 @@
             "description": "Called after an error is thrown",
             "metadata": [
                 {
-                    "type": "fileId",
+                    "type": "id",
                     "required": true
                 }
             ]
