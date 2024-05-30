@@ -310,6 +310,7 @@ export class CWCTelemetryHelper {
             cwsprChatHasCodeSnippet: triggerPayload.codeSelection && !triggerPayload.codeSelection.isEmpty,
             cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
             credentialStartUrl: AuthUtil.instance.startUrl,
+            cwsprChatHasProjectLevelContext: triggerPayload.hasProjectLevelContext,
         })
     }
 
@@ -338,6 +339,7 @@ export class CWCTelemetryHelper {
             cwsprChatResponseLength: message.messageLength,
             cwsprChatConversationType: 'Chat',
             credentialStartUrl: AuthUtil.instance.startUrl,
+            cwsprChatHasProjectLevelContext: triggerPayload.hasProjectLevelContext,
         }
 
         telemetry.amazonq_addMessage.emit(event)

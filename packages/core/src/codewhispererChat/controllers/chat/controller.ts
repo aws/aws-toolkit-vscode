@@ -564,6 +564,7 @@ export class ChatController {
                 if (c) {
                     getLogger().info(`Relevant code ${c.content}`)
                     triggerPayload.message += `Here are some relevant code ${c?.content} in file ${c.fileName}. Use it only if my questions is relevant to this code. `
+                    triggerPayload.hasProjectLevelContext = true
                 } else {
                     getLogger().info(`No Relevant code`)
                 }

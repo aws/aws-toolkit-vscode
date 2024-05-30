@@ -139,6 +139,7 @@ export interface TriggerPayload {
     readonly matchPolicy: MatchPolicy | undefined
     readonly codeQuery: CodeQuery | undefined
     readonly userIntent: UserIntent | undefined
+    hasProjectLevelContext?: boolean
 }
 
 export interface InsertedCode {

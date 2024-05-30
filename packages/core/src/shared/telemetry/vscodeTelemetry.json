@@ -155,6 +155,11 @@
             "description": "true if user has selected code snippet, false otherwise."
         },
         {
+            "name": "cwsprChatHasProjectLevelContext",
+            "type": "boolean",
+            "description": "true if query has project level context."
+        },
+        {
             "name": "cwsprChatProgrammingLanguage",
             "type": "string",
             "description": "Programming language associated with the message"
@@ -711,6 +716,10 @@
                 },
                 {
                     "type": "cwsprChatConversationType"
+                },
+                {
+                    "type": "cwsprChatHasProjectLevelContext",
+                    "required": false
                 }
             ]
         },
@@ -788,6 +797,10 @@
                 },
                 {
                     "type": "cwsprChatConversationType"
+                },
+                {
+                    "type": "cwsprChatHasProjectLevelContext",
+                    "required": false
                 }
             ]
         },
@@ -880,6 +893,10 @@
                 },
                 {
                     "type": "cwsprChatTotalCodeBlocks",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatHasProjectLevelContext",
                     "required": false
                 }
             ]
