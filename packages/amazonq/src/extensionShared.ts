@@ -36,6 +36,7 @@ import { registerSubmitFeedback } from 'aws-core-vscode/feedback'
 import { telemetry, ExtStartUpSources } from 'aws-core-vscode/telemetry'
 import { DevFunction, updateDevMode } from 'aws-core-vscode/dev'
 import { getAuthStatus } from './auth/util'
+import { registerCommands } from './commands'
 
 export async function activateShared(context: vscode.ExtensionContext, isWeb: boolean) {
     initialize(context, isWeb)
