@@ -2,7 +2,7 @@
     "name": "amazon-q-vscode",
     "displayName": "Amazon Q",
     "description": "Amazon Q is your generative AI-powered assistant across the software development lifecycle.",
-    "version": "1.9.4-LSP",
+    "version": "1.9.5-LSP",
     "extensionKind": [
         "workspace"
     ],

@@ -521,22 +521,26 @@ export async function collectFilesForIndex(
     sourcePaths: string[],
     workspaceFolders: CurrentWsFolders,
     respectGitIgnore: boolean = true,
-    maxSize = 200 * 1024 * 1024 // 200 MB,
+    maxSize = 250 * 1024 * 1024 // 250 MB,
 ): Promise<
     {
         workspaceFolder: vscode.WorkspaceFolder
         relativeFilePath: string
         fileUri: vscode.Uri
-        fileContent: string
-        zipFilePath: string
+        fileSizeBytes: number
     }[]
 > {
-    const storage: Awaited<ReturnType<typeof collectFiles>> = []
+    const storage: Awaited<ReturnType<typeof collectFilesForIndex>> = []
 
     const isLanguageSupported = (filename: string) => {
         const k =
             /\.(js|ts|java|py|rb|cpp|tsx|jsx|cc|c|h|html|json|css|md|php|swift|rs|scala|yaml|tf|sql|sh|go|yml|kt|smithy|config|kts|gradle)$/i
         return k.test(filename)
+    }
+
+    const isBuildOrBin = (filePath: string) => {
+        const k = /[/\\](bin|build)[/\\]/i
+        return k.test(filePath)
     }
 
     let totalSizeBytes = 0
@@ -549,6 +553,9 @@ export async function collectFilesForIndex(
 
         for (const file of files) {
             if (!isLanguageSupported(file.fsPath)) {
+                continue
+            }
+            if (isBuildOrBin(file.fsPath)) {
                 continue
             }
             const relativePath = getWorkspaceRelativePath(file.fsPath, { workspaceFolders })
@@ -567,16 +574,21 @@ export async function collectFilesForIndex(
                     { code: 'ContentLengthError' }
                 )
             }
-            // Now that we've read the file, increase our usage
-            totalSizeBytes += fileStat.size
             storage.push({
                 workspaceFolder: relativePath.workspaceFolder,
                 relativeFilePath: relativePath.relativePath,
                 fileUri: file,
-                fileContent: '',
-                zipFilePath: '',
+                fileSizeBytes: fileStat.size,
             })
         }
     }
-    return storage
+    storage.sort((a, b) => a.fileUri.fsPath.length - b.fileUri.fsPath.length)
+    let i = 0
+    for (i = 0; i < storage.length; i += 1) {
+        totalSizeBytes += storage[i].fileSizeBytes
+        if (totalSizeBytes >= maxSize) {
+            break
+        }
+    }
+    return storage.slice(0, Math.min(10000, i))
 }
