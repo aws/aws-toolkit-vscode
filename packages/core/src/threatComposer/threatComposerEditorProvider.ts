@@ -9,7 +9,7 @@ import * as nls from 'vscode-nls'
 import { fsCommon } from '../srcShared/fs'
 import request from '../common/request'
 import { getLogger } from '../shared/logger'
-import { ThreatComposer } from './editorWebview'
+import { ThreatComposerEditor } from './threatComposerEditor'
 import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { getClientId } from '../shared/telemetry/util'
@@ -45,7 +45,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
     }
 
     protected readonly name: string = 'ThreatComposerManager'
-    protected readonly managedVisualizations = new Map<string, ThreatComposer>()
+    protected readonly managedVisualizations = new Map<string, ThreatComposerEditor>()
     protected extensionContext: vscode.ExtensionContext
     protected webviewHtml?: string
     protected readonly logger = getLogger()
@@ -131,7 +131,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
                     // Existing visualization does not exist, construct new visualization
                     try {
                         const fileId = getStringHash(document.uri.fsPath + clientId)
-                        const newVisualization = new ThreatComposer(
+                        const newVisualization = new ThreatComposerEditor(
                             document,
                             webviewPanel,
                             this.extensionContext,
@@ -161,7 +161,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         this.logger.error(`${this.name}: Unable to open in ThreatComposer view: ${err}`)
     }
 
-    protected handleNewVisualization(key: string, visualization: ThreatComposer): void {
+    protected handleNewVisualization(key: string, visualization: ThreatComposerEditor): void {
         this.managedVisualizations.set(key, visualization)
 
         const visualizationDisposable = visualization.onVisualizationDisposeEvent(() => {
@@ -174,7 +174,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         this.extensionContext.subscriptions.push(visualizationDisposable)
     }
 
-    protected getExistingVisualization(key: string): ThreatComposer | undefined {
+    protected getExistingVisualization(key: string): ThreatComposerEditor | undefined {
         return this.managedVisualizations.get(key)
     }
 }

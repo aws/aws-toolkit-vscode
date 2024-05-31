@@ -15,7 +15,7 @@ import { sendThreatComposerOpenCancelled } from './messageHandlers/emitTelemetry
 
 const localize = nls.loadMessageBundle()
 
-export class ThreatComposer {
+export class ThreatComposerEditor {
     public readonly documentUri: vscode.Uri
     public webviewPanel: vscode.WebviewPanel
     protected readonly disposables: vscode.Disposable[] = []

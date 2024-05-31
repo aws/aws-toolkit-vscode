@@ -6,7 +6,7 @@
 import path from 'path'
 import { Commands } from '../../shared/vscode/commands2'
 import vscode from 'vscode'
-import { ThreatComposerEditorProvider } from '../editorWebviewManager'
+import { ThreatComposerEditorProvider } from '../threatComposerEditorProvider'
 import { fsCommon } from '../../srcShared/fs'
 
 const createNewThreatComposerFile = async () => {
