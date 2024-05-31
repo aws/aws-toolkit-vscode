@@ -49,7 +49,7 @@ export class ThreatComposerEditor {
         this.defaultTemplateName = path.basename(this.defaultTemplatePath)
         this.fileId = fileId
 
-        telemetry.threatcomposer_opened.record({
+        telemetry.threatComposer_opened.record({
             id: this.fileId,
         })
 
@@ -155,7 +155,7 @@ export class ThreatComposerEditor {
                             return
                         }
 
-                        await telemetry.threatcomposer_closed.run(async span => {
+                        await telemetry.threatComposer_closed.run(async span => {
                             span.record({
                                 id: this.fileId,
                             })

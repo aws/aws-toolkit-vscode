@@ -25,7 +25,7 @@ export async function saveFileMessageHandler(request: SaveFileRequestMessage, co
     // If filePath is empty, save contents in default template file
     const filePath = context.defaultTemplatePath
 
-    await telemetry.threatcomposer_fileSaved.run(async span => {
+    await telemetry.threatComposer_fileSaved.run(async span => {
         span.record({
             id: context.fileId,
             saveType: 'MANUAL_SAVE',

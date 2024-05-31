@@ -113,7 +113,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         const threatComposerSettings = vscode.workspace.getConfiguration('aws').threatComposer
 
         if (threatComposerSettings.defaultEditor) {
-            await telemetry.threatcomposer_opened.run(async span => {
+            await telemetry.threatComposer_opened.run(async span => {
                 if (clientId === '') {
                     clientId = await getClientId(globals.context.globalState)
                 }

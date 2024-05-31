@@ -3,18 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { telemetry, ThreatcomposerClosed, ThreatcomposerError } from '../../shared/telemetry/telemetry'
+import { telemetry, ThreatComposerClosed, ThreatComposerError } from '../../shared/telemetry/telemetry'
 
-export function sendThreatComposerErrored(metadata: ThreatcomposerError) {
-    telemetry.threatcomposer_error.emit({
+export function sendThreatComposerErrored(metadata: ThreatComposerError) {
+    telemetry.threatComposer_error.emit({
         result: metadata.result ?? 'Succeeded',
         reason: metadata.reason ?? '',
         id: metadata.id,
     })
 }
 
-export function sendThreatComposerOpenCancelled(metadata: ThreatcomposerClosed) {
-    telemetry.threatcomposer_closed.emit({
+export function sendThreatComposerOpenCancelled(metadata: ThreatComposerClosed) {
+    telemetry.threatComposer_closed.emit({
         result: metadata.result ?? 'Succeeded',
         reason: metadata.reason ?? '',
         id: metadata.id,

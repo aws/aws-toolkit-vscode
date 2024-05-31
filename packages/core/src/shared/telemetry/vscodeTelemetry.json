@@ -1251,7 +1251,17 @@
             ]
         },
         {
-            "name": "threatcomposer_opened",
+            "name": "threatComposer_created",
+            "description": "Called after a new threat composer file is created using command pallet or New File option",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "threatComposer_opened",
             "description": "Called after opening a threat composer file",
             "metadata": [
                 {
@@ -1261,7 +1271,7 @@
             ]
         },
         {
-            "name": "threatcomposer_fileSaved",
+            "name": "threatComposer_fileSaved",
             "description": "Called after a threat composer file has been saved",
             "metadata": [
                 {
@@ -1275,7 +1285,7 @@
             ]
         },
         {
-            "name": "threatcomposer_closed",
+            "name": "threatComposer_closed",
             "description": "Called after closing a threat composer file",
             "metadata": [
                 {
@@ -1285,7 +1295,7 @@
             ]
         },
         {
-            "name": "threatcomposer_error",
+            "name": "threatComposer_error",
             "description": "Called after an error is thrown",
             "metadata": [
                 {
