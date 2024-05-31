@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { getNonce } from './util'
 import * as nls from 'vscode-nls'
 import { fsCommon } from '../srcShared/fs'
 import request from '../common/request'
@@ -13,7 +12,7 @@ import { ThreatComposerEditor } from './threatComposerEditor'
 import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { getClientId } from '../shared/telemetry/util'
-import { getStringHash } from '../shared/utilities/textUtilities'
+import { getRandomString, getStringHash } from '../shared/utilities/textUtilities'
 import globals from '../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
@@ -84,7 +83,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         const darkModeTag = `<meta name='dark-mode' content='${isDarkMode}'>`
         let html = `${htmlFileSplit[0]} <head> ${baseTag}' ${localeTag} ${darkModeTag} ${htmlFileSplit[1]}`
 
-        const nonce = getNonce()
+        const nonce = getRandomString()
         htmlFileSplit = html.split("script-src 'self'")
 
         let localDevURL = ''
