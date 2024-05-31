@@ -1,5 +1,13 @@
 The AWS Toolkit lets you interact with AWS directly from VS Code. Ready to install? See [Getting Started](#getting-started).
 
+## [Threat Composer](https://github.com/awslabs/threat-composer#readme)
+
+Integrate threat modeling practices into your development workflow by creating and version controlling your threat models as code.
+
+Threat Composer for the AWS Toolkit for Visual Studio Code allows you to create, view and edit [Threat Composer](https://github.com/awslabs/threat-composer#readme) threat models `.tc.json` directly within VSCode.
+
+![Threat Composer](https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/threatComposer.gif)
+
 ## Amazon Q and CodeWhisperer
 
 Amazon CodeWhisperer is now part of Amazon Q. [Try the Amazon Q extension](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.amazon-q-vscode).
