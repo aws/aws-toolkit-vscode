@@ -60,8 +60,7 @@ import { ExtensionUse } from './auth/utils'
 import { ExtStartUpSources } from './shared/telemetry'
 
 export { makeEndpointsProvider, registerGenericCommands } from './extensionShared'
-import { activate as activateThreatComposerEditor } from './threatcomposereditor/activation'
-
+import { activate as activateThreatComposerEditor } from './threatComposer/activation'
 
 let localize: nls.LocalizeFunc
 
