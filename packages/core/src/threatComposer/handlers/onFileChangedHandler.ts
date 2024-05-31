@@ -6,6 +6,7 @@
 import { Command, FileChangedMessage, MessageType, WebviewContext } from '../types'
 import vscode from 'vscode'
 import fs from '../../shared/fs/fs'
+import { getLogger } from '../../shared/logger'
 
 /**
  * Function to call when the text document has been modified
@@ -36,7 +37,7 @@ export async function onFileChanged(context: WebviewContext) {
             // There are no unsaved local changes in the file, so the file change is
             // triggered due to an external change in the file. This must be propagated
             // to the webview, so that it can be updated.
-            console.log('DocumentChanged')
+            getLogger().debug('DocumentChanged')
             await broadcastFileChange(fileName, filePath, fileContents, context.panel)
             context.fileStates[filePath] = { fileContents: fileContents }
             context.autoSaveFileState[filePath] = { fileContents: fileContents }
@@ -46,7 +47,7 @@ export async function onFileChanged(context: WebviewContext) {
             // change trigger is ignored. When the user decides to save the local
             // changes, they can decide to overwrite the file.
             void vscode.window.showWarningMessage(`${fileName}  has been modified externally.`)
-            console.warn('Document Changed externally before local changes are saved')
+            getLogger().warn('Document Changed externally before local changes are saved')
         }
     }
 }
