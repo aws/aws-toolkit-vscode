@@ -96,13 +96,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
 
         htmlFileSplit = html.split('<body>')
         const script = await fsCommon.readFileAsString(
-            vscode.Uri.joinPath(
-                this.extensionContext.extensionUri,
-                'dist',
-                'src',
-                'threatcomposereditor',
-                'vsCodeExtensionInterface.js'
-            )
+            vscode.Uri.joinPath(this.extensionContext.extensionUri, 'resources', 'js', 'vsCodeExtensionInterface.js')
         )
 
         return `${htmlFileSplit[0]} <body> <script nonce='${nonce}'>${script}</script> ${htmlFileSplit[1]}`
