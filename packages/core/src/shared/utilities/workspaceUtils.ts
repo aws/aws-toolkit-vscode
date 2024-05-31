@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
+import * as os from 'os'
 import * as pathutils from '../../shared/utilities/pathUtils'
 import { getLogger } from '../logger'
 import { isInDirectory } from '../filesystemUtilities'
@@ -522,6 +523,7 @@ export async function collectFilesForIndex(
     workspaceFolders: CurrentWsFolders,
     respectGitIgnore: boolean = true,
     maxSize = 250 * 1024 * 1024 // 250 MB,
+    // make this configurable, so we can test it
 ): Promise<
     {
         workspaceFolder: vscode.WorkspaceFolder
@@ -539,7 +541,7 @@ export async function collectFilesForIndex(
     }
 
     const isBuildOrBin = (filePath: string) => {
-        const k = /[/\\](bin|build)[/\\]/i
+        const k = /[/\\](bin|build|node_modules)[/\\]/i
         return k.test(filePath)
     }
 
@@ -568,12 +570,6 @@ export async function collectFilesForIndex(
             if (fileStat.size > 10 * 1024 * 1024) {
                 continue
             }
-            if (totalSizeBytes + fileStat.size > maxSize) {
-                throw new ToolkitError(
-                    'The project you have selected for source code is too large to use as context. Please select a different folder to use',
-                    { code: 'ContentLengthError' }
-                )
-            }
             storage.push({
                 workspaceFolder: relativePath.workspaceFolder,
                 relativeFilePath: relativePath.relativePath,
@@ -582,13 +578,18 @@ export async function collectFilesForIndex(
             })
         }
     }
+    // prioritize upper level files
     storage.sort((a, b) => a.fileUri.fsPath.length - b.fileUri.fsPath.length)
+
+    let maxSizeBytes = Math.min(maxSize, os.freemem() / 2)
+
     let i = 0
     for (i = 0; i < storage.length; i += 1) {
         totalSizeBytes += storage[i].fileSizeBytes
-        if (totalSizeBytes >= maxSize) {
+        if (totalSizeBytes >= maxSizeBytes) {
             break
         }
     }
+
     return storage.slice(0, Math.min(10000, i))
 }

@@ -9,9 +9,11 @@ import * as fs from 'fs-extra'
 import { getLogger } from '../shared/logger/logger'
 import { CurrentWsFolders, collectFilesForIndex } from '../shared/utilities/workspaceUtils'
 import * as CodeWhispererConstants from '../codewhisperer/models/constants'
-import { makeTemporaryToolkitFolder } from '../shared/filesystemUtilities'
+//import { makeTemporaryToolkitFolder } from '../shared/filesystemUtilities'
 import fetch from 'node-fetch'
 import { clear, indexFiles, query } from './lsp/lspClient'
+import { SystemUtilities } from '../shared/systemUtilities'
+import AdmZip from 'adm-zip'
 
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -49,16 +51,30 @@ export class Search {
             })
         })
     }
-    async downloadCodeSearch() {
-        const fname = `code-search-0.1.18-${process.platform}-${process.arch}.zip`
-        const s3Path = `https://github.com/leigaol/code-test-release/${fname}`
-        const tempFolder = await makeTemporaryToolkitFolder()
-        const localFile = path.join(tempFolder, fname)
-        await this._download(localFile, s3Path)
-        return localFile
-    }
+    async installLspZip() {
+        const extPath = path.join(SystemUtilities.getHomeDirectory(), '.vscode', 'extensions')
+        const localQServer = path.join(extPath, 'qserver')
+        if (fs.existsSync(localQServer)) {
+            getLogger().info(`Found qserver at ${localQServer}`)
+            return localQServer
+        }
 
-    async installCodeSearch() {}
+        try {
+            const fname = `qserver-${process.platform}-${process.arch}.zip`
+            const s3Path = `https://github.com/leigaol/test-qserver/releases/download/0.1/${fname}`
+            const localFile = path.join(SystemUtilities.getHomeDirectory(), '.vscode', 'extensions', fname)
+            if (fs.existsSync(localFile)) {
+                getLogger().info(`Found qserver.zip at ${localFile}`)
+                return localFile
+            }
+            await this._download(localFile, s3Path)
+            const zip = new AdmZip(localFile)
+            zip.extractAllTo(extPath)
+            return localFile
+        } catch (e) {
+            getLogger().error(`Failed to download qserver: ${e}`)
+        }
+    }
 
     async clear() {
         clear('')
