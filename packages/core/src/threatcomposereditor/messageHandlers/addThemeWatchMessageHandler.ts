@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MessageType, ThemeChangedMessage, Command, WebviewContext } from '../types'
+import { Command, MessageType, ThemeChangedMessage, WebviewContext } from '../types'
 import vscode from 'vscode'
 
 export function addThemeWatchMessageHandler(context: WebviewContext) {

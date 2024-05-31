@@ -5,12 +5,12 @@
 
 import vscode from 'vscode'
 import {
+    Command,
+    MessageType,
+    SaveCompleteSubType,
     SaveFileRequestMessage,
     SaveFileResponseMessage,
-    MessageType,
-    Command,
     WebviewContext,
-    SaveCompleteSubType,
 } from '../types'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'

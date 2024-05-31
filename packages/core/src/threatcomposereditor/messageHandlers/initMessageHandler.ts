@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MessageType, WebviewContext, Command } from '../types'
+import { Command, MessageType, WebviewContext } from '../types'
 import { broadcastFileChange } from './addFileWatchMessageHandler'
-// import vscode from 'vscode'
 
 export async function initMessageHandler(context: WebviewContext) {
     const filePath = context.defaultTemplatePath

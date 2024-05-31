@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MessageType, FileChangedMessage, Command, WebviewContext } from '../types'
+import { Command, FileChangedMessage, MessageType, WebviewContext } from '../types'
 import vscode from 'vscode'
 import { fsCommon } from '../../srcShared/fs'
 

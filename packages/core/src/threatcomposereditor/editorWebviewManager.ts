@@ -33,19 +33,15 @@ let clientId = ''
  */
 export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProvider {
     public static readonly viewType = 'threatComposer.tc.json'
+
     public static register(context: vscode.ExtensionContext): vscode.Disposable {
         const provider = new ThreatComposerEditorProvider(context)
-        const providerRegistration = vscode.window.registerCustomEditorProvider(
-            ThreatComposerEditorProvider.viewType,
-            provider,
-            {
-                webviewOptions: {
-                    enableFindWidget: true,
-                    retainContextWhenHidden: true, // Set to false to re-render on tab switch
-                },
-            }
-        )
-        return providerRegistration
+        return vscode.window.registerCustomEditorProvider(ThreatComposerEditorProvider.viewType, provider, {
+            webviewOptions: {
+                enableFindWidget: true,
+                retainContextWhenHidden: true, // Set to 'false' to re-render on tab switch
+            },
+        })
     }
 
     protected readonly name: string = 'ThreatComposerManager'
@@ -78,14 +74,14 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
 
         // Set asset source to CDN
         const source = isLocalDev ? localhost : cdn
-        const baseTag = `<base href="${source}"/>`
+        const baseTag = `<base href='${source}'/>`
 
         // Set dark mode, locale, and feature flags
         const locale = vscode.env.language
-        const localeTag = `<meta name="locale" content="${locale}">`
+        const localeTag = `<meta name='locale' content='${locale}'>`
         const theme = vscode.window.activeColorTheme.kind
         const isDarkMode = theme === vscode.ColorThemeKind.Dark || theme === vscode.ColorThemeKind.HighContrast
-        const darkModeTag = `<meta name="dark-mode" content="${isDarkMode}">`
+        const darkModeTag = `<meta name='dark-mode' content='${isDarkMode}'>`
         let html = `${htmlFileSplit[0]} <head> ${baseTag}' ${localeTag} ${darkModeTag} ${htmlFileSplit[1]}`
 
         const nonce = getNonce()
@@ -109,7 +105,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
             )
         )
 
-        return `${htmlFileSplit[0]} <body> <script nonce="${nonce}">${script}</script> ${htmlFileSplit[1]}`
+        return `${htmlFileSplit[0]} <body> <script nonce='${nonce}'>${script}</script> ${htmlFileSplit[1]}`
     }
 
     /**

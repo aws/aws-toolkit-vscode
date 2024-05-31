@@ -5,12 +5,12 @@
 
 import {
     Command,
+    LoadStageMessage,
     LogMessage,
     Message,
-    WebviewContext,
-    SaveFileRequestMessage,
     MessageType,
-    LoadStageMessage,
+    SaveFileRequestMessage,
+    WebviewContext,
 } from './types'
 import { autoSaveFileMessageHandler, saveFileMessageHandler } from './messageHandlers/saveFileMessageHandler'
 import { logMessageHandler } from './messageHandlers/logMessageHandler'
