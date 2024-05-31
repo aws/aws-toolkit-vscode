@@ -229,8 +229,16 @@ export class GumbyController {
     }
 
     private async validateProjectsWithReplyOnError(message: any): Promise<TransformationCandidateProject[]> {
+        let telemetryJavaVersion = JDKToTelemetryValue(JDKVersion.UNSUPPORTED) as CodeTransformJavaSourceVersionsAllowed
+        let errorCode = undefined
         try {
-            return await getValidCandidateProjects()
+            const validProjects = await getValidCandidateProjects()
+            if (validProjects.length > 0) {
+                // validProjects[0].JDKVersion will be undefined if javap errors out or no .class files found, so call it UNSUPPORTED
+                const javaVersion = validProjects[0].JDKVersion ?? JDKVersion.UNSUPPORTED
+                telemetryJavaVersion = JDKToTelemetryValue(javaVersion) as CodeTransformJavaSourceVersionsAllowed
+            }
+            return validProjects
         } catch (err: any) {
             if (err instanceof NoJavaProjectsFoundError) {
                 this.messenger.sendUnrecoverableErrorResponse('no-java-project-found', message.tabID)
@@ -239,6 +247,16 @@ export class GumbyController {
             } else {
                 this.messenger.sendUnrecoverableErrorResponse('no-project-found', message.tabID)
             }
+            errorCode = err.code
+        } finally {
+            // New projectDetails metric should always be fired whether the project was valid or invalid
+            telemetry.codeTransform_projectDetails.emit({
+                passive: true,
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                codeTransformLocalJavaVersion: telemetryJavaVersion,
+                result: errorCode ? MetadataResult.Fail : MetadataResult.Pass,
+                reason: errorCode,
+            })
         }
         return []
     }

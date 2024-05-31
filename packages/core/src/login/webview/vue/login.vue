@@ -421,7 +421,7 @@ export default defineComponent({
                 } else if (this.selectedLoginOption === LoginOption.ENTERPRISE_SSO) {
                     this.stage = 'SSO_FORM'
                     this.$nextTick(() => document.getElementById('startUrl')!.focus())
-                    await client.storeMetricMetadata({ region: this.selectedRegion })
+                    await client.storeMetricMetadata({ awsRegion: this.selectedRegion })
                 } else if (this.selectedLoginOption >= LoginOption.EXISTING_LOGINS) {
                     this.stage = 'AUTHENTICATING'
                     const selectedConnection =
@@ -509,7 +509,7 @@ export default defineComponent({
         handleRegionInput(event: any) {
             this.handleUrlInput() // startUrl validity depends on region, see handleUriInput() for details
             void client.storeMetricMetadata({
-                region: event.target.value,
+                awsRegion: event.target.value,
             })
             void client.emitUiClick('auth_regionSelection')
         },
@@ -546,10 +546,9 @@ export default defineComponent({
                 })
             })
 
-            // If Amazon Q has no connections while Toolkit has connections
-            // Auto connect Q using toolkit connection.
-            const connections = await client.listConnections()
-            if (connections.length === 0 && sharedConnections && sharedConnections.length > 0) {
+            // If Toolkit has usable connections, instead auto connect Q using toolkit connection.
+            // Keep in mind that a "usable" connection is one with at least the CW core scopes (inline, ...)
+            if (sharedConnections && sharedConnections.length > 0) {
                 const conn = await client.findUsableConnection(sharedConnections)
                 if (conn) {
                     await client.useConnection(conn.id, true)
