@@ -22,7 +22,7 @@ import { AslVisualizationCDKManager } from './commands/visualizeStateMachine/asl
 import { renderCdkStateMachineGraph } from './commands/visualizeStateMachine/renderStateMachineGraphCDK'
 import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { PerfLog } from '../shared/logger/logger'
+import { PerfLog } from '../shared/logger/perfLogger'
 
 /**
  * Activate Step Functions related functionality for the extension.

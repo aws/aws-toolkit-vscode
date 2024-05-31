@@ -17,7 +17,7 @@ import { DocumentItemNodeWriteable } from './explorer/documentItemNodeWriteable'
 import { updateDocumentVersion } from './commands/updateDocumentVersion'
 import { Commands } from '../shared/vscode/commands2'
 import * as constants from '../shared/constants'
-import { PerfLog } from '../shared/logger/logger'
+import { PerfLog } from '../shared/logger/perfLogger'
 
 // Activate SSM Document related functionality for the extension.
 export async function activate(

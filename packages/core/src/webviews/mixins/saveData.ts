@@ -36,6 +36,8 @@ const saveData: Vue.ComponentOptionsMixin = {
         this.$options._unid = unid
 
         if (_unids.has(unid)) {
+            // Disable because we cannot log to extension in a webview.
+            // eslint-disable-next-line aws-toolkits/no-console-log
             console.warn(`Component "${unid}" already exists. State-saving functionality will be disabled.`)
             return
         }
