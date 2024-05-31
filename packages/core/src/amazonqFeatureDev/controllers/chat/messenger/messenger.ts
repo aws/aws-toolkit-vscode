@@ -21,6 +21,7 @@ import {
 } from '../../../views/connector/connector'
 import { AppToWebViewMessageDispatcher } from '../../../views/connector/connector'
 import { ChatItemAction } from '@aws/mynah-ui'
+import { messageWithConversationId } from '../../../userFacingText'
 
 export class Messenger {
     public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}
@@ -62,8 +63,6 @@ export class Messenger {
         phase?: SessionStatePhase,
         conversationId?: string
     ) {
-        const conversationIdText = conversationId ? `\n\nConversation ID: **${conversationId}**` : ''
-
         if (retries === 0) {
             this.sendAnswer({
                 type: 'answer',
@@ -90,7 +89,7 @@ export class Messenger {
                 this.dispatcher.sendErrorMessage(
                     new ErrorMessage(
                         `Sorry, we're experiencing an issue on our side. Would you like to try again?`,
-                        errorMessage + conversationIdText,
+                        errorMessage + messageWithConversationId(conversationId),
                         tabID
                     )
                 )
@@ -99,7 +98,7 @@ export class Messenger {
                 this.dispatcher.sendErrorMessage(
                     new ErrorMessage(
                         `Sorry, we're experiencing an issue on our side. Would you like to try again?`,
-                        errorMessage + conversationIdText,
+                        errorMessage + messageWithConversationId(conversationId),
                         tabID
                     )
                 )
@@ -109,7 +108,7 @@ export class Messenger {
                 this.dispatcher.sendErrorMessage(
                     new ErrorMessage(
                         `Sorry, we encountered a problem when processing your request.`,
-                        errorMessage + conversationIdText,
+                        errorMessage + messageWithConversationId(conversationId),
                         tabID
                     )
                 )
