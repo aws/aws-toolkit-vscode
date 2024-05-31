@@ -34,7 +34,14 @@ import { placeholder } from '../../../shared/vscode/commands2'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { getPathsFromZipFilePath } from '../../util/files'
-import { examples, newTaskChanges, approachCreation, sessionClosed, updateCode } from '../../userFacingText'
+import {
+    examples,
+    newTaskChanges,
+    approachCreation,
+    sessionClosed,
+    updateCode,
+    logWithConversationId,
+} from '../../userFacingText'
 import { getWorkspaceFoldersByPrefixes } from '../../../shared/utilities/workspaceUtils'
 
 export interface ChatControllerEventEmitters {
@@ -321,7 +328,7 @@ export class FeatureDevController {
     private async onApproachGeneration(session: Session, message: string, tabID: string) {
         await session.preloader(message)
 
-        getLogger().info(`${featureName} conversation id: ${session.conversationId}`)
+        getLogger().info(logWithConversationId(session.conversationId))
 
         // This is a loading animation
         this.messenger.sendAnswer({
@@ -366,7 +373,7 @@ export class FeatureDevController {
      * Handle a regular incoming message when a user is in the code generation phase
      */
     private async onCodeGeneration(session: Session, message: string, tabID: string) {
-        getLogger().info(`Q - Dev chat conversation id: ${session.conversationId}`)
+        getLogger().info(logWithConversationId(session.conversationId))
 
         // lock the UI/show loading bubbles
         this.messenger.sendAsyncEventProgress(
