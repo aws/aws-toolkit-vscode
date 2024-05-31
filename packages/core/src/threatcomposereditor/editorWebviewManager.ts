@@ -101,7 +101,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
                 'dist',
                 'src',
                 'threatcomposereditor',
-                'VSCodeExtensionInterface.js'
+                'vsCodeExtensionInterface.js'
             )
         )
 

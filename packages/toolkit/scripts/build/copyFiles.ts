@@ -97,8 +97,8 @@ const tasks: CopyTask[] = [
 
     //ThreatComposer
     {
-        target: path.join('../core', 'src', 'threatcomposereditor', 'VSCodeExtensionInterface.js'),
-        destination: path.join('src', 'threatcomposereditor', 'VSCodeExtensionInterface.js'),
+        target: path.join('../core', 'src', 'threatcomposereditor', 'vsCodeExtensionInterface.js'),
+        destination: path.join('src', 'threatcomposereditor', 'vsCodeExtensionInterface.js'),
     },
 ]
 
