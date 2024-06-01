@@ -126,6 +126,9 @@ export class Messenger {
             )
         }
         this.telemetryHelper.setResponseStreamStartTime(tabID)
+        if (triggerPayload.hasProjectLevelContext) {
+            this.telemetryHelper.setResponseFromRequestWithProjectContext(messageID)
+        }
 
         const eventCounts = new Map<string, number>()
         waitUntil(

@@ -7,7 +7,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  */
-
+import * as vscode from 'vscode'
 import * as path from 'path'
 import * as nls from 'vscode-nls'
 
@@ -86,6 +86,15 @@ export async function activate(extensionContext: ExtensionContext) {
 
     const disposable = client.start()
     toDispose.push(disposable)
+
+    vscode.workspace.onDidCloseTextDocument(document => {
+        if (document.uri.scheme !== 'file') {
+            return
+        }
+        client?.sendNotification('textDocument/didClose', {
+            textDocument: { uri: document.uri.toString(), path: document.uri.fsPath },
+        })
+    })
 
     return client.onReady().then(() => {
         const disposableFunc = { dispose: () => rangeFormatting?.dispose() as void }
