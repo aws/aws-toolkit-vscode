@@ -55,7 +55,7 @@ export async function activate(context: ExtensionContext) {
 
     await activateBadge()
 
-    if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
+    if (CodeWhispererSettings.instance.isLocalIndexEnabled() && Search.instance.isLspInstalled()) {
         setImmediate(() =>
             activateLsp(context).then(() => {
                 getLogger().info('LSP activated')

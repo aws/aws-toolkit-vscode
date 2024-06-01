@@ -94,5 +94,8 @@ export async function activate(extensionContext: ExtensionContext) {
 }
 
 export async function deactivate(): Promise<any> {
-    return Promise.resolve(undefined)
+    if (!client) {
+        return undefined
+    }
+    return client.stop()
 }

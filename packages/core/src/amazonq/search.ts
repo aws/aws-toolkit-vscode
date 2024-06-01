@@ -9,7 +9,6 @@ import * as fs from 'fs-extra'
 import { getLogger } from '../shared/logger/logger'
 import { CurrentWsFolders, collectFilesForIndex } from '../shared/utilities/workspaceUtils'
 import * as CodeWhispererConstants from '../codewhisperer/models/constants'
-//import { makeTemporaryToolkitFolder } from '../shared/filesystemUtilities'
 import fetch from 'node-fetch'
 import { clear, indexFiles, query } from './lsp/lspClient'
 import { SystemUtilities } from '../shared/systemUtilities'
@@ -51,6 +50,13 @@ export class Search {
             })
         })
     }
+
+    isLspInstalled() {
+        const extPath = path.join(SystemUtilities.getHomeDirectory(), '.vscode', 'extensions')
+        const localQServer = path.join(extPath, 'qserver')
+        return fs.existsSync(localQServer)
+    }
+
     async installLspZip() {
         const extPath = path.join(SystemUtilities.getHomeDirectory(), '.vscode', 'extensions')
         const localQServer = path.join(extPath, 'qserver')
@@ -112,4 +118,6 @@ export class Search {
             getLogger().info(`NEW: Finish building vector index of project`)
         }
     }
+
+    async updateIndex(filepath: string) {}
 }

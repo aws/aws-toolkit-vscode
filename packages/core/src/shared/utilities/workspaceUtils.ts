@@ -536,8 +536,8 @@ export async function collectFilesForIndex(
 
     const isLanguageSupported = (filename: string) => {
         const k =
-            /\.(js|ts|java|py|rb|cpp|tsx|jsx|cc|c|h|html|json|css|md|php|swift|rs|scala|yaml|tf|sql|sh|go|yml|kt|smithy|config|kts|gradle)$/i
-        return k.test(filename)
+            /\.(js|ts|java|py|rb|cpp|tsx|jsx|cc|c|h|html|json|css|md|php|swift|rs|scala|yaml|tf|sql|sh|go|yml|kt|smithy|config|kts|gradle|cfg|xml)$/i
+        return k.test(filename) || filename.endsWith('Config')
     }
 
     const isBuildOrBin = (filePath: string) => {
@@ -590,6 +590,6 @@ export async function collectFilesForIndex(
             break
         }
     }
-
+    // pick top 10k files below size limit
     return storage.slice(0, Math.min(10000, i))
 }
