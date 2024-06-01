@@ -87,15 +87,24 @@ export async function activate(extensionContext: ExtensionContext) {
     const disposable = client.start()
     toDispose.push(disposable)
 
-    vscode.workspace.onDidCloseTextDocument(document => {
+    let savedDocument: vscode.Uri | undefined = undefined
+    const d2 = vscode.workspace.onDidSaveTextDocument(document => {
         if (document.uri.scheme !== 'file') {
             return
         }
-        client?.sendNotification('textDocument/didClose', {
-            textDocument: { uri: document.uri.toString(), path: document.uri.fsPath },
-        })
+        savedDocument = document.uri
     })
 
+    const d3 = vscode.window.onDidChangeActiveTextEditor(editor => {
+        if (savedDocument && editor && editor.document.uri.fsPath !== savedDocument.fsPath) {
+            client?.sendNotification('textDocument/didClose', {
+                textDocument: { uri: savedDocument.toString() },
+            })
+        }
+    })
+
+    toDispose.push(d2)
+    toDispose.push(d3)
     return client.onReady().then(() => {
         const disposableFunc = { dispose: () => rangeFormatting?.dispose() as void }
         toDispose.push(disposableFunc)
