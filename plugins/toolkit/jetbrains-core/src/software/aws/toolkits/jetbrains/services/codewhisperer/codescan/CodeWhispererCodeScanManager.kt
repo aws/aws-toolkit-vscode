@@ -387,7 +387,6 @@ class CodeWhispererCodeScanManager(val project: Project) {
      */
     fun addCodeScanUI(setSelected: Boolean = false) = runInEdt {
         reset()
-        EditorFactory.getInstance().eventMulticaster.addDocumentListener(documentListener, project)
         val problemsWindow = getProblemsWindow()
         if (!problemsWindow.contentManager.contents.contains(codeScanIssuesContent)) {
             problemsWindow.contentManager.addContent(codeScanIssuesContent)

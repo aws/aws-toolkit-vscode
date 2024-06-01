@@ -22,7 +22,7 @@ class ResumeCodeScans : DumbAwareAction(
         val actionManager = CodeWhispererExplorerActionManager.getInstance()
         actionManager.setAutoCodeScan(project, true)
         //  Run Proactive Code File Scan once toggle is enabled
-        if (!actionManager.isMonthlyQuotaForCodeScansExceeded() && !isUserBuilderId(project)) {
+        if (actionManager.isAutoEnabledForCodeScan() && !actionManager.isMonthlyQuotaForCodeScansExceeded() && !isUserBuilderId(project)) {
             CodeWhispererCodeScanManager.getInstance(project).createDebouncedRunCodeScan(CodeWhispererConstants.CodeAnalysisScope.FILE)
         }
     }
