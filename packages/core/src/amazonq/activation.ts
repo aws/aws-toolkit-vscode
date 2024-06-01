@@ -56,14 +56,12 @@ export async function activate(context: ExtensionContext) {
     await activateBadge()
 
     if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
-        Search.instance.installLspZip().then(() => {
-            setImmediate(() =>
-                activateLsp(context).then(() => {
-                    getLogger().info('LSP activated')
-                    Search.instance.buildIndex()
-                })
-            )
-        })
+        setImmediate(() =>
+            activateLsp(context).then(() => {
+                getLogger().info('LSP activated')
+                Search.instance.buildIndex()
+            })
+        )
     }
 }
 

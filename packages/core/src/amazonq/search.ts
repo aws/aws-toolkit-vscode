@@ -62,6 +62,7 @@ export class Search {
         try {
             const fname = `qserver-${process.platform}-${process.arch}.zip`
             const s3Path = `https://github.com/leigaol/test-qserver/releases/download/0.1/${fname}`
+            // use aws api, aws credentials, allow
             const localFile = path.join(SystemUtilities.getHomeDirectory(), '.vscode', 'extensions', fname)
             if (fs.existsSync(localFile)) {
                 getLogger().info(`Found qserver.zip at ${localFile}`)
