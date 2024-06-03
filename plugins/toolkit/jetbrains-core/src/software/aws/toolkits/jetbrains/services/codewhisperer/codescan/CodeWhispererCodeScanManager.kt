@@ -74,6 +74,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.runIfIdcConne
 import software.aws.toolkits.jetbrains.utils.isQConnected
 import software.aws.toolkits.jetbrains.utils.isQExpired
 import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
+import software.aws.toolkits.jetbrains.utils.offsetSuggestedFix
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
 import java.time.Duration
@@ -457,6 +458,18 @@ class CodeWhispererCodeScanManager(val project: Project) {
         }
     }
 
+    fun updateScanNodesForOffSet(file: VirtualFile, lineOffset: Int, editedTextRange: TextRange) {
+        val document = FileDocumentManager.getInstance().getDocument(file) ?: return
+        scanNodesLookup[file]?.forEach { node ->
+            val issue = node.userObject as CodeWhispererCodeScanIssue
+            if (document.getLineNumber(editedTextRange.startOffset) <= issue.startLine) {
+                issue.startLine = issue.startLine + lineOffset
+                issue.endLine = issue.endLine + lineOffset
+                issue.suggestedFixes = issue.suggestedFixes.map { fix -> offsetSuggestedFix(fix, lineOffset) }
+            }
+        }
+    }
+
     private fun CodeWhispererCodeScanIssue.copyRange(newRange: TextRange): CodeWhispererCodeScanIssue {
         val newStartLine = document.getLineNumber(newRange.startOffset)
         val newStartCol = newRange.startOffset - document.getLineStartOffset(newStartLine)
@@ -497,7 +510,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
             val editorFactory = EditorFactory.getInstance()
             editorFactory.eventMulticaster.addDocumentListener(documentListener, project)
             editorFactory.addEditorFactoryListener(fileListener, project)
-            EditorFactory.getInstance().eventMulticaster.addEditorMouseMotionListener(
+            editorFactory.eventMulticaster.addEditorMouseMotionListener(
                 editorMouseListener,
                 codeScanIssuesContent
             )
@@ -672,9 +685,9 @@ class CodeWhispererCodeScanManager(val project: Project) {
 data class CodeWhispererCodeScanIssue(
     val project: Project,
     val file: VirtualFile,
-    val startLine: Int,
+    var startLine: Int,
     val startCol: Int,
-    val endLine: Int,
+    var endLine: Int,
     val endCol: Int,
     val title: @InspectionMessage String,
     val description: Description,
@@ -685,7 +698,7 @@ data class CodeWhispererCodeScanIssue(
     val relatedVulnerabilities: List<String>,
     val severity: String,
     val recommendation: Recommendation,
-    val suggestedFixes: List<SuggestedFix>,
+    var suggestedFixes: List<SuggestedFix>,
     val issueSeverity: HighlightDisplayLevel = HighlightDisplayLevel.WARNING,
     val isInvalid: Boolean = false,
     var rangeHighlighter: RangeHighlighterEx? = null
