@@ -285,7 +285,8 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
                 .build()
         )
     } catch (e: Exception) {
-        throw e
+        LOG.debug { "Create Upload URL failed: ${e.message}" }
+        throw codeScanServerException("CreateUploadUrlException: " + e.message?.let { it } ?: message("codewhisperer.codescan.run_scan_error_telemetry"))
     }
 
     private fun getUploadIntent(scope: CodeWhispererConstants.CodeAnalysisScope): UploadIntent = when (scope) {
@@ -317,8 +318,8 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
                 IoUtils.copy(fileToUpload.inputStream(), connection.outputStream)
             }
         } catch (e: Exception) {
-            val errorMessage = e.message?.let { it } ?: message("codewhisperer.codescan.run_scan_error_telemetry")
-            throw uploadArtifactFailedError(errorMessage)
+            LOG.debug { "Artifact failed to upload in the S3 bucket: ${e.message}" }
+            throw codeScanServerException("UploadArtifactToS3Exception: " + e.message?.let { it } ?: message("codewhisperer.codescan.run_scan_error_telemetry"))
         }
     }
 
@@ -340,7 +341,7 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
             )
         } catch (e: Exception) {
             LOG.debug { "Creating security scan failed: ${e.message}" }
-            throw e
+            throw codeScanServerException("CreateCodeScanException: " + e.message?.let { it } ?: message("codewhisperer.codescan.run_scan_error_telemetry"))
         }
     }
 
@@ -352,7 +353,7 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
         )
     } catch (e: Exception) {
         LOG.debug { "Getting security scan failed: ${e.message}" }
-        throw e
+        throw codeScanServerException("GetCodeScanException: " + e.message?.let { it } ?: message("codewhisperer.codescan.run_scan_error_telemetry"))
     }
 
     fun listCodeScanFindings(jobId: String, nextToken: String?): ListCodeScanFindingsResponse = try {
@@ -365,7 +366,7 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
         )
     } catch (e: Exception) {
         LOG.debug { "Listing security scan failed: ${e.message}" }
-        throw e
+        throw codeScanServerException("ListCodeScanFindingsException: " + e.message?.let { it } ?: message("codewhisperer.codescan.run_scan_error_telemetry"))
     }
 
     fun mapToCodeScanIssues(recommendations: List<String>): List<CodeWhispererCodeScanIssue> {

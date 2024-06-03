@@ -311,14 +311,14 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
     @Test
     fun `test run() - createCodeScan error`() {
         mockClient.stub {
-            onGeneric { createCodeScan(any(), any()) }.thenThrow(CodeWhispererCodeScanException::class.java)
+            onGeneric { createCodeScan(any(), any()) }.thenThrow(CodeWhispererCodeScanServerException::class.java)
         }
 
         runBlocking {
             val codeScanResponse = codeScanSessionSpy.run()
             assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
             assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
-            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererCodeScanException>()
+            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererCodeScanServerException>()
         }
     }
 
@@ -361,28 +361,28 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
     @Test
     fun `test run() - getCodeScan error`() {
         mockClient.stub {
-            onGeneric { getCodeScan(any(), any()) }.thenThrow(CodeWhispererException::class.java)
+            onGeneric { getCodeScan(any(), any()) }.thenThrow(CodeWhispererCodeScanServerException::class.java)
         }
 
         runBlocking {
             val codeScanResponse = codeScanSessionSpy.run()
             assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
             assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
-            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererException>()
+            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererCodeScanServerException>()
         }
     }
 
     @Test
     fun `test run() - listCodeScanFindings error`() {
         mockClient.stub {
-            onGeneric { listCodeScanFindings(any(), any()) }.thenThrow(CodeWhispererException::class.java)
+            onGeneric { listCodeScanFindings(any(), any()) }.thenThrow(CodeWhispererCodeScanServerException::class.java)
         }
 
         runBlocking {
             val codeScanResponse = codeScanSessionSpy.run()
             assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
             assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
-            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererException>()
+            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererCodeScanServerException>()
         }
     }
 
