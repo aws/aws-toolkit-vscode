@@ -145,6 +145,13 @@ internal class CodeWhispererCodeScanResultsView(private val project: Project) : 
         }
     }
 
+    fun refreshUIWithUpdatedModel(scanTreeModel: CodeWhispererCodeScanTreeModel) {
+        codeScanTree.apply {
+            model = scanTreeModel
+            repaint()
+        }
+    }
+
     fun setStoppingCodeScan() {
         completeInfoLabel.isVisible = false
         stopCodeScanButton.isVisible = false

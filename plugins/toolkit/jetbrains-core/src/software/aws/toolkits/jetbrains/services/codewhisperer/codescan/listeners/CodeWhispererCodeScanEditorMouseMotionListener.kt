@@ -35,6 +35,7 @@ import software.aws.toolkits.jetbrains.ToolkitPlaces
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanIssue
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererTelemetryService
@@ -403,7 +404,9 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
                 PsiDocumentManager.getInstance(issue.project).commitDocument(document)
                 CodeWhispererTelemetryService.getInstance().sendCodeScanIssueApplyFixEvent(issue, Result.Succeeded)
                 hidePopup()
-                CodeWhispererCodeScanManager.getInstance(issue.project).updateScanNodesForIssuesOutOfTextRange(issue)
+                if (CodeWhispererExplorerActionManager.getInstance().isAutoEnabledForCodeScan()) {
+                    CodeWhispererCodeScanManager.getInstance(issue.project).removeIssueByFindingId(issue.file, issue.findingId)
+                }
             }
             sendCodeRemediationTelemetryToServiceApi(
                 issue.file.programmingLanguage(),
