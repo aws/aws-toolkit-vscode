@@ -283,16 +283,7 @@ export async function addScopes(conn: SsoConnection, extraScopes: string[], auth
     const oldScopes = conn.scopes ?? []
     const newScopes = Array.from(new Set([...oldScopes, ...extraScopes]))
 
-    const updateConnectionScopes = (scopes: string[]) => {
-        return auth.updateConnection(conn, {
-            type: 'sso',
-            scopes,
-            startUrl: conn.startUrl,
-            ssoRegion: conn.ssoRegion,
-        })
-    }
-
-    const updatedConn = await updateConnectionScopes(newScopes)
+    const updatedConn = await setScopes(conn, newScopes, auth)
 
     try {
         return await auth.reauthenticate(updatedConn, false)
@@ -301,7 +292,16 @@ export async function addScopes(conn: SsoConnection, extraScopes: string[], auth
         // InvalidGrantException, etc), then we need to revert to the old connection scopes. Otherwise,
         // this could soft-lock users into a broken connection that cannot be re-authenticated without
         // first deleting the connection.
-        await updateConnectionScopes(oldScopes)
+        await setScopes(conn, oldScopes, auth)
         throw e
     }
+}
+
+export function setScopes(conn: SsoConnection, scopes: string[], auth = Auth.instance): Promise<SsoConnection> {
+    return auth.updateConnection(conn, {
+        type: 'sso',
+        scopes,
+        startUrl: conn.startUrl,
+        ssoRegion: conn.ssoRegion,
+    })
 }
