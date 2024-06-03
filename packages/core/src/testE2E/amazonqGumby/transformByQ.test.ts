@@ -12,7 +12,7 @@ import assert from 'assert'
 import { getSha256, uploadArtifactToS3, zipCode } from '../../codewhisperer/service/transformByQ/transformApiHandler'
 import request from '../../common/request'
 import AdmZip from 'adm-zip'
-import { setValidConnection } from '../util/amazonQUtil'
+import { setValidConnection } from '../util/connection'
 import { transformByQState, ZipManifest } from '../../codewhisperer/models/model'
 
 describe('transformByQ', async function () {

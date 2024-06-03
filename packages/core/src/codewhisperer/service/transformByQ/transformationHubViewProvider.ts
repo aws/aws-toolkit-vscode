@@ -314,7 +314,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         let progressHtml
         // for each step that has succeeded, increment activeStepId by 1
         let activeStepId = [
-            jobPlanProgress.startJob,
+            jobPlanProgress.uploadCode,
             jobPlanProgress.buildCode,
             jobPlanProgress.generatePlan,
             jobPlanProgress.transformCode,
@@ -326,8 +326,8 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
 
         if (jobPlanProgress['transformCode'] !== StepProgress.NotStarted) {
             const waitingMarkup = simpleStep(
-                this.getProgressIconMarkup(jobPlanProgress['startJob']),
-                CodeWhispererConstants.waitingForJobStartStepMessage,
+                this.getProgressIconMarkup(jobPlanProgress['uploadCode']),
+                CodeWhispererConstants.uploadingCodeStepMessage,
                 activeStepId === 0
             )
             const buildMarkup =

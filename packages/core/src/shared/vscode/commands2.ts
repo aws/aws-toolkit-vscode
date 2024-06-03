@@ -146,6 +146,16 @@ export class Commands {
         }
     }
 
+    /** See {@link Commands.getOrThrow}. */
+    public async getOrThrow(id: string): Promise<Command> {
+        const cmd = await this.get(id)
+        if (cmd === undefined) {
+            throw new ToolkitError(`Tried to get Command '${id}', but it hasn't been registered.`)
+        }
+
+        return cmd
+    }
+
     /** See {@link Commands.tryExecute}. */
     public async tryExecute<T extends Callback = Callback>(
         id: string,
@@ -223,9 +233,16 @@ export class Commands {
     public static readonly instance = new Commands()
 
     /**
-     * Returns a {@link Command} if the ID is currently registered within VS Code.
+     * Returns a {@link Command} if the ID is currently registered within VS Code,
+     * or undefined otherwise.
      */
     public static readonly get = this.instance.get.bind(this.instance)
+
+    /**
+     * Returns a {@link Command} if the ID is currently registered within VS Code,
+     * or throws a {@link ToolkitError} otherwise.
+     */
+    public static readonly getOrThrow = this.instance.getOrThrow.bind(this.instance)
 
     /**
      * Executes a command if it exists, else does nothing.

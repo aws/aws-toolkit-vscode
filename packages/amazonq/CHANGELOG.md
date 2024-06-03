@@ -1,3 +1,11 @@
+## 1.7.0 2024-05-30
+
+- **Bug Fix** Feature Development: File rejection is not rejecting a file when code is generated
+- **Bug Fix** Security Scan: Improved accuracy when applying security fixes
+- **Bug Fix** Amazon Q Code Transformation: show more specific error messages on failure cases
+- **Feature** Security Scan: Support for scanning files outside of workspaces.
+- **Feature** Amazon Q now publishes to Open VSX: https://open-vsx.org/namespace/amazonwebservices
+
 ## 1.6.0 2024-05-21
 
 - **Bug Fix** Amazon Q Chat: Inside chat body, if there is a code block inside a list item it shows <br/> tags

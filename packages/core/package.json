@@ -34,6 +34,8 @@
         "./shared": "./dist/src/shared/index.js",
         "./auth": "./dist/src/auth/index.js",
         "./amazonqGumby": "./dist/src/amazonqGumby/index.js",
+        "./amazonqFeatureDev": "./dist/src/amazonqFeatureDev/index.js",
+        "./test": "./dist/src/test/index.js",
         "./login": "./dist/src/login/webview/index.js",
         "./utils": "./dist/src/shared/utilities/index.js",
         "./feedback": "./dist/src/feedback/index.js",
@@ -1131,10 +1133,6 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.toolkit.auth.signout",
-                    "when": "false"
-                },
-                {
                     "command": "aws.toolkit.auth.help",
                     "when": "false"
                 },
@@ -1155,6 +1153,10 @@
                 },
                 {
                     "command": "aws.ec2.stopInstance",
+                    "when": "true"
+                },
+                {
+                    "command": "aws.ec2.rebootInstance",
                     "when": "true"
                 },
                 {
@@ -2149,16 +2151,6 @@
                 "category": "AWS",
                 "icon": "$(debug-disconnect)",
                 "enablement": "isCloud9 || !aws.isWebExtHost"
-            },
-            {
-                "command": "aws.toolkit.logout",
-                "title": "%AWS.command.logout%",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
             },
             {
                 "command": "aws.toolkit.auth.addConnection",
@@ -4054,7 +4046,7 @@
         "@aws-sdk/property-provider": "3.46.0",
         "@aws-sdk/smithy-client": "^3.46.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
-        "@aws/mynah-ui": "^4.9.1",
+        "@aws/mynah-ui": "^4.9.2",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
         "@smithy/middleware-retry": "^2.3.1",

@@ -34,7 +34,14 @@ import { placeholder } from '../../../shared/vscode/commands2'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { getPathsFromZipFilePath } from '../../util/files'
-import { examples, newTaskChanges, approachCreation, sessionClosed, updateCode } from '../../userFacingText'
+import {
+    examples,
+    newTaskChanges,
+    approachCreation,
+    sessionClosed,
+    updateCode,
+    logWithConversationId,
+} from '../../userFacingText'
 import { getWorkspaceFoldersByPrefixes } from '../../../shared/utilities/workspaceUtils'
 
 export interface ChatControllerEventEmitters {
@@ -321,26 +328,24 @@ export class FeatureDevController {
     private async onApproachGeneration(session: Session, message: string, tabID: string) {
         await session.preloader(message)
 
-        getLogger().info(`${featureName} conversation id: ${session.conversationId}`)
+        getLogger().info(logWithConversationId(session.conversationId))
 
+        // This is a loading animation
         this.messenger.sendAnswer({
-            type: 'answer',
+            type: 'answer-stream',
             tabID,
             message: approachCreation,
         })
-
-        // Ensure that the loading icon stays showing
-        this.messenger.sendAsyncEventProgress(tabID, true, undefined)
 
         this.messenger.sendUpdatePlaceholder(tabID, 'Generating plan ...')
 
         const interactions = await session.send(message)
         this.messenger.sendUpdatePlaceholder(tabID, 'How can this plan be improved?')
 
-        // Resolve the "..." with the content
+        // This is were we get the plan fully and add it to the chat.
         this.messenger.sendAnswer({
             message: interactions.content,
-            type: 'answer-part',
+            type: 'answer',
             tabID: tabID,
             canBeVoted: true,
         })
@@ -368,7 +373,7 @@ export class FeatureDevController {
      * Handle a regular incoming message when a user is in the code generation phase
      */
     private async onCodeGeneration(session: Session, message: string, tabID: string) {
-        getLogger().info(`Q - Dev chat conversation id: ${session.conversationId}`)
+        getLogger().info(logWithConversationId(session.conversationId))
 
         // lock the UI/show loading bubbles
         this.messenger.sendAsyncEventProgress(
