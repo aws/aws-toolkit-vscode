@@ -114,7 +114,7 @@ function keyedDebounce<T, U extends any[], K extends string = string>(
     }
 }
 
-interface ConnectionStateChangeEvent {
+export interface ConnectionStateChangeEvent {
     readonly id: Connection['id']
     readonly state: ProfileMetadata['connectionState']
 }
@@ -282,6 +282,8 @@ export class Auth implements AuthService, ConnectionManager {
         }
 
         const id = randomUUID()
+        void this.updateConnectionState(id, 'authenticating')
+
         const tokenProvider = this.getSsoTokenProvider(id, {
             ...profile,
             metadata: { connectionState: 'unauthenticated' },
@@ -506,6 +508,12 @@ export class Auth implements AuthService, ConnectionManager {
 
     private async updateConnectionState(id: Connection['id'], connectionState: ProfileMetadata['connectionState']) {
         getLogger().info(`auth: Updating connection state of ${id} to ${connectionState}`)
+
+        if (connectionState === 'authenticating') {
+            this.#onDidChangeConnectionState.fire({ id, state: connectionState })
+            return
+        }
+
         const oldProfile = this.store.getProfileOrThrow(id)
         if (oldProfile.metadata.connectionState === connectionState) {
             return oldProfile
