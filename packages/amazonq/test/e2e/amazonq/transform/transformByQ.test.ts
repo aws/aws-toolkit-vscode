@@ -6,14 +6,20 @@
 import * as os from 'os'
 import * as path from 'path'
 import * as fs from 'fs-extra'
-import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
-import * as codeWhisperer from '../../codewhisperer/client/codewhisperer'
+import {
+    contentChecksumType,
+    uploadIntent,
+    transformByQState,
+    ZipManifest,
+    getSha256,
+    uploadArtifactToS3,
+    zipCode,
+    codeWhispererClient,
+} from 'aws-core-vscode/codewhisperer'
 import assert from 'assert'
-import { getSha256, uploadArtifactToS3, zipCode } from '../../codewhisperer/service/transformByQ/transformApiHandler'
-import request from '../../common/request'
+import { request } from 'aws-core-vscode/common'
 import AdmZip from 'adm-zip'
-import { setValidConnection } from '../util/connection'
-import { transformByQState, ZipManifest } from '../../codewhisperer/models/model'
+import { setValidConnection } from '../../util/connection'
 
 describe('transformByQ', async function () {
     let tempDir = ''
@@ -52,10 +58,10 @@ describe('transformByQ', async function () {
     it('WHEN upload payload with missing sha256 in headers THEN fails to upload', async function () {
         const buffer = fs.readFileSync(zippedCodePath)
         const sha256 = getSha256(buffer)
-        const response = await codeWhisperer.codeWhispererClient.createUploadUrl({
+        const response = await codeWhispererClient.createUploadUrl({
             contentChecksum: sha256,
-            contentChecksumType: CodeWhispererConstants.contentChecksumType,
-            uploadIntent: CodeWhispererConstants.uploadIntent,
+            contentChecksumType: contentChecksumType,
+            uploadIntent: uploadIntent,
         })
         const headersObj = {
             'x-amz-checksum-sha256': '',
@@ -85,10 +91,10 @@ describe('transformByQ', async function () {
     it('WHEN createUploadUrl THEN URL uses HTTPS and sets 60 second expiration', async function () {
         const buffer = fs.readFileSync(zippedCodePath)
         const sha256 = getSha256(buffer)
-        const response = await codeWhisperer.codeWhispererClient.createUploadUrl({
+        const response = await codeWhispererClient.createUploadUrl({
             contentChecksum: sha256,
-            contentChecksumType: CodeWhispererConstants.contentChecksumType,
-            uploadIntent: CodeWhispererConstants.uploadIntent,
+            contentChecksumType: contentChecksumType,
+            uploadIntent: uploadIntent,
         })
         const uploadUrl = response.uploadUrl
         const usesHttpsAndExpiresAfter60Seconds = uploadUrl.includes('https') && uploadUrl.includes('X-Amz-Expires=60')

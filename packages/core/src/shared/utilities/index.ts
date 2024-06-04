@@ -5,3 +5,4 @@
 
 export { isExtensionInstalled, isExtensionActive } from './vsCodeUtils'
 export { VSCODE_EXTENSION_ID } from '../extensions'
+export { sleep } from './timeoutUtils'

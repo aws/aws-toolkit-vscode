@@ -6,24 +6,26 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import * as path from 'path'
+import {
+    session,
+    DefaultCodeWhispererClient,
+    RecommendationHandler,
+    ConfigurationEntry,
+    KeyStrokeHandler,
+    invokeRecommendation,
+} from 'aws-core-vscode/codewhisperer'
+import { sleep } from 'aws-core-vscode/utils'
 import { setValidConnection, skipTestIfNoValidConn } from '../util/connection'
-import { ConfigurationEntry } from '../../codewhisperer/models/model'
-import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
-import { RecommendationHandler } from '../../codewhisperer/service/recommendationHandler'
 import {
     createMockTextEditor,
     createTextDocumentChangeEvent,
     resetCodeWhispererGlobalVariables,
-} from '../../test/codewhisperer/testUtil'
-import { KeyStrokeHandler } from '../../codewhisperer/service/keyStrokeHandler'
-import { sleep } from '../../shared/utilities/timeoutUtils'
-import { invokeRecommendation } from '../../codewhisperer/commands/invokeRecommendation'
-import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
-import { session } from '../../codewhisperer/util/codeWhispererSession'
+} from 'aws-core-vscode/test'
+import { getTestWorkspaceFolder } from 'aws-core-vscode/testInteg'
 
 describe('CodeWhisperer service invocation', async function () {
     let validConnection: boolean
-    const client = new codewhispererClient.DefaultCodeWhispererClient()
+    const client = new DefaultCodeWhispererClient()
     const config: ConfigurationEntry = {
         isShowMethodsEnabled: true,
         isManualTriggerEnabled: true,

@@ -5,24 +5,25 @@
 
 import assert from 'assert'
 import * as vscode from 'vscode'
-import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
-import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
-import * as path from 'path'
-import * as testutil from '../../test/testUtil'
-import { setValidConnection, skipTestIfNoValidConn } from '../util/connection'
-import { resetCodeWhispererGlobalVariables } from '../../test/codewhisperer/testUtil'
-import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
-import { closeAllEditors } from '../../test/testUtil'
 import {
+    DefaultCodeWhispererClient,
+    codeScanPythonPayloadSizeLimitBytes,
+    CodeAnalysisScope,
+    codeScanFindingsSchema,
     getPresignedUrlAndUpload,
     createScanJob,
     pollScanJobStatus,
     listScanResults,
-} from '../../codewhisperer/service/securityScanHandler'
-import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { fsCommon } from '../../srcShared/fs'
-import { ZipUtil } from '../../codewhisperer/util/zipUtil'
-import { randomUUID } from '../../common/crypto'
+    ZipUtil,
+} from 'aws-core-vscode/codewhisperer'
+import { resetCodeWhispererGlobalVariables, toFile } from 'aws-core-vscode/test'
+import * as path from 'path'
+import { setValidConnection, skipTestIfNoValidConn } from '../util/connection'
+import { getTestWorkspaceFolder } from 'aws-core-vscode/testInteg'
+import { closeAllEditors } from 'aws-core-vscode/test'
+import { makeTemporaryToolkitFolder } from 'aws-core-vscode/shared'
+import { fsCommon } from 'aws-core-vscode/srcShared'
+import { randomUUID } from 'aws-core-vscode/common'
 
 const filePromptWithSecurityIssues = `from flask import app
 
@@ -38,7 +39,7 @@ def execute_input_compliant():
     # Compliant: executes sanitized inputs.
     exec("import urllib%d as urllib" % int(module_version))`
 
-const largePrompt = 'a'.repeat(CodeWhispererConstants.codeScanPythonPayloadSizeLimitBytes + 1)
+const largePrompt = 'a'.repeat(codeScanPythonPayloadSizeLimitBytes + 1)
 
 const javaPromptNoBuild = `class HelloWorld {
     public static void main(String[] args) {
@@ -49,7 +50,7 @@ const javaPromptNoBuild = `class HelloWorld {
 describe('CodeWhisperer security scan', async function () {
     let validConnection: boolean
     let tempFolder: string
-    const client = new codewhispererClient.DefaultCodeWhispererClient()
+    const client = new DefaultCodeWhispererClient()
     const workspaceFolder = getTestWorkspaceFolder()
 
     before(async function () {
@@ -93,7 +94,7 @@ describe('CodeWhisperer security scan', async function () {
         const uri = editor.document.uri
 
         const projectPaths = zipUtil.getProjectPaths()
-        const scope = CodeWhispererConstants.CodeAnalysisScope.PROJECT
+        const scope = CodeAnalysisScope.PROJECT
         const zipMetadata = await zipUtil.generateZip(uri, scope)
         const codeScanName = randomUUID()
 
@@ -122,7 +123,7 @@ describe('CodeWhisperer security scan', async function () {
         const artifactMap = securityJobSetupResult.artifactMap
         const projectPaths = securityJobSetupResult.projectPaths
 
-        const scope = CodeWhispererConstants.CodeAnalysisScope.PROJECT
+        const scope = CodeAnalysisScope.PROJECT
 
         //get job status and result
         const scanJob = await createScanJob(
@@ -141,7 +142,7 @@ describe('CodeWhisperer security scan', async function () {
         const securityRecommendationCollection = await listScanResults(
             client,
             scanJob.jobId,
-            CodeWhispererConstants.codeScanFindingsSchema,
+            codeScanFindingsSchema,
             projectPaths,
             scope
         )
@@ -154,10 +155,10 @@ describe('CodeWhisperer security scan', async function () {
         //set up file and editor
         tempFolder = await makeTemporaryToolkitFolder()
         const tempFile = path.join(tempFolder, 'test.py')
-        await testutil.toFile(filePromptWithSecurityIssues, tempFile)
+        await toFile(filePromptWithSecurityIssues, tempFile)
         const editor = await openTestFile(tempFile)
 
-        const scope = CodeWhispererConstants.CodeAnalysisScope.PROJECT
+        const scope = CodeAnalysisScope.PROJECT
 
         //run security scan
         const securityJobSetupResult = await securityJobSetup(editor)
@@ -181,7 +182,7 @@ describe('CodeWhisperer security scan', async function () {
         const securityRecommendationCollection = await listScanResults(
             client,
             scanJob.jobId,
-            CodeWhispererConstants.codeScanFindingsSchema,
+            codeScanFindingsSchema,
             projectPaths,
             scope
         )
@@ -193,7 +194,7 @@ describe('CodeWhisperer security scan', async function () {
     it('codescan request on file that is too large causes scan job setup to fail', async function () {
         tempFolder = await makeTemporaryToolkitFolder()
         const tempFile = path.join(tempFolder, 'test2.py')
-        await testutil.toFile(largePrompt, tempFile)
+        await toFile(largePrompt, tempFile)
         const editor = await openTestFile(tempFile)
 
         await assert.rejects(() => securityJobSetup(editor))
@@ -202,7 +203,7 @@ describe('CodeWhisperer security scan', async function () {
     it('codescan request on java file with no build causes scan job setup to fail', async function () {
         tempFolder = await makeTemporaryToolkitFolder()
         const tempFile = path.join(tempFolder, 'test.java')
-        await testutil.toFile(javaPromptNoBuild, tempFile)
+        await toFile(javaPromptNoBuild, tempFile)
         const editor = await openTestFile(tempFile)
 
         await assert.rejects(() => securityJobSetup(editor))
