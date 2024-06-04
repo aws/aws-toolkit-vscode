@@ -7,17 +7,24 @@ import { FeatureValue } from '../client/codewhispereruserclient'
 import { codeWhispererClient as client } from '../client/codewhisperer'
 import { AuthUtil } from '../util/authUtil'
 import { getLogger } from '../../shared/logger'
+import { isBuilderIdConnection, isIdcSsoConnection } from '../../auth/connection'
+import { getAvailableCustomizationsList } from '../util/customizationUtil'
 
 export class FeatureContext {
     constructor(public name: string, public variation: string, public value: FeatureValue) {}
 }
 
 const testFeatureName = 'testFeature'
+const customizationArnOverrideName = 'customizationArnOverride'
 const featureConfigPollIntervalInMs = 30 * 60 * 1000 // 30 mins
 
 // TODO: add real feature later
 export const featureDefinitions = new Map([
     [testFeatureName, new FeatureContext(testFeatureName, 'CONTROL', { stringValue: 'testValue' })],
+    [
+        customizationArnOverrideName,
+        new FeatureContext(customizationArnOverrideName, 'customizationARN', { stringValue: '' }),
+    ],
 ])
 
 export class FeatureConfigProvider {
@@ -53,6 +60,29 @@ export class FeatureConfigProvider {
                     new FeatureContext(evaluation.feature, evaluation.variation, evaluation.value)
                 )
             })
+
+            const customizationArnOverride = this.featureConfigs.get(customizationArnOverrideName)?.value?.stringValue
+            if (customizationArnOverride !== undefined) {
+                // Double check if server-side wrongly returns a customizationArn to BID users
+                if (isBuilderIdConnection(AuthUtil.instance.conn)) {
+                    this.featureConfigs.delete(customizationArnOverrideName)
+                } else if (isIdcSsoConnection(AuthUtil.instance.conn)) {
+                    let availableCustomizations = null
+                    try {
+                        availableCustomizations = (await getAvailableCustomizationsList()).map(c => c.arn)
+                    } catch (e) {
+                        getLogger().debug('amazonq: Failed to list available customizations')
+                    }
+
+                    // If customizationArn from A/B is not available in listAvailableCustomizations response, don't use this value
+                    if (!availableCustomizations?.includes(customizationArnOverride)) {
+                        getLogger().debug(
+                            `Customization arn ${customizationArnOverride} not available in listAvailableCustomizations, not using`
+                        )
+                        this.featureConfigs.delete(customizationArnOverrideName)
+                    }
+                }
+            }
         } catch (e) {
             getLogger().error(`CodeWhisperer: Error when fetching feature configs ${e}`, e)
         }
@@ -80,6 +110,10 @@ export class FeatureConfigProvider {
     // 7) In case `getXXX()` returns undefined, it should be treated as a default/control group.
     getTestFeature(): string | undefined {
         return this.getFeatureValueForKey(testFeatureName).stringValue
+    }
+
+    getCustomizationArnOverride(): string | undefined {
+        return this.getFeatureValueForKey(customizationArnOverrideName).stringValue
     }
 
     // Get the feature value for the given key.
