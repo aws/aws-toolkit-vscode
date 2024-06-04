@@ -232,7 +232,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
             val codeScanSessionConfig = CodeScanSessionConfig.create(file, project, scope)
             language = codeScanSessionConfig.getSelectedFile()?.programmingLanguage() ?: CodeWhispererUnknownLanguage.INSTANCE
             if (scope == CodeWhispererConstants.CodeAnalysisScope.FILE &&
-                !language.isAutoFileScanSupported()
+                (!language.isAutoFileScanSupported() || codeScanSessionConfig.getSelectedFile()?.path?.endsWith(".jar") == true)
             ) {
                 LOG.debug { "Language is unknown or plaintext, skipping code scan." }
                 codeScanStatus = Result.Cancelled
@@ -345,6 +345,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
             is CodeWhispererCodeScanServerException -> getCodeScanServerExceptionMessage(e)
             is WaiterTimeoutException, is TimeoutCancellationException -> message("codewhisperer.codescan.scan_timed_out")
             is CancellationException -> message("codewhisperer.codescan.cancelled_by_user_exception")
+            is IllegalStateException -> message("codewhisperer.codescan.cannot_read_file")
             else -> null
         } ?: message("codewhisperer.codescan.run_scan_error")
 
@@ -737,7 +738,7 @@ data class CodeWhispererCodeScanIssue(
 
     val document = runReadAction {
         FileDocumentManager.getInstance().getDocument(file)
-            ?: cannotFindFile(file.path)
+            ?: cannotFindFile("Unable to find file", file.path)
     }
 
     /**

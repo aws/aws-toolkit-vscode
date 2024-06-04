@@ -15,8 +15,8 @@ internal fun noFileOpenError(): Nothing =
 internal fun codeScanFailed(errorMessage: String): Nothing =
     throw Exception(errorMessage)
 
-internal fun cannotFindFile(file: String?): Nothing =
-    error(message("codewhisperer.codescan.file_not_found", file ?: ""))
+internal fun cannotFindFile(errorMessage: String, filepath: String): Nothing =
+    error(message("codewhisperer.codescan.file_not_found", filepath, errorMessage))
 
 internal fun cannotFindBuildArtifacts(): Nothing =
     throw CodeWhispererCodeScanException(message("codewhisperer.codescan.build_artifacts_not_found"))
