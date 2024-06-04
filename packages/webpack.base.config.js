@@ -13,7 +13,6 @@ const { ESBuildMinifyPlugin } = require('esbuild-loader')
 const fs = require('fs')
 const { NLSBundlePlugin } = require('vscode-nls-dev/lib/webpack-bundler')
 const CircularDependencyPlugin = require('circular-dependency-plugin')
-
 // Webpack must run from subproject/package dir.
 const currentDir = process.cwd()
 const packageJsonFile = path.join(currentDir, 'package.json')

@@ -57,6 +57,15 @@ export class Search {
         return fs.existsSync(localQServer)
     }
 
+    async installLspZipIfNotInstalled(context: vscode.ExtensionContext) {
+        const localQServer = context.asAbsolutePath(path.join('resources', 'qserver'))
+        const zipFilePath = context.asAbsolutePath(path.join('resources', 'qserver.zip'))
+        if (!fs.existsSync(localQServer)) {
+            const zip = new AdmZip(zipFilePath)
+            zip.extractAllTo(context.asAbsolutePath(path.join('resources')))
+        }
+    }
+
     async installLspZip() {
         const extPath = path.join(SystemUtilities.getHomeDirectory(), '.vscode', 'extensions')
         const localQServer = path.join(extPath, 'qserver')

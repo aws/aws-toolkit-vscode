@@ -522,7 +522,7 @@ export async function collectFilesForIndex(
     sourcePaths: string[],
     workspaceFolders: CurrentWsFolders,
     respectGitIgnore: boolean = true,
-    maxSize = 250 * 1024 * 1024 // 250 MB,
+    maxSize = 400 * 1024 * 1024 // 400 MB,
     // make this configurable, so we can test it
 ): Promise<
     {
