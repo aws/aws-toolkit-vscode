@@ -7,5 +7,6 @@ sealed class UploadFailureReason {
     data class HTTP_ERROR(val statusCode: Int) : UploadFailureReason()
     object PRESIGNED_URL_EXPIRED : UploadFailureReason()
     object CONNECTION_REFUSED : UploadFailureReason()
+    object SSL_HANDSHAKE_ERROR : UploadFailureReason()
     data class OTHER(val errorMessage: String) : UploadFailureReason()
 }

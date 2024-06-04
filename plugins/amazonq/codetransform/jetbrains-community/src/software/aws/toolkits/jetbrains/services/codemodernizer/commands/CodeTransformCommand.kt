@@ -10,6 +10,7 @@ enum class CodeTransformCommand {
     UploadComplete,
     TransformComplete,
     TransformResuming,
+    DownloadFailed,
     AuthRestored,
     StartHil,
 }

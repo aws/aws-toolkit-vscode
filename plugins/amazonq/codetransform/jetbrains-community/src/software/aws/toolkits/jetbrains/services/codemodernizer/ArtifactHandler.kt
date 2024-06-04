@@ -24,6 +24,7 @@ import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineBgContext
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.services.amazonq.CODE_TRANSFORM_TROUBLESHOOT_DOC_ARTIFACT
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
+import software.aws.toolkits.jetbrains.services.codemodernizer.commands.CodeTransformMessageListener
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerArtifact
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeTransformHilDownloadArtifact
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.DownloadFailureReason
@@ -154,17 +155,18 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
                 )
             }
         } catch (e: Exception) {
+            var errorMessage: String = e.message.orEmpty()
             // SdkClientException will be thrown, masking actual issues like SSLHandshakeException underneath
             if (e.message.toString().contains(DOWNLOAD_PROXY_WILDCARD_ERROR)) {
-                notifyUnableToDownload(
-                    DownloadFailureReason.PROXY_WILDCARD_ERROR,
-                )
+                errorMessage = message("codemodernizer.notification.warn.download_failed_wildcard.content")
+                CodeTransformMessageListener.instance.onDownloadFailure(DownloadFailureReason.PROXY_WILDCARD_ERROR)
             } else if (e.message.toString().contains(DOWNLOAD_SSL_HANDSHAKE_ERROR)) {
-                notifyUnableToDownload(
-                    DownloadFailureReason.SSL_HANDSHAKE_ERROR,
-                )
+                errorMessage = message("codemodernizer.notification.warn.download_failed_ssl.content")
+                CodeTransformMessageListener.instance.onDownloadFailure(DownloadFailureReason.SSL_HANDSHAKE_ERROR)
+            } else {
+                CodeTransformMessageListener.instance.onDownloadFailure(DownloadFailureReason.OTHER(e.message.toString()))
             }
-            return DownloadArtifactResult(null, "", e.message.orEmpty())
+            return DownloadArtifactResult(null, "", errorMessage)
         } finally {
             isCurrentlyDownloading.set(false)
         }
@@ -197,23 +199,6 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
             } else {
                 telemetry.vscViewerCancelled(jobId)
             }
-        }
-    }
-
-    fun notifyUnableToDownload(error: DownloadFailureReason) {
-        LOG.error { "Unable to download artifact: $error" }
-        if (error == DownloadFailureReason.PROXY_WILDCARD_ERROR) {
-            notifyStickyWarn(
-                message("codemodernizer.notification.warn.view_diff_failed.title"),
-                message("codemodernizer.notification.warn.download_failed_wildcard.content", error),
-                project,
-            )
-        } else if (error == DownloadFailureReason.SSL_HANDSHAKE_ERROR) {
-            notifyStickyWarn(
-                message("codemodernizer.notification.warn.view_diff_failed.title"),
-                message("codemodernizer.notification.warn.download_failed_ssl.content", error),
-                project,
-            )
         }
     }
 

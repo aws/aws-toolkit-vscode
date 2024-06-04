@@ -9,6 +9,7 @@ import com.intellij.serviceContainer.AlreadyDisposedException
 import com.intellij.util.io.HttpRequests
 import kotlinx.coroutines.delay
 import org.apache.commons.codec.digest.DigestUtils
+import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.services.codewhispererruntime.model.ResumeTransformationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.StartTransformationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationJob
@@ -54,6 +55,7 @@ import java.time.Instant
 import java.util.Base64
 import java.util.concurrent.CancellationException
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.net.ssl.SSLHandshakeException
 
 const val ZIP_SOURCES_PATH = "sources"
 const val BUILD_LOG_PATH = "build-logs.txt"
@@ -61,6 +63,10 @@ const val UPLOAD_ZIP_MANIFEST_VERSION = 1.0F
 const val MAX_ZIP_SIZE = 1000000000 // 1GB
 const val HIL_1P_UPGRADE_CAPABILITY = "HIL_1pDependency_VersionUpgrade"
 const val EXPLAINABILITY_V1 = "EXPLAINABILITY_V1"
+
+// constants for handling SDKClientException
+const val CONNECTION_REFUSED_ERROR: String = "Connection refused"
+const val SSL_HANDSHAKE_ERROR: String = "Unable to execute HTTP request: PKIX path building failed"
 
 class CodeModernizerSession(
     val sessionContext: CodeModernizerSessionContext,
@@ -185,6 +191,10 @@ class CodeModernizerSession(
             state.putJobHistory(sessionContext, TransformationStatus.FAILED)
             state.currentJobStatus = TransformationStatus.FAILED
             return CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.CONNECTION_REFUSED)
+        } catch (e: SSLHandshakeException) {
+            state.putJobHistory(sessionContext, TransformationStatus.FAILED)
+            state.currentJobStatus = TransformationStatus.FAILED
+            return CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.SSL_HANDSHAKE_ERROR)
         } catch (e: HttpRequests.HttpStatusException) {
             state.putJobHistory(sessionContext, TransformationStatus.FAILED)
             state.currentJobStatus = TransformationStatus.FAILED
@@ -203,6 +213,17 @@ class CodeModernizerSession(
                 state.putJobHistory(sessionContext, TransformationStatus.FAILED)
                 state.currentJobStatus = TransformationStatus.FAILED
                 return CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.OTHER(e.localizedMessage.toString()))
+            }
+        } catch (e: SdkClientException) {
+            // Errors from code whisperer client will always be thrown as SdkClientException
+            state.putJobHistory(sessionContext, TransformationStatus.FAILED)
+            state.currentJobStatus = TransformationStatus.FAILED
+            return if (e.message.toString().contains(CONNECTION_REFUSED_ERROR)) {
+                CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.CONNECTION_REFUSED)
+            } else if (e.message.toString().contains(SSL_HANDSHAKE_ERROR)) {
+                CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.SSL_HANDSHAKE_ERROR)
+            } else {
+                CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.OTHER(e.localizedMessage.toString()))
             }
         } catch (e: Exception) {
             state.putJobHistory(sessionContext, TransformationStatus.FAILED)

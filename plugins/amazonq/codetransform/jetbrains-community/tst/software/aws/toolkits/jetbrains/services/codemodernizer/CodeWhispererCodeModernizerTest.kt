@@ -14,13 +14,11 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerArtifact
-import software.aws.toolkits.jetbrains.services.codemodernizer.model.DownloadFailureReason
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.InvalidTelemetryReason
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.ValidationResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.filterOnlyParentFiles
@@ -53,11 +51,9 @@ class CodeWhispererCodeModernizerTest : CodeWhispererCodeModernizerTestBase() {
     fun `ArtifactHandler notifies proxy wildcard error`() = runBlocking {
         val handler = spy(ArtifactHandler(project, clientAdaptorSpy))
         doThrow(RuntimeException("Dangling meta character '*' near index 0")).whenever(clientAdaptorSpy).downloadExportResultArchive(jobId)
-        doNothing().whenever(handler).notifyUnableToDownload(eq(DownloadFailureReason.PROXY_WILDCARD_ERROR))
-        val expectedResult = DownloadArtifactResult(null, "", "Dangling meta character '*' near index 0")
+        val expectedResult = DownloadArtifactResult(null, "", message("codemodernizer.notification.warn.download_failed_wildcard.content"))
         val result = handler.downloadArtifact(jobId)
         verify(clientAdaptorSpy, times(1)).downloadExportResultArchive(jobId)
-        verify(handler, times(1)).notifyUnableToDownload(DownloadFailureReason.PROXY_WILDCARD_ERROR)
         assertEquals(expectedResult, result)
     }
 
@@ -66,15 +62,13 @@ class CodeWhispererCodeModernizerTest : CodeWhispererCodeModernizerTestBase() {
         val handler = spy(ArtifactHandler(project, clientAdaptorSpy))
         doThrow(RuntimeException("Unable to execute HTTP request: javax.net.ssl.SSLHandshakeException: PKIX path building failed"))
             .whenever(clientAdaptorSpy).downloadExportResultArchive(jobId)
-        doNothing().whenever(handler).notifyUnableToDownload(eq(DownloadFailureReason.SSL_HANDSHAKE_ERROR))
         val expectedResult = DownloadArtifactResult(
             null,
             "",
-            "Unable to execute HTTP request: javax.net.ssl.SSLHandshakeException: PKIX path building failed"
+            message("codemodernizer.notification.warn.download_failed_ssl.content")
         )
         val result = handler.downloadArtifact(jobId)
         verify(clientAdaptorSpy, times(1)).downloadExportResultArchive(jobId)
-        verify(handler, times(1)).notifyUnableToDownload(DownloadFailureReason.SSL_HANDSHAKE_ERROR)
         assertEquals(expectedResult, result)
     }
 

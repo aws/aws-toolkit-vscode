@@ -29,6 +29,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildCo
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildCompileLocalFailedChatContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildCompileLocalInProgressChatContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildCompileLocalSuccessChatContent
+import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildDownloadFailureChatContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildHilCannotResumeContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildHilErrorContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildHilInitialContent
@@ -59,6 +60,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.messages.Incoming
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerJobCompletedResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeTransformHilDownloadArtifact
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CustomerSelection
+import software.aws.toolkits.jetbrains.services.codemodernizer.model.DownloadFailureReason
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MavenCopyCommandsResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MavenDependencyReportCommandsResult
@@ -308,6 +310,12 @@ class CodeTransformChatController(
             CodeTransformCommand.StartHil -> {
                 handleHil()
             }
+            CodeTransformCommand.DownloadFailed -> {
+                val result = message.downloadFailure
+                if (result != null) {
+                    handleDownloadFailed(message.downloadFailure)
+                }
+            }
             else -> {
                 processTransformQuickAction(IncomingCodeTransformMessage.Transform(tabId = activeTabId))
             }
@@ -455,6 +463,11 @@ class CodeTransformChatController(
         runInEdt {
             codeModernizerManager.getBottomToolWindow().show()
         }
+    }
+
+    private suspend fun handleDownloadFailed(failureReason: DownloadFailureReason) {
+        codeTransformChatHelper.addNewMessage(buildDownloadFailureChatContent(failureReason))
+        codeTransformChatHelper.addNewMessage(buildStartNewTransformFollowup())
     }
 
     // Remove open file button after pom.xml is deleted

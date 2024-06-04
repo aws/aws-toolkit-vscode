@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.codemodernizer.commands
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerJobCompletedResult
+import software.aws.toolkits.jetbrains.services.codemodernizer.model.DownloadFailureReason
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MavenCopyCommandsResult
 
 class CodeTransformMessageListener {
@@ -39,6 +40,10 @@ class CodeTransformMessageListener {
 
     fun onTransformResuming() {
         _messages.tryEmit(CodeTransformActionMessage(CodeTransformCommand.TransformResuming))
+    }
+
+    fun onDownloadFailure(failure: DownloadFailureReason) {
+        _messages.tryEmit(CodeTransformActionMessage(CodeTransformCommand.DownloadFailed, downloadFailure = failure))
     }
 
     fun onAuthRestored() {
