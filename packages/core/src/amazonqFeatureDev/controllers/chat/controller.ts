@@ -348,6 +348,7 @@ export class FeatureDevController {
             type: 'answer',
             tabID: tabID,
             canBeVoted: true,
+            snapToTop: true,
         })
 
         if (interactions.responseType === 'VALID') {
