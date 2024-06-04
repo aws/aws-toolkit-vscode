@@ -21,6 +21,11 @@ function getProjectPaths() {
     }
     return workspaceFolders.map(folder => folder.uri.fsPath)
 }
+interface Chunk {
+    readonly filePath: string
+    readonly content: string
+    readonly context?: string
+}
 
 export class Search {
     static #instance: Search
@@ -95,15 +100,10 @@ export class Search {
     async clear() {
         clear('')
     }
-    async query(s: string) {
-        const c = await query(s)
-        if (c) {
-            return {
-                fileName: c.fileName,
-                content: c.content,
-                nextContent: '',
-            }
-        }
+
+    async query(s: string): Promise<Chunk[]> {
+        const cs: Chunk[] = await query(s)
+        return cs
     }
 
     async buildIndex() {

@@ -562,9 +562,16 @@ export class ChatController {
             if (userIntentEnableProjectContext) {
                 if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                     const c = await Search.instance.query(triggerPayload.message)
-                    if (c) {
-                        getLogger().info(`Relevant code ${c.content}`)
-                        triggerPayload.message += ` \nHere are some relevant code \`\`\`${c?.content}\`\`\` in file ${c.fileName}. Use it only if my questions is relevant to this code. `
+                    if (c.length > 0) {
+                        let msg = ''
+                        c.forEach(e => {
+                            if (e.context) {
+                                msg += `\`\`\`${e.context}\`\`\` in file ${e.filePath}.\n  `
+                            } else {
+                                msg += `\`\`\`${e.content}\`\`\` in file ${e.filePath}. \n `
+                            }
+                        })
+                        triggerPayload.message += ` \nHere is relevant code: ` + msg.substring(0, 3900)
                         triggerPayload.hasProjectLevelContext = true
                     } else {
                         getLogger().info(`No Relevant code`)
