@@ -6,6 +6,12 @@
 import { Command, MessageType, WebviewContext } from '../types'
 import { broadcastFileChange } from './addFileWatchMessageHandler'
 
+/**
+ * Handler for when the Threat Composer view is ready.
+ * This handler is used to initialize the webview with the contents of the Threat Composer file
+ * selected.
+ * @param context The context object containing the necessary information for the webview.
+ */
 export async function initMessageHandler(context: WebviewContext) {
     const filePath = context.defaultTemplatePath
 
@@ -28,6 +34,11 @@ export async function initMessageHandler(context: WebviewContext) {
     }
 }
 
+/**
+ * Handler for reloading the Threat Composer file.
+ * This handler is used to reload the Threat Composer file with the latest contents.
+ * @param context The context object containing the necessary information for the webview.
+ */
 export async function reloadMessageHandler(context: WebviewContext) {
     const filePath = context.defaultTemplatePath
 

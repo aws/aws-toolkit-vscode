@@ -18,6 +18,12 @@ import { openFeedbackMessageHandler } from './messageHandlers/openFeedbackMessag
 import { initMessageHandler, reloadMessageHandler } from './messageHandlers/initMessageHandler'
 import { loadStageMessageHandler } from './messageHandlers/loadStageMessageHandler'
 
+/**
+ * Handles messages received from the webview. Depending on the message type and command, it
+ * calls the appropriate handler function
+ * @param message The message received from the webview
+ * @param context The context object containing information about the webview environment
+ */
 export async function handleMessage(message: unknown, context: WebviewContext) {
     const composerMessage = message as Message
 

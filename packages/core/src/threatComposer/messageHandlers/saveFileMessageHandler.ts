@@ -16,6 +16,17 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
 import _ from 'lodash'
 
+/**
+ * Handler for saving a file message from the webview.
+ * This function performs the following tasks:
+ * 1. It saves the file contents to the workspace.
+ * 2. It saves the file using the `vscode` command `workbench.action.files.save`.
+ * 3. It handles the case where the file has been externally modified.
+ * 4. It sends a response message back to the webview with the save status and any failure reason.
+ * @returns {Promise<void>} A promise that resolves when the file has been saved.
+ * @param request The request message containing the file contents and path.
+ * @param context The webview context containing the necessary information for saving the file.
+ */
 export async function saveFileMessageHandler(request: SaveFileRequestMessage, context: WebviewContext) {
     let saveCompleteSubType = SaveCompleteSubType.SAVE_FAILED
     let saveSuccess = false
@@ -80,6 +91,17 @@ export async function saveFileMessageHandler(request: SaveFileRequestMessage, co
     })
 }
 
+/**
+ * Handler for auto saving a file message from the webview.
+ * This function performs the following tasks:
+ * 1. It saves the file contents to the workspace.
+ * 2. It handles the case when the change has resulted in a similar JSON (will not save if the
+ * change is due to formatting or ordering changes that do not affect the JSON structure).
+ * 3. It sends a response message back to the webview with the save status and any failure reason.
+ * @returns {Promise<void>} A promise that resolves when the file has been saved.
+ * @param request The request message containing the file contents and path.
+ * @param context The webview context containing the necessary information for saving the file.
+ */
 export async function autoSaveFileMessageHandler(request: SaveFileRequestMessage, context: WebviewContext) {
     let saveCompleteSubType = SaveCompleteSubType.SAVE_FAILED
     let saveSuccess = false
@@ -142,6 +164,11 @@ export async function autoSaveFileMessageHandler(request: SaveFileRequestMessage
     }
 }
 
+/**
+ * Saves to the workspace with the provided file contents.
+ * @param context The webview context containing the necessary information for saving the file.
+ * @param fileContents The file contents to save.
+ */
 async function saveWorkspace(context: WebviewContext, fileContents: string) {
     context.autoSaveFileWatches[context.defaultTemplatePath] = { fileContents: fileContents }
 

@@ -28,11 +28,15 @@ let clientId = ''
  *
  * ThreatComposer editor is used for `.tc.json` files, which are just json files.
  * To get started, run this extension and open an empty `.tc.json` file in VS Code.
- *
  */
 export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProvider {
     public static readonly viewType = 'threatComposer.tc.json'
 
+    /**
+     * Registers a new custom editor provider for `.tc.json` files.
+     * @remarks This should only be called once per extension.
+     * @param context The extension context
+     */
     public static register(context: vscode.ExtensionContext): vscode.Disposable {
         const provider = new ThreatComposerEditorProvider(context)
         return vscode.window.registerCustomEditorProvider(ThreatComposerEditorProvider.viewType, provider, {
@@ -54,6 +58,10 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         void this.fetchWebviewHtml()
     }
 
+    /**
+     * Fetches the webview HTML from the CDN or local server.
+     * @private
+     */
     private async fetchWebviewHtml() {
         const source = isLocalDev ? localhost : cdn
         const response = await request.fetch('GET', `${source}/index.html`).response
@@ -64,6 +72,10 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         }
     }
 
+    /**
+     * Gets the webview content for the Threat Composer Editor.
+     * @private
+     */
     private getWebviewContent = async () => {
         if (!this.webviewHtml) {
             void this.fetchWebviewHtml()
@@ -103,6 +115,10 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
 
     /**
      * Called when our custom editor is opened.
+     * @param document:  The document to be displayed in the editor.
+     * @param webviewPanel: The webview panel that the editor should be displayed in.
+     * @param _token: A cancellation token that can be used to cancel the editor.
+     * @returns A promise that resolves when the editor is resolved.
      */
     public async resolveCustomTextEditor(
         document: vscode.TextDocument,

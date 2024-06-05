@@ -9,6 +9,12 @@ import vscode from 'vscode'
 import { ThreatComposerEditorProvider } from '../threatComposerEditorProvider'
 import { fsCommon } from '../../srcShared/fs'
 
+/**
+ * This is a helper function to create a new Threat Composer file.
+ * It first checks if a workspace has been opened, as we would need a workspace to save the file.
+ * User is then prompted for a file name that is saved in the workspace as <name>.tc.json.
+ * The new file is then opened in a Threat Composer view.
+ */
 const createNewThreatComposerFile = async () => {
     if (vscode.workspace.workspaceFolders) {
         const rootFolder = vscode.workspace.workspaceFolders[0].uri.fsPath
@@ -40,8 +46,17 @@ const createNewThreatComposerFile = async () => {
     }
 }
 
+/**
+ * Command to Create a new Threat Composer File through the command pallet.
+ * The only difference with `NewThreatComposerFile` is in the text that is displayed
+ */
 export const CreateNewThreatComposer = Commands.declare(
     'aws.createNewThreatComposer',
     () => createNewThreatComposerFile
 )
+
+/**
+ * Command to Create a new Threat Composer File through the New File option.
+ * The only difference with `CreateNewThreatComposer` is in the text that is displayed
+ */
 export const NewThreatComposerFile = Commands.declare('aws.newThreatComposerFile', () => createNewThreatComposerFile)

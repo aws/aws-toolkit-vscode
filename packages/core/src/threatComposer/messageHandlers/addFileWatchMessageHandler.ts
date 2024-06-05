@@ -7,6 +7,17 @@ import { Command, FileChangedMessage, MessageType, WebviewContext } from '../typ
 import vscode from 'vscode'
 import { fsCommon } from '../../srcShared/fs'
 
+/**
+ * Function to add a watcher on the file that was opened. The watcher will notify Threat Composer
+ * view when a change occurs to the file externally.
+ * If the change occurs due to
+ *    a user save action, file change is ignored.
+ *    an auto save that is persisted as AutoSave is turned on in VSCode settings, update file state.
+ *    an external file change,
+ *       if a local, unsaved change exist in Threat Composer, the file change is ignored.
+ *       if no unsaved local changes exist, the view is notified of the external file change.
+ * @param context: The Webview Context that contain the details of the file and the webview
+ */
 export function addFileWatchMessageHandler(context: WebviewContext) {
     const filePath = context.defaultTemplatePath
     const fileName = context.defaultTemplateName
@@ -33,6 +44,13 @@ export function addFileWatchMessageHandler(context: WebviewContext) {
     )
 }
 
+/**
+ * Helper Function to broadcast the file change to the Threat Composer view
+ * @param fileName: Name of the file that was changed
+ * @param filePath: The path to the file
+ * @param fileContents: The updated file contents
+ * @param panel: the panel which contains the webview to be notified.
+ */
 export async function broadcastFileChange(
     fileName: string,
     filePath: string,

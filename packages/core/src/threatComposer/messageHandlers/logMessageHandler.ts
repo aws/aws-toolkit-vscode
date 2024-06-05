@@ -8,6 +8,11 @@ import { getLogger } from '../../shared/logger'
 import * as vscode from 'vscode'
 import { sendThreatComposerErrored } from './emitTelemetryMessageHandler'
 
+/**
+ * Handler for logging messages from the webview.
+ * @param message The message containing the log message and other metadata.
+ * @param context The context object containing the necessary information for the webview.
+ */
 export async function logMessageHandler(message: LogMessage, context: WebviewContext) {
     const logger = getLogger()
     switch (message.logType) {

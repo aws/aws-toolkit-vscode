@@ -15,6 +15,11 @@ import { sendThreatComposerOpenCancelled } from './messageHandlers/emitTelemetry
 
 const localize = nls.loadMessageBundle()
 
+/**
+ * The main class for the Threat Composer Editor. This class handles the creation and management
+ * of the webview panel for the Threat Composer Editor. It also handles the communication
+ * between the webview and the extension context.
+ */
 export class ThreatComposerEditor {
     public readonly documentUri: vscode.Uri
     public webviewPanel: vscode.WebviewPanel
@@ -82,6 +87,14 @@ export class ThreatComposerEditor {
         return textDocument.getText()
     }
 
+    /**
+     * Sets up the webview panel for the Threat Composer Editor. This includes creating the
+     * panel, setting up the webview content, and handling the communication between the webview
+     * and the extension context.
+     * @param textDocument The text document to be displayed in the webview panel.
+     * @param context The extension context.
+     * @private
+     */
     private setupWebviewPanel(textDocument: vscode.TextDocument, context: vscode.ExtensionContext) {
         const documentUri = textDocument.uri
 
@@ -186,6 +199,13 @@ export class ThreatComposerEditor {
         )
     }
 
+    /**
+     * Initialises the webview panel for the Threat Composer Editor. This includes setting up the
+     * panel's title and webview options.
+     * @param documentUri
+     * @param context
+     * @private
+     */
     private initialiseVisualizationWebviewPanel(documentUri: vscode.Uri, context: vscode.ExtensionContext) {
         // Setup initial content for the webview
         this.webviewPanel.webview.options = {

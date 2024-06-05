@@ -6,6 +6,11 @@
 import { Command, MessageType, ThemeChangedMessage, WebviewContext } from '../types'
 import vscode from 'vscode'
 
+/**
+ * Function to add a watcher on the VSCode theme. The watcher will notify Threat Composer
+ * view when the theme is changed.
+ * @param context: The Webview Context that contain the details of the file and the webview
+ */
 export function addThemeWatchMessageHandler(context: WebviewContext) {
     context.disposables.push(
         vscode.window.onDidChangeActiveColorTheme(async data => {
@@ -18,6 +23,11 @@ export function addThemeWatchMessageHandler(context: WebviewContext) {
     )
 }
 
+/**
+ * Helper Function to broadcast the theme change to the Threat Composer view
+ * @param newTheme: The updated theme
+ * @param panel: the panel which contains the webview to be notified.
+ */
 export async function broadcastThemeChange(newTheme: string, panel: vscode.WebviewPanel) {
     const themeChangedMessage: ThemeChangedMessage = {
         messageType: MessageType.BROADCAST,
