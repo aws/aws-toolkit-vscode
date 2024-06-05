@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { commandPalette } from '../../codewhisperer/commands/types'
 import { CodeScanIssue } from '../../codewhisperer/models/model'
 import { Commands, VsCodeCommandArg, placeholder } from '../../shared/vscode/commands2'
 import { ChatControllerMessagePublishers } from '../controllers/chat/controller'
@@ -106,7 +107,7 @@ export type CodeScanIssueCommandType = 'aws.amazonq.explainIssue'
 
 export type EditorContextCommandType = EditorContextBaseCommandType | CodeScanIssueCommandType
 
-export type EditorContextCommandTriggerType = 'contextMenu' | 'keybinding' | 'commandPalette' | 'click'
+export type EditorContextCommandTriggerType = 'contextMenu' | 'keybinding' | typeof commandPalette | 'click'
 
 export interface EditorContextCommandBase {
     type: EditorContextBaseCommandType

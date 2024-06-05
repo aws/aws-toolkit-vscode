@@ -41,8 +41,10 @@ import { SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import { ToolkitError } from '../../shared/errors'
 import { isRemoteWorkspace } from '../../shared/vscode/env'
-import { hasScopes } from '../../auth/connection'
+import { hasScopes, isBuilderIdConnection } from '../../auth/connection'
 import globals from '../../shared/extensionGlobals'
+
+const MessageTimeOut = 5_000
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.amazonq.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -53,12 +55,20 @@ export const toggleCodeSuggestions = Commands.declare(
             })
 
             const isSuggestionsEnabled = await suggestionState.toggleSuggestions()
+
             span.record({
                 settingState: isSuggestionsEnabled
                     ? CodeWhispererConstants.autoSuggestionConfig.activated
                     : CodeWhispererConstants.autoSuggestionConfig.deactivated,
             })
             vsCodeState.isFreeTierLimitReached = false
+
+            void vscode.window.setStatusBarMessage(
+                isSuggestionsEnabled
+                    ? 'Amazon Q: Auto-Suggestions are currently running.'
+                    : 'Amazon Q: Auto-Suggestions are currently paused.',
+                MessageTimeOut
+            )
         })
     }
 )
@@ -81,6 +91,9 @@ export const toggleCodeScans = Commands.declare(
     { id: 'aws.codeWhisperer.toggleCodeScan', compositeKey: { 1: 'source' } },
     (scansState: CodeScansState) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         await telemetry.aws_modifySetting.run(async span => {
+            if (isBuilderIdConnection(AuthUtil.instance.conn)) {
+                throw new Error(`Auto-scans are not supported with the Amazon Builder ID connection.`)
+            }
             span.record({
                 settingId: CodeWhispererConstants.autoScansConfig.settingId,
             })
@@ -93,6 +106,12 @@ export const toggleCodeScans = Commands.declare(
             })
 
             await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
+            void vscode.window.setStatusBarMessage(
+                isScansEnabled
+                    ? 'Amazon Q: Auto-Scans are currently running.'
+                    : 'Amazon Q: Auto-Scans are currently paused.',
+                MessageTimeOut
+            )
         })
     }
 )
@@ -134,6 +153,9 @@ export const showSecurityScan = Commands.declare(
 export const selectCustomizationPrompt = Commands.declare(
     { id: 'aws.amazonq.selectCustomization', compositeKey: { 1: 'source' } },
     () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
+        if (isBuilderIdConnection(AuthUtil.instance.conn)) {
+            throw new Error(`Select Customizations are not supported with the Amazon Builder ID connection.`)
+        }
         telemetry.ui_click.emit({ elementId: 'cw_selectCustomization_Cta' })
         void showCustomizationPrompt().then()
     }
