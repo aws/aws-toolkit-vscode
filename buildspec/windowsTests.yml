@@ -50,22 +50,16 @@ phases:
         $script:TEST_ARTIFACTS=Join-Path $env:TEMP testArtifacts
         $script:TEST_REPORTS=Join-Path $script:TEST_ARTIFACTS test-reports
 
-        function copyFolder($basedir, $subdir, $destdir) {
-          $src = Join-Path "." -ChildPath $basedir | Join-Path -ChildPath $subdir
-          $dest = Join-Path $destdir -ChildPath $basedir | Join-Path -ChildPath $subDir
-          if( (Get-ChildItem $src -ErrorAction SilentlyContinue | Measure-Object).Count -ne 0) {
-            Copy-Item $src $dest -Recurse -Force -ErrorAction SilentlyContinue
+        function copyArtifacts($filter, $destdir) {
+          Get-ChildItem -Recurse -Directory -ErrorAction SilentlyContinue | Where-Object { $_.FullName -Like "$filter" } | ForEach-Object {
+              Copy-Item -Path $_.FullName -Destination "$destdir/$(Resolve-Path -Relative $_.FullName)" -Recurse -Container
           }
         }
 
-        function copyArtifacts($root) {
-            copyFolder $root "build/reports/" $script:TEST_ARTIFACTS
-            copyFolder $root "build/idea-sandbox/system-test/log/" $script:TEST_ARTIFACTS
-            copyFolder $root "build/test-results/test/" $script:TEST_REPORTS
-        }
+        copyArtifacts "*\build\idea-sandbox\system*\log" $script:TEST_ARTIFACTS
+        copyArtifacts "*\build\reports" $script:TEST_ARTIFACTS
 
-        copyArtifacts "."
-        Get-ChildItem -Directory | ForEach-Object { copyArtifacts $_.Name }
+        copyArtifacts "*\test-results" $script:TEST_REPORTS
 
         if(-Not($Env:CODEBUILD_BUILD_SUCCEEDING -eq "0" -Or $Env:CODE_COV_TOKEN -eq $null)) {
           $env:VCS_COMMIT_ID=$Env:CODEBUILD_RESOLVED_SOURCE_VERSION;
