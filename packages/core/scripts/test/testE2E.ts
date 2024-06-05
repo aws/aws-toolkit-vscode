@@ -5,5 +5,9 @@
 
 import { runToolkitTests } from './launchTestUtilities'
 void (async () => {
-    await runToolkitTests('e2e', 'dist/src/testE2E/index.js')
+    const relativeEntrypoint = process.argv[2]
+    if (!relativeEntrypoint) {
+        throw new Error('Relative entrypoint is required')
+    }
+    await runToolkitTests('e2e', relativeEntrypoint)
 })()
