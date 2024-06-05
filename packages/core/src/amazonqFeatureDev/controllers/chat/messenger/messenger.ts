@@ -32,6 +32,7 @@ export class Messenger {
         followUps?: ChatItemAction[]
         tabID: string
         canBeVoted?: boolean
+        snapToTop?: boolean
     }) {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
@@ -41,6 +42,7 @@ export class Messenger {
                     followUps: params.followUps,
                     relatedSuggestions: undefined,
                     canBeVoted: params.canBeVoted ?? false,
+                    snapToTop: params.snapToTop ?? false,
                 },
                 params.tabID
             )
