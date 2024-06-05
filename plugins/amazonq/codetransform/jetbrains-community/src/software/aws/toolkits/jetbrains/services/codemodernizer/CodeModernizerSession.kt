@@ -60,7 +60,7 @@ import javax.net.ssl.SSLHandshakeException
 const val ZIP_SOURCES_PATH = "sources"
 const val BUILD_LOG_PATH = "build-logs.txt"
 const val UPLOAD_ZIP_MANIFEST_VERSION = 1.0F
-const val MAX_ZIP_SIZE = 1000000000 // 1GB
+const val MAX_ZIP_SIZE = 2000000000 // 2GB
 const val HIL_1P_UPGRADE_CAPABILITY = "HIL_1pDependency_VersionUpgrade"
 const val EXPLAINABILITY_V1 = "EXPLAINABILITY_V1"
 
@@ -161,6 +161,8 @@ class CodeModernizerSession(
             val payloadSize = payload.length().toInt()
 
             telemetry.jobCreateZipEndTime(payloadSize, startTime)
+
+            LOG.info { "Uploading zip file with size: $payloadSize bytes" }
 
             if (payloadSize > MAX_ZIP_SIZE) {
                 return CodeModernizerStartJobResult.CancelledZipTooLarge
