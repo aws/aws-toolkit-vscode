@@ -22,7 +22,7 @@ const createNewThreatComposerFile = async () => {
         const title = await vscode.window.showInputBox({
             prompt: 'Enter name for file',
             validateInput: async text => {
-                if (text && (await fsCommon.existsFile(path.join(rootFolder, text + '.tc.json')))) {
+                if (text && (await fsCommon.existsFile(path.join(rootFolder, `${title}.tc.json`)))) {
                     return 'The specified file already exists'
                 }
             },
@@ -33,7 +33,7 @@ const createNewThreatComposerFile = async () => {
         }
 
         const fileContent = '' //Empty content would be accepted by TC which will save default structure automatically
-        const filePath = path.join(rootFolder, title + '.tc.json')
+        const filePath = path.join(rootFolder, `${title}.tc.json`)
         await fsCommon.writeFile(filePath, fileContent)
 
         await vscode.commands.executeCommand(

@@ -1296,7 +1296,7 @@
         },
         {
             "name": "threatComposer_error",
-            "description": "Called after an error is thrown",
+            "description": "Called after an error is thrown from the threat composer view",
             "metadata": [
                 {
                     "type": "id",

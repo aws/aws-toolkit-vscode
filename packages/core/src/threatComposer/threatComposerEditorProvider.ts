@@ -139,7 +139,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
                 } else {
                     // Existing visualization does not exist, construct new visualization
                     try {
-                        const fileId = getStringHash(document.uri.fsPath + clientId)
+                        const fileId = getStringHash(`${document.uri.fsPath}${clientId}`)
                         const newVisualization = new ThreatComposerEditor(
                             document,
                             webviewPanel,
