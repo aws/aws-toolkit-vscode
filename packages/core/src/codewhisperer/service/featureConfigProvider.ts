@@ -3,12 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { FeatureValue } from '../client/codewhispereruserclient'
+import { Customization, FeatureValue } from '../client/codewhispereruserclient'
 import { codeWhispererClient as client } from '../client/codewhisperer'
 import { AuthUtil } from '../util/authUtil'
 import { getLogger } from '../../shared/logger'
 import { isBuilderIdConnection, isIdcSsoConnection } from '../../auth/connection'
-import { getAvailableCustomizationsList } from '../util/customizationUtil'
 
 export class FeatureContext {
     constructor(public name: string, public variation: string, public value: FeatureValue) {}
@@ -69,7 +68,17 @@ export class FeatureConfigProvider {
                 } else if (isIdcSsoConnection(AuthUtil.instance.conn)) {
                     let availableCustomizations = null
                     try {
-                        availableCustomizations = (await getAvailableCustomizationsList()).map(c => c.arn)
+                        const items: Customization[] = []
+                        const response = await client.listAvailableCustomizations()
+                        response
+                            .map(
+                                listAvailableCustomizationsResponse =>
+                                    listAvailableCustomizationsResponse.customizations
+                            )
+                            .forEach(customizations => {
+                                items.push(...customizations)
+                            })
+                        availableCustomizations = items.map(c => c.arn)
                     } catch (e) {
                         getLogger().debug('amazonq: Failed to list available customizations')
                     }
