@@ -66,7 +66,7 @@ export class FeatureConfigProvider {
                 if (isBuilderIdConnection(AuthUtil.instance.conn)) {
                     this.featureConfigs.delete(customizationArnOverrideName)
                 } else if (isIdcSsoConnection(AuthUtil.instance.conn)) {
-                    let availableCustomizations = null
+                    let availableCustomizations = undefined
                     try {
                         const items: Customization[] = []
                         const response = await client.listAvailableCustomizations()
