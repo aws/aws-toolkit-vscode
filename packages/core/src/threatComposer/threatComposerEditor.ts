@@ -105,8 +105,8 @@ export class ThreatComposerEditor {
             workSpacePath: this.workSpacePath,
             defaultTemplatePath: this.defaultTemplatePath,
             defaultTemplateName: this.defaultTemplateName,
-            fileWatches: this.fileWatches,
-            autoSaveFileWatches: this.autoSaveFileWatches,
+            fileStates: this.fileWatches,
+            autoSaveFileState: this.autoSaveFileWatches,
             loaderNotification: undefined,
             fileId: this.fileId,
         }

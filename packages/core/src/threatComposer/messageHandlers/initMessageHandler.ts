@@ -17,8 +17,8 @@ export async function initMessageHandler(context: WebviewContext) {
 
     try {
         const fileContents = context.textDocument.getText().toString()
-        context.fileWatches[filePath] = { fileContents: fileContents }
-        context.autoSaveFileWatches[filePath] = { fileContents: fileContents }
+        context.fileStates[filePath] = { fileContents: fileContents }
+        context.autoSaveFileState[filePath] = { fileContents: fileContents }
         await broadcastFileChange(context.defaultTemplateName, filePath, fileContents, context.panel)
         if (context.loaderNotification) {
             context.loaderNotification.progress.report({ increment: 20 })
@@ -43,7 +43,7 @@ export async function reloadMessageHandler(context: WebviewContext) {
     const filePath = context.defaultTemplatePath
 
     try {
-        const fileContents = context.autoSaveFileWatches[filePath].fileContents
+        const fileContents = context.autoSaveFileState[filePath].fileContents
         await broadcastFileChange(context.defaultTemplateName, filePath, fileContents, context.panel)
     } catch (e) {
         await context.panel.webview.postMessage({

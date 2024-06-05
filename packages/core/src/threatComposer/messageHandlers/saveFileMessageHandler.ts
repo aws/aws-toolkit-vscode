@@ -43,11 +43,11 @@ export async function saveFileMessageHandler(request: SaveFileRequestMessage, co
         })
 
         try {
-            if (context.fileWatches[filePath] && context.autoSaveFileWatches[filePath]) {
-                previousAutoSaveFileContent = context.autoSaveFileWatches[filePath].fileContents
+            if (context.fileStates[filePath] && context.autoSaveFileState[filePath]) {
+                previousAutoSaveFileContent = context.autoSaveFileState[filePath].fileContents
 
-                if (context.fileWatches[filePath].fileContents !== request.fileContents) {
-                    context.autoSaveFileWatches[filePath] = { fileContents: request.fileContents }
+                if (context.fileStates[filePath].fileContents !== request.fileContents) {
+                    context.autoSaveFileState[filePath] = { fileContents: request.fileContents }
 
                     await saveWorkspace(context, request.fileContents)
 
@@ -69,7 +69,7 @@ export async function saveFileMessageHandler(request: SaveFileRequestMessage, co
             }
         } catch (e) {
             if (previousAutoSaveFileContent !== undefined) {
-                context.autoSaveFileWatches[filePath] = { fileContents: previousAutoSaveFileContent }
+                context.autoSaveFileState[filePath] = { fileContents: previousAutoSaveFileContent }
             }
 
             errorMessage = (e as Error).message
@@ -112,8 +112,8 @@ export async function autoSaveFileMessageHandler(request: SaveFileRequestMessage
     const filePath = context.defaultTemplatePath
 
     try {
-        if (context.autoSaveFileWatches[filePath]) {
-            previousAutoSaveFileContent = context.autoSaveFileWatches[filePath].fileContents
+        if (context.autoSaveFileState[filePath]) {
+            previousAutoSaveFileContent = context.autoSaveFileState[filePath].fileContents
 
             if (previousAutoSaveFileContent !== request.fileContents) {
                 let previousState
@@ -127,7 +127,7 @@ export async function autoSaveFileMessageHandler(request: SaveFileRequestMessage
                 const currentState = JSON.parse(request.fileContents)
 
                 if (!_.isEqual(previousState, currentState)) {
-                    context.autoSaveFileWatches[filePath] = { fileContents: request.fileContents }
+                    context.autoSaveFileState[filePath] = { fileContents: request.fileContents }
 
                     await saveWorkspace(context, request.fileContents)
                     saveCompleteSubType = SaveCompleteSubType.SAVED
@@ -143,7 +143,7 @@ export async function autoSaveFileMessageHandler(request: SaveFileRequestMessage
         }
     } catch (e) {
         if (previousAutoSaveFileContent !== undefined) {
-            context.autoSaveFileWatches[filePath] = { fileContents: previousAutoSaveFileContent }
+            context.autoSaveFileState[filePath] = { fileContents: previousAutoSaveFileContent }
         }
 
         errorMessage = (e as Error).message
@@ -170,7 +170,7 @@ export async function autoSaveFileMessageHandler(request: SaveFileRequestMessage
  * @param fileContents The file contents to save.
  */
 async function saveWorkspace(context: WebviewContext, fileContents: string) {
-    context.autoSaveFileWatches[context.defaultTemplatePath] = { fileContents: fileContents }
+    context.autoSaveFileState[context.defaultTemplatePath] = { fileContents: fileContents }
 
     const edit = new vscode.WorkspaceEdit()
     // Just replace the entire document every time for this example extension.

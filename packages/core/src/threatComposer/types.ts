@@ -11,8 +11,8 @@ export type WebviewContext = {
     workSpacePath: string
     defaultTemplatePath: string
     defaultTemplateName: string
-    fileWatches: Record<string, FileWatchInfo>
-    autoSaveFileWatches: Record<string, FileWatchInfo>
+    fileStates: Record<string, FileWatchInfo>
+    autoSaveFileState: Record<string, FileWatchInfo>
     loaderNotification: undefined | LoaderNotification
     fileId: string
 }
