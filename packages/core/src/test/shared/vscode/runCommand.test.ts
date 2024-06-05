@@ -9,7 +9,7 @@ import * as sinon from 'sinon'
 import assert from 'assert'
 import { ToolkitError } from '../../../shared/errors'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { Commands, defaultTelemetryThrottleMs, unsetSource } from '../../../shared/vscode/commands2'
+import { Commands, defaultTelemetryThrottleMs } from '../../../shared/vscode/commands2'
 import { assertTelemetry, installFakeClock } from '../../testUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 
@@ -168,7 +168,7 @@ describe('runCommand', function () {
                     passive: true,
                     command: command.id,
                     result: 'Succeeded',
-                    source: unsetSource,
+                    source: 'vscodeUI',
                 })
             })
         })
