@@ -9,7 +9,6 @@
 import vscode from 'vscode'
 import { getLogger } from '../shared/logger'
 import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
-import { activateExtension } from '../shared/utilities/vsCodeUtils'
 import { mapTestErrors, normalizeError, patchObject, setRunnableTimeout } from '../test/setupUtil'
 import { getTestWindow, resetTestWindow } from '../test/shared/vscode/window'
 
@@ -33,7 +32,7 @@ export async function mochaGlobalSetup(extensionId: string) {
         patchWindow()
 
         // Needed for getLogger().
-        await activateExtension(extensionId, false)
+        await vscode.extensions.getExtension(extensionId)?.activate()
 
         // Log as much as possible, useful for debugging integration tests.
         getLogger().setLogLevel('debug')
