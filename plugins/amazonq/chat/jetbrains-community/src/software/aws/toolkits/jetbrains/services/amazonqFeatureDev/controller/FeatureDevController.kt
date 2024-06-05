@@ -531,7 +531,7 @@ class FeatureDevController(
         val interactions = session.send(message)
         messenger.sendUpdatePlaceholder(tabId, message("amazonqFeatureDev.placeholder.iterate_plan"))
 
-        messenger.sendAnswer(tabId = tabId, message = interactions.content, messageType = FeatureDevMessageType.Answer, canBeVoted = true)
+        messenger.sendAnswer(tabId = tabId, message = interactions.content, messageType = FeatureDevMessageType.Answer, canBeVoted = true, snapToTop = true)
 
         if (interactions.interactionSucceeded) {
             messenger.sendAnswer(

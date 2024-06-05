@@ -107,6 +107,7 @@ data class FeatureDevMessage(
     val message: String? = null,
     val followUps: List<FollowUp>? = null,
     val canBeVoted: Boolean,
+    val snapToTop: Boolean
 
 ) : UiMessage(
     tabId = tabId,
