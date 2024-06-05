@@ -239,8 +239,8 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 type: ChatItemType.ANSWER,
                 fileList: {
                     rootFolderTitle: 'Changes',
-                    filePaths: filePaths.map(i => i.relativePath),
-                    deletedFiles: deletedFiles.map(i => i.relativePath),
+                    filePaths: filePaths.map(i => i.zipFilePath),
+                    deletedFiles: deletedFiles.map(i => i.zipFilePath),
                     details: getDetails(filePaths),
                     actions: getActions([...filePaths, ...deletedFiles]),
                 },
