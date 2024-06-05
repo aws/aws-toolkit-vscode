@@ -52,11 +52,14 @@
         "syncPackageJson": "ts-node ./scripts/build/syncPackageJson.ts",
         "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE",
         "compile": "npm run clean && npm run buildScripts && webpack --mode development",
+        "compileOnly": "tsc -p ./",
         "package": "ts-node ../../scripts/package.ts",
         "format": "prettier --ignore-path ../../.prettierignore --check src scripts",
         "formatfix": "prettier --ignore-path ../../.prettierignore --write src scripts",
         "lint": "echo 'Nothing to lint yet!'",
         "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
+        "testCompile": "npm run clean && npm run buildScripts && npm run compileOnly",
+        "testE2E": "npm run testCompile && c8 ts-node ../core/scripts/test/testE2E.ts dist/test/e2e/index.js",
         "webRun": "npx @vscode/test-web --open-devtools --browserOption=--disable-web-security --waitForDebugger=9222 --extensionDevelopmentPath=. .",
         "webWatch": "npm run clean && npm run buildScripts && webpack --mode development --watch",
         "serve": "webpack serve --config-name mainServe --mode development",
@@ -215,15 +218,7 @@
         "menus": {
             "commandPalette": [
                 {
-                    "command": "aws.amazonq.signout",
-                    "when": "false"
-                },
-                {
                     "command": "aws.amazonq.reconnect",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.amazonq.openReferencePanel",
                     "when": "false"
                 },
                 {
@@ -362,42 +357,50 @@
             {
                 "command": "aws.amazonq.explainCode",
                 "title": "%AWS.command.amazonq.explainCode%",
-                "category": "%AWS.amazonq.title%"
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
             },
             {
                 "command": "aws.amazonq.security.scan",
                 "title": "%AWS.command.amazonq.security.scan%",
-                "category": "%AWS.amazonq.title%"
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
             },
             {
                 "command": "aws.amazonq.refactorCode",
                 "title": "%AWS.command.amazonq.refactorCode%",
-                "category": "%AWS.amazonq.title%"
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
             },
             {
                 "command": "aws.amazonq.fixCode",
                 "title": "%AWS.command.amazonq.fixCode%",
-                "category": "%AWS.amazonq.title%"
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
             },
             {
                 "command": "aws.amazonq.optimizeCode",
                 "title": "%AWS.command.amazonq.optimizeCode%",
-                "category": "%AWS.amazonq.title%"
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
             },
             {
                 "command": "aws.amazonq.sendToPrompt",
                 "title": "%AWS.command.amazonq.sendToPrompt%",
-                "category": "%AWS.amazonq.title%"
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
             },
             {
                 "command": "aws.amazonq.reconnect",
                 "title": "%AWS.command.codewhisperer.reconnect%",
-                "category": "%AWS.amazonq.title%"
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
             },
             {
                 "command": "aws.amazonq.openReferencePanel",
                 "title": "%AWS.command.codewhisperer.openReferencePanel%",
-                "category": "%AWS.amazonq.title%"
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
             },
             {
                 "command": "aws.amazonq.transformationHub.reviewChanges.acceptChanges",
@@ -452,7 +455,8 @@
             {
                 "command": "aws.amazonq.invokeInlineCompletion",
                 "title": "%AWS.command.codewhisperer.title%",
-                "category": "%AWS.amazonq.title%"
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
             },
             {
                 "command": "aws.amazonq.configure",
@@ -471,6 +475,12 @@
                 "title": "%AWS.command.codewhisperer.signout%",
                 "category": "%AWS.amazonq.title%",
                 "icon": "$(debug-disconnect)"
+            },
+            {
+                "command": "aws.amazonq.signout",
+                "title": "%AWS.command.codewhisperer.signout%",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
             },
             {
                 "command": "aws.amazonq.learnMore",
@@ -498,6 +508,30 @@
                 "command": "aws.amazonq.showHistoryInHub",
                 "title": "Show Job Status",
                 "icon": "$(history)"
+            },
+            {
+                "command": "aws.amazonq.selectCustomization",
+                "title": "%AWS.codewhisperer.customization.notification.new_customizations.select%",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
+            },
+            {
+                "command": "aws.amazonq.gettingStarted",
+                "title": "Try inline suggestion examples",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
+            },
+            {
+                "command": "aws.amazonq.toggleCodeSuggestion",
+                "title": "%AWS.amazonq.toggleCodeSuggestion%",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
+            },
+            {
+                "command": "aws.codeWhisperer.toggleCodeScan",
+                "title": "%AWS.amazonq.toggleCodeScan%",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
             }
         ],
         "keybindings": [

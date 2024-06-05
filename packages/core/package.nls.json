@@ -259,5 +259,7 @@
     "AWS.amazonq.chat": "Chat",
     "AWS.amazonq.login": "Login",
     "AWS.amazonq.learnMore": "Learn More About Amazon Q",
-    "AWS.amazonq.codewhisperer.title": "Amazon Q"
+    "AWS.amazonq.codewhisperer.title": "Amazon Q",
+    "AWS.amazonq.toggleCodeSuggestion": "Toggle Auto-Suggestions",
+    "AWS.amazonq.toggleCodeScan": "Toggle Auto-Scans"
 }

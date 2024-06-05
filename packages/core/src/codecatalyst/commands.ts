@@ -26,6 +26,7 @@ import { CreateDevEnvironmentRequest, UpdateDevEnvironmentRequest } from 'aws-sd
 import { Auth } from '../auth/auth'
 import { SsoConnection } from '../auth/connection'
 import { isInDevEnv, isRemoteWorkspace } from '../shared/vscode/env'
+import { commandPalette } from '../codewhisperer/commands/types'
 
 /** "List CodeCatalyst Commands" command. */
 export async function listCommands(): Promise<void> {
@@ -303,7 +304,7 @@ export class CodeCatalystCommands {
         // need to be careful of mapping explosion so this granular data would either need
         // to be flattened or we restrict the names to a pre-determined set
         if (id === undefined) {
-            telemetry.record({ source: 'CommandPalette' })
+            telemetry.record({ source: commandPalette })
         }
 
         if (connection !== undefined) {
