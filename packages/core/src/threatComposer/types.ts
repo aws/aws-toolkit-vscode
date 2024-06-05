@@ -115,7 +115,7 @@ export interface LogMessage extends Message {
     logMessage: string
     logType: 'INFO' | 'WARNING' | 'ERROR'
     showNotification: boolean
-    notifitonType: 'INVALD_JSON' | undefined
+    notificationType: 'INVALID_JSON' | undefined
 }
 
 export interface EmitTelemetryMessage extends Message {

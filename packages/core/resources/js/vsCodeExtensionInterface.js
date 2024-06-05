@@ -99,7 +99,7 @@ async function render(/** @type {string} */ text) {
             logMessage: e.message,
             logType: 'ERROR',
             showNotification: true,
-            notifitonType: 'INVALD_JSON',
+            notificationType: 'INVALID_JSON',
         })
     }
 
