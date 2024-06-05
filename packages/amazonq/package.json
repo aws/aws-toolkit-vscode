@@ -46,7 +46,7 @@
     "browser": "./dist/src/extensionWeb",
     "scripts": {
         "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production",
-        "buildScripts": "npm run generateNonCodeFiles && npm run copyFiles && npm run syncPackageJson",
+        "buildScripts": "npm run generateNonCodeFiles && npm run copyFiles && npm run syncPackageJson && tsc -p ./ --noEmit",
         "generateNonCodeFiles": "ts-node ../../scripts/generateNonCodeFiles.ts",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "syncPackageJson": "ts-node ./scripts/build/syncPackageJson.ts",
@@ -56,7 +56,7 @@
         "format": "prettier --ignore-path ../../.prettierignore --check src scripts",
         "formatfix": "prettier --ignore-path ../../.prettierignore --write src scripts",
         "lint": "echo 'Nothing to lint yet!'",
-        "watch": "npm run clean && npm run buildScripts -- --vueHr && tsc -watch -p ./",
+        "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
         "webRun": "npx @vscode/test-web --open-devtools --browserOption=--disable-web-security --waitForDebugger=9222 --extensionDevelopmentPath=. .",
         "webWatch": "npm run clean && npm run buildScripts && webpack --mode development --watch",
         "serve": "webpack serve --config-name mainServe --mode development",
