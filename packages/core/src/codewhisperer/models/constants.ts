@@ -336,8 +336,7 @@ export const newCustomizationMessage = 'You have access to new Amazon Q customiz
 export const newCustomizationsAvailableKey = 'aws.amazonq.codewhisperer.newCustomizations'
 
 // Start of QCT Strings
-
-export const uploadZipSizeLimitInBytes = 5000000000 // 5GB
+export const uploadZipSizeLimitInBytes = 2000000000 // 2GB
 
 export const maxBufferSize = 1024 * 1024 * 8 // this is 8MB; the default max buffer size for stdout for spawnSync is 1MB
 
@@ -598,10 +597,10 @@ export const nonWindowsJava11HomeHelpChatMessage =
     'To find the JDK path, run the following command in a new IDE terminal:  `/usr/libexec/java_home -v 11`'
 
 export const projectSizeTooLargeChatMessage =
-    'Sorry, your project size exceeds the Amazon Q Code Transformation upload limit of 5GB. For more information, see the [Code Transformation documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#project-size-limit).'
+    'Sorry, your project size exceeds the Amazon Q Code Transformation upload limit of 2GB. For more information, see the [Code Transformation documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#project-size-limit).'
 
 export const projectSizeTooLargeNotification =
-    'Your project size exceeds the Amazon Q Code Transformation upload limit of 5GB. For more information, see the [Code Transformation documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#project-size-limit).'
+    'Your project size exceeds the Amazon Q Code Transformation upload limit of 2GB. For more information, see the [Code Transformation documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#project-size-limit).'
 
 export const JDK8VersionNumber = '52'
 
