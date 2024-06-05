@@ -234,7 +234,8 @@ class CodeWhispererCodeScanManager(val project: Project) {
             language = selectedFile?.programmingLanguage() ?: CodeWhispererUnknownLanguage.INSTANCE
             if (scope == CodeWhispererConstants.CodeAnalysisScope.FILE &&
                 (
-                    selectedFile == null || !language.isAutoFileScanSupported() || (codeScanSessionConfig.fileIndex.isInLibrarySource(selectedFile))
+                    selectedFile == null || !language.isAutoFileScanSupported() ||
+                        runReadAction { (codeScanSessionConfig.fileIndex.isInLibrarySource(selectedFile)) }
                     )
             ) {
                 LOG.debug { "Language is unknown or plaintext, skipping code scan." }
