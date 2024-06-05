@@ -520,7 +520,9 @@ function handleBadCompositeKey(data: { id: string; args: any[]; compositeKey: Co
     Object.entries(compositeKey).forEach(([index, field]) => {
         const indexAsInt = parseInt(index)
         const arg = args[indexAsInt]
-        if (field === 'source' && typeof arg !== 'string') {
+        if (field === 'source' && arg === undefined) {
+            args[indexAsInt] = 'vscodeUI'
+        } else if (field === 'source' && typeof arg !== 'string') {
             /**
              * This case happens when either the caller sets the wrong args themselves through
              * vscode.commands.executeCommand OR if through a VS Code UI component like the ellipsis menu
