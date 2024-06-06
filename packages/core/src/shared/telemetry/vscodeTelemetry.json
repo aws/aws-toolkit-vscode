@@ -332,6 +332,12 @@
             "name": "awsRegion",
             "type": "string",
             "description": "An AWS region."
+        },
+        {
+            "name": "saveType",
+            "type": "string",
+            "allowedValues": ["MANUAL_SAVE", "AUTO_SAVE"],
+            "description": "Type of save executed"
         }
     ],
     "metrics": [
@@ -1240,6 +1246,60 @@
                 },
                 {
                     "type": "source",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "threatComposer_created",
+            "description": "Called after a new threat composer file is created using command pallet or New File option",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "threatComposer_opened",
+            "description": "Called after opening a threat composer file",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "threatComposer_fileSaved",
+            "description": "Called after a threat composer file has been saved",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                },
+                {
+                    "type": "saveType",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "threatComposer_closed",
+            "description": "Called after closing a threat composer file",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "threatComposer_error",
+            "description": "Called after an error is thrown from the threat composer view",
+            "metadata": [
+                {
+                    "type": "id",
                     "required": true
                 }
             ]

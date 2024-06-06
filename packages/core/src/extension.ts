@@ -60,6 +60,7 @@ import { ExtensionUse } from './auth/utils'
 import { ExtStartUpSources } from './shared/telemetry'
 
 export { makeEndpointsProvider, registerGenericCommands } from './extensionShared'
+import { activate as activateThreatComposerEditor } from './threatComposer/activation'
 
 let localize: nls.LocalizeFunc
 
@@ -221,6 +222,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 }
             }
             await activateApplicationComposer(context)
+            await activateThreatComposerEditor(context)
         }
 
         await activateStepFunctions(context, globals.awsContext, globals.outputChannel)
