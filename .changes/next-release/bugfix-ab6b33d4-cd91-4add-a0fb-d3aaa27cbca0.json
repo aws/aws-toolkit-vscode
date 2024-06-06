@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Security Scan: Fixes inconsistent behavior with how security issues are underlined in the editor."
-}

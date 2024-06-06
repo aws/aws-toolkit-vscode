@@ -1,0 +1,23 @@
+{
+  "date" : "2024-06-06",
+  "version" : "3.9",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "feat(featureDev): generated plan being shown from top"
+  }, {
+    "type" : "feature",
+    "description" : "Amazon Q Code Transform: Communicate download failure in transform chat, and improve download failure notification"
+  }, {
+    "type" : "feature",
+    "description" : "CodeTransformation: increase project upload limit to 2GB"
+  }, {
+    "type" : "bugfix",
+    "description" : "Security Scan: Improved method of applying security fixes"
+  }, {
+    "type" : "bugfix",
+    "description" : "Security Scan: Improved accuracy when applying security fixes"
+  }, {
+    "type" : "bugfix",
+    "description" : "Security Scan: Fixes inconsistent behavior with how security issues are underlined in the editor."
+  } ]
+}
