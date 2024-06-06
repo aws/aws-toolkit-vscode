@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Toolkit now supports creating, viewing and editing [Threat Composer](https://github.com/awslabs/threat-composer#readme) threat models (`*.tc.json`)"
+}

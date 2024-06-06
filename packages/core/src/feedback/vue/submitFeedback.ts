@@ -67,7 +67,7 @@ export class FeedbackWebview extends VueWebview {
     }
 }
 
-type FeedbackId = 'AWS Toolkit' | 'Amazon Q' | 'Application Composer'
+type FeedbackId = 'AWS Toolkit' | 'Amazon Q' | 'Application Composer' | 'Threat Composer'
 
 let _submitFeedback: RegisteredCommand<(_: VsCodeCommandArg, id: FeedbackId) => Promise<void>> | undefined
 export function submitFeedback(_: VsCodeCommandArg, id: FeedbackId) {
