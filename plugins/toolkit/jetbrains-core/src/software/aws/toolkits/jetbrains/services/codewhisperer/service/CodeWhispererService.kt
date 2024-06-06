@@ -90,6 +90,8 @@ import java.util.concurrent.TimeUnit
 
 @Service
 class CodeWhispererService {
+    private var refreshFailure: Int = 0
+
     fun showRecommendationsInPopup(
         editor: Editor,
         triggerTypeInfo: TriggerTypeInfo,
@@ -106,10 +108,18 @@ class CodeWhispererService {
         }
 
         if (isQExpired(project)) {
-            // The purpose to execute in the background is to hide the progress indicator UI
-            val shouldReauth = ApplicationManager.getApplication().executeOnPooledThread<Boolean> {
-                promptReAuth(project)
-            }.get()
+            // say the connection is un-refreshable if refresh fails for 3 times
+            val shouldReauth = if (refreshFailure < MAX_REFRESH_ATTEMPT) {
+                ApplicationManager.getApplication().executeOnPooledThread<Boolean> {
+                    promptReAuth(project)
+                }.get().also { success ->
+                    if (!success) {
+                        refreshFailure++
+                    }
+                }
+            } else {
+                true
+            }
 
             if (shouldReauth) {
                 return
@@ -754,6 +764,8 @@ class CodeWhispererService {
 
     companion object {
         private val LOG = getLogger<CodeWhispererService>()
+        private const val MAX_REFRESH_ATTEMPT = 3
+
         val CODEWHISPERER_CODE_COMPLETION_PERFORMED: Topic<CodeWhispererCodeCompletionServiceListener> = Topic.create(
             "CodeWhisperer code completion service invoked",
             CodeWhispererCodeCompletionServiceListener::class.java
