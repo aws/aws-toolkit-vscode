@@ -27,7 +27,7 @@ function main() {
         console.log('prepare: skipped (running in CI)')
         return
     }
-    child_process.execSync('husky install', { stdio: 'inherit' })
+    child_process.execSync('husky', { stdio: 'inherit' })
 }
 
 main()
