@@ -11,6 +11,8 @@ import software.amazon.awssdk.services.codewhispererruntime.model.FeatureValue
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.calculateIfBIDConnection
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.calculateIfIamIdentityCenterConnection
 import software.aws.toolkits.jetbrains.utils.isQExpired
 
 @Service
@@ -28,6 +30,31 @@ class CodeWhispererFeatureConfigService {
             // Simply force overwrite feature configs from server response, no needed to check existing values.
             response.featureEvaluations().forEach {
                 featureConfigs[it.feature()] = FeatureContext(it.feature(), it.variation(), it.value())
+            }
+
+            val customizationArnOverride = featureConfigs[CUSTOMIZATION_ARN_OVERRIDE_NAME]?.value?.stringValue()
+            if (customizationArnOverride != null) {
+                // Double check if server-side wrongly returns a customizationArn to BID users
+                calculateIfBIDConnection(project) {
+                    featureConfigs.remove(CUSTOMIZATION_ARN_OVERRIDE_NAME)
+                }
+                val availableCustomizations =
+                    calculateIfIamIdentityCenterConnection(project) {
+                        try {
+                            CodeWhispererClientAdaptor.getInstance(project).listAvailableCustomizations().map { c -> c.arn }
+                        } catch (e: Exception) {
+                            LOG.debug(e) { "Failed to list available customizations" }
+                            null
+                        }
+                    }
+
+                // If customizationArn from A/B is not available in listAvailableCustomizations response, don't use this value
+                if (availableCustomizations?.contains(customizationArnOverride) == false) {
+                    LOG.debug {
+                        "Customization arn $customizationArnOverride not available in listAvailableCustomizations, not using"
+                    }
+                    featureConfigs.remove(CUSTOMIZATION_ARN_OVERRIDE_NAME)
+                }
             }
         } catch (e: Exception) {
             LOG.debug(e) { "Error when fetching feature configs" }
@@ -53,6 +80,8 @@ class CodeWhispererFeatureConfigService {
     // 6) Add a test case for this feature.
     fun getTestFeature(): String = getFeatureValueForKey(TEST_FEATURE_NAME).stringValue()
 
+    fun getCustomizationArnOverride(): String = getFeatureValueForKey(CUSTOMIZATION_ARN_OVERRIDE_NAME).stringValue()
+
     // Get the feature value for the given key.
     // In case of a misconfiguration, it will return a default feature value of Boolean true.
     private fun getFeatureValueForKey(name: String): FeatureValue =
@@ -62,6 +91,7 @@ class CodeWhispererFeatureConfigService {
     companion object {
         fun getInstance(): CodeWhispererFeatureConfigService = service()
         private const val TEST_FEATURE_NAME = "testFeature"
+        const val CUSTOMIZATION_ARN_OVERRIDE_NAME = "customizationArnOverride"
         private val LOG = getLogger<CodeWhispererFeatureConfigService>()
 
         // TODO: add real feature later
@@ -70,6 +100,12 @@ class CodeWhispererFeatureConfigService {
                 TEST_FEATURE_NAME,
                 "CONTROL",
                 FeatureValue.builder().stringValue("testValue").build()
+            ),
+            // For BuilderId and error cases return an empty string "arn" to handle
+            CUSTOMIZATION_ARN_OVERRIDE_NAME to FeatureContext(
+                CUSTOMIZATION_ARN_OVERRIDE_NAME,
+                "customizationARN",
+                FeatureValue.builder().stringValue("").build()
             )
         )
     }

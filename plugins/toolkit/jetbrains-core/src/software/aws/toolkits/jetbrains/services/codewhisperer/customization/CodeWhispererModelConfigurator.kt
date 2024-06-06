@@ -21,6 +21,7 @@ import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererR
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererFeatureConfigService
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.calculateIfIamIdentityCenterConnection
 import software.aws.toolkits.jetbrains.utils.notifyInfo
@@ -155,8 +156,18 @@ class DefaultCodeWhispererModelConfigurator : CodeWhispererModelConfigurator, Pe
             return@calculateIfIamIdentityCenterConnection customizationUiItems
         }
 
-    override fun activeCustomization(project: Project): CodeWhispererCustomization? =
-        calculateIfIamIdentityCenterConnection(project) { connectionIdToActiveCustomizationArn[it.id] }
+    override fun activeCustomization(project: Project): CodeWhispererCustomization? {
+        val result = calculateIfIamIdentityCenterConnection(project) { connectionIdToActiveCustomizationArn[it.id] }
+
+        // A/B case
+        val customizationArnFromAB = CodeWhispererFeatureConfigService.getInstance().getCustomizationArnOverride()
+        if (customizationArnFromAB.isEmpty()) return result
+        return CodeWhispererCustomization(
+            arn = customizationArnFromAB,
+            name = result?.name.orEmpty(),
+            description = result?.description
+        )
+    }
 
     override fun switchCustomization(project: Project, newCustomization: CodeWhispererCustomization?) {
         calculateIfIamIdentityCenterConnection(project) {

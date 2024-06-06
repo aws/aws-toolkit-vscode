@@ -51,6 +51,15 @@ fun <T> calculateIfIamIdentityCenterConnection(connection: ToolkitConnection, ca
         calculationTask(connection)
     }
 
+fun <T> calculateIfBIDConnection(project: Project, calculationTask: (connection: ToolkitConnection) -> T): T? =
+    ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())?.let {
+        if (it.isSono()) {
+            calculationTask(it)
+        } else {
+            null
+        }
+    }
+
 // Controls the condition to send telemetry event to CodeWhisperer service, currently:
 // 1. It will be sent for Builder ID users, only if they have optin telemetry sharing.
 // 2. It will be sent for IdC users, regardless of telemetry optout status.
