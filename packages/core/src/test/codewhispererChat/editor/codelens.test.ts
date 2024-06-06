@@ -63,7 +63,7 @@ describe('TryChatCodeLensProvider', () => {
 
     it('keeps returning a code lense until it hits the max times it should show', async function () {
         stubConnection('connected')
-
+        isAmazonQVisibleEventEmitter.fire(false)
         let codeLensCount = 0
         const modifierKey = resolveModifierKey()
         while (codeLensCount < 10) {
@@ -123,6 +123,7 @@ describe('TryChatCodeLensProvider', () => {
 
     it('does show codelens if lineAnnotationController (tips) is in end state', async function () {
         stubConnection('connected')
+        isAmazonQVisibleEventEmitter.fire(false)
         // indicate lineAnnotationController is not visible and in end state
         await globals.context.globalState.update(inlinehintKey, EndState.id)
 
