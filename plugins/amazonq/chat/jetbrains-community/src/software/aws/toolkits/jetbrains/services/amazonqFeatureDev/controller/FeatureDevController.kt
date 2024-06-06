@@ -518,7 +518,7 @@ class FeatureDevController(
     private suspend fun onApproachGeneration(session: Session, message: String, tabId: String) {
         session.preloader(message, messenger)
 
-        logger.info { "$FEATURE_NAME conversation id: ${session.conversationId}" }
+        logger.info { conversationIDLog(session.conversationId) }
 
         messenger.sendAnswer(
             tabId = tabId,
@@ -680,6 +680,8 @@ class FeatureDevController(
     private fun getSessionInfo(tabId: String) = chatSessionStorage.getSession(tabId, context.project)
 
     fun retriesRemaining(session: Session?): Int = session?.retries ?: DEFAULT_RETRY_LIMIT
+
+    fun conversationIDLog(conversationId: String) = "$FEATURE_NAME Conversation ID: $conversationId"
 
     companion object {
         private val logger = getLogger<FeatureDevController>()

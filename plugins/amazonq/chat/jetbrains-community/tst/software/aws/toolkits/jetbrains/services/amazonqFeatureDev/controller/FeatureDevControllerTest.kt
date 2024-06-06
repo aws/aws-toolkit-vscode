@@ -282,6 +282,7 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
 
         val mockSession = mock<Session>()
         whenever(mockSession.send(userMessage)).thenReturn(mockInteraction)
+        whenever(mockSession.conversationId).thenReturn(testConversationId)
         whenever(mockSession.sessionState).thenReturn(
             PrepareCodeGenerationState(
                 testTabId, "", mock(), newFileContents, deletedFiles, testReferences, testUploadId, 0, messenger
@@ -307,6 +308,7 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
         val mockSession = mock<Session>()
 
         whenever(mockSession.send(userMessage)).thenThrow(RuntimeException())
+        whenever(mockSession.conversationId).thenReturn(testConversationId)
 
         controller.onCodeGeneration(mockSession, userMessage, testTabId)
 
@@ -328,6 +330,7 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
 
         val mockSession = mock<Session>()
         whenever(mockSession.send(userMessage)).thenReturn(mockInteraction)
+        whenever(mockSession.conversationId).thenReturn(testConversationId)
         whenever(mockSession.sessionState).thenReturn(
             PrepareCodeGenerationState(
                 testTabId, "", mock(), filePaths, deletedFiles, testReferences, testUploadId, 0, messenger
@@ -356,6 +359,7 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
 
         val mockSession = mock<Session>()
         whenever(mockSession.send(userMessage)).thenReturn(mockInteraction)
+        whenever(mockSession.conversationId).thenReturn(testConversationId)
         whenever(mockSession.sessionState).thenReturn(
             PrepareCodeGenerationState(
                 testTabId, "", mock(), filePaths, deletedFiles, testReferences, testUploadId, 0, messenger
