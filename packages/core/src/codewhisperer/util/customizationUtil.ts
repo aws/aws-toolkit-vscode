@@ -25,6 +25,7 @@ import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { parse } from '@aws-sdk/util-arn-parser'
 import { Commands } from '../../shared/vscode/commands2'
 import { vsCodeState } from '../models/model'
+import { FeatureConfigProvider } from '../service/featureConfigProvider'
 
 /**
  *
@@ -108,7 +109,21 @@ export const getSelectedCustomization = (): Customization => {
 
     const selectedCustomizationArr =
         globals.context.globalState.get<{ [label: string]: Customization }>(selectedCustomizationKey) || {}
-    return selectedCustomizationArr[AuthUtil.instance.conn.label] || baseCustomization
+    const result = selectedCustomizationArr[AuthUtil.instance.conn.label] || baseCustomization
+
+    // A/B case
+    const arnOverride = FeatureConfigProvider.instance.getCustomizationArnOverride()
+    if (arnOverride === undefined || arnOverride === '') {
+        return result
+    } else {
+        // A trick to prioritize arn from A/B over user's currently selected(for request and telemetry)
+        // but still shows customization info of user's currently selected.
+        return {
+            arn: arnOverride,
+            name: result.name,
+            description: result.description,
+        }
+    }
 }
 
 export const setSelectedCustomization = async (customization: Customization) => {
