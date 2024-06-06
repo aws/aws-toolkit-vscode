@@ -16,6 +16,7 @@ import { SchemaService } from './schemas'
 import { TelemetryLogger } from './telemetry/telemetryLogger'
 import { TelemetryService } from './telemetry/telemetryService'
 import { UriHandler } from './vscode/uriHandler'
+import { getLogger } from './logger/logger'
 
 type Clock = Pick<
     typeof globalThis,
@@ -45,7 +46,7 @@ function copyClock(): Clock {
 
     const browserAlternatives = getBrowserAlternatives()
     if (Object.keys(browserAlternatives).length > 0) {
-        console.log('globals: Using browser alternatives for clock functions')
+        getLogger().info('globals: Using browser alternatives for clock functions')
         Object.assign(clock, browserAlternatives)
     } else {
         // In node.js context

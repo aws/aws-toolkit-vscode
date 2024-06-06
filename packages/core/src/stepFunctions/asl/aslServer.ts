@@ -8,6 +8,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  */
 
+// Disable because this is a language server.
+/* eslint-disable aws-toolkits/no-console-log */
+
 import {
     ClientCapabilities as aslClientCapabilities,
     DocumentLanguageSettings,

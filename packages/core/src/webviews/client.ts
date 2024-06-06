@@ -187,6 +187,8 @@ export class WebviewClientFactory {
                 },
                 get: (_, prop) => {
                     if (typeof prop !== 'string') {
+                        // Disable because we cannot log to extension in a webview.
+                        // eslint-disable-next-line aws-toolkits/no-console-log
                         console.warn(`Tried to index webview client with non-string property: ${String(prop)}`)
                         return
                     }
