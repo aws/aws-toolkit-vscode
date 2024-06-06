@@ -221,7 +221,7 @@
     "AWS.codecatalyst.explorerTitle": "CodeCatalyst",
     "AWS.cwl.limit.desc": "Maximum amount of log entries pulled per request from CloudWatch Logs (max 10000)",
     "AWS.samcli.deploy.bucket.recentlyUsed": "Buckets recently used for SAM deployments",
-    "AWS.submenu.amazonqEditorContextSubmenu.title": "Send to Amazon Q",
+    "AWS.submenu.amazonqEditorContextSubmenu.title": "Amazon Q",
     "AWS.submenu.auth.title": "Authentication",
     "AWS.generic.feedback": "Feedback",
     "AWS.generic.help": "Help",
