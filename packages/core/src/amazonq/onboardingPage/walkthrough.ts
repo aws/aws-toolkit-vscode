@@ -4,9 +4,9 @@
  */
 
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
-import { getLogger } from '../../shared'
 import globals, { isWeb } from '../../shared/extensionGlobals'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
+import { getLogger } from '../../shared/logger'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 import vscode from 'vscode'
 
