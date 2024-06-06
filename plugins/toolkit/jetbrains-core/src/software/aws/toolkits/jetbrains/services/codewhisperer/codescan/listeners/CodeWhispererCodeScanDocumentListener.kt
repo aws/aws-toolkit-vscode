@@ -8,8 +8,8 @@ import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.isFile
+import com.intellij.refactoring.suggested.oldRange
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanIssue
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
@@ -35,7 +35,7 @@ internal class CodeWhispererCodeScanDocumentListener(val project: Project) : Doc
             else -> 0
         }
 
-        val editedTextRange = TextRange.create(event.offset, event.offset + event.oldLength)
+        val editedTextRange = event.oldRange
         scanManager.updateScanNodesForOffSet(file, lineOffset, editedTextRange)
         val nodes = scanManager.getOverlappingScanNodes(file, editedTextRange)
         nodes.forEach {

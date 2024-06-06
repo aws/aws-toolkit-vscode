@@ -13,10 +13,8 @@ import java.util.zip.ZipOutputStream
  * Adds a new [ZipEntry] with the contents of [file] to the [ZipOutputStream].
  */
 fun ZipOutputStream.putNextEntry(entryName: String, file: Path) {
-    this.putNextEntry(ZipEntry(entryName))
     val bytes = Files.readAllBytes(file)
-    this.write(bytes, 0, bytes.size)
-    this.closeEntry()
+    putNextEntry(entryName, bytes)
 }
 
 /**
@@ -25,6 +23,15 @@ fun ZipOutputStream.putNextEntry(entryName: String, file: Path) {
 fun ZipOutputStream.putNextEntry(entryName: String, inputStream: InputStream) {
     this.putNextEntry(ZipEntry(entryName))
     inputStream.copyTo(this)
+    this.closeEntry()
+}
+
+/**
+ * Adds a new [ZipEntry] with the contents of [data] to the [ZipOutputStream].
+ */
+fun ZipOutputStream.putNextEntry(entryName: String, data: ByteArray) {
+    this.putNextEntry(ZipEntry(entryName))
+    this.write(data, 0, data.size)
     this.closeEntry()
 }
 

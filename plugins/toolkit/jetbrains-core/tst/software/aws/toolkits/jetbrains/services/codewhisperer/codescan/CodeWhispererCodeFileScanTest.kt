@@ -3,11 +3,13 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.codescan
 
+import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.replaceService
+import com.intellij.testFramework.runInEdtAndWait
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.apache.commons.codec.digest.DigestUtils
@@ -26,6 +28,7 @@ import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.reset
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
@@ -41,11 +44,14 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import software.aws.toolkits.jetbrains.utils.isInstanceOf
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.telemetry.CodewhispererLanguage
+import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.util.Base64
+import java.util.Scanner
 import java.util.UUID
 import java.util.zip.ZipFile
+import java.util.zip.ZipInputStream
 import kotlin.io.path.relativeTo
 import kotlin.test.assertNotNull
 
@@ -88,7 +94,7 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
         )
         file2 = psifile2.virtualFile.toNioPath().toFile()
 
-        psifile = projectRule.fixture.addFileToProject(
+        psifile = projectRule.fixture.configureByText(
             "/test.py",
             """import numpy as np
                import from module1 import helper
@@ -384,6 +390,37 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
             assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
             assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererCodeScanServerException>()
         }
+    }
+
+    @Test
+    fun `test zipFile uses latest document changes`() {
+        reset(sessionConfigSpy)
+        runInEdtAndWait {
+            WriteCommandAction.runWriteCommandAction(project) {
+                projectRule.fixture.editor.document.insertString(0, "line inserted at beginning of file\n")
+            }
+        }
+
+        val payload = sessionConfigSpy.createPayload()
+        val bufferedInputStream = BufferedInputStream(payload.srcZip.inputStream())
+        val zis = ZipInputStream(bufferedInputStream)
+        zis.nextEntry
+        val scanner = Scanner(zis)
+        var contents = ""
+        while (scanner.hasNextLine()) {
+            contents += scanner.nextLine() + "\n"
+        }
+
+        val expectedContents = """line inserted at beginning of file
+import numpy as np
+               import from module1 import helper
+               
+               def add(a, b):
+                  return a + b
+                  
+"""
+
+        assertThat(contents).isEqualTo(expectedContents)
     }
 
     companion object {
