@@ -19,7 +19,7 @@ import {
     ZipManifest,
     TransformByQStatus,
 } from '../models/model'
-import { convertDateToTimestamp, getStringHash } from '../../shared/utilities/textUtilities'
+import { convertDateToTimestamp } from '../../shared/utilities/textUtilities'
 import {
     createZipManifest,
     downloadHilResultArchive,
@@ -42,19 +42,9 @@ import {
     prepareProjectDependencies,
     runMavenDependencyUpdateCommands,
 } from '../service/transformByQ/transformMavenHandler'
-import {
-    CodeTransformCancelSrcComponents,
-    CodeTransformJavaSourceVersionsAllowed,
-    CodeTransformJavaTargetVersionsAllowed,
-    telemetry,
-} from '../../shared/telemetry/telemetry'
+import { CodeTransformCancelSrcComponents, telemetry } from '../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import {
-    CancelActionPositions,
-    JDKToTelemetryValue,
-    calculateTotalLatency,
-    telemetryUndefined,
-} from '../../amazonqGumby/telemetry/codeTransformTelemetry'
+import { CancelActionPositions, calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
@@ -597,24 +587,6 @@ export async function setTransformationToRunningState() {
     transformByQState.setStartTime(
         convertDateToTimestamp(new Date(CodeTransformTelemetryState.instance.getStartTime()))
     )
-
-    const projectPath = transformByQState.getProjectPath()
-    let projectId = telemetryUndefined
-    if (projectPath !== undefined) {
-        projectId = getStringHash(projectPath)
-    }
-
-    telemetry.codeTransform_jobStartedCompleteFromPopupDialog.emit({
-        codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-        codeTransformJavaSourceVersionsAllowed: JDKToTelemetryValue(
-            transformByQState.getSourceJDKVersion()!
-        ) as CodeTransformJavaSourceVersionsAllowed,
-        codeTransformJavaTargetVersionsAllowed: JDKToTelemetryValue(
-            transformByQState.getTargetJDKVersion()
-        ) as CodeTransformJavaTargetVersionsAllowed,
-        codeTransformProjectId: projectId,
-        result: MetadataResult.Pass,
-    })
 
     await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-transformation-hub')
 }

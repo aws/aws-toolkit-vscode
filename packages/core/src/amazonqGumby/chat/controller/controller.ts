@@ -38,14 +38,18 @@ import {
 } from '../../errors'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import MessengerUtils, { ButtonActions, GumbyCommands } from './messenger/messengerUtils'
-import { CancelActionPositions, JDKToTelemetryValue } from '../../telemetry/codeTransformTelemetry'
+import { CancelActionPositions, JDKToTelemetryValue, telemetryUndefined } from '../../telemetry/codeTransformTelemetry'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
-import { telemetry, CodeTransformJavaSourceVersionsAllowed } from '../../../shared/telemetry/telemetry'
+import {
+    telemetry,
+    CodeTransformJavaTargetVersionsAllowed,
+    CodeTransformJavaSourceVersionsAllowed,
+} from '../../../shared/telemetry/telemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import { CodeTransformTelemetryState } from '../../telemetry/codeTransformTelemetryState'
 import { getAuthType } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
 import DependencyVersions from '../../models/dependencies'
-
+import { getStringHash } from '../../../shared/utilities/textUtilities'
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
 export interface ChatControllerEventEmitters {
@@ -324,6 +328,18 @@ export class GumbyController {
             )
         }
 
+        const projectPath = transformByQState.getProjectPath()
+        telemetry.codeTransform_jobStartedCompleteFromPopupDialog.emit({
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformJavaSourceVersionsAllowed: JDKToTelemetryValue(
+                transformByQState.getSourceJDKVersion()!
+            ) as CodeTransformJavaSourceVersionsAllowed,
+            codeTransformJavaTargetVersionsAllowed: JDKToTelemetryValue(
+                transformByQState.getTargetJDKVersion()
+            ) as CodeTransformJavaTargetVersionsAllowed,
+            codeTransformProjectId: projectPath === undefined ? telemetryUndefined : getStringHash(projectPath),
+            result: MetadataResult.Pass,
+        })
         try {
             this.sessionStorage.getSession().conversationState = ConversationState.COMPILING
             this.messenger.sendCompilationInProgress(message.tabID)
