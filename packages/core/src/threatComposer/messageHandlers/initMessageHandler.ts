@@ -4,7 +4,7 @@
  */
 
 import { Command, MessageType, WebviewContext } from '../types'
-import { broadcastFileChange } from './addFileWatchMessageHandler'
+import { broadcastFileChange } from './onFileChangedHandler'
 
 /**
  * Handler for when the Threat Composer view is ready.
