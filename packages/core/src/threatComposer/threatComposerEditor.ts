@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import { handleMessage } from './handleMessage'
 import { FileWatchInfo, WebviewContext } from './types'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { onFileChanged } from './messageHandlers/addFileWatchMessageHandler'
+import { onFileChanged } from './messageHandlers/onFileChangedHandler'
 import { addThemeWatchMessageHandler } from './messageHandlers/addThemeWatchMessageHandler'
 import { sendThreatComposerOpenCancelled } from './messageHandlers/emitTelemetryMessageHandler'
 
