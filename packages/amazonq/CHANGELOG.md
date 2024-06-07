@@ -1,3 +1,11 @@
+## 1.8.0 2024-06-07
+
+- **Bug Fix** fix(featureDev): fix file rejection for multi-workspaces
+- **Feature** The `Send to Amazon Q` [context menu](https://github.com/aws/aws-toolkit-vscode/assets/371007/ce4c61a4-1b58-48ee-8500-56667d45dd7d) was renamed to `Amazon Q`
+- **Feature** Amazon Q Transform: Increase project upload size limit to 2GB
+- **Feature** feat(featureDev): generated plan being shown from top
+- **Feature** Add additional commands for Amazon Q.
+
 ## 1.7.0 2024-05-30
 
 - **Bug Fix** Feature Development: File rejection is not rejecting a file when code is generated

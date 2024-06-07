@@ -1,0 +1,26 @@
+{
+	"date": "2024-06-07",
+	"version": "1.8.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "fix(featureDev): fix file rejection for multi-workspaces"
+		},
+		{
+			"type": "Feature",
+			"description": "The `Send to Amazon Q` [context menu](https://github.com/aws/aws-toolkit-vscode/assets/371007/ce4c61a4-1b58-48ee-8500-56667d45dd7d) was renamed to `Amazon Q`"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q Transform: Increase project upload size limit to 2GB"
+		},
+		{
+			"type": "Feature",
+			"description": "feat(featureDev): generated plan being shown from top"
+		},
+		{
+			"type": "Feature",
+			"description": "Add additional commands for Amazon Q."
+		}
+	]
+}
