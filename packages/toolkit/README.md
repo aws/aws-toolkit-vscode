@@ -6,7 +6,7 @@ Integrate threat modeling practices into your development workflow by creating a
 
 Threat Composer for the AWS Toolkit for Visual Studio Code allows you to create, view and edit [Threat Composer](https://github.com/awslabs/threat-composer#readme) threat models `.tc.json` directly within VSCode.
 
-![Threat Composer](https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/threatComposer.gif)
+![Threat Composer](https://raw.githubusercontent.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/threatComposer.gif)
 
 ## Amazon Q and CodeWhisperer
 
