@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.codescan.listener
 import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.isFile
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isUserBuilderId
@@ -15,7 +14,15 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 internal class CodeWhispererCodeScanFileListener(val project: Project) : EditorFactoryListener {
     override fun editorCreated(event: EditorFactoryEvent) {
         val actionManager = CodeWhispererExplorerActionManager.getInstance()
-        if (event.editor.virtualFile.isFile && event.editor.project == project && actionManager.isAutoEnabledForCodeScan() &&
+
+        if (event.editor.virtualFile == null) {
+            return
+        }
+        if (event.editor.project != project) {
+            return
+        }
+
+        if (actionManager.isAutoEnabledForCodeScan() &&
             !actionManager.isMonthlyQuotaForCodeScansExceeded() && !isUserBuilderId(project)
         ) {
             CodeWhispererCodeScanManager.getInstance(project).createDebouncedRunCodeScan(CodeWhispererConstants.CodeAnalysisScope.FILE)

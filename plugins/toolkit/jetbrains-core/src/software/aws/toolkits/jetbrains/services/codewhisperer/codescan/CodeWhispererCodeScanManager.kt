@@ -26,6 +26,7 @@ import com.intellij.openapi.ui.MessageDialogBuilder
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.isFile
 import com.intellij.refactoring.suggested.range
 import com.intellij.ui.content.ContentManagerEvent
 import com.intellij.ui.content.ContentManagerListener
@@ -234,7 +235,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
             language = selectedFile?.programmingLanguage() ?: CodeWhispererUnknownLanguage.INSTANCE
             if (scope == CodeWhispererConstants.CodeAnalysisScope.FILE &&
                 (
-                    selectedFile == null || !language.isAutoFileScanSupported() ||
+                    selectedFile == null || !language.isAutoFileScanSupported() || !selectedFile.isFile ||
                         runReadAction { (codeScanSessionConfig.fileIndex.isInLibrarySource(selectedFile)) } ||
                         selectedFile.fileSystem.protocol == "remoteDeploymentFS"
                     )

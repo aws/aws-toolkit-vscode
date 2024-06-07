@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Resolve a NullPointerException that could occur while handling editor creation event. (#4554)"
+}
