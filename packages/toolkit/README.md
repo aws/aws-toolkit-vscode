@@ -1,3 +1,11 @@
+[![Twitter Follow](https://img.shields.io/badge/follow-@aws-1DA1F2?style=flat-square&logo=aws&logoColor=white&label=Follow)](https://x.com/awscloud)
+[![Youtube Channel Views](https://img.shields.io/youtube/channel/views/UCd6MoB9NC6uYN2grvUNT-Zg?style=flat-square&logo=youtube&label=Youtube)](https://www.youtube.com/@amazonwebservices)
+![Marketplace Installs](https://img.shields.io/vscode-marketplace/i/AmazonWebServices.aws-toolkit-vscode.svg?label=Installs&style=flat-square)
+
+# Amazon Q and CodeWhisperer
+
+Amazon CodeWhisperer is now part of Amazon Q. [Try the Amazon Q extension](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.amazon-q-vscode).
+
 # Getting Started
 
 1. Open the AWS Toolkit extension
@@ -16,10 +24,6 @@ Integrate threat modeling practices into your development workflow by creating a
 Threat Composer for the AWS Toolkit for Visual Studio Code allows you to create, view and edit [Threat Composer](https://github.com/awslabs/threat-composer#readme) threat models `.tc.json` directly within VSCode.
 
 ![Threat Composer](https://raw.githubusercontent.com/aws/aws-toolkit-vscode/HEAD/docs/marketplace/vscode/threatComposer.gif)
-
-## Amazon Q and CodeWhisperer
-
-Amazon CodeWhisperer is now part of Amazon Q. [Try the Amazon Q extension](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.amazon-q-vscode).
 
 ## [Application Composer](https://aws.amazon.com/application-composer/)
 
