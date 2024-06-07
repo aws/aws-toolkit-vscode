@@ -1,3 +1,6 @@
+# _3.10_ (2024-06-07)
+- **(Bug Fix)** Resolve a NullPointerException that could occur while handling editor creation event. ([#4554](https://github.com/aws/aws-toolkit-jetbrains/issues/4554))
+
 # _3.9_ (2024-06-06)
 - **(Feature)** feat(featureDev): generated plan being shown from top
 - **(Feature)** Amazon Q Code Transform: Communicate download failure in transform chat, and improve download failure notification

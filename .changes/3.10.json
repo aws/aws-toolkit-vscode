@@ -1,0 +1,8 @@
+{
+  "date" : "2024-06-07",
+  "version" : "3.10",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Resolve a NullPointerException that could occur while handling editor creation event. (#4554)"
+  } ]
+}
