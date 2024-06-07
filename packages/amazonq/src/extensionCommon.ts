@@ -61,7 +61,9 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
                     () =>
                         vscode.window
                             .showInformationMessage(
-                                `The Amazon Q extension is incompatible with AWS Toolkit ${toolkitVersion as any} and older. Your AWS Toolkit was updated to version 3.0 or later.`,
+                                `The Amazon Q extension is incompatible with AWS Toolkit ${
+                                    toolkitVersion as any
+                                } and older. Your AWS Toolkit was updated to version 3.0 or later.`,
                                 'Reload Now'
                             )
                             .then(async resp => {

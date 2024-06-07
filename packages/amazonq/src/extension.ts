@@ -32,7 +32,11 @@ async function activateAmazonQNonCommon(context: vscode.ExtensionContext) {
     await activateCWChat(context)
     await activateQGumby(extContext as ExtContext)
 
-    const authProvider = new CommonAuthViewProvider(context, amazonQContextPrefix, DefaultAmazonQAppInitContext.instance.onDidChangeAmazonQVisibility)
+    const authProvider = new CommonAuthViewProvider(
+        context,
+        amazonQContextPrefix,
+        DefaultAmazonQAppInitContext.instance.onDidChangeAmazonQVisibility
+    )
     context.subscriptions.push(
         vscode.window.registerWebviewViewProvider(authProvider.viewType, authProvider, {
             webviewOptions: {
