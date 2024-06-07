@@ -3,24 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Command, MessageType, ThemeChangedMessage, WebviewContext } from '../types'
-import vscode from 'vscode'
+import { Command, MessageType, ThemeChangedMessage } from '../types'
+import { ColorTheme, ColorThemeKind, WebviewPanel } from 'vscode'
 
 /**
- * Function to add a watcher on the VSCode theme. The watcher will notify Threat Composer
- * view when the theme is changed.
- * @param context: The Webview Context that contain the details of the file and the webview
+ * Handler for theme change event. It will broadcast the theme change event to the
+ * Threat Composer webview, so that it can update the UI accordingly.
+ * @param colorTheme The updated color theme
+ * @param panel The panel which contains the webview to be notified.
  */
-export function addThemeWatchMessageHandler(context: WebviewContext) {
-    context.disposables.push(
-        vscode.window.onDidChangeActiveColorTheme(async data => {
-            const newTheme =
-                data.kind === vscode.ColorThemeKind.Dark || data.kind === vscode.ColorThemeKind.HighContrast
-                    ? 'dark'
-                    : 'light'
-            await broadcastThemeChange(newTheme, context.panel)
-        })
-    )
+export async function onThemeChanged(colorTheme: ColorTheme, panel: WebviewPanel) {
+    const colorThemeKind = colorTheme.kind
+    const newTheme =
+        colorThemeKind === ColorThemeKind.Dark || colorThemeKind === ColorThemeKind.HighContrast ? 'dark' : 'light'
+    await broadcastThemeChange(newTheme, panel)
 }
 
 /**
@@ -28,7 +24,7 @@ export function addThemeWatchMessageHandler(context: WebviewContext) {
  * @param newTheme: The updated theme
  * @param panel: the panel which contains the webview to be notified.
  */
-export async function broadcastThemeChange(newTheme: string, panel: vscode.WebviewPanel) {
+export async function broadcastThemeChange(newTheme: string, panel: WebviewPanel) {
     const themeChangedMessage: ThemeChangedMessage = {
         messageType: MessageType.BROADCAST,
         command: Command.THEME_CHANGED,
