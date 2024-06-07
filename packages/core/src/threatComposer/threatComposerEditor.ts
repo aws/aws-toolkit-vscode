@@ -11,7 +11,7 @@ import { FileWatchInfo, WebviewContext } from './types'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { onFileChanged } from './messageHandlers/onFileChangedHandler'
 import { onThemeChanged } from './messageHandlers/onThemeChangedHandler'
-import { sendThreatComposerOpenCancelled } from './messageHandlers/emitTelemetryMessageHandler'
+import { sendThreatComposerOpenCancelled } from './messageHandlers/webviewTelemetryHandler'
 
 const localize = nls.loadMessageBundle()
 
