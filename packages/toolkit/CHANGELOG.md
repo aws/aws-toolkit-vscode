@@ -1,3 +1,7 @@
+## 3.9.0 2024-06-07
+
+- **Feature** Toolkit now supports creating, viewing and editing [Threat Composer](https://github.com/awslabs/threat-composer#readme) threat models (`*.tc.json`)
+
 ## 3.8.0 2024-05-30
 
 - **Bug Fix** auth: use device code auth when running in a web browser
