@@ -208,6 +208,8 @@ class InteractiveBearerTokenProviderTest {
 
         // initial load
         verify(diskCache).loadAccessToken(any<DeviceGrantAccessTokenCacheKey>())
+        verify(diskCache).invalidateClientRegistration(region)
+        verify(diskCache).invalidateAccessToken(startUrl)
 
         // clears out on-disk token
         verify(diskCache, times(2)).invalidateAccessToken(

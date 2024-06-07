@@ -47,19 +47,37 @@ class DiskCacheTest {
 
     @Test
     fun nonExistentClientRegistrationReturnsNull() {
-        assertThat(sut.loadClientRegistration(ssoRegion)).isNull()
+        assertThat(
+            sut.loadClientRegistration(
+                DeviceAuthorizationClientRegistrationCacheKey(
+                    startUrl = ssoUrl,
+                    scopes = scopes,
+                    region = ssoRegion
+                )
+            )
+        ).isNull()
     }
 
     @Test
     fun corruptClientRegistrationReturnsNull() {
-        cacheLocation.resolve("aws-toolkit-jetbrains-client-id-$ssoRegion.json").writeText("badData")
+        val key = DeviceAuthorizationClientRegistrationCacheKey(
+            startUrl = ssoUrl,
+            scopes = scopes,
+            region = ssoRegion
+        )
+        cacheLocation.resolve("223224b6f0b4702c1a984be8284fe2c9d9718759.json").writeText("badData")
 
-        assertThat(sut.loadClientRegistration(ssoRegion)).isNull()
+        assertThat(sut.loadClientRegistration(key)).isNull()
     }
 
     @Test
     fun expiredClientRegistrationReturnsNull() {
-        cacheLocation.resolve("aws-toolkit-jetbrains-client-id-$ssoRegion.json").writeText(
+        val key = DeviceAuthorizationClientRegistrationCacheKey(
+            startUrl = ssoUrl,
+            scopes = scopes,
+            region = ssoRegion
+        )
+        cacheLocation.resolve("223224b6f0b4702c1a984be8284fe2c9d9718759.json").writeText(
             """
             {
                 "clientId": "DummyId", 
@@ -69,13 +87,18 @@ class DiskCacheTest {
             """.trimIndent()
         )
 
-        assertThat(sut.loadClientRegistration(ssoRegion)).isNull()
+        assertThat(sut.loadClientRegistration(key)).isNull()
     }
 
     @Test
     fun clientRegistrationExpiringSoonIsTreatedAsExpired() {
+        val key = DeviceAuthorizationClientRegistrationCacheKey(
+            startUrl = ssoUrl,
+            scopes = scopes,
+            region = ssoRegion
+        )
         val expirationTime = now.plus(14, ChronoUnit.MINUTES)
-        cacheLocation.resolve("aws-toolkit-jetbrains-client-id-$ssoRegion.json").writeText(
+        cacheLocation.resolve("223224b6f0b4702c1a984be8284fe2c9d9718759.json").writeText(
             """
             {
                 "clientId": "DummyId", 
@@ -85,31 +108,7 @@ class DiskCacheTest {
             """.trimIndent()
         )
 
-        assertThat(sut.loadClientRegistration(ssoRegion)).isNull()
-    }
-
-    @Test
-    fun validClientRegistrationReturnsCorrectly() {
-        val expirationTime = now.plus(20, ChronoUnit.MINUTES)
-        cacheLocation.resolve("aws-toolkit-jetbrains-client-id-$ssoRegion.json").writeText(
-            """
-            {
-                "clientId": "DummyId", 
-                "clientSecret": "DummySecret", 
-                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expirationTime)}"
-            }
-            """.trimIndent()
-        )
-
-        assertThat(sut.loadClientRegistration(ssoRegion))
-            .usingRecursiveComparison()
-            .isEqualTo(
-                DeviceAuthorizationClientRegistration(
-                    "DummyId",
-                    "DummySecret",
-                    expirationTime
-                )
-            )
+        assertThat(sut.loadClientRegistration(key)).isNull()
     }
 
     @Test
@@ -140,34 +139,6 @@ class DiskCacheTest {
                     expirationTime,
                     scopes
                 )
-            )
-    }
-
-    @Test
-    fun clientRegistrationSavesCorrectly() {
-        val expirationTime = DateTimeFormatter.ISO_INSTANT.parse("2020-04-07T21:31:33Z")
-        sut.saveClientRegistration(
-            ssoRegion,
-            DeviceAuthorizationClientRegistration(
-                "DummyId",
-                "DummySecret",
-                Instant.from(expirationTime)
-            )
-        )
-
-        val clientRegistration = cacheLocation.resolve("aws-toolkit-jetbrains-client-id-$ssoRegion.json")
-        if (SystemInfo.isUnix) {
-            assertPosixPermissions(clientRegistration, "rw-------")
-        }
-        assertThat(clientRegistration.readText())
-            .isEqualToIgnoringWhitespace(
-                """
-                {
-                    "clientId": "DummyId", 
-                    "clientSecret": "DummySecret", 
-                    "expiresAt": "2020-04-07T21:31:33Z"
-                }       
-                """.trimIndent()
             )
     }
 
@@ -356,28 +327,6 @@ class DiskCacheTest {
     }
 
     @Test
-    fun invalidateClientRegistrationDeletesTheFile() {
-        val expirationTime = now.plus(20, ChronoUnit.MINUTES)
-        val cacheFile = cacheLocation.resolve("aws-toolkit-jetbrains-client-id-$ssoRegion.json")
-        cacheFile.writeText(
-            """
-            {
-                "clientId": "DummyId", 
-                "clientSecret": "DummySecret", 
-                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expirationTime)}"
-            }
-            """.trimIndent()
-        )
-
-        assertThat(sut.loadClientRegistration(ssoRegion)).isNotNull()
-
-        sut.invalidateClientRegistration(ssoRegion)
-
-        assertThat(sut.loadClientRegistration(ssoRegion)).isNull()
-        assertThat(cacheFile).doesNotExist()
-    }
-
-    @Test
     fun `invalidate scoped client registration deletes the file`() {
         val expirationTime = now.plus(20, ChronoUnit.MINUTES)
         val cacheFile = cacheLocation.resolve("223224b6f0b4702c1a984be8284fe2c9d9718759.json")
@@ -407,19 +356,20 @@ class DiskCacheTest {
 
     @Test
     fun nonExistentAccessTokenReturnsNull() {
-        assertThat(sut.loadAccessToken(ssoUrl)).isNull()
+        assertThat(sut.loadAccessToken(DeviceGrantAccessTokenCacheKey("connectionId", ssoUrl, listOf("scope1", "scope2")))).isNull()
     }
 
     @Test
     fun corruptAccessTokenReturnsNull() {
-        cacheLocation.resolve("c1ac99f782ad92755c6de8647b510ec247330ad1.json").writeText("badData")
+        val key = DeviceGrantAccessTokenCacheKey("connectionId", ssoUrl, listOf("scope1", "scope2"))
 
-        assertThat(sut.loadAccessToken(ssoUrl)).isNull()
+        assertThat(sut.loadAccessToken(key)).isNull()
     }
 
     @Test
     fun `expired access token is not loaded`() {
-        cacheLocation.resolve("c1ac99f782ad92755c6de8647b510ec247330ad1.json").writeText(
+        val key = DeviceGrantAccessTokenCacheKey("connectionId", ssoUrl, listOf("scope1", "scope2"))
+        cacheLocation.resolve("72286fb950f12c77c840239851fd64ac60275c5c.json").writeText(
             """
             {
                 "startUrl": "$ssoUrl", 
@@ -430,12 +380,13 @@ class DiskCacheTest {
             """.trimIndent()
         )
 
-        assertThat(sut.loadAccessToken(ssoUrl)).isNull()
+        assertThat(sut.loadAccessToken(key)).isNull()
     }
 
     @Test
     fun `expired access token is loaded if it has a refresh token`() {
-        cacheLocation.resolve("c1ac99f782ad92755c6de8647b510ec247330ad1.json").writeText(
+        val key = DeviceGrantAccessTokenCacheKey("connectionId", ssoUrl, listOf("scope1", "scope2"))
+        cacheLocation.resolve("72286fb950f12c77c840239851fd64ac60275c5c.json").writeText(
             """
             {
                 "startUrl": "$ssoUrl", 
@@ -447,13 +398,14 @@ class DiskCacheTest {
             """.trimIndent()
         )
 
-        assertThat(sut.loadAccessToken(ssoUrl)).isNotNull()
+        assertThat(sut.loadAccessToken(key)).isNotNull()
     }
 
     @Test
     fun accessTokenExpiringSoonIsTreatedAsExpired() {
+        val key = DeviceGrantAccessTokenCacheKey("connectionId", ssoUrl, listOf("scope1", "scope2"))
         val expirationTime = now.plus(14, ChronoUnit.MINUTES)
-        cacheLocation.resolve("c1ac99f782ad92755c6de8647b510ec247330ad1.json").writeText(
+        cacheLocation.resolve("72286fb950f12c77c840239851fd64ac60275c5c.json").writeText(
             """
             {
                 "startUrl": "$ssoUrl", 
@@ -464,38 +416,13 @@ class DiskCacheTest {
             """.trimIndent()
         )
 
-        assertThat(sut.loadAccessToken(ssoUrl)).isNull()
-    }
-
-    @Test
-    fun validAccessTokenReturnsCorrectly() {
-        val expirationTime = now.plus(20, ChronoUnit.MINUTES)
-        cacheLocation.resolve("c1ac99f782ad92755c6de8647b510ec247330ad1.json").writeText(
-            """
-            {
-                "startUrl": "$ssoUrl", 
-                "region": "$ssoRegion",
-                "accessToken": "DummyAccessToken",
-                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expirationTime)}"
-            }
-            """.trimIndent()
-        )
-
-        assertThat(sut.loadAccessToken(ssoUrl))
-            .usingRecursiveComparison()
-            .isEqualTo(
-                DeviceAuthorizationGrantToken(
-                    ssoUrl,
-                    ssoRegion,
-                    "DummyAccessToken",
-                    expiresAt = expirationTime
-                )
-            )
+        assertThat(sut.loadAccessToken(key)).isNull()
     }
 
     @Test
     fun validAccessTokenFromCliReturnsCorrectly() {
-        cacheLocation.resolve("c1ac99f782ad92755c6de8647b510ec247330ad1.json").writeText(
+        val key = DeviceGrantAccessTokenCacheKey("connectionId", ssoUrl, listOf("scope1", "scope2"))
+        cacheLocation.resolve("72286fb950f12c77c840239851fd64ac60275c5c.json").writeText(
             """
             {
                 "startUrl": "$ssoUrl", 
@@ -506,7 +433,7 @@ class DiskCacheTest {
             """.trimIndent()
         )
 
-        assertThat(sut.loadAccessToken(ssoUrl))
+        assertThat(sut.loadAccessToken(key))
             .usingRecursiveComparison()
             .isEqualTo(
                 DeviceAuthorizationGrantToken(
@@ -515,39 +442,6 @@ class DiskCacheTest {
                     "DummyAccessToken",
                     expiresAt = ZonedDateTime.of(2999, 6, 10, 0, 50, 40, 0, ZoneOffset.UTC).toInstant()
                 )
-            )
-    }
-
-    @Test
-    fun accessTokenSavesCorrectly() {
-        val expirationTime = DateTimeFormatter.ISO_INSTANT.parse("2020-04-07T21:31:33Z")
-        sut.saveAccessToken(
-            ssoUrl,
-            DeviceAuthorizationGrantToken(
-                ssoUrl,
-                ssoRegion,
-                "DummyAccessToken",
-                expiresAt = Instant.from(expirationTime),
-                createdAt = Instant.EPOCH
-            )
-        )
-
-        val accessTokenCache = cacheLocation.resolve("c1ac99f782ad92755c6de8647b510ec247330ad1.json")
-        if (SystemInfo.isUnix) {
-            assertPosixPermissions(accessTokenCache, "rw-------")
-        }
-
-        assertThat(accessTokenCache.readText())
-            .isEqualToIgnoringWhitespace(
-                """
-                {
-                    "startUrl": "$ssoUrl", 
-                    "region": "$ssoRegion",
-                    "accessToken": "DummyAccessToken",
-                    "expiresAt": "2020-04-07T21:31:33Z",
-                    "createdAt":"1970-01-01T00:00:00Z"
-                }       
-                """.trimIndent()
             )
     }
 
@@ -587,34 +481,10 @@ class DiskCacheTest {
     }
 
     @Test
-    fun accessTokenInvalidationDeletesFile() {
-        val expirationTime = now.plus(20, ChronoUnit.MINUTES)
-        val cacheFile = cacheLocation.resolve("c1ac99f782ad92755c6de8647b510ec247330ad1.json")
-        cacheFile.writeText(
-            """
-            {
-                "startUrl": "$ssoUrl", 
-                "region": "$ssoRegion",
-                "accessToken": "DummyAccessToken",
-                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expirationTime)}",
-                "createdAt":"1970-01-01T00:00:00Z"
-            }
-            """.trimIndent()
-        )
-
-        assertThat(sut.loadAccessToken(ssoUrl)).isNotNull()
-
-        sut.invalidateAccessToken(ssoUrl)
-
-        assertThat(sut.loadAccessToken(ssoUrl)).isNull()
-        assertThat(cacheFile).doesNotExist()
-    }
-
-    @Test
     fun `invalidate scoped access token deletes file`() {
         val expirationTime = now.plus(20, ChronoUnit.MINUTES)
-        val cacheFile = cacheLocation.resolve("72286fb950f12c77c840239851fd64ac60275c5c.json")
         val key = DeviceGrantAccessTokenCacheKey("connectionId", ssoUrl, listOf("scope1", "scope2"))
+        val cacheFile = cacheLocation.resolve("72286fb950f12c77c840239851fd64ac60275c5c.json")
 
         cacheFile.writeText(
             """
@@ -670,7 +540,11 @@ class DiskCacheTest {
         cacheRoot.setPosixFilePermissions(PosixFilePermissions.fromString("r-xr-xr-x"))
 
         sut.saveClientRegistration(
-            ssoRegion,
+            DeviceAuthorizationClientRegistrationCacheKey(
+                startUrl = ssoUrl,
+                scopes = scopes,
+                region = ssoRegion
+            ),
             DeviceAuthorizationClientRegistration(
                 "DummyId",
                 "DummySecret",
@@ -678,7 +552,7 @@ class DiskCacheTest {
             )
         )
 
-        val registration = cacheLocation.resolve("aws-toolkit-jetbrains-client-id-$ssoRegion.json")
+        val registration = cacheLocation.resolve("223224b6f0b4702c1a984be8284fe2c9d9718759.json")
         assertThat(cacheLocation).isEqualTo(Paths.get(cacheRoot.toString(), "fakehome", ".aws", "sso", "cache"))
         assertPosixPermissions(cacheRoot, "rwxr-xr-x")
         assertPosixPermissions(cacheRoot.resolve("fakehome"), "rwx------")
@@ -691,9 +565,14 @@ class DiskCacheTest {
     @Test
     @DisabledOnOs(OS.WINDOWS)
     fun `handles error saving client registration when client registration is not writable`() {
-        val registration = cacheLocation.resolve("aws-toolkit-jetbrains-client-id-$ssoRegion.json")
+        val key = DeviceAuthorizationClientRegistrationCacheKey(
+            startUrl = ssoUrl,
+            scopes = scopes,
+            region = ssoRegion
+        )
+        val registration = cacheLocation.resolve("223224b6f0b4702c1a984be8284fe2c9d9718759.json")
         sut.saveClientRegistration(
-            ssoRegion,
+            key,
             DeviceAuthorizationClientRegistration(
                 "DummyId",
                 "DummySecret",
@@ -705,7 +584,7 @@ class DiskCacheTest {
         assertPosixPermissions(registration, "---------")
 
         sut.saveClientRegistration(
-            ssoRegion,
+            key,
             DeviceAuthorizationClientRegistration(
                 "DummyId",
                 "DummySecret",
@@ -719,19 +598,24 @@ class DiskCacheTest {
     @Test
     @DisabledOnOs(OS.WINDOWS)
     fun `handles reading client registration when file is owned but not readable`() {
+        val key = DeviceAuthorizationClientRegistrationCacheKey(
+            startUrl = ssoUrl,
+            scopes = scopes,
+            region = ssoRegion
+        )
         sut.saveClientRegistration(
-            ssoRegion,
+            key,
             DeviceAuthorizationClientRegistration(
                 "DummyId",
                 "DummySecret",
                 Instant.MAX
             )
         )
-        val registration = cacheLocation.resolve("aws-toolkit-jetbrains-client-id-$ssoRegion.json")
+        val registration = cacheLocation.resolve("223224b6f0b4702c1a984be8284fe2c9d9718759.json")
         registration.setPosixFilePermissions(emptySet())
         assertPosixPermissions(registration, "---------")
 
-        assertThat(sut.loadClientRegistration(ssoRegion)).isNotNull()
+        assertThat(sut.loadClientRegistration(key)).isNotNull()
 
         assertPosixPermissions(registration, "rw-------")
     }

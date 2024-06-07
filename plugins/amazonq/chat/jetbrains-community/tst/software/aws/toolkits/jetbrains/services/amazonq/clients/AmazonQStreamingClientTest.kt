@@ -65,7 +65,7 @@ class AmazonQStreamingClientTest : AmazonQTestBase() {
         connectionManager = mock {
             on {
                 activeConnectionForFeature(any())
-            } doReturn authManagerRule.createConnection(ManagedSsoProfile("us-east-1", aString(), emptyList())) as AwsBearerTokenConnection
+            } doReturn authManagerRule.createConnection(ManagedSsoProfile("us-east-1", aString(), listOf("scopes"))) as AwsBearerTokenConnection
         }
 
         projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposableRule.disposable)

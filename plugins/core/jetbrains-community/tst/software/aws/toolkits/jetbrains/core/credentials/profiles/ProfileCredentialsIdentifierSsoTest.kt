@@ -48,7 +48,7 @@ class ProfileCredentialsIdentifierSsoTest {
 
         // IllegalStateException instead of more general base Exception so we know if the type changes
         val exception = assertThrows<NoTokenInitializedException> {
-            InteractiveBearerTokenProvider("", "us-east-1", emptyList(), cache = cache, id = "test").resolveToken()
+            InteractiveBearerTokenProvider("", "us-east-1", listOf("scopes"), cache = cache, id = "test").resolveToken()
         }
         assertThat(sut.handleValidationException(exception)).isNotNull()
     }

@@ -93,20 +93,6 @@ class DiskCache(
             )
         }
 
-    override fun loadClientRegistration(ssoRegion: String): ClientRegistration? {
-        LOG.debug { "loadClientRegistration for $ssoRegion" }
-        val inputStream = clientRegistrationCache(ssoRegion).tryInputStreamIfExists() ?: return null
-        return loadClientRegistration(inputStream)
-    }
-
-    override fun saveClientRegistration(ssoRegion: String, registration: ClientRegistration) {
-        LOG.debug { "saveClientRegistration for $ssoRegion" }
-        val registrationCache = clientRegistrationCache(ssoRegion)
-        writeKey(registrationCache) {
-            objectMapper.writeValue(it, registration)
-        }
-    }
-
     override fun invalidateClientRegistration(ssoRegion: String) {
         LOG.debug { "invalidateClientRegistration for $ssoRegion" }
         clientRegistrationCache(ssoRegion).tryDeleteIfExists()
@@ -131,22 +117,6 @@ class DiskCache(
     override fun invalidateClientRegistration(cacheKey: ClientRegistrationCacheKey) {
         LOG.debug { "invalidateClientRegistration for $cacheKey" }
         clientRegistrationCache(cacheKey).tryDeleteIfExists()
-    }
-
-    override fun loadAccessToken(ssoUrl: String): AccessToken? {
-        LOG.debug { "loadAccessToken for $ssoUrl" }
-        val cacheFile = accessTokenCache(ssoUrl)
-        val inputStream = cacheFile.tryInputStreamIfExists() ?: return null
-
-        return loadAccessToken(inputStream)
-    }
-
-    override fun saveAccessToken(ssoUrl: String, accessToken: AccessToken) {
-        LOG.debug { "saveAccessToken for $ssoUrl" }
-        val accessTokenCache = accessTokenCache(ssoUrl)
-        writeKey(accessTokenCache) {
-            objectMapper.writeValue(it, accessToken)
-        }
     }
 
     override fun invalidateAccessToken(ssoUrl: String) {

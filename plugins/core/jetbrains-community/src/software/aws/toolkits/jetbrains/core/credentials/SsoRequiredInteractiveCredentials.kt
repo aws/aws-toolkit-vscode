@@ -4,17 +4,31 @@
 package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.openapi.actionSystem.AnAction
+import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROLE_ACCESS_SCOPE
+import software.aws.toolkits.jetbrains.core.credentials.sso.LazyAccessTokenProvider
 import software.aws.toolkits.jetbrains.core.credentials.sso.SsoCache
 import software.aws.toolkits.resources.message
 
 interface SsoRequiredInteractiveCredentials : InteractiveCredential {
     val ssoCache: SsoCache
     val ssoUrl: String
+    val ssoRegion: String
 
     override val userActionDisplayMessage: String get() = message("credentials.sso.display", displayName)
     override val userActionShortDisplayMessage: String get() = message("credentials.sso.display.short")
 
     override val userAction: AnAction get() = RefreshConnectionAction(message("credentials.sso.action"))
 
-    override fun userActionRequired(): Boolean = ssoCache.loadAccessToken(ssoUrl) == null
+    private val lazyTokenProvider: LazyAccessTokenProvider
+        get() = LazyAccessTokenProvider(
+            ssoCache,
+            ssoUrl,
+            ssoRegion,
+            listOf(IDENTITY_CENTER_ROLE_ACCESS_SCOPE)
+        )
+
+    // assumes single scope if we're going through this interface
+    override fun userActionRequired(): Boolean = lazyTokenProvider.resolveToken() == null
+
+    fun invalidateCurrentToken() = lazyTokenProvider.invalidate()
 }

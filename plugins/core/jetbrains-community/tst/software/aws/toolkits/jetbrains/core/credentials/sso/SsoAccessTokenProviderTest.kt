@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.core.credentials.sso
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.ApplicationRule
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.RuleChain
@@ -17,6 +18,7 @@ import org.junit.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.KStubbing
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.stub
@@ -37,7 +39,9 @@ import software.amazon.awssdk.services.ssooidc.model.StartDeviceAuthorizationRes
 import software.aws.toolkits.core.region.aRegionId
 import software.aws.toolkits.core.utils.delegateMock
 import software.aws.toolkits.core.utils.test.aString
+import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROLE_ACCESS_SCOPE
 import software.aws.toolkits.jetbrains.core.credentials.sso.pkce.ToolkitOAuthService
+import software.aws.toolkits.jetbrains.utils.rules.RegistryRule
 import software.aws.toolkits.jetbrains.utils.rules.SsoLoginCallbackProviderRule
 import java.time.Clock
 import java.time.Duration
@@ -60,17 +64,18 @@ class SsoAccessTokenProviderTest {
     private val applicationRule = ApplicationRule()
     private val disposableRule = DisposableRule()
     private val ssoCallbackRule = SsoLoginCallbackProviderRule()
+    private val registryRule = RegistryRule("aws.dev.useDAG", true)
 
     @JvmField
     @Rule
-    val ruleChain = RuleChain(applicationRule, ssoCallbackRule, disposableRule)
+    val ruleChain = RuleChain(applicationRule, registryRule, ssoCallbackRule, disposableRule)
 
     @Before
     fun setUp() {
         ssoOidcClient = delegateMock()
         ssoCache = mock()
 
-        sut = SsoAccessTokenProvider(ssoUrl, ssoRegion, ssoCache, ssoOidcClient, clock = clock)
+        sut = SsoAccessTokenProvider(ssoUrl, ssoRegion, ssoCache, ssoOidcClient, scopes = listOf(IDENTITY_CENTER_ROLE_ACCESS_SCOPE), clock = clock)
     }
 
     @Test
@@ -78,7 +83,7 @@ class SsoAccessTokenProviderTest {
         val accessToken = DeviceAuthorizationGrantToken(ssoUrl, ssoRegion, "dummyToken", expiresAt = clock.instant())
         ssoCache.stub {
             on(
-                ssoCache.loadAccessToken(ssoUrl)
+                ssoCache.loadAccessToken(argThat<DeviceGrantAccessTokenCacheKey> { startUrl == ssoUrl })
             ).thenReturn(
                 accessToken
             )
@@ -89,11 +94,11 @@ class SsoAccessTokenProviderTest {
             .usingRecursiveComparison()
             .isEqualTo(accessToken)
 
-        verify(ssoCache).loadAccessToken(ssoUrl)
+        verify(ssoCache).loadAccessToken(any<DeviceGrantAccessTokenCacheKey>())
     }
 
     @Test
-    fun getAccessTokenWithClientRegistrationCache() {
+    fun `get device access token with client registration cache`() {
         val expirationClientRegistration = clock.instant().plusSeconds(120)
         setupCacheStub(expirationClientRegistration)
 
@@ -117,13 +122,13 @@ class SsoAccessTokenProviderTest {
 
         verify(ssoOidcClient).startDeviceAuthorization(any<StartDeviceAuthorizationRequest>())
         verify(ssoOidcClient).createToken(any<CreateTokenRequest>())
-        verify(ssoCache).loadAccessToken(ssoUrl)
-        verify(ssoCache).loadClientRegistration(ssoRegion)
-        verify(ssoCache).saveAccessToken(ssoUrl, accessToken)
+        verify(ssoCache).loadAccessToken(argThat<DeviceGrantAccessTokenCacheKey> { startUrl == ssoUrl })
+        verify(ssoCache).loadClientRegistration(argThat { region == ssoRegion })
+        verify(ssoCache).saveAccessToken(argThat<DeviceGrantAccessTokenCacheKey> { startUrl == ssoUrl }, eq(accessToken))
     }
 
     @Test
-    fun getAccessTokenWithoutCaches() {
+    fun `get device access token without caches`() {
         val expirationClientRegistration = clock.instant().plusSeconds(120)
         setupCacheStub(returnValue = null)
 
@@ -133,7 +138,7 @@ class SsoAccessTokenProviderTest {
                     RegisterClientRequest.builder()
                         .clientType("public")
                         .clientName("AWS IDE Plugins for JetBrains")
-                        .scopes(emptyList())
+                        .scopes(listOf(IDENTITY_CENTER_ROLE_ACCESS_SCOPE))
                         .build()
                 )
             ).thenReturn(
@@ -163,14 +168,15 @@ class SsoAccessTokenProviderTest {
         verify(ssoOidcClient).registerClient(any<RegisterClientRequest>())
         verify(ssoOidcClient).startDeviceAuthorization(any<StartDeviceAuthorizationRequest>())
         verify(ssoOidcClient).createToken(any<CreateTokenRequest>())
-        verify(ssoCache).loadAccessToken(ssoUrl)
-        verify(ssoCache).loadClientRegistration(ssoRegion)
-        verify(ssoCache).saveClientRegistration(eq(ssoRegion), any())
-        verify(ssoCache).saveAccessToken(ssoUrl, accessToken)
+        verify(ssoCache).loadAccessToken(argThat<DeviceGrantAccessTokenCacheKey> { startUrl == ssoUrl })
+        verify(ssoCache).loadClientRegistration(argThat<DeviceAuthorizationClientRegistrationCacheKey> { region == ssoRegion })
+        verify(ssoCache).saveClientRegistration(argThat<DeviceAuthorizationClientRegistrationCacheKey> { region == ssoRegion }, any())
+        verify(ssoCache).saveAccessToken(argThat<DeviceGrantAccessTokenCacheKey> { startUrl == ssoUrl }, eq(accessToken))
     }
 
     @Test
-    fun `initiates authorizatation_grant registration when scopes are requested in a commercial region`() {
+    fun `initiates authorizatation_grant registration when requested in a commercial region`() {
+        setPkceTrue()
         val sut = SsoAccessTokenProvider(ssoUrl, "us-east-1", ssoCache, ssoOidcClient, scopes = listOf("dummy:scope"), clock = clock)
         setupCacheStub(returnValue = null)
 
@@ -196,7 +202,8 @@ class SsoAccessTokenProviderTest {
     }
 
     @Test
-    fun `initiates device code registration when scopes are requested in a non-commercial region`() {
+    fun `initiates device code registration when requested in a non-commercial region`() {
+        setPkceTrue()
         val sut = SsoAccessTokenProvider(ssoUrl, "us-gov-east-1", ssoCache, ssoOidcClient, scopes = listOf("dummy:scope"), clock = clock)
         setupCacheStub(returnValue = null)
 
@@ -218,11 +225,11 @@ class SsoAccessTokenProviderTest {
         // flow is not completely stubbed out
         assertThrows<Exception> { sut.accessToken() }
 
-        verify(ssoCache).saveClientRegistration(any<DeviceAuthorizationClientRegistrationCacheKey>(), any())
+        verify(ssoCache).saveClientRegistration(any(), any())
     }
 
     @Test
-    fun getAccessTokenWithoutCachesMultiplePolls() {
+    fun `get device access token without caches and multiple polls`() {
         val expirationClientRegistration = clock.instant().plusSeconds(120)
 
         setupCacheStub(expirationClientRegistration)
@@ -258,9 +265,9 @@ class SsoAccessTokenProviderTest {
 
         verify(ssoOidcClient).startDeviceAuthorization(any<StartDeviceAuthorizationRequest>())
         verify(ssoOidcClient, times(2)).createToken(any<CreateTokenRequest>())
-        verify(ssoCache).loadAccessToken(ssoUrl)
-        verify(ssoCache).loadClientRegistration(ssoRegion)
-        verify(ssoCache).saveAccessToken(ssoUrl, accessToken)
+        verify(ssoCache).loadAccessToken(argThat<DeviceGrantAccessTokenCacheKey> { startUrl == ssoUrl })
+        verify(ssoCache).loadClientRegistration(argThat<DeviceAuthorizationClientRegistrationCacheKey> { region == ssoRegion })
+        verify(ssoCache).saveAccessToken(argThat<DeviceGrantAccessTokenCacheKey> { startUrl == ssoUrl }, eq(accessToken))
     }
 
     @Test
@@ -271,7 +278,7 @@ class SsoAccessTokenProviderTest {
         val accessToken = DeviceAuthorizationGrantToken(ssoUrl, ssoRegion, "dummyToken", "refreshToken", clock.instant())
         ssoCache.stub {
             on(
-                ssoCache.loadAccessToken(ssoUrl)
+                ssoCache.loadAccessToken(argThat<DeviceGrantAccessTokenCacheKey> { startUrl == ssoUrl })
             ).thenReturn(
                 accessToken
             )
@@ -287,15 +294,15 @@ class SsoAccessTokenProviderTest {
 
         val refreshedToken = runBlocking { sut.refreshToken(sut.accessToken()) }
 
-        verify(ssoCache).loadAccessToken(ssoUrl)
-        verify(ssoCache).loadClientRegistration(ssoRegion)
+        verify(ssoCache).loadAccessToken(argThat<DeviceGrantAccessTokenCacheKey> { startUrl == ssoUrl })
+        verify(ssoCache).loadClientRegistration(argThat { region == ssoRegion })
         verify(ssoOidcClient).createToken(any<CreateTokenRequest>())
-        verify(ssoCache).saveAccessToken(ssoUrl, refreshedToken)
+        verify(ssoCache).saveAccessToken(argThat<DeviceGrantAccessTokenCacheKey> { startUrl == ssoUrl }, eq(refreshedToken))
     }
 
     @Test
     fun `PKCE refresh access token saves PKCE token`() {
-        val sut = SsoAccessTokenProvider(ssoUrl, "us-east-1", ssoCache, ssoOidcClient, scopes = listOf("dummy:scope"), clock = clock)
+        setPkceTrue()
 
         val expirationClientRegistration = clock.instant().plusSeconds(120)
         setupCacheStub(expirationClientRegistration)
@@ -342,7 +349,7 @@ class SsoAccessTokenProviderTest {
     }
 
     @Test
-    fun exceptionStopsPolling() {
+    fun `exception stops device code polling`() {
         val expirationClientRegistration = clock.instant().plusSeconds(120)
 
         setupCacheStub(expirationClientRegistration)
@@ -356,12 +363,12 @@ class SsoAccessTokenProviderTest {
 
         verify(ssoOidcClient).startDeviceAuthorization(any<StartDeviceAuthorizationRequest>())
         verify(ssoOidcClient).createToken(any<CreateTokenRequest>())
-        verify(ssoCache).loadAccessToken(ssoUrl)
-        verify(ssoCache).loadClientRegistration(ssoRegion)
+        verify(ssoCache).loadAccessToken(argThat<DeviceGrantAccessTokenCacheKey> { startUrl == ssoUrl })
+        verify(ssoCache).loadClientRegistration(argThat<DeviceAuthorizationClientRegistrationCacheKey> { region == ssoRegion })
     }
 
     @Test
-    fun backOffTimeIsRespected() {
+    fun `backoff time is respected during device code polling`() {
         val expirationClientRegistration = clock.instant().plusSeconds(120)
         setupCacheStub(expirationClientRegistration)
 
@@ -394,13 +401,13 @@ class SsoAccessTokenProviderTest {
 
         assertThat(callDuration).isGreaterThan(Duration.ofSeconds(5))
 
-        verify(ssoCache).saveAccessToken(ssoUrl, accessToken)
+        verify(ssoCache).saveAccessToken(argThat<DeviceGrantAccessTokenCacheKey> { startUrl == ssoUrl }, eq(accessToken))
 
         verify(ssoOidcClient).startDeviceAuthorization(any<StartDeviceAuthorizationRequest>())
         verify(ssoOidcClient, times(2)).createToken(any<CreateTokenRequest>())
-        verify(ssoCache).loadAccessToken(ssoUrl)
-        verify(ssoCache).loadClientRegistration(ssoRegion)
-        verify(ssoCache).saveAccessToken(ssoUrl, accessToken)
+        verify(ssoCache).loadAccessToken(argThat<DeviceGrantAccessTokenCacheKey> { startUrl == ssoUrl })
+        verify(ssoCache).loadClientRegistration(argThat<DeviceAuthorizationClientRegistrationCacheKey> { region == ssoRegion })
+        verify(ssoCache).saveAccessToken(argThat<DeviceGrantAccessTokenCacheKey> { startUrl == ssoUrl }, eq(accessToken))
     }
 
     @Test
@@ -418,12 +425,12 @@ class SsoAccessTokenProviderTest {
         assertThatThrownBy { runBlocking { sut.accessToken() } }.isInstanceOf(SsoOidcException::class.java)
 
         verify(ssoOidcClient).registerClient(any<RegisterClientRequest>())
-        verify(ssoCache).loadAccessToken(ssoUrl)
-        verify(ssoCache).loadClientRegistration(ssoRegion)
+        verify(ssoCache).loadAccessToken(any())
+        verify(ssoCache).loadClientRegistration(argThat { region == ssoRegion })
     }
 
     @Test
-    fun invalidClientRegistrationClearsTheCache() {
+    fun `invalid device code registration clears the cache`() {
         setupCacheStub(Instant.now(clock))
 
         ssoOidcClient.stub {
@@ -436,7 +443,7 @@ class SsoAccessTokenProviderTest {
 
         assertThatThrownBy { runBlocking { sut.accessToken() } }.isInstanceOf(InvalidClientException::class.java)
 
-        verify(ssoCache).invalidateClientRegistration(ssoRegion)
+        verify(ssoCache, times(2)).invalidateClientRegistration(argThat<ClientRegistrationCacheKey> { region == ssoRegion })
     }
 
     @Test
@@ -453,13 +460,13 @@ class SsoAccessTokenProviderTest {
     private fun setupCacheStub(returnValue: ClientRegistration?) {
         ssoCache.stub {
             on(
-                ssoCache.loadAccessToken(ssoUrl)
+                ssoCache.loadAccessToken(any())
             ).thenReturn(
                 null
             )
 
             on(
-                ssoCache.loadClientRegistration(ssoRegion)
+                ssoCache.loadClientRegistration(argThat { region == ssoRegion })
             ).thenReturn(
                 returnValue
             )
@@ -523,4 +530,6 @@ class SsoAccessTokenProviderTest {
         .refreshToken("refreshToken2")
         .expiresIn(180)
         .build()
+
+    private fun setPkceTrue() = Registry.get("aws.dev.useDAG").setValue(false)
 }

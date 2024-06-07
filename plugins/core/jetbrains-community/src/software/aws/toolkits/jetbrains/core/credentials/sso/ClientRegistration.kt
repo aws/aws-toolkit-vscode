@@ -54,19 +54,21 @@ data class PKCEClientRegistration(
     override fun toString(): String = redactedString(this)
 }
 
-sealed interface ClientRegistrationCacheKey
+sealed interface ClientRegistrationCacheKey {
+    val region: String
+}
 
 // only applicable in scoped registration path
 // based on internal development branch @da780a4,L2574-2586
 data class DeviceAuthorizationClientRegistrationCacheKey(
     val startUrl: String,
     val scopes: List<String>,
-    val region: String,
+    override val region: String,
 ) : ClientRegistrationCacheKey
 
 data class PKCEClientRegistrationCacheKey(
     val issuerUrl: String,
-    val region: String,
+    override val region: String,
     val scopes: List<String>,
     // assume clientType, grantTypes, redirectUris are static, but throw them in just in case
     val clientType: String,

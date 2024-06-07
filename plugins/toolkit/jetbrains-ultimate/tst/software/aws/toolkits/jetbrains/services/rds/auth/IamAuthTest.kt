@@ -31,6 +31,7 @@ import software.aws.toolkits.jetbrains.core.credentials.diskCache
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialsIdentifierSso
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileSsoSessionIdentifier
 import software.aws.toolkits.jetbrains.core.credentials.sso.DeviceAuthorizationGrantToken
+import software.aws.toolkits.jetbrains.core.credentials.sso.DeviceGrantAccessTokenCacheKey
 import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
@@ -83,9 +84,10 @@ class IamAuthTest {
     fun `Handle Sso authentication no token present`() {
         val noTokenCredentialId = RuleUtils.randomName()
         val ssoUrl = RuleUtils.randomName()
-        diskCache.saveAccessToken(ssoUrl, DeviceAuthorizationGrantToken(ssoUrl, "us-east-1", "access1", "refresh1", Instant.MAX))
+        val cacheKey = DeviceGrantAccessTokenCacheKey(connectionId = "us-east-1", startUrl = ssoUrl, scopes = listOf("scopes"))
+        diskCache.saveAccessToken(cacheKey, DeviceAuthorizationGrantToken(ssoUrl, "us-east-1", "access1", "refresh1", Instant.MAX))
         credentialManager.addCredentials(ProfileCredentialsIdentifierSso(noTokenCredentialId, noTokenCredentialId, "us-east-1", CredentialType.SsoProfile))
-        credentialManager.addSsoProvider(ProfileSsoSessionIdentifier(noTokenCredentialId, ssoUrl, "us-east-1", setOf()))
+        credentialManager.addSsoProvider(ProfileSsoSessionIdentifier(noTokenCredentialId, ssoUrl, "us-east-1", setOf("scopes")))
         val conneciton = buildConnection(hasCredentials = true, credentialId = "profile:" + noTokenCredentialId)
 
         val connection = iamAuth.handleSsoAuthentication(projectRule.project, conneciton)

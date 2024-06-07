@@ -217,11 +217,11 @@ class DefaultToolkitAuthManagerTest {
                 ManagedSsoProfile(
                     "us-east-1",
                     "foo",
-                    emptyList()
+                    listOf("scopes")
                 )
             )
 
-            loginSso(projectRule.project, "foo", "us-east-1", emptyList())
+            loginSso(projectRule.project, "foo", "us-east-1", listOf("scopes"))
 
             val tokenProvider = it.constructed()[0]
             verify(tokenProvider).state()
@@ -244,12 +244,12 @@ class DefaultToolkitAuthManagerTest {
                 ManagedSsoProfile(
                     "us-east-1",
                     "foo",
-                    emptyList()
+                    listOf("scopes")
                 )
             )
             connectionManager.switchConnection(existingConnection)
 
-            loginSso(projectRule.project, "foo", "us-east-1", emptyList())
+            loginSso(projectRule.project, "foo", "us-east-1", listOf("scopes"))
 
             val tokenProvider = it.constructed()[0]
             verify(tokenProvider).resolveToken()
@@ -270,12 +270,12 @@ class DefaultToolkitAuthManagerTest {
                 ManagedSsoProfile(
                     "us-east-1",
                     "foo",
-                    emptyList()
+                    listOf("scopes")
                 )
             )
             connectionManager.switchConnection(existingConnection)
 
-            loginSso(projectRule.project, "foo", "us-east-1", emptyList())
+            loginSso(projectRule.project, "foo", "us-east-1", listOf("scopes"))
 
             val tokenProvider = it.constructed()[0]
             verify(tokenProvider, timeout(5000)).reauthenticate()
@@ -382,7 +382,7 @@ class DefaultToolkitAuthManagerTest {
         regionProvider.addRegion(Region.US_EAST_1)
         projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposableRule.disposable)
 
-        val profile = ManagedSsoProfile("us-east-1", "startUrl000")
+        val profile = ManagedSsoProfile("us-east-1", "startUrl000", listOf("scopes"))
         val connection = ToolkitAuthManager.getInstance().createConnection(profile) as ManagedBearerSsoConnection
         connectionManager.switchConnection(connection)
 

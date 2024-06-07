@@ -22,6 +22,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.auth.credentials.SystemPropertyCredentialsProvider
 import software.amazon.awssdk.profiles.Profile
 import software.amazon.awssdk.profiles.ProfileProperty
+import software.amazon.awssdk.services.sso.model.UnauthorizedException
 import software.amazon.awssdk.services.ssooidc.model.SsoOidcException
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialIdentifierBase
@@ -80,9 +81,30 @@ private class ProfileCredentialsIdentifierLegacySso(
     defaultRegionId: String?,
     override val ssoCache: SsoCache,
     override val ssoUrl: String,
+    override val ssoRegion: String,
     credentialType: CredentialType?
 ) : ProfileCredentialsIdentifier(profileName, defaultRegionId, credentialType),
-    SsoRequiredInteractiveCredentials
+    SsoRequiredInteractiveCredentials,
+    PostValidateInteractiveCredential {
+    // react to failure to use the local credential set
+    override fun handleValidationException(e: Exception) = ifReAuthNeeded(e) {
+        ConnectionState.RequiresUserAction(
+            object : InteractiveCredential, CredentialIdentifier by this {
+                override val userActionDisplayMessage = message("credentials.sso.display", displayName)
+                override val userActionShortDisplayMessage = message("credentials.sso.display.short")
+                override val userAction = object : AnAction(message("credentials.sso.action")), DumbAware {
+                    override fun actionPerformed(e: AnActionEvent) {
+                        invalidateCurrentToken()
+
+                        RefreshConnectionAction().actionPerformed(e)
+                    }
+                }
+
+                override fun userActionRequired() = true
+            }
+        )
+    }
+}
 
 class ProfileCredentialsIdentifierSso @TestOnly constructor(
     profileName: String,
@@ -92,10 +114,9 @@ class ProfileCredentialsIdentifierSso @TestOnly constructor(
 ) : ProfileCredentialsIdentifier(profileName, defaultRegionId, credentialType), PostValidateInteractiveCredential, SsoSessionBackedCredentialIdentifier {
     override val sessionIdentifier = "$SSO_SESSION_SECTION_NAME:$ssoSessionName"
 
-    override fun handleValidationException(e: Exception): ConnectionState.RequiresUserAction? {
-        // in the new SSO flow, we must attempt validation before knowing if user action is truly required
-        if (findUpException<SsoOidcException>(e) || findUpException<IllegalStateException>(e) || findUpException<NoTokenInitializedException>(e)) {
-            return ConnectionState.RequiresUserAction(
+    override fun handleValidationException(e: Exception): ConnectionState.RequiresUserAction? =
+        ifReAuthNeeded(e) {
+            ConnectionState.RequiresUserAction(
                 object : InteractiveCredential, CredentialIdentifier by this {
                     override val userActionDisplayMessage = message("credentials.sso.display", displayName)
                     override val userActionShortDisplayMessage = message("credentials.sso.display.short")
@@ -121,23 +142,33 @@ class ProfileCredentialsIdentifierSso @TestOnly constructor(
                 }
             )
         }
+}
 
-        return null
+// in the new SSO flow, we must attempt validation before knowing if user action is truly required
+private fun ifReAuthNeeded(e: Exception, action: () -> ConnectionState.RequiresUserAction?): ConnectionState.RequiresUserAction? {
+    if (findUpException<SsoOidcException>(e) ||
+        findUpException<IllegalStateException>(e) ||
+        findUpException<NoTokenInitializedException>(e) ||
+        findUpException<UnauthorizedException>(e)
+    ) {
+        return action()
     }
 
-    // true exception could be further up the chain
-    private inline fun<reified T : Throwable> findUpException(e: Throwable?): Boolean {
-        // inline fun can't use recursion
-        var throwable = e
-        while (throwable != null) {
-            if (throwable is T) {
-                return true
-            }
-            throwable = throwable.cause
+    return null
+}
+
+// true exception could be further up the chain
+private inline fun<reified T : Throwable> findUpException(e: Throwable?): Boolean {
+    // inline fun can't use recursion
+    var throwable = e
+    while (throwable != null) {
+        if (throwable is T) {
+            return true
         }
-
-        return false
+        throwable = throwable.cause
     }
+
+    return false
 }
 
 private class NeverShowAgain : DumbAwareAction(message("settings.never_show_again")) {
@@ -410,6 +441,7 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
                 defaultRegion,
                 ssoCache,
                 this.traverseCredentialChain(profiles).map { it.property(ProfileProperty.SSO_START_URL) }.first { it.isPresent }.get(),
+                this.traverseCredentialChain(profiles).map { it.property(ProfileProperty.SSO_REGION) }.first { it.isPresent }.get(),
                 requestedProfileType
             )
             this.requiresSso() -> ProfileCredentialsIdentifierSso(
