@@ -24,7 +24,7 @@ import { PrepareRepoFailedError } from '../../../amazonqFeatureDev/errors'
 import * as crypto from '../../../common/crypto'
 import { TelemetryHelper } from '../../../amazonqFeatureDev/util/telemetryHelper'
 import { assertTelemetry, createTestWorkspaceFolder } from '../../testUtil'
-import { getFetchStubWithResponse } from '../../common/request.test'
+import { getFetchStubWithResponse } from '../..'
 
 const mockSessionStateAction = (msg?: string): SessionStateAction => {
     return {

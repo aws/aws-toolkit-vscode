@@ -30,7 +30,7 @@ import { CommonAuthWebview } from 'aws-core-vscode/login'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 import { telemetry, ExtStartUpSources } from 'aws-core-vscode/telemetry'
 import { getAuthStatus } from './auth/util'
-import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode/common'
+import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode/extensionCommon'
 import { registerCommands } from './commands'
 
 export const amazonQContextPrefix = 'amazonq'

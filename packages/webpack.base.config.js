@@ -49,6 +49,14 @@ module.exports = (env = {}, argv = {}) => {
                 // But, for whatever reason, the ESM output is used if we don't explicitly set `mainFields` under webpack's `resolve`
                 '@aws/fully-qualified-names$': '@aws/fully-qualified-names/node/aws_fully_qualified_names.js',
             },
+            fallback: {
+                /**
+                 * required by xml2js otherwise we get:
+                 * BREAKING CHANGE: webpack < 5 used to include polyfills for node.js core modules by default.
+                 * This is no longer the case. Verify if you need this module and configure a polyfill for it.
+                 */
+                timers: false,
+            },
         },
         node: {
             __dirname: false, //preserve the default node.js behavior for __dirname
