@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import { handleMessage } from './handleMessage'
 import { FileWatchInfo, WebviewContext } from './types'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { addFileWatchMessageHandler } from './messageHandlers/addFileWatchMessageHandler'
+import { onFileChanged } from './messageHandlers/addFileWatchMessageHandler'
 import { addThemeWatchMessageHandler } from './messageHandlers/addThemeWatchMessageHandler'
 import { sendThreatComposerOpenCancelled } from './messageHandlers/emitTelemetryMessageHandler'
 
@@ -154,7 +154,11 @@ export class ThreatComposerEditor {
                     // Remember that a single text document can also be shared between multiple custom
                     // editors (this happens for example when you split a custom editor)
 
-                    addFileWatchMessageHandler(contextObject)
+                    contextObject.disposables.push(
+                        vscode.workspace.onDidChangeTextDocument(async () => {
+                            await onFileChanged(contextObject)
+                        })
+                    )
                     addThemeWatchMessageHandler(contextObject)
 
                     // Handle messages from the webview

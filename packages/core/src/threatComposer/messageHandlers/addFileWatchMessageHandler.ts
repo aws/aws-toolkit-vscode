@@ -8,40 +8,47 @@ import vscode from 'vscode'
 import { fsCommon } from '../../srcShared/fs'
 
 /**
- * Function to add a watcher on the file that was opened. The watcher will notify Threat Composer
- * view when a change occurs to the file externally.
+ * Function to call when the text document has been modified
  * If the change occurs due to
  *    a user save action, file change is ignored.
- *    an auto save that is persisted as AutoSave is turned on in VSCode settings, update file state.
+ *    an auto save that is persisted as a result of the 'AutoSave' setting turned on in VSCode,
+ *      update file state.
  *    an external file change,
- *       if a local, unsaved change exist in Threat Composer, the file change is ignored.
- *       if no unsaved local changes exist, the view is notified of the external file change.
+ *       if a local, unsaved change exist in Threat Composer, the file change is ignored and the
+ *          user is warned.
+ *       if no unsaved local changes exist, the web view is notified of the external file change.
  * @param context: The Webview Context that contain the details of the file and the webview
  */
-export function addFileWatchMessageHandler(context: WebviewContext) {
+export async function onFileChanged(context: WebviewContext) {
     const filePath = context.defaultTemplatePath
     const fileName = context.defaultTemplateName
 
-    context.disposables.push(
-        vscode.workspace.onDidChangeTextDocument(async e => {
-            const fileContents = await fsCommon.readFileAsString(filePath)
+    const fileContents = await fsCommon.readFileAsString(filePath)
 
-            if (fileContents !== context.fileStates[filePath].fileContents) {
-                if (fileContents === context.autoSaveFileState[filePath].fileContents) {
-                    context.fileStates[filePath] = { fileContents: fileContents }
-                } else if (
-                    context.fileStates[filePath].fileContents === context.autoSaveFileState[filePath].fileContents
-                ) {
-                    console.log('DocumentChanged')
-                    await broadcastFileChange(fileName, filePath, fileContents, context.panel)
-                    context.fileStates[filePath] = { fileContents: fileContents }
-                    context.autoSaveFileState[filePath] = { fileContents: fileContents }
-                } else {
-                    console.error('Document Changed externally before local changes are saved')
-                }
-            }
-        })
-    )
+    // If the change event is due to a save action by the user, this trigger can be ignored.
+    if (fileContents !== context.fileStates[filePath].fileContents) {
+        if (fileContents === context.autoSaveFileState[filePath].fileContents) {
+            // Contents of the file are the same as that of the 'autoSaveFileState'. This
+            // means that the file change was triggered as a result of auto save, we
+            // don't have to notify the webview However, 'fileStates' need to be updated.
+            context.fileStates[filePath] = { fileContents: fileContents }
+        } else if (context.fileStates[filePath].fileContents === context.autoSaveFileState[filePath].fileContents) {
+            // There are no unsaved local changes in the file, so the file change is
+            // triggered due to an external change in the file. This must be propagated
+            // to the webview, so that it can be updated.
+            console.log('DocumentChanged')
+            await broadcastFileChange(fileName, filePath, fileContents, context.panel)
+            context.fileStates[filePath] = { fileContents: fileContents }
+            context.autoSaveFileState[filePath] = { fileContents: fileContents }
+        } else {
+            // There are unsaved local changes in the file, and the file has been
+            // changed externally. The file is currently in a dirty state. This file
+            // change trigger is ignored. When the user decides to save the local
+            // changes, they can decide to overwrite the file.
+            void vscode.window.showWarningMessage(`${fileName}  has been modified externally.`)
+            console.warn('Document Changed externally before local changes are saved')
+        }
+    }
 }
 
 /**
