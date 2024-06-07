@@ -28,7 +28,7 @@ import {
 } from 'aws-core-vscode/shared'
 import { initializeAuth, CredentialsStore, LoginManager, AuthUtils } from 'aws-core-vscode/auth'
 import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode'
-import { activate as activateCWChat } from 'aws-core-vscode/amazonq'
+import { DefaultAmazonQAppInitContext, activate as activateCWChat } from 'aws-core-vscode/amazonq'
 import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
 import { CommonAuthViewProvider, CommonAuthWebview } from 'aws-core-vscode/login'
 import { isExtensionActive, VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
@@ -109,7 +109,11 @@ export async function activateShared(context: vscode.ExtensionContext, isWeb: bo
     // Amazon Q specific commands
     registerCommands(context)
 
-    const authProvider = new CommonAuthViewProvider(context, contextPrefix)
+    const authProvider = new CommonAuthViewProvider(
+        context,
+        contextPrefix,
+        DefaultAmazonQAppInitContext.instance.onDidChangeAmazonQVisibility
+    )
     context.subscriptions.push(
         vscode.commands.registerCommand('amazonq.dev.openMenu', async () => {
             if (!isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
