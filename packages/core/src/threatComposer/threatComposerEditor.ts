@@ -10,7 +10,7 @@ import { handleMessage } from './handleMessage'
 import { FileWatchInfo, WebviewContext } from './types'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { onFileChanged } from './messageHandlers/onFileChangedHandler'
-import { addThemeWatchMessageHandler } from './messageHandlers/addThemeWatchMessageHandler'
+import { onThemeChanged } from './messageHandlers/addThemeWatchMessageHandler'
 import { sendThreatComposerOpenCancelled } from './messageHandlers/emitTelemetryMessageHandler'
 
 const localize = nls.loadMessageBundle()
@@ -159,7 +159,13 @@ export class ThreatComposerEditor {
                             await onFileChanged(contextObject)
                         })
                     )
-                    addThemeWatchMessageHandler(contextObject)
+
+                    // Hook up event handler to update the UI on theme changes within VSCode.
+                    contextObject.disposables.push(
+                        vscode.window.onDidChangeActiveColorTheme(async data => {
+                            await onThemeChanged(data, contextObject.panel)
+                        })
+                    )
 
                     // Handle messages from the webview
                     this.disposables.push(
