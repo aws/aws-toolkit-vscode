@@ -12,11 +12,11 @@ import {
     SaveFileRequestMessage,
     WebviewContext,
 } from './types'
-import { autoSaveFileMessageHandler, saveFileMessageHandler } from './messageHandlers/saveFileMessageHandler'
-import { logMessageHandler } from './messageHandlers/logMessageHandler'
-import { openFeedbackMessageHandler } from './messageHandlers/openFeedbackMessageHandler'
-import { initMessageHandler, reloadMessageHandler } from './messageHandlers/initMessageHandler'
-import { loadStageMessageHandler } from './messageHandlers/loadStageMessageHandler'
+import { autoSaveFileMessageHandler, saveFileMessageHandler } from './handlers/saveFileMessageHandler'
+import { logMessageHandler } from './handlers/logMessageHandler'
+import { openFeedbackMessageHandler } from './handlers/openFeedbackMessageHandler'
+import { initMessageHandler, reloadMessageHandler } from './handlers/initMessageHandler'
+import { loadStageMessageHandler } from './handlers/loadStageMessageHandler'
 
 /**
  * Handles messages received from the webview. Depending on the message type and command, it

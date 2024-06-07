@@ -9,9 +9,9 @@ import * as vscode from 'vscode'
 import { handleMessage } from './handleMessage'
 import { FileWatchInfo, WebviewContext } from './types'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { onFileChanged } from './messageHandlers/onFileChangedHandler'
-import { onThemeChanged } from './messageHandlers/onThemeChangedHandler'
-import { sendThreatComposerOpenCancelled } from './messageHandlers/webviewTelemetryHandler'
+import { onFileChanged } from './handlers/onFileChangedHandler'
+import { onThemeChanged } from './handlers/onThemeChangedHandler'
+import { sendThreatComposerOpenCancelled } from './handlers/webviewTelemetryHandler'
 
 const localize = nls.loadMessageBundle()
 
