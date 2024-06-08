@@ -11,6 +11,10 @@
 		},
 		{
 			"path": "packages/amazonq"
+		},
+		{
+			"name": "codespaces-jupyter",
+			"path": "../../home/codespace/.cache/codespaces-jupyter"
 		}
 	],
 	"settings": {

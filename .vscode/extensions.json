@@ -1,3 +1,4 @@
 {
-    "recommendations": ["amodio.tsl-problem-matcher", "dbaeumer.vscode-eslint"]
+    "recommendations": [
+        "amodio.tsl-problem-matcher""]
 }
