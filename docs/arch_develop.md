@@ -45,8 +45,8 @@ Current quirks of the current monorepo status that should be resolved/evaluated 
         an issue if more subprojects are added and the contents of the root and local modules folders differ.
 -   [`globalSetup.test.ts`](../packages/core/src/test/globalSetup.test.ts) should be configured to work as a library/run tests for all subprojects.
 -   Subproject `tsconfig.json`s should extend a root `tsconfig.packages.json`.
--   Linting tests should run at the root level, not subproject level.
 -   `packages/*/scripts/` should be generalized and moved to the root of the project as needed.
+-   Linting tests should run at the root level, not subproject level.
 -   LICENSE, README.md, and other non-code artifacts that must be packaged into the .vsix are currently
     being copied into the packaging subproject directory from the root project directory as part of the `copyFiles` task.
 -   Pre-release only publishes packages/toolkit extension directly. It should be extended to other added extensions. See [`release.yml`](../.github/workflows/release.yml)
@@ -56,7 +56,7 @@ Additional quirks introduced by creating a core library from the original extens
 
 -   Tests are ran from `packages/core/`
 -   Extension runs from `packages/toolkit`
--   Extension tests run from the core lib. Since some of the tests require an extension context/sandbox, we initiate a "fake" extension to run these tests. This is also why there are vscode extensionproperties in the package.json
+-   Extension tests run from the core lib. Since some of the tests require an extension context/sandbox, we initiate a "fake" extension to run these tests. This is also why there are vscode extension properties in the package.json
 -   Some of original extension code (that now lives in `packages/core`) depends on the package.json, specifically the contributes section. This section is very large AND needs to be present in both the core library and toolkit extension package.jsons. The core library code needs access to this section to create types, set up SAM debuggers, etc. The toolkit needs this section during packaging/debugging so that the extension can run in vscode. The short term solution was to creat a [build script](../packages/toolkit/scripts/build/handlePackageJson.ts) to copy necessary fields over to the toolkit extension during packaging and debugging.
 
 ### Contributes and Settings
@@ -71,6 +71,40 @@ Some components of the core library depend on the `package.json`s of the extensi
     -   Moves all Amazon Q related `configuration.properties` to the local `package.json` only, overwriting anything that exists with the same name locally.
     -   Does not restore, it is a superset of what exists in `packages/core` for `configuration.properties`.
     -   To develop for the Amazon Q extension: add all changes to `packages/amazonq/package.json`, EXCEPT for settings that are references by code in the core library, or settings that already exist in the core `package.json`
+
+## Shared vs Common names
+
+In this repo, the keywords **"shared"** and **"common"** have specific meanings in the context of file/folder names.
+
+### "common"
+
+Code within a folder/file that has the "common" keyword implies that it can run in any environment. Examples of environments are: Web mode, or Node.js (local desktop)
+
+We need this distinction since not all code can run in any environment. A common example is filesystem code, where the actual implementation used could work in Node.js but not in Web mode.
+
+### "shared"
+
+Code within a folder/file that has the "shared" keyword implies that it is intended to be reused wherever it can be. This is generalized code that "Feature A" or "Feature B" could use if it works for their use case.
+
+An example is the `waitUntil()` function which continuously invokes an arbitrary callback function until it succeeds.
+
+> NOTE: Something that is "shared" does not mean it is "common", as it could be reused in different places but only work in Node.js for example.
+
+### How to apply this
+
+-   Aim to make code compatible with "common" from the beginning.
+-   In a "topic" folder, if you have common code, create a subfolder named "common" and add your common code to there.
+    ```
+    src/
+      |
+      myTopic/
+        |
+        common/
+        nonCommon.ts
+    ```
+-   See if yours, or existing code can be moved in to a "shared" folder. Maybe it can be easily modified to become "shared".
+-   If there is no "shared" or "common" naming used for the file/folder, then assume it only works in Node.js.
+-   In the rare case your code only works in Web mode, create a `web` subfolder for that code.
 
 ## Commands
 

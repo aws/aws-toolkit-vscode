@@ -50,7 +50,7 @@ import { isReleaseVersion } from './shared/vscode/env'
 import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './auth/auth'
 import { registerSubmitFeedback } from './feedback/vue/submitFeedback'
-import { activateShared, deactivateShared, emitUserState } from './extensionShared'
+import { activateCommon, deactivateCommon, emitUserState } from './extensionCommon'
 import { learnMoreAmazonQCommand, qExtensionPageCommand, dismissQTree } from './amazonq/explorer/amazonQChildrenNodes'
 import { AuthUtil, isPreviousQUser } from './codewhisperer/util/authUtil'
 import { installAmazonQExtension } from './codewhisperer/commands/basicCommands'
@@ -58,8 +58,6 @@ import { isExtensionInstalled, VSCODE_EXTENSION_ID } from './shared/utilities'
 import { amazonQInstallDismissedKey } from './codewhisperer/models/constants'
 import { ExtensionUse } from './auth/utils'
 import { ExtStartUpSources } from './shared/telemetry'
-
-export { makeEndpointsProvider, registerGenericCommands } from './extensionShared'
 import { activate as activateThreatComposerEditor } from './threatComposer/activation'
 
 let localize: nls.LocalizeFunc
@@ -68,7 +66,7 @@ let localize: nls.LocalizeFunc
  * The entrypoint for the nodejs version of the toolkit
  *
  * **CONTRIBUTORS** If you are adding code to this function prioritize adding it to
- * {@link activateShared} if appropriate
+ * {@link activateCommon} if appropriate
  */
 export async function activate(context: vscode.ExtensionContext) {
     const activationStartedOn = Date.now()
@@ -77,7 +75,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     try {
         // IMPORTANT: If you are doing setup that should also work in web mode (browser), it should be done in the function below
-        const extContext = await activateShared(context, contextPrefix, false)
+        const extContext = await activateCommon(context, contextPrefix, false)
 
         initializeCredentialsProviderManager()
 
@@ -275,7 +273,7 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export async function deactivate() {
-    await deactivateShared()
+    await deactivateCommon()
     await globals.resourceManager.dispose()
 }
 
