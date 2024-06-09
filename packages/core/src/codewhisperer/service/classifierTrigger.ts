@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as os from 'os'
+import os from 'os'
 import * as vscode from 'vscode'
 import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/telemetry'
 import { extractContextForCodeWhisperer } from '../util/editorContext'
