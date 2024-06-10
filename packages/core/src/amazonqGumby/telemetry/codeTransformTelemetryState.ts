@@ -4,13 +4,7 @@
  */
 
 import { randomUUID } from '../../common/crypto'
-
-export interface ICodeTransformMetaData {
-    dependencyVersionSelected?: string
-    canceledFromChat?: boolean
-    retryCount?: number
-    errorMessage?: string
-}
+import { ICodeTransformMetaData } from './codeTransformMetadata'
 
 interface ICodeTransformTelemetryState {
     sessionId: string
