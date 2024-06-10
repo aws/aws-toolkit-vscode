@@ -4,21 +4,21 @@
  */
 
 import assert from 'assert'
-import { InactivityMessage, shouldTrackUserActivity } from '../../codecatalyst/devEnv'
+import { InactivityMessage, shouldSendActivity } from '../../codecatalyst/devEnv'
 import * as sinon from 'sinon'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { TestWindow, getTestWindow } from '../../test/shared/vscode/window'
 import { DevEnvActivity } from '../../shared/clients/devenvClient'
 
-describe('shouldTrackUserActivity', function () {
+describe('shouldSendActivity', function () {
     it('returns true when inactivity timeout > 0', function () {
-        assert.strictEqual(shouldTrackUserActivity(1), true)
-        assert.strictEqual(shouldTrackUserActivity(15), true)
+        assert.strictEqual(shouldSendActivity(1), true)
+        assert.strictEqual(shouldSendActivity(15), true)
     })
 
     it('returns false when inactivity timeout <== 0', function () {
-        assert.strictEqual(shouldTrackUserActivity(0), false)
-        assert.strictEqual(shouldTrackUserActivity(-1), false)
+        assert.strictEqual(shouldSendActivity(0), false)
+        assert.strictEqual(shouldSendActivity(-1), false)
     })
 })
 
@@ -124,7 +124,7 @@ describe('InactivityMessages', function () {
         // which is why 2 1/2 minutes becomes 3 minutes. Then we start the countdown to show the
         // first warning message.
         const minuteFirstMessageShown =
-            inactiveMinutes - Math.ceil(initialOffsetMinutes) - InactivityMessage.firstMessageBeforeShutdown
+            inactiveMinutes - Math.ceil(initialOffsetMinutes) - InactivityMessage.shutdownWarningThreshold
         setInitialOffset(initialOffsetMinutes)
 
         await instance.setupMessage(inactiveMinutes, devEnvActivity as unknown as DevEnvActivity, relativeMinuteMillis)
@@ -161,7 +161,7 @@ describe('InactivityMessages', function () {
         })
 
         await instance.setupMessage(
-            InactivityMessage.firstMessageBeforeShutdown + 1,
+            InactivityMessage.shutdownWarningThreshold + 1,
             devEnvActivity as unknown as DevEnvActivity,
             relativeMinuteMillis
         )

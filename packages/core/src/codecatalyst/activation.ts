@@ -24,6 +24,7 @@ import { codeCatalystConnectCommand, getThisDevEnv } from './model'
 import { getLogger } from '../shared/logger/logger'
 import { DevEnvActivityStarter } from './devEnv'
 import { learnMoreCommand, onboardCommand, reauth } from './explorer'
+import { isInDevEnv } from '../shared/vscode/env'
 
 const localize = nls.loadMessageBundle()
 
@@ -87,7 +88,11 @@ export async function activate(ctx: ExtContext): Promise<void> {
     })
 
     if (!thisDevenv) {
-        getLogger().verbose('codecatalyst: not a devenv, getThisDevEnv() returned empty')
+        if (isInDevEnv()) {
+            getLogger().error('codecatalyst: cannot initialize because getThisDevEnv() failed')
+        } else {
+            getLogger().verbose('codecatalyst: not a devenv')
+        }
     } else {
         ctx.extensionContext.subscriptions.push(DevEnvClient.instance)
         if (DevEnvClient.instance.id) {
@@ -123,7 +128,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
     }
 
     // This must always be called on activation
-    DevEnvActivityStarter.register(authProvider)
+    DevEnvActivityStarter.init(authProvider)
 }
 
 async function showReadmeFileOnFirstLoad(workspaceState: vscode.ExtensionContext['workspaceState']): Promise<void> {

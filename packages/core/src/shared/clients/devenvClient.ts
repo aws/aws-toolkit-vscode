@@ -106,7 +106,7 @@ export class DevEnvClient implements vscode.Disposable {
     })
 
     /**
-     * WARNING: You should use {@link DevEnvActivity} unless you have a reason not to.
+     * WARNING: Use {@link DevEnvActivity} instead of calling this directly.
      */
     async updateActivity(timestamp: number = Date.now()): Promise<number> {
         await this.got.put('activity', { json: { timestamp: timestamp.toString() } })
@@ -123,10 +123,8 @@ export class DevEnvClient implements vscode.Disposable {
 }
 
 /**
- * This allows you to easily work with Dev Env user activity timestamps.
- *
- * An activity is a timestamp that the server uses to
- * determine when the user was last active.
+ * Posts user activity timestamps to the dev env "/activity" API, which are used by MDE to decide
+ * when the user was last active, and thus prevent auto-shutdown of the dev env.
  */
 export class DevEnvActivity implements vscode.Disposable {
     private activityUpdatedEmitter = new vscode.EventEmitter<number>()
@@ -138,10 +136,8 @@ export class DevEnvActivity implements vscode.Disposable {
 
     static readonly activityUpdateDelay = 10_000
 
-    /**
-     * Returns an instance if the activity mechanism is confirmed to be working.
-     */
-    static async instanceIfActivityTrackingEnabled(
+    /** Gets a new DevEnvActivity, or undefined if service is failed. */
+    static async create(
         client: DevEnvClient,
         extensionUserActivity?: ExtensionUserActivity
     ): Promise<DevEnvActivity | undefined> {
@@ -150,7 +146,7 @@ export class DevEnvActivity implements vscode.Disposable {
             getLogger().debug('codecatalyst: DevEnvActivity: Activity API is enabled')
         } catch (e) {
             const error = e instanceof HTTPError ? e.response.body : e
-            getLogger().error(`codecatalyst: DevEnvActivity: Activity API failed:%s`, error)
+            getLogger().error(`codecatalyst: DevEnvActivity: Activity API failed: %s`, error)
             return undefined
         }
 
@@ -167,10 +163,10 @@ export class DevEnvActivity implements vscode.Disposable {
         ))
     }
 
-    /** Send activity timestamp to the Dev Env */
+    /** Send activity timestamp to the MDE environment endpoint. */
     async sendActivityUpdate(timestamp: number = Date.now()): Promise<number> {
         await this.client.updateActivity()
-        getLogger().debug(`codecatalyst: DevEnvActivity: heartbeat sent at ${timestamp}`)
+        getLogger().debug('codecatalyst: DevEnvActivity: heartbeat sent')
         this.lastLocalActivity = timestamp
         this.activityUpdatedEmitter.fire(timestamp)
         return timestamp
