@@ -11,3 +11,5 @@ export function run(): Promise<void> {
 
 export { registerAuthHook, using } from './setupUtil'
 export { runTests } from './testRunner'
+export * from './codewhisperer/testUtil'
+export * from './testUtil'

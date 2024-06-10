@@ -8,3 +8,5 @@ import { runTests } from '../test/testRunner'
 export function run(): Promise<void> {
     return runTests(process.env.TEST_DIR ?? 'src/testInteg', ['src/testInteg/globalSetup.test.ts'])
 }
+
+export * from './integrationTestsUtilities'

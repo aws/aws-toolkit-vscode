@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { isValidAmazonQConnection } from '../../codewhisperer/util/authUtil'
-import { Auth } from '../../auth/auth'
+import { isValidAmazonQConnection } from 'aws-core-vscode/codewhisperer'
+import { Auth } from 'aws-core-vscode/auth'
 
 /*
 In order to run codewhisperer or gumby integration tests user must:

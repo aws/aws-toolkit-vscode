@@ -4,13 +4,15 @@
  */
 
 import assert from 'assert'
-import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
-import { ConfigurationEntry } from '../../codewhisperer/models/model'
+import {
+    DefaultCodeWhispererClient,
+    ConfigurationEntry,
+    RecommendationHandler,
+    session,
+    invokeRecommendation,
+} from 'aws-core-vscode/codewhisperer'
 import { setValidConnection, skipTestIfNoValidConn } from '../util/connection'
-import { RecommendationHandler } from '../../codewhisperer/service/recommendationHandler'
-import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../../test/codewhisperer/testUtil'
-import { invokeRecommendation } from '../../codewhisperer/commands/invokeRecommendation'
-import { session } from '../../codewhisperer/util/codeWhispererSession'
+import { createMockTextEditor, resetCodeWhispererGlobalVariables } from 'aws-core-vscode/test'
 
 /*
 New model deployment may impact references returned. 
@@ -34,7 +36,7 @@ const rightContext = `[i].title + '">' + cars[i].title + '</a>';
 
 describe('CodeWhisperer service invocation', async function () {
     let validConnection: boolean
-    const client = new codewhispererClient.DefaultCodeWhispererClient()
+    const client = new DefaultCodeWhispererClient()
     const configWithRefs: ConfigurationEntry = {
         isShowMethodsEnabled: true,
         isManualTriggerEnabled: true,
