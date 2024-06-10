@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import * as semver from 'semver'
 import { join } from 'path'
 import {
-    CodeSuggestionsState,
     activate as activateCodeWhisperer,
     shutdown as shutdownCodeWhisperer,
     amazonQDismissedKey,
