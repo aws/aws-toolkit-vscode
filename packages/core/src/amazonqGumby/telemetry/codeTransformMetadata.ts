@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export const codeTransformMaxMetaDataLength = 65344
+export const codeTransformMaxMetaDataLength = 65536
 
 export interface ICodeTransformMetaData {
     dependencyVersionSelected?: string
