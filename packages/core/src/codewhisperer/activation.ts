@@ -323,7 +323,12 @@ export async function activate(context: ExtContext): Promise<void> {
     function setSubscriptionsForAutoScans() {
         // Initial scan when the editor opens for the first time
         const editor = vscode.window.activeTextEditor
-        if (editor && shouldRunAutoScan(editor) && editor.document.getText().length > 0) {
+        if (
+            editor &&
+            shouldRunAutoScan(editor) &&
+            editor.document.getText().length > 0 &&
+            editor.document.languageId !== 'plaintext'
+        ) {
             void debounceStartSecurityScan(
                 securityPanelViewProvider,
                 editor,
@@ -346,6 +351,7 @@ export async function activate(context: ExtContext): Promise<void> {
                     editor &&
                     shouldRunAutoScan(editor) &&
                     editor.document.getText().length > 0 &&
+                    editor.document.languageId !== 'plaintext' &&
                     (!codewhispererDiagnostics || codewhispererDiagnostics?.length === 0)
                 ) {
                     void debounceStartSecurityScan(
@@ -364,6 +370,7 @@ export async function activate(context: ExtContext): Promise<void> {
                     editor &&
                     shouldRunAutoScan(editor) &&
                     event.document === editor.document &&
+                    event.document.languageId !== 'plaintext' &&
                     event.contentChanges.length > 0
                 ) {
                     void debounceStartSecurityScan(
@@ -380,7 +387,12 @@ export async function activate(context: ExtContext): Promise<void> {
         // Trigger scan if the toggle has just been enabled
         CodeScansState.instance.onDidChangeState(isScansEnabled => {
             const editor = vscode.window.activeTextEditor
-            if (editor && shouldRunAutoScan(editor, isScansEnabled) && editor.document.getText().length > 0) {
+            if (
+                editor &&
+                shouldRunAutoScan(editor, isScansEnabled) &&
+                editor.document.getText().length > 0 &&
+                editor.document.languageId !== 'plaintext'
+            ) {
                 void debounceStartSecurityScan(
                     securityPanelViewProvider,
                     editor,
