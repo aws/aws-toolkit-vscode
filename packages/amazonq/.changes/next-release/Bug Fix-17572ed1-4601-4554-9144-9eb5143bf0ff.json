@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Do not turn on auto trigger when IDE reloads"
+}

@@ -113,9 +113,6 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     // reload webviews
     await vscode.commands.executeCommand('workbench.action.webview.reloadWebviewAction')
 
-    // enable auto suggestions on activation
-    await CodeSuggestionsState.instance.setSuggestionsEnabled(true)
-
     if (AuthUtils.ExtensionUse.instance.isFirstUse()) {
         CommonAuthWebview.authSource = ExtStartUpSources.firstStartUp
         await vscode.commands.executeCommand('workbench.view.extension.amazonq')
