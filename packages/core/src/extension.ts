@@ -169,55 +169,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 dismissQTree.register()
                 installAmazonQExtension.register()
 
-                if (!isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq)) {
-                    await telemetry.toolkit_showNotification.run(async () => {
-                        if (isPreviousQUser()) {
-                            await installAmazonQExtension.execute()
-                            telemetry.record({ id: 'amazonQStandaloneInstalled' })
-                            void vscode.window.showInformationMessage(
-                                "Amazon Q is now its own extension.\n\nWe've auto-installed it for you with all the same features and settings from CodeWhisperer and Amazon Q chat."
-                            )
-                        } else {
-                            const dismissedInstall =
-                                globals.context.globalState.get<boolean>(amazonQInstallDismissedKey)
-                            if (!dismissedInstall) {
-                                telemetry.record({ id: 'amazonQStandaloneChange' })
-                                void vscode.window
-                                    .showInformationMessage(
-                                        'Amazon Q has moved to its own extension.' +
-                                            '\nInstall it to use Amazon Q, a generative AI assistant, with chat and code suggestions.',
-                                        'Install',
-                                        'Learn More'
-                                    )
-                                    .then(async resp => {
-                                        await telemetry.toolkit_invokeAction.run(async () => {
-                                            telemetry.record({
-                                                source: ExtensionUse.instance.isFirstUse()
-                                                    ? ExtStartUpSources.firstStartUp
-                                                    : ExtStartUpSources.none,
-                                            })
-
-                                            if (resp === 'Learn More') {
-                                                // Clicking learn more will open the q extension page
-                                                telemetry.record({ action: 'learnMore' })
-                                                await qExtensionPageCommand.execute()
-                                                return
-                                            }
-
-                                            if (resp === 'Install') {
-                                                telemetry.record({ action: 'installAmazonQ' })
-                                                await installAmazonQExtension.execute()
-                                            } else {
-                                                telemetry.record({ action: 'dismissQNotification' })
-                                            }
-
-                                            await globals.context.globalState.update(amazonQInstallDismissedKey, true)
-                                        })
-                                    })
-                            }
-                        }
-                    })
-                }
+                await handleAmazonQInstall()
             }
             await activateApplicationComposer(context)
             await activateThreatComposerEditor(context)
@@ -275,6 +227,57 @@ export async function activate(context: vscode.ExtensionContext) {
 export async function deactivate() {
     await deactivateCommon()
     await globals.resourceManager.dispose()
+}
+
+async function handleAmazonQInstall() {
+    const dismissedInstall = globals.context.globalState.get<boolean>(amazonQInstallDismissedKey)
+    if (isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) || dismissedInstall) {
+        return
+    }
+
+    await telemetry.toolkit_showNotification.run(async () => {
+        if (isPreviousQUser()) {
+            await installAmazonQExtension.execute()
+            telemetry.record({ id: 'amazonQStandaloneInstalled' })
+            void vscode.window.showInformationMessage(
+                "Amazon Q is now its own extension.\n\nWe've auto-installed it for you with all the same features and settings from CodeWhisperer and Amazon Q chat."
+            )
+            await globals.context.globalState.update(amazonQInstallDismissedKey, true)
+        } else {
+            telemetry.record({ id: 'amazonQStandaloneChange' })
+            void vscode.window
+                .showInformationMessage(
+                    'Amazon Q has moved to its own extension.' +
+                        '\nInstall it to use Amazon Q, a generative AI assistant, with chat and code suggestions.',
+                    'Install',
+                    'Learn More'
+                )
+                .then(async resp => {
+                    await telemetry.toolkit_invokeAction.run(async () => {
+                        telemetry.record({
+                            source: ExtensionUse.instance.isFirstUse()
+                                ? ExtStartUpSources.firstStartUp
+                                : ExtStartUpSources.none,
+                        })
+
+                        if (resp === 'Learn More') {
+                            // Clicking learn more will open the q extension page
+                            telemetry.record({ action: 'learnMore' })
+                            await qExtensionPageCommand.execute()
+                            return
+                        }
+
+                        if (resp === 'Install') {
+                            telemetry.record({ action: 'installAmazonQ' })
+                            await installAmazonQExtension.execute()
+                        } else {
+                            telemetry.record({ action: 'dismissQNotification' })
+                        }
+                        await globals.context.globalState.update(amazonQInstallDismissedKey, true)
+                    })
+                })
+        }
+    })
 }
 
 function initializeCredentialsProviderManager() {
