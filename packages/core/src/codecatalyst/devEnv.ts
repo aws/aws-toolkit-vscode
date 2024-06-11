@@ -174,7 +174,7 @@ export class InactivityMessage implements vscode.Disposable {
 
         // Reset (redefine) the timer whenever user is active.
         devEnvActivity.onActivityUpdate(async lastActivity => {
-            this.clearOldMessage()
+            this.clear()
 
             const { millisToWait, minutesSinceTimestamp } = this.millisUntilNextWholeMinute(lastActivity, oneMin)
             const minutesUntilShutdown = maxInactivityMinutes - minutesSinceTimestamp
@@ -183,12 +183,13 @@ export class InactivityMessage implements vscode.Disposable {
                 minutesUntilShutdown - InactivityMessage.shutdownWarningThreshold
             )
             const timerInterval = millisToWait + minutesUntilFirstMessage * oneMin
-            getLogger().debug(
-                'InactivityMessage: millisToWait=%d minutesUntilFirstMessage=%d oneMin=%d',
-                millisToWait,
-                minutesUntilFirstMessage,
-                oneMin
-            )
+            if (timerInterval <= 10 * oneMin) {
+                getLogger().debug(
+                    'InactivityMessage: minutesUntilFirstMessage=%d timerInterval=%d',
+                    minutesUntilFirstMessage,
+                    timerInterval
+                )
+            }
 
             /** Wait until we are {@link InactivityMessage.shutdownWarningThreshold} minutes before shutdown. */
             this.#beforeMessageShown = globals.clock.setTimeout(() => {
@@ -200,8 +201,7 @@ export class InactivityMessage implements vscode.Disposable {
 
                 const willRefreshOnStaleTimestamp = async () => await devEnvActivity.isLocalActivityStale()
 
-                this.clearOldMessage()
-                this.#message?.clearExistingMessage()
+                this.clear()
                 this.#message = new Message()
                 this.#message
                     .show(
@@ -215,16 +215,18 @@ export class InactivityMessage implements vscode.Disposable {
                         getLogger().error('Message.show failed: %s', (e as Error).message)
                     })
             }, timerInterval)
-            getLogger().debug('InactivityMessage: created message timer for %d ms', timerInterval)
         })
     }
 
-    private clearOldMessage() {
+    /** Cancels or disposes the existing message and timer. */
+    private clear() {
         if (this.#beforeMessageShown) {
             clearTimeout(this.#beforeMessageShown)
             this.#beforeMessageShown = undefined
         }
         if (this.#message) {
+            // Send a "user" cancellation so that the progress message does NOT redisplay.
+            this.#message.clear(true)
             this.#message.dispose()
             this.#message = undefined
         }
@@ -255,13 +257,17 @@ export class InactivityMessage implements vscode.Disposable {
     }
 
     dispose() {
-        this.clearOldMessage()
+        this.clear()
     }
 }
 
 /** Shows a "Dev env will shutdown in x minutes due to inactivity" warning. */
 class Message implements vscode.Disposable {
-    private currentWarningMessageTimeout: Timeout | undefined
+    private progressTimeout!: Timeout
+    // HACK: showWarningMessage() may "stack" if timeout is very low and the user didn't immediately
+    // hit OK. To avoid that, we store a timestamp to avoid redundant, successive, "stacked" show() calls.
+    // (This mostly only matters for development/debugging.)
+    private lastActive = 0
 
     /**
      * Show the warning message
@@ -281,18 +287,19 @@ class Message implements vscode.Disposable {
         willRefreshOnStaleTimestamp: () => Promise<boolean>,
         oneMin: number
     ) {
-        this.clearExistingMessage()
+        this.clear()
         // Show a new message every minute
-        this.currentWarningMessageTimeout = new Timeout(1 * oneMin)
+        this.progressTimeout = new Timeout(oneMin)
 
-        if (await willRefreshOnStaleTimestamp()) {
+        const isUserActive = Math.max(0, Date.now() - this.lastActive) < oneMin
+        if (isUserActive || (await willRefreshOnStaleTimestamp())) {
             return
         }
 
         if (minutesUntilShutdown <= 1) {
             // Recursive base case, with only 1 minute left we do not want to show warning messages anymore,
             // since we will show a shutdown message instead.
-            this.clearExistingMessage()
+            this.clear()
 
             const imHere = `I'm here!`
             return vscode.window
@@ -303,12 +310,13 @@ class Message implements vscode.Disposable {
                 )
                 .then(res => {
                     if (res === imHere) {
+                        this.lastActive = Date.now()
                         userIsActive()
                     }
                 })
         }
 
-        this.currentWarningMessageTimeout.token.onCancellationRequested(c => {
+        this.progressTimeout.token.onCancellationRequested(c => {
             if (c.agent === 'user') {
                 // User clicked the 'Cancel' button, indicate they are active.
                 userIsActive()
@@ -323,35 +331,38 @@ class Message implements vscode.Disposable {
                 )
             }
         })
-
         if (isCloud9()) {
             // C9 does not support message with progress, so just show a warning message.
             return vscode.window
                 .showWarningMessage(this.getMessage(minutesUserWasInactive, minutesUntilShutdown), 'Cancel')
                 .then(() => {
-                    this.currentWarningMessageTimeout!.cancel()
+                    this.progressTimeout.cancel()
                 })
         } else {
             // Show cancellable "progress" message.
             return void showMessageWithCancel(
                 this.getMessage(minutesUserWasInactive, minutesUntilShutdown),
-                this.currentWarningMessageTimeout
+                this.progressTimeout
             )
         }
     }
 
-    clearExistingMessage() {
-        if (this.currentWarningMessageTimeout) {
-            this.currentWarningMessageTimeout.dispose()
-            this.currentWarningMessageTimeout = undefined
+    /** Cancels or disposes the existing message. */
+    clear(user: boolean = false) {
+        if (this.progressTimeout) {
+            if (user) {
+                this.progressTimeout.cancel()
+            } else {
+                this.progressTimeout.dispose()
+            }
         }
     }
 
     dispose() {
-        this.clearExistingMessage()
+        this.clear()
     }
 
     private getMessage(inactiveMinutes: number, remainingMinutes: number) {
-        return `Your CodeCatalyst Dev Environment has been inactive for ${inactiveMinutes} minutes, shutting it down in ${remainingMinutes} minutes.`
+        return `Your CodeCatalyst Dev Environment has been inactive for ${inactiveMinutes} minutes, and will stop in ${remainingMinutes} minutes.`
     }
 }

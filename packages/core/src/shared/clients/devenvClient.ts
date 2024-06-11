@@ -192,7 +192,12 @@ export class DevEnvActivity implements vscode.Disposable {
         return (await this.getLatestActivity()) !== this.lastLocalActivity
     }
 
-    /** Runs the given callback when the activity is updated */
+    /**
+     * Subscribes to the "user activity sent" event.
+     *
+     * @param callback Called when event is fired.
+     * @param callback.timestamp Timestamp (milliseconds since 1970), see {@link Date.now}
+     */
     onActivityUpdate(callback: (timestamp: number) => any) {
         this.activityUpdatedEmitter.event(callback)
     }
