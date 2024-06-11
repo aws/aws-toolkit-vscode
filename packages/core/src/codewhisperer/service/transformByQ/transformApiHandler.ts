@@ -799,11 +799,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             }
         } catch (e: any) {
             let errorMessage = (e as Error).message
-            if (errorMessage.includes('Failed to establish a socket connection')) {
-                errorMessage = CodeWhispererConstants.socketConnectionFailed
-                transformByQState.setJobFailureErrorChatMessage(errorMessage)
-                transformByQState.setJobFailureErrorNotification(errorMessage)
-            }
             errorMessage += ` -- ${transformByQState.getJobFailureMetadata()}`
             getLogger().error(`CodeTransformation: GetTransformation error = ${errorMessage}`)
             telemetry.codeTransform_logApiError.emit({
