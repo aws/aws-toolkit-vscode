@@ -15,6 +15,7 @@ import { CodeCatalystAuthenticationProvider } from './auth'
 import { getThisDevEnv } from './model'
 import { isInDevEnv } from '../shared/vscode/env'
 import { shared } from '../shared/utilities/functionUtils'
+import { DevSettings } from '../shared/settings'
 
 /** Starts the {@link DevEnvActivity} Hearbeat mechanism. */
 export class DevEnvActivityStarter {
@@ -93,8 +94,13 @@ export class DevEnvActivityStarter {
             )
         }
 
+        const devenvTimeoutMs = DevSettings.instance.get('devenvTimeoutMs', 0)
+        if (devenvTimeoutMs) {
+            getLogger().warn('codecatalyst: using devenvTimeoutMs=%d', devenvTimeoutMs)
+        }
         // If user is not authenticated, assume 15 minutes.
-        const inactivityTimeoutMin = thisDevenv?.summary.inactivityTimeoutMinutes ?? 15
+        const inactivityTimeoutMin =
+            devenvTimeoutMs > 0 ? devenvTimeoutMs : thisDevenv?.summary.inactivityTimeoutMinutes ?? 15
         if (!shouldSendActivity(inactivityTimeoutMin)) {
             getLogger().info(
                 `codecatalyst: disabling DevEnvActivity heartbeat: configured to never timeout (inactivityTimeoutMinutes=${inactivityTimeoutMin})`
