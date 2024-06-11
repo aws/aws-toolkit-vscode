@@ -84,7 +84,7 @@ class BuildProgressSplitterPanelManager(private val project: Project) :
     }
 
     fun defaultProgressData() = listOf(
-        BuildProgressStepTreeItem(message("codemodernizer.toolwindow.progress.waiting"), BuildStepStatus.WORKING, ProgressStepId.ACCEPTED),
+        BuildProgressStepTreeItem(message("codemodernizer.toolwindow.progress.uploading"), BuildStepStatus.WORKING, ProgressStepId.UPLOADING),
     )
 
     fun setProgressStepsDefaultUI() {
@@ -132,11 +132,12 @@ class BuildProgressSplitterPanelManager(private val project: Project) :
         }
 
         if (newState in setOf(
+                TransformationStatus.ACCEPTED,
                 TransformationStatus.STARTED,
                 TransformationStatus.PREPARING,
             )
         ) {
-            maybeAdd(ProgressStepId.ACCEPTED, message("codemodernizer.toolwindow.progress.waiting"))
+            maybeAdd(ProgressStepId.UPLOADING, message("codemodernizer.toolwindow.progress.uploading"))
             maybeAdd(ProgressStepId.BUILDING, message("codemodernizer.toolwindow.progress.building"))
         }
         if (newState in setOf(
@@ -144,7 +145,7 @@ class BuildProgressSplitterPanelManager(private val project: Project) :
                 TransformationStatus.PLANNING,
             )
         ) {
-            maybeAdd(ProgressStepId.ACCEPTED, message("codemodernizer.toolwindow.progress.waiting"))
+            maybeAdd(ProgressStepId.UPLOADING, message("codemodernizer.toolwindow.progress.uploading"))
             maybeAdd(ProgressStepId.BUILDING, message("codemodernizer.toolwindow.progress.building"))
             maybeAdd(ProgressStepId.PLANNING, message("codemodernizer.toolwindow.progress.planning"))
         }
@@ -153,21 +154,21 @@ class BuildProgressSplitterPanelManager(private val project: Project) :
                 TransformationStatus.TRANSFORMING,
             )
         ) {
-            maybeAdd(ProgressStepId.ACCEPTED, message("codemodernizer.toolwindow.progress.waiting"))
+            maybeAdd(ProgressStepId.UPLOADING, message("codemodernizer.toolwindow.progress.uploading"))
             maybeAdd(ProgressStepId.BUILDING, message("codemodernizer.toolwindow.progress.building"))
             maybeAdd(ProgressStepId.PLANNING, message("codemodernizer.toolwindow.progress.planning"))
             maybeAdd(ProgressStepId.TRANSFORMING, message("codemodernizer.toolwindow.progress.transforming"))
         }
 
         if (newState == TransformationStatus.PAUSED) {
-            maybeAdd(ProgressStepId.ACCEPTED, message("codemodernizer.toolwindow.progress.waiting"))
+            maybeAdd(ProgressStepId.UPLOADING, message("codemodernizer.toolwindow.progress.uploading"))
             maybeAdd(ProgressStepId.BUILDING, message("codemodernizer.toolwindow.progress.building"))
             maybeAdd(ProgressStepId.PLANNING, message("codemodernizer.toolwindow.progress.planning"))
             maybeAdd(ProgressStepId.TRANSFORMING, message("codemodernizer.toolwindow.progress.transforming"))
         }
 
         if (newState == TransformationStatus.RESUMED) {
-            maybeAdd(ProgressStepId.ACCEPTED, message("codemodernizer.toolwindow.progress.waiting"))
+            maybeAdd(ProgressStepId.UPLOADING, message("codemodernizer.toolwindow.progress.uploading"))
             maybeAdd(ProgressStepId.BUILDING, message("codemodernizer.toolwindow.progress.building"))
             maybeAdd(ProgressStepId.PLANNING, message("codemodernizer.toolwindow.progress.planning"))
             maybeAdd(ProgressStepId.TRANSFORMING, message("codemodernizer.toolwindow.progress.transforming"))
@@ -178,7 +179,7 @@ class BuildProgressSplitterPanelManager(private val project: Project) :
                 TransformationStatus.PARTIALLY_COMPLETED,
             )
         ) {
-            maybeAdd(ProgressStepId.ACCEPTED, message("codemodernizer.toolwindow.progress.waiting"))
+            maybeAdd(ProgressStepId.UPLOADING, message("codemodernizer.toolwindow.progress.uploading"))
             maybeAdd(ProgressStepId.BUILDING, message("codemodernizer.toolwindow.progress.building"))
             maybeAdd(ProgressStepId.PLANNING, message("codemodernizer.toolwindow.progress.planning"))
             maybeAdd(ProgressStepId.TRANSFORMING, message("codemodernizer.toolwindow.progress.transforming"))
@@ -208,19 +209,14 @@ class BuildProgressSplitterPanelManager(private val project: Project) :
             }
         }
         val updatedStatuses = when (newState) {
-            TransformationStatus.CREATED, TransformationStatus.ACCEPTED -> {
+            TransformationStatus.CREATED, TransformationStatus.ACCEPTED, TransformationStatus.STARTED -> {
                 loadingPanelText = message("codemodernizer.toolwindow.scan_in_progress.accepted")
-                statuses.update(BuildStepStatus.WORKING, ProgressStepId.ACCEPTED)
-            }
-
-            TransformationStatus.STARTED -> {
-                loadingPanelText = message("codemodernizer.toolwindow.scan_in_progress.accepted")
-                statuses.update(BuildStepStatus.DONE, ProgressStepId.ACCEPTED)
+                statuses.update(BuildStepStatus.DONE, ProgressStepId.UPLOADING)
             }
 
             TransformationStatus.PREPARING -> {
                 loadingPanelText = message("codemodernizer.toolwindow.scan_in_progress.building", jdkVersion.description)
-                statuses.update(BuildStepStatus.DONE, ProgressStepId.ACCEPTED)
+                statuses.update(BuildStepStatus.DONE, ProgressStepId.UPLOADING)
             }
 
             TransformationStatus.PREPARED -> {
@@ -356,7 +352,7 @@ class BuildProgressSplitterPanelManager(private val project: Project) :
 
     private fun isValidStepClick(stepId: ProgressStepId): Boolean = when (stepId) {
         ProgressStepId.PLAN_STEP -> true
-        ProgressStepId.ACCEPTED -> false
+        ProgressStepId.UPLOADING -> false
         ProgressStepId.BUILDING -> false
         ProgressStepId.PLANNING -> false
         ProgressStepId.TRANSFORMING -> false

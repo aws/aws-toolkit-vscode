@@ -14,6 +14,7 @@ import com.intellij.openapi.wm.ToolWindowManager
 import software.aws.toolkits.core.utils.createTemporaryZipFile
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.jetbrains.services.codemodernizer.CodeTransformTelemetryManager
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.HIL_DEPENDENCIES_ROOT_NAME
@@ -210,19 +211,21 @@ data class CodeModernizerSessionContext(
 
                     // 2) Dependencies
                     if (depDirectory != null) {
-                        dependencyFiles.forEach { depfile ->
-                            val relativePath = File(depfile.path).relativeTo(depDirectory.parentFile)
+                        dependencyFiles.forEach { depFile ->
+                            val relativePath = File(depFile.path).relativeTo(depDirectory.parentFile)
                             val paddedPath = depSources.resolve(relativePath)
                             var paddedPathString = paddedPath.toPath().toString()
                             // Convert Windows file path to work on Linux
                             if (File.separatorChar != '/') {
                                 paddedPathString = paddedPathString.replace('\\', '/')
                             }
-                            depfile.inputStream().use {
+                            depFile.inputStream().use {
                                 zip.putNextEntry(paddedPathString, it)
                             }
                         }
                     }
+
+                    LOG.info { "Dependency files size = ${dependencyFiles.sumOf { it.length().toInt() }}" }
 
                     // 3) Sources
                     files.forEach { file ->
@@ -233,10 +236,17 @@ data class CodeModernizerSessionContext(
                         if (File.separatorChar != '/') {
                             paddedPathString = paddedPathString.replace('\\', '/')
                         }
-                        file.inputStream.use {
-                            zip.putNextEntry(paddedPathString, it)
+                        try {
+                            file.inputStream.use {
+                                zip.putNextEntry(paddedPathString, it)
+                            }
+                        } catch (e: NoSuchFileException) {
+                            // continue without failing
+                            LOG.error { "NoSuchFileException likely due to a symlink, skipping file" }
                         }
                     }
+
+                    LOG.info { "Source code files size = ${files.sumOf { it.length.toInt() }}" }
 
                     // 4) Build Log
                     buildLogBuilder.toString().byteInputStream().use {

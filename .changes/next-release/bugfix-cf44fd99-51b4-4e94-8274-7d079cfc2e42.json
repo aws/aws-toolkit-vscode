@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "fix(Amazon Q Code Transformation): allow module to be zipped successfully even if it contains broken symlinks"
+}

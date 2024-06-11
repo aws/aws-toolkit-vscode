@@ -13,7 +13,7 @@ data class BuildProgressStepTreeItem(
 )
 
 enum class ProgressStepId(val order: Int) {
-    ACCEPTED(1),
+    UPLOADING(1),
     BUILDING(2),
     PLANNING(3),
     TRANSFORMING(4),
