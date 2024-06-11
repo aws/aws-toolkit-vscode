@@ -158,63 +158,56 @@ export class InactivityMessage implements vscode.Disposable {
     static readonly shutdownWarningThreshold = 5
 
     /**
-     * Sets up messages that will be displayed when the dev env is nearing auto-shutdown because of inactivity.
+     * Creates a timer which will show warning messsage(s) when the dev env is nearing auto-shutdown because of inactivity.
      *
-     * @param maxInactivityMinutes Minutes of inactivity allowed before auto-shutdown.
-     * @param devEnvActivity The DevEnvActivity client
-     * @param relativeMinuteMillis How many milliseconds we want a "minute" to be. This is
-     *                             useful for testing purposes.
+     * @param maxInactivityMinutes Maximum inactivity allowed before auto-shutdown.
+     * @param devEnvActivity DevEnvActivity client
+     * @param oneMin Milliseconds in a "minute". Used in tests.
      */
     async setupMessage(
         maxInactivityMinutes: DevEnvironment['inactivityTimeoutMinutes'],
         devEnvActivity: DevEnvActivity,
-        relativeMinuteMillis: number = 60_000
+        oneMin: number = 60_000
     ) {
-        devEnvActivity.onActivityUpdate(async latestActivityTimestamp => {
-            this._setupMessage(maxInactivityMinutes, latestActivityTimestamp, devEnvActivity, relativeMinuteMillis)
-        })
-
         // Send an initial update to the dev env on startup
         await devEnvActivity.sendActivityUpdate()
-    }
 
-    private _setupMessage(
-        maxInactivityMinutes: number,
-        latestTimestamp: number,
-        devEnvActivity: DevEnvActivity,
-        relativeMinuteMillis: number
-    ) {
-        this.clearOldMessage()
+        // Reset (redefine) the timer whenever user is active.
+        devEnvActivity.onActivityUpdate(async lastActivity => {
+            this.clearOldMessage()
 
-        const { millisToWait, minutesSinceTimestamp } = this.millisUntilNextWholeMinute(
-            latestTimestamp,
-            relativeMinuteMillis
-        )
-        const minutesUntilShutdown = maxInactivityMinutes - minutesSinceTimestamp
-        const minutesUntilFirstMessage = minutesUntilShutdown - InactivityMessage.shutdownWarningThreshold
+            const { millisToWait, minutesSinceTimestamp } = this.millisUntilNextWholeMinute(lastActivity, oneMin)
+            const minutesUntilShutdown = maxInactivityMinutes - minutesSinceTimestamp
+            const minutesUntilFirstMessage = minutesUntilShutdown - InactivityMessage.shutdownWarningThreshold
+            const timerInterval = millisToWait + minutesUntilFirstMessage * oneMin
 
-        /** Wait until we are {@link InactivityMessage.shutdownWarningThreshold} minutes before shutdown. */
-        this.#beforeMessageShown = globals.clock.setTimeout(() => {
-            const userIsActive = () => {
-                devEnvActivity.sendActivityUpdate().catch(e => {
-                    getLogger().error('DevEnvActivity.sendActivityUpdate failed: %s', (e as Error).message)
-                })
-            }
+            /** Wait until we are {@link InactivityMessage.shutdownWarningThreshold} minutes before shutdown. */
+            this.#beforeMessageShown = globals.clock.setTimeout(() => {
+                const userIsActive = () => {
+                    devEnvActivity.sendActivityUpdate().catch(e => {
+                        getLogger().error('DevEnvActivity.sendActivityUpdate failed: %s', (e as Error).message)
+                    })
+                }
 
-            const willRefreshOnStaleTimestamp = async () => await devEnvActivity.isLocalActivityStale()
+                const willRefreshOnStaleTimestamp = async () => await devEnvActivity.isLocalActivityStale()
 
-            this.message()
-                .show(
-                    minutesSinceTimestamp + minutesUntilFirstMessage,
-                    minutesUntilShutdown - minutesUntilFirstMessage,
-                    userIsActive,
-                    willRefreshOnStaleTimestamp,
-                    relativeMinuteMillis
-                )
-                .catch(e => {
-                    getLogger().error('Message.show failed: %s', (e as Error).message)
-                })
-        }, millisToWait + minutesUntilFirstMessage * relativeMinuteMillis)
+                this.clearOldMessage()
+                this.#message?.clearExistingMessage()
+                this.#message = new Message()
+                this.#message
+                    .show(
+                        minutesSinceTimestamp + minutesUntilFirstMessage,
+                        minutesUntilShutdown - minutesUntilFirstMessage,
+                        userIsActive,
+                        willRefreshOnStaleTimestamp,
+                        oneMin
+                    )
+                    .catch(e => {
+                        getLogger().error('Message.show failed: %s', (e as Error).message)
+                    })
+            }, timerInterval)
+            getLogger().debug('InactivityMessage: created message timer for %d ms', timerInterval)
+        })
     }
 
     private clearOldMessage() {
@@ -241,20 +234,15 @@ export class InactivityMessage implements vscode.Disposable {
      */
     private millisUntilNextWholeMinute(
         latestTimestamp: number,
-        relativeMinuteMillis: number
+        oneMin: number
     ): { millisToWait: number; minutesSinceTimestamp: number } {
         const millisSinceLastTimestamp = Date.now() - latestTimestamp
-        const millisSinceLastWholeMinute = millisSinceLastTimestamp % relativeMinuteMillis
+        const millisSinceLastWholeMinute = millisSinceLastTimestamp % oneMin
 
-        const millisToWait = millisSinceLastWholeMinute !== 0 ? relativeMinuteMillis - millisSinceLastWholeMinute : 0
-        const minutesSinceTimestamp = (millisSinceLastTimestamp + millisToWait) / relativeMinuteMillis
+        const millisToWait = millisSinceLastWholeMinute !== 0 ? oneMin - millisSinceLastWholeMinute : 0
+        const minutesSinceTimestamp = (millisSinceLastTimestamp + millisToWait) / oneMin
 
         return { millisToWait, minutesSinceTimestamp }
-    }
-
-    private message() {
-        this.clearOldMessage()
-        return (this.#message = new Message())
     }
 
     dispose() {
@@ -262,6 +250,7 @@ export class InactivityMessage implements vscode.Disposable {
     }
 }
 
+/** Shows a "Dev env will shutdown in x minutes due to inactivity" warning. */
 class Message implements vscode.Disposable {
     private currentWarningMessageTimeout: Timeout | undefined
 
@@ -274,19 +263,18 @@ class Message implements vscode.Disposable {
      * @param willRefreshOnStaleTimestamp sanity checks with the dev env api that the latest activity timestamp
      *                                    is the same as what this client has locally. If stale, the warning message
      *                                    will be refreshed asynchronously. Returns true if the message will be refreshed.
-     * @param relativeMinuteMillis How many milliseconds we want a "minute" to be. This is
-     *                             useful for testing purposes.
+     * @param oneMin Milliseconds in a "minute". Used in tests.
      */
     async show(
         minutesUserWasInactive: number,
         minutesUntilShutdown: number,
         userIsActive: () => void,
         willRefreshOnStaleTimestamp: () => Promise<boolean>,
-        relativeMinuteMillis: number
+        oneMin: number
     ) {
         this.clearExistingMessage()
         // Show a new message every minute
-        this.currentWarningMessageTimeout = new Timeout(1 * relativeMinuteMillis)
+        this.currentWarningMessageTimeout = new Timeout(1 * oneMin)
 
         if (await willRefreshOnStaleTimestamp()) {
             return
@@ -322,7 +310,7 @@ class Message implements vscode.Disposable {
                     minutesUntilShutdown - 1,
                     userIsActive,
                     willRefreshOnStaleTimestamp,
-                    relativeMinuteMillis
+                    oneMin
                 )
             }
         })
@@ -330,16 +318,14 @@ class Message implements vscode.Disposable {
         if (isCloud9()) {
             // C9 does not support message with progress, so just show a warning message.
             return vscode.window
-                .showWarningMessage(
-                    this.buildInactiveWarningMessage(minutesUserWasInactive, minutesUntilShutdown),
-                    'Cancel'
-                )
+                .showWarningMessage(this.getMessage(minutesUserWasInactive, minutesUntilShutdown), 'Cancel')
                 .then(() => {
                     this.currentWarningMessageTimeout!.cancel()
                 })
         } else {
+            // Show cancellable "progress" message.
             return void showMessageWithCancel(
-                this.buildInactiveWarningMessage(minutesUserWasInactive, minutesUntilShutdown),
+                this.getMessage(minutesUserWasInactive, minutesUntilShutdown),
                 this.currentWarningMessageTimeout
             )
         }
@@ -356,7 +342,7 @@ class Message implements vscode.Disposable {
         this.clearExistingMessage()
     }
 
-    private buildInactiveWarningMessage(inactiveMinutes: number, remainingMinutes: number) {
+    private getMessage(inactiveMinutes: number, remainingMinutes: number) {
         return `Your CodeCatalyst Dev Environment has been inactive for ${inactiveMinutes} minutes, shutting it down in ${remainingMinutes} minutes.`
     }
 }
