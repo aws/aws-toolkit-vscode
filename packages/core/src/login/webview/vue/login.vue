@@ -366,13 +366,16 @@ export default defineComponent({
         await this.emitUpdate('created')
     },
 
-    mounted() {
+    async mounted() {
         this.fetchRegions()
-        void this.updateExistingConnections()
+        await this.updateExistingConnections()
 
         // Reset gathered telemetry data each time we view the login page.
         // The webview panel is reset on each view of the login page by design.
-        void client.resetStoredMetricMetadata()
+        client.resetStoredMetricMetadata()
+
+        // Pre-select the first available login option
+        await this.preselectLoginOption()
     },
     methods: {
         toggleItemSelection(itemId: number) {
@@ -562,6 +565,17 @@ export default defineComponent({
         },
         handleHelpLinkClick() {
             void client.emitUiClick('auth_helpLink')
+        },
+        async preselectLoginOption() {
+            // Select the first available option for Login
+            if (this.existingLogins.length > 0) {
+                this.selectedLoginOption = LoginOption.EXISTING_LOGINS
+            } else if (this.app === 'AMAZONQ') {
+                this.selectedLoginOption = LoginOption.BUILDER_ID
+            } else if (this.app === 'TOOLKIT') {
+                this.selectedLoginOption = LoginOption.ENTERPRISE_SSO
+            }
+            this.$forceUpdate()
         },
         shouldDisableSsoContinue() {
             return this.startUrl.length == 0 || this.startUrlError.length > 0 || !this.selectedRegion
