@@ -30,7 +30,7 @@ export class SecurityScanLanguageContext {
             terraform: 'tf',
             terragrunt: 'tf',
             packer: 'tf',
-            plaintext: 'plaintext',
+            // plaintext: 'plaintext',
             c: 'c',
             cpp: 'cpp',
             php: 'php',

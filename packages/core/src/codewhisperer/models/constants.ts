@@ -263,7 +263,7 @@ export const securityScanLanguageIds = [
     'terraform',
     'terragrunt',
     'packer',
-    'plaintext',
+    // 'plaintext',
     'jsonc',
     'c',
     'cpp',
