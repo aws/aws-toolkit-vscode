@@ -37,6 +37,7 @@ type MessageCommand =
     | 'codetransform-open-mvn-build'
     | 'codetransform-view-diff'
     | 'codetransform-view-summary'
+    | 'codetransform-view-build-log'
     | 'codetransform-confirm-hil-selection'
     | 'codetransform-reject-hil-selection'
     | 'codetransform-pom-file-open-click'

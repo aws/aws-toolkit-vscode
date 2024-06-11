@@ -23,6 +23,8 @@ interface InboundAppMessagesHandler {
 
     suspend fun processCodeTransformViewSummary(message: IncomingCodeTransformMessage.CodeTransformViewSummary)
 
+    suspend fun processCodeTransformViewBuildLog(message: IncomingCodeTransformMessage.CodeTransformViewBuildLog)
+
     suspend fun processCodeTransformNewAction(message: IncomingCodeTransformMessage.CodeTransformNew)
 
     suspend fun processCodeTransformCommand(message: CodeTransformActionMessage)

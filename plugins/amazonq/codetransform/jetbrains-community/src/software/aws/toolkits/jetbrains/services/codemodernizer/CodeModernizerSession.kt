@@ -18,6 +18,7 @@ import software.amazon.awssdk.services.codewhispererruntime.model.Transformation
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationProgressUpdateStatus
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationStatus
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationUserActionStatus
+import software.amazon.awssdk.services.codewhispererstreaming.model.TransformationDownloadArtifactType
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
@@ -78,6 +79,7 @@ class CodeModernizerSession(
     private val isDisposed = AtomicBoolean(false)
     private val shouldStop = AtomicBoolean(false)
     private val telemetry = CodeTransformTelemetryManager.getInstance(sessionContext.project)
+    private val artifactHandler = ArtifactHandler(sessionContext.project, GumbyClient.getInstance(sessionContext.project))
 
     private var mvnBuildResult: MavenCopyCommandsResult? = null
     private var transformResult: CodeModernizerJobCompletedResult? = null
@@ -481,8 +483,16 @@ class CodeModernizerSession(
                         val failureReason = result.jobDetails?.reason() ?: message("codemodernizer.notification.warn.unknown_start_failure")
                         return CodeModernizerJobCompletedResult.JobFailed(jobId, failureReason)
                     } else if (!passedBuild) {
-                        val failureReason = result.jobDetails?.reason() ?: message("codemodernizer.notification.warn.maven_failed.content")
-                        return CodeModernizerJobCompletedResult.JobFailedInitialBuild(jobId, failureReason)
+                        // This is a short term solution to check if build log is available by attempting to download it.
+                        // In the long term, we should check if build log is available from transformation metadata.
+                        val downloadArtifactResult = artifactHandler.downloadArtifact(jobId, TransformationDownloadArtifactType.LOGS, true)
+                        if (downloadArtifactResult.artifact != null) {
+                            val failureReason = result.jobDetails?.reason() ?: message("codemodernizer.notification.warn.maven_failed.content")
+                            return CodeModernizerJobCompletedResult.JobFailedInitialBuild(jobId, failureReason, true)
+                        } else {
+                            val failureReason = result.jobDetails?.reason() ?: message("codemodernizer.notification.warn.maven_failed.content")
+                            return CodeModernizerJobCompletedResult.JobFailedInitialBuild(jobId, failureReason, false)
+                        }
                     } else {
                         val failureReason = result.jobDetails?.reason() ?: message("codemodernizer.notification.warn.unknown_status_response")
                         return CodeModernizerJobCompletedResult.JobFailed(jobId, failureReason)

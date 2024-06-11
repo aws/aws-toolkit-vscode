@@ -23,6 +23,7 @@ enum class CodeTransformButtonId(val id: String) {
     OpenMvnBuild("open_mvn_build"),
     ViewDiff("view_diff"),
     ViewSummary("view_summary"),
+    ViewBuildLog("view_build_log"),
     ConfirmHilSelection("confirm_hil_selection"),
     RejectHilSelection("reject_hil_selection"),
     OpenDependencyErrorPom("open_dependency_error_pom"),
@@ -93,6 +94,10 @@ sealed interface IncomingCodeTransformMessage : CodeTransformBaseMessage {
     ) : IncomingCodeTransformMessage
 
     data class CodeTransformViewSummary(
+        @JsonProperty("tabID") val tabId: String,
+    ) : IncomingCodeTransformMessage
+
+    data class CodeTransformViewBuildLog(
         @JsonProperty("tabID") val tabId: String,
     ) : IncomingCodeTransformMessage
 

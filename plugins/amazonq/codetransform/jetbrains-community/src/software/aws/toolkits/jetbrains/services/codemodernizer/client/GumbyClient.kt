@@ -31,6 +31,7 @@ import software.amazon.awssdk.services.codewhispererruntime.model.UploadContext
 import software.amazon.awssdk.services.codewhispererruntime.model.UploadIntent
 import software.amazon.awssdk.services.codewhispererstreaming.model.ExportContext
 import software.amazon.awssdk.services.codewhispererstreaming.model.ExportIntent
+import software.amazon.awssdk.services.codewhispererstreaming.model.TransformationDownloadArtifactType
 import software.amazon.awssdk.services.codewhispererstreaming.model.TransformationExportContext
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
@@ -165,7 +166,8 @@ class GumbyClient(private val project: Project) {
 
     suspend fun downloadExportResultArchive(
         jobId: JobId,
-        hilDownloadArtifactId: String? = null
+        hilDownloadArtifactId: String? = null,
+        downloadArtifactType: TransformationDownloadArtifactType? = TransformationDownloadArtifactType.CLIENT_INSTRUCTIONS
     ): MutableList<ByteArray> = amazonQStreamingClient.exportResultArchive(
         jobId.id,
         ExportIntent.TRANSFORMATION,
@@ -178,7 +180,7 @@ class GumbyClient(private val project: Project) {
                     TransformationExportContext
                         .builder()
                         .downloadArtifactId(hilDownloadArtifactId)
-                        .downloadArtifactType("ClientInstructions")
+                        .downloadArtifactType(downloadArtifactType.toString())
                         .build()
                 )
                 .build()

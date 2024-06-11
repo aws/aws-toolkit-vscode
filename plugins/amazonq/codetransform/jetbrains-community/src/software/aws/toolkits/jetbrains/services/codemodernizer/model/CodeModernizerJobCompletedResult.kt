@@ -15,7 +15,7 @@ sealed class CodeModernizerJobCompletedResult {
 
     data class JobPaused(val jobId: JobId, val downloadArtifactId: String) : CodeModernizerJobCompletedResult()
 
-    data class JobFailedInitialBuild(val jobId: JobId, val failureReason: String) : CodeModernizerJobCompletedResult()
+    data class JobFailedInitialBuild(val jobId: JobId, val failureReason: String, val hasBuildLog: Boolean) : CodeModernizerJobCompletedResult()
     object ManagerDisposed : CodeModernizerJobCompletedResult()
     object Stopped : CodeModernizerJobCompletedResult()
     object JobAbortedBeforeStarting : CodeModernizerJobCompletedResult()

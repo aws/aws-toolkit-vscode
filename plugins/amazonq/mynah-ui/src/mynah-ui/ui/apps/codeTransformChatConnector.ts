@@ -235,6 +235,12 @@ export class CodeTransformChatConnector {
                 tabID,
                 tabType: 'codetransform',
             })
+        } else if (action.id === FormButtonIds.CodeTransformViewBuildLog) {
+            this.sendMessageToExtension({
+                command: 'codetransform-view-build-log',
+                tabID,
+                tabType: 'codetransform',
+            })
         } else if (action.id === FormButtonIds.ConfirmHilSelection) {
             this.sendMessageToExtension({
                 command: 'codetransform-confirm-hil-selection',

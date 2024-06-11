@@ -226,9 +226,6 @@ class CodeTransformChatController(
 
         codeTransformChatHelper.run {
             updateLastPendingMessage(buildCompileLocalSuccessChatContent())
-
-//            addNewMessage(buildTransformBeginChatContent())
-//            addNewMessage(buildTransformInProgressChatContent())
         }
 
         runInEdt {
@@ -272,6 +269,10 @@ class CodeTransformChatController(
 
     override suspend fun processCodeTransformViewSummary(message: IncomingCodeTransformMessage.CodeTransformViewSummary) {
         artifactHandler.showTransformationSummary(CodeModernizerSessionState.getInstance(context.project).currentJobId as JobId)
+    }
+
+    override suspend fun processCodeTransformViewBuildLog(message: IncomingCodeTransformMessage.CodeTransformViewBuildLog) {
+        artifactHandler.showBuildLog(CodeModernizerSessionState.getInstance(context.project).currentJobId as JobId)
     }
 
     override suspend fun processCodeTransformNewAction(message: IncomingCodeTransformMessage.CodeTransformNew) {

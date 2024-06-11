@@ -29,7 +29,7 @@ open class CodeModernizerArtifact(
     private val patches: List<VirtualFile>,
     val summary: TransformationSummary,
     val summaryMarkdownFile: File,
-) {
+) : CodeTransformDownloadArtifact {
     val patch: VirtualFile
         get() = patches.first()
 

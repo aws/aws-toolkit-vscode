@@ -36,6 +36,7 @@ private enum class CodeTransformMessageTypes(val type: String) {
     CodeTransformOpenMvnBuild("codetransform-open-mvn-build"),
     ViewDiff("codetransform-view-diff"),
     ViewSummary("codetransform-view-summary"),
+    ViewBuildLog("codetransform-view-build-log"),
     AuthFollowUpWasClicked("auth-follow-up-was-clicked"),
     BodyLinkClicked("response-body-link-click"),
     ConfirmHilSelection("codetransform-confirm-hil-selection"),
@@ -64,6 +65,7 @@ class CodeTransformChatApp : AmazonQApp {
             CodeTransformMessageTypes.CodeTransformOpenMvnBuild.type to IncomingCodeTransformMessage.CodeTransformOpenMvnBuild::class,
             CodeTransformMessageTypes.ViewDiff.type to IncomingCodeTransformMessage.CodeTransformViewDiff::class,
             CodeTransformMessageTypes.ViewSummary.type to IncomingCodeTransformMessage.CodeTransformViewSummary::class,
+            CodeTransformMessageTypes.ViewBuildLog.type to IncomingCodeTransformMessage.CodeTransformViewBuildLog::class,
             CodeTransformMessageTypes.AuthFollowUpWasClicked.type to IncomingCodeTransformMessage.AuthFollowUpWasClicked::class,
             CodeTransformMessageTypes.BodyLinkClicked.type to IncomingCodeTransformMessage.BodyLinkClicked::class,
             CodeTransformMessageTypes.ConfirmHilSelection.type to IncomingCodeTransformMessage.ConfirmHilSelection::class,
@@ -132,6 +134,7 @@ class CodeTransformChatApp : AmazonQApp {
             is IncomingCodeTransformMessage.CodeTransformOpenMvnBuild -> inboundAppMessagesHandler.processCodeTransformOpenMvnBuild(message)
             is IncomingCodeTransformMessage.CodeTransformViewDiff -> inboundAppMessagesHandler.processCodeTransformViewDiff(message)
             is IncomingCodeTransformMessage.CodeTransformViewSummary -> inboundAppMessagesHandler.processCodeTransformViewSummary(message)
+            is IncomingCodeTransformMessage.CodeTransformViewBuildLog -> inboundAppMessagesHandler.processCodeTransformViewBuildLog(message)
             is IncomingCodeTransformMessage.TabCreated -> inboundAppMessagesHandler.processTabCreated(message)
             is IncomingCodeTransformMessage.TabRemoved -> inboundAppMessagesHandler.processTabRemoved(message)
             is IncomingCodeTransformMessage.AuthFollowUpWasClicked -> inboundAppMessagesHandler.processAuthFollowUpClick(message)

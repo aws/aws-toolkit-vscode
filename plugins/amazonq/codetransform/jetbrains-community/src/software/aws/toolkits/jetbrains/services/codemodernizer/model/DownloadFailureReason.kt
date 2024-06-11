@@ -3,8 +3,11 @@
 
 package software.aws.toolkits.jetbrains.services.codemodernizer.model
 
+import software.amazon.awssdk.services.codewhispererstreaming.model.TransformationDownloadArtifactType
+
 sealed class DownloadFailureReason {
-    object SSL_HANDSHAKE_ERROR : DownloadFailureReason()
-    object PROXY_WILDCARD_ERROR : DownloadFailureReason()
-    data class OTHER(val errorMessage: String) : DownloadFailureReason()
+    data class SSL_HANDSHAKE_ERROR(val artifactType: TransformationDownloadArtifactType) : DownloadFailureReason()
+    data class PROXY_WILDCARD_ERROR(val artifactType: TransformationDownloadArtifactType) : DownloadFailureReason()
+    data class INVALID_ARTIFACT(val artifactType: TransformationDownloadArtifactType) : DownloadFailureReason()
+    data class OTHER(val artifactType: TransformationDownloadArtifactType, val errorMessage: String) : DownloadFailureReason()
 }

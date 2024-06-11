@@ -1676,7 +1676,10 @@
         },
         "TransformationDownloadArtifactType":{
             "type":"string",
-            "enum":["ClientInstructions"]
+            "enum":[
+                "ClientInstructions",
+                "Logs"
+            ]
         },
         "TransformationDownloadArtifacts":{
             "type":"list",
