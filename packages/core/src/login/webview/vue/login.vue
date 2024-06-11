@@ -102,8 +102,8 @@
                     @toggle="toggleItemSelection"
                     :isSelected="selectedLoginOption === LoginOption.BUILDER_ID"
                     :itemId="LoginOption.BUILDER_ID"
-                    :itemText="'No AWS account required'"
-                    :itemTitle="'Use For Free'"
+                    :itemText="'with Builder ID, a personal profile from AWS'"
+                    :itemTitle="'Use for Free'"
                     :itemType="LoginOption.BUILDER_ID"
                     class="selectable-item bottomMargin"
                 ></SelectableItem>

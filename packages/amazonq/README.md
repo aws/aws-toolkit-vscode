@@ -5,7 +5,7 @@
 
 # Getting Started
 
-**Free Tier** - create or log in with an AWS Builder ID (no AWS account needed!).
+**Free Tier** - create or log in with an AWS Builder ID (a personal profile from AWS).
 
 **Pro Tier** - if your organization is on the Amazon Q Developer Pro tier, log in with single sign-on.
 
