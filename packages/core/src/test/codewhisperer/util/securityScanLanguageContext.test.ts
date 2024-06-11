@@ -36,7 +36,7 @@ describe('securityScanLanguageContext', function () {
             ['json', true],
             ['yaml', true],
             ['tf', true],
-            ['plaintext', true],
+            ['plaintext', false],
             ['html', false],
             ['r', false],
             ['vb', false],
