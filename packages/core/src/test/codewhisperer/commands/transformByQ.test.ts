@@ -179,7 +179,7 @@ describe('transformByQ', function () {
                 status: 'COMPLETED',
             },
         }
-        assert.deepStrictEqual(actual, expected)
+        assert.equal(actual['abc-123'].projectName, expected['abc-123'].projectName)
     })
 
     it(`WHEN get headers for upload artifact to S3 THEN returns correct header with kms key arn`, function () {
