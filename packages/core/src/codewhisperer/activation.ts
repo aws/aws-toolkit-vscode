@@ -316,7 +316,9 @@ export async function activate(context: ExtContext): Promise<void> {
             !auth.isBuilderIdInUse() &&
             editor &&
             editor.document.uri.scheme === 'file' &&
-            securityScanLanguageContext.isLanguageSupported(editor.document.languageId)
+            securityScanLanguageContext.isLanguageSupported(editor.document.languageId) &&
+            editor.document.languageId !== 'plaintext' &&
+            editor.document.languageId !== 'unknown'
         )
     }
 
@@ -326,8 +328,7 @@ export async function activate(context: ExtContext): Promise<void> {
         if (
             editor &&
             shouldRunAutoScan(editor) &&
-            editor.document.getText().length > 0 &&
-            editor.document.languageId !== 'plaintext'
+            editor.document.getText().length > 0
         ) {
             void debounceStartSecurityScan(
                 securityPanelViewProvider,
@@ -351,7 +352,6 @@ export async function activate(context: ExtContext): Promise<void> {
                     editor &&
                     shouldRunAutoScan(editor) &&
                     editor.document.getText().length > 0 &&
-                    editor.document.languageId !== 'plaintext' &&
                     (!codewhispererDiagnostics || codewhispererDiagnostics?.length === 0)
                 ) {
                     void debounceStartSecurityScan(
@@ -370,7 +370,6 @@ export async function activate(context: ExtContext): Promise<void> {
                     editor &&
                     shouldRunAutoScan(editor) &&
                     event.document === editor.document &&
-                    event.document.languageId !== 'plaintext' &&
                     event.contentChanges.length > 0
                 ) {
                     void debounceStartSecurityScan(
@@ -390,8 +389,7 @@ export async function activate(context: ExtContext): Promise<void> {
             if (
                 editor &&
                 shouldRunAutoScan(editor, isScansEnabled) &&
-                editor.document.getText().length > 0 &&
-                editor.document.languageId !== 'plaintext'
+                editor.document.getText().length > 0 
             ) {
                 void debounceStartSecurityScan(
                     securityPanelViewProvider,
