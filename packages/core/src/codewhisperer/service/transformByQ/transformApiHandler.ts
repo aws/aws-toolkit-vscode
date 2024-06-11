@@ -136,6 +136,10 @@ export async function uploadArtifactToS3(
         let errorMessage = `The upload failed due to: ${(e as Error).message}`
         if (errorMessage.includes('Request has expired')) {
             errorMessage = CodeWhispererConstants.errorUploadingWithExpiredUrl
+        } else if (errorMessage.includes('Failed to establish a socket connection')) {
+            errorMessage = CodeWhispererConstants.socketConnectionFailed
+        } else if (errorMessage.includes('self signed certificate in certificate chain')) {
+            errorMessage = CodeWhispererConstants.selfSignedCertificateError
         }
         getLogger().error(`CodeTransformation: UploadZip error = ${e}`)
         telemetry.codeTransform_logApiError.emit({
@@ -795,6 +799,11 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             }
         } catch (e: any) {
             let errorMessage = (e as Error).message
+            if (errorMessage.includes('Failed to establish a socket connection')) {
+                errorMessage = CodeWhispererConstants.socketConnectionFailed
+                transformByQState.setJobFailureErrorChatMessage(errorMessage)
+                transformByQState.setJobFailureErrorNotification(errorMessage)
+            }
             errorMessage += ` -- ${transformByQState.getJobFailureMetadata()}`
             getLogger().error(`CodeTransformation: GetTransformation error = ${errorMessage}`)
             telemetry.codeTransform_logApiError.emit({
