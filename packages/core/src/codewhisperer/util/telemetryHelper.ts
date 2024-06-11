@@ -547,7 +547,7 @@ export class TelemetryHelper {
                 telemetryEvent: {
                     codeScanEvent: {
                         programmingLanguage: {
-                            languageName: runtimeLanguageContext.toRuntimeLanguage(languageId as CodewhispererLanguage),
+                            languageName: codewhispererRuntimeLanguage,
                         },
                         codeScanJobId: jobId,
                         timestamp: new Date(Date.now()),
