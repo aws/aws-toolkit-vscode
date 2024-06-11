@@ -12,7 +12,12 @@ import { init as gumbyChatAppInit } from '../amazonqGumby/app'
 import { AmazonQAppInitContext, DefaultAmazonQAppInitContext } from './apps/initContext'
 import { activateBadge } from './util/viewBadgeHandler'
 import { amazonQHelpUrl } from '../shared/constants'
-import { focusAmazonQChatWalkthrough, openAmazonQWalkthrough } from './onboardingPage/walkthrough'
+import {
+    focusAmazonQChatWalkthrough,
+    openAmazonQWalkthrough,
+    walkthroughInlineSuggestionsExample,
+    walkthroughSecurityScanExample,
+} from './onboardingPage/walkthrough'
 import { listCodeWhispererCommandsWalkthrough } from '../codewhisperer/ui/statusBarMenu'
 import { Commands, placeholder } from '../shared/vscode/commands2'
 import { focusAmazonQPanel, focusAmazonQPanelKeybinding } from '../codewhispererChat/commands/registerCommands'
@@ -45,6 +50,8 @@ export async function activate(context: ExtensionContext) {
             },
         }),
         focusAmazonQChatWalkthrough.register(),
+        walkthroughInlineSuggestionsExample.register(),
+        walkthroughSecurityScanExample.register(),
         openAmazonQWalkthrough.register(),
         listCodeWhispererCommandsWalkthrough.register(),
         focusAmazonQPanel.register(),
