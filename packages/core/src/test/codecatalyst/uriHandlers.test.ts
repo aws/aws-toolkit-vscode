@@ -100,7 +100,7 @@ describe('CodeCatalyst handlers', function () {
         it('returns builder ID SSO if IdC params are not present', async function () {
             await handler.handleUri(createConnectUri(params))
             assert.ok(
-                openDevEnvMock.calledWith(devenvId, undefined, {
+                openDevEnvMock.calledWith(sinon.match.any, devenvId, undefined, {
                     startUrl: builderIdStartUrl,
                     region: defaultSsoRegion,
                 })
@@ -111,7 +111,12 @@ describe('CodeCatalyst handlers', function () {
             const ssoStartUrl = 'https://my-url'
             const ssoRegion = 'us-west-2'
             await handler.handleUri(createConnectUri({ ...params, sso_start_url: ssoStartUrl, sso_region: ssoRegion }))
-            assert.ok(openDevEnvMock.calledWith(devenvId, undefined, { startUrl: ssoStartUrl, region: ssoRegion }))
+            assert.ok(
+                openDevEnvMock.calledWith(sinon.match.any, devenvId, undefined, {
+                    startUrl: ssoStartUrl,
+                    region: ssoRegion,
+                })
+            )
         })
 
         it('checks that the environment exists', async function () {

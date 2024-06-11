@@ -36,9 +36,11 @@ phases:
                 git commit -m "Update version to snapshot version: ${VERSION}-SNAPSHOT"
             - |
                 if [ "$STAGE" != "prod" ]; then
-                  echo "Stage is not production, skipping github push step"
+                  echo "SKIPPED (stage=${STAGE}): 'git push originWithCreds ${TARGET_BRANCH}'"
                   exit 0
                 fi
                 echo "pushing to github"
+                git fetch originWithCreds ${TARGET_BRANCH}
+                git merge --no-edit -m "Merge release into ${TARGET_BRANCH}" FETCH_HEAD
                 git push originWithCreds --tags
                 git push originWithCreds ${TARGET_BRANCH}

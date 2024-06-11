@@ -114,8 +114,8 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
         errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
         errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
         transformByQState.appendToErrorLog(`${baseCommand} copy-dependencies failed: \n ${errorLog}`)
-        getLogger().error(
-            `CodeTransformation: Error in running Maven copy-dependencies command ${baseCommand} = ${errorLog}`
+        getLogger().info(
+            `CodeTransformation: Maven copy-dependencies command ${baseCommand} failed, but still continuing with transformation: ${errorLog}`
         )
         let errorReason = ''
         if (spawnResult.stdout) {

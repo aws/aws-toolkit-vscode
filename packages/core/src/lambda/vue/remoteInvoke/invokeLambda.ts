@@ -69,7 +69,7 @@ export class RemoteInvokeWebview extends VueWebview {
             this.channel.appendLine(logs)
             this.channel.appendLine('')
             this.channel.appendLine('Payload:')
-            this.channel.appendLine(payload.toString())
+            this.channel.appendLine(String(payload))
             this.channel.appendLine('')
         } catch (e) {
             const error = e as Error

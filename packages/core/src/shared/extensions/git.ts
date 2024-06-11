@@ -341,8 +341,8 @@ export class GitExtension {
 
         if (version === undefined || version.compare(minGitFilterVersion) === -1) {
             throw new Error(
-                `Git version is too low or could not be determined (min=${minGitFilterVersion}): ${
-                    version ?? 'unknown'
+                `Git version is too low or could not be determined (min=${minGitFilterVersion.version}): ${
+                    version?.version ?? 'unknown'
                 }`
             )
         }

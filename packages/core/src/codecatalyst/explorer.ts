@@ -8,15 +8,14 @@ import { DevEnvironment } from '../shared/clients/codecatalystClient'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { addColor, getIcon } from '../shared/icons'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
-import { Commands, placeholder } from '../shared/vscode/commands2'
+import { Commands } from '../shared/vscode/commands2'
 import { CodeCatalystAuthenticationProvider } from './auth'
-import { CodeCatalystCommands } from './commands'
+import { CodeCatalystCommands, codecatalystConnectionsCmd } from './commands'
 import { ConnectedDevEnv, getDevfileLocation, getThisDevEnv } from './model'
 import * as codecatalyst from './model'
 import { getLogger } from '../shared/logger'
 import { Connection } from '../auth/connection'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
-import { getShowManageConnections } from '../login/command'
 
 export const learnMoreCommand = Commands.declare('aws.learnMore', () => async (docsUrl: vscode.Uri) => {
     return openUrl(docsUrl)
@@ -57,12 +56,10 @@ async function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
 
     if (!auth.activeConnection) {
         return [
-            getShowManageConnections()
-                .build(placeholder, 'codecatalystDeveloperTools', 'codecatalyst')
-                .asTreeNode({
-                    label: 'Sign in to get started',
-                    iconPath: getIcon('vscode-account'),
-                }),
+            codecatalystConnectionsCmd.build().asTreeNode({
+                label: 'Sign in to get started',
+                iconPath: getIcon('vscode-account'),
+            }),
             learnMoreNode,
         ]
     }

@@ -1,6 +1,3 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
-
 git secrets --register-aws || (echo 'Please install git-secrets https://github.com/awslabs/git-secrets to check for accidentally commited secrets!' && exit 1)
 git secrets --pre_commit_hook -- ""
 node_modules/.bin/pretty-quick --staged

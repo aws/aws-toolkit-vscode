@@ -13,7 +13,6 @@ import { appendFileSync, mkdirpSync, remove } from 'fs-extra'
 import { join } from 'path'
 import { format } from 'util'
 import globals from '../shared/extensionGlobals'
-import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { CodelensRootRegistry } from '../shared/fs/codelensRootRegistry'
 import { CloudFormationTemplateRegistry } from '../shared/fs/templateRegistry'
 import { getLogger, LogLevel } from '../shared/logger'
@@ -39,24 +38,26 @@ let testLogger: TestLogger | undefined
 let openExternalStub: sinon.SinonStub<Parameters<(typeof vscode)['env']['openExternal']>, Thenable<boolean>>
 // let executeCommandSpy: sinon.SinonSpy | undefined
 
-export async function mochaGlobalSetup(this: Mocha.Runner) {
-    // Clean up and set up test logs
-    try {
-        await remove(testLogOutput)
-    } catch (e) {}
-    mkdirpSync(testReportDir)
+export async function mochaGlobalSetup(extensionId: string) {
+    return async function (this: Mocha.Runner) {
+        // Clean up and set up test logs
+        try {
+            await remove(testLogOutput)
+        } catch (e) {}
+        mkdirpSync(testReportDir)
 
-    // Shows the full error chain when tests fail
-    mapTestErrors(this, normalizeError)
+        // Shows the full error chain when tests fail
+        mapTestErrors(this, normalizeError)
 
-    // Extension activation has many side-effects such as changing globals
-    // For stability in tests we will wait until the extension has activated prior to injecting mocks
-    const activationLogger = (msg: string, ...meta: any[]) => console.log(format(msg, ...meta))
-    await activateExtension(VSCODE_EXTENSION_ID.awstoolkitcore, false, activationLogger)
-    const fakeContext = await FakeExtensionContext.create()
-    fakeContext.globalStorageUri = (await testUtil.createTestWorkspaceFolder('globalStoragePath')).uri
-    fakeContext.extensionPath = globals.context.extensionPath
-    Object.assign(globals, { context: fakeContext })
+        // Extension activation has many side-effects such as changing globals
+        // For stability in tests we will wait until the extension has activated prior to injecting mocks
+        const activationLogger = (msg: string, ...meta: any[]) => console.log(format(msg, ...meta))
+        await activateExtension(extensionId, false, activationLogger)
+        const fakeContext = await FakeExtensionContext.create()
+        fakeContext.globalStorageUri = (await testUtil.createTestWorkspaceFolder('globalStoragePath')).uri
+        fakeContext.extensionPath = globals.context.extensionPath
+        Object.assign(globals, { context: fakeContext })
+    }
 }
 
 export async function mochaGlobalTeardown(this: Mocha.Context) {

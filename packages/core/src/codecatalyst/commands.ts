@@ -12,7 +12,7 @@ import * as vscode from 'vscode'
 import { selectCodeCatalystRepository, selectCodeCatalystResource } from './wizards/selectResource'
 import { openCodeCatalystUrl } from './utils'
 import { CodeCatalystAuthenticationProvider } from './auth'
-import { Commands, placeholder } from '../shared/vscode/commands2'
+import { Commands, VsCodeCommandArg, placeholder } from '../shared/vscode/commands2'
 import { CodeCatalystClient, CodeCatalystResource, createClient } from '../shared/clients/codecatalystClient'
 import { DevEnvironmentId, getConnectedDevEnv, openDevEnv } from './model'
 import { showConfigureDevEnv } from './vue/configure/backend'
@@ -26,7 +26,7 @@ import { CreateDevEnvironmentRequest, UpdateDevEnvironmentRequest } from 'aws-sd
 import { Auth } from '../auth/auth'
 import { SsoConnection } from '../auth/connection'
 import { isInDevEnv, isRemoteWorkspace } from '../shared/vscode/env'
-import { getShowManageConnections } from '../login/command'
+import { commandPalette } from '../codewhisperer/commands/types'
 
 /** "List CodeCatalyst Commands" command. */
 export async function listCommands(): Promise<void> {
@@ -214,6 +214,17 @@ class RemoteContextError extends ToolkitError {
     }
 }
 
+export const codecatalystConnectionsCmd = Commands.declare(
+    'aws.codecatalyst.manageConnections',
+    () => () =>
+        void vscode.commands.executeCommand(
+            'aws.toolkit.auth.manageConnections',
+            placeholder,
+            'codecatalystDeveloperTools',
+            'codecatalyst'
+        )
+)
+
 export class CodeCatalystCommands {
     public readonly withClient: ClientInjector
     public readonly bindClient = createCommandDecorator(this)
@@ -226,11 +237,11 @@ export class CodeCatalystCommands {
         return listCommands()
     }
 
-    public cloneRepository(...args: WithClient<typeof cloneCodeCatalystRepo>) {
+    public cloneRepo(_?: VsCodeCommandArg, ...args: WithClient<typeof cloneCodeCatalystRepo>) {
         return this.withClient(cloneCodeCatalystRepo, ...args)
     }
 
-    public createDevEnv(): Promise<void> {
+    public createDevEnv(_?: VsCodeCommandArg): Promise<void> {
         if (isRemoteWorkspace() && isInDevEnv()) {
             throw new RemoteContextError()
         }
@@ -276,6 +287,7 @@ export class CodeCatalystCommands {
     }
 
     public async openDevEnv(
+        _?: VsCodeCommandArg,
         id?: DevEnvironmentId,
         targetPath?: string,
         connection?: { startUrl: string; region: string }
@@ -292,13 +304,13 @@ export class CodeCatalystCommands {
         // need to be careful of mapping explosion so this granular data would either need
         // to be flattened or we restrict the names to a pre-determined set
         if (id === undefined) {
-            telemetry.record({ source: 'CommandPalette' })
+            telemetry.record({ source: commandPalette })
         }
 
         if (connection !== undefined) {
             await this.authProvider.tryConnectTo(connection)
         } else if (!this.authProvider.isConnectionValid()) {
-            void getShowManageConnections().execute(placeholder, 'codecatalystDeveloperTools', 'codecatalyst')
+            void codecatalystConnectionsCmd.execute()
             return
         }
 
@@ -337,7 +349,7 @@ export class CodeCatalystCommands {
         deleteDevEnv: Commands.from(this).declareDeleteDevEnv('aws.codecatalyst.deleteDevEnv'),
         openDevEnvSettings: Commands.from(this).declareOpenDevEnvSettings('aws.codecatalyst.openDevEnvSettings'),
         openDevfile: Commands.from(this).declareOpenDevfile('aws.codecatalyst.openDevfile'),
-        cloneRepo: Commands.from(this).declareCloneRepository({
+        cloneRepo: Commands.from(this).declareCloneRepo({
             id: 'aws.codecatalyst.cloneRepo',
             telemetryName: 'codecatalyst_localClone',
         }),

@@ -5,13 +5,14 @@
 
 export abstract class IamPolicyChecksConstants {
     static readonly ValidatePolicySuccessWithFindings =
-        'Please view the problems panel to review the issues with your policy document. Policy checks should be run until issues are no longer found in your policy document.'
-    static readonly ValidatePolicySuccessNoFindings = 'Policy checks did not discover any problems with your policy.'
+        'Review the findings for your policy document in the problems panel. We recommend that you update your policy document and re-run the policy checks until no findings are generated.'
+    static readonly ValidatePolicySuccessNoFindings = 'Policy checks did not generate any findings for your policy.'
     static readonly CustomCheckSuccessWithFindings =
-        'Result: FAIL. Please view the problems panel to review the issues with your policy document. Policy checks should be run until issues are no longer found in your policy document.'
-    static readonly CustomCheckSuccessNoFindings =
-        'Result: PASS. Policy checks did not discover any problems with your policy.'
-    static readonly CustomCheckFilePathSetting = 'aws.accessAnalyzer.policyChecks.customChecksFilePath'
+        'Result: FAIL. Review the details for the check failure for your policy document in the problems panel. We recommend that you update your policy document and re-run the policy check until the check returns a PASS result.'
+    static readonly CustomCheckSuccessNoFindings = 'Result: PASS.'
+    static readonly CheckNoNewAccessFilePathSetting = 'aws.accessAnalyzer.policyChecks.checkNoNewAccessFilePath'
+    static readonly CheckAccessNotGrantedFilePathSetting =
+        'aws.accessAnalyzer.policyChecks.checkAccessNotGrantedFilePath'
     static readonly CfnParameterFilePathSetting = 'aws.accessAnalyzer.policyChecks.cloudFormationParameterFilePath'
     static readonly MissingReferenceDocError = 'Reference document is missing.'
     static readonly IncorrectFileExtension =
@@ -37,7 +38,8 @@ export type PolicyChecksUiClick =
     | 'accessanalyzer_selectInputPolicyType'
     | 'accessanalyzer_selectReferencePolicyType'
     | 'accessanalyzer_selectCustomCheckType'
-    | 'accessanalyzer_selectCustomChecksFilePath'
+    | 'accessanalyzer_selectCheckAccessNotGrantedFilePath'
+    | 'accessanalyzer_selectCheckNoNewAccessFilePath'
     | 'accessanalyzer_selectCfnParameterFilePath'
     | 'accessanalyzer_runValidatePolicy'
     | 'accessanalyzer_runCustomPolicyCheck'

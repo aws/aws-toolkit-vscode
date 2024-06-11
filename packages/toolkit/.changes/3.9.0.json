@@ -1,0 +1,10 @@
+{
+	"date": "2024-06-07",
+	"version": "3.9.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Toolkit now supports creating, viewing and editing [Threat Composer](https://github.com/awslabs/threat-composer#readme) threat models (`*.tc.json`)"
+		}
+	]
+}

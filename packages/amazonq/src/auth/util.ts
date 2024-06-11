@@ -64,5 +64,5 @@ async function getAutoConnectableConnection(): Promise<AwsConnection | undefined
         return undefined
     }
 
-    return AuthUtil.instance.findUsableQConnection(await listConnections())
+    return AuthUtil.instance.findMinimalQConnection(await listConnections())
 }

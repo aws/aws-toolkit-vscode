@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { ExtContext } from '../shared/extensions'
 import { CodeCatalystRemoteSourceProvider } from './repos/remoteSourceProvider'
-import { CodeCatalystCommands } from './commands'
+import { CodeCatalystCommands, codecatalystConnectionsCmd } from './commands'
 import { GitExtension } from '../shared/extensions/git'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { registerDevfileWatcher, updateDevfileCommand } from './devfile'
@@ -17,14 +17,13 @@ import { watchRestartingDevEnvs } from './reconnect'
 import { ToolkitPromptSettings } from '../shared/settings'
 import { dontShow } from '../shared/localizedText'
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
-import { Commands, placeholder } from '../shared/vscode/commands2'
+import { Commands } from '../shared/vscode/commands2'
 import { createClient, getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { isDevenvVscode } from './utils'
 import { codeCatalystConnectCommand, getThisDevEnv } from './model'
 import { getLogger } from '../shared/logger/logger'
 import { DevEnvActivityStarter } from './devEnv'
 import { learnMoreCommand, onboardCommand, reauth } from './explorer'
-import { getShowManageConnections } from '../login/command'
 
 const localize = nls.loadMessageBundle()
 
@@ -58,9 +57,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
         uriHandlers.register(ctx.uriHandler, CodeCatalystCommands.declared),
         ...Object.values(CodeCatalystCommands.declared).map(c => c.register(commands)),
-        Commands.register('aws.codecatalyst.manageConnections', () => {
-            return getShowManageConnections().execute(placeholder, 'codecatalystDeveloperTools', 'codecatalyst')
-        }),
+        codecatalystConnectionsCmd.register(),
         Commands.register('aws.codecatalyst.signout', () => {
             return authProvider.secondaryAuth.deleteConnection()
         })

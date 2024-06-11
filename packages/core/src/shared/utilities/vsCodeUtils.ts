@@ -102,7 +102,7 @@ export function buildMissingExtensionMessage(
     feat = `${getIdeProperties().company} Toolkit`
 ): string {
     const minV = semver.coerce(minVersion)
-    const expectedVersionMsg = isNonNullable(minV) ? ` of version >=${minV}` : ''
+    const expectedVersionMsg = isNonNullable(minV) ? ` of version >=${minV.version}` : ''
 
     return localize(
         'AWS.missingExtension',
@@ -214,9 +214,9 @@ export function reloadWindowPrompt(message: string): void {
  * Opens a URL in the system web browser. Throws `CancellationError`
  * if user dismisses the vscode confirmation prompt.
  */
-export async function openUrl(url: vscode.Uri): Promise<boolean> {
+export async function openUrl(url: vscode.Uri, source?: string): Promise<boolean> {
     return telemetry.aws_openUrl.run(async span => {
-        span.record({ url: url.toString() })
+        span.record({ url: url.toString(), source })
         const didOpen = await vscode.env.openExternal(url)
         if (!didOpen) {
             throw new CancellationError('user')

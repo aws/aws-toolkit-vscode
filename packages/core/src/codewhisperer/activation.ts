@@ -315,7 +315,7 @@ export async function activate(context: ExtContext): Promise<void> {
             auth.isConnectionValid() &&
             !auth.isBuilderIdInUse() &&
             editor &&
-            vscode.workspace.getWorkspaceFolder(editor.document.uri) &&
+            editor.document.uri.scheme === 'file' &&
             securityScanLanguageContext.isLanguageSupported(editor.document.languageId)
         )
     }

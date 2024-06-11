@@ -6,7 +6,7 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { setValidConnection, skiptTestIfNoValidConn } from '../util/codewhispererUtil'
+import { setValidConnection, skipTestIfNoValidConn } from '../util/connection'
 import { ConfigurationEntry } from '../../codewhisperer/models/model'
 import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
 import { RecommendationHandler } from '../../codewhisperer/service/recommendationHandler'
@@ -39,7 +39,7 @@ describe('CodeWhisperer service invocation', async function () {
         void resetCodeWhispererGlobalVariables()
         RecommendationHandler.instance.clearRecommendations()
         //valid connection required to run tests
-        skiptTestIfNoValidConn(validConnection, this)
+        skipTestIfNoValidConn(validConnection, this)
     })
 
     it('manual trigger returns valid recommendation response', async function () {

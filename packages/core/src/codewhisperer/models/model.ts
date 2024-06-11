@@ -350,12 +350,12 @@ export enum DropdownStep {
 }
 
 export const jobPlanProgress: {
-    startJob: StepProgress
+    uploadCode: StepProgress
     buildCode: StepProgress
     generatePlan: StepProgress
     transformCode: StepProgress
 } = {
-    startJob: StepProgress.NotStarted,
+    uploadCode: StepProgress.NotStarted,
     buildCode: StepProgress.NotStarted,
     generatePlan: StepProgress.NotStarted,
     transformCode: StepProgress.NotStarted,

@@ -384,11 +384,7 @@ export class Messenger {
         this.dispatcher.sendCommandMessage(new SendCommandMessage(message.command, message.tabID, message.eventId))
     }
 
-    public sendJobFinishedMessage(tabID: string, message: string = '') {
-        if (message === '') {
-            message = CodeWhispererConstants.jobCancelledChatMessage
-        }
-
+    public sendJobFinishedMessage(tabID: string, message: string) {
         const buttons: ChatItemButton[] = []
         buttons.push({
             keepCardAfterClick: false,

@@ -68,7 +68,7 @@ export class HumanInTheLoopManager {
 
     public createPomFileCopy = async (outputDirectoryPath: string, pomFileVirtualFileReference: vscode.Uri) => {
         const newPomCopyRef = await createPomCopy(outputDirectoryPath, pomFileVirtualFileReference, 'pom.xml')
-        this.tmpSessionFiles.push(newPomCopyRef.path)
+        this.tmpSessionFiles.push(newPomCopyRef.fsPath)
         return newPomCopyRef
     }
 

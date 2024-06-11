@@ -16,7 +16,7 @@ import fs from 'fs'
 
 const mockCodeScanFindings = JSON.stringify([
     {
-        filePath: '/workspaceFolder/python3.7-plain-sam-app/hello_world/app.py',
+        filePath: 'workspaceFolder/python3.7-plain-sam-app/hello_world/app.py',
         startLine: 1,
         endLine: 1,
         title: 'title',
@@ -85,8 +85,9 @@ describe('securityScanHandler', function () {
                 CodeAnalysisScope.PROJECT
             )
 
-            assert.equal(aggregatedCodeScanIssueList.length, 1)
+            assert.equal(aggregatedCodeScanIssueList.length, 2)
             assert.equal(aggregatedCodeScanIssueList[0].issues.length, 1)
+            assert.equal(aggregatedCodeScanIssueList[1].issues.length, 1)
         })
 
         it('should handle ListCodeScanFindings request with paginated response', async function () {
@@ -106,7 +107,7 @@ describe('securityScanHandler', function () {
                 CodeAnalysisScope.PROJECT
             )
 
-            assert.equal(aggregatedCodeScanIssueList.length, 1)
+            assert.equal(aggregatedCodeScanIssueList.length, 2)
             assert.equal(aggregatedCodeScanIssueList[0].issues.length, 3)
         })
     })

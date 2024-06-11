@@ -35,7 +35,6 @@ export type DevFunction =
     | 'openTerminal'
     | 'deleteDevEnv'
     | 'editStorage'
-    | 'editStorage'
     | 'showEnvVars'
     | 'deleteSsoConnections'
     | 'expireSsoConnections'

@@ -1,40 +1,6 @@
 {
     "types": [
         {
-            "name": "cfnParameterFileUsed",
-            "type": "boolean",
-            "description": "Boolean value of whether or not a Cfn parameter file is provided."
-        },
-        {
-            "name": "documentType",
-            "type": "string",
-            "allowedValues": ["CloudFormation", "Terraform Plan", "JSON Policy Language"],
-            "description": "Document type of the edited file in IAM Policy Checks"
-        },
-        {
-            "name": "inputPolicyType",
-            "type": "string",
-            "allowedValues": ["Identity", "Resource", "None"],
-            "description": "User inputted policy type of the edited file. Applicable to only JSON Policy Language."
-        },
-        {
-            "name": "checkType",
-            "type": "string",
-            "allowedValues": ["CheckNoNewAccess", "CheckAccessNotGranted"],
-            "description": "User inputted check type to denote which custom check to run."
-        },
-        {
-            "name": "referencePolicyType",
-            "type": "string",
-            "allowedValues": ["Identity", "Resource", "None"],
-            "description": "User inputted policy type of the reference file. Applicable to only CheckNoNewAccess check type."
-        },
-        {
-            "name": "findingsCount",
-            "type": "int",
-            "description": "Number of findings discovered after execution"
-        },
-        {
             "name": "amazonGenerateApproachLatency",
             "type": "double",
             "description": "The time it takes to generate approach response"
@@ -363,9 +329,15 @@
             "description": "Comma-delimited list of scopes that user has."
         },
         {
-            "name": "region",
+            "name": "awsRegion",
             "type": "string",
             "description": "An AWS region."
+        },
+        {
+            "name": "saveType",
+            "type": "string",
+            "allowedValues": ["MANUAL_SAVE", "AUTO_SAVE"],
+            "description": "Type of save executed"
         }
     ],
     "metrics": [
@@ -1249,7 +1221,7 @@
                     "required": false
                 },
                 {
-                    "type": "region",
+                    "type": "awsRegion",
                     "required": false
                 },
                 {
@@ -1279,58 +1251,56 @@
             ]
         },
         {
-            "name": "accessanalyzer_iamPolicyChecksCustomChecks",
-            "description": "Execution of Custom Policy Checks in IAM Policy Checks",
+            "name": "threatComposer_created",
+            "description": "Called after a new threat composer file is created using command pallet or New File option",
             "metadata": [
                 {
-                    "type": "cfnParameterFileUsed"
-                },
-                {
-                    "type": "checkType"
-                },
-                {
-                    "type": "documentType"
-                },
-                {
-                    "type": "findingsCount"
-                },
-                {
-                    "type": "inputPolicyType"
-                },
-                {
-                    "type": "referencePolicyType"
-                },
-                {
-                    "type": "reason",
-                    "required": false
-                },
-                {
-                    "type": "result"
+                    "type": "id",
+                    "required": true
                 }
             ]
         },
         {
-            "name": "accessanalyzer_iamPolicyChecksValidatePolicy",
-            "description": "Execution of Validate Policy in IAM Policy Checks",
+            "name": "threatComposer_opened",
+            "description": "Called after opening a threat composer file",
             "metadata": [
                 {
-                    "type": "cfnParameterFileUsed"
+                    "type": "id",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "threatComposer_fileSaved",
+            "description": "Called after a threat composer file has been saved",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
                 },
                 {
-                    "type": "documentType"
-                },
+                    "type": "saveType",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "threatComposer_closed",
+            "description": "Called after closing a threat composer file",
+            "metadata": [
                 {
-                    "type": "findingsCount"
-                },
+                    "type": "id",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "threatComposer_error",
+            "description": "Called after an error is thrown from the threat composer view",
+            "metadata": [
                 {
-                    "type": "inputPolicyType"
-                },
-                {
-                    "type": "reason",
-                    "required": false
-                },
-                {
-                    "type": "result"
+                    "type": "id",
+                    "required": true
                 }
             ]
         }

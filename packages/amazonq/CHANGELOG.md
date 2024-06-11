@@ -1,3 +1,25 @@
+## 1.8.0 2024-06-07
+
+- **Bug Fix** fix(featureDev): fix file rejection for multi-workspaces
+- **Feature** The `Send to Amazon Q` [context menu](https://github.com/aws/aws-toolkit-vscode/assets/371007/ce4c61a4-1b58-48ee-8500-56667d45dd7d) was renamed to `Amazon Q`
+- **Feature** Amazon Q Transform: Increase project upload size limit to 2GB
+- **Feature** feat(featureDev): generated plan being shown from top
+- **Feature** Add additional commands for Amazon Q.
+
+## 1.7.0 2024-05-30
+
+- **Bug Fix** Feature Development: File rejection is not rejecting a file when code is generated
+- **Bug Fix** Security Scan: Improved accuracy when applying security fixes
+- **Bug Fix** Amazon Q Code Transformation: show more specific error messages on failure cases
+- **Feature** Security Scan: Support for scanning files outside of workspaces.
+- **Feature** Amazon Q now publishes to Open VSX: https://open-vsx.org/namespace/amazonwebservices
+
+## 1.6.0 2024-05-21
+
+- **Bug Fix** Amazon Q Chat: Inside chat body, if there is a code block inside a list item it shows <br/> tags
+- **Bug Fix** Amazon Q Chat: Prompt input field allows additional input beyond the character limit
+- **Bug Fix** Amazon Q Chat: Prompt input field not getting focus when chat window opens
+
 ## 1.5.0 2024-05-17
 
 - **Bug Fix** Security Scan: Fixes an issue when scanning projects with binary files

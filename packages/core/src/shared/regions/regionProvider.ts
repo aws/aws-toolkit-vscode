@@ -11,11 +11,12 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { getLogger } from '../logger'
 import { Endpoints, loadEndpoints, Region } from './endpoints'
-import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { regionSettingKey } from '../constants'
 import { AwsContext } from '../awsContext'
-import { getIdeProperties, isCloud9 } from '../extensionUtilities'
+import { getIdeProperties, isAmazonQ, isCloud9 } from '../extensionUtilities'
 import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
+import { isSsoConnection } from '../../auth/connection'
+import { Auth } from '../../auth'
 
 export const defaultRegion = 'us-east-1'
 export const defaultPartition = 'aws'
@@ -90,27 +91,35 @@ export class RegionProvider {
     }
 
     /**
-     * @param node node on current command.
      * @returns heuristic for default region based on
-     * last touched region in explorer, wizard response, and node passed in.
+     * last touched region in auth, explorer, wizard response.
      */
-    public guessDefaultRegion(node?: AWSTreeNodeBase): string {
-        const explorerRegions = this.getExplorerRegions()
-
-        if (node?.regionCode) {
-            return node.regionCode
-        } else if (explorerRegions.length === 1) {
-            return explorerRegions[0]
-        } else if (this.lastTouchedRegion) {
-            return this.lastTouchedRegion
-        } else {
-            const lastWizardResponse = this.globalState.get<Region>('lastSelectedRegion')
-            if (lastWizardResponse && lastWizardResponse.id) {
-                return lastWizardResponse.id
-            } else {
-                return this.defaultRegionId
-            }
+    public guessDefaultRegion(): string | undefined {
+        const conn = Auth.instance.activeConnection
+        if (isAmazonQ() && isSsoConnection(conn)) {
+            // Only the current auth region makes sense for Amazon Q use cases.
+            return conn.ssoRegion
         }
+
+        if (conn?.type === 'sso') {
+            return conn.ssoRegion
+        }
+
+        const explorerRegions = this.getExplorerRegions()
+        if (explorerRegions.length === 1) {
+            return explorerRegions[0]
+        }
+
+        if (this.lastTouchedRegion) {
+            return this.lastTouchedRegion
+        }
+
+        const lastWizardResponse = this.globalState.get<Region>('lastSelectedRegion')
+        if (lastWizardResponse && lastWizardResponse.id) {
+            return lastWizardResponse.id
+        }
+
+        return undefined
     }
 
     public setLastTouchedRegion(region: string | undefined) {

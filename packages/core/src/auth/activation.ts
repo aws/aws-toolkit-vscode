@@ -3,22 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import { Auth } from './auth'
 import { LoginManager } from './deprecated/loginManager'
 import { fromString } from './providers/credentials'
 import { getLogger } from '../shared/logger'
-import { ExtensionUse, initAuthCommands } from './utils'
+import { ExtensionUse } from './utils'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { isInDevEnv } from '../shared/vscode/env'
 import { isWeb } from '../shared/extensionGlobals'
-import { getShowManageConnections, registerCommands } from '../login/command'
 
-export async function initialize(
-    extensionContext: vscode.ExtensionContext,
-    loginManager: LoginManager,
-    contextPrefix: string
-): Promise<void> {
+export async function initialize(loginManager: LoginManager): Promise<void> {
     Auth.instance.onDidChangeActiveConnection(async conn => {
         // This logic needs to be moved to `Auth.useConnection` to correctly record `passive`
         if (conn?.type === 'iam' && conn.state === 'valid') {
@@ -27,11 +21,6 @@ export async function initialize(
             await loginManager.logout()
         }
     })
-
-    initAuthCommands(contextPrefix)
-    registerCommands(extensionContext, contextPrefix)
-
-    extensionContext.subscriptions.push(getShowManageConnections())
 
     await showManageConnectionsOnStartup()
 }

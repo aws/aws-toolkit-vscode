@@ -16,7 +16,6 @@ import { TextMessageHandler } from './messages/handler'
 import { MessageController } from './messages/controller'
 import { getActions, getDetails } from './diffTree/actions'
 import { DiffTreeFileInfo } from './diffTree/types'
-import '../../../../resources/css/amazonq-webview.css'
 
 export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
     // eslint-disable-next-line prefer-const
@@ -230,18 +229,23 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
         onMessageReceived: (tabID: string, messageData: MynahUIDataModel) => {
             mynahUI.updateStore(tabID, messageData)
         },
-        onFileComponentUpdate: (tabID: string, filePaths: DiffTreeFileInfo[], deletedFiles: DiffTreeFileInfo[]) => {
+        onFileComponentUpdate: (
+            tabID: string,
+            filePaths: DiffTreeFileInfo[],
+            deletedFiles: DiffTreeFileInfo[],
+            messageId: string
+        ) => {
             const updateWith: Partial<ChatItem> = {
                 type: ChatItemType.ANSWER,
                 fileList: {
                     rootFolderTitle: 'Changes',
-                    filePaths: filePaths.map(i => i.relativePath),
-                    deletedFiles: deletedFiles.map(i => i.relativePath),
+                    filePaths: filePaths.map(i => i.zipFilePath),
+                    deletedFiles: deletedFiles.map(i => i.zipFilePath),
                     details: getDetails(filePaths),
                     actions: getActions([...filePaths, ...deletedFiles]),
                 },
             }
-            mynahUI.updateLastChatAnswer(tabID, updateWith)
+            mynahUI.updateChatAnswerWithMessageId(tabID, messageId, updateWith)
         },
         onWarning: (tabID: string, message: string, title: string) => {
             mynahUI.notify({

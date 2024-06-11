@@ -41,5 +41,5 @@ phases:
                   # note: the tag arg passed here should match what is in 10changeversion.yml
                   gh release create --repo $REPO --title "$PKG_DISPLAY_NAME $VERSION" --notes "$RELEASE_MESSAGE" -- "${TARGET_EXTENSION}/v${VERSION}" "$UPLOAD_TARGET" "$HASH_UPLOAD_TARGET"
                 else
-                  echo "SKIPPED: 'gh release create --repo $REPO'"
+                  echo "SKIPPED (stage=${STAGE}): 'gh release create --repo $REPO'"
                 fi

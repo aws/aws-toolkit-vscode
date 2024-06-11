@@ -1,0 +1,18 @@
+{
+	"date": "2024-05-21",
+	"version": "1.6.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Inside chat body, if there is a code block inside a list item it shows <br/> tags"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Prompt input field allows additional input beyond the character limit"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Prompt input field not getting focus when chat window opens"
+		}
+	]
+}

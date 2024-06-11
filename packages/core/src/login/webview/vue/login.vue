@@ -366,13 +366,16 @@ export default defineComponent({
         await this.emitUpdate('created')
     },
 
-    mounted() {
+    async mounted() {
         this.fetchRegions()
-        void this.updateExistingConnections()
+        await this.updateExistingConnections()
 
         // Reset gathered telemetry data each time we view the login page.
         // The webview panel is reset on each view of the login page by design.
-        void client.resetStoredMetricMetadata()
+        client.resetStoredMetricMetadata()
+
+        // Pre-select the first available login option
+        await this.preselectLoginOption()
     },
     methods: {
         toggleItemSelection(itemId: number) {
@@ -421,7 +424,7 @@ export default defineComponent({
                 } else if (this.selectedLoginOption === LoginOption.ENTERPRISE_SSO) {
                     this.stage = 'SSO_FORM'
                     this.$nextTick(() => document.getElementById('startUrl')!.focus())
-                    await client.storeMetricMetadata({ region: this.selectedRegion })
+                    await client.storeMetricMetadata({ awsRegion: this.selectedRegion })
                 } else if (this.selectedLoginOption >= LoginOption.EXISTING_LOGINS) {
                     this.stage = 'AUTHENTICATING'
                     const selectedConnection =
@@ -509,7 +512,7 @@ export default defineComponent({
         handleRegionInput(event: any) {
             this.handleUrlInput() // startUrl validity depends on region, see handleUriInput() for details
             void client.storeMetricMetadata({
-                region: event.target.value,
+                awsRegion: event.target.value,
             })
             void client.emitUiClick('auth_regionSelection')
         },
@@ -546,10 +549,9 @@ export default defineComponent({
                 })
             })
 
-            // If Amazon Q has no connections while Toolkit has connections
-            // Auto connect Q using toolkit connection.
-            const connections = await client.listConnections()
-            if (connections.length === 0 && sharedConnections && sharedConnections.length > 0) {
+            // If Toolkit has usable connections, instead auto connect Q using toolkit connection.
+            // Keep in mind that a "usable" connection is one with at least the CW core scopes (inline, ...)
+            if (sharedConnections && sharedConnections.length > 0) {
                 const conn = await client.findUsableConnection(sharedConnections)
                 if (conn) {
                     await client.useConnection(conn.id, true)
@@ -564,6 +566,17 @@ export default defineComponent({
         handleHelpLinkClick() {
             void client.emitUiClick('auth_helpLink')
         },
+        async preselectLoginOption() {
+            // Select the first available option for Login
+            if (this.existingLogins.length > 0) {
+                this.selectedLoginOption = LoginOption.EXISTING_LOGINS
+            } else if (this.app === 'AMAZONQ') {
+                this.selectedLoginOption = LoginOption.BUILDER_ID
+            } else if (this.app === 'TOOLKIT') {
+                this.selectedLoginOption = LoginOption.ENTERPRISE_SSO
+            }
+            this.$forceUpdate()
+        },
         shouldDisableSsoContinue() {
             return this.startUrl.length == 0 || this.startUrlError.length > 0 || !this.selectedRegion
         },
@@ -575,6 +588,8 @@ export default defineComponent({
 </script>
 
 <style>
+@import './base.css';
+
 .selectable-item {
     margin-bottom: 10px;
     margin-top: 10px;
@@ -591,7 +606,7 @@ export default defineComponent({
     color: #c6c6c6;
     margin-bottom: 5px;
     margin-top: 5px;
-    font-size: 10px;
+    font-size: var(--font-size-sm);
     font-weight: 500;
 }
 .vscode-light .hint {
@@ -602,41 +617,40 @@ export default defineComponent({
 }
 
 .auth-container {
-    display: flex;
-    flex-direction: column;
-    /* Stretches our overall container to the whole screen */
-    height: 100%;
+    height: auto;
+    margin: auto;
+    position: absolute;
+    top: var(--auth-container-top);
     width: 260px;
-    /* Centers all content in to middle of page since the height is the whole screen*/
-    justify-content: center;
 }
 
 .header {
-    font-size: 12px;
+    font-size: var(--font-size-base);
     font-weight: bold;
 }
-.header.vscode-dark {
+
+.vscode-dark .header {
     color: white;
 }
-.header.vscode-light {
+.vscode-light .header {
     color: black;
 }
 
 .title {
     margin-bottom: 3px;
     margin-top: 3px;
-    font-size: 11px;
+    font-size: var(--font-size-base);
     font-weight: 500;
 }
-.title.vscode-dark {
+.vscode-dark .title {
     color: white;
 }
-.title.vscode-light {
+.vscode-light .title {
     color: black;
 }
 
 .subHeader {
-    font-size: 10px;
+    font-size: var(--font-size-sm);
 }
 .continue-button {
     background-color: var(--vscode-button-background);
@@ -649,6 +663,7 @@ export default defineComponent({
     margin-bottom: 3px;
     margin-top: 3px;
     cursor: pointer;
+    font-size: var(--font-size-base);
 }
 .back-button {
     background: none;
@@ -678,7 +693,7 @@ export default defineComponent({
     padding-right: 8px;
     padding-top: 6px;
     padding-bottom: 6px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     font-weight: 400;
 }
 body.vscode-light .urlInput {
@@ -697,7 +712,7 @@ body.vscode-dark .urlInput {
     padding-right: 8px;
     padding-top: 6px;
     padding-bottom: 6px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     font-weight: 400;
 }
 body.vscode-light .iamInput {
@@ -715,18 +730,18 @@ body.vscode-dark .iamInput {
     padding-right: 8px;
     padding-top: 6px;
     padding-bottom: 6px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     font-weight: 400;
 }
 body.vscode-light .regionSelect {
     color: black;
 }
 body.vscode-dark .regionSelect {
-    color: #cccccc;
+    color: white;
 }
 .start-url-error {
     color: #ff0000;
-    font-size: 8px;
+    font-size: var(--font-size-sm);
 }
 #logo {
     fill: var(--vscode-button-foreground);

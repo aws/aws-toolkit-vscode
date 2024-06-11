@@ -25,8 +25,7 @@ describe('HumanInTheLoopManager', async function () {
         assert.strictEqual(compileFolderInfo.name, 'q-pom-dependency-list')
         assert.strictEqual(compileFolderInfo.path, HumanInTheLoopManager.instance.getTmpDependencyListDir())
     })
-    // TODO: Windows test is failing because of leading \. Need to fix on separate branch/PR
-    it.skip('will createPomFileCopy() and delete artifact', async function () {
+    it('will createPomFileCopy() and delete artifact', async function () {
         const pomFileVirtualFileReference = vscode.Uri.file(
             getTestResourceFilePath('resources/files/humanInTheLoop/downloadResults/pom.xml')
         )
@@ -36,7 +35,7 @@ describe('HumanInTheLoopManager', async function () {
             pomFileVirtualFileReference
         )
         const outputPathResult = path.join(outputDirectoryPath, 'pom.xml')
-        assertEqualPaths(newPomFilePath.path, outputPathResult)
+        assertEqualPaths(newPomFilePath.fsPath, outputPathResult)
         const newPomFileContents = await fsCommon.readFileAsString(newPomFilePath.path)
         assert.strictEqual(
             stripStringWhitespace(newPomFileContents),

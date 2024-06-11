@@ -129,6 +129,7 @@ export class AuthUtil {
             if (this.isValidEnterpriseSsoInUse() || (this.isBuilderIdInUse() && !this.isConnectionExpired())) {
                 // start the feature config polling job
                 await vscode.commands.executeCommand('aws.amazonq.fetchFeatureConfigs')
+                await showAmazonQWalkthroughOnce()
             }
             await this.setVscodeContextProps()
         })
@@ -222,8 +223,6 @@ export class AuthUtil {
             conn = await this.auth.reauthenticate(conn)
         }
 
-        await showAmazonQWalkthroughOnce()
-
         return this.secondaryAuth.useNewConnection(conn)
     }
 
@@ -243,9 +242,21 @@ export class AuthUtil {
             conn = await this.auth.reauthenticate(conn)
         }
 
-        await showAmazonQWalkthroughOnce()
-
         return this.secondaryAuth.useNewConnection(conn)
+    }
+
+    /**
+     * HACK: Use the connection, but then mark it as expired.
+     * We currently only need this to handle an edge case with the transition
+     * from the old to new standalone extension. This should eventually be removed.
+     */
+    public async useConnectionButExpire(conn: Connection) {
+        await this.secondaryAuth.useNewConnection(conn)
+        if (conn.type !== 'sso') {
+            return
+        }
+        await this.auth.expireConnection(conn)
+        await this.notifyReauthenticate()
     }
 
     public static get instance() {
@@ -424,10 +435,14 @@ export class AuthUtil {
     }
 
     /**
-     * From the given connections, returns a connection that works with Amazon Q.
+     * From the given connections, returns a connection that has some connection to Q.
+     *
+     * HACK: There is an edge case where we want to connect to the connection that only has
+     *       the old CW scopes, but not all Q scopes. So this function at the bare minimum returns
+     *       a connection if it has some CW scopes.
      */
-    findUsableQConnection(connections: AwsConnection[]): AwsConnection | undefined {
-        const hasQScopes = (c: AwsConnection) => amazonQScopes.every(s => c.scopes?.includes(s))
+    findMinimalQConnection(connections: AwsConnection[]): AwsConnection | undefined {
+        const hasQScopes = (c: AwsConnection) => codeWhispererCoreScopes.every(s => c.scopes?.includes(s))
         const score = (c: AwsConnection) => Number(hasQScopes(c)) * 10 + Number(c.state === 'valid')
         connections.sort(function (a, b) {
             return score(b) - score(a)

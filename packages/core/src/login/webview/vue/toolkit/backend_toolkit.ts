@@ -40,7 +40,8 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         const metadata: TelemetryMetadata = {
             credentialSourceId: 'iamIdentityCenter',
             credentialStartUrl: startUrl,
-            region,
+            awsRegion: region,
+            isReAuth: false,
         }
 
         if (this.isCodeCatalystLogin) {
@@ -108,7 +109,11 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
     async startBuilderIdSetup(): Promise<AuthError | undefined> {
         getLogger().debug(`called startBuilderIdSetup()`)
         return this.ssoSetup('startCodeCatalystBuilderIdSetup', async () => {
-            this.storeMetricMetadata({ credentialSourceId: 'awsId', authEnabledFeatures: 'codecatalyst' })
+            this.storeMetricMetadata({
+                credentialSourceId: 'awsId',
+                authEnabledFeatures: 'codecatalyst',
+                isReAuth: false,
+            })
 
             await this.codeCatalystAuth.connectToAwsBuilderId()
             await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)

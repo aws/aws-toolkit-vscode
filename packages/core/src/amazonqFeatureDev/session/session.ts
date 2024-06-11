@@ -125,6 +125,7 @@ export class Session {
             amazonqConversationId: this.conversationId,
             enabled: true,
             result: 'Succeeded',
+            credentialStartUrl: AuthUtil.instance.startUrl,
         })
     }
 
@@ -166,8 +167,13 @@ export class Session {
         return resp.interaction
     }
 
-    public async updateFilesPaths(tabID: string, filePaths: NewFileInfo[], deletedFiles: DeletedFileInfo[]) {
-        this.messenger.updateFileComponent(tabID, filePaths, deletedFiles)
+    public async updateFilesPaths(
+        tabID: string,
+        filePaths: NewFileInfo[],
+        deletedFiles: DeletedFileInfo[],
+        messageId: string
+    ) {
+        this.messenger.updateFileComponent(tabID, filePaths, deletedFiles, messageId)
     }
 
     public async insertChanges() {

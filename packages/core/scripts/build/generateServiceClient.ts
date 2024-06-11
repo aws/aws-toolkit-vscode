@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as child_process from 'child_process'
+import * as proc from 'child_process'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 
@@ -48,7 +48,7 @@ async function cloneJsSdk(dir: string): Promise<void> {
         }
         const tag = `v${sdkversion}`
 
-        const gitHead = child_process.spawnSync('git', ['-C', dir, 'rev-parse', 'HEAD'])
+        const gitHead = proc.spawnSync('git', ['-C', dir, 'rev-parse', 'HEAD'])
 
         const alreadyCloned = gitHead.status !== undefined && gitHead.status === 0
         const msg = `${alreadyCloned ? 'Updating' : 'Cloning'} AWS JS SDK...
@@ -75,7 +75,7 @@ async function cloneJsSdk(dir: string): Promise<void> {
                   dir,
               ]
 
-        const gitCmd = child_process.execFile('git', gitArgs, { encoding: 'utf8' })
+        const gitCmd = proc.execFile('git', gitArgs, { encoding: 'utf8' })
 
         gitCmd.stderr?.on('data', (data: any) => {
             console.log(data)
@@ -84,7 +84,7 @@ async function cloneJsSdk(dir: string): Promise<void> {
             gitCmd.stdout?.removeAllListeners()
 
             // Only needed for the "update" case, but harmless for "clone".
-            const gitCheckout = child_process.spawnSync('git', [
+            const gitCheckout = proc.spawnSync('git', [
                 '-c',
                 'advice.detachedHead=false',
                 '-C',
@@ -164,7 +164,7 @@ async function patchServicesIntoApiMetadata(apiMetadataPath: string, serviceName
 async function runTypingsGenerator(repoPath: string): Promise<void> {
     console.log('Generating service client typings...')
 
-    const stdout = child_process.execFileSync('node', ['scripts/typings-generator.js'], {
+    const stdout = proc.execFileSync('node', ['scripts/typings-generator.js'], {
         encoding: 'utf8',
         cwd: repoPath,
     })

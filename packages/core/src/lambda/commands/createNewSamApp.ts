@@ -41,7 +41,7 @@ import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDeb
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { debugNewSamAppUrl, launchConfigDocUrl } from '../../shared/constants'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
-import { execSync } from 'child_process'
+import { execFileSync } from 'child_process'
 import { writeFile } from 'fs-extra'
 import { checklogs } from '../../shared/localizedText'
 import globals from '../../shared/extensionGlobals'
@@ -211,7 +211,7 @@ export async function createNewSamApplication(
         // Needs to be done or else gopls won't start
         if (goRuntimes.includes(createRuntime)) {
             try {
-                execSync('go mod tidy', { cwd: path.join(path.dirname(templateUri.fsPath), 'hello-world') })
+                execFileSync('go', ['mod', 'tidy'], { cwd: path.join(path.dirname(templateUri.fsPath), 'hello-world') })
             } catch (err) {
                 getLogger().warn(
                     localize(

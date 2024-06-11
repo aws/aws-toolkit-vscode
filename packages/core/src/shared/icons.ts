@@ -17,7 +17,7 @@ import { getLogger } from './logger/logger'
 // https://code.visualstudio.com/api/references/icons-in-labels#animation
 
 type ContributedIcon = keyof typeof packageJson.contributes.icons
-type IconPath = { light: Uri; dark: Uri } | Icon
+type IconPath = { light: Uri; dark: Uri; toString: () => string } | Icon
 type IconId = `vscode-${string}` | ContributedIcon
 
 /**
@@ -117,13 +117,17 @@ function resolveIconId(
     return new Icon(namespace === 'vscode' ? name : id, source)
 }
 
-function resolvePathsSync(rootDir: string, target: string): { light: Uri; dark: Uri } | undefined {
-    const darkPath = path.join(rootDir, 'dark', `${target}.svg`)
-    const lightPath = path.join(rootDir, 'light', `${target}.svg`)
+function resolvePathsSync(
+    rootDir: string,
+    target: string
+): { light: Uri; dark: Uri; toString: () => string } | undefined {
+    const filename = `${target}.svg`
+    const darkPath = path.join(rootDir, 'dark', filename)
+    const lightPath = path.join(rootDir, 'light', filename)
 
     try {
         if (!isWeb() && fs.existsSync(darkPath) && fs.existsSync(lightPath)) {
-            return { dark: Uri.file(darkPath), light: Uri.file(lightPath) }
+            return { dark: Uri.file(darkPath), light: Uri.file(lightPath), toString: () => filename }
         }
     } catch (error) {
         getLogger().warn(`icons: path resolution failed for "${target}": %s`, error)
