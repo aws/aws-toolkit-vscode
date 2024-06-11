@@ -295,6 +295,7 @@ class Message implements vscode.Disposable {
             return vscode.window
                 .showWarningMessage(
                     `Your CodeCatalyst Dev Environment has been inactive for ${minutesUserWasInactive} minutes, and will stop soon.`,
+                    { modal: true },
                     imHere
                 )
                 .then(res => {
