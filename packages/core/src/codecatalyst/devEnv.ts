@@ -178,8 +178,17 @@ export class InactivityMessage implements vscode.Disposable {
 
             const { millisToWait, minutesSinceTimestamp } = this.millisUntilNextWholeMinute(lastActivity, oneMin)
             const minutesUntilShutdown = maxInactivityMinutes - minutesSinceTimestamp
-            const minutesUntilFirstMessage = minutesUntilShutdown - InactivityMessage.shutdownWarningThreshold
+            const minutesUntilFirstMessage = Math.max(
+                0,
+                minutesUntilShutdown - InactivityMessage.shutdownWarningThreshold
+            )
             const timerInterval = millisToWait + minutesUntilFirstMessage * oneMin
+            getLogger().debug(
+                'InactivityMessage: millisToWait=%d minutesUntilFirstMessage=%d oneMin=%d',
+                millisToWait,
+                minutesUntilFirstMessage,
+                oneMin
+            )
 
             /** Wait until we are {@link InactivityMessage.shutdownWarningThreshold} minutes before shutdown. */
             this.#beforeMessageShown = globals.clock.setTimeout(() => {
@@ -196,8 +205,8 @@ export class InactivityMessage implements vscode.Disposable {
                 this.#message = new Message()
                 this.#message
                     .show(
-                        minutesSinceTimestamp + minutesUntilFirstMessage,
-                        minutesUntilShutdown - minutesUntilFirstMessage,
+                        Math.max(0, minutesSinceTimestamp + minutesUntilFirstMessage),
+                        Math.max(0, minutesUntilShutdown - minutesUntilFirstMessage),
                         userIsActive,
                         willRefreshOnStaleTimestamp,
                         oneMin
