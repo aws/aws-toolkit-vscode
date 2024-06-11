@@ -3553,6 +3553,12 @@
                 "key": "ctrl+shift+v",
                 "mac": "cmd+shift+v",
                 "when": "editorTextFocus && editorLangId == asl || editorTextFocus && editorLangId == asl-yaml"
+            },
+            {
+                "command": "aws.samcli.sync",
+                "key": "ctrl+shift+s",
+                "mac": "cmd+shift+s",
+                "when": "editorLangId == yaml || workspaceCtontain:**/*.yaml"
             }
         ],
         "grammars": [
@@ -3593,7 +3599,94 @@
                 }
             }
         ],
-        "walkthroughs": [],
+        "walkthroughs": [
+            {
+                "id": "lambdaWelcome",
+                "title": "Lambda Toolkit walkthrough",
+                "description": "walkthrough toolkit for Lambda, including create stack with applicationComposer, Add Lmabda function, test, build, deploy and debug your Lambda function",
+                "when": "workspacePlatform != webworker",
+                "steps": [
+                    {
+                        "id": "1",
+                        "title": "Setup AWS Profile",
+                        "description": "Click Toolkit extension button on the left bottom, choose to sign in with your AWS credentials\n If you haven't registered an AWS account or having trouble authenticating, please refer to the [User Guide](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/connect.html)",
+                        "media": {
+                            "svg": "resources/aws-logo.svg",
+                            "altText": "test"
+                        }
+                    },
+                    {
+                        "id": "2",
+                        "title": "Setup SAM Cli",
+                        "description": "SAM CLI need to be installed to enable working locally with your function and deploying \n[Install SAM CLI](command:toSide:workbench.action.files.newUntitledFile?%7B%22languageId%22%3A%22python%22%7D)",
+                        "media": {
+                            "svg": "resources/amazonq-logo.svg",
+                            "altText": "test2"
+                        }
+                    },
+                    {
+                        "id": "3",
+                        "title": "Setup Docker for Mac",
+                        "description": "SAM CLI need to be installed to enable working locally with your function and deploying \n[Install Docker](command:toSide:workbench.action.files.newUntitledFile?%7B%22languageId%22%3A%22python%22%7D)",
+                        "media": {
+                            "markdown": "resources/walkthrough/install-python-windows-8.md"
+                        }
+                    },
+                    {
+                        "id": "4",
+                        "title": "Learn more",
+                        "description": "Choose one of the following walkthrough to continue learning how to deploy your local project to AWS: \n[REST API Microservice](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D) \n[Image Resizing with S3](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D) \n[Polling with SQS](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D)",
+                        "media": {
+                            "svg": "resources/amazonq-logo.svg",
+                            "altText": "test2"
+                        }
+                    }
+                ]
+            },
+            {
+                "id": "lambdaWelcome223",
+                "title": "Lambda Toolkit walkthrough223",
+                "description": "walkthrough toolkit for Lambda, including create stack with applicationComposer, Add Lmabda function, test, build, deploy and debug your Lambda function",
+                "when": "workspacePlatform != webworker",
+                "steps": [
+                    {
+                        "id": "1",
+                        "title": "Setup AWS Profile",
+                        "description": "Click Toolkit extension button on the left bottom, choose to sign in with your AWS credentials\n If you haven't registered an AWS account or having trouble authenticating, please refer to the [User Guide](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/connect.html)",
+                        "media": {
+                            "svg": "resources/aws-logo.svg",
+                            "altText": "test"
+                        }
+                    },
+                    {
+                        "id": "2",
+                        "title": "Setup SAM Cli",
+                        "description": "SAM CLI need to be installed to enable working locally with your function and deploying \n[Install SAM CLI](command:toSide:workbench.action.files.newUntitledFile?%7B%22languageId%22%3A%22python%22%7D)",
+                        "media": {
+                            "svg": "resources/amazonq-logo.svg",
+                            "altText": "test2"
+                        }
+                    },
+                    {
+                        "id": "3",
+                        "title": "Setup Docker for Mac",
+                        "description": "SAM CLI need to be installed to enable working locally with your function and deploying \n[Install Docker](command:toSide:workbench.action.files.newUntitledFile?%7B%22languageId%22%3A%22python%22%7D)",
+                        "media": {
+                            "markdown": "resources/walkthrough/install-python-windows-8.md"
+                        }
+                    },
+                    {
+                        "id": "4",
+                        "title": "Learn more",
+                        "description": "Choose one of the following walkthrough to continue learning how to deploy your local project to AWS: \n[]",
+                        "media": {
+                            "svg": "resources/amazonq-logo.svg",
+                            "altText": "test2"
+                        }
+                    }
+                ]
+            }
+        ],
         "icons": {
             "aws-amazonq-q-gradient": {
                 "description": "AWS Contributed Icon",
