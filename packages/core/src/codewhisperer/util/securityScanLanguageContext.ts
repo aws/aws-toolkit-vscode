@@ -30,7 +30,7 @@ export class SecurityScanLanguageContext {
             terraform: 'tf',
             terragrunt: 'tf',
             packer: 'tf',
-            // plaintext: 'plaintext',
+            plaintext: 'plaintext',
             c: 'c',
             cpp: 'cpp',
             php: 'php',
@@ -43,7 +43,7 @@ export class SecurityScanLanguageContext {
 
     public isLanguageSupported(languageId: string): boolean {
         const lang = this.normalizeLanguage(languageId)
-        return lang !== undefined
+        return lang !== undefined && lang !== 'plaintext'
     }
 }
 

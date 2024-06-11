@@ -317,9 +317,6 @@ export async function activate(context: ExtContext): Promise<void> {
             editor &&
             editor.document.uri.scheme === 'file' &&
             securityScanLanguageContext.isLanguageSupported(editor.document.languageId)
-            //&&
-            // editor.document.languageId !== 'plaintext' &&
-            // editor.document.languageId !== 'unknown'
         )
     }
 
