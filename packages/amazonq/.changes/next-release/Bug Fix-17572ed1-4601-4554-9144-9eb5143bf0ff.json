@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Do not turn on auto trigger when IDE reloads"
+	"description": "Amazon Q inline suggestions: remember `Pause Auto-Suggestions` after IDE restart"
 }
