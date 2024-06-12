@@ -6,6 +6,8 @@
 /**
  * This module contains shared code between the main extension and browser/web
  * extension entrypoints.
+ *
+ * See `arch_develop.md` in `docs/` for more info.
  */
 
 import vscode from 'vscode'
@@ -61,7 +63,7 @@ let localize: nls.LocalizeFunc
  * Activation/setup code that is shared by the regular (nodejs) extension AND web mode extension.
  * Most setup code should live here, unless there is a reason not to.
  */
-export async function activateShared(
+export async function activateCommon(
     context: vscode.ExtensionContext,
     contextPrefix: string,
     isWeb: boolean
@@ -163,7 +165,7 @@ export async function activateShared(
 }
 
 /** Deactivation code that is shared between nodejs and web implementations */
-export async function deactivateShared() {
+export async function deactivateCommon() {
     await globals.telemetry.shutdown()
 }
 /**

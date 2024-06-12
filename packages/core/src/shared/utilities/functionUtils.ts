@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from '../extensionGlobals'
+import { Timeout } from './timeoutUtils'
 
 /**
  * Creates a function that always returns a 'shared' Promise.
@@ -87,21 +87,22 @@ export function memoize<T, U extends any[]>(fn: (...args: U) => T): (...args: U)
  * the execution by another {@link delay} milliseconds.
  */
 export function debounce<T>(cb: () => T | Promise<T>, delay: number = 0): () => Promise<T> {
-    let timer: NodeJS.Timeout | undefined
+    let timeout: Timeout | undefined
     let promise: Promise<T> | undefined
 
     return () => {
-        timer?.refresh()
+        timeout?.refresh()
 
         return (promise ??= new Promise<T>((resolve, reject) => {
-            timer = globals.clock.setTimeout(async () => {
-                timer = promise = undefined
+            timeout = new Timeout(delay)
+            timeout.onCompletion(async () => {
+                timeout = promise = undefined
                 try {
                     resolve(await cb())
                 } catch (err) {
                     reject(err)
                 }
-            }, delay)
+            })
         }))
     }
 }
@@ -114,30 +115,31 @@ export function cancellableDebounce<T, U extends any[]>(
     cb: (...args: U) => T | Promise<T>,
     delay: number = 0
 ): { promise: (...args: U) => Promise<T>; cancel: () => void } {
-    let timer: NodeJS.Timeout | undefined
+    let timeout: Timeout | undefined
     let promise: Promise<T> | undefined
 
     const cancel = (): void => {
-        if (timer) {
-            clearTimeout(timer)
-            timer = undefined
+        if (timeout) {
+            timeout.cancel()
+            timeout = undefined
             promise = undefined
         }
     }
 
     return {
         promise: (...arg) => {
-            timer?.refresh()
+            timeout?.refresh()
 
             return (promise ??= new Promise<T>((resolve, reject) => {
-                timer = globals.clock.setTimeout(async () => {
-                    timer = promise = undefined
+                timeout = new Timeout(delay)
+                timeout.onCompletion(async () => {
+                    timeout = promise = undefined
                     try {
                         resolve(await cb(...arg))
                     } catch (err) {
                         reject(err)
                     }
-                }, delay)
+                })
             }))
         },
         cancel: cancel,
