@@ -4,7 +4,7 @@
  */
 
 import { randomUUID } from '../../common/crypto'
-import { ICodeTransformMetaData } from './codeTransformMetadata'
+import { codeTransformMetaDataToJsonString, ICodeTransformMetaData } from './codeTransformMetadata'
 
 interface ICodeTransformTelemetryState {
     sessionId: string
@@ -29,7 +29,8 @@ export class CodeTransformTelemetryState {
     public getStartTime = () => this.mainState.sessionStartTime
     public getResultStatus = () => this.mainState.resultStatus
     public getCodeTransformMetaData = () => this.mainState.codeTransformMetadata
-    public getCodeTransformMetaDataString = () => JSON.stringify(this.mainState.codeTransformMetadata)
+    public getCodeTransformMetaDataString = () =>
+        codeTransformMetaDataToJsonString(this.mainState.codeTransformMetadata)
 
     public setSessionId = () => {
         this.mainState.sessionId = randomUUID()
