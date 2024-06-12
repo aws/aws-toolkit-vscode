@@ -14,7 +14,7 @@ import { CodeCatalystCommands, codecatalystConnectionsCmd } from './commands'
 import { ConnectedDevEnv, getDevfileLocation, getThisDevEnv } from './model'
 import * as codecatalyst from './model'
 import { getLogger } from '../shared/logger'
-import { Connection } from '../auth/connection'
+import { SsoConnection } from '../auth/connection'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 
 export const learnMoreCommand = Commands.declare('aws.learnMore', () => async (docsUrl: vscode.Uri) => {
@@ -24,8 +24,8 @@ export const learnMoreCommand = Commands.declare('aws.learnMore', () => async (d
 // Only used in rare cases on C9
 export const reauth = Commands.declare(
     '_aws.codecatalyst.reauthenticate',
-    () => async (conn: Connection, authProvider: CodeCatalystAuthenticationProvider) => {
-        await authProvider.auth.reauthenticate(conn)
+    () => async (conn: SsoConnection, authProvider: CodeCatalystAuthenticationProvider) => {
+        await authProvider.reauthenticate(conn)
     }
 )
 

@@ -82,7 +82,7 @@ export class DevEnvActivityStarter {
                         if (res !== 'Reauthenticate') {
                             return
                         }
-                        await this.authProvider.auth.reauthenticate(connection)
+                        await this.authProvider.reauthenticate(connection)
                         void this.tryStartDevEnvActivityHeartbeat()
                     })
 
