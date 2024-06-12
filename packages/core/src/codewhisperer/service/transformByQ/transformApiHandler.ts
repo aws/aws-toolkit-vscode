@@ -136,6 +136,10 @@ export async function uploadArtifactToS3(
         let errorMessage = `The upload failed due to: ${(e as Error).message}`
         if (errorMessage.includes('Request has expired')) {
             errorMessage = CodeWhispererConstants.errorUploadingWithExpiredUrl
+        } else if (errorMessage.includes('Failed to establish a socket connection')) {
+            errorMessage = CodeWhispererConstants.socketConnectionFailed
+        } else if (errorMessage.includes('self signed certificate in certificate chain')) {
+            errorMessage = CodeWhispererConstants.selfSignedCertificateError
         }
         getLogger().error(`CodeTransformation: UploadZip error = ${e}`)
         telemetry.codeTransform_logApiError.emit({
