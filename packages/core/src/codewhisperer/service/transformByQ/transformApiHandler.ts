@@ -38,7 +38,7 @@ import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/cod
 import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import request from '../../../common/request'
-import { JobStoppedError, ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
+import { JobStoppedError, TransformationPreBuildError, ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import { writeLogs } from './transformFileHandler'
 import { AuthUtil } from '../../util/authUtil'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
@@ -763,6 +763,9 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                     transformByQState.setJobFailureErrorChatMessage(
                         CodeWhispererConstants.failedToStartJobLinesLimitChatMessage
                     )
+                }
+                if (errorMessage.includes('The requested module could not be built')) {
+                    throw new TransformationPreBuildError(response.transformationJob.reason || '')
                 } else {
                     transformByQState.setJobFailureErrorChatMessage(
                         `${CodeWhispererConstants.failedToCompleteJobGenericChatMessage} ${errorMessage}`
@@ -810,7 +813,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 result: MetadataResult.Fail,
                 reason: 'GetTransformationFailed',
             })
-            throw new Error('Error while polling job status')
+            throw e
         }
     }
     return status
@@ -848,36 +851,26 @@ export function findDownloadArtifactStep(transformationSteps: TransformationStep
     }
 }
 
-interface IDownloadResultArchiveParams {
-    jobId: string
-    downloadArtifactId: string
-    pathToArchive: string
-}
-export async function downloadResultArchive({
-    jobId,
-    downloadArtifactId,
-    pathToArchive,
-}: IDownloadResultArchiveParams) {
+export async function downloadResultArchive(
+    jobId: string,
+    downloadArtifactId: string | undefined,
+    pathToArchive: string,
+    downloadArtifactType: TransformationDownloadArtifactType
+) {
     let downloadErrorMessage = undefined
     const cwStreamingClient = await createCodeWhispererChatStreamingClient()
+
     try {
         await downloadExportResultArchive(
             cwStreamingClient,
             {
                 exportId: jobId,
                 exportIntent: ExportIntent.TRANSFORMATION,
-                exportContext: {
-                    transformationExportContext: {
-                        downloadArtifactId,
-                        downloadArtifactType: TransformationDownloadArtifactType.CLIENT_INSTRUCTIONS,
-                    },
-                },
             },
             pathToArchive
         )
     } catch (e: any) {
         downloadErrorMessage = (e as Error).message
-        // This allows the customer to retry the download
         getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'ExportResultArchive',
@@ -893,13 +886,20 @@ export async function downloadResultArchive({
     }
 }
 
-export async function downloadHilResultArchive(jobId: string, downloadArtifactId: string, pathToArchiveDir: string) {
+export async function downloadAndExtractResultArchive(
+    jobId: string,
+    downloadArtifactId: string | undefined,
+    pathToArchiveDir: string,
+    downloadArtifactType: TransformationDownloadArtifactType
+) {
     const archivePathExists = await fsCommon.existsDir(pathToArchiveDir)
     if (!archivePathExists) {
         await fsCommon.mkdir(pathToArchiveDir)
     }
+
     const pathToArchive = path.join(pathToArchiveDir, 'ExportResultsArchive.zip')
-    await downloadResultArchive({ jobId, downloadArtifactId, pathToArchive })
+
+    await downloadResultArchive(jobId, downloadArtifactId, pathToArchive, downloadArtifactType)
 
     let downloadErrorMessage = undefined
     try {
@@ -909,8 +909,17 @@ export async function downloadHilResultArchive(jobId: string, downloadArtifactId
     } catch (e) {
         downloadErrorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
-        throw new Error('Error downloading HIL artifacts')
+        throw new Error('Error downloading transformation result artifacts')
     }
+}
+
+export async function downloadHilResultArchive(jobId: string, downloadArtifactId: string, pathToArchiveDir: string) {
+    await downloadAndExtractResultArchive(
+        jobId,
+        downloadArtifactId,
+        pathToArchiveDir,
+        TransformationDownloadArtifactType.CLIENT_INSTRUCTIONS
+    )
 
     // manifest.json
     // pomFolder/pom.xml or manifest has pomFolderName path
