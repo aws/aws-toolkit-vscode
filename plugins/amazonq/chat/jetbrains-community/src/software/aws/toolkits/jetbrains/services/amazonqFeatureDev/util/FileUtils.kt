@@ -3,6 +3,10 @@
 
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util
 
+import com.intellij.openapi.fileChooser.FileChooser
+import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.deleteIfExists
@@ -23,4 +27,9 @@ fun resolveAndCreateOrUpdateFile(projectRootPath: Path, relativeFilePath: String
 fun resolveAndDeleteFile(projectRootPath: Path, relativePath: String) {
     val filePath = projectRootPath.resolve(relativePath)
     filePath.deleteIfExists()
+}
+
+fun selectFolder(project: Project, openOn: VirtualFile): VirtualFile? {
+    val fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor()
+    return FileChooser.chooseFile(fileChooserDescriptor, project, openOn)
 }

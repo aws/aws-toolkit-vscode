@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.controller
 
+import com.intellij.testFramework.LightVirtualFile
 import com.intellij.testFramework.RuleChain
 import com.intellij.testFramework.replaceService
 import io.mockk.coEvery
@@ -56,6 +57,7 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.Sessio
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.SessionStatePhase
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.storage.ChatSessionStorage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.getFollowUpOptions
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.selectFolder
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.uploadArtifactToS3
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AmazonqTelemetry
@@ -393,5 +395,90 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
         val newFileContentsCopy = newFileContents.toList()
         newFileContentsCopy[0].rejected = !newFileContentsCopy[0].rejected
         coVerify { messenger.updateFileComponent(testTabId, newFileContentsCopy, deletedFiles, "") }
+    }
+
+    @Test
+    fun `test modifyDefaultSourceFolder customer does not select a folder`() = runTest {
+        val followUp = FollowUp(FollowUpTypes.MODIFY_DEFAULT_SOURCE_FOLDER, pillText = "Modify default source folder")
+        val message = IncomingFeatureDevMessage.FollowupClicked(followUp, testTabId, "", "test-command")
+
+        whenever(featureDevClient.createTaskAssistConversation()).thenReturn(exampleCreateTaskAssistConversationResponse)
+        whenever(chatSessionStorage.getSession(any(), any())).thenReturn(spySession)
+
+        mockkStatic("software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.FileUtilsKt")
+        every { selectFolder(any(), any()) } returns null
+
+        spySession.preloader(userMessage, messenger)
+        controller.processFollowupClickedMessage(message)
+
+        coVerifyOrder {
+            messenger.sendSystemPrompt(
+                tabId = testTabId,
+                followUp = listOf(
+                    FollowUp(
+                        pillText = message("amazonqFeatureDev.follow_up.modify_source_folder"),
+                        type = FollowUpTypes.MODIFY_DEFAULT_SOURCE_FOLDER,
+                        status = FollowUpStatusType.Info,
+                    )
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `test modifyDefaultSourceFolder customer selects a folder outside the workspace`() = runTest {
+        val followUp = FollowUp(FollowUpTypes.MODIFY_DEFAULT_SOURCE_FOLDER, pillText = "Modify default source folder")
+        val message = IncomingFeatureDevMessage.FollowupClicked(followUp, testTabId, "", "test-command")
+
+        whenever(featureDevClient.createTaskAssistConversation()).thenReturn(exampleCreateTaskAssistConversationResponse)
+        whenever(chatSessionStorage.getSession(any(), any())).thenReturn(spySession)
+
+        mockkStatic("software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.FileUtilsKt")
+        every { selectFolder(any(), any()) } returns LightVirtualFile("/path")
+
+        spySession.preloader(userMessage, messenger)
+        controller.processFollowupClickedMessage(message)
+
+        coVerifyOrder {
+            messenger.sendAnswer(
+                tabId = testTabId,
+                messageType = FeatureDevMessageType.Answer,
+                message = message("amazonqFeatureDev.follow_up.incorrect_source_folder")
+            )
+            messenger.sendSystemPrompt(
+                tabId = testTabId,
+                followUp = listOf(
+                    FollowUp(
+                        pillText = message("amazonqFeatureDev.follow_up.modify_source_folder"),
+                        type = FollowUpTypes.MODIFY_DEFAULT_SOURCE_FOLDER,
+                        status = FollowUpStatusType.Info,
+                    )
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `test modifyDefaultSourceFolder customer selects a correct sub folder`() = runTest {
+        val followUp = FollowUp(FollowUpTypes.MODIFY_DEFAULT_SOURCE_FOLDER, pillText = "Modify default source folder")
+        val message = IncomingFeatureDevMessage.FollowupClicked(followUp, testTabId, "", "test-command")
+
+        whenever(featureDevClient.createTaskAssistConversation()).thenReturn(exampleCreateTaskAssistConversationResponse)
+        whenever(chatSessionStorage.getSession(any(), any())).thenReturn(spySession)
+
+        val folder = LightVirtualFile("${spySession.context.projectRoot.name}/path/to/sub/folder")
+        mockkStatic("software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.FileUtilsKt")
+        every { selectFolder(any(), any()) } returns folder
+
+        spySession.preloader(userMessage, messenger)
+        controller.processFollowupClickedMessage(message)
+
+        coVerify {
+            messenger.sendAnswer(
+                tabId = testTabId,
+                messageType = FeatureDevMessageType.Answer,
+                message = message("amazonqFeatureDev.follow_up.modified_source_folder", folder.path)
+            )
+        }
     }
 }

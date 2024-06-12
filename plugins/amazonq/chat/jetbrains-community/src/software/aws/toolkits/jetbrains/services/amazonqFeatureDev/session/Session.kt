@@ -97,16 +97,16 @@ class Session(val tabID: String, val project: Project) {
      * Triggered by the Insert code follow-up button to apply code changes.
      */
     fun insertChanges(filePaths: List<NewFileZipInfo>, deletedFiles: List<DeletedFileInfo>, references: List<CodeReferenceGenerated>) {
-        val projectRootPath = context.projectRoot.toNioPath()
+        val selectedSourceFolder = context.selectedSourceFolder.toNioPath()
 
-        filePaths.forEach { resolveAndCreateOrUpdateFile(projectRootPath, it.zipFilePath, it.fileContent) }
+        filePaths.forEach { resolveAndCreateOrUpdateFile(selectedSourceFolder, it.zipFilePath, it.fileContent) }
 
-        deletedFiles.forEach { resolveAndDeleteFile(projectRootPath, it.zipFilePath) }
+        deletedFiles.forEach { resolveAndDeleteFile(selectedSourceFolder, it.zipFilePath) }
 
         ReferenceLogController.addReferenceLog(references, project)
 
         // Taken from https://intellij-support.jetbrains.com/hc/en-us/community/posts/206118439-Refresh-after-external-changes-to-project-structure-and-sources
-        VfsUtil.markDirtyAndRefresh(true, true, true, context.projectRoot)
+        VfsUtil.markDirtyAndRefresh(true, true, true, context.selectedSourceFolder)
     }
 
     suspend fun send(msg: String): Interaction {

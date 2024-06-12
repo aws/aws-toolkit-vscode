@@ -91,8 +91,8 @@ class SessionTest : FeatureDevTestBase() {
         val mockNewFile = listOf(NewFileZipInfo("test.ts", "testContent", false))
         val mockDeletedFile = listOf(DeletedFileInfo("deletedTest.ts", false))
 
-        session.context.projectRoot = mock()
-        whenever(session.context.projectRoot.toNioPath()).thenReturn(Path(""))
+        session.context.selectedSourceFolder = mock()
+        whenever(session.context.selectedSourceFolder.toNioPath()).thenReturn(Path(""))
 
         session.insertChanges(mockNewFile, mockDeletedFile, emptyList())
 
