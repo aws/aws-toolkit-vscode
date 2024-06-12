@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { Auth } from '../../auth/auth'
 import { ToolkitError } from '../../shared/errors'
-import { getSecondaryAuth } from '../../auth/secondaryAuth'
+import { getSecondaryAuth, setScopes } from '../../auth/secondaryAuth'
 import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { AmazonQPromptSettings } from '../../shared/settings'
 import {
@@ -25,6 +25,7 @@ import {
     scopesGumby,
     isIdcSsoConnection,
     AwsConnection,
+    hasExactScopes,
 } from '../../auth/connection'
 import { getLogger } from '../../shared/logger'
 import { Commands } from '../../shared/vscode/commands2'
@@ -341,10 +342,9 @@ export class AuthUtil {
                 return
             }
 
-            if (!isValidAmazonQConnection(this.conn)) {
-                const conn = await this.secondaryAuth.addScopes(this.conn, amazonQScopes)
+            if (!hasExactScopes(this.conn, amazonQScopes)) {
+                const conn = await setScopes(this.conn, amazonQScopes, this.auth)
                 await this.secondaryAuth.useNewConnection(conn)
-                return
             }
 
             await this.auth.reauthenticate(this.conn)
