@@ -125,6 +125,7 @@ export class Session {
             amazonqConversationId: this.conversationId,
             enabled: true,
             result: 'Succeeded',
+            credentialStartUrl: AuthUtil.instance.startUrl,
         })
     }
 

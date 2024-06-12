@@ -168,6 +168,8 @@ export class Settings {
     /**
      * Returns a scoped "slice" (or "view") of the settings configuration.
      *
+     * TODO(jmkeyes): This lacks all the type checking and error handling of {@link Settings}.
+     *
      * The returned {@link Settings} interface is limited to the provided section.
      *
      * Example:

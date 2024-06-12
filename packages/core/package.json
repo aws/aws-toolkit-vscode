@@ -29,6 +29,8 @@
     "exports": {
         ".": "./dist/src/extension.js",
         "./web": "./dist/src/extensionWeb.js",
+        "./webShared": "./dist/src/extensionWebShared.js",
+        "./common": "./dist/src/extensionCommon.js",
         "./amazonq": "./dist/src/amazonq/index.js",
         "./codewhisperer": "./dist/src/codewhisperer/index.js",
         "./shared": "./dist/src/shared/index.js",
@@ -284,6 +286,11 @@
                     "markdownDescription": "%AWS.configuration.description.amazonq.localWorkspaceIndex%",
                     "default": true,
                     "scope": "application"
+                },
+                "aws.threatComposer.defaultEditor": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "%AWS.configuration.description.threatComposer.defaultEditor%"
                 }
             }
         },
@@ -1180,6 +1187,10 @@
                 {
                     "command": "aws.toolkit.amazonq.extensionpage",
                     "when": "false"
+                },
+                {
+                    "command": "aws.newThreatComposerFile",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -1230,7 +1241,7 @@
                 },
                 {
                     "command": "aws.openInApplicationComposer",
-                    "when": "editorLangId == json || editorLangId == yaml || resourceFilename =~ /^.*\\.(template)$/",
+                    "when": "(editorLangId == json && !(resourceFilename =~ /^.*\\.tc\\.json$/)) || editorLangId == yaml || resourceFilename =~ /^.*\\.(template)$/",
                     "group": "navigation"
                 }
             ],
@@ -1351,7 +1362,7 @@
                 },
                 {
                     "command": "aws.openInApplicationComposer",
-                    "when": "isFileSystemResource && resourceFilename =~ /^.*\\.(json|yml|yaml|template)$/",
+                    "when": "isFileSystemResource && !(resourceFilename =~ /^.*\\.tc\\.json$/) && resourceFilename =~ /^.*\\.(json|yml|yaml|template)$/",
                     "group": "z_aws@1"
                 }
             ],
@@ -2019,6 +2030,11 @@
                 {
                     "command": "aws.toolkit.viewLogs",
                     "group": "1_help@5"
+                }
+            ],
+            "file/newFile": [
+                {
+                    "command": "aws.newThreatComposerFile"
                 }
             ]
         },
@@ -3488,6 +3504,26 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.createNewThreatComposer",
+                "title": "%AWS.command.threatComposer.createNew%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.newThreatComposerFile",
+                "title": "%AWS.command.threatComposer.newFile%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             }
         ],
         "jsonValidation": [
@@ -3943,7 +3979,23 @@
                     }
                 ]
             }
-        ]
+        ],
+        "customEditors": [
+            {
+                "viewType": "threatComposer.tc.json",
+                "displayName": "%AWS.threatComposer.title%",
+                "selector": [
+                    {
+                        "filenamePattern": "*.tc.json"
+                    }
+                ]
+            }
+        ],
+        "configurationDefaults": {
+            "workbench.editorAssociations": {
+                "{git,gitlens,conflictResolution,vscode-local-history}:/**/*.tc.json": "default"
+            }
+        }
     },
     "scripts": {
         "postinstall": "npm run generateTelemetry && npm run generateConfigurationAttributes && npm run compile",
@@ -3960,7 +4012,7 @@
         "testCompile": "npm run clean && npm run buildScripts && npm run compileOnly",
         "test": "npm run testCompile && c8 ts-node ./scripts/test/test.ts",
         "testWeb": "npm run compileDev && c8 ts-node ./scripts/test/testWeb.ts",
-        "testE2E": "npm run testCompile && c8 ts-node ./scripts/test/testE2E.ts",
+        "testE2E": "npm run testCompile && c8 ts-node ./scripts/test/testE2E.ts dist/src/testE2E/index.js",
         "testInteg": "npm run testCompile && c8 ts-node ./scripts/test/testInteg.ts",
         "format": "prettier --ignore-path ../../.prettierignore --check src scripts",
         "formatfix": "prettier --ignore-path ../../.prettierignore --write src scripts",

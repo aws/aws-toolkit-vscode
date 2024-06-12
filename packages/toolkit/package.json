@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including CodeCatalyst, Application Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services.",
-    "version": "3.9.0-SNAPSHOT",
+    "version": "3.10.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -55,7 +55,7 @@
     "contributes": "This field will be autopopulated from the core module during debugging and packaging.",
     "scripts": {
         "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production",
-        "buildScripts": "npm run generateNonCodeFiles && npm run copyFiles",
+        "buildScripts": "npm run generateNonCodeFiles && npm run copyFiles && tsc -p ./ --noEmit",
         "generateNonCodeFiles": "ts-node ../../scripts/generateNonCodeFiles.ts",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "clean": "ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE quickStart*",

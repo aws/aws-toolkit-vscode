@@ -141,6 +141,7 @@ export class Connector {
                 messageId: messageData.messageID ?? messageData.triggerID ?? '',
                 relatedContent: undefined,
                 canBeVoted: messageData.canBeVoted,
+                snapToTop: messageData.snapToTop,
                 followUp:
                     messageData.followUps !== undefined && messageData.followUps.length > 0
                         ? {

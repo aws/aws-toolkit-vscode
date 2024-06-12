@@ -34,7 +34,14 @@ import { placeholder } from '../../../shared/vscode/commands2'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { getPathsFromZipFilePath } from '../../util/files'
-import { examples, newTaskChanges, approachCreation, sessionClosed, updateCode } from '../../userFacingText'
+import {
+    examples,
+    newTaskChanges,
+    approachCreation,
+    sessionClosed,
+    updateCode,
+    logWithConversationId,
+} from '../../userFacingText'
 import { getWorkspaceFoldersByPrefixes } from '../../../shared/utilities/workspaceUtils'
 
 export interface ChatControllerEventEmitters {
@@ -180,12 +187,14 @@ export class FeatureDevController {
                         amazonqConversationId: session?.conversationId,
                         value: 1,
                         result: 'Succeeded',
+                        credentialStartUrl: AuthUtil.instance.startUrl,
                     })
                 } else if (vote === 'downvote') {
                     telemetry.amazonq_codeGenerationThumbsDown.emit({
                         amazonqConversationId: session?.conversationId,
                         value: 1,
                         result: 'Succeeded',
+                        credentialStartUrl: AuthUtil.instance.startUrl,
                     })
                 }
                 break
@@ -321,7 +330,7 @@ export class FeatureDevController {
     private async onApproachGeneration(session: Session, message: string, tabID: string) {
         await session.preloader(message)
 
-        getLogger().info(`${featureName} conversation id: ${session.conversationId}`)
+        getLogger().info(logWithConversationId(session.conversationId))
 
         // This is a loading animation
         this.messenger.sendAnswer({
@@ -341,6 +350,7 @@ export class FeatureDevController {
             type: 'answer',
             tabID: tabID,
             canBeVoted: true,
+            snapToTop: true,
         })
 
         if (interactions.responseType === 'VALID') {
@@ -366,7 +376,7 @@ export class FeatureDevController {
      * Handle a regular incoming message when a user is in the code generation phase
      */
     private async onCodeGeneration(session: Session, message: string, tabID: string) {
-        getLogger().info(`Q - Dev chat conversation id: ${session.conversationId}`)
+        getLogger().info(logWithConversationId(session.conversationId))
 
         // lock the UI/show loading bubbles
         this.messenger.sendAsyncEventProgress(
@@ -483,6 +493,7 @@ export class FeatureDevController {
                 acceptedFiles(session.state.filePaths) + acceptedFiles(session.state.deletedFiles)
 
             telemetry.amazonq_isAcceptedCodeChanges.emit({
+                credentialStartUrl: AuthUtil.instance.startUrl,
                 amazonqConversationId: session.conversationId,
                 amazonqNumberOfFilesAccepted,
                 enabled: true,
@@ -533,6 +544,7 @@ export class FeatureDevController {
             amazonqConversationId: session.conversationId,
             enabled: true,
             result: 'Succeeded',
+            credentialStartUrl: AuthUtil.instance.startUrl,
         })
         // Unblock the message button
         this.messenger.sendAsyncEventProgress(message.tabID, false, undefined)

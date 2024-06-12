@@ -337,8 +337,8 @@ export class ProposedTransformationExplorer {
                     pathToArchive
                 )
             } catch (e: any) {
+                // user can retry the download
                 downloadErrorMessage = (e as Error).message
-                // This allows the customer to retry the download
                 if (downloadErrorMessage.includes('Encountered an unexpected error when processing the request')) {
                     downloadErrorMessage = CodeWhispererConstants.errorDownloadingExpiredDiff
                 }
@@ -421,10 +421,12 @@ export class ProposedTransformationExplorer {
                 deserializeErrorMessage = (e as Error).message
                 getLogger().error(`CodeTransformation: ParseDiff error = ${deserializeErrorMessage}`)
                 transformByQState.getChatControllers()?.transformationFinished.fire({
-                    message: CodeWhispererConstants.errorDeserializingDiffChatMessage,
+                    message: `${CodeWhispererConstants.errorDeserializingDiffChatMessage} ${deserializeErrorMessage}`,
                     tabID: ChatSessionManager.Instance.getSession().tabID,
                 })
-                void vscode.window.showErrorMessage(CodeWhispererConstants.errorDeserializingDiffNotification)
+                void vscode.window.showErrorMessage(
+                    `${CodeWhispererConstants.errorDeserializingDiffNotification} ${deserializeErrorMessage}`
+                )
             } finally {
                 telemetry.codeTransform_jobArtifactDownloadAndDeserializeTime.emit({
                     codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
