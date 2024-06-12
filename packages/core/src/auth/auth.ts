@@ -121,6 +121,13 @@ export interface ConnectionStateChangeEvent {
 
 export type AuthType = Auth
 
+type DeclaredConnection = {
+    startUrl: string
+    region: string
+    source: string
+    id?: string
+}
+
 export class Auth implements AuthService, ConnectionManager {
     readonly #ssoCache = getCache()
     readonly #validationErrors = new Map<Connection['id'], Error>()
@@ -149,6 +156,11 @@ export class Auth implements AuthService, ConnectionManager {
 
     public get hasConnections() {
         return this.store.listProfiles().length !== 0
+    }
+
+    private readonly _declaredConnections: { [key: string]: DeclaredConnection } = {}
+    public get declaredConnections() {
+        return Object.values(this._declaredConnections)
     }
 
     public async restorePreviousSession(): Promise<Connection | undefined> {
@@ -998,6 +1010,21 @@ export class Auth implements AuthService, ConnectionManager {
             await this.store.deleteProfile(id)
             await this.store.setCurrentProfileId(undefined)
         }
+    }
+
+    public declareConnectionFromApi(conn: Pick<AwsConnection, 'id' | 'startUrl' | 'ssoRegion'>, source: string) {
+        getLogger().debug(`Declare connection ${conn.id} from API with startUrl: ${conn.startUrl}`)
+        this._declaredConnections[conn.id] = {
+            startUrl: conn.startUrl,
+            region: conn.ssoRegion,
+            source,
+            id: conn.id,
+        }
+    }
+
+    public undeclareConnectionFromApi(connId: string) {
+        getLogger().debug(`Undeclared connection ${connId}`)
+        delete this._declaredConnections[connId]
     }
 }
 /**

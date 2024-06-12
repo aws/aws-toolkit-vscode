@@ -15,7 +15,7 @@ import { CodeScanIssue, CodeScansState, codeScanState, CodeSuggestionsState, vsC
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showCodeWhispererConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
-import { amazonQScopes, AuthUtil } from '../util/authUtil'
+import { AuthUtil } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { getLogger } from '../../shared/logger'
 import { isExtensionActive, isExtensionInstalled, openUrl } from '../../shared/utilities/vsCodeUtils'
@@ -41,7 +41,7 @@ import { SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import { ToolkitError } from '../../shared/errors'
 import { isRemoteWorkspace } from '../../shared/vscode/env'
-import { hasScopes, isBuilderIdConnection } from '../../auth/connection'
+import { isBuilderIdConnection } from '../../auth/connection'
 import globals from '../../shared/extensionGlobals'
 
 const MessageTimeOut = 5_000
@@ -424,64 +424,34 @@ export const signoutCodeWhisperer = Commands.declare(
 
 let _toolkitApi: any = undefined
 
-const registerToolkitApiCallbackOnce = once(async () => {
+const registerToolkitApiCallbackOnce = once(() => {
     getLogger().info(`toolkitApi: Registering callbacks of toolkit api`)
     const auth = Auth.instance
 
     auth.onDidChangeConnectionState(async e => {
-        // when changing connection state in Q, also change connection state in toolkit
-        if (_toolkitApi && 'setConnection' in _toolkitApi) {
+        if (_toolkitApi && 'declareConnection' in _toolkitApi) {
             const id = e.id
             const conn = await auth.getConnection({ id })
-            if (conn && conn.type === 'sso') {
-                getLogger().info(`toolkitApi: set connection ${id}`)
-                await _toolkitApi.setConnection({
-                    type: conn.type,
-                    ssoRegion: conn.ssoRegion,
-                    scopes: conn.scopes,
-                    startUrl: conn.startUrl,
-                    state: e.state,
-                    id: id,
-                    label: conn.label,
-                } as AwsConnection)
+            if (conn?.type === 'sso') {
+                getLogger().info(`toolkitApi: declare connection ${id}`)
+                _toolkitApi.declareConnection(
+                    {
+                        type: conn.type,
+                        ssoRegion: conn.ssoRegion,
+                        startUrl: conn.startUrl,
+                        id: id,
+                    } as AwsConnection,
+                    'Amazon Q'
+                )
             }
         }
     })
-    // when deleting connection in Q, also delete same connection in toolkit
     auth.onDidDeleteConnection(async id => {
-        if (_toolkitApi && 'deleteConnection' in _toolkitApi) {
-            getLogger().info(`toolkitApi: delete connection ${id}`)
-            await _toolkitApi.deleteConnection(id)
+        if (_toolkitApi && 'undeclareConnection' in _toolkitApi) {
+            getLogger().info(`toolkitApi: undeclare connection ${id}`)
+            _toolkitApi.undeclareConnection(id)
         }
     })
-
-    if (_toolkitApi) {
-        // when toolkit connection changes
-        if ('onDidChangeConnection' in _toolkitApi) {
-            _toolkitApi.onDidChangeConnection(
-                async (connection: AwsConnection) => {
-                    getLogger().info(`toolkitApi: connection change callback ${connection.id}`)
-                    await AuthUtil.instance.onUpdateConnection(connection)
-                },
-
-                async (id: string) => {
-                    getLogger().info(`toolkitApi: connection delete callback ${id}`)
-                    await AuthUtil.instance.onDeleteConnection(id)
-                }
-            )
-        }
-
-        // HACK
-        // If the user has an old 3 scope Amazon Q connection, we will use it and expire it to
-        // bring the user to the new 5 scope connection. The code for this lives in the webview,
-        // so we will force show the webview if we have a connection that fits this criteria.
-        if ('listConnections' in _toolkitApi && !AuthUtil.instance.isConnected()) {
-            const conn = AuthUtil.instance.findMinimalQConnection(await _toolkitApi.listConnections())
-            if (conn !== undefined && !hasScopes(conn.scopes!, amazonQScopes)) {
-                focusQAfterDelay()
-            }
-        }
-    }
 })
 
 export const registerToolkitApiCallback = Commands.declare(
@@ -502,7 +472,20 @@ export const registerToolkitApiCallback = Commands.declare(
                 _toolkitApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
             }
             if (_toolkitApi) {
-                await registerToolkitApiCallbackOnce()
+                registerToolkitApiCallbackOnce()
+                // Declare current conn immediately
+                const currentConn = AuthUtil.instance.conn
+                if (currentConn?.type === 'sso') {
+                    _toolkitApi.declareConnection(
+                        {
+                            type: currentConn.type,
+                            ssoRegion: currentConn.ssoRegion,
+                            startUrl: currentConn.startUrl,
+                            id: currentConn.id,
+                        } as AwsConnection,
+                        'Amazon Q'
+                    )
+                }
             }
         }
     }

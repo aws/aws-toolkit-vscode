@@ -18,6 +18,7 @@ import {
 import { Auth } from '../../../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
 import { AuthError, AuthFlowState, TelemetryMetadata } from '../types'
+import { builderIdStartUrl } from '../../../../auth/sso/model'
 import { addScopes } from '../../../../auth/secondaryAuth'
 
 export class ToolkitLoginWebview extends CommonAuthWebview {
@@ -126,18 +127,12 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
      */
     async fetchConnections(): Promise<AwsConnection[] | undefined> {
         const connections: AwsConnection[] = []
-        const _connections = await Auth.instance.listConnections()
-        _connections.forEach(c => {
-            const status = Auth.instance.getConnectionState({ id: c.id })
-            const source = Auth.instance.getConnectionSource({ id: c.id })
-            if (c.type === 'sso' && source === 'amazonq' && status) {
+        Auth.instance.declaredConnections.forEach(conn => {
+            if (conn.startUrl !== builderIdStartUrl) {
                 connections.push({
-                    id: c.id,
-                    label: c.label,
-                    type: c.type,
-                    ssoRegion: c.ssoRegion,
-                    startUrl: c.startUrl,
-                    state: status,
+                    id: conn.id,
+                    ssoRegion: conn.region,
+                    startUrl: conn.startUrl,
                 } as AwsConnection)
             }
         })
