@@ -9,6 +9,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.modules
 import com.intellij.openapi.projectRoots.JavaSdkVersion
 import com.intellij.openapi.projectRoots.impl.JavaSdkImpl
+import com.intellij.openapi.roots.LanguageLevelProjectExtension
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.vfs.VirtualFile
 
@@ -17,19 +18,27 @@ import com.intellij.openapi.vfs.VirtualFile
  */
 fun Project.tryGetJdk(): JavaSdkVersion? {
     val projectSdk = ProjectRootManager.getInstance(this).projectSdk
+    val languagelevelSdk = this.tryGetJdkLanguageLevelJdk()
     val javaSdk = JavaSdkImpl.getInstance()
-    return javaSdk.getVersion(projectSdk ?: return null)
+    if (languagelevelSdk != null) {
+        return languagelevelSdk
+    }
+    return projectSdk?.let { javaSdk.getVersion(it) }
 }
 
-fun Project.getSupportedJavaMappings(supportedJavaMappings: Map<JavaSdkVersion, Set<JavaSdkVersion>>): List<String> {
-    val projectSdk = ProjectRootManager.getInstance(this).projectSdk
-    val javaSdk = JavaSdkImpl.getInstance()
-    return if (projectSdk == null) {
-        listOf()
-    } else {
-        supportedJavaMappings.getOrDefault(javaSdk.getVersion(projectSdk), listOf()).map { it.name }.toList()
-    }
+/**
+ * @description Try to get the project SDK "language level" version from the "project structure" settings.
+ * The default value should be set to the SDK, so if the parent SDK is set to Java 17 and the language level
+ * is set to default. The value spit out will be JDK_17.
+ */
+fun Project.tryGetJdkLanguageLevelJdk(): JavaSdkVersion? {
+    val languageLevelExtension = LanguageLevelProjectExtension.getInstance(this)
+    val languageLevel = languageLevelExtension?.languageLevel
+    return languageLevel?.let { JavaSdkVersion.fromLanguageLevel(it) }
 }
+
+fun Project.getSupportedJavaMappings(supportedJavaMappings: Map<JavaSdkVersion, Set<JavaSdkVersion>>): List<String> =
+    supportedJavaMappings.getOrDefault(this.tryGetJdk(), listOf()).map { it.name }.toList()
 
 private fun Project.getAllSupportedBuildFiles(supportedBuildFileNames: List<String>): List<VirtualFile> {
     /**
@@ -62,18 +71,6 @@ fun Project.getSupportedBuildFilesWithSupportedJdk(
         val moduleOfFile = runReadAction { projectRootManager.fileIndex.getModuleForFile(it) }
         return@filter (moduleOfFile in supportedModules) || (moduleOfFile == null && validProjectJdk)
     }
-}
-
-fun Project.getSupportedBuildModulesPath(supportedBuildFileNames: List<String>): List<String> {
-    val projectRootManager = ProjectRootManager.getInstance(this)
-    val probableProjectRoot = this.basePath?.toVirtualFile() // May point to only one intellij module (the first opened one)
-    val probableContentRoots = projectRootManager.contentRoots.toMutableSet() // May not point to the topmost folder of modules
-    probableContentRoots.add(probableProjectRoot) // dedupe
-    val topLevelRoots = filterOnlyParentFiles(probableContentRoots)
-    val detectedBuildFilePaths = topLevelRoots.flatMap { root ->
-        findBuildFiles(root.toNioPath().toFile(), supportedBuildFileNames).mapNotNull { it.path }
-    }
-    return detectedBuildFilePaths
 }
 
 fun Project.getSupportedModules(supportedJavaMappings: Map<JavaSdkVersion, Set<JavaSdkVersion>>) = this.modules.filter {
