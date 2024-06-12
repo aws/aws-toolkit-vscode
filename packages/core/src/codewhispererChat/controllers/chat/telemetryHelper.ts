@@ -257,6 +257,9 @@ export class CWCTelemetryHelper {
                         acceptedCharacterCount: event.cwsprChatAcceptedCharactersLength,
                         acceptedLineCount: event.cwsprChatAcceptedNumberOfLines,
                         acceptedSnippetHasReference: false,
+                        hasProjectLevelContext: this.responseFromRequestWithProjectContext.get(
+                            event.cwsprChatMessageId
+                        ),
                     },
                 },
             })
@@ -367,6 +370,7 @@ export class CWCTelemetryHelper {
                         requestLength: event.cwsprChatRequestLength,
                         responseLength: event.cwsprChatResponseLength,
                         numberOfCodeBlocks: event.cwsprChatResponseCodeSnippetCount,
+                        hasProjectLevelContext: triggerPayload.hasProjectLevelContext,
                     },
                 },
             })
