@@ -106,6 +106,8 @@ export class DevEnvClient implements vscode.Disposable {
     })
 
     /**
+     * Notifies the MDE API of user activity.
+     *
      * WARNING: Use {@link DevEnvActivity} instead of calling this directly.
      */
     async updateActivity(timestamp: number = Date.now()): Promise<number> {
@@ -114,7 +116,9 @@ export class DevEnvClient implements vscode.Disposable {
     }
 
     /**
-     * WARNING: You should use {@link DevEnvActivity} unless you have a reason not to.
+     * Gets the latest user activity timestamp from MDE API.
+     *
+     * WARNING: Use {@link DevEnvActivity} instead of calling this directly.
      */
     async getActivity(): Promise<number | undefined> {
         const response = await this.got<GetActivityResponse>('activity')
