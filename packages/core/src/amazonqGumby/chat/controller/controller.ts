@@ -271,7 +271,7 @@ export class GumbyController {
                 this.messenger.sendJobFinishedMessage(message.tabID, CodeWhispererConstants.jobCancelledChatMessage)
                 break
             case ButtonActions.VIEW_TRANSFORMATION_HUB:
-                await vscode.commands.executeCommand(GumbyCommands.FOCUS_TRANSFORMATION_HUB)
+                await vscode.commands.executeCommand(GumbyCommands.FOCUS_TRANSFORMATION_HUB, CancelActionPositions.Chat)
                 this.messenger.sendJobSubmittedMessage(message.tabID)
                 break
             case ButtonActions.STOP_TRANSFORMATION_JOB:
@@ -451,10 +451,8 @@ export class GumbyController {
             this.messenger.sendKnownErrorResponse('no-alternate-dependencies-found', message.tabID)
             await this.continueTransformationWithoutHIL(message)
         } else if (message.error instanceof ModuleUploadError) {
-            this.messenger.sendUnrecoverableErrorResponse('upload-to-s3-failed', message.tabID)
             this.resetTransformationChatFlow()
         } else if (message.error instanceof JobStartError) {
-            this.messenger.sendUnrecoverableErrorResponse('job-start-failed', message.tabID)
             this.resetTransformationChatFlow()
         }
     }

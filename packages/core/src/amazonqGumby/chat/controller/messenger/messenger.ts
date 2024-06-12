@@ -327,12 +327,6 @@ export class Messenger {
             case 'unsupported-source-jdk-version':
                 message = CodeWhispererConstants.unsupportedJavaVersionChatMessage
                 break
-            case 'upload-to-s3-failed':
-                message = `I was not able to upload your module to be transformed. Please try again later.`
-                break
-            case 'job-start-failed':
-                message = CodeWhispererConstants.failedToStartJobTooManyJobsChatMessage
-                break
         }
 
         const buttons: ChatItemButton[] = []
