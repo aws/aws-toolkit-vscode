@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "fix(featureDev): stop showing spinerText when there is an error."
+}
