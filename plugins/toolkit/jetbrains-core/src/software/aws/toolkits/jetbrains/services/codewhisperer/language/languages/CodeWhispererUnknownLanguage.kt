@@ -11,6 +11,8 @@ class CodeWhispererUnknownLanguage private constructor() : CodeWhispererProgramm
 
     override fun toTelemetryType(): CodewhispererLanguage = CodewhispererLanguage.Unknown
 
+    override fun toCodeWhispererRuntimeLanguage(): CodeWhispererProgrammingLanguage = CodeWhispererPlainText.INSTANCE
+
     companion object {
         const val ID = "unknown"
 

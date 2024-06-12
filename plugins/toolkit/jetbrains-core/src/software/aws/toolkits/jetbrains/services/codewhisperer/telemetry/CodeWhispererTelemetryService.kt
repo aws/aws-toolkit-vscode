@@ -13,7 +13,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import kotlinx.coroutines.launch
 import org.apache.commons.collections4.queue.CircularFifoQueue
 import org.jetbrains.annotations.TestOnly
-import software.amazon.awssdk.services.codewhispererruntime.model.CodeAnalysisScope
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererRuntimeException
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
@@ -370,12 +369,21 @@ class CodeWhispererTelemetryService {
         selectedIndex: Int,
         completionType: CodewhispererCompletionType
     ) {
-        val codewhispererLanguage = requestContext.fileContextInfo.programmingLanguage.toTelemetryType()
+        val codewhispererLanguage = requestContext.fileContextInfo.programmingLanguage
         CodeWhispererUserModificationTracker.getInstance(requestContext.project).enqueue(
             AcceptedSuggestionEntry(
-                time, vFile, range, suggestion, responseContext.sessionId, requestId, selectedIndex,
-                requestContext.triggerTypeInfo.triggerType, completionType,
-                codewhispererLanguage, null, null,
+                time,
+                vFile,
+                range,
+                suggestion,
+                responseContext.sessionId,
+                requestId,
+                selectedIndex,
+                requestContext.triggerTypeInfo.triggerType,
+                completionType,
+                codewhispererLanguage,
+                null,
+                null,
                 requestContext.connection
             )
         )

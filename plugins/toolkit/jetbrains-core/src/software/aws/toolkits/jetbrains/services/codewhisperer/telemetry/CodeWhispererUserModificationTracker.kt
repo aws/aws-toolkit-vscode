@@ -19,6 +19,9 @@ import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererUnknownLanguage
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroupSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getConnectionStartUrl
 import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.InsertedCodeModificationEntry
@@ -26,7 +29,6 @@ import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.ge
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.telemetry.AmazonqTelemetry
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
-import software.aws.toolkits.telemetry.CodewhispererLanguage
 import software.aws.toolkits.telemetry.CodewhispererRuntime
 import software.aws.toolkits.telemetry.CodewhispererTelemetry
 import software.aws.toolkits.telemetry.CodewhispererTriggerType
@@ -50,7 +52,7 @@ data class AcceptedSuggestionEntry(
     val index: Int,
     val triggerType: CodewhispererTriggerType,
     val completionType: CodewhispererCompletionType,
-    val codewhispererLanguage: CodewhispererLanguage,
+    val codewhispererLanguage: CodeWhispererProgrammingLanguage,
     val codewhispererRuntime: CodewhispererRuntime?,
     val codewhispererRuntimeSource: String?,
     val connection: ToolkitConnection?
@@ -183,7 +185,7 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
         CodewhispererTelemetry.userModification(
             project = project,
             codewhispererCompletionType = suggestion.completionType,
-            codewhispererLanguage = suggestion.codewhispererLanguage,
+            codewhispererLanguage = suggestion.codewhispererLanguage.toTelemetryType(),
             codewhispererModificationPercentage = percentage,
             codewhispererRequestId = suggestion.requestId,
             codewhispererRuntime = suggestion.codewhispererRuntime,
@@ -203,7 +205,11 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
             cwsprChatModificationPercentage = percentage,
             credentialStartUrl = getStartUrl(project)
         )
-        CodeWhispererClientAdaptor.getInstance(project).sendChatUserModificationTelemetry(insertedCode.conversationId, insertedCode.messageId, null, percentage)
+        val lang = insertedCode.vFile?.programmingLanguage() ?: CodeWhispererUnknownLanguage.INSTANCE
+
+        CodeWhispererClientAdaptor.getInstance(
+            project
+        ).sendChatUserModificationTelemetry(insertedCode.conversationId, insertedCode.messageId, lang, percentage)
     }
 
 // temp disable user modfication event for further discussion on metric calculation

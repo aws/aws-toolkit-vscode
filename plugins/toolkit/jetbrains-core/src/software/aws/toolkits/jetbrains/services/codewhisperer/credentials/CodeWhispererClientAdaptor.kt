@@ -167,7 +167,7 @@ interface CodeWhispererClientAdaptor : Disposable {
     fun sendChatUserModificationTelemetry(
         sessionId: String,
         requestId: String,
-        language: String?,
+        language: CodeWhispererProgrammingLanguage,
         modificationPercentage: Double
     ): SendTelemetryEventResponse
 
@@ -504,14 +504,16 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
     override fun sendChatUserModificationTelemetry(
         sessionId: String,
         requestId: String,
-        language: String?,
+        language: CodeWhispererProgrammingLanguage,
         modificationPercentage: Double
     ): SendTelemetryEventResponse = bearerClient().sendTelemetryEvent { requestBuilder ->
         requestBuilder.telemetryEvent { telemetryEventBuilder ->
             telemetryEventBuilder.chatUserModificationEvent {
                 it.conversationId(sessionId)
                 it.messageId(requestId)
-                it.programmingLanguage { langBuilder -> langBuilder.languageName(language) }
+                it.programmingLanguage { langBuilder ->
+                    langBuilder.languageName(language.toCodeWhispererRuntimeLanguage().languageId)
+                }
                 it.modificationPercentage(modificationPercentage)
             }
         }

@@ -57,6 +57,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.P
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.Resume
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.PauseCodeWhispererNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.ResumeCodeWhispererNode
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPython
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.InvocationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
@@ -70,7 +71,6 @@ import software.aws.toolkits.jetbrains.services.telemetry.NoOpPublisher
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
-import software.aws.toolkits.telemetry.CodewhispererLanguage
 import software.aws.toolkits.telemetry.CodewhispererRuntime
 import software.aws.toolkits.telemetry.CodewhispererSuggestionState
 import software.aws.toolkits.telemetry.CodewhispererTriggerType
@@ -144,7 +144,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                 0,
                 CodewhispererTriggerType.OnDemand,
                 CodewhispererCompletionType.Line,
-                CodewhispererLanguage.Java,
+                CodeWhispererJava.INSTANCE,
                 CodewhispererRuntime.Java11,
                 "",
                 null
