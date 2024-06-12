@@ -12,7 +12,8 @@ import { updateDevMode } from 'aws-core-vscode/dev'
 import { CommonAuthViewProvider } from 'aws-core-vscode/login'
 import { isExtensionActive, VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 import { registerSubmitFeedback } from 'aws-core-vscode/feedback'
-import { DevFunction } from 'aws-core-vscode/dev'
+import { DevOptions } from 'aws-core-vscode/dev'
+import { Auth } from 'aws-core-vscode/auth'
 
 export async function activate(context: vscode.ExtensionContext) {
     // IMPORTANT: No other code should be added to this function. Place it in one of the following 2 functions where appropriate.
@@ -59,19 +60,25 @@ async function setupDevMode(context: vscode.ExtensionContext) {
     // TODO: Make this work in web mode and move it to extensionCommon.ts
     await updateDevMode()
 
+    const devOptions: DevOptions = {
+        context,
+        auth: Auth.instance,
+        menuOptions: [
+            'editStorage',
+            'showEnvVars',
+            'deleteSsoConnections',
+            'expireSsoConnections',
+            'editAuthConnections',
+        ],
+    }
+
     context.subscriptions.push(
         vscode.commands.registerCommand('amazonq.dev.openMenu', async () => {
             if (!isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)) {
                 void vscode.window.showErrorMessage('AWS Toolkit must be installed to access the Developer Menu.')
                 return
             }
-            await vscode.commands.executeCommand('_aws.dev.invokeMenu', context, [
-                'editStorage',
-                'showEnvVars',
-                'deleteSsoConnections',
-                'expireSsoConnections',
-                'editAuthConnections',
-            ] as DevFunction[])
+            await vscode.commands.executeCommand('_aws.dev.invokeMenu', devOptions)
         })
     )
 }
