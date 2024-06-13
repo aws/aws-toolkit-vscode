@@ -725,6 +725,7 @@ const devSettings = {
     telemetryEndpoint: String,
     telemetryUserPool: String,
     renderDebugDetails: Boolean,
+    devenvTimeoutMs: Number,
     endpoints: Record(String, String),
     codecatalystService: Record(String, String),
     codewhispererService: Record(String, String),
