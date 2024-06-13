@@ -10,7 +10,7 @@ import { ExtContext } from '../shared/extensions'
 import { CodeCatalystRemoteSourceProvider } from './repos/remoteSourceProvider'
 import { CodeCatalystCommands, codecatalystConnectionsCmd } from './commands'
 import { GitExtension } from '../shared/extensions/git'
-import { CodeCatalystAuthenticationProvider } from './auth'
+import { CodeCatalystAuthenticationProvider, defaultScopes } from './auth'
 import { registerDevfileWatcher, updateDevfileCommand } from './devfile'
 import { DevEnvClient } from '../shared/clients/devenvClient'
 import { watchRestartingDevEnvs } from './reconnect'
@@ -24,6 +24,7 @@ import { codeCatalystConnectCommand, getThisDevEnv } from './model'
 import { getLogger } from '../shared/logger/logger'
 import { DevEnvActivityStarter } from './devEnv'
 import { learnMoreCommand, onboardCommand, reauth } from './explorer'
+import { hasExactScopes } from '../auth/connection'
 
 const localize = nls.loadMessageBundle()
 
@@ -52,6 +53,12 @@ export async function activate(ctx: ExtContext): Promise<void> {
         } catch (err) {
             getLogger().info('codecatalyst: createClient failed during activation: %s', err)
         }
+    }
+
+    // Forget Amazon Q connections while we transition to separate auth sessions per extension
+    // TODO: Remove after some time?
+    if (authProvider.isConnected() && !hasExactScopes(authProvider.activeConnection!, defaultScopes)) {
+        await authProvider.secondaryAuth.forgetConnection()
     }
 
     ctx.extensionContext.subscriptions.push(

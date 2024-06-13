@@ -328,6 +328,23 @@ export class Auth implements AuthService, ConnectionManager {
         this.#onDidDeleteConnection.fire(connId)
     }
 
+    /**
+     * @warning Intended for a specific use case. May have unintended side effects. Use `deleteConnection()` instead.
+     *
+     * Forget about a connection without logging out, invalidating it, or deleting it from disk.
+     */
+    public async forgetConnection(connection: Pick<Connection, 'id'>): Promise<void> {
+        const connId = connection.id
+        const profile = this.store.getProfile(connId)
+        if (profile) {
+            await this.store.deleteProfile(connId)
+            if (profile.type === 'sso') {
+                await this.clearStaleLinkedIamConnections()
+            }
+        }
+        this.#onDidDeleteConnection.fire(connId)
+    }
+
     private async clearStaleLinkedIamConnections() {
         // Updates our store, evicting stale IAM credential profiles if the
         // SSO they are linked to was removed.
