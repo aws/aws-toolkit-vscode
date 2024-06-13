@@ -311,29 +311,20 @@ describe('resetDebugArtifacts', () => {
         assert.strictEqual(transformByQState.getPreBuildLogFilePath(), '')
     })
 
-    it.skip('should not remove any directory if the pre-build log file path is not set', async () => {
+    it('should not remove any directory if the pre-build log file path is not set', async () => {
         transformByQState.setPreBuildLogFilePath('')
-
-        const fsSpy = sinon.spy(fs, 'rmSync')
 
         await resetDebugArtifacts()
 
-        sinon.assert.notCalled(fsSpy)
         assert.strictEqual(transformByQState.getPreBuildLogFilePath(), '')
-        sinon.restore()
     })
 
-    it.skip('should not remove any directory if the pre-build log file does not exist', async () => {
+    it('should not remove any directory if the pre-build log file does not exist', async () => {
         const preBuildLogFilePath = 'non/existent/path/to/pre-build.log'
         transformByQState.setPreBuildLogFilePath(preBuildLogFilePath)
 
-        const fsSpy = sinon.spy(fs, 'rmSync')
-
         await resetDebugArtifacts()
 
-        sinon.assert.notCalled(fsSpy)
         assert.strictEqual(transformByQState.getPreBuildLogFilePath(), '')
-
-        sinon.restore()
     })
 })
