@@ -92,7 +92,7 @@ async function getVSCodeCliArgs(params: {
 
     const workspaceFolderLocation = params.workspaceFolder
         ? params.workspaceFolder
-        : join('dist', 'src', 'testFixtures', 'workspaceFolder')
+        : 'dist/src/testFixtures/workspaceFolder'
     const workspacePath = join(projectRootDir, workspaceFolderLocation)
     // This tells VS Code to run the extension in a web environment, which mimics vscode.dev
     const webExtensionKind = params.suite === 'web' ? ['--extensionDevelopmentKind=web'] : []
