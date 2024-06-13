@@ -1,0 +1,14 @@
+{
+  "date" : "2024-06-13",
+  "version" : "3.11",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Amazon Q Code Transform: Allow user to view transformation build log"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix intermittent validation exception from CodeWhisperer service for improperly formed request"
+  }, {
+    "type" : "bugfix",
+    "description" : "fix(Amazon Q Code Transformation): allow module to be zipped successfully even if it contains broken symlinks"
+  } ]
+}

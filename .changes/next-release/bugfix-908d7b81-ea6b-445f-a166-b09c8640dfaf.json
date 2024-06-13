@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix intermittent validation exception from CodeWhisperer service for improperly formed request"
-}
