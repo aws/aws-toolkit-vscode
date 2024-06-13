@@ -3,9 +3,11 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.testFramework.ApplicationRule
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
+import com.intellij.testFramework.replaceService
 import com.intellij.util.xmlb.XmlSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.jdom.output.XMLOutputter
@@ -14,6 +16,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
 import software.amazon.awssdk.regions.Region
@@ -37,6 +40,7 @@ import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererCustomization
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererCustomizationState
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.DefaultCodeWhispererModelConfigurator
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererFeatureConfigService
 import software.aws.toolkits.jetbrains.utils.xmlElement
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.isAccessible
@@ -68,6 +72,7 @@ class CodeWhispererModelConfiguratorTest {
 
     private lateinit var sut: DefaultCodeWhispererModelConfigurator
     private lateinit var mockClient: CodeWhispererRuntimeClient
+    private lateinit var abManager: CodeWhispererFeatureConfigService
 
     @Before
     fun setup() {
@@ -93,6 +98,30 @@ class CodeWhispererModelConfiguratorTest {
                     )
                     .build()
         }
+
+        abManager = mock {
+            on { getCustomizationArnOverride() }.thenReturn("")
+        }
+
+        ApplicationManager.getApplication().replaceService(
+            CodeWhispererFeatureConfigService::class.java,
+            abManager,
+            disposableRule.disposable
+        )
+    }
+
+    @Test
+    fun `should override customization arn if there is one under AB test`() {
+        val ssoConn = spy(LegacyManagedBearerSsoConnection(region = "us-east-1", startUrl = "url 1", scopes = Q_SCOPES))
+        ToolkitConnectionManager.getInstance(projectRule.project).switchConnection(ssoConn)
+
+        sut.switchCustomization(projectRule.project, CodeWhispererCustomization("foo", "customization_1", "description_1"))
+        assertThat(sut.activeCustomization(projectRule.project)).isEqualTo(CodeWhispererCustomization("foo", "customization_1", "description_1"))
+
+        abManager.stub {
+            on { getCustomizationArnOverride() }.thenReturn("bar")
+        }
+        assertThat(sut.activeCustomization(projectRule.project)).isEqualTo(CodeWhispererCustomization("bar", "customization_1", "description_1"))
     }
 
     @Test
