@@ -33,7 +33,7 @@ export class DevEnvClient implements vscode.Disposable {
             getLogger().debug('codecatalyst: DevEnvClient skipped (local)')
             this.timer = undefined
         } else {
-            getLogger().info('codecatalyst: DevEnvClient started')
+            getLogger().debug('codecatalyst: DevEnvClient started')
             this.timer = globals.clock.setInterval(async () => {
                 const r = await this.getStatus()
                 if (this.lastStatus !== r.status) {
