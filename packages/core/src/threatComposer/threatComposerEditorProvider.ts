@@ -50,12 +50,12 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
     protected readonly name: string = 'ThreatComposerManager'
     protected readonly managedVisualizations = new Map<string, ThreatComposerEditor>()
     protected extensionContext: vscode.ExtensionContext
-    protected webviewHtml?: string
+    protected webviewHtml: string
     protected readonly logger = getLogger()
 
     constructor(context: vscode.ExtensionContext) {
         this.extensionContext = context
-        void this.fetchWebviewHtml()
+        this.webviewHtml = ''
     }
 
     /**
@@ -78,8 +78,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
      */
     private getWebviewContent = async () => {
         if (!this.webviewHtml) {
-            void this.fetchWebviewHtml()
-            return ''
+            await this.fetchWebviewHtml()
         }
         let htmlFileSplit = this.webviewHtml.split('<head>')
 
@@ -129,6 +128,10 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
 
         if (threatComposerSettings.defaultEditor) {
             await telemetry.threatComposer_opened.run(async span => {
+                if (!this.webviewHtml) {
+                    await this.fetchWebviewHtml()
+                }
+
                 if (clientId === '') {
                     clientId = await getClientId(globals.context.globalState)
                 }
