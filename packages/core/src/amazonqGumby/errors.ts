@@ -48,6 +48,12 @@ export class JobStoppedError extends Error {
     }
 }
 
+export class TransformationPreBuildError extends Error {
+    constructor() {
+        super('Job failed to build after submission')
+    }
+}
+
 export class ModuleUploadError extends Error {
     constructor() {
         super('Failed to upload module to S3')
