@@ -43,6 +43,15 @@ export async function reloadMessageHandler(context: WebviewContext) {
     const filePath = context.defaultTemplatePath
 
     try {
+        if (!context.fileStates[filePath]) {
+            const fileContents = context.textDocument.getText().toString()
+            context.fileStates[filePath] = { fileContents: fileContents }
+        }
+
+        if (!context.autoSaveFileState[filePath]) {
+            context.autoSaveFileState[filePath] = context.fileStates[filePath]
+        }
+
         const fileContents = context.autoSaveFileState[filePath].fileContents
         await broadcastFileChange(context.defaultTemplateName, filePath, fileContents, context.panel)
     } catch (e) {
