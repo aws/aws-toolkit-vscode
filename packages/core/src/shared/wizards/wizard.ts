@@ -4,9 +4,9 @@
  */
 
 import { Branch, ControlSignal, StateMachineController, StepFunction } from './stateController'
-import * as _ from 'lodash'
 import { Prompter, PromptResult } from '../../shared/ui/prompter'
 import { PrompterProvider, WizardForm } from './wizardForm'
+import { _CloneDeep, _Get, _Set } from '../utilities/objectUtils'
 
 /** Checks if the user response is valid (i.e. not undefined and not a control signal) */
 export function isValidResponse<T>(response: PromptResult<T>): response is T {
@@ -178,17 +178,17 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     }
 
     private createStepEstimator<TProp>(state: TState, prop: string): StepEstimator<TProp> {
-        state = _.cloneDeep(state)
+        state = _CloneDeep(state)
 
         return response => {
             if (response !== undefined && !isValidResponse(response)) {
                 return 0
             }
 
-            _.set(state, prop, response)
+            _Set(state, prop, response)
             const estimate = this.resolveNextSteps(state).length
             const parentEstimate = this._estimator !== undefined ? this._estimator(state) : 0
-            _.set(state, prop, undefined)
+            _Set(state, prop, undefined)
 
             return estimate + parentEstimate
         }
@@ -215,7 +215,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
                 { stepCache: stepCache, estimator: this.createStepEstimator(state, prop) },
                 this._form.applyDefaults(state)
             )
-            const impliedResponse = _.get(this.options.implicitState ?? {}, prop)
+            const impliedResponse = _Get(this.options.implicitState ?? {}, prop)
             const response = await this.promptUser(stateWithCache, provider, impliedResponse)
 
             if (response === WIZARD_EXIT && this._exitStep !== undefined) {
@@ -226,7 +226,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
             }
 
             return {
-                nextState: isValidResponse(response) ? _.set(state, prop, response) : state,
+                nextState: isValidResponse(response) ? _Set(state, prop, response) : state,
                 nextSteps: this.resolveNextSteps(state),
                 controlSignal: isWizardControl(response) ? response.type : undefined,
             }

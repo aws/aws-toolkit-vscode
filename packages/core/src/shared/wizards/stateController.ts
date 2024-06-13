@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as _ from 'lodash'
+import { _CloneDeep, _IsEmpty, _IsEqual, _Get, _Set } from '../utilities/objectUtils'
 
 export enum ControlSignal {
     Retry,
@@ -35,13 +35,13 @@ export type Branch<TState> = StepFunction<TState>[]
  * steps that the machine should use.
  */
 export class StateMachineController<TState> {
-    private previousStates: TState[] = []
+    private previousStates: TState[] extends object ? TState[] : never
     private extraSteps = new Map<number, Branch<TState>>()
     private steps: Branch<TState> = []
     private internalStep: number = 0
 
     public constructor(private state: TState = {} as TState) {
-        this.previousStates = [_.cloneDeep(state)]
+        this.previousStates = [_CloneDeep(state as object) as TState]
     }
 
     public addStep(step: StepFunction<TState>): void {
@@ -82,7 +82,9 @@ export class StateMachineController<TState> {
     protected detectCycle(step: StepFunction<TState>): TState | undefined {
         return this.previousStates.find(
             (pastState, index) =>
-                index !== this.internalStep && this.steps[index] === step && _.isEqual(this.state, pastState)
+                index !== this.internalStep &&
+                this.steps[index] === step &&
+                _IsEqual(this.state as object, pastState as object)
         )
     }
 
@@ -95,7 +97,7 @@ export class StateMachineController<TState> {
     }
 
     protected async processNextStep(): Promise<StepResult<TState>> {
-        const result = await this.steps[this.internalStep](_.cloneDeep(this.state))
+        const result = await this.steps[this.internalStep](_CloneDeep(this.state as object) as TState)
 
         function isMachineResult(result: any): result is StepResult<TState> {
             return (
@@ -144,7 +146,7 @@ export class StateMachineController<TState> {
             }
         }
 
-        const result = _.cloneDeep(this.state)
+        const result = _CloneDeep(this.state as object) as TState
         if (this.internalStep === this.steps.length) {
             this.rollbackState()
         }
