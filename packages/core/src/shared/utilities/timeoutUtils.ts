@@ -192,7 +192,7 @@ interface WaitUntilOptions {
 }
 
 /**
- * Invokes `fn()` until it returns a non-undefined value.
+ * Invokes `fn()` until it returns a truthy value (or non-undefined if `truthy:false`).
  *
  * @param fn  Function whose result is checked
  * @param options  See {@link WaitUntilOptions}
