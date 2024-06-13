@@ -4,11 +4,13 @@
  */
 
 import * as vscode from 'vscode'
+import { localize } from '../../shared/utilities/vsCodeUtils'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { inspect } from 'util'
 import { DocumentDBClient } from '../../shared/clients/docdbClient'
+import { DBClusterNode } from './dbClusterNode'
 
 /**
  * An AWS Explorer node representing DocumentDB.
@@ -24,10 +26,11 @@ export class DocumentDBNode extends AWSTreeNodeBase {
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
-                return Promise.resolve([]) //TODO: Get clusters from region
+                const clusters = await this.client.listClusters()
+                return clusters.map(cluster => new DBClusterNode(cluster, this.client))
             },
-            getNoChildrenPlaceholderNode: async () => new PlaceholderNode(this, '[Nothing to see here yet.]'),
-            //new PlaceholderNode(this, localize('AWS.explorerNode.docdb.noClusters', '[No Clusters found]')),
+            getNoChildrenPlaceholderNode: async () =>
+                new PlaceholderNode(this, localize('AWS.explorerNode.docdb.noClusters', '[No Clusters found]')),
         })
     }
 

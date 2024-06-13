@@ -3,14 +3,41 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import _ from 'lodash'
-import { AWSError, DocDB, DocDBElastic } from 'aws-sdk'
-import { getLogger } from '../logger'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
+import {
+    DocDBClient,
+    DescribeDBClustersCommand,
+    DBCluster,
+    DocDBClientConfig,
+    DescribeGlobalClustersCommand,
+} from '@aws-sdk/client-docdb'
 
 export type DocumentDBClient = InterfaceNoSymbol<DefaultDocumentDBClient>
 
 export class DefaultDocumentDBClient {
-    public constructor(public readonly regionCode: string) {}
+    private readonly config: DocDBClientConfig
+
+    public constructor(public readonly regionCode: string) {
+        this.config = {
+            region: regionCode,
+        }
+    }
+
+    public async listClusters(): Promise<DBCluster[]> {
+        const client = new DocDBClient(this.config)
+        let results: DBCluster[] = []
+
+        const input = {
+            Filters: [{ Name: 'engine', Values: ['docdb'] }],
+        }
+
+        let command = new DescribeDBClustersCommand(input)
+        const response = await client.send(command)
+        results = response.DBClusters ?? []
+
+        command = new DescribeGlobalClustersCommand(input)
+        const response2 = await client.send(command)
+
+        return results.concat(response2.DBClusters ?? [])
+    }
 }
