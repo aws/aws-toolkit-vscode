@@ -6,7 +6,7 @@
 import assert from 'assert'
 import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
 import { ConfigurationEntry } from '../../codewhisperer/models/model'
-import { setValidConnection, skiptTestIfNoValidConn } from '../util/codewhispererUtil'
+import { setValidConnection, skipTestIfNoValidConn } from '../util/connection'
 import { RecommendationHandler } from '../../codewhisperer/service/recommendationHandler'
 import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../../test/codewhisperer/testUtil'
 import { invokeRecommendation } from '../../codewhisperer/commands/invokeRecommendation'
@@ -58,7 +58,7 @@ describe('CodeWhisperer service invocation', async function () {
         //TODO: remove this line (this.skip()) when these tests no longer auto-skipped
         this.skip()
         //valid connection required to run tests
-        skiptTestIfNoValidConn(validConnection, this)
+        skipTestIfNoValidConn(validConnection, this)
     })
 
     it('trigger known to return recs with references returns rec with reference', async function () {

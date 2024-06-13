@@ -83,6 +83,7 @@ export type ListCodeScanFindingsRequest = Readonly<
 export type SupplementalContext = Readonly<
     CodeWhispererClient.SupplementalContext | CodeWhispererUserClient.SupplementalContext
 >
+// eslint-disable-next-line @typescript-eslint/no-duplicate-type-constituents
 export type ArtifactType = Readonly<CodeWhispererClient.ArtifactType | CodeWhispererUserClient.ArtifactType>
 export type ArtifactMap = Readonly<CodeWhispererClient.ArtifactMap | CodeWhispererUserClient.ArtifactMap>
 export type ListCodeScanFindingsResponse =
@@ -326,9 +327,21 @@ export class DefaultCodeWhispererClient {
     }
 
     /**
+     * @description After the job has been PAUSED we need to get user intervention. Once that user
+     * intervention has been handled we can resume the transformation job.
+     * @params transformationJobId - String id returned from StartCodeTransformationResponse
+     * @params userActionStatus - String to determine what action the user took, if any.
+     */
+    public async codeModernizerResumeTransformation(
+        request: CodeWhispererUserClient.ResumeTransformationRequest
+    ): Promise<PromiseResult<CodeWhispererUserClient.ResumeTransformationResponse, AWSError>> {
+        return (await this.createUserSdkClient()).resumeTransformation(request).promise()
+    }
+
+    /**
      * @description After starting a transformation use this function to display the LLM
      * transformation plan to the user.
-     * @params tranformationJobId - String id returned from StartCodeTransformationResponse
+     * @params transformationJobId - String id returned from StartCodeTransformationResponse
      */
     public async codeModernizerGetCodeTransformationPlan(
         request: CodeWhispererUserClient.GetTransformationPlanRequest

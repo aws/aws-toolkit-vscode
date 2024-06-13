@@ -5,7 +5,6 @@
 
 const path = require('path')
 const currentDir = process.cwd()
-const { merge } = require('webpack-merge')
 
 const baseConfigFactory = require('../webpack.base.config')
 const baseWebConfigsFactory = require('../webpack.web.config')
@@ -14,14 +13,14 @@ module.exports = (env, argv) => {
     const config = {
         ...baseConfigFactory(env, argv),
         entry: {
-            'src/main': './src/main.ts',
+            'src/extension': './src/extension.ts',
         },
     }
 
     const webConfig = {
         ...baseWebConfigsFactory(env, argv),
         entry: {
-            'src/mainWeb': './src/mainWeb.ts',
+            'src/extensionWeb': './src/extensionWeb.ts',
         },
     }
 

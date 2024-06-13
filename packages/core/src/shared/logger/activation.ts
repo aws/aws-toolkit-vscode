@@ -24,7 +24,7 @@ export async function activate(
 ): Promise<void> {
     const settings = Settings.instance.getSection('aws')
     const devLogfile = settings.get('dev.logfile', '')
-    const logUri = devLogfile ? vscode.Uri.file(resolvePath(devLogfile)) : undefined
+    const logUri = typeof devLogfile === 'string' ? vscode.Uri.file(resolvePath(devLogfile)) : undefined
     const chanLogLevel = fromVscodeLogLevel(logChannel.logLevel)
 
     await fsCommon.mkdir(extensionContext.logUri)
@@ -63,7 +63,10 @@ export async function activate(
         'debugConsole'
     )
 
-    getLogger().debug(`Logging started: ${logUri}`)
+    getLogger().debug(`Logging started: ${logUri ?? '(no file)'}`)
+    if (devLogfile && typeof devLogfile !== 'string') {
+        getLogger().error('invalid aws.dev.logfile setting')
+    }
 
     Logging.init(logUri, mainLogger, contextPrefix)
     extensionContext.subscriptions.push(Logging.instance.viewLogs, Logging.instance.viewLogsAtMessage)

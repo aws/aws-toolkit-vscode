@@ -29,7 +29,6 @@ import {
     CodeScanTelemetryEntry,
 } from '../models/model'
 import { cancel, ok } from '../../shared/localizedText'
-import { getFileExt } from '../util/commonUtil'
 import { getDirSize } from '../../shared/filesystemUtilities'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { isAwsError } from '../../shared/errors'
@@ -41,6 +40,7 @@ import { debounce } from 'lodash'
 import { once } from '../../shared/utilities/functionUtils'
 import { randomUUID } from '../../common/crypto'
 import { CodeAnalysisScope } from '../models/constants'
+import { CodeScanJobFailedError, CreateCodeScanFailedError, SecurityScanError } from '../models/errors'
 
 const localize = nls.loadMessageBundle()
 export const stopScanButton = localize('aws.codewhisperer.stopscan', 'Stop Scan')
@@ -63,7 +63,6 @@ const getLogOutputChan = once(() => {
 
 export function startSecurityScanWithProgress(
     securityPanelViewProvider: SecurityPanelViewProvider,
-    editor: vscode.TextEditor,
     client: DefaultCodeWhispererClient,
     context: vscode.ExtensionContext
 ) {
@@ -76,7 +75,7 @@ export function startSecurityScanWithProgress(
         async () => {
             await startSecurityScan(
                 securityPanelViewProvider,
-                editor,
+                undefined,
                 client,
                 context,
                 CodeWhispererConstants.CodeAnalysisScope.PROJECT
@@ -92,7 +91,7 @@ export const debounceStartSecurityScan = debounce(
 
 export async function startSecurityScan(
     securityPanelViewProvider: SecurityPanelViewProvider,
-    editor: vscode.TextEditor,
+    editor: vscode.TextEditor | undefined,
     client: DefaultCodeWhispererClient,
     context: vscode.ExtensionContext,
     scope: CodeWhispererConstants.CodeAnalysisScope
@@ -107,10 +106,12 @@ export async function startSecurityScan(
     }
     let serviceInvocationStartTime = 0
     const codeScanTelemetryEntry: CodeScanTelemetryEntry = {
-        codewhispererLanguage: runtimeLanguageContext.getLanguageContext(
-            editor.document.languageId,
-            path.extname(editor.document.fileName)
-        ).language,
+        codewhispererLanguage: editor
+            ? runtimeLanguageContext.getLanguageContext(
+                  editor.document.languageId,
+                  path.extname(editor.document.fileName)
+              ).language
+            : 'plaintext',
         codewhispererCodeScanSrcPayloadBytes: 0,
         codewhispererCodeScanSrcZipFileBytes: 0,
         codewhispererCodeScanLines: 0,
@@ -131,8 +132,8 @@ export async function startSecurityScan(
          */
         throwIfCancelled(scope, codeScanStartTime)
         const zipUtil = new ZipUtil()
-        const zipMetadata = await zipUtil.generateZip(editor.document.uri, scope)
-        const projectPath = zipUtil.getProjectPath(editor.document.uri)
+        const zipMetadata = await zipUtil.generateZip(editor?.document.uri, scope)
+        const projectPaths = zipUtil.getProjectPaths()
 
         const contextTruncationStartTime = performance.now()
         codeScanTelemetryEntry.contextTruncationDuration = performance.now() - contextTruncationStartTime
@@ -172,7 +173,9 @@ export async function startSecurityScan(
             scanName
         )
         if (scanJob.status === 'Failed') {
-            throw new Error(scanJob.errorMessage)
+            logger.verbose(`${scanJob.errorMessage}`)
+            const errorMessage = scanJob.errorMessage ?? 'CreateCodeScanFailed'
+            throw new CreateCodeScanFailedError(errorMessage)
         }
         logger.verbose(`Created security scan job.`)
         codeScanTelemetryEntry.codewhispererCodeScanJobId = scanJob.jobId
@@ -183,7 +186,8 @@ export async function startSecurityScan(
         throwIfCancelled(scope, codeScanStartTime)
         const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scope, codeScanStartTime)
         if (jobStatus === 'Failed') {
-            throw new Error('Security scan job failed.')
+            logger.verbose(`Security scan job failed.`)
+            throw new CodeScanJobFailedError()
         }
 
         /**
@@ -195,7 +199,7 @@ export async function startSecurityScan(
             client,
             scanJob.jobId,
             CodeWhispererConstants.codeScanFindingsSchema,
-            projectPath,
+            projectPaths,
             scope
         )
         const { total, withFixes } = securityRecommendationCollection.reduce(
@@ -225,7 +229,7 @@ export async function startSecurityScan(
         if (error instanceof CodeScanStoppedError) {
             codeScanTelemetryEntry.result = 'Cancelled'
         } else {
-            errorPromptHelper(error as Error, scope)
+            errorPromptHelper(error as SecurityScanError, scope)
             codeScanTelemetryEntry.result = 'Failed'
         }
 
@@ -234,6 +238,7 @@ export async function startSecurityScan(
                 scope === CodeAnalysisScope.PROJECT &&
                 error.message.includes(CodeWhispererConstants.projectScansThrottlingMessage)
             ) {
+                getLogger().error(CodeWhispererConstants.projectScansLimitReached)
                 void vscode.window.showErrorMessage(CodeWhispererConstants.projectScansLimitReached)
                 // TODO: Should we set a graphical state?
                 // We shouldn't set vsCodeState.isFreeTierLimitReached here because it will hide CW and Q chat options.
@@ -245,19 +250,19 @@ export async function startSecurityScan(
                 CodeScansState.instance.setMonthlyQuotaExceeded()
             }
         }
-        codeScanTelemetryEntry.reason = (error as Error).message
+        codeScanTelemetryEntry.reason = (error as SecurityScanError).message
     } finally {
         codeScanState.setToNotStarted()
         codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime
         codeScanTelemetryEntry.codeScanServiceInvocationsDuration = performance.now() - serviceInvocationStartTime
-        await emitCodeScanTelemetry(editor, codeScanTelemetryEntry)
+        await emitCodeScanTelemetry(codeScanTelemetryEntry, scope)
     }
 }
 
 export function showSecurityScanResults(
     securityPanelViewProvider: SecurityPanelViewProvider,
     securityRecommendationCollection: AggregatedCodeScanIssue[],
-    editor: vscode.TextEditor,
+    editor: vscode.TextEditor | undefined,
     context: vscode.ExtensionContext,
     scope: CodeWhispererConstants.CodeAnalysisScope,
     zipMetadata: ZipMetadata,
@@ -274,22 +279,24 @@ export function showSecurityScanResults(
     }
     if (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
         populateCodeScanLogStream(zipMetadata.scannedFiles)
-        showScanCompletedNotification(totalIssues, zipMetadata.scannedFiles, false)
+        showScanCompletedNotification(totalIssues, zipMetadata.scannedFiles)
     }
 }
 
-export async function emitCodeScanTelemetry(editor: vscode.TextEditor, codeScanTelemetryEntry: CodeScanTelemetryEntry) {
-    const uri = editor.document.uri
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
-    const fileExt = getFileExt(editor.document.languageId)
-    if (workspaceFolder !== undefined && fileExt !== undefined) {
-        const projectSize = await getDirSize(
-            workspaceFolder.uri.fsPath,
-            performance.now(),
-            CodeWhispererConstants.projectSizeCalculateTimeoutSeconds * 1000,
-            fileExt
-        )
-        codeScanTelemetryEntry.codewhispererCodeScanProjectBytes = projectSize
+export async function emitCodeScanTelemetry(
+    codeScanTelemetryEntry: CodeScanTelemetryEntry,
+    scope: CodeWhispererConstants.CodeAnalysisScope
+) {
+    codeScanTelemetryEntry.codewhispererCodeScanProjectBytes = 0
+    const now = performance.now()
+    if (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
+        for (const folder of vscode.workspace.workspaceFolders ?? []) {
+            codeScanTelemetryEntry.codewhispererCodeScanProjectBytes += await getDirSize(
+                folder.uri.fsPath,
+                now,
+                CodeWhispererConstants.projectSizeCalculateTimeoutSeconds * 1000
+            )
+        }
     }
     telemetry.codewhisperer_securityScan.emit({
         ...codeScanTelemetryEntry,
@@ -297,9 +304,9 @@ export async function emitCodeScanTelemetry(editor: vscode.TextEditor, codeScanT
     })
 }
 
-export function errorPromptHelper(error: Error, scope: CodeAnalysisScope) {
+export function errorPromptHelper(error: SecurityScanError, scope: CodeAnalysisScope) {
     if (scope === CodeAnalysisScope.PROJECT) {
-        void vscode.window.showWarningMessage(`Security scan failed. ${error}`, ok)
+        void vscode.window.showWarningMessage(error.customerFacingMessage, ok)
     }
 }
 
@@ -329,20 +336,13 @@ export async function confirmStopSecurityScan() {
     }
 }
 
-function showScanCompletedNotification(total: number, scannedFiles: Set<string>, isProjectTruncated: boolean) {
+function showScanCompletedNotification(total: number, scannedFiles: Set<string>) {
     const totalFiles = `${scannedFiles.size} ${scannedFiles.size === 1 ? 'file' : 'files'}`
     const totalIssues = `${total} ${total === 1 ? 'issue was' : 'issues were'}`
-    const fileSizeLimitReached = isProjectTruncated ? 'File size limit reached.' : ''
     const learnMore = 'Learn More'
     const items = [CodeWhispererConstants.showScannedFilesMessage]
-    if (isProjectTruncated) {
-        items.push(learnMore)
-    }
     void vscode.window
-        .showInformationMessage(
-            `Security scan completed for ${totalFiles}. ${totalIssues} found. ${fileSizeLimitReached}`,
-            ...items
-        )
+        .showInformationMessage(`Security scan completed for ${totalFiles}. ${totalIssues} found.`, ...items)
         .then(value => {
             if (value === CodeWhispererConstants.showScannedFilesMessage) {
                 const [, codeScanOutpuChan] = getLogOutputChan()

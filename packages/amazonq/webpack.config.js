@@ -4,7 +4,7 @@
  */
 
 const baseConfigFactory = require('../webpack.base.config')
-const baseVueConfigFactory = require('../webpack.vue.config')
+const baseWebConfigsFactory = require('../webpack.web.config')
 
 module.exports = (env, argv) => {
     const config = {
@@ -14,14 +14,12 @@ module.exports = (env, argv) => {
         },
     }
 
-    const vue = baseVueConfigFactory(env, argv)
-    const vueConfig = {
-        ...vue.config,
+    const webConfig = {
+        ...baseWebConfigsFactory(env, argv),
         entry: {
-            ...vue.createVueEntries(),
-            //'src/amazonq/webview/ui/amazonq-ui': './src/amazonq/webview/ui/main.ts',
+            'src/extensionWeb': './src/extensionWeb.ts',
         },
     }
 
-    return [config, vueConfig]
+    return [config, webConfig]
 }

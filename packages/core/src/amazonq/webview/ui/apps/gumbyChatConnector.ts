@@ -166,7 +166,7 @@ export class Connector {
             action: action.id,
             formSelectedValues: action.formItemValues,
             tabType: 'gumby',
-            tabId: tabId,
+            tabID: tabId,
         })
     }
 

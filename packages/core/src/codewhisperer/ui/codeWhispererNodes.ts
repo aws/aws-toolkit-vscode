@@ -27,6 +27,7 @@ import { cwQuickPickSource } from '../commands/types'
 import { AuthUtil } from '../util/authUtil'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
+import { isWeb } from '../../shared/extensionGlobals'
 
 export function createAutoSuggestions(pause: boolean): DataQuickPickItem<'autoSuggestions'> {
     const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Auto-Suggestions')
@@ -172,7 +173,7 @@ export function createFeedbackNode(): DataQuickPickItem<'sendFeedback'> {
         data: 'sendFeedback',
         label: 'Send Feedback',
         iconPath: getIcon('vscode-thumbsup'),
-        onClick: () => submitFeedback(placeholder, 'CodeWhisperer'),
+        onClick: () => submitFeedback(placeholder, 'Amazon Q'),
     } as DataQuickPickItem<'sendFeedback'>
 }
 
@@ -216,9 +217,19 @@ export function createSignIn(): DataQuickPickItem<'signIn'> {
     const label = localize('AWS.codewhisperer.signInNode.label', 'Sign in to get started')
     const icon = getIcon('vscode-account')
 
+    let onClick = () => {
+        void focusAmazonQPanel.execute(placeholder, 'codewhispererQuickPick')
+    }
+    if (isWeb()) {
+        // TODO: nkomonen, call a Command instead
+        onClick = () => {
+            void AuthUtil.instance.connectToAwsBuilderId()
+        }
+    }
+
     return {
         data: 'signIn',
         label: codicon`${icon} ${label}`,
-        onClick: () => focusAmazonQPanel.execute(placeholder, 'codewhispererQuickPick'),
+        onClick,
     }
 }

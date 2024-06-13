@@ -12,7 +12,7 @@ export const featureDevScheme = 'aws-featureDev'
 // For uniquely identifiying which chat messages should be routed to FeatureDev
 export const featureDevChat = 'featureDevChat'
 
-export const featureName = 'Amazon Q feature development'
+export const featureName = 'Amazon Q Developer Agent for software development'
 
 // Max allowed size for file collection
 export const maxRepoSizeBytes = 200 * 1024 * 1024

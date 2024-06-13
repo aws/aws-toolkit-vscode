@@ -97,6 +97,22 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  *                   },
  *                 },
  *               },
+ *               relevantDocuments: [ // RelevantDocumentList
+ *                 { // RelevantTextDocument
+ *                   relativeFilePath: "STRING_VALUE", // required
+ *                   programmingLanguage: {
+ *                     languageName: "STRING_VALUE", // required
+ *                   },
+ *                   text: "STRING_VALUE",
+ *                   documentSymbols: [
+ *                     {
+ *                       name: "STRING_VALUE", // required
+ *                       type: "DECLARATION" || "USAGE", // required
+ *                       source: "STRING_VALUE",
+ *                     },
+ *                   ],
+ *                 },
+ *               ],
  *             },
  *             shellState: { // ShellState
  *               shellName: "STRING_VALUE", // required
@@ -122,6 +138,12 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  *                   value: "STRING_VALUE",
  *                 },
  *               ],
+ *             },
+ *             appStudioContext: { // AppStudioState
+ *               namespace: "STRING_VALUE", // required
+ *               propertyName: "STRING_VALUE", // required
+ *               propertyValue: "STRING_VALUE",
+ *               propertyContext: "STRING_VALUE", // required
  *             },
  *             diagnostic: { // Diagnostic Union: only one key present
  *               textDocumentDiagnostic: { // TextDocumentDiagnostic
@@ -203,6 +225,22 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  *                 end: "<Position>", // required
  *               },
  *             },
+ *             relevantDocuments: [
+ *               {
+ *                 relativeFilePath: "STRING_VALUE", // required
+ *                 programmingLanguage: {
+ *                   languageName: "STRING_VALUE", // required
+ *                 },
+ *                 text: "STRING_VALUE",
+ *                 documentSymbols: [
+ *                   {
+ *                     name: "STRING_VALUE", // required
+ *                     type: "DECLARATION" || "USAGE", // required
+ *                     source: "STRING_VALUE",
+ *                   },
+ *                 ],
+ *               },
+ *             ],
  *           },
  *           shellState: {
  *             shellName: "STRING_VALUE", // required
@@ -228,6 +266,12 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  *                 value: "STRING_VALUE",
  *               },
  *             ],
+ *           },
+ *           appStudioContext: {
+ *             namespace: "STRING_VALUE", // required
+ *             propertyName: "STRING_VALUE", // required
+ *             propertyValue: "STRING_VALUE",
+ *             propertyContext: "STRING_VALUE", // required
  *           },
  *           diagnostic: {//  Union: only one key present
  *             textDocumentDiagnostic: {
@@ -277,7 +321,9 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  *       },
  *     },
  *     chatTriggerType: "MANUAL" || "DIAGNOSTIC", // required
+ *     customizationArn: "STRING_VALUE",
  *   },
+ *   profileArn: "STRING_VALUE",
  * };
  * const command = new GenerateAssistantResponseCommand(input);
  * const response = await client.send(command);

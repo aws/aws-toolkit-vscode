@@ -43,11 +43,11 @@ export class RuntimeLanguageContext {
     >
 
     /**
-     * A map storing CodeWhisperer supported programming language with key: vscLanguageId and value: language extension
-     * Key: vscLanguageId
-     * Value: language extension
+     * A map storing CodeWhisperer supported programming language with key: language extension and value: vscLanguageId
+     * Key: language extension
+     * Value: vscLanguageId
      */
-    private supportedLanguageExtensionMap: ConstantMap<CodewhispererLanguage, string>
+    private supportedLanguageExtensionMap: ConstantMap<string, CodewhispererLanguage>
 
     constructor() {
         this.supportedLanguageMap = createConstantMap<
@@ -88,29 +88,29 @@ export class RuntimeLanguageContext {
             yml: 'yaml',
             yaml: 'yaml',
         })
-        this.supportedLanguageExtensionMap = createConstantMap<CodewhispererLanguage, string>({
+        this.supportedLanguageExtensionMap = createConstantMap<string, CodewhispererLanguage>({
             c: 'c',
             cpp: 'cpp',
-            csharp: 'cs',
+            cs: 'csharp',
             go: 'go',
             hcl: 'tf',
             java: 'java',
-            javascript: 'js',
+            js: 'javascript',
             json: 'json',
             jsonc: 'json',
             jsx: 'jsx',
-            kotlin: 'kt',
-            plaintext: 'txt',
+            kt: 'kotlin',
+            txt: 'plaintext',
             php: 'php',
-            python: 'py',
-            ruby: 'rb',
-            rust: 'rs',
+            py: 'python',
+            rb: 'ruby',
+            rs: 'rust',
             scala: 'scala',
-            shell: 'sh',
+            sh: 'shell',
             sql: 'sql',
             tf: 'tf',
             tsx: 'tsx',
-            typescript: 'ts',
+            ts: 'typescript',
             yaml: 'yaml',
             yml: 'yaml',
         })
@@ -154,7 +154,9 @@ export class RuntimeLanguageContext {
      * @returns corresponding language extension if any, otherwise undefined
      */
     public getLanguageExtensionForNotebook(languageId?: string): string | undefined {
-        return this.supportedLanguageExtensionMap.get(this.normalizeLanguage(languageId)) ?? undefined
+        return [...this.supportedLanguageExtensionMap.entries()].find(
+            ([, language]) => language === this.normalizeLanguage(languageId)
+        )?.[0]
     }
 
     /**
@@ -178,17 +180,6 @@ export class RuntimeLanguageContext {
             }
         }
         return { language: this.normalizeLanguage(languageId) ?? 'plaintext' }
-    }
-
-    /**
-     *
-     * @param fileExtension File extension i.e. py, js, java
-     * @returns The corresponding {@link CodewhispererLanguage} of the file extension
-     */
-    public getLanguageFromFileExtension(fileExtension: string): CodewhispererLanguage | undefined {
-        return [...this.supportedLanguageExtensionMap.entries()].find(
-            ([, extension]) => extension === fileExtension
-        )?.[0]
     }
 
     /**
@@ -234,8 +225,16 @@ export class RuntimeLanguageContext {
      * @returns  true if the fileformat is supported by CodeWhisperer otherwise false
      */
     public isFileFormatSupported(fileFormat: string): boolean {
-        const fileformat = this.supportedLanguageExtensionMap.get(fileFormat)
-        return fileformat !== undefined && this.supportedLanguageExtensionMap.get(fileformat) !== 'txt'
+        const language = this.supportedLanguageExtensionMap.get(fileFormat)
+        return language !== undefined && language !== 'plaintext'
+    }
+
+    /**
+     * @param fileExtension: extension of the selected file
+     * @returns corresponding vscode language id if any, otherwise undefined
+     */
+    public getLanguageFromFileExtension(fileExtension: string) {
+        return this.supportedLanguageExtensionMap.get(fileExtension)
     }
 }
 

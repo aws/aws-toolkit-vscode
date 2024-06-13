@@ -104,6 +104,7 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
                     this.webView!.server.storeMetricMetadata({ isReAuth: false })
                 }
                 this.webView!.server.emitAuthMetric()
+                this.webView!.server.cancelAuthFlow()
 
                 // Set after emitting. If users use side bar to return to login, this source is correct
                 // for the next iteration. Otherwise, other sources will be set accordingly by whatever

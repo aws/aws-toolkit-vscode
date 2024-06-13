@@ -170,7 +170,9 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
             throw new Error('Attempted to select from a disposed message')
         }
         if (!this.options?.items || this.options.items.length === 0) {
-            throw new Error(`Could not find the specified item "${item}". Message has no items: ${this.message}`)
+            throw new Error(
+                `Could not find the specified item "${String(item)}". Message has no items: ${this.message}`
+            )
         }
 
         const selected =
@@ -179,7 +181,7 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
                 : this.options?.items?.find(i => i === item)
 
         if (!selected) {
-            throw new Error(`Could not find the specified item "${item}" on message: ${this.printDebug()}`)
+            throw new Error(`Could not find the specified item "${String(item)}" on message: ${this.printDebug()}`)
         }
 
         this._selected = selected

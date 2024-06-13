@@ -1,0 +1,7 @@
+{
+    "hilCapability": "HIL_1pDependency_VersionUpgrade",
+    "pomFolderName": "pomFolder",
+    "pomGroupId": "org.projectlombok",
+    "pomArtifactId": "lombok",
+    "sourcePomVersion": "0.11.4"
+}

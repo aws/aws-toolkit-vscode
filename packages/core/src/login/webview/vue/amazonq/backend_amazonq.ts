@@ -4,11 +4,12 @@
  */
 import * as vscode from 'vscode'
 import {
-    scopesCodeWhispererChat,
     AwsConnection,
     Connection,
     isSsoConnection,
     SsoConnection,
+    hasScopes,
+    scopesCodeWhispererCore,
 } from '../../../../auth/connection'
 import { AuthUtil, amazonQScopes } from '../../../../codewhisperer/util/authUtil'
 import { CommonAuthWebview } from '../backend'
@@ -55,10 +56,11 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
      * @returns Amazon Q connection, or undefined if none of the given connections have scopes required for Amazon Q.
      */
     findUsableConnection(connections: AwsConnection[]): AwsConnection | undefined {
-        return AuthUtil.instance.findUsableQConnection(connections)
+        return AuthUtil.instance.findMinimalQConnection(connections)
     }
 
     async useConnection(connectionId: string, auto: boolean): Promise<AuthError | undefined> {
+        getLogger().debug(`called useConnection() with connectionId: '${connectionId}', auto: '${auto}'`)
         return this.ssoSetup(
             'useConnection',
             async () => {
@@ -79,17 +81,28 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                                         credentialSourceId:
                                             conn.startUrl === builderIdStartUrl ? 'awsId' : 'iamIdentityCenter',
                                         credentialStartUrl: conn.startUrl,
-                                        region: conn.ssoRegion,
+                                        awsRegion: conn.ssoRegion,
                                         authEnabledFeatures: this.getAuthEnabledFeatures(conn),
                                     })
                                 }
                                 let newConn: SsoConnection
-                                if (conn.scopes?.includes(scopesCodeWhispererChat[0])) {
+                                if (conn.scopes && hasScopes(conn.scopes, scopesCodeWhispererCore)) {
                                     getLogger().info(
                                         `auth: re-use connection from existing connection id ${connectionId}`
                                     )
                                     newConn = await Auth.instance.createConnectionFromApi(conn)
-                                    await AuthUtil.instance.secondaryAuth.useNewConnection(newConn)
+
+                                    // HACK: This if statement should eventually be removed when we assume users have added all Q scopes (reauthed).
+                                    //
+                                    // In this case we have a connection that has the CW scopes, but not all Amazon Q scopes
+                                    // We will use this connection but mark it as expired hoping that the user will reauth,
+                                    // and as a result add all Amazon Q scopes.
+                                    if (!hasScopes(conn.scopes, amazonQScopes)) {
+                                        await AuthUtil.instance.useConnectionButExpire(newConn)
+                                    } else {
+                                        // Once we remove the above 'if' statement, this is all that needs to actually be called
+                                        await AuthUtil.instance.secondaryAuth.useNewConnection(newConn)
+                                    }
                                 } else {
                                     getLogger().info(
                                         `auth: re-use(new scope) to connection from existing connection id ${connectionId}`
@@ -100,7 +113,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                                     // if failed, connection is set to invalid
                                     const oldScopes = conn?.scopes ? conn.scopes : []
                                     const newScopes = Array.from(new Set([...oldScopes, ...amazonQScopes]))
-                                    newConn = await Auth.instance.createConnectionFromApi({
+                                    const payload: AwsConnection = {
                                         type: conn.type,
                                         ssoRegion: conn.ssoRegion,
                                         scopes: newScopes,
@@ -108,14 +121,21 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                                         state: conn.state,
                                         id: conn.id,
                                         label: conn.label,
-                                    })
-                                    await Auth.instance.reauthenticate(newConn)
+                                    }
+                                    newConn = await Auth.instance.createConnectionFromApi(payload)
+                                    try {
+                                        await Auth.instance.reauthenticate(newConn, false)
+                                    } catch (e) {
+                                        // Restore original scopes as to not soft-lock connections.
+                                        await Auth.instance.createConnectionFromApi({ ...payload, scopes: oldScopes })
+                                        throw e
+                                    }
                                     await AuthUtil.instance.secondaryAuth.useNewConnection(newConn)
                                 }
                                 if (!auto) {
                                     this.storeMetricMetadata({
                                         credentialStartUrl: conn.startUrl,
-                                        region: conn.ssoRegion,
+                                        awsRegion: conn.ssoRegion,
                                         authEnabledFeatures: this.getAuthEnabledFeatures(newConn),
                                     })
                                 }
@@ -133,6 +153,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     }
 
     async startBuilderIdSetup(): Promise<AuthError | undefined> {
+        getLogger().debug(`called startBuilderIdSetup()`)
         return await this.ssoSetup('startCodeWhispererBuilderIdSetup', async () => {
             this.storeMetricMetadata({
                 credentialSourceId: 'awsId',
@@ -146,10 +167,11 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     }
 
     async startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
+        getLogger().debug(`called useConnection() with startUrl: '${startUrl}', region: '${region}'`)
         return await this.ssoSetup('startCodeWhispererEnterpriseSetup', async () => {
             this.storeMetricMetadata({
                 credentialStartUrl: startUrl,
-                region,
+                awsRegion: region,
                 credentialSourceId: 'iamIdentityCenter',
                 authEnabledFeatures: 'codewhisperer',
                 isReAuth: false,
@@ -184,7 +206,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                     isReAuth: true,
                     ...this.getMetadataForExistingConn(),
                 })
-                await AuthUtil.instance.reauthenticate(true)
+                await AuthUtil.instance.reauthenticate()
             })
         } finally {
             this.isReauthenticating = false

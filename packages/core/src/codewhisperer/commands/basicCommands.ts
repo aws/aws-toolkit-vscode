@@ -15,7 +15,7 @@ import { CodeScanIssue, CodeScansState, codeScanState, CodeSuggestionsState, vsC
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showCodeWhispererConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
-import { AuthUtil } from '../util/authUtil'
+import { amazonQScopes, AuthUtil } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { getLogger } from '../../shared/logger'
 import { isExtensionActive, isExtensionInstalled, openUrl } from '../../shared/utilities/vsCodeUtils'
@@ -33,7 +33,6 @@ import { FeatureConfigProvider } from '../service/featureConfigProvider'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { Auth, AwsConnection } from '../../auth'
 import { once } from '../../shared/utilities/functionUtils'
-import { isTextEditor } from '../../shared/utilities/editorUtilities'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import { removeDiagnostic } from '../service/diagnosticsProvider'
 import { SecurityIssueHoverProvider } from '../service/securityIssueHoverProvider'
@@ -42,6 +41,10 @@ import { SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import { ToolkitError } from '../../shared/errors'
 import { isRemoteWorkspace } from '../../shared/vscode/env'
+import { hasScopes, isBuilderIdConnection } from '../../auth/connection'
+import globals from '../../shared/extensionGlobals'
+
+const MessageTimeOut = 5_000
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.amazonq.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -52,12 +55,20 @@ export const toggleCodeSuggestions = Commands.declare(
             })
 
             const isSuggestionsEnabled = await suggestionState.toggleSuggestions()
+
             span.record({
                 settingState: isSuggestionsEnabled
                     ? CodeWhispererConstants.autoSuggestionConfig.activated
                     : CodeWhispererConstants.autoSuggestionConfig.deactivated,
             })
             vsCodeState.isFreeTierLimitReached = false
+
+            void vscode.window.setStatusBarMessage(
+                isSuggestionsEnabled
+                    ? 'Amazon Q: Auto-Suggestions are currently running.'
+                    : 'Amazon Q: Auto-Suggestions are currently paused.',
+                MessageTimeOut
+            )
         })
     }
 )
@@ -80,6 +91,9 @@ export const toggleCodeScans = Commands.declare(
     { id: 'aws.codeWhisperer.toggleCodeScan', compositeKey: { 1: 'source' } },
     (scansState: CodeScansState) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         await telemetry.aws_modifySetting.run(async span => {
+            if (isBuilderIdConnection(AuthUtil.instance.conn)) {
+                throw new Error(`Auto-scans are not supported with the Amazon Builder ID connection.`)
+            }
             span.record({
                 settingId: CodeWhispererConstants.autoScansConfig.settingId,
             })
@@ -91,7 +105,13 @@ export const toggleCodeScans = Commands.declare(
                     : CodeWhispererConstants.autoScansConfig.deactivated,
             })
 
-            await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+            await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
+            void vscode.window.setStatusBarMessage(
+                isScansEnabled
+                    ? 'Amazon Q: Auto-Scans are currently running.'
+                    : 'Amazon Q: Auto-Scans are currently paused.',
+                MessageTimeOut
+            )
         })
     }
 )
@@ -117,32 +137,25 @@ export const showSecurityScan = Commands.declare(
             if (AuthUtil.instance.isConnectionExpired()) {
                 await AuthUtil.instance.notifyReauthenticate()
             }
-            const editor = vscode.window.activeTextEditor
-            if (editor && isTextEditor(editor)) {
-                if (codeScanState.isNotStarted()) {
-                    // User intends to start as "Start Security Scan" is shown in the explorer tree
-                    codeScanState.setToRunning()
-                    void startSecurityScanWithProgress(
-                        securityPanelViewProvider,
-                        editor,
-                        client,
-                        context.extensionContext
-                    )
-                } else if (codeScanState.isRunning()) {
-                    // User intends to stop as "Stop Security Scan" is shown in the explorer tree
-                    // Cancel only when the code scan state is "Running"
-                    await confirmStopSecurityScan()
-                }
-                vsCodeState.isFreeTierLimitReached = false
-            } else {
-                void vscode.window.showInformationMessage('Open a valid file to scan.')
+            if (codeScanState.isNotStarted()) {
+                // User intends to start as "Start Security Scan" is shown in the explorer tree
+                codeScanState.setToRunning()
+                void startSecurityScanWithProgress(securityPanelViewProvider, client, context.extensionContext)
+            } else if (codeScanState.isRunning()) {
+                // User intends to stop as "Stop Security Scan" is shown in the explorer tree
+                // Cancel only when the code scan state is "Running"
+                await confirmStopSecurityScan()
             }
+            vsCodeState.isFreeTierLimitReached = false
         }
 )
 
 export const selectCustomizationPrompt = Commands.declare(
     { id: 'aws.amazonq.selectCustomization', compositeKey: { 1: 'source' } },
     () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
+        if (isBuilderIdConnection(AuthUtil.instance.conn)) {
+            throw new Error(`Select Customizations are not supported with the Amazon Builder ID connection.`)
+        }
         telemetry.ui_click.emit({ elementId: 'cw_selectCustomization_Cta' })
         void showCustomizationPrompt().then()
     }
@@ -150,13 +163,7 @@ export const selectCustomizationPrompt = Commands.declare(
 
 export const reconnect = Commands.declare(
     { id: 'aws.amazonq.reconnect', compositeKey: { 1: 'source' } },
-    () =>
-        async (_: VsCodeCommandArg, source: CodeWhispererSource, addMissingScopes: boolean = false) => {
-            if (typeof addMissingScopes !== 'boolean') {
-                addMissingScopes = false
-            }
-            await AuthUtil.instance.reauthenticate(addMissingScopes)
-        }
+    () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => await AuthUtil.instance.reauthenticate()
 )
 
 /** @deprecated in favor of the `Add Connection` page */
@@ -287,6 +294,13 @@ export const notifyNewCustomizationsCmd = Commands.declare(
     }
 )
 
+function focusQAfterDelay() {
+    // this command won't work without a small delay after install
+    globals.clock.setTimeout(() => {
+        void focusAmazonQPanel.execute(placeholder, 'startDelay')
+    }, 1000)
+}
+
 export const fetchFeatureConfigsCmd = Commands.declare(
     { id: 'aws.amazonq.fetchFeatureConfigs', logging: false },
     () => async () => {
@@ -329,10 +343,7 @@ export const installAmazonQExtension = Commands.declare(
         await vscode.commands.executeCommand('workbench.extensions.installExtension', VSCODE_EXTENSION_ID.amazonq)
 
         // jump to Amazon Q extension view after install.
-        // this command won't work without a small delay after install
-        setTimeout(() => {
-            void vscode.commands.executeCommand('workbench.view.extension.amazonq')
-        }, 1000)
+        focusQAfterDelay()
     }
 )
 
@@ -358,7 +369,7 @@ export const applySecurityFix = Commands.declare(
             const document = await vscode.workspace.openTextDocument(filePath)
             const fileContent = document.getText()
             languageId = document.languageId
-            const updatedContent = applyPatch(fileContent, patch)
+            const updatedContent = applyPatch(fileContent, patch, { fuzzFactor: 4 })
             if (!updatedContent) {
                 void vscode.window.showErrorMessage(CodeWhispererConstants.codeFixAppliedFailedMessage)
                 throw Error('Failed to get updated content from applying diff patch')
@@ -444,21 +455,35 @@ const registerToolkitApiCallbackOnce = once(async () => {
         }
     })
 
-    // when toolkit connection changes
-    if (_toolkitApi && 'onDidChangeConnection' in _toolkitApi) {
-        _toolkitApi.onDidChangeConnection(
-            async (connection: AwsConnection) => {
-                getLogger().info(`toolkitApi: connection change callback ${connection.id}`)
-                await AuthUtil.instance.onUpdateConnection(connection)
-            },
+    if (_toolkitApi) {
+        // when toolkit connection changes
+        if ('onDidChangeConnection' in _toolkitApi) {
+            _toolkitApi.onDidChangeConnection(
+                async (connection: AwsConnection) => {
+                    getLogger().info(`toolkitApi: connection change callback ${connection.id}`)
+                    await AuthUtil.instance.onUpdateConnection(connection)
+                },
 
-            async (id: string) => {
-                getLogger().info(`toolkitApi: connection delete callback ${id}`)
-                await AuthUtil.instance.onDeleteConnection(id)
+                async (id: string) => {
+                    getLogger().info(`toolkitApi: connection delete callback ${id}`)
+                    await AuthUtil.instance.onDeleteConnection(id)
+                }
+            )
+        }
+
+        // HACK
+        // If the user has an old 3 scope Amazon Q connection, we will use it and expire it to
+        // bring the user to the new 5 scope connection. The code for this lives in the webview,
+        // so we will force show the webview if we have a connection that fits this criteria.
+        if ('listConnections' in _toolkitApi && !AuthUtil.instance.isConnected()) {
+            const conn = AuthUtil.instance.findMinimalQConnection(await _toolkitApi.listConnections())
+            if (conn !== undefined && !hasScopes(conn.scopes!, amazonQScopes)) {
+                focusQAfterDelay()
             }
-        )
+        }
     }
 })
+
 export const registerToolkitApiCallback = Commands.declare(
     { id: 'aws.amazonq.refreshConnectionCallback' },
     () => async (toolkitApi?: any) => {

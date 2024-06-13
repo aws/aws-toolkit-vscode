@@ -81,10 +81,10 @@ export default defineComponent({
             this.error = ''
             this.isSubmitting = true
             console.log('Submitting feedback...')
-            // identifier to help us (internally) know that feedback came from either CodeWhisperer or AWS Toolkit
+            // identifier to help us (internally) know that feedback came from either Amazon Q or AWS Toolkit
+            // TODO: rework this and align with JetBrains?
             const resp = await client.submit({
-                comment:
-                    this.feedbackName === 'CodeWhisperer' ? 'CodeWhisperer onboarding: ' + this.comment : this.comment,
+                comment: this.feedbackName ? `${this.feedbackName} ${this.comment}` : this.comment,
                 sentiment: this.sentiment,
             })
 

@@ -248,6 +248,7 @@ export class CodeWhispererStatusBar {
             }
             case 'notConnected':
                 statusBar.text = codicon` ${getIcon('vscode-chrome-close')} ${title}`
+                statusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground')
                 break
         }
 

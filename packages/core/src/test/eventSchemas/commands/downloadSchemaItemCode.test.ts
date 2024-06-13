@@ -83,7 +83,9 @@ describe('CodeDownloader', function () {
             const comparisonResult = arrayBuffersEqual(returnedBuffer, myBuffer.buffer)
             assert.ok(
                 comparisonResult,
-                `Buffers do not match, string representation of expected buffer : TEST STRING, returned : ${returnedBuffer.toString()}`
+                `Buffers do not match, string representation of expected buffer : TEST STRING, returned : ${String(
+                    returnedBuffer
+                )}`
             )
         })
 

@@ -308,13 +308,13 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
 
         let planSteps = transformByQState.getPlanSteps()
         if (jobPlanProgress['generatePlan'] === StepProgress.Succeeded && transformByQState.isRunning()) {
-            planSteps = await getTransformationSteps(transformByQState.getJobId())
+            planSteps = await getTransformationSteps(transformByQState.getJobId(), false)
             transformByQState.setPlanSteps(planSteps)
         }
         let progressHtml
         // for each step that has succeeded, increment activeStepId by 1
         let activeStepId = [
-            jobPlanProgress.startJob,
+            jobPlanProgress.uploadCode,
             jobPlanProgress.buildCode,
             jobPlanProgress.generatePlan,
             jobPlanProgress.transformCode,
@@ -326,8 +326,8 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
 
         if (jobPlanProgress['transformCode'] !== StepProgress.NotStarted) {
             const waitingMarkup = simpleStep(
-                this.getProgressIconMarkup(jobPlanProgress['startJob']),
-                CodeWhispererConstants.waitingForJobStartStepMessage,
+                this.getProgressIconMarkup(jobPlanProgress['uploadCode']),
+                CodeWhispererConstants.uploadingCodeStepMessage,
                 activeStepId === 0
             )
             const buildMarkup =

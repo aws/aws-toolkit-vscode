@@ -12,8 +12,8 @@ import assert from 'assert'
 import { getSha256, uploadArtifactToS3, zipCode } from '../../codewhisperer/service/transformByQ/transformApiHandler'
 import request from '../../common/request'
 import AdmZip from 'adm-zip'
-import { setValidConnection } from '../util/amazonQUtil'
-import { transformByQState } from '../../codewhisperer/models/model'
+import { setValidConnection } from '../util/connection'
+import { transformByQState, ZipManifest } from '../../codewhisperer/models/model'
 
 describe('transformByQ', async function () {
     let tempDir = ''
@@ -34,8 +34,12 @@ describe('transformByQ', async function () {
         fs.writeFileSync(tempFilePath, 'sample content for the test file')
         transformByQState.setProjectPath(tempDir)
         zippedCodePath = await zipCode({
-            path: tempFilePath,
-            name: tempFileName,
+            dependenciesFolder: {
+                path: tempFilePath,
+                name: tempFileName,
+            },
+            modulePath: tempDir,
+            zipManifest: new ZipManifest(),
         })
     })
 

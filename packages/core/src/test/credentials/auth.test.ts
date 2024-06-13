@@ -154,11 +154,12 @@ describe('Auth', function () {
             assert.deepStrictEqual(updated.scopes, updatedProfile.scopes)
         })
 
-        it('invalidates the connection', async function () {
+        it('does not change the connection state', async function () {
             const conn = await auth.createConnection(ssoProfile)
+            const originalState = auth.getConnectionState(conn)
             const updated = await auth.updateConnection(conn, updatedProfile)
 
-            assert.strictEqual(auth.getConnectionState(updated), 'invalid')
+            assert.strictEqual(auth.getConnectionState(updated), originalState)
         })
 
         it('fires an event when updating', async function () {

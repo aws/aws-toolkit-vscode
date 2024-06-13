@@ -4,10 +4,13 @@
  */
 
 import { randomUUID } from '../../common/crypto'
+import { codeTransformMetaDataToJsonString, ICodeTransformMetaData } from './codeTransformMetadata'
 
 interface ICodeTransformTelemetryState {
     sessionId: string
     sessionStartTime: number
+    resultStatus: string
+    codeTransformMetadata: ICodeTransformMetaData
 }
 
 export class CodeTransformTelemetryState {
@@ -17,11 +20,17 @@ export class CodeTransformTelemetryState {
         this.mainState = {
             sessionId: randomUUID(),
             sessionStartTime: Date.now(),
+            resultStatus: '',
+            codeTransformMetadata: {},
         }
     }
 
     public getSessionId = () => this.mainState.sessionId
     public getStartTime = () => this.mainState.sessionStartTime
+    public getResultStatus = () => this.mainState.resultStatus
+    public getCodeTransformMetaData = () => this.mainState.codeTransformMetadata
+    public getCodeTransformMetaDataString = () =>
+        codeTransformMetaDataToJsonString(this.mainState.codeTransformMetadata)
 
     public setSessionId = () => {
         this.mainState.sessionId = randomUUID()
@@ -29,6 +38,16 @@ export class CodeTransformTelemetryState {
     public setStartTime = () => {
         this.mainState.sessionStartTime = Date.now()
     }
+    public setResultStatus = (newValue: string) => {
+        this.mainState.resultStatus = newValue
+    }
+    public setCodeTransformMetaDataField = (updatePartial: Partial<ICodeTransformMetaData>) => {
+        this.mainState.codeTransformMetadata = {
+            ...this.mainState.codeTransformMetadata,
+            ...updatePartial,
+        }
+    }
+    public resetCodeTransformMetaDataField = () => (this.mainState.codeTransformMetadata = {})
 
     static #instance: CodeTransformTelemetryState
 

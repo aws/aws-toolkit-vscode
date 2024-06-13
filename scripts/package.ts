@@ -99,7 +99,8 @@ function getVersionSuffix(feature: string, debug: boolean): string {
     const debugSuffix = debug ? '-debug' : ''
     const featureSuffix = feature === '' ? '' : `-${feature}`
     const commitId = child_process.execFileSync('git', ['rev-parse', '--short=7', 'HEAD']).toString().trim()
-    const commitSuffix = commitId ? `-${commitId}` : ''
+    // Commit id is prefixed with "g" because "-0abc123" is not a valid semver prerelease, and will cause vsce to fail.
+    const commitSuffix = commitId ? `-g${commitId}` : ''
     return `${debugSuffix}${featureSuffix}${commitSuffix}`
 }
 
@@ -155,6 +156,7 @@ function main() {
         fs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
         child_process.execFileSync('vsce', ['package', '--ignoreFile', '../.vscodeignore.packages'], {
             stdio: 'inherit',
+            shell: process.platform === 'win32', // For vsce.cmd on Windows.
         })
 
         console.log(`VSIX Version: ${packageJson.version}`)

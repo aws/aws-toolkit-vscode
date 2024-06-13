@@ -21,6 +21,7 @@ import {
 } from '../../../views/connector/connector'
 import { AppToWebViewMessageDispatcher } from '../../../views/connector/connector'
 import { ChatItemAction } from '@aws/mynah-ui'
+import { messageWithConversationId } from '../../../userFacingText'
 
 export class Messenger {
     public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}
@@ -31,6 +32,7 @@ export class Messenger {
         followUps?: ChatItemAction[]
         tabID: string
         canBeVoted?: boolean
+        snapToTop?: boolean
     }) {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
@@ -40,6 +42,7 @@ export class Messenger {
                     followUps: params.followUps,
                     relatedSuggestions: undefined,
                     canBeVoted: params.canBeVoted ?? false,
+                    snapToTop: params.snapToTop ?? false,
                 },
                 params.tabID
             )
@@ -55,15 +58,19 @@ export class Messenger {
         this.sendUpdatePlaceholder(tabID, 'Chat input is disabled')
     }
 
-    public sendErrorMessage(errorMessage: string, tabID: string, retries: number, phase?: SessionStatePhase) {
+    public sendErrorMessage(
+        errorMessage: string,
+        tabID: string,
+        retries: number,
+        phase?: SessionStatePhase,
+        conversationId?: string
+    ) {
         if (retries === 0) {
-            this.dispatcher.sendErrorMessage(
-                new ErrorMessage(
-                    `Sorry, we're unable to provide a response at this time. Please try again later or share feedback with our team to help us troubleshoot.`,
-                    errorMessage,
-                    tabID
-                )
-            )
+            this.sendAnswer({
+                type: 'answer',
+                tabID: tabID,
+                message: `I'm sorry, I'm having technical difficulties and can't continue at the moment. Please try again later, and share feedback to help me improve.`,
+            })
             this.sendAnswer({
                 message: undefined,
                 type: 'system-prompt',
@@ -84,7 +91,7 @@ export class Messenger {
                 this.dispatcher.sendErrorMessage(
                     new ErrorMessage(
                         `Sorry, we're experiencing an issue on our side. Would you like to try again?`,
-                        errorMessage,
+                        errorMessage + messageWithConversationId(conversationId),
                         tabID
                     )
                 )
@@ -93,7 +100,7 @@ export class Messenger {
                 this.dispatcher.sendErrorMessage(
                     new ErrorMessage(
                         `Sorry, we're experiencing an issue on our side. Would you like to try again?`,
-                        errorMessage,
+                        errorMessage + messageWithConversationId(conversationId),
                         tabID
                     )
                 )
@@ -103,7 +110,7 @@ export class Messenger {
                 this.dispatcher.sendErrorMessage(
                     new ErrorMessage(
                         `Sorry, we encountered a problem when processing your request.`,
-                        errorMessage,
+                        errorMessage + messageWithConversationId(conversationId),
                         tabID
                     )
                 )
@@ -138,8 +145,13 @@ export class Messenger {
         this.dispatcher.sendAsyncEventProgress(new AsyncEventProgressMessage(tabID, inProgress, message))
     }
 
-    public updateFileComponent(tabID: string, filePaths: NewFileInfo[], deletedFiles: DeletedFileInfo[]) {
-        this.dispatcher.updateFileComponent(new FileComponent(tabID, filePaths, deletedFiles))
+    public updateFileComponent(
+        tabID: string,
+        filePaths: NewFileInfo[],
+        deletedFiles: DeletedFileInfo[],
+        messageId: string
+    ) {
+        this.dispatcher.updateFileComponent(new FileComponent(tabID, filePaths, deletedFiles, messageId))
     }
 
     public sendUpdatePlaceholder(tabID: string, newPlaceholder: string) {

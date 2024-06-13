@@ -337,11 +337,16 @@ export class ProposedTransformationExplorer {
                     pathToArchive
                 )
             } catch (e: any) {
+                // user can retry the download
                 downloadErrorMessage = (e as Error).message
-                // This allows the customer to retry the download
-                void vscode.window.showErrorMessage(CodeWhispererConstants.errorDownloadingDiffNotification)
+                if (downloadErrorMessage.includes('Encountered an unexpected error when processing the request')) {
+                    downloadErrorMessage = CodeWhispererConstants.errorDownloadingExpiredDiff
+                }
+                void vscode.window.showErrorMessage(
+                    `${CodeWhispererConstants.errorDownloadingDiffNotification} The download failed due to: ${downloadErrorMessage}`
+                )
                 transformByQState.getChatControllers()?.transformationFinished.fire({
-                    message: CodeWhispererConstants.errorDownloadingDiffChatMessage,
+                    message: `${CodeWhispererConstants.errorDownloadingDiffChatMessage} The download failed due to: ${downloadErrorMessage}`,
                     tabID: ChatSessionManager.Instance.getSession().tabID,
                 })
                 await vscode.commands.executeCommand(
@@ -369,6 +374,7 @@ export class ProposedTransformationExplorer {
                     result: downloadErrorMessage ? MetadataResult.Fail : MetadataResult.Pass,
                     reason: downloadErrorMessage,
                 })
+                cwStreamingClient.destroy()
             }
 
             const exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
@@ -415,10 +421,12 @@ export class ProposedTransformationExplorer {
                 deserializeErrorMessage = (e as Error).message
                 getLogger().error(`CodeTransformation: ParseDiff error = ${deserializeErrorMessage}`)
                 transformByQState.getChatControllers()?.transformationFinished.fire({
-                    message: CodeWhispererConstants.errorDeserializingDiffChatMessage,
+                    message: `${CodeWhispererConstants.errorDeserializingDiffChatMessage} ${deserializeErrorMessage}`,
                     tabID: ChatSessionManager.Instance.getSession().tabID,
                 })
-                void vscode.window.showErrorMessage(CodeWhispererConstants.errorDeserializingDiffNotification)
+                void vscode.window.showErrorMessage(
+                    `${CodeWhispererConstants.errorDeserializingDiffNotification} ${deserializeErrorMessage}`
+                )
             } finally {
                 telemetry.codeTransform_jobArtifactDownloadAndDeserializeTime.emit({
                     codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),

@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "CodeCatalyst: Dev Environment may time out if user is not authenticated"
+}

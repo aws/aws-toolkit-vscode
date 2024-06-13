@@ -11,15 +11,25 @@ import * as crypto from 'crypto'
 import * as CodeWhispererConstants from '../../models/constants'
 import {
     FolderInfo,
+    HilZipManifest,
+    IHilZipManifestParams,
     jobPlanProgress,
     sessionJobHistory,
     StepProgress,
     transformByQState,
+    TransformByQStatus,
     TransformByQStoppedError,
     ZipManifest,
 } from '../../models/model'
 import { getLogger } from '../../../shared/logger'
-import { CreateUploadUrlResponse, ProgressUpdates } from '../../client/codewhispereruserclient'
+import {
+    CreateUploadUrlResponse,
+    ProgressUpdates,
+    TransformationProgressUpdate,
+    TransformationSteps,
+    TransformationUserActionStatus,
+    UploadContext,
+} from '../../client/codewhispereruserclient'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import AdmZip from 'adm-zip'
 import globals from '../../../shared/extensionGlobals'
@@ -28,9 +38,13 @@ import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/cod
 import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import request from '../../../common/request'
-import { ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
+import { JobStoppedError, ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import { writeLogs } from './transformFileHandler'
 import { AuthUtil } from '../../util/authUtil'
+import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
+import { downloadExportResultArchive } from '../../../shared/utilities/download'
+import { ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhisperer-streaming'
+import { fsCommon } from '../../../srcShared/fs'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { convertToTimeString, encodeHTML } from '../../../shared/utilities/textUtilities'
 
@@ -95,6 +109,15 @@ export async function uploadArtifactToS3(
 ) {
     throwIfCancelled()
     try {
+        const uploadFileByteSize = (await fs.promises.stat(fileName)).size
+        getLogger().info(
+            `Uploading zip at %s with checksum %s using uploadId: %s and size %s kB`,
+            fileName,
+            sha256,
+            resp.uploadId,
+            Math.round(uploadFileByteSize / 1000)
+        )
+
         const apiStartTime = Date.now()
         const response = await request.fetch('PUT', resp.uploadUrl, {
             body: buffer,
@@ -105,64 +128,109 @@ export async function uploadArtifactToS3(
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformUploadId: resp.uploadId,
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-            codeTransformTotalByteSize: (await fs.promises.stat(fileName)).size,
+            codeTransformTotalByteSize: uploadFileByteSize,
             result: MetadataResult.Pass,
         })
         getLogger().info(`CodeTransformation: Status from S3 Upload = ${response.status}`)
     } catch (e: any) {
-        const errorMessage = (e as Error).message
-        getLogger().error(`CodeTransformation: UploadZip error = ${errorMessage}`)
+        let errorMessage = `The upload failed due to: ${(e as Error).message}`
+        if (errorMessage.includes('Request has expired')) {
+            errorMessage = CodeWhispererConstants.errorUploadingWithExpiredUrl
+        } else if (errorMessage.includes('Failed to establish a socket connection')) {
+            errorMessage = CodeWhispererConstants.socketConnectionFailed
+        } else if (errorMessage.includes('self signed certificate in certificate chain')) {
+            errorMessage = CodeWhispererConstants.selfSignedCertificateError
+        }
+        getLogger().error(`CodeTransformation: UploadZip error = ${e}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'UploadZip',
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformApiErrorMessage: errorMessage,
             codeTransformRequestId: e.requestId ?? '',
+            codeTransformTotalByteSize: (await fs.promises.stat(fileName)).size,
             result: MetadataResult.Fail,
             reason: 'UploadToS3Failed',
         })
-        throw new Error('Upload PUT request failed')
+        throw new Error(errorMessage)
+    }
+}
+
+export async function resumeTransformationJob(jobId: string, userActionStatus: TransformationUserActionStatus) {
+    try {
+        const apiStartTime = Date.now()
+        const response = await codeWhisperer.codeWhispererClient.codeModernizerResumeTransformation({
+            transformationJobId: jobId,
+            userActionStatus, // can be "COMPLETED" or "REJECTED"
+        })
+        if (response) {
+            telemetry.codeTransform_logApiLatency.emit({
+                codeTransformApiNames: 'ResumeTransformation',
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                codeTransformJobId: jobId,
+                codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
+                codeTransformRequestId: response.$response.requestId,
+                result: MetadataResult.Pass,
+            })
+            // always store request ID, but it will only show up in a notification if an error occurs
+            return response.transformationStatus
+        }
+    } catch (e: any) {
+        const errorMessage = `Resuming the job failed due to: ${(e as Error).message}`
+        getLogger().error(`CodeTransformation: ResumeTransformation error = ${errorMessage}`)
+        telemetry.codeTransform_logApiError.emit({
+            codeTransformApiNames: 'ResumeTransformation',
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformJobId: jobId,
+            codeTransformApiErrorMessage: errorMessage,
+            codeTransformRequestId: e.requestId ?? '',
+            result: MetadataResult.Fail,
+            reason: 'ResumeTransformationFailed',
+        })
+        throw new Error(errorMessage)
     }
 }
 
 export async function stopJob(jobId: string) {
-    if (jobId !== '') {
-        try {
-            const apiStartTime = Date.now()
-            const response = await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
-                transformationJobId: jobId,
-            })
-            if (response !== undefined) {
-                telemetry.codeTransform_logApiLatency.emit({
-                    codeTransformApiNames: 'StopTransformation',
-                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformJobId: jobId,
-                    codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-                    codeTransformRequestId: response.$response.requestId,
-                    result: MetadataResult.Pass,
-                })
-                // always store request ID, but it will only show up in a notification if an error occurs
-                if (response.$response.requestId) {
-                    transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
-                }
-            }
-        } catch (e: any) {
-            const errorMessage = (e as Error).message
-            getLogger().error(`CodeTransformation: StopTransformation error = ${errorMessage}`)
-            telemetry.codeTransform_logApiError.emit({
+    if (!jobId) {
+        return
+    }
+
+    try {
+        const apiStartTime = Date.now()
+        const response = await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
+            transformationJobId: jobId,
+        })
+        if (response !== undefined) {
+            telemetry.codeTransform_logApiLatency.emit({
                 codeTransformApiNames: 'StopTransformation',
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformJobId: jobId,
-                codeTransformApiErrorMessage: errorMessage,
-                codeTransformRequestId: e.requestId ?? '',
-                result: MetadataResult.Fail,
-                reason: 'StopTransformationFailed',
+                codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
+                codeTransformRequestId: response.$response.requestId,
+                result: MetadataResult.Pass,
             })
-            throw new Error('Stop job failed')
+            // always store request ID, but it will only show up in a notification if an error occurs
+            if (response.$response.requestId) {
+                transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
+            }
         }
+    } catch (e: any) {
+        const errorMessage = (e as Error).message
+        getLogger().error(`CodeTransformation: StopTransformation error = ${errorMessage}`)
+        telemetry.codeTransform_logApiError.emit({
+            codeTransformApiNames: 'StopTransformation',
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformJobId: jobId,
+            codeTransformApiErrorMessage: errorMessage,
+            codeTransformRequestId: e.requestId ?? '',
+            result: MetadataResult.Fail,
+            reason: 'StopTransformationFailed',
+        })
+        throw new Error('Stop job failed')
     }
 }
 
-export async function uploadPayload(payloadFileName: string) {
+export async function uploadPayload(payloadFileName: string, uploadContext?: UploadContext) {
     const buffer = fs.readFileSync(payloadFileName)
     const sha256 = getSha256(buffer)
 
@@ -174,6 +242,7 @@ export async function uploadPayload(payloadFileName: string) {
             contentChecksum: sha256,
             contentChecksumType: CodeWhispererConstants.contentChecksumType,
             uploadIntent: CodeWhispererConstants.uploadIntent,
+            uploadContext,
         })
         if (response.$response.requestId) {
             transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
@@ -187,8 +256,8 @@ export async function uploadPayload(payloadFileName: string) {
             result: MetadataResult.Pass,
         })
     } catch (e: any) {
-        const errorMessage = (e as Error).message
-        getLogger().error(`CodeTransformation: CreateUploadUrl error: = ${errorMessage}`)
+        const errorMessage = `The upload failed due to: ${(e as Error).message}`
+        getLogger().error(`CodeTransformation: CreateUploadUrl error: = ${e}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'CreateUploadUrl',
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
@@ -197,16 +266,21 @@ export async function uploadPayload(payloadFileName: string) {
             result: MetadataResult.Fail,
             reason: 'CreateUploadUrlFailed',
         })
-        throw new Error('Create upload URL failed')
+        throw new Error(errorMessage)
     }
     try {
         await uploadArtifactToS3(payloadFileName, response, sha256, buffer)
     } catch (e: any) {
         const errorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: UploadArtifactToS3 error: = ${errorMessage}`)
-        throw new Error('S3 upload failed')
+        throw new Error(errorMessage)
     }
-    transformByQState.setJobId(encodeHTML(response.uploadId))
+    // UploadContext only exists for subsequent uploads, and they will return a uploadId that is NOT
+    // the jobId. Only the initial call will uploadId be the jobId
+    if (!uploadContext) {
+        transformByQState.setJobId(encodeHTML(response.uploadId))
+    }
+    jobPlanProgress['uploadCode'] = StepProgress.Succeeded
     updateJobHistory()
     return response.uploadId
 }
@@ -261,23 +335,41 @@ function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string
     return files
 }
 
-export async function zipCode(dependenciesFolder: FolderInfo) {
+interface IZipManifestParams {
+    hilZipParams?: IHilZipManifestParams
+}
+export function createZipManifest({ hilZipParams }: IZipManifestParams) {
+    const zipManifest = hilZipParams ? new HilZipManifest(hilZipParams) : new ZipManifest()
+    return zipManifest
+}
+
+interface IZipCodeParams {
+    dependenciesFolder: FolderInfo
+    humanInTheLoopFlag?: boolean
+    modulePath?: string
+    zipManifest: ZipManifest | HilZipManifest
+}
+export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePath, zipManifest }: IZipCodeParams) {
     let tempFilePath = undefined
     let zipStartTime = undefined
+    let logFilePath = undefined
     try {
-        const modulePath = transformByQState.getProjectPath()
         throwIfCancelled()
         zipStartTime = Date.now()
-        const sourceFolder = modulePath
-        const sourceFiles = getFilesRecursively(sourceFolder, false)
-
         const zip = new AdmZip()
-        const zipManifest = new ZipManifest()
 
-        for (const file of sourceFiles) {
-            const relativePath = path.relative(sourceFolder, file)
-            const paddedPath = path.join('sources', relativePath)
-            zip.addLocalFile(file, path.dirname(paddedPath))
+        // If no modulePath is passed in, we are not uploaded the source folder
+        // NOTE: We only upload dependencies for human in the loop work
+        if (modulePath) {
+            const sourceFiles = getFilesRecursively(modulePath, false)
+            let sourceFilesSize = 0
+            for (const file of sourceFiles) {
+                const relativePath = path.relative(modulePath, file)
+                const paddedPath = path.join('sources', relativePath)
+                zip.addLocalFile(file, path.dirname(paddedPath))
+                sourceFilesSize += (await fs.promises.stat(file)).size
+            }
+            getLogger().info(`CodeTransformation: source code files size = ${sourceFilesSize}`)
         }
 
         throwIfCancelled()
@@ -288,21 +380,26 @@ export async function zipCode(dependenciesFolder: FolderInfo) {
         }
 
         if (dependencyFiles.length > 0) {
+            let dependencyFilesSize = 0
             for (const file of dependencyFiles) {
                 if (isExcludedDependencyFile(file)) {
                     continue
                 }
                 const relativePath = path.relative(dependenciesFolder.path, file)
-                const paddedPath = path.join(`dependencies/${dependenciesFolder.name}`, relativePath)
+                // const paddedPath = path.join(`dependencies/${dependenciesFolder.name}`, relativePath)
+                const paddedPath = path.join(`dependencies/`, relativePath)
                 zip.addLocalFile(file, path.dirname(paddedPath))
+                dependencyFilesSize += (await fs.promises.stat(file)).size
             }
-            zipManifest.dependenciesRoot += `${dependenciesFolder.name}/`
+            getLogger().info(`CodeTransformation: dependency files size = ${dependencyFilesSize}`)
             telemetry.codeTransform_dependenciesCopied.emit({
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 result: MetadataResult.Pass,
             })
         } else {
-            zipManifest.dependenciesRoot = undefined
+            if (zipManifest instanceof ZipManifest) {
+                zipManifest.dependenciesRoot = undefined
+            }
         }
 
         zip.addFile('manifest.json', Buffer.from(JSON.stringify(zipManifest)), 'utf-8')
@@ -310,15 +407,18 @@ export async function zipCode(dependenciesFolder: FolderInfo) {
         throwIfCancelled()
 
         // add text file with logs from mvn clean install and mvn copy-dependencies
-        const logFilePath = await writeLogs()
-        zip.addLocalFile(logFilePath)
+        logFilePath = await writeLogs()
+        // We don't add build-logs.txt file to the manifest if we are
+        // uploading HIL artifacts
+        if (!humanInTheLoopFlag) {
+            zip.addLocalFile(logFilePath)
+        }
 
         tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
         fs.writeFileSync(tempFilePath, zip.toBuffer())
         if (fs.existsSync(dependenciesFolder.path)) {
             fs.rmSync(dependenciesFolder.path, { recursive: true, force: true })
         }
-        fs.rmSync(logFilePath) // will always exist here
     } catch (e: any) {
         telemetry.codeTransform_logGeneralError.emit({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
@@ -327,6 +427,10 @@ export async function zipCode(dependenciesFolder: FolderInfo) {
             reason: 'ZipCreationFailed',
         })
         throw Error('Failed to zip project')
+    } finally {
+        if (logFilePath) {
+            fs.rmSync(logFilePath)
+        }
     }
 
     const zipSize = (await fs.promises.stat(tempFilePath)).size
@@ -341,6 +445,8 @@ export async function zipCode(dependenciesFolder: FolderInfo) {
         result: exceedsLimit ? MetadataResult.Fail : MetadataResult.Pass,
     })
 
+    getLogger().info(`CodeTransformation: created ZIP of size ${zipSize} at ${tempFilePath}`)
+
     if (exceedsLimit) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.projectSizeTooLargeNotification)
         transformByQState.getChatControllers()?.transformationFinished.fire({
@@ -349,7 +455,6 @@ export async function zipCode(dependenciesFolder: FolderInfo) {
         })
         throw new ZipExceedsSizeLimitError()
     }
-
     return tempFilePath
 }
 
@@ -382,7 +487,7 @@ export async function startJob(uploadId: string) {
         })
         return response.transformationJobId
     } catch (e: any) {
-        const errorMessage = (e as Error).message
+        const errorMessage = `Starting the job failed due to: ${(e as Error).message}`
         getLogger().error(`CodeTransformation: StartTransformation error = ${errorMessage}`)
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'StartTransformation',
@@ -392,7 +497,7 @@ export async function startJob(uploadId: string) {
             result: MetadataResult.Fail,
             reason: 'StartTransformationFailed',
         })
-        throw new Error(`Start job failed: ${errorMessage}`)
+        throw new Error(errorMessage)
     }
 }
 
@@ -570,9 +675,12 @@ export async function getTransformationPlan(jobId: string) {
     }
 }
 
-export async function getTransformationSteps(jobId: string) {
+export async function getTransformationSteps(jobId: string, handleThrottleFlag: boolean) {
     try {
-        await sleep(2000) // prevent ThrottlingException
+        // prevent ThrottlingException
+        if (handleThrottleFlag) {
+            await sleep(2000)
+        }
         const apiStartTime = Date.now()
         const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
@@ -624,10 +732,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 result: MetadataResult.Pass,
             })
             status = response.transformationJob.status!
-            // must be series of ifs, not else ifs
-            if (CodeWhispererConstants.validStatesForJobStarted.includes(status)) {
-                jobPlanProgress['startJob'] = StepProgress.Succeeded
-            }
             if (CodeWhispererConstants.validStatesForBuildSucceeded.includes(status)) {
                 jobPlanProgress['buildCode'] = StepProgress.Succeeded
             }
@@ -645,11 +749,38 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
 
             const errorMessage = response.transformationJob.reason
             if (errorMessage !== undefined) {
-                transformByQState.setJobFailureErrorChatMessage(errorMessage)
-                transformByQState.setJobFailureErrorNotification(errorMessage)
+                if (errorMessage.includes('Monthly aggregated Lines of Code limit breached')) {
+                    transformByQState.setJobFailureErrorNotification(
+                        CodeWhispererConstants.failedToStartJobMonthlyLimitNotification
+                    )
+                    transformByQState.setJobFailureErrorChatMessage(
+                        CodeWhispererConstants.failedToStartJobMonthlyLimitChatMessage
+                    )
+                } else if (errorMessage.includes('Lines of Code limit breached for job')) {
+                    transformByQState.setJobFailureErrorNotification(
+                        CodeWhispererConstants.failedToStartJobLinesLimitNotification
+                    )
+                    transformByQState.setJobFailureErrorChatMessage(
+                        CodeWhispererConstants.failedToStartJobLinesLimitChatMessage
+                    )
+                }
+                transformByQState.setJobFailureErrorChatMessage(
+                    `${CodeWhispererConstants.failedToCompleteJobGenericChatMessage} ${errorMessage}`
+                )
+                transformByQState.setJobFailureErrorNotification(
+                    `${CodeWhispererConstants.failedToCompleteJobGenericNotification} ${errorMessage}`
+                )
                 transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
             }
             if (validStates.includes(status)) {
+                break
+            }
+            /**
+             * If we find a paused state, we need the user to take action. We will set the global
+             * state for polling status and early exit.
+             */
+            if (CodeWhispererConstants.pausedStates.includes(status)) {
+                transformByQState.setPolledJobStatus(TransformByQStatus.WaitingUserInput)
                 break
             }
             /*
@@ -657,7 +788,8 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
              * is called, we break above on validStatesForCheckingDownloadUrl and check final status in finalizeTransformationJob
              */
             if (CodeWhispererConstants.failureStates.includes(status)) {
-                throw new Error('Job was rejected, stopped, or failed')
+                transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
+                throw new JobStoppedError(response.$response.requestId)
             }
             await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
             timer += CodeWhispererConstants.transformationJobPollingIntervalSeconds
@@ -677,8 +809,118 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 result: MetadataResult.Fail,
                 reason: 'GetTransformationFailed',
             })
-            throw new Error('Error while polling job status')
+            throw e
         }
     }
     return status
+}
+
+export function getArtifactsFromProgressUpdate(progressUpdate?: TransformationProgressUpdate) {
+    const artifactType = progressUpdate?.downloadArtifacts?.[0]?.downloadArtifactType
+    const artifactId = progressUpdate?.downloadArtifacts?.[0]?.downloadArtifactId
+    return {
+        artifactId,
+        artifactType,
+    }
+}
+
+export function findDownloadArtifactStep(transformationSteps: TransformationSteps) {
+    for (let i = 0; i < transformationSteps.length; i++) {
+        const progressUpdates = transformationSteps[i].progressUpdates
+        if (progressUpdates?.length) {
+            for (let j = 0; j < progressUpdates.length; j++) {
+                if (
+                    progressUpdates[j].downloadArtifacts?.[0]?.downloadArtifactType ||
+                    progressUpdates[j].downloadArtifacts?.[0]?.downloadArtifactId
+                ) {
+                    return {
+                        transformationStep: transformationSteps[i],
+                        progressUpdate: progressUpdates[j],
+                    }
+                }
+            }
+        }
+    }
+    return {
+        transformationStep: undefined,
+        progressUpdate: undefined,
+    }
+}
+
+export async function downloadResultArchive(
+    jobId: string,
+    downloadArtifactId: string | undefined,
+    pathToArchive: string,
+    downloadArtifactType: TransformationDownloadArtifactType
+) {
+    let downloadErrorMessage = undefined
+    const cwStreamingClient = await createCodeWhispererChatStreamingClient()
+
+    try {
+        await downloadExportResultArchive(
+            cwStreamingClient,
+            {
+                exportId: jobId,
+                exportIntent: ExportIntent.TRANSFORMATION,
+            },
+            pathToArchive
+        )
+    } catch (e: any) {
+        downloadErrorMessage = (e as Error).message
+        getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
+        telemetry.codeTransform_logApiError.emit({
+            codeTransformApiNames: 'ExportResultArchive',
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformJobId: transformByQState.getJobId(),
+            codeTransformApiErrorMessage: downloadErrorMessage,
+            codeTransformRequestId: e.requestId ?? '',
+            result: MetadataResult.Fail,
+            reason: 'ExportResultArchiveFailed',
+        })
+        throw e
+    } finally {
+        cwStreamingClient.destroy()
+    }
+}
+
+export async function downloadAndExtractResultArchive(
+    jobId: string,
+    downloadArtifactId: string | undefined,
+    pathToArchiveDir: string,
+    downloadArtifactType: TransformationDownloadArtifactType
+) {
+    const archivePathExists = await fsCommon.existsDir(pathToArchiveDir)
+    if (!archivePathExists) {
+        await fsCommon.mkdir(pathToArchiveDir)
+    }
+
+    const pathToArchive = path.join(pathToArchiveDir, 'ExportResultsArchive.zip')
+
+    await downloadResultArchive(jobId, downloadArtifactId, pathToArchive, downloadArtifactType)
+
+    let downloadErrorMessage = undefined
+    try {
+        // Download and deserialize the zip
+        const zip = new AdmZip(pathToArchive)
+        zip.extractAllTo(pathToArchiveDir)
+    } catch (e) {
+        downloadErrorMessage = (e as Error).message
+        getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
+        throw new Error('Error downloading transformation result artifacts')
+    }
+}
+
+export async function downloadHilResultArchive(jobId: string, downloadArtifactId: string, pathToArchiveDir: string) {
+    await downloadAndExtractResultArchive(
+        jobId,
+        downloadArtifactId,
+        pathToArchiveDir,
+        TransformationDownloadArtifactType.CLIENT_INSTRUCTIONS
+    )
+
+    // manifest.json
+    // pomFolder/pom.xml or manifest has pomFolderName path
+    const manifestFileVirtualFileReference = vscode.Uri.file(path.join(pathToArchiveDir, 'manifest.json'))
+    const pomFileVirtualFileReference = vscode.Uri.file(path.join(pathToArchiveDir, 'pomFolder', 'pom.xml'))
+    return { manifestFileVirtualFileReference, pomFileVirtualFileReference }
 }

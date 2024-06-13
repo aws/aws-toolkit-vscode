@@ -43,7 +43,7 @@ export async function createStateMachineFromTemplate(context: vscode.ExtensionCo
 async function getTextDocumentForSelectedItem(
     fileName: string,
     extensionPath: string,
-    format: string
+    format: TemplateFormats
 ): Promise<vscode.TextDocument> {
     let content = await readFileAsString(path.join(extensionPath, 'templates', fileName))
 

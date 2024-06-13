@@ -40,7 +40,7 @@ describe('DevEnvActivity', function () {
 
         devEnvClientStub = createStubInstance(DevEnvClient)
 
-        devEnvActivity = (await DevEnvActivity.instanceIfActivityTrackingEnabled(
+        devEnvActivity = (await DevEnvActivity.create(
             devEnvClientStub as unknown as DevEnvClient,
             new ExtensionUserActivity(0, [userActivityEvent])
         ))!
@@ -56,7 +56,7 @@ describe('DevEnvActivity', function () {
 
     it('does not allow instance to be created if activity API not working', async function () {
         devEnvClientStub.getActivity.throws()
-        const instance = await DevEnvActivity.instanceIfActivityTrackingEnabled(
+        const instance = await DevEnvActivity.create(
             devEnvClientStub as unknown as DevEnvClient,
             new ExtensionUserActivity(0, [userActivityEvent])
         )
@@ -77,6 +77,7 @@ describe('DevEnvActivity', function () {
 
         it('when vscode user activity event is emitted', async () => {
             assert.strictEqual(activitySubscriber.callCount, 0)
+            devEnvActivity.setUpdateActivityOnIdeActivity(true)
             await triggerUserActivityEvent({})
             assert.strictEqual(activitySubscriber.callCount, 1)
         })

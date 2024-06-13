@@ -26,7 +26,7 @@ import {
     SessionStateInteraction,
     SessionStatePhase,
 } from '../types'
-import { collectFiles, getWorkspaceFoldersByPrefixes, prepareRepoData } from '../util/files'
+import { prepareRepoData } from '../util/files'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { uploadCode } from '../util/upload'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
@@ -34,6 +34,7 @@ import { isPresent } from '../../shared/utilities/collectionUtils'
 import { encodeHTML } from '../../shared/utilities/textUtilities'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { randomUUID } from '../../common/crypto'
+import { collectFiles, getWorkspaceFoldersByPrefixes } from '../../shared/utilities/workspaceUtils'
 
 export class ConversationNotStartedState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
@@ -308,7 +309,11 @@ export class CodeGenState extends CodeGenBase implements SessionState {
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         return telemetry.amazonq_codeGenerationInvoke.run(async span => {
             try {
-                span.record({ amazonqConversationId: this.config.conversationId })
+                span.record({
+                    amazonqConversationId: this.config.conversationId,
+                    credentialStartUrl: AuthUtil.instance.startUrl,
+                })
+
                 action.telemetry.setGenerateCodeIteration(this.currentIteration)
                 action.telemetry.setGenerateCodeLastInvocationTime()
 
@@ -470,6 +475,10 @@ export class PrepareCodeGenState implements SessionState {
         })
 
         const uploadId = await telemetry.amazonq_createUpload.run(async span => {
+            span.record({
+                amazonqConversationId: this.config.conversationId,
+                credentialStartUrl: AuthUtil.instance.startUrl,
+            })
             const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
                 this.config.workspaceRoots,
                 this.config.workspaceFolders,

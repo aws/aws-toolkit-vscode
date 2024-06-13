@@ -125,7 +125,7 @@ export async function invokeRemoteRestApi(
                     [curr.id!]: curr,
                 }
             }, {})
-        logger.debug(`Loaded: ${resources}`)
+        logger.debug(`Loaded: %O`, resources)
 
         // something is wrong if the paths aren't defined...
         // const sortResources = (a: [string, Resource], b: [string, Resource]) => a[1].path!.localeCompare(b[1].path!)

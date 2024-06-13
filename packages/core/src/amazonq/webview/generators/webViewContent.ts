@@ -6,6 +6,7 @@
 import path from 'path'
 import { Uri, Webview } from 'vscode'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { globals } from '../../../shared'
 
 export class WebViewContentGenerator {
     public async generate(extensionURI: Uri, webView: Webview): Promise<string> {
@@ -19,14 +20,6 @@ export class WebViewContentGenerator {
         return `<!DOCTYPE html>
         <html>
             <head>
-                <style>
-                body.vscode-dark,
-                body.vscode-high-contrast:not(.vscode-high-contrast-light) {
-                    --mynah-color-light: rgba(255, 255, 255, 0.05);
-                    --mynah-color-highlight: rgba(0, 137, 255, 0.2);
-                    --mynah-color-highlight-text: rgba(0, 137, 255, 1);
-                }                
-                </style>
                 <meta http-equiv="Content-Security-Policy" content="${contentPolicy}">
                 <title>Amazon Q (Preview)</title>                
                 ${await this.generateJS(extensionURI, webView)}                
@@ -43,13 +36,18 @@ export class WebViewContentGenerator {
 
         const serverHostname = process.env.WEBPACK_DEVELOPER_SERVER
 
-        const entrypoint =
+        const javascriptEntrypoint =
             serverHostname !== undefined
                 ? Uri.parse(serverHostname).with({ path: `/${source}` })
                 : webView.asWebviewUri(javascriptUri)
 
+        const cssEntrypoint = webView.asWebviewUri(
+            Uri.joinPath(globals.context.extensionUri, 'resources', 'css', 'amazonq-webview.css')
+        )
+
         return `
-        <script type="text/javascript" src="${entrypoint.toString()}" defer onload="init()"></script>
+        <script type="text/javascript" src="${javascriptEntrypoint.toString()}" defer onload="init()"></script>
+        <link rel="stylesheet" href="${cssEntrypoint.toString()}">
         <script type="text/javascript">
             const init = () => {
                 createMynahUI(acquireVsCodeApi(), ${

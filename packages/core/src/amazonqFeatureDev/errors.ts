@@ -27,9 +27,12 @@ export class PanelLoadError extends ToolkitError {
 
 export class WorkspaceFolderNotFoundError extends ToolkitError {
     constructor() {
-        super(`Workspace folder was not found. Open a workspace to continue using ${featureName}`, {
-            code: 'WorkspaceFolderNotFound',
-        })
+        super(
+            `I couldn't find a workspace folder. Open a workspace, and then open a new chat tab and enter /dev to start discussing your code task with me.`,
+            {
+                code: 'WorkspaceFolderNotFound',
+            }
+        )
     }
 }
 
