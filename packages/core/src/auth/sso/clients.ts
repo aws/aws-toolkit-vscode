@@ -35,6 +35,7 @@ import { HttpRequest, HttpResponse } from '@smithy/protocol-http'
 import { StandardRetryStrategy, defaultRetryDecider } from '@smithy/middleware-retry'
 import { AuthenticationFlow } from './model'
 import { toSnakeCase } from '../../shared/utilities/textUtilities'
+import { getUserAgent } from '../../shared/telemetry/util'
 
 export class OidcClient {
     public constructor(private readonly client: SSOOIDC, private readonly clock: { Date: typeof Date }) {}
@@ -108,6 +109,7 @@ export class OidcClient {
                 () => Promise.resolve(3), // Maximum number of retries
                 { retryDecider: updatedRetryDecider }
             ),
+            customUserAgent: getUserAgent({ includePlatform: true, includeClientId: true }),
         })
 
         addLoggingMiddleware(client)
@@ -214,6 +216,7 @@ export class SsoClient {
             new SSO({
                 region,
                 endpoint: DevSettings.instance.get('endpoints', {})['sso'],
+                customUserAgent: getUserAgent({ includePlatform: true, includeClientId: true }),
             }),
             provider
         )

@@ -12,6 +12,7 @@ import { Logging } from './commands'
 import { resolvePath } from '../utilities/pathUtils'
 import { fsCommon } from '../../srcShared/fs'
 import { isWeb } from '../extensionGlobals'
+import { getUserAgent } from '../telemetry/util'
 
 /**
  * Activate Logger functionality for the extension.
@@ -44,7 +45,6 @@ export async function activate(
     })
 
     setLogger(mainLogger)
-    getLogger().info(`Log level: ${chanLogLevel}`)
 
     // Logs to "AWS Toolkit" output channel.
     setLogger(
@@ -66,7 +66,8 @@ export async function activate(
         'debugConsole'
     )
 
-    getLogger().debug(`Logging started: ${logUri ?? '(no file)'}`)
+    getLogger().info('Log level: %s%s', chanLogLevel, logUri ? `, file: ${logUri.fsPath}` : '')
+    getLogger().debug('User agent: %s', getUserAgent({ includePlatform: true, includeClientId: true }))
     if (devLogfile && typeof devLogfile !== 'string') {
         getLogger().error('invalid aws.dev.logfile setting')
     }
