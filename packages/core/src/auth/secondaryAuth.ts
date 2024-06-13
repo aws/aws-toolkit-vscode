@@ -189,14 +189,26 @@ export class SecondaryAuth<T extends Connection = Connection> {
         }
     }
 
+    /**
+     * @warning Intended for a single use case where we need to let one service "forget" about a
+     * connection but leave it intact for other services. This may have unintended consequences.
+     * Use `deleteConnection()` instead.
+     *
+     * Clears the connection in use without deleting it or logging out.
+     */
+    public async forgetConnection() {
+        await this.clearSavedConnection()
+        await this.clearActiveConnection()
+    }
+
     /** Stop using the saved connection and fallback to using the active connection, if it is usable. */
-    private async clearSavedConnection() {
+    public async clearSavedConnection() {
         await this.memento.update(this.key, undefined)
         this.#savedConnection = undefined
         this.#onDidChangeActiveConnection.fire(this.activeConnection)
     }
 
-    private async clearActiveConnection() {
+    public async clearActiveConnection() {
         this.#activeConnection = undefined
         if (this.#savedConnection) {
             /**
