@@ -13,7 +13,7 @@ class CodeWhispererPlainText private constructor() : CodeWhispererProgrammingLan
 
     override fun isCodeScanSupported(): Boolean = true
 
-    override fun isAutoFileScanSupported(): Boolean = true
+    override fun isAutoFileScanSupported(): Boolean = false
 
     companion object {
         const val ID = "plaintext"
