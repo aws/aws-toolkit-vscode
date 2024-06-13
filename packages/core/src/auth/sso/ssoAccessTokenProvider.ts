@@ -44,6 +44,7 @@ import { randomUUID } from '../../common/crypto'
 import { isRemoteWorkspace, isWebWorkspace } from '../../shared/vscode/env'
 import { showInputBox } from '../../shared/ui/inputPrompter'
 import { DevSettings } from '../../shared/settings'
+import { onceChanged } from '../../shared/utilities/functionUtils'
 
 export const authenticationPath = 'sso/authenticated'
 
@@ -53,40 +54,7 @@ const authorizationGrantType = 'authorization_code'
 const refreshGrantType = 'refresh_token'
 
 /**
- *  SSO flow (RFC: https://tools.ietf.org/html/rfc8628)
- *    1. Get a client id (SSO-OIDC identifier, formatted per RFC6749).
- *       - Toolkit code: {@link SsoAccessTokenProvider.registerClient}
- *          - Calls {@link OidcClient.registerClient}
- *       - RETURNS:
- *         - ClientSecret
- *         - ClientId
- *         - ClientSecretExpiresAt
- *       - Client registration is valid for potentially months and creates state
- *         server-side, so the client SHOULD cache them to disk.
- *    2. Start device authorization.
- *       - Toolkit code: {@link SsoAccessTokenProvider.authorize}
- *          - Calls {@link OidcClient.startDeviceAuthorization}
- *       - RETURNS (RFC: https://tools.ietf.org/html/rfc8628#section-3.2):
- *         - DeviceCode             : Device verification code
- *         - UserCode               : User verification code
- *         - VerificationUri        : User verification URI on the authorization server
- *         - VerificationUriComplete: User verification URI including the `user_code`
- *         - ExpiresIn              : Lifetime (seconds) of `device_code` and `user_code`
- *         - Interval               : Minimum time (seconds) the client SHOULD wait between polling intervals.
- *    3. Poll for the access token.
- *       - Toolkit code: {@link SsoAccessTokenProvider.authorize}
- *          - Calls {@link pollForTokenWithProgress}
- *       - RETURNS:
- *         - AccessToken
- *         - ExpiresIn
- *         - RefreshToken (optional)
- *    4. (Repeat) Tokens SHOULD be refreshed if expired and a refresh token is available.
- *        - Toolkit code: {@link SsoAccessTokenProvider.refreshToken}
- *          - Calls {@link OidcClient.createToken}
- *        - RETURNS:
- *         - AccessToken
- *         - ExpiresIn
- *         - RefreshToken (optional)
+ * See {@link DeviceFlowAuthorization} or {@link AuthFlowAuthorization} for protocol overview.
  */
 export abstract class SsoAccessTokenProvider {
     /**
@@ -94,6 +62,7 @@ export abstract class SsoAccessTokenProvider {
      * there is no other easy way to pass this in without signficant refactors.
      */
     private static _authSource: string = 'unknown'
+    private static logIfChanged = onceChanged((s: string) => getLogger().info(s))
 
     public static set authSource(val: string) {
         SsoAccessTokenProvider._authSource = val
@@ -106,8 +75,8 @@ export abstract class SsoAccessTokenProvider {
     ) {}
 
     public async invalidate(): Promise<void> {
+        getLogger().info(`SsoAccessTokenProvider: invalidate token and registration`)
         // Use allSettled() instead of all() to ensure all clear() calls are resolved.
-        getLogger().info(`SsoAccessTokenProvider invalidate token and registration`)
         await Promise.allSettled([
             this.cache.token.clear(this.tokenCacheKey, 'SsoAccessTokenProvider.invalidate()'),
             this.cache.registration.clear(this.registrationCacheKey, 'SsoAccessTokenProvider.invalidate()'),
@@ -116,11 +85,11 @@ export abstract class SsoAccessTokenProvider {
 
     public async getToken(): Promise<SsoToken | undefined> {
         const data = await this.cache.token.load(this.tokenCacheKey)
-        getLogger().info(
+        SsoAccessTokenProvider.logIfChanged(
             indent(
-                `current client registration id=${data?.registration?.clientId}, 
-                            expires at ${data?.registration?.expiresAt}, 
-                            key = ${this.tokenCacheKey}`,
+                `current client registration id=${data?.registration?.clientId}
+             expires at ${data?.registration?.expiresAt}
+             key = ${this.tokenCacheKey}`,
                 4,
                 true
             )
@@ -350,6 +319,42 @@ function getSessionDuration(id: string, memento = globals.context.globalState) {
     return creationDate !== undefined ? Date.now() - creationDate : undefined
 }
 
+/**
+ *  SSO "device code" flow (RFC: https://tools.ietf.org/html/rfc8628)
+ *    1. Get a client id (SSO-OIDC identifier, formatted per RFC6749).
+ *       - Toolkit code: {@link SsoAccessTokenProvider.registerClient}
+ *          - Calls {@link OidcClient.registerClient}
+ *       - RETURNS:
+ *         - ClientSecret
+ *         - ClientId
+ *         - ClientSecretExpiresAt
+ *       - Client registration is valid for potentially months and creates state
+ *         server-side, so the client SHOULD cache them to disk.
+ *    2. Start device authorization.
+ *       - Toolkit code: {@link SsoAccessTokenProvider.authorize}
+ *          - Calls {@link OidcClient.startDeviceAuthorization}
+ *       - RETURNS (RFC: https://tools.ietf.org/html/rfc8628#section-3.2):
+ *         - DeviceCode             : Device verification code
+ *         - UserCode               : User verification code
+ *         - VerificationUri        : User verification URI on the authorization server
+ *         - VerificationUriComplete: User verification URI including the `user_code`
+ *         - ExpiresIn              : Lifetime (seconds) of `device_code` and `user_code`
+ *         - Interval               : Minimum time (seconds) the client SHOULD wait between polling intervals.
+ *    3. Poll for the access token.
+ *       - Toolkit code: {@link SsoAccessTokenProvider.authorize}
+ *          - Calls {@link pollForTokenWithProgress}
+ *       - RETURNS:
+ *         - AccessToken
+ *         - ExpiresIn
+ *         - RefreshToken (optional)
+ *    4. (Repeat) Tokens SHOULD be refreshed if expired and a refresh token is available.
+ *        - Toolkit code: {@link SsoAccessTokenProvider.refreshToken}
+ *          - Calls {@link OidcClient.createToken}
+ *        - RETURNS:
+ *         - AccessToken
+ *         - ExpiresIn
+ *         - RefreshToken (optional)
+ */
 export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
     constructor(
         profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
@@ -419,6 +424,42 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
     }
 }
 
+/**
+ *  SSO "authorization code" + PKCE flow (https://oauth.net/2/grant-types/authorization-code/)
+ *   1. `grant_type = authorization_code`
+ *   2. Clients exchange an authorization code for an access token.
+ *       1. After the user returns to the client via the redirect URL, the application will get the authorization code from the URL and use it to request an access token.
+ *   3. PKCE https://oauth.net/2/pkce/
+ *       1. PKCE-enhanced Authorization Code Flow prevents CSRF and authorization code injection attacks, by introducing a *secret* created by the client, that can be verified by the authorization server.
+ *       2. PKCE does not add any new responses, so clients can always use the PKCE extension even if an authorization server does not support it.
+ *   4. LIFECYCLE
+ *       1. CLIENT CREATES AN APP (ONE-TIME)
+ *           1. Client creates an "app": server returns a `client_id` for use in all future sessions. (expires in 90 days)
+ *       2. PKCE SEQUENCE:
+ *           1. Client app generates a random secret (`code_verifier`) per authorization request.
+ *           2. Client: AUTHORIZATION REQUEST: `registerClient()`: client sends SHA256 hash (`code_challenge_method`) of the secret (`code_challenge`) in the authorization request.
+ *               1. PARAMETERS:
+ *                   1. `response_type=code`: indicates that your client expects to receive an authorization code.
+ *                   2. `client_id`
+ *                   3. `redirect_uri`: Server will navigate the user to this URL, after appending `?code=…`. Typically `http://127.0.0.1/…` but may be remote (`https://vscode.dev/…`) or custom URI scheme (`vscode://…`).
+ *                   4. `state=1234zyx`: CSRF token. Random string generated by your (client) application, which you’ll verify later.
+ *                   5. `code_challenge`: See above.
+ *                   6. `code_challenge_method=S256`: either "plain" or "S256".
+ *           3. Server: website redirects the user to `<redirect_uri>?code=…&state=…`.
+ *               1. Client verifies the `state` (CSRF token).
+ *               2. Client gets the `code`. Can later exchange it for a "token set" (access token, refresh token and id token).
+ *           4. Client: ACCESS TOKEN REQUEST ("AUTHORIZATION CODE EXCHANGE"): `createToken()`: client exchanges the authorization code for an access token and sends the un-hashed secret (`code_verifier`), which the server can hash and compare to the original hash, to verify the createToken() request came from the actual client.
+ *               1. PARAMETERS:
+ *                   1. `grant_type=authorization_code`
+ *                   2. `client_id`
+ *                   3. `redirect_uri`: See above.
+ *                   4. `code`: Authorization code obtained from the redirect.
+ *                   5. `client_secret` (optional): The application’s registered client secret if it was issued a secret.
+ *                   6. `code_verifier`: See above.
+ *           5. Server: transforms the provided `code_verifier` using the same hash method (`code_challenge_method`), then compares it to the stored `code_challenge` string.
+ *               1. If the verifier matches the expected value, server issues an access token.
+ *               2. If there is a problem, server responds with `invalid_grant` error.
+ */
 class AuthFlowAuthorization extends SsoAccessTokenProvider {
     constructor(
         profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
