@@ -286,7 +286,13 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
         )
     } catch (e: Exception) {
         LOG.debug { "Create Upload URL failed: ${e.message}" }
-        throw codeScanServerException("CreateUploadUrlException: " + e.message?.let { it } ?: message("codewhisperer.codescan.run_scan_error_telemetry"))
+
+        val errorMessage = when {
+            e.message?.contains("Your account is not authorized to make this call.") == true -> "Your account is not authorized to make this call."
+            e.message?.contains("Service returned HTTP status code 407") == true -> "Service returned HTTP status code 407"
+            else -> e.message ?: message("codewhisperer.codescan.run_scan_error_telemetry")
+        }
+        throw codeScanServerException("CreateUploadUrlException: $errorMessage")
     }
 
     private fun getUploadIntent(scope: CodeWhispererConstants.CodeAnalysisScope): UploadIntent = when (scope) {
@@ -341,7 +347,15 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
             )
         } catch (e: Exception) {
             LOG.debug { "Creating security scan failed: ${e.message}" }
-            throw codeScanServerException("CreateCodeScanException: " + e.message?.let { it } ?: message("codewhisperer.codescan.run_scan_error_telemetry"))
+            val errorMessage = when {
+                e.message?.contains("Too many requests, please wait before trying again.") == true -> "Too many requests, please wait before trying again."
+                e.message?.contains("Improperly formed request.") == true -> "Improperly formed request."
+                e.message?.contains("Service returned HTTP status code 407") == true -> "Service returned HTTP status code 407"
+                e.message?.contains("Encountered an unexpected error when processing the request, please try again.") == true ->
+                    "Encountered an unexpected error when processing the request, please try again."
+                else -> e.message ?: message("codewhisperer.codescan.run_scan_error_telemetry")
+            }
+            throw codeScanServerException("CreateCodeScanException: $errorMessage")
         }
     }
 

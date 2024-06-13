@@ -399,14 +399,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
             is CodeWhispererCodeScanServerException -> e.message
             is WaiterTimeoutException, is TimeoutCancellationException -> message("codewhisperer.codescan.scan_timed_out")
             is CancellationException -> message("codewhisperer.codescan.cancelled_by_user_exception")
-            else -> when {
-                /**
-                 * Error message has text with user details(like requestId) which is specific so sending a custom error message to calculate the occurence of this event.
-                 */
-                e.message?.startsWith("Too many requests, please wait before trying again.") == true ->
-                    "Too many requests, please wait before trying again."
-                else -> e.message
-            }
+            else -> e.message
         } ?: message("codewhisperer.codescan.run_scan_error_telemetry")
 
         return telemetryErrorMessage
