@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "fix(featureDev): stop showing spinerText when there is an error."
+	"description": "Amazon Q /dev command: stop showing spinner when there is an error."
 }
