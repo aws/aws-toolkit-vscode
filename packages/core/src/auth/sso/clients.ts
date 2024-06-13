@@ -88,6 +88,7 @@ export class OidcClient {
 
         return {
             ...selectFrom(response, 'accessToken', 'refreshToken', 'tokenType'),
+            requestId: response.$metadata.requestId,
             expiresAt: new this.clock.Date(response.expiresIn * 1000 + this.clock.Date.now()),
         }
     }

@@ -133,11 +133,23 @@ export abstract class SsoAccessTokenProvider {
     }
 
     private async refreshToken(token: RequiredProps<SsoToken, 'refreshToken'>, registration: ClientRegistration) {
+        const metric = {
+            sessionDuration: getSessionDuration(this.tokenCacheKey),
+            credentialType: 'bearerToken',
+            credentialSourceId: this.profile.startUrl === builderIdStartUrl ? 'awsId' : 'iamIdentityCenter',
+        }
+
         try {
             const clientInfo = selectFrom(registration, 'clientId', 'clientSecret')
             const response = await this.oidc.createToken({ ...clientInfo, ...token, grantType: refreshGrantType })
             const refreshed = this.formatToken(response, registration)
             await this.cache.token.save(this.tokenCacheKey, refreshed)
+
+            telemetry.aws_refreshCredentials.emit({
+                result: 'Succeeded',
+                requestId: response.requestId,
+                ...metric,
+            } as AwsRefreshCredentials)
 
             return refreshed
         } catch (err) {
@@ -146,9 +158,7 @@ export abstract class SsoAccessTokenProvider {
                     result: getTelemetryResult(err),
                     reason: getTelemetryReason(err),
                     requestId: getRequestId(err),
-                    sessionDuration: getSessionDuration(this.tokenCacheKey),
-                    credentialType: 'bearerToken',
-                    credentialSourceId: this.profile.startUrl === builderIdStartUrl ? 'awsId' : 'iamIdentityCenter',
+                    ...metric,
                 } as AwsRefreshCredentials)
 
                 if (err instanceof SSOOIDCServiceException && isClientFault(err)) {
