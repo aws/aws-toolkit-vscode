@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { onAccessDeniedException, CodeCatalystClient, createClient } from '../shared/clients/codecatalystClient'
 import { Auth } from '../auth/auth'
 import * as localizedText from '../shared/localizedText'
-import { getSecondaryAuth } from '../auth/secondaryAuth'
+import { getSecondaryAuth, setScopes } from '../auth/secondaryAuth'
 import { getLogger } from '../shared/logger'
 import { ToolkitError, isAwsError } from '../shared/errors'
 import { MetricName, MetricShapes, telemetry } from '../shared/telemetry/telemetry'
@@ -22,11 +22,10 @@ import {
     createSsoProfile,
     isValidCodeCatalystConnection,
     isIdcSsoConnection,
+    hasExactScopes,
 } from '../auth/connection'
 import { createBuilderIdConnection } from '../auth/utils'
 import { builderIdStartUrl } from '../auth/sso/model'
-import { codeWhispererClient } from '../codewhisperer/client/codewhisperer'
-import { AuthUtil as CodeWhispererAuth } from '../codewhisperer/util/authUtil'
 import { showReauthenticateMessage } from '../shared/utilities/messages'
 import { ToolkitPromptSettings } from '../shared/settings'
 
@@ -47,6 +46,9 @@ export class CodeCatalystAuthStorage {
 
 export const onboardingUrl = vscode.Uri.parse('https://codecatalyst.aws/onboarding/view')
 
+/**
+ * AWS account scopes are intended to be included. Some codepaths that use defaultScopes may depend on these scopes.
+ */
 export const defaultScopes = [...scopesSsoAccountAccess, ...scopesCodeCatalyst]
 
 export const isUpgradeableConnection = (conn: Connection): conn is SsoConnection =>
@@ -114,13 +116,6 @@ export class CodeCatalystAuthenticationProvider {
         return this.getConnectionState(conn).scopeExpired
     }
 
-    public isSharedConn(): boolean {
-        return (
-            this.secondaryAuth.activeConnection !== undefined &&
-            this.secondaryAuth.activeConnection?.id === CodeWhispererAuth.instance.secondaryAuth.activeConnection?.id
-        )
-    }
-
     public isConnectionValid(): boolean {
         return (
             this.activeConnection !== undefined &&
@@ -167,45 +162,23 @@ export class CodeCatalystAuthenticationProvider {
             return
         }
 
-        // Check if CodeWhisper and CodeCatalyst share the same connection
-        const isSharedConn = this.isSharedConn()
-
-        if (isSharedConn) {
-            await codeWhispererClient.listAvailableCustomizations()
-        }
-
-        /*
-         * Partial Expiration occurs when CodeWhisperer and CodeCatalyst are using
-         * the same SSO connection, but CodeCatalyst scopes have expired before CodeWhisperer.
-         */
-        const isPartialExpiration = isSharedConn && !CodeWhispererAuth.instance.isConnectionExpired()
-
-        getLogger().info(
-            'auth: CodeCatalyst scopes are expired. shared=%s, partialExpiration=%s, showReauthPrompt=%s',
-            isSharedConn,
-            isPartialExpiration,
-            showReauthPrompt
-        )
-
         await this.setScopeExpired(this.activeConnection!, true)
         await setCodeCatalystConnectedContext(this.isConnectionValid())
 
         // showReauthPrompt is true primarily when a user interaction triggered the ADE
         if (showReauthPrompt) {
-            void this.showReauthenticationPrompt(this.activeConnection!, isPartialExpiration)
+            void this.showReauthenticationPrompt(this.activeConnection!)
         }
     }
 
-    public async showReauthenticationPrompt(conn: Connection, isPartialExpiration?: boolean): Promise<void> {
-        const partiallyExpiredMessage = 'CodeCatalyst connection has expired. Amazon Q is still connected.'
-
+    public async showReauthenticationPrompt(conn: SsoConnection): Promise<void> {
         await showReauthenticateMessage({
-            message: isPartialExpiration ? partiallyExpiredMessage : localizedText.connectionExpired('CodeCatalyst'),
+            message: localizedText.connectionExpired('CodeCatalyst'),
             connect: localizedText.connect,
             suppressId: 'codeCatalystConnectionExpired',
             settings: ToolkitPromptSettings.instance,
             reauthFunc: async () => {
-                await this.auth.reauthenticate(conn)
+                await this.reauthenticate(conn)
             },
         })
     }
@@ -309,7 +282,7 @@ export class CodeCatalystAuthenticationProvider {
             conn = await this.tryGetBuilderIdConnection()
 
             if (this.auth.getConnectionState(conn) === 'invalid') {
-                conn = await this.auth.reauthenticate(conn)
+                conn = await this.reauthenticate(conn)
             }
 
             isConnectionOnboarded = await this.isConnectionOnboarded(conn, true)
@@ -342,7 +315,7 @@ export class CodeCatalystAuthenticationProvider {
             }
 
             if (this.auth.getConnectionState(conn) === 'invalid') {
-                conn = await this.auth.reauthenticate(conn)
+                conn = await this.reauthenticate(conn)
             }
 
             isConnectionOnboarded = await this.isConnectionOnboarded(conn, true)
@@ -386,6 +359,22 @@ export class CodeCatalystAuthenticationProvider {
             const newConn = await this.secondaryAuth.addScopes(conn, defaultScopes)
             await this.secondaryAuth.useNewConnection(newConn)
             await this.isConnectionOnboarded(newConn, true)
+        }
+    }
+
+    public async reauthenticate(conn: SsoConnection) {
+        try {
+            let connToReauth = conn
+            // Sanity check - connections with other scopes should have been forced out at this point.
+            if (!hasExactScopes(conn, defaultScopes)) {
+                const newConn = await setScopes(conn, defaultScopes)
+                await this.secondaryAuth.useNewConnection(newConn)
+                connToReauth = newConn
+            }
+
+            return await this.auth.reauthenticate(connToReauth)
+        } catch (err) {
+            throw ToolkitError.chain(err, 'Unable to reauthenticate CodeCatalyst connection.')
         }
     }
 

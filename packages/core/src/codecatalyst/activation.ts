@@ -18,7 +18,7 @@ import { ToolkitPromptSettings } from '../shared/settings'
 import { dontShow } from '../shared/localizedText'
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { Commands } from '../shared/vscode/commands2'
-import { createClient, getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
+import { getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { isDevenvVscode } from './utils'
 import { codeCatalystConnectCommand, getThisDevEnv } from './model'
 import { getLogger } from '../shared/logger/logger'
@@ -43,17 +43,6 @@ export async function activate(ctx: ExtContext): Promise<void> {
     learnMoreCommand.register()
 
     await authProvider.restore()
-
-    // if connection is shared with CodeWhisperer, check if CodeCatalyst scopes are expired
-    if (authProvider.activeConnection && authProvider.isSharedConn()) {
-        try {
-            await createClient(authProvider.activeConnection, undefined, undefined, undefined, {
-                showReauthPrompt: false,
-            })
-        } catch (err) {
-            getLogger().info('codecatalyst: createClient failed during activation: %s', err)
-        }
-    }
 
     // Forget Amazon Q connections while we transition to separate auth sessions per extension
     // TODO: Remove after some time?
