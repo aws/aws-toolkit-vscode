@@ -1,3 +1,8 @@
+# _3.11_ (2024-06-13)
+- **(Feature)** Amazon Q Code Transform: Allow user to view transformation build log
+- **(Bug Fix)** Fix intermittent validation exception from CodeWhisperer service for improperly formed request
+- **(Bug Fix)** fix(Amazon Q Code Transformation): allow module to be zipped successfully even if it contains broken symlinks
+
 # _3.10_ (2024-06-07)
 - **(Bug Fix)** Resolve a NullPointerException that could occur while handling editor creation event. ([#4554](https://github.com/aws/aws-toolkit-jetbrains/issues/4554))
 
