@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { UserIntent } from '@amzn/codewhisperer-streaming'
+import { RelevantTextDocument, UserIntent } from '@amzn/codewhisperer-streaming'
 import { MatchPolicy, CodeQuery } from '../../clients/chat/v0/model'
 import { Selection } from 'vscode'
 import { TabOpenType } from '../../../amazonq/webview/ui/storages/tabsStorage'
@@ -139,6 +139,7 @@ export interface TriggerPayload {
     readonly matchPolicy: MatchPolicy | undefined
     readonly codeQuery: CodeQuery | undefined
     readonly userIntent: UserIntent | undefined
+    relevantTextDocuments?: RelevantTextDocument[]
     hasProjectLevelContext?: boolean
 }
 

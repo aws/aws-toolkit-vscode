@@ -13,6 +13,7 @@ import fetch from 'node-fetch'
 import { clear, indexFiles, query } from './lsp/lspClient'
 import { SystemUtilities } from '../shared/systemUtilities'
 import AdmZip from 'adm-zip'
+import { RelevantTextDocument } from '@amzn/codewhisperer-streaming'
 
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -21,10 +22,12 @@ function getProjectPaths() {
     }
     return workspaceFolders.map(folder => folder.uri.fsPath)
 }
-interface Chunk {
+
+export interface Chunk {
     readonly filePath: string
     readonly content: string
     readonly context?: string
+    readonly relativePath?: string
 }
 
 export class Search {
@@ -101,9 +104,21 @@ export class Search {
         clear('')
     }
 
-    async query(s: string): Promise<Chunk[]> {
+    async query(s: string): Promise<RelevantTextDocument[]> {
         const cs: Chunk[] = await query(s)
-        return cs
+        const resp: RelevantTextDocument[] = []
+        cs.forEach(chunk => {
+            const text = chunk.context ? chunk.context : chunk.content
+            const extName = path.basename(chunk.filePath).split('.').pop()?.toLocaleLowerCase()
+            resp.push({
+                text: text,
+                relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
+                programmingLanguage: {
+                    languageName: extName,
+                },
+            })
+        })
+        return resp
     }
 
     async buildIndex() {

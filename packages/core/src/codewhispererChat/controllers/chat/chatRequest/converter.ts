@@ -7,6 +7,7 @@ import {
     CursorState,
     DocumentSymbol,
     GenerateAssistantResponseRequest,
+    RelevantTextDocument,
     SymbolType,
     TextDocument,
 } from '@amzn/codewhisperer-streaming'
@@ -90,6 +91,10 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): Gen
         }
     }
 
+    const relevantDocuments: RelevantTextDocument[] = triggerPayload.relevantTextDocuments
+        ? triggerPayload.relevantTextDocuments
+        : []
+
     return {
         conversationState: {
             currentMessage: {
@@ -101,6 +106,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): Gen
                         editorState: {
                             document,
                             cursorState,
+                            relevantDocuments,
                         },
                     },
                     userIntent: triggerPayload.userIntent,

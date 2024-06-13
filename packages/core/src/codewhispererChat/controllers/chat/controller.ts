@@ -551,45 +551,12 @@ export class ChatController {
     private async generateResponse(triggerPayload: TriggerPayload, triggerID: string) {
         // Loop while we waiting for tabID to be set
         if (triggerPayload.message) {
-            let userIntentEnableProjectContext = false
-            if (triggerPayload.message.startsWith('@ws')) {
-                userIntentEnableProjectContext = true
-                triggerPayload.message = triggerPayload.message.slice(3)
-            } else if (triggerPayload.message.startsWith('@workspace')) {
-                userIntentEnableProjectContext = true
-                triggerPayload.message = triggerPayload.message.slice(10)
-            }
-            if (userIntentEnableProjectContext) {
-                if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
-                    const c = await Search.instance.query(triggerPayload.message)
-                    if (c.length > 0) {
-                        let msg = ''
-                        c.forEach(e => {
-                            if (e.context) {
-                                msg += `\`\`\`${e.context}\`\`\` in file ${e.filePath}.\n  `
-                            } else {
-                                msg += `\`\`\`${e.content}\`\`\` in file ${e.filePath}. \n `
-                            }
-                        })
-                        triggerPayload.message += ` \nHere is relevant code: ` + msg.substring(0, 3900)
-                        triggerPayload.hasProjectLevelContext = true
-                    } else {
-                        getLogger().info(`No Relevant code`)
-                    }
+            if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
+                triggerPayload.relevantTextDocuments = await Search.instance.query(triggerPayload.message)
+                if (triggerPayload.relevantTextDocuments.length > 0) {
+                    triggerPayload.hasProjectLevelContext = true
                 } else {
-                    void vscode.window
-                        .showInformationMessage(
-                            'Please enable local indexing in Amazon Q settings and then restart or reload VS Code.',
-                            'Open Settings'
-                        )
-                        .then(resp => {
-                            if (resp === 'Open Settings') {
-                                void vscode.commands.executeCommand(
-                                    'workbench.action.openSettings',
-                                    `@id:amazonQ.localWorkspaceIndex`
-                                )
-                            }
-                        })
+                    getLogger().info(`No Relevant code`)
                 }
             }
         }
