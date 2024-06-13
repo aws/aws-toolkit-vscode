@@ -460,9 +460,9 @@ export class GumbyController {
             this.messenger.sendKnownErrorResponse('no-alternate-dependencies-found', message.tabID)
             await this.continueTransformationWithoutHIL(message)
         } else if (message.error instanceof ModuleUploadError) {
-            this.messenger.sendUnrecoverableErrorResponse('upload-to-s3-failed', message.tabID)
+            this.resetTransformationChatFlow()
         } else if (message.error instanceof JobStartError) {
-            this.messenger.sendUnrecoverableErrorResponse('job-start-failed', message.tabID)
+            this.resetTransformationChatFlow()
         } else if (message.error instanceof TransformationPreBuildError) {
             this.messenger.sendJobSubmittedMessage(message.tabID, true)
             this.messenger.sendAsyncEventProgress(
