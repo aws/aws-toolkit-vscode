@@ -38,7 +38,7 @@ import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/cod
 import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import request from '../../../common/request'
-import { JobStoppedError, TransformationPreBuildError, ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
+import { JobStoppedError, ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import { writeLogs } from './transformFileHandler'
 import { AuthUtil } from '../../util/authUtil'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
@@ -764,16 +764,12 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                         CodeWhispererConstants.failedToStartJobLinesLimitChatMessage
                     )
                 }
-                if (errorMessage.includes('The requested module could not be built')) {
-                    throw new TransformationPreBuildError(response.transformationJob.reason || '')
-                } else {
-                    transformByQState.setJobFailureErrorChatMessage(
-                        `${CodeWhispererConstants.failedToCompleteJobGenericChatMessage} ${errorMessage}`
-                    )
-                    transformByQState.setJobFailureErrorNotification(
-                        `${CodeWhispererConstants.failedToCompleteJobGenericNotification} ${errorMessage}`
-                    )
-                }
+                transformByQState.setJobFailureErrorChatMessage(
+                    `${CodeWhispererConstants.failedToCompleteJobGenericChatMessage} ${errorMessage}`
+                )
+                transformByQState.setJobFailureErrorNotification(
+                    `${CodeWhispererConstants.failedToCompleteJobGenericNotification} ${errorMessage}`
+                )
                 transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
             }
             if (validStates.includes(status)) {
@@ -881,6 +877,7 @@ export async function downloadResultArchive(
             result: MetadataResult.Fail,
             reason: 'ExportResultArchiveFailed',
         })
+        throw e
     } finally {
         cwStreamingClient.destroy()
     }

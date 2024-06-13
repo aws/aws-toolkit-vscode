@@ -266,7 +266,6 @@ export class GumbyController {
 
     private async formActionClicked(message: any) {
         const typedAction = MessengerUtils.stringToEnumValue(ButtonActions, message.action as any)
-        console.log(`typedAction: ${typedAction}`)
         switch (typedAction) {
             case ButtonActions.CONFIRM_TRANSFORMATION_FORM:
                 await this.initiateTransformationOnProject(message)

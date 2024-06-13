@@ -517,16 +517,19 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
             transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToCompleteJobChatMessage)
         }
 
-        if (error instanceof TransformationPreBuildError) {
-            const tmpDir = path.join(os.tmpdir(), 'q-transformation-build-logs')
-            await downloadAndExtractResultArchive(jobId, undefined, tmpDir, 'Logs')
-            const pathToLog = path.join(tmpDir, 'buildCommandOutput.log')
-            transformByQState.setPreBuildLogFilePath(pathToLog)
+        // Since we don't yet have a good way of knowing what the error was,
+        // we try to fetch any build failure artifacts that may exist so that we can optionally
+        // show them to the user if they exist.
+        const tmpDir = path.join(os.tmpdir(), 'q-transformation-build-logs')
+        await downloadAndExtractResultArchive(jobId, undefined, tmpDir, 'Logs')
+        const pathToLog = path.join(tmpDir, 'buildCommandOutput.log')
+        transformByQState.setPreBuildLogFilePath(pathToLog)
 
-            throw error
+        if (fs.existsSync(pathToLog)) {
+            throw new TransformationPreBuildError()
+        } else {
+            throw new PollJobError()
         }
-
-        throw new PollJobError()
     }
     let plan = undefined
     try {

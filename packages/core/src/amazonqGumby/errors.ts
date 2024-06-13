@@ -49,8 +49,8 @@ export class JobStoppedError extends Error {
 }
 
 export class TransformationPreBuildError extends Error {
-    constructor(message: string) {
-        super(message)
+    constructor() {
+        super('Job failed to build after submission')
     }
 }
 
