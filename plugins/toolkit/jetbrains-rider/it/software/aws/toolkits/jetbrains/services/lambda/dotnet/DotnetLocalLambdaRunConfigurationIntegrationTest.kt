@@ -56,7 +56,7 @@ abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val 
         PropertiesComponent.getInstance().setValue("debugger.immediate.window.in.watches", initialImmediateWindow)
     }
 
-    override fun getSolutionDirectoryName(): String = solutionName
+    override fun getSolutionDirectoryName(): String = "testData/solutions/$solutionName"
 
     @Test
     fun samIsExecutedDebugger() {
@@ -151,7 +151,7 @@ abstract class DotnetLocalLambdaImageRunConfigurationIntegrationTestBase(private
         removeAllBreakpoints(project)
     }
 
-    override fun getSolutionDirectoryName(): String = solutionName
+    override fun getSolutionDirectoryName(): String = "testData/solutions/$solutionName"
 
     @Test
     fun samIsExecutedImage() {
