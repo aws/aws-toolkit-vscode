@@ -353,7 +353,7 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     /**
-     * @warning Only intended for Dev mode purposes
+     * @warning Only intended for Dev mode purposes.
      *
      * Put the SSO connection in to an expired state
      */
