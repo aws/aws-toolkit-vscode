@@ -436,20 +436,19 @@ const registerToolkitApiCallbackOnce = once(() => {
                 getLogger().info(`toolkitApi: declare connection ${id}`)
                 _toolkitApi.declareConnection(
                     {
-                        type: conn.type,
                         ssoRegion: conn.ssoRegion,
                         startUrl: conn.startUrl,
-                        id: id,
-                    } as AwsConnection,
+                    },
                     'Amazon Q'
                 )
             }
         }
     })
-    auth.onDidDeleteConnection(async id => {
-        if (_toolkitApi && 'undeclareConnection' in _toolkitApi) {
-            getLogger().info(`toolkitApi: undeclare connection ${id}`)
-            _toolkitApi.undeclareConnection(id)
+    auth.onDidDeleteConnection(async event => {
+        if (_toolkitApi && 'undeclareConnection' in _toolkitApi && event.storedProfile?.type === 'sso') {
+            const startUrl = event.storedProfile.startUrl
+            getLogger().info(`toolkitApi: undeclare connection ${event.connId} with starturl: ${startUrl}`)
+            _toolkitApi.undeclareConnection({ startUrl })
         }
     })
 })

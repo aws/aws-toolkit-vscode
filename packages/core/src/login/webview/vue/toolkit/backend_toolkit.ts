@@ -130,8 +130,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         Auth.instance.declaredConnections.forEach(conn => {
             if (conn.startUrl !== builderIdStartUrl) {
                 connections.push({
-                    id: conn.id,
-                    ssoRegion: conn.region,
+                    ssoRegion: conn.ssoRegion,
                     startUrl: conn.startUrl,
                 } as AwsConnection)
             }

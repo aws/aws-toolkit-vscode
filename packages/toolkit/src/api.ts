@@ -54,8 +54,8 @@ export const awsToolkitApi = {
              * but the connection is not re-used directly. These do not persist across restarts.
              * @param connection The AWS connection of the source extension that is intended to be shared with toolkit
              */
-            declareConnection(conn: AwsConnection, source: string) {
-                getLogger().debug(`declareConnection: extension ${extensionId}, connection id ${conn.id}`)
+            declareConnection(conn: Pick<AwsConnection, 'startUrl' | 'ssoRegion'>, source: string) {
+                getLogger().debug(`declareConnection: extension ${extensionId}, connection starturl: ${conn.startUrl}`)
                 Auth.instance.declareConnectionFromApi(conn, source)
             },
 
@@ -64,9 +64,9 @@ export const awsToolkitApi = {
              * connection's parameters (startURL, region) from the list of available logins.
              * @param connId The connection id of a declared connection.
              */
-            undeclareConnection(connId: string) {
-                getLogger().debug(`declareConnection: extension ${extensionId}, connection id ${connId}`)
-                Auth.instance.undeclareConnectionFromApi(connId)
+            undeclareConnection(conn: Pick<AwsConnection, 'startUrl'>) {
+                getLogger().debug(`declareConnection: extension ${extensionId}, connection starturl: ${conn.startUrl}`)
+                Auth.instance.undeclareConnectionFromApi(conn)
             },
 
             /**
@@ -102,8 +102,8 @@ export const awsToolkitApi = {
                         } as AwsConnection)
                     }
                 })
-                Auth.instance.onDidDeleteConnection(async id => {
-                    await onConnectionDeletion(id)
+                Auth.instance.onDidDeleteConnection(async event => {
+                    await onConnectionDeletion(event.connId)
                 })
             },
         }

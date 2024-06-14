@@ -121,12 +121,8 @@ export interface ConnectionStateChangeEvent {
 
 export type AuthType = Auth
 
-type DeclaredConnection = {
-    startUrl: string
-    region: string
-    source: string
-    id?: string
-}
+export type DeletedConnection = { connId: Connection['id']; storedProfile?: StoredProfile }
+type DeclaredConnection = Pick<SsoProfile, 'ssoRegion' | 'startUrl'> & { source: string }
 
 export class Auth implements AuthService, ConnectionManager {
     readonly #ssoCache = getCache()
@@ -135,7 +131,7 @@ export class Auth implements AuthService, ConnectionManager {
     readonly #onDidChangeActiveConnection = new vscode.EventEmitter<StatefulConnection | undefined>()
     readonly #onDidChangeConnectionState = new vscode.EventEmitter<ConnectionStateChangeEvent>()
     readonly #onDidUpdateConnection = new vscode.EventEmitter<StatefulConnection>()
-    readonly #onDidDeleteConnection = new vscode.EventEmitter<Connection['id']>()
+    readonly #onDidDeleteConnection = new vscode.EventEmitter<DeletedConnection>()
     public readonly onDidChangeActiveConnection = this.#onDidChangeActiveConnection.event
     public readonly onDidChangeConnectionState = this.#onDidChangeConnectionState.event
     public readonly onDidUpdateConnection = this.#onDidUpdateConnection.event
@@ -158,6 +154,9 @@ export class Auth implements AuthService, ConnectionManager {
         return this.store.listProfiles().length !== 0
     }
 
+    /**
+     * Map startUrl -> declared connections
+     */
     private readonly _declaredConnections: { [key: string]: DeclaredConnection } = {}
     public get declaredConnections() {
         return Object.values(this._declaredConnections)
@@ -337,7 +336,7 @@ export class Auth implements AuthService, ConnectionManager {
             }
         }
 
-        this.#onDidDeleteConnection.fire(connId)
+        this.#onDidDeleteConnection.fire({ connId, storedProfile: profile })
     }
 
     private async clearStaleLinkedIamConnections() {
@@ -1012,19 +1011,20 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
-    public declareConnectionFromApi(conn: Pick<AwsConnection, 'id' | 'startUrl' | 'ssoRegion'>, source: string) {
-        getLogger().debug(`Declare connection ${conn.id} from API with startUrl: ${conn.startUrl}`)
-        this._declaredConnections[conn.id] = {
+    public declareConnectionFromApi(conn: Pick<AwsConnection, 'startUrl' | 'ssoRegion'>, source: string) {
+        getLogger().debug(`Declared connection '${conn.startUrl}' from ${source}.`)
+        this._declaredConnections[conn.startUrl] = {
             startUrl: conn.startUrl,
-            region: conn.ssoRegion,
+            ssoRegion: conn.ssoRegion,
             source,
-            id: conn.id,
         }
     }
 
-    public undeclareConnectionFromApi(connId: string) {
-        getLogger().debug(`Undeclared connection ${connId}`)
-        delete this._declaredConnections[connId]
+    public undeclareConnectionFromApi(conn: Pick<AwsConnection, 'startUrl'>) {
+        getLogger().debug(
+            `Undeclared connection '${conn.startUrl}' from ${this._declaredConnections[conn.startUrl].source}`
+        )
+        delete this._declaredConnections[conn.startUrl]
     }
 }
 /**

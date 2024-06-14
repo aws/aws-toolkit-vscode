@@ -130,11 +130,11 @@ export class SecondaryAuth<T extends Connection = Connection> {
             getLogger().error('handleConnectionChanged() failed: %s', (e as Error).message)
         })
         this.auth.onDidChangeActiveConnection(handleConnectionChanged)
-        this.auth.onDidDeleteConnection(async (deletedConnId: Connection['id']) => {
-            if (deletedConnId === this.#activeConnection?.id) {
+        this.auth.onDidDeleteConnection(async event => {
+            if (event.connId === this.#activeConnection?.id) {
                 await this.clearActiveConnection()
             }
-            if (deletedConnId === this.#savedConnection?.id) {
+            if (event.connId === this.#savedConnection?.id) {
                 // Our saved connection does not exist anymore, delete the reference to it.
                 await this.clearSavedConnection()
             }
