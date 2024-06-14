@@ -7,10 +7,9 @@ import * as vscode from 'vscode'
 import { inspect } from 'util'
 import { DBCluster } from '@aws-sdk/client-docdb'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { DocumentDBClient } from '../../shared/clients/docdbClient'
 
 export class DBClusterNode extends AWSTreeNodeBase {
-    constructor(private readonly cluster: DBCluster, private readonly client: DocumentDBClient) {
+    constructor(readonly cluster: DBCluster) {
         super(cluster.DBClusterIdentifier ?? '[Cluster]', vscode.TreeItemCollapsibleState.Collapsed)
         this.contextValue = 'awsDocDBClusterNode'
     }
