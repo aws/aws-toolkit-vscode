@@ -24,7 +24,10 @@ export async function activate(
 ): Promise<void> {
     const settings = Settings.instance.getSection('aws')
     const devLogfile = settings.get('dev.logfile', '')
-    const logUri = typeof devLogfile === 'string' ? vscode.Uri.file(resolvePath(devLogfile)) : undefined
+    const logUri =
+        typeof devLogfile === 'string' && devLogfile.trim() !== ''
+            ? vscode.Uri.file(resolvePath(devLogfile))
+            : undefined
     const chanLogLevel = fromVscodeLogLevel(logChannel.logLevel)
 
     await fsCommon.mkdir(extensionContext.logUri)
