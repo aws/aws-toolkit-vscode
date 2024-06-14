@@ -95,12 +95,21 @@ export class OidcClient {
 
     public static create(region: string) {
         const updatedRetryDecider = (err: SdkError) => {
-            // Check the default retry conditions
             if (defaultRetryDecider(err)) {
                 return true
             }
 
-            // Custom retry rules
+            // Sessions may "expire" earlier than expected due to network faults.
+            // TODO: add more cases from node_modules/@aws-sdk/client-sso-oidc/dist-types/models/models_0.d.ts
+            // ExpiredTokenException
+            // InternalServerException
+            // InvalidClientException
+            // InvalidRequestException
+            // SlowDownException
+            // UnsupportedGrantTypeException
+            // InvalidRequestRegionException
+            // InvalidRedirectUriException
+            // InvalidRedirectUriException
             return err.name === 'InvalidGrantException'
         }
         const client = new SSOOIDC({

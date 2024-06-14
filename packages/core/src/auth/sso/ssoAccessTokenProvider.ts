@@ -31,10 +31,11 @@ import {
     getTelemetryResult,
     isClientFault,
     isNetworkError,
+    resolveErrorMessageToDisplay,
 } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 import { AwsLoginWithBrowser, AwsRefreshCredentials, Metric, telemetry } from '../../shared/telemetry/telemetry'
-import { indent, toBase64URL } from '../../shared/utilities/textUtilities'
+import { indent, toBase64URL, truncate } from '../../shared/utilities/textUtilities'
 import { AuthSSOServer } from './server'
 import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
@@ -157,6 +158,7 @@ export abstract class SsoAccessTokenProvider {
                 telemetry.aws_refreshCredentials.emit({
                     result: getTelemetryResult(err),
                     reason: getTelemetryReason(err),
+                    reasonDesc: truncate(resolveErrorMessageToDisplay(err, ''), 200, ''),
                     requestId: getRequestId(err),
                     ...metric,
                 } as AwsRefreshCredentials)
@@ -282,6 +284,7 @@ async function pollForTokenWithProgress<T>(
             await sleep(interval)
         }
 
+        // TODO: verify that this emits telemetry
         throw new ToolkitError('Timed-out waiting for browser login flow to complete', {
             code: 'TimedOut',
         })
