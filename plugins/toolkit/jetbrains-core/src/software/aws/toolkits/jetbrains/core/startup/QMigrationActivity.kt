@@ -23,7 +23,7 @@ import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
-import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
+import software.aws.toolkits.jetbrains.services.amazonq.QConstants
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
@@ -111,7 +111,7 @@ class QMigrationActivity : StartupActivity.DumbAware {
                                 project = project,
                                 notificationActions = listOf(
                                     NotificationAction.createSimple(message("aws.q.migration.action.read_more.text")) {
-                                        BrowserUtil.browse(URI(CodeWhispererConstants.Q_MARKETPLACE_URI))
+                                        BrowserUtil.browse(URI(QConstants.Q_MARKETPLACE_URI))
                                         ToolkitTelemetry.showNotification(
                                             id = Q_STANDALONE_INSTALLED_ID,
                                             component = Component.ReadMore,

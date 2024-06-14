@@ -6,6 +6,7 @@ import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
 import software.aws.toolkits.gradle.jvmTarget
 
 plugins {
+    id("java-library")
     id("toolkit-detekt")
     id("toolkit-jvm-conventions")
 }
@@ -19,7 +20,10 @@ dependencies {
     implementation(versionCatalog.findBundle("kotlin").get())
     implementation(versionCatalog.findLibrary("kotlin-coroutines").get())
 
-    testImplementation(versionCatalog.findLibrary("kotlin-test").get())
+    testFixturesApi(versionCatalog.findLibrary("kotlin-test").get())
+    testFixturesApi(versionCatalog.findLibrary("kotlin-coroutinesDebug").get())
+    testFixturesApi(versionCatalog.findLibrary("kotlin-coroutinesTest").get())
+    testFixturesApi(versionCatalog.findLibrary("mockk").get())
 }
 
 sourceSets {

@@ -18,9 +18,8 @@ plugins {
 
 dependencies {
     testImplementation(gradleApi())
-    testImplementation(project(":plugin-toolkit:core"))
-    testImplementation(project(path = ":plugin-toolkit:core", configuration = "testArtifacts"))
-    testImplementation(project(":plugin-toolkit:resources"))
+    testImplementation(project(":plugin-core:core"))
+    testImplementation(project(path = ":plugin-core:core", configuration = "testArtifacts"))
     testImplementation(libs.kotlin.coroutines)
     testImplementation(libs.junit5.jupiterApi)
     testImplementation(libs.intellijRemoteFixtures)

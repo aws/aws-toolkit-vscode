@@ -9,11 +9,6 @@
     <ID>CommentWrapping:S3VirtualBucket.kt$S3VirtualBucket$/* Unit tests refuse to open this in an editor if this is true */</ID>
     <ID>CommentWrapping:SamInitSelectionPanel.kt$SamInitSelectionPanel$/* Only available in PyCharm! */</ID>
     <ID>CommentWrapping:SamInitSelectionPanel.kt$SamInitSelectionPanel$/* Used in Rider to refresh the validation */</ID>
-    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererCodeReferenceManager.kt$CodeWhispererCodeReferenceManager$val (_, editor, _, caretPosition) = requestContext</ID>
-    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererCodeReferenceManager.kt$CodeWhispererCodeReferenceManager.&lt;no name provided>$val (localEditor, highlighter, codeContent, referenceContent) = it</ID>
-    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererPopupManager.kt$CodeWhispererPopupManager$val (_, _, recommendationContext, popup) = states</ID>
-    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererStateTest.kt$CodeWhispererStateTest$val (actualProject, actualEditor, actualTriggerTypeInfo, actualCaretPosition, actualFileContextInfo) = actualRequestContext</ID>
-    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererStateTest.kt$CodeWhispererStateTest$val (actualRequestId, actualRecommendationDetail, _, actualIsDiscarded) = actualDetailContext</ID>
     <ID>DestructuringDeclarationWithTooManyEntries:JavaCodeScanSessionConfig.kt$JavaCodeScanSessionConfig$val (sourceFiles, srcPayloadSize, totalLines, buildPaths) = includeDependencies()</ID>
     <ID>ExpressionBodySyntax:CawsProjectListRenderer.kt$CawsProjectListRenderer.&lt;no name provided>$return myContext</ID>
     <ID>ExpressionBodySyntax:CodeWhispererSettingsTest.kt$CodeWhispererSettingsTest.&lt;no name provided>$return myToolWindows[id]</ID>
@@ -70,8 +65,6 @@
     <ID>FunctionNaming:SamVersionCacheTest.kt$SamVersionCacheTest$@Test fun errorCode_RandomError()</ID>
     <ID>FunctionNaming:SamVersionCacheTest.kt$SamVersionCacheTest$@Test fun successExecution_EmptyOutput()</ID>
     <ID>FunctionOnlyReturningConstant:CodeWhispererCodeScanTestBase.kt$CodeWhispererCodeScanTestBase$protected fun getFakeRecommendationsOnNonExistentFile()</ID>
-    <ID>ImplicitDefaultLocale:CodeWhispererColorUtil.kt$CodeWhispererColorUtil$String.format("#%02x%02x%02x", this.red, this.green, this.blue)</ID>
-    <ID>LoopWithTooManyJumpStatements:CodeWhispererEditorManager.kt$CodeWhispererEditorManager$while</ID>
     <ID>LoopWithTooManyJumpStatements:DownloadObjectAction.kt$DownloadObjectAction$for</ID>
     <ID>TopLevelPropertyNaming:EventsFetcherTest.kt$private const val nonEmptyMessage = "Second call on the same page must not return anything"</ID>
     <ID>TopLevelPropertyNaming:EventsFetcherTest.kt$private const val wrongPageMessage = "Wrong list of available pages"</ID>

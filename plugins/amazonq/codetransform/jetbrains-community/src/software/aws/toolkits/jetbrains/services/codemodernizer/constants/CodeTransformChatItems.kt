@@ -25,7 +25,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.model.ValidationR
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getModuleOrProjectNameForFile
 import software.aws.toolkits.jetbrains.services.cwc.clients.chat.model.FollowUpType
 import software.aws.toolkits.jetbrains.services.cwc.messages.FollowUp
-import software.aws.toolkits.resources.AwsToolkitBundle.message
+import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodeTransformPreValidationError
 
 private val cancelUserSelectionButton = Button(

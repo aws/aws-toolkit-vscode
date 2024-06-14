@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererCodeReferenceManager.kt$CodeWhispererCodeReferenceManager$val (_, editor, _, caretPosition) = requestContext</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererCodeReferenceManager.kt$CodeWhispererCodeReferenceManager.&lt;no name provided>$val (localEditor, highlighter, codeContent, referenceContent) = it</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererPopupManager.kt$CodeWhispererPopupManager$val (_, _, recommendationContext, popup) = states</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererStateTest.kt$CodeWhispererStateTest$val (actualProject, actualEditor, actualTriggerTypeInfo, actualCaretPosition, actualFileContextInfo) = actualRequestContext</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererStateTest.kt$CodeWhispererStateTest$val (actualRequestId, actualRecommendationDetail, _, actualIsDiscarded) = actualDetailContext</ID>
+    <ID>ExpressionBodySyntax:CodeWhispererSettingsTest.kt$CodeWhispererSettingsTest.&lt;no name provided>$return myToolWindows[id]</ID>
+    <ID>ExpressionBodySyntax:CodeWhispererTelemetryService.kt$CodeWhispererTelemetryService$return previousUserTriggerDecisionTimestamp?.let { Duration.between(it, Instant.now()).toMillis().toDouble() }</ID>
+    <ID>FunctionOnlyReturningConstant:CodeWhispererCodeScanTestBase.kt$CodeWhispererCodeScanTestBase$protected fun getFakeRecommendationsOnNonExistentFile()</ID>
+    <ID>ImplicitDefaultLocale:CodeWhispererColorUtil.kt$CodeWhispererColorUtil$String.format("#%02x%02x%02x", this.red, this.green, this.blue)</ID>
+    <ID>LoopWithTooManyJumpStatements:CodeWhispererEditorManager.kt$CodeWhispererEditorManager$while</ID>
+  </CurrentIssues>
+</SmellBaseline>

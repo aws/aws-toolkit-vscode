@@ -8,14 +8,14 @@ import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.DumbAwareAction
-import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
+import software.aws.toolkits.jetbrains.services.amazonq.QConstants
 import java.net.URI
 
 class CredentialsHelpAction : DumbAwareAction(AllIcons.General.ContextHelp) {
     override fun actionPerformed(e: AnActionEvent) {
         // TODO: update
         runInEdt {
-            BrowserUtil.browse(URI(CodeWhispererConstants.CODEWHISPERER_LOGIN_HELP_URI))
+            BrowserUtil.browse(URI(QConstants.CODEWHISPERER_LOGIN_HELP_URI))
         }
     }
 }

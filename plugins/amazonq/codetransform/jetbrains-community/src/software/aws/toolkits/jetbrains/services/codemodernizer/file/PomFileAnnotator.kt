@@ -24,7 +24,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.JBColor
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.CodeModernizerUIConstants.Companion.getLightYellowThemeBackgroundColor
-import software.aws.toolkits.resources.AwsToolkitBundle.message
+import software.aws.toolkits.resources.message
 import java.awt.Font
 import javax.swing.Icon
 

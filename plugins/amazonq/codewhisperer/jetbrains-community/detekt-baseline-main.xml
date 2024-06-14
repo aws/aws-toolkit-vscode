@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererCodeReferenceManager.kt$CodeWhispererCodeReferenceManager$val (_, editor, _, caretPosition) = requestContext</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererCodeReferenceManager.kt$CodeWhispererCodeReferenceManager.&lt;no name provided>$val (localEditor, highlighter, codeContent, referenceContent) = it</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererPopupManager.kt$CodeWhispererPopupManager$val (_, _, recommendationContext, popup) = states</ID>
+    <ID>ExpressionBodySyntax:CodeWhispererTelemetryService.kt$CodeWhispererTelemetryService$return previousUserTriggerDecisionTimestamp?.let { Duration.between(it, Instant.now()).toMillis().toDouble() }</ID>
+    <ID>ImplicitDefaultLocale:CodeWhispererColorUtil.kt$CodeWhispererColorUtil$String.format("#%02x%02x%02x", this.red, this.green, this.blue)</ID>
+    <ID>LoopWithTooManyJumpStatements:CodeWhispererEditorManager.kt$CodeWhispererEditorManager$while</ID>
+    <ID>UnnecessaryFilter:CodeWhispererPopupManager.kt$CodeWhispererPopupManager$filter { isValidRecommendation(it, userInput, typeahead) }</ID>
+    <ID>UseOrEmpty:CodeWhispererCodeReferenceComponents.kt$CodeWhispererCodeReferenceComponents$path ?: ""</ID>
+    <ID>UseOrEmpty:CodeWhispererCodeScanException.kt$file ?: ""</ID>
+    <ID>UseOrEmpty:CodeWhispererCodeScanManager.kt$CodeWhispererCodeScanManager$scanNodesLookup[file]?.mapNotNull { node -> val issue = node.userObject as CodeWhispererCodeScanIssue if (issue.textRange?.overlaps(range) == true) node else null } ?: listOf()</ID>
+    <ID>UseOrEmpty:CodeWhispererService.kt$CodeWhispererService$e.requestId() ?: ""</ID>
+    <ID>UseOrEmpty:CodeWhispererService.kt$CodeWhispererService$exceptionType?.let { "Exception Type: $it, " } ?: ""</ID>
+    <ID>UseOrEmpty:CodeWhispererService.kt$CodeWhispererService$latency?.let { "Latency: $latency, " } ?: ""</ID>
+  </CurrentIssues>
+</SmellBaseline>

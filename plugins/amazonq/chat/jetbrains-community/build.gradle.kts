@@ -17,6 +17,8 @@ intellij {
 
 dependencies {
     implementation(project(":plugin-amazonq:shared:jetbrains-community"))
+    // everything references codewhisperer, which is not ideal
+    implementation(project(":plugin-amazonq:codewhisperer:jetbrains-community"))
 
     compileOnly(project(":plugin-core:jetbrains-community"))
 

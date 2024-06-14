@@ -11,7 +11,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <EmbeddedResource Include="..\..\..\..\resources\resources\software\aws\toolkits\resources\MessagesBundle.properties">
+      <EmbeddedResource Include="..\..\..\..\..\..\plugins\core\resources\resources\software\aws\toolkits\resources\MessagesBundle.properties">
         <Link>Resources/MessagesBundle.properties</Link>
       </EmbeddedResource>
     </ItemGroup>

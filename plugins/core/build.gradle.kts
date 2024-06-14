@@ -11,9 +11,11 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":plugin-core:sdk-codegen"))
+    implementation(project(":plugin-core:core"))
     implementation(project(":plugin-core:jetbrains-community"))
     implementation(project(":plugin-core:jetbrains-ultimate"))
+    implementation(project(":plugin-core:resources"))
+    implementation(project(":plugin-core:sdk-codegen"))
     implementation(project(":plugin-core:webview"))
 }
 
@@ -22,5 +24,4 @@ tasks.check {
     coreProject.forEach {
         dependsOn(":plugin-core:${it.name}:check")
     }
-
 }

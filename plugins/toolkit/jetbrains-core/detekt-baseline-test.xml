@@ -2,8 +2,6 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererStateTest.kt$CodeWhispererStateTest$val (actualProject, actualEditor, actualTriggerTypeInfo, actualCaretPosition, actualFileContextInfo) = actualRequestContext</ID>
-    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererStateTest.kt$CodeWhispererStateTest$val (actualRequestId, actualRecommendationDetail, _, actualIsDiscarded) = actualDetailContext</ID>
     <ID>ExpressionBodySyntax:CodeWhispererSettingsTest.kt$CodeWhispererSettingsTest.&lt;no name provided>$return myToolWindows[id]</ID>
     <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_fail_autodetectBadSam_andManuallySetToBadSam()</ID>
     <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_autodetectBadSam()</ID>
@@ -72,8 +70,6 @@
     <ID>UnnecessaryApply:EventsFetcherTest.kt$EventsFetcherTest$apply { expectRange("4097", "4097", first, expectedSize = 1) }</ID>
     <ID>UnnecessaryApply:SendMessagePaneTest.kt$SendMessagePaneTest$apply { inputText.text = "" }</ID>
     <ID>UnnecessaryApply:SendMessagePaneTest.kt$SendMessagePaneTest$apply { inputText.text = MESSAGE }</ID>
-    <ID>UnnecessaryFilter:CodeWhispererTelemetryTest.kt$CodeWhispererTelemetryTest$filter { !it.content().startsWith(typeahead) }</ID>
-    <ID>UnnecessaryFilter:CodeWhispererTelemetryTest.kt$CodeWhispererTelemetryTest$filter { it.content().isEmpty() }</ID>
     <ID>UnsafeCallOnNullableType:FileInfoCacheTest.kt$FileInfoCacheTest$infoProvider.evaluate(tempFile.absolutePath).blockingGet(0)!!</ID>
     <ID>UnsafeCallOnNullableType:FileInfoCacheTest.kt$FileInfoCacheTest$pathPromise.blockingGet(0)!!</ID>
     <ID>UnsafeCallOnNullableType:FileInfoCacheTest.kt$FileInfoCacheTest$pathTempFile1Promise.blockingGet(0)!!</ID>

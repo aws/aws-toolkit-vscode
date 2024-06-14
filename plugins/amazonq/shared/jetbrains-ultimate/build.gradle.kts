@@ -15,6 +15,6 @@ dependencies {
     compileOnly(project(":plugin-amazonq:shared:jetbrains-community"))
     compileOnly(project(":plugin-core:jetbrains-ultimate"))
 
-    // delete when fully split
-    implementation(project(":plugin-toolkit:jetbrains-ultimate"))
+    testFixturesApi(testFixtures(project(":plugin-core:jetbrains-community")))
+    testFixturesApi(testFixtures(project(":plugin-core:jetbrains-ultimate")))
 }

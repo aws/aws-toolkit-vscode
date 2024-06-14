@@ -9,9 +9,6 @@
     <ID>CommentWrapping:S3VirtualBucket.kt$S3VirtualBucket$/* Unit tests refuse to open this in an editor if this is true */</ID>
     <ID>CommentWrapping:SamInitSelectionPanel.kt$SamInitSelectionPanel$/* Only available in PyCharm! */</ID>
     <ID>CommentWrapping:SamInitSelectionPanel.kt$SamInitSelectionPanel$/* Used in Rider to refresh the validation */</ID>
-    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererCodeReferenceManager.kt$CodeWhispererCodeReferenceManager$val (_, editor, _, caretPosition) = requestContext</ID>
-    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererCodeReferenceManager.kt$CodeWhispererCodeReferenceManager.&lt;no name provided>$val (localEditor, highlighter, codeContent, referenceContent) = it</ID>
-    <ID>DestructuringDeclarationWithTooManyEntries:CodeWhispererPopupManager.kt$CodeWhispererPopupManager$val (_, _, recommendationContext, popup) = states</ID>
     <ID>DestructuringDeclarationWithTooManyEntries:JavaCodeScanSessionConfig.kt$JavaCodeScanSessionConfig$val (sourceFiles, srcPayloadSize, totalLines, buildPaths) = includeDependencies()</ID>
     <ID>ExpressionBodySyntax:CawsProjectListRenderer.kt$CawsProjectListRenderer.&lt;no name provided>$return myContext</ID>
     <ID>ExpressionBodySyntax:CodeWhispererTelemetryService.kt$CodeWhispererTelemetryService$return previousUserTriggerDecisionTimestamp?.let { Duration.between(it, Instant.now()).toMillis().toDouble() }</ID>
@@ -21,8 +18,6 @@
     <ID>ForbiddenVoid:DownloadCodeForSchemaDialog.kt$DownloadCodeForSchemaDialog$Void</ID>
     <ID>ForbiddenVoid:SchemaViewer.kt$SchemaPreviewer$Void</ID>
     <ID>ForbiddenVoid:SchemaViewer.kt$SchemaViewer$Void</ID>
-    <ID>ImplicitDefaultLocale:CodeWhispererColorUtil.kt$CodeWhispererColorUtil$String.format("#%02x%02x%02x", this.red, this.green, this.blue)</ID>
-    <ID>LoopWithTooManyJumpStatements:CodeWhispererEditorManager.kt$CodeWhispererEditorManager$while</ID>
     <ID>LoopWithTooManyJumpStatements:DownloadObjectAction.kt$DownloadObjectAction$for</ID>
     <ID>NoNameShadowing:CloudControlApiResources.kt$CloudControlApiResources${ it.typeName() }</ID>
     <ID>NoNameShadowing:CodeStoragePanel.kt$CodeStoragePanel${ it.repositoryName == ecrDialog.repoName }</ID>
@@ -47,7 +42,6 @@
     <ID>UnnecessaryApply:ExperimentConfigurable.kt$ExperimentConfigurable$apply { component.icon = AllIcons.General.Warning }</ID>
     <ID>UnnecessaryApply:SendMessagePane.kt$SendMessagePane$apply { border = IdeBorderFactory.createBorder() }</ID>
     <ID>UnnecessaryApply:SendMessagePane.kt$SendMessagePane$apply { emptyText.text = message("sqs.send.message.body.empty.text") }</ID>
-    <ID>UnnecessaryFilter:CodeWhispererPopupManager.kt$CodeWhispererPopupManager$filter { isValidRecommendation(it, userInput, typeahead) }</ID>
     <ID>UnsafeCallOnNullableType:CachingAsyncEvaluator.kt$CachingAsyncEvaluator$cachePromise.blockingGet(0)!!</ID>
     <ID>UnsafeCallOnNullableType:CachingAsyncEvaluator.kt$CachingAsyncEvaluator$promise.blockingGet(blockingTime, blockingUnit)!!</ID>
     <ID>UnsafeCallOnNullableType:CreateFunctionDialog.kt$CreateFunctionDialog$view.configSettings.iamRole.selected()!!</ID>
@@ -150,12 +144,6 @@
     <ID>UseOrEmpty:AbstractActions.kt$SingleExplorerNodeActionGroup$e?.selectedNodes&lt;T>()?.takeIf { it.size == 1 }?.first()?.let { getChildren(it, e) }?.toTypedArray() ?: emptyArray()</ID>
     <ID>UseOrEmpty:AbstractActions.kt$this?.getData(ExplorerDataKeys.SELECTED_NODES)?.mapNotNull { it as? T } ?: emptyList()</ID>
     <ID>UseOrEmpty:CodeScanSessionConfig.kt$CodeScanSessionConfig.Companion$file.extension ?: ""</ID>
-    <ID>UseOrEmpty:CodeWhispererCodeReferenceComponents.kt$CodeWhispererCodeReferenceComponents$path ?: ""</ID>
-    <ID>UseOrEmpty:CodeWhispererCodeScanException.kt$file ?: ""</ID>
-    <ID>UseOrEmpty:CodeWhispererCodeScanManager.kt$CodeWhispererCodeScanManager$scanNodesLookup[file]?.mapNotNull { node -> val issue = node.userObject as CodeWhispererCodeScanIssue if (issue.textRange?.overlaps(range) == true) node else null } ?: listOf()</ID>
-    <ID>UseOrEmpty:CodeWhispererService.kt$CodeWhispererService$e.requestId() ?: ""</ID>
-    <ID>UseOrEmpty:CodeWhispererService.kt$CodeWhispererService$exceptionType?.let { "Exception Type: $it, " } ?: ""</ID>
-    <ID>UseOrEmpty:CodeWhispererService.kt$CodeWhispererService$latency?.let { "Latency: $latency, " } ?: ""</ID>
     <ID>UseOrEmpty:ConfigureLambdaDialog.kt$ConfigureLambdaDialog$view.lambdaFunction.selected()?.functionName() ?: ""</ID>
     <ID>UseOrEmpty:CreationPanel.kt$CreationPanel$ecrUri ?: ""</ID>
     <ID>UseOrEmpty:CreationPanel.kt$CreationPanel$startCommand ?: ""</ID>
@@ -189,7 +177,6 @@
     <ID>UseOrEmpty:TemplateSettings.kt$TemplateSettings$path ?: ""</ID>
     <ID>UseOrEmpty:ToolConfigurable.kt$ToolConfigurable$settings.getExecutablePath(toolType) ?: ""</ID>
     <ID>UseOrEmpty:ToolkitToolWindow.kt$ToolkitToolWindow$it.getUserData(AWS_TOOLKIT_TAB_ID_KEY) ?: ""</ID>
-    <ID>UseOrEmpty:UiUtils.kt$WrappingCellRenderer$(value as? String) ?: ""</ID>
     <ID>UseOrEmpty:UpdateFunctionConfigDialog.kt$UpdateFunctionConfigDialog$initialSettings.envVariables ?: emptyMap()</ID>
     <ID>UseOrEmpty:Updater.kt$Updater$eventsAndButtonStates?.first ?: emptyList()</ID>
     <ID>UseOrEmpty:Updater.kt$Updater$stack?.outputs() ?: emptyList()</ID>
