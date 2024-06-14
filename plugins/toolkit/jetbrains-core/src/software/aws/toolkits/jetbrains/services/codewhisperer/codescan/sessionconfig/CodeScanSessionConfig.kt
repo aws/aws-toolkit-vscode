@@ -26,7 +26,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.fileTooLa
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.noFileOpenError
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.noSupportedFilesError
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPlainText
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererUnknownLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.CODE_SCAN_CREATE_PAYLOAD_TIMEOUT_IN_SECONDS
@@ -206,7 +205,7 @@ class CodeScanSessionConfig(
                             } else {
                                 try {
                                     val language = current.programmingLanguage()
-                                    if (language != CodeWhispererPlainText.INSTANCE && language != CodeWhispererUnknownLanguage.INSTANCE) {
+                                    if (language !is CodeWhispererUnknownLanguage) {
                                         languageCounts[language] = (languageCounts[language] ?: 0) + 1
                                     }
                                     files.add(current.path)
