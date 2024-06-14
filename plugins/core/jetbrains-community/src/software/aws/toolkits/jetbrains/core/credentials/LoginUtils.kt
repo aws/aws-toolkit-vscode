@@ -40,12 +40,13 @@ sealed interface Login {
     data class BuilderId(
         val scopes: List<String>,
         val onPendingToken: (InteractiveBearerTokenProvider) -> Unit,
-        val onError: (Exception) -> Unit
+        val onError: (Exception) -> Unit,
+        val onSuccess: () -> Unit
     ) : Login {
         override val id: CredentialSourceId = CredentialSourceId.AwsId
 
         fun loginBuilderId(project: Project): Boolean {
-            loginSso(project, SONO_URL, SONO_REGION, scopes, onPendingToken, onError)
+            loginSso(project, SONO_URL, SONO_REGION, scopes, onPendingToken, onError, onSuccess)
             return true
         }
     }
