@@ -15,7 +15,7 @@ import {
     MetricShapes,
     TelemetryBase,
 } from './telemetry.gen'
-import { getTelemetryReason, getTelemetryResult } from '../errors'
+import { getRequestId, getTelemetryReason, getTelemetryReasonDesc, getTelemetryResult } from '../errors'
 import { entries, NumericKeys } from '../utilities/tsUtils'
 
 const AsyncLocalStorage: typeof AsyncLocalStorageClass =
@@ -150,16 +150,14 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
      */
     public stop(err?: unknown): void {
         const duration = this.startTime !== undefined ? globals.clock.Date.now() - this.startTime.getTime() : undefined
-        const msg = (err as any)?.message
-        // Truncate error message to 200 chars.
-        const reasonDesc = typeof msg === 'string' && msg.trim() !== '' ? msg.substring(0, 200) : undefined
 
-        // TODO: add MetricBase.reasonDesc so we can remove `as any` below.
+        // TODO: add reasonDesc/requestId to `MetricBase` so we can remove `as any` below.
         this.emit({
             duration,
             result: getTelemetryResult(err),
             reason: getTelemetryReason(err),
-            reasonDesc: reasonDesc,
+            reasonDesc: getTelemetryReasonDesc(err),
+            requestId: getRequestId(err),
         } as any as Partial<T>)
 
         this.#startTime = undefined

@@ -5,12 +5,7 @@
 
 import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
-import {
-    AuthorizationPendingException,
-    CreateTokenRequest,
-    SSOOIDCServiceException,
-    SlowDownException,
-} from '@aws-sdk/client-sso-oidc'
+import { AuthorizationPendingException, SSOOIDCServiceException, SlowDownException } from '@aws-sdk/client-sso-oidc'
 import {
     SsoToken,
     ClientRegistration,
@@ -257,7 +252,7 @@ export abstract class SsoAccessTokenProvider {
 }
 
 const backoffDelayMs = 5000
-async function pollForTokenWithProgress<T>(
+async function pollForTokenWithProgress<T extends { requestId?: string }>(
     fn: () => Promise<T>,
     authorization: Awaited<ReturnType<OidcClient['startDeviceAuthorization']>>,
     interval = authorization.interval ?? backoffDelayMs
@@ -268,7 +263,11 @@ async function pollForTokenWithProgress<T>(
             !token.isCancellationRequested
         ) {
             try {
-                return await fn()
+                const res = await fn()
+                telemetry.record({
+                    requestId: res.requestId,
+                })
+                return res
             } catch (err) {
                 if (!hasStringProps(err, 'name')) {
                     throw err
@@ -404,14 +403,16 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
                 throw new CancellationError('user')
             }
 
-            const tokenRequest = {
-                clientId: registration.clientId,
-                clientSecret: registration.clientSecret,
-                deviceCode: authorization.deviceCode,
-                grantType: deviceGrantType,
-            }
-
-            return await pollForTokenWithProgress(() => this.oidc.createToken(tokenRequest), authorization)
+            return await pollForTokenWithProgress(
+                () =>
+                    this.oidc.createToken({
+                        clientId: registration.clientId,
+                        clientSecret: registration.clientSecret,
+                        deviceCode: authorization.deviceCode,
+                        grantType: deviceGrantType,
+                    }),
+                authorization
+            )
         }
 
         const token = this.withBrowserLoginTelemetry(() => openBrowserAndWaitUntilComplete())
@@ -531,16 +532,17 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
                     throw authorizationCode.err()
                 }
 
-                const tokenRequest: CreateTokenRequest = {
+                const res = await this.oidc.createToken({
                     clientId: registration.clientId,
                     clientSecret: registration.clientSecret,
                     grantType: authorizationGrantType,
                     redirectUri,
                     codeVerifier,
                     code: authorizationCode.unwrap(),
-                }
+                })
+                telemetry.record({ requestId: res.requestId })
 
-                return this.oidc.createToken(tokenRequest)
+                return res
             })
 
             return this.formatToken(token, registration)
@@ -577,6 +579,11 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
     }
 }
 
+/**
+ * Alternative to {@link AuthFlowAuthorization} for demo/testing purposes.
+ *
+ * Allows user to enter the code manually after completing the authorization flow.
+ */
 class WebAuthorization extends SsoAccessTokenProvider {
     private redirectUri = 'http://127.0.0.1:54321/oauth/callback'
 
@@ -638,16 +645,14 @@ class WebAuthorization extends SsoAccessTokenProvider {
                 },
             })
 
-            const tokenRequest: CreateTokenRequest = {
+            return this.oidc.createToken({
                 clientId: registration.clientId,
                 clientSecret: registration.clientSecret,
                 grantType: authorizationGrantType,
                 redirectUri: this.redirectUri,
                 codeVerifier,
                 code: inputBox,
-            }
-
-            return this.oidc.createToken(tokenRequest)
+            })
         })
 
         return this.formatToken(token, registration)

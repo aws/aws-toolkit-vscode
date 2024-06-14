@@ -44,7 +44,6 @@ describe('SsoAccessTokenProvider', function () {
         return {
             accessToken: 'dummyAccessToken',
             expiresAt: new clock.Date(clock.Date.now() + timeDelta),
-            requestId: 'be62f79a-e9cf-41cd-a755-e6920c56e4fb',
             ...extras,
         }
     }
@@ -135,7 +134,9 @@ describe('SsoAccessTokenProvider', function () {
 
         it('refreshes expired tokens', async function () {
             const refreshedToken = createToken(hourInMs, { accessToken: 'newToken' })
-            oidcClient.createToken.resolves(refreshedToken)
+            oidcClient.createToken.resolves({
+                ...refreshedToken,
+            } as any)
 
             const refreshableToken = createToken(-hourInMs, { refreshToken: 'refreshToken' })
             const validRegistation = createRegistration(hourInMs)
@@ -210,7 +211,9 @@ describe('SsoAccessTokenProvider', function () {
             if (!opts?.skipAuthorization) {
                 oidcClient.startDeviceAuthorization.resolves(authorization)
             }
-            oidcClient.createToken.resolves(token)
+            oidcClient.createToken.resolves({
+                ...token,
+            } as any)
 
             return { token, registration, authorization }
         }
