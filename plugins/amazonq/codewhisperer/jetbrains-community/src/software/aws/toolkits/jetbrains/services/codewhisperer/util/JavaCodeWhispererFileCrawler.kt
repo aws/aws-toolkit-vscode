@@ -15,6 +15,8 @@ import com.intellij.psi.PsiPackage
 import com.intellij.psi.search.GlobalSearchScope
 import kotlinx.coroutines.yield
 import org.jetbrains.jps.model.java.JavaModuleSourceRootTypes
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.classresolver.ClassResolverKey
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.classresolver.CodeWhispereJavaClassResolver
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.classresolver.CodeWhispererClassResolver
@@ -92,6 +94,11 @@ object JavaCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
             val methods = classAndMethods[ClassResolverKey.MethodName].orEmpty()
 
             clazz + methods
-        }.orEmpty()
+        } ?: run {
+            getLogger<JavaCodeWhispererFileCrawler>().warn {
+                "could not resolve correct CwsprClassResolver, available CwsprClassResolver=${CodeWhispererClassResolver.EP_NAME.extensionList}"
+            }
+            emptyList()
+        }
     }
 }

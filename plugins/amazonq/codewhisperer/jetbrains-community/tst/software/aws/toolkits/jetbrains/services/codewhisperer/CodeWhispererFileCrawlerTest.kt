@@ -8,6 +8,8 @@ import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
+import com.intellij.testFramework.DisposableRule
+import com.intellij.testFramework.ExtensionTestUtil
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
 import com.intellij.testFramework.runInEdtAndWait
 import kotlinx.coroutines.runBlocking
@@ -16,6 +18,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.core.utils.test.aString
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.classresolver.CodeWhispereJavaClassResolver
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.classresolver.CodeWhispererClassResolver
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.classresolver.CodeWhispererPythonClassResolver
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererFileCrawler
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.FileCrawler
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.JavaCodeWhispererFileCrawler
@@ -119,7 +124,11 @@ class CodeWhispererFileCrawlerTest {
 class JavaCodeWhispererFileCrawlerTest {
     @Rule
     @JvmField
-    val projectRule: CodeInsightTestFixtureRule = JavaCodeInsightTestFixtureRule()
+    val projectRule = JavaCodeInsightTestFixtureRule()
+
+    @Rule
+    @JvmField
+    val disposableRule = DisposableRule()
 
     lateinit var sut: CodeWhispererFileCrawler
 
@@ -351,7 +360,9 @@ class JavaCodeWhispererFileCrawlerTest {
     }
 
     @Test
-    fun `listUtgCandidate by content`() {
+    fun `listUtgCandidate by content - java`() {
+        ExtensionTestUtil.maskExtensions(CodeWhispererClassResolver.EP_NAME, listOf(CodeWhispereJavaClassResolver()), disposableRule.disposable)
+
         val mainPsi = fixture.addFileToProject(
             "Main.java",
             """
@@ -431,6 +442,10 @@ class PythonCodeWhispererFileCrawlerTest {
     @Rule
     val projectRule: CodeInsightTestFixtureRule = PythonCodeInsightTestFixtureRule()
 
+    @JvmField
+    @Rule
+    val disposableRule = DisposableRule()
+
     lateinit var sut: CodeWhispererFileCrawler
 
     lateinit var project: Project
@@ -500,7 +515,9 @@ class PythonCodeWhispererFileCrawlerTest {
     }
 
     @Test
-    fun `listUtgCandidate by content`() {
+    fun `listUtgCandidate by content - python`() {
+        ExtensionTestUtil.maskExtensions(CodeWhispererClassResolver.EP_NAME, listOf(CodeWhispererPythonClassResolver()), disposableRule.disposable)
+
         val mainPsi = fixture.addFileToProject(
             "main.py",
             """
@@ -511,9 +528,9 @@ class PythonCodeWhispererFileCrawlerTest {
                 
             """.trimIndent()
         )
-        val file1 = fixture.addFileToProject("Class1.java", "trivial string 1")
-        val file2 = fixture.addFileToProject("Class2.java", "trivial string 2")
-        val file3 = fixture.addFileToProject("Class3.java", "trivial string 3")
+        val file1 = fixture.addFileToProject("foo.py", "trivial string 1")
+        val file2 = fixture.addFileToProject("bar.py", "trivial string 2")
+        val file3 = fixture.addFileToProject("baz.py", "trivial string 3")
         val tstPsi = fixture.addFileToProject(
             "/test/main_test_not_following_naming_convention.py",
             """
