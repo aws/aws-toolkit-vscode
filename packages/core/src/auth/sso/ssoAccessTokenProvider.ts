@@ -23,14 +23,14 @@ import {
     ToolkitError,
     getRequestId,
     getTelemetryReason,
+    getTelemetryReasonDesc,
     getTelemetryResult,
     isClientFault,
     isNetworkError,
-    resolveErrorMessageToDisplay,
 } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 import { AwsLoginWithBrowser, AwsRefreshCredentials, Metric, telemetry } from '../../shared/telemetry/telemetry'
-import { indent, toBase64URL, truncate } from '../../shared/utilities/textUtilities'
+import { indent, toBase64URL } from '../../shared/utilities/textUtilities'
 import { AuthSSOServer } from './server'
 import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
@@ -153,7 +153,7 @@ export abstract class SsoAccessTokenProvider {
                 telemetry.aws_refreshCredentials.emit({
                     result: getTelemetryResult(err),
                     reason: getTelemetryReason(err),
-                    reasonDesc: truncate(resolveErrorMessageToDisplay(err, ''), 200, ''),
+                    reasonDesc: getTelemetryReasonDesc(err),
                     requestId: getRequestId(err),
                     ...metric,
                 } as AwsRefreshCredentials)
