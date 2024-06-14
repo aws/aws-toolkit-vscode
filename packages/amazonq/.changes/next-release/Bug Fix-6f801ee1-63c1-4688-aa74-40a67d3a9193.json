@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q /dev command: stop showing spinner when there is an error."
-}
