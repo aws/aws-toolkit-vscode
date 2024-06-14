@@ -353,7 +353,7 @@ export class Auth implements AuthService, ConnectionManager {
                 await this.clearStaleLinkedIamConnections()
             }
         }
-        this.#onDidDeleteConnection.fire(connId)
+        this.#onDidDeleteConnection.fire({ connId, storedProfile: profile })
     }
 
     private async clearStaleLinkedIamConnections() {
