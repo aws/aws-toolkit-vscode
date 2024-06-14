@@ -1,3 +1,11 @@
+## 1.9.0 2024-06-14
+
+- **Bug Fix** Amazon Q inline suggestions: remember `Pause Auto-Suggestions` after IDE restart
+- **Bug Fix** Amazon Q /dev command: stop showing spinner when there is an error.
+- **Bug Fix** Security Scan: Fixes an issue where auto-scans cause the editor to become unresponsive for larger projects.
+- **Bug Fix** Fix(Amazon Q Code Transformation): show more detailed error messages for proxy issues
+- **Feature** Amazon Q Code Transform: Allow user to view transformation build log
+
 ## 1.8.0 2024-06-07
 
 - **Bug Fix** fix(featureDev): fix file rejection for multi-workspaces
