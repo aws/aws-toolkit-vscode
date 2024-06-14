@@ -96,6 +96,10 @@ export function isRemoteWorkspace(): boolean {
     return vscode.env.remoteName === 'ssh-remote'
 }
 
+export function isWebWorkspace(): boolean {
+    return vscode.env.uiKind === vscode.UIKind.Web
+}
+
 export function getCodeCatalystProjectName(): string | undefined {
     return process.env['__DEV_ENVIRONMENT_PROJECT_NAME']
 }

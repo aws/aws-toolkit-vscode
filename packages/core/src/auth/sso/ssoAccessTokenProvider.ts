@@ -34,14 +34,16 @@ import {
 } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 import { AwsLoginWithBrowser, AwsRefreshCredentials, Metric, telemetry } from '../../shared/telemetry/telemetry'
-import { indent } from '../../shared/utilities/textUtilities'
+import { indent, toBase64URL } from '../../shared/utilities/textUtilities'
 import { AuthSSOServer } from './server'
 import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { randomBytes, createHash } from 'crypto'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { randomUUID } from '../../common/crypto'
-import { isRemoteWorkspace } from '../../shared/vscode/env'
+import { isRemoteWorkspace, isWebWorkspace } from '../../shared/vscode/env'
+import { showInputBox } from '../../shared/ui/inputPrompter'
+import { DevSettings } from '../../shared/settings'
 
 export const authenticationPath = 'sso/authenticated'
 
@@ -260,9 +262,12 @@ export abstract class SsoAccessTokenProvider {
              *
              * Since we are unable to serve the final authorization page
              */
-            return isRemoteWorkspace() || vscode.env.uiKind === vscode.UIKind.Web
+            return isRemoteWorkspace() || isWebWorkspace()
         }
     ) {
+        if (DevSettings.instance.get('webAuth', false) && isWebWorkspace()) {
+            return new WebAuthorization(profile, cache, oidc)
+        }
         if (useDeviceFlow()) {
             return new DeviceFlowAuthorization(profile, cache, oidc)
         }
@@ -511,6 +516,94 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
 
         // Clear cached if registration is expired or it uses a deprecate auth version (device code)
         if (cachedRegistration && (isExpired(cachedRegistration) || isDeprecatedAuth(cachedRegistration))) {
+            await this.invalidate()
+        }
+
+        return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+    }
+}
+
+class WebAuthorization extends SsoAccessTokenProvider {
+    private redirectUri = 'http://127.0.0.1:54321/oauth/callback'
+
+    constructor(
+        profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
+        cache = getCache(),
+        oidc: OidcClient
+    ) {
+        super(profile, cache, oidc)
+    }
+
+    override async registerClient(): Promise<ClientRegistration> {
+        const companyName = getIdeProperties().company
+        return this.oidc.registerClient(
+            {
+                // All AWS extensions (Q, Toolkit) for a given IDE use the same client name.
+                clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
+                clientType: clientRegistrationType,
+                scopes: this.profile.scopes,
+                grantTypes: [authorizationGrantType, refreshGrantType],
+                redirectUris: [this.redirectUri],
+                issuerUrl: this.profile.startUrl,
+            },
+            this.profile.startUrl,
+            'web auth code'
+        )
+    }
+
+    override async authorize(
+        registration: ClientRegistration
+    ): Promise<{ token: SsoToken; registration: ClientRegistration; region: string; startUrl: string }> {
+        const state = randomUUID()
+
+        const token = await this.withBrowserLoginTelemetry(async () => {
+            const codeVerifier = toBase64URL(randomBytes(32).toString('base64'))
+            const codeChallenge = toBase64URL(createHash('sha256').update(codeVerifier).digest().toString('base64'))
+
+            const location = await this.oidc.authorize({
+                responseType: 'code',
+                clientId: registration.clientId,
+                // we aren't running on localhost so we can't see the what ports are free
+                redirectUri: this.redirectUri,
+                scopes: this.profile.scopes ?? [],
+                state,
+                codeChallenge,
+                codeChallengeMethod: 'S256',
+            })
+
+            await vscode.env.openExternal(vscode.Uri.parse(location))
+
+            const inputBox = await showInputBox({
+                title: 'Authorization Input',
+                placeholder: 'Input the authorization code',
+                validateInput: (val: string) => {
+                    if (val.length === 0) {
+                        return 'At least one character is required'
+                    }
+                    return undefined
+                },
+            })
+
+            const tokenRequest: CreateTokenRequest = {
+                clientId: registration.clientId,
+                clientSecret: registration.clientSecret,
+                grantType: authorizationGrantType,
+                redirectUri: this.redirectUri,
+                codeVerifier,
+                code: inputBox,
+            }
+
+            return this.oidc.createToken(tokenRequest)
+        })
+
+        return this.formatToken(token, registration)
+    }
+
+    override async getValidatedClientRegistration(): Promise<ClientRegistration> {
+        const cacheKey = this.registrationCacheKey
+        const cachedRegistration = await this.cache.registration.load(cacheKey)
+
+        if (cachedRegistration && (isExpired(cachedRegistration) || cachedRegistration.flow !== 'web auth code')) {
             await this.invalidate()
         }
 
