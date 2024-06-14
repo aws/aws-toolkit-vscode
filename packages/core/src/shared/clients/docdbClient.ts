@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import globals from '../extensionGlobals'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
 import {
     DocDBClient,
@@ -15,16 +16,19 @@ import {
 export type DocumentDBClient = InterfaceNoSymbol<DefaultDocumentDBClient>
 
 export class DefaultDocumentDBClient {
-    private readonly config: DocDBClientConfig
+    public constructor(public readonly regionCode: string) {}
 
-    public constructor(public readonly regionCode: string) {
-        this.config = {
-            region: regionCode,
+    public async getClient(): Promise<DocDBClient> {
+        const credentials = await globals.awsContext.getCredentials()
+        const config: DocDBClientConfig = {
+            credentials: credentials,
+            region: this.regionCode,
         }
+        return new DocDBClient(config)
     }
 
     public async listClusters(): Promise<DBCluster[]> {
-        const client = new DocDBClient(this.config)
+        const client = await this.getClient()
         let results: DBCluster[] = []
 
         const input = {
