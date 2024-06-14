@@ -275,7 +275,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import SelectableItem from './selectableItem.vue'
-import { LoginOption, AuthError } from './types'
+import { LoginOption } from './types'
 import { CommonAuthWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { Region } from '../../../shared/regions/endpoints'
@@ -429,7 +429,13 @@ export default defineComponent({
                     this.stage = 'AUTHENTICATING'
                     const selectedConnection =
                         this.existingLogins[this.selectedLoginOption - LoginOption.EXISTING_LOGINS]
-                    const error = await client.useConnection(selectedConnection.connectionId, false)
+
+                    // Existing connections cannot be Builder IDs, they are filtered out in the client.
+                    const error = await client.startEnterpriseSetup(
+                        selectedConnection.startUrl,
+                        selectedConnection.region,
+                        this.app
+                    )
                     if (error) {
                         this.stage = 'START'
                         void client.errorNotification(error)
@@ -446,16 +452,7 @@ export default defineComponent({
                 }
                 this.stage = 'AUTHENTICATING'
 
-                // First check if the user tried submitting a connection that was already displayed as existing.
-                const existingConn = this.existingLogins.find(conn => conn.startUrl === this.startUrl)
-
-                let error: AuthError | undefined
-                if (existingConn !== undefined) {
-                    error = await client.useConnection(existingConn.connectionId, false)
-                } else {
-                    error = await client.startEnterpriseSetup(this.startUrl, this.selectedRegion, this.app)
-                }
-
+                const error = await client.startEnterpriseSetup(this.startUrl, this.selectedRegion, this.app)
                 if (error) {
                     this.stage = 'START'
                     void client.errorNotification(error)
@@ -492,16 +489,6 @@ export default defineComponent({
             if (this.startUrl && !validateSsoUrlFormat(this.startUrl)) {
                 this.startUrlError =
                     'URLs must start with http:// or https://. Example: https://d-xxxxxxxxxx.awsapps.com/start'
-            } else if (
-                this.startUrl &&
-                this.existingLogins.some(conn => conn.startUrl === this.startUrl && conn.region !== this.selectedRegion)
-            ) {
-                // Here, the user provided a startUrl that is already displayed as an existing option (in the previous screen).
-                // If the selectedRegion differs from the region in the existing connection, then we can display this error.
-                // Otherwise, we would have skipped this codepath and we will just re-use the existing connection since it is the same
-                // as what the user provided.
-                this.startUrlError =
-                    'A connection for this start URL already exists. Sign out before creating a new one.'
             } else {
                 this.startUrlError = ''
                 void client.storeMetricMetadata({
@@ -548,15 +535,6 @@ export default defineComponent({
                     region: connection.ssoRegion,
                 })
             })
-
-            // If Toolkit has usable connections, instead auto connect Q using toolkit connection.
-            // Keep in mind that a "usable" connection is one with at least the CW core scopes (inline, ...)
-            if (sharedConnections && sharedConnections.length > 0) {
-                const conn = await client.findUsableConnection(sharedConnections)
-                if (conn) {
-                    await client.useConnection(conn.id, true)
-                }
-            }
 
             this.$forceUpdate()
         },

@@ -159,15 +159,6 @@ export abstract class CommonAuthWebview extends VueWebview {
 
     abstract fetchConnections(): Promise<AwsConnection[] | undefined>
 
-    /**
-     * Re-use connection that is pushed from Amazon Q to Toolkit.
-     * @param connectionId ID of the connection to re-use
-     * @param auto indicate whether this happened automatically (true), or the result of user action (false)
-     */
-    abstract useConnection(connectionId: string, auto: boolean): Promise<AuthError | undefined>
-
-    abstract findUsableConnection(connections: AwsConnection[]): AwsConnection | undefined
-
     async errorNotification(e: AuthError) {
         void vscode.window.showInformationMessage(`${e.text}`)
     }

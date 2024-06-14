@@ -345,22 +345,6 @@ export class CodeCatalystAuthenticationProvider {
             }
         }
     }
-    /**
-     * Try to use an existing connection for CodeCatalyst Login
-     */
-    public async tryUseConnection(conn: SsoConnection) {
-        const connId = conn.id
-        if (isValidCodeCatalystConnection(conn)) {
-            getLogger().info(`auth: re-use connection from existing connection id ${connId}`)
-            await this.secondaryAuth.useNewConnection(conn)
-            await this.isConnectionOnboarded(conn, true)
-        } else {
-            getLogger().info(`auth: re-use(new scope) to connection from existing connection id ${connId}`)
-            const newConn = await this.secondaryAuth.addScopes(conn, defaultScopes)
-            await this.secondaryAuth.useNewConnection(newConn)
-            await this.isConnectionOnboarded(newConn, true)
-        }
-    }
 
     public async reauthenticate(conn: SsoConnection) {
         try {
