@@ -1,3 +1,8 @@
+## 3.10.0 2024-06-14
+
+- **Bug Fix** UX: Amazon Q continues to install even if users uninstall it.
+- **Bug Fix** CodeCatalyst: Dev Environment may time out if user is not authenticated
+
 ## 3.9.0 2024-06-07
 
 - **Feature** Toolkit now supports creating, viewing and editing [Threat Composer](https://github.com/awslabs/threat-composer#readme) threat models (`*.tc.json`)
