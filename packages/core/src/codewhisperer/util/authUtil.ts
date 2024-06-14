@@ -129,6 +129,7 @@ export class AuthUtil {
             if (this.isValidEnterpriseSsoInUse() || (this.isBuilderIdInUse() && !this.isConnectionExpired())) {
                 // start the feature config polling job
                 await vscode.commands.executeCommand('aws.amazonq.fetchFeatureConfigs')
+                await showAmazonQWalkthroughOnce()
             }
             await this.setVscodeContextProps()
         })
@@ -222,8 +223,6 @@ export class AuthUtil {
             conn = await this.auth.reauthenticate(conn)
         }
 
-        await showAmazonQWalkthroughOnce()
-
         return this.secondaryAuth.useNewConnection(conn)
     }
 
@@ -242,8 +241,6 @@ export class AuthUtil {
         if (this.auth.getConnectionState(conn) === 'invalid') {
             conn = await this.auth.reauthenticate(conn)
         }
-
-        await showAmazonQWalkthroughOnce()
 
         return this.secondaryAuth.useNewConnection(conn)
     }

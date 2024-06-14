@@ -151,6 +151,55 @@ export class ValidationException extends __BaseException {
 
 /**
  * @public
+ * Description of a user's context when they are calling Q Chat from AppStudio
+ */
+export interface AppStudioState {
+  /**
+   * @public
+   * The namespace of the context. Examples: 'ui.Button', 'ui.Table.DataSource', 'ui.Table.RowActions.Button', 'logic.invokeAWS', 'logic.JavaScript'
+   */
+  namespace: string | undefined;
+
+  /**
+   * @public
+   * The name of the property. Examples: 'visibility', 'disability', 'value', 'code'
+   */
+  propertyName: string | undefined;
+
+  /**
+   * @public
+   * The value of the property.
+   */
+  propertyValue?: string;
+
+  /**
+   * @public
+   * Context about how the property is used
+   */
+  propertyContext: string | undefined;
+}
+
+/**
+ * @internal
+ */
+export const AppStudioStateFilterSensitiveLog = (obj: AppStudioState): any => ({
+  ...obj,
+  ...(obj.namespace && { namespace:
+    SENSITIVE_STRING
+  }),
+  ...(obj.propertyName && { propertyName:
+    SENSITIVE_STRING
+  }),
+  ...(obj.propertyValue && { propertyValue:
+    SENSITIVE_STRING
+  }),
+  ...(obj.propertyContext && { propertyContext:
+    SENSITIVE_STRING
+  }),
+})
+
+/**
+ * @public
  * Streaming Response Event for Assistant Markdown text message.
  */
 export interface AssistantResponseEvent {
@@ -824,6 +873,49 @@ export namespace CursorState {
 
 /**
  * @public
+ * Represents an IDE retrieved relevant Text Document / File
+ */
+export interface RelevantTextDocument {
+  /**
+   * @public
+   * Filepath relative to the root of the workspace
+   */
+  relativeFilePath: string | undefined;
+
+  /**
+   * @public
+   * The text document's language identifier.
+   */
+  programmingLanguage?: ProgrammingLanguage;
+
+  /**
+   * @public
+   * Content of the text document
+   */
+  text?: string;
+
+  /**
+   * @public
+   * DocumentSymbols parsed from a text document
+   */
+  documentSymbols?: (DocumentSymbol)[];
+}
+
+/**
+ * @internal
+ */
+export const RelevantTextDocumentFilterSensitiveLog = (obj: RelevantTextDocument): any => ({
+  ...obj,
+  ...(obj.relativeFilePath && { relativeFilePath:
+    SENSITIVE_STRING
+  }),
+  ...(obj.text && { text:
+    SENSITIVE_STRING
+  }),
+})
+
+/**
+ * @public
  * Represents the state of an Editor
  */
 export interface EditorState {
@@ -838,6 +930,12 @@ export interface EditorState {
    * Position of the cursor
    */
   cursorState?: CursorState;
+
+  /**
+   * @public
+   * Represents IDE provided relevant files
+   */
+  relevantDocuments?: (RelevantTextDocument)[];
 }
 
 /**
@@ -850,6 +948,12 @@ export const EditorStateFilterSensitiveLog = (obj: EditorState): any => ({
   }),
   ...(obj.cursorState && { cursorState:
     obj.cursorState
+  }),
+  ...(obj.relevantDocuments && { relevantDocuments:
+    obj.relevantDocuments.map(
+      item =>
+      RelevantTextDocumentFilterSensitiveLog(item)
+    )
   }),
 })
 
@@ -1057,9 +1161,15 @@ export interface UserInputMessageContext {
 
   /**
    * @public
-   * Environment state chat messaage context.
+   * Environment state chat message context.
    */
   envState?: EnvState;
+
+  /**
+   * @public
+   * The state of a user's AppStudio UI when sending a message.
+   */
+  appStudioContext?: AppStudioState;
 
   /**
    * @public
@@ -1084,6 +1194,9 @@ export const UserInputMessageContextFilterSensitiveLog = (obj: UserInputMessageC
   }),
   ...(obj.envState && { envState:
     EnvStateFilterSensitiveLog(obj.envState)
+  }),
+  ...(obj.appStudioContext && { appStudioContext:
+    AppStudioStateFilterSensitiveLog(obj.appStudioContext)
   }),
   ...(obj.diagnostic && { diagnostic:
     DiagnosticFilterSensitiveLog(obj.diagnostic)
@@ -1547,6 +1660,8 @@ export interface ConversationState {
    * Trigger Reason for Chat
    */
   chatTriggerType: ChatTriggerType | string | undefined;
+
+  customizationArn?: string;
 }
 
 /**
@@ -1571,6 +1686,7 @@ export const ConversationStateFilterSensitiveLog = (obj: ConversationState): any
  */
 export const TransformationDownloadArtifactType = {
   CLIENT_INSTRUCTIONS: "ClientInstructions",
+  LOGS: "Logs",
 } as const
 /**
  * @public
@@ -1744,6 +1860,26 @@ export const ResultArchiveStreamFilterSensitiveLog = (obj: ResultArchiveStream):
 
 /**
  * @public
+ * This exception is thrown when request was denied due to caller exceeding their usage limits
+ */
+export class ServiceQuotaExceededException extends __BaseException {
+  readonly name: "ServiceQuotaExceededException" = "ServiceQuotaExceededException";
+  readonly $fault: "client" = "client";
+  /**
+   * @internal
+   */
+  constructor(opts: __ExceptionOptionType<ServiceQuotaExceededException, __BaseException>) {
+    super({
+      name: "ServiceQuotaExceededException",
+      $fault: "client",
+      ...opts
+    });
+    Object.setPrototypeOf(this, ServiceQuotaExceededException.prototype);
+  }
+}
+
+/**
+ * @public
  * Represents a Workspace state uploaded to S3 for Async Code Actions
  */
 export interface WorkspaceState {
@@ -1776,6 +1912,8 @@ export interface GenerateAssistantResponseRequest {
    * Structure to represent the current state of a chat conversation.
    */
   conversationState: ConversationState | undefined;
+
+  profileArn?: string;
 }
 
 /**

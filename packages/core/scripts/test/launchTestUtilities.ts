@@ -29,7 +29,12 @@ type SuiteName = 'integration' | 'e2e' | 'unit' | 'web'
  * If you want to run the tests manually you should use the `Run & Debug` menu in VS Code instead
  * to be able to use to breakpoints.
  */
-export async function runToolkitTests(suite: SuiteName, relativeTestEntryPoint: string, env?: Record<string, string>) {
+export async function runToolkitTests(
+    suite: SuiteName,
+    relativeTestEntryPoint: string,
+    workspaceFolder?: string,
+    env?: Record<string, string>
+) {
     try {
         console.log(`Running ${suite} test suite...`)
 
@@ -37,6 +42,7 @@ export async function runToolkitTests(suite: SuiteName, relativeTestEntryPoint: 
             vsCodeExecutablePath: await setupVSCodeTestInstance(suite),
             relativeTestEntryPoint,
             suite,
+            workspaceFolder,
             env,
         })
         console.log(`runTests() args:\n${JSON.stringify(args, undefined, 2)}`)
@@ -58,6 +64,7 @@ async function getVSCodeCliArgs(params: {
     vsCodeExecutablePath: string
     relativeTestEntryPoint: string
     suite: SuiteName
+    workspaceFolder?: string
     env?: Record<string, string>
 }): Promise<TestOptions> {
     const projectRootDir = process.cwd()
@@ -83,7 +90,10 @@ async function getVSCodeCliArgs(params: {
         disableExtensionsArgs = ['--disable-extensions']
     }
 
-    const workspacePath = join(projectRootDir, 'dist', 'src', 'testFixtures', 'workspaceFolder')
+    const workspaceFolderLocation = params.workspaceFolder
+        ? params.workspaceFolder
+        : 'dist/src/testFixtures/workspaceFolder'
+    const workspacePath = join(projectRootDir, workspaceFolderLocation)
     // This tells VS Code to run the extension in a web environment, which mimics vscode.dev
     const webExtensionKind = params.suite === 'web' ? ['--extensionDevelopmentKind=web'] : []
     const userDataDir = process.env.AWS_TOOLKIT_TEST_USER_DIR

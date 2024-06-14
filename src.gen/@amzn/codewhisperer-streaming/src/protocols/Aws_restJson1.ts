@@ -14,6 +14,7 @@ import {
 import { CodeWhispererStreamingServiceException as __BaseException } from "../models/CodeWhispererStreamingServiceException";
 import {
   AccessDeniedException,
+  AppStudioState,
   AssistantResponseEvent,
   AssistantResponseMessage,
   BinaryMetadataEvent,
@@ -40,9 +41,11 @@ import {
   ProgrammingLanguage,
   Range,
   Reference,
+  RelevantTextDocument,
   ResourceNotFoundException,
   ResultArchiveStream,
   RuntimeDiagnostic,
+  ServiceQuotaExceededException,
   ShellHistoryEntry,
   ShellState,
   Span,
@@ -122,6 +125,7 @@ export const se_GenerateAssistantResponseCommand = async(
   let body: any;
   body = JSON.stringify(take(input, {
     'conversationState': _ => _json(_),
+    'profileArn': [],
   }));
   return new __HttpRequest({
     protocol,
@@ -318,6 +322,9 @@ const de_ExportResultArchiveCommandError = async(
         case "ResourceNotFoundException":
         case "com.amazon.aws.codewhisperer#ResourceNotFoundException":
           throw await de_ResourceNotFoundExceptionRes(parsedOutput, context);
+        case "ServiceQuotaExceededException":
+        case "com.amazon.aws.codewhisperer#ServiceQuotaExceededException":
+          throw await de_ServiceQuotaExceededExceptionRes(parsedOutput, context);
         case "ThrottlingException":
         case "com.amazon.aws.codewhisperer#ThrottlingException":
           throw await de_ThrottlingExceptionRes(parsedOutput, context);
@@ -414,6 +421,27 @@ const de_ExportResultArchiveCommandError = async(
         });
         Object.assign(contents, doc);
         const exception = new ResourceNotFoundException({
+          $metadata: deserializeMetadata(parsedOutput),
+          ...contents
+        });
+        return __decorateServiceException(exception, parsedOutput.body);
+      };
+
+      /**
+       * deserializeAws_restJson1ServiceQuotaExceededExceptionRes
+       */
+      const de_ServiceQuotaExceededExceptionRes = async (
+        parsedOutput: any,
+        context: __SerdeContext
+      ): Promise<ServiceQuotaExceededException> => {
+        const contents: any = map({
+        });
+        const data: any = parsedOutput.body;
+        const doc = take(data, {
+          'message': __expectString,
+        });
+        Object.assign(contents, doc);
+        const exception = new ServiceQuotaExceededException({
           $metadata: deserializeMetadata(parsedOutput),
           ...contents
         });
@@ -623,6 +651,8 @@ const de_ExportResultArchiveCommandError = async(
         Object.assign(contents, _json(data));
         return contents;
       }
+      // se_AppStudioState omitted.
+
       // se_AssistantResponseMessage omitted.
 
       // se_ChatHistory omitted.
@@ -662,6 +692,10 @@ const de_ExportResultArchiveCommandError = async(
       // se_Reference omitted.
 
       // se_References omitted.
+
+      // se_RelevantDocumentList omitted.
+
+      // se_RelevantTextDocument omitted.
 
       // se_RuntimeDiagnostic omitted.
 

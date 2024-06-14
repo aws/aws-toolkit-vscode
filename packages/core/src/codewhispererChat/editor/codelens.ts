@@ -38,7 +38,8 @@ export class TryChatCodeLensProvider implements vscode.CodeLensProvider {
     private static providerDisposable: vscode.Disposable | undefined = undefined
     private disposables: vscode.Disposable[] = []
 
-    private isAmazonQVisible: boolean = false
+    // Assumption: Amazon Q is visible by default and codelens should be hidden
+    private isAmazonQVisible: boolean = true
 
     constructor(
         isAmazonQVisibleEvent: vscode.Event<boolean>,

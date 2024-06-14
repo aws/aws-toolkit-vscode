@@ -4,13 +4,12 @@
  */
 
 import { SinonSandbox, createSandbox } from 'sinon'
-import { assertTelemetry, tryRegister } from '../../../testUtil'
+import { assertTelemetry } from '../../../testUtil'
 import assert from 'assert'
 import { createTestAuth } from '../../../credentials/testUtil'
 import { Auth } from '../../../../auth'
 import { isBuilderIdConnection, isIdcSsoConnection, scopesSsoAccountAccess } from '../../../../auth/connection'
 import { getOpenExternalStub } from '../../../globalSetup.test'
-import { openAmazonQWalkthrough } from '../../../../amazonq/onboardingPage/walkthrough'
 import { ToolkitLoginWebview } from '../../../../login/webview/vue/toolkit/backend_toolkit'
 import {
     CodeCatalystAuthenticationProvider,
@@ -32,10 +31,6 @@ describe('Toolkit Login', function () {
     let auth: ReturnType<typeof createTestAuth>
     let codecatalystAuth: CodeCatalystAuthenticationProvider
     let backend: ToolkitLoginWebview
-
-    before(function () {
-        tryRegister(openAmazonQWalkthrough)
-    })
 
     beforeEach(function () {
         sandbox = createSandbox()

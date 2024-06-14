@@ -63,7 +63,7 @@ export interface ExportResultArchiveCommandOutput extends ExportResultArchiveRes
  *   exportContext: { // ExportContext Union: only one key present
  *     transformationExportContext: { // TransformationExportContext
  *       downloadArtifactId: "STRING_VALUE", // required
- *       downloadArtifactType: "ClientInstructions", // required
+ *       downloadArtifactType: "ClientInstructions" || "Logs", // required
  *     },
  *   },
  * };
