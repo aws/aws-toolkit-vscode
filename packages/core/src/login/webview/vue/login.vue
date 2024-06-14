@@ -291,10 +291,6 @@ function validateSsoUrlFormat(url: string) {
     return regex.test(url)
 }
 
-function isBuilderId(url: string) {
-    return url === 'https://view.awsapps.com/start'
-}
-
 function getCredentialId(loginOption: LoginOption) {
     switch (loginOption) {
         case LoginOption.BUILDER_ID:
@@ -323,10 +319,7 @@ interface ImportedLogin {
     id: number
     text: string
     title: string
-    connectionId: string
     type: number
-
-    // used internally
     startUrl: string
     region: string
 }
@@ -347,6 +340,7 @@ export default defineComponent({
     },
     data() {
         return {
+            existingStartUrls: [] as string[],
             importedLogins: [] as ImportedLogin[],
             selectedLoginOption: LoginOption.NONE,
             stage: 'START' as Stage,
@@ -369,6 +363,7 @@ export default defineComponent({
     async mounted() {
         this.fetchRegions()
         await this.updateImportedConnections()
+        await this.updateExistingStartUrls()
 
         // Reset gathered telemetry data each time we view the login page.
         // The webview panel is reset on each view of the login page by design.
@@ -376,6 +371,7 @@ export default defineComponent({
 
         // Pre-select the first available login option
         await this.preselectLoginOption()
+        this.handleUrlInput() // validate the default startUrl
     },
     methods: {
         toggleItemSelection(itemId: number) {
@@ -489,6 +485,9 @@ export default defineComponent({
             if (this.startUrl && !validateSsoUrlFormat(this.startUrl)) {
                 this.startUrlError =
                     'URLs must start with http:// or https://. Example: https://d-xxxxxxxxxx.awsapps.com/start'
+            } else if (this.startUrl && this.existingStartUrls.some(url => url === this.startUrl)) {
+                this.startUrlError =
+                    'A connection for this start URL already exists. Sign out before creating a new one.'
             } else {
                 this.startUrlError = ''
                 void client.storeMetricMetadata({
@@ -497,7 +496,6 @@ export default defineComponent({
             }
         },
         handleRegionInput(event: any) {
-            this.handleUrlInput() // startUrl validity depends on region, see handleUriInput() for details
             void client.storeMetricMetadata({
                 awsRegion: event.target.value,
             })
@@ -526,17 +524,17 @@ export default defineComponent({
                 this.importedLogins.push({
                     id: LoginOption.IMPORTED_LOGINS + index,
                     text: this.app === 'TOOLKIT' ? 'Used by Amazon Q' : 'Used by AWS Toolkit',
-                    title: isBuilderId(connection.startUrl)
-                        ? 'AWS Builder ID'
-                        : `IAM Identity Center ${connection.startUrl}`,
-                    connectionId: connection.id,
-                    type: isBuilderId(connection.startUrl) ? LoginOption.BUILDER_ID : LoginOption.ENTERPRISE_SSO,
+                    title: `IAM Identity Center ${connection.startUrl}`,
+                    type: LoginOption.ENTERPRISE_SSO,
                     startUrl: connection.startUrl,
                     region: connection.ssoRegion,
                 })
             })
 
             this.$forceUpdate()
+        },
+        async updateExistingStartUrls() {
+            this.existingStartUrls = (await client.listSsoConnections()).map(conn => conn.startUrl)
         },
         async getDefaultStartUrl() {
             return await client.getDefaultStartUrl()
