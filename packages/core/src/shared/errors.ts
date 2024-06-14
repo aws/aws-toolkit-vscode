@@ -459,13 +459,15 @@ export function isClientFault(error: ServiceException): boolean {
     return error.$fault === 'client' && !(isThrottlingError(error) || isTransientError(error))
 }
 
-export function getRequestId(error: unknown): string | undefined {
-    if (isAwsError(error)) {
-        return error.requestId
+export function getRequestId(err: unknown): string | undefined {
+    if (isAwsError(err)) {
+        return err.requestId
     }
 
-    if (error instanceof ServiceException) {
-        return error.$metadata.requestId
+    // XXX: Checking `err instanceof ServiceException` fails for `SSOOIDCServiceException` even
+    // though it subclasses @aws-sdk/smithy-client.ServiceException
+    if (typeof (err as any)?.$metadata?.requestId === 'string') {
+        return (err as any).$metadata.requestId
     }
 }
 
