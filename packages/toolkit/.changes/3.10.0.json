@@ -1,0 +1,14 @@
+{
+	"date": "2024-06-14",
+	"version": "3.10.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "UX: Amazon Q continues to install even if users uninstall it."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeCatalyst: Dev Environment may time out if user is not authenticated"
+		}
+	]
+}
