@@ -81,22 +81,22 @@
                 </svg>
             </button>
             <div class="auth-container-section">
-                <div class="existing-logins" v-if="existingLogins.length > 0">
+                <div class="imported-logins" v-if="importedLogins.length > 0">
                     <div class="header bottomMargin">Connect with an existing account:</div>
-                    <div v-for="(existingLogin, index) in existingLogins" :key="index">
+                    <div v-for="(importedLogin, index) in importedLogins" :key="index">
                         <SelectableItem
                             @toggle="toggleItemSelection"
-                            :isSelected="selectedLoginOption === LoginOption.EXISTING_LOGINS + index"
-                            :itemId="LoginOption.EXISTING_LOGINS + index"
-                            :itemText="existingLogin.text"
-                            :itemTitle="existingLogin.title"
-                            :itemType="existingLogin.type"
+                            :isSelected="selectedLoginOption === LoginOption.IMPORTED_LOGINS + index"
+                            :itemId="LoginOption.IMPORTED_LOGINS + index"
+                            :itemText="importedLogin.text"
+                            :itemTitle="importedLogin.title"
+                            :itemType="importedLogin.type"
                             class="selectable-item bottomMargin"
                         ></SelectableItem>
                     </div>
                     <div class="header">Or, choose a sign-in option:</div>
                 </div>
-                <div class="header bottomMargin" v-if="existingLogins.length == 0">Choose a sign-in option:</div>
+                <div class="header bottomMargin" v-if="importedLogins.length == 0">Choose a sign-in option:</div>
                 <SelectableItem
                     v-if="app === 'AMAZONQ'"
                     @toggle="toggleItemSelection"
@@ -312,14 +312,14 @@ const authUiClickOptionMap = {
     [LoginOption.BUILDER_ID]: 'auth_builderIdOption',
     [LoginOption.ENTERPRISE_SSO]: 'auth_idcOption',
     [LoginOption.IAM_CREDENTIAL]: 'auth_credentialsOption',
-    [LoginOption.EXISTING_LOGINS]: 'auth_existingAuthOption',
+    [LoginOption.IMPORTED_LOGINS]: 'auth_existingAuthOption',
 }
 
 function getUiClickEvent(loginOption: LoginOption) {
     return (authUiClickOptionMap as any)[loginOption]
 }
 
-interface ExistingLogin {
+interface ImportedLogin {
     id: number
     text: string
     title: string
@@ -347,7 +347,7 @@ export default defineComponent({
     },
     data() {
         return {
-            existingLogins: [] as ExistingLogin[],
+            importedLogins: [] as ImportedLogin[],
             selectedLoginOption: LoginOption.NONE,
             stage: 'START' as Stage,
             regions: [] as Region[],
@@ -368,7 +368,7 @@ export default defineComponent({
 
     async mounted() {
         this.fetchRegions()
-        await this.updateExistingConnections()
+        await this.updateImportedConnections()
 
         // Reset gathered telemetry data each time we view the login page.
         // The webview panel is reset on each view of the login page by design.
@@ -425,12 +425,12 @@ export default defineComponent({
                     this.stage = 'SSO_FORM'
                     this.$nextTick(() => document.getElementById('startUrl')!.focus())
                     await client.storeMetricMetadata({ awsRegion: this.selectedRegion })
-                } else if (this.selectedLoginOption >= LoginOption.EXISTING_LOGINS) {
+                } else if (this.selectedLoginOption >= LoginOption.IMPORTED_LOGINS) {
                     this.stage = 'AUTHENTICATING'
                     const selectedConnection =
-                        this.existingLogins[this.selectedLoginOption - LoginOption.EXISTING_LOGINS]
+                        this.importedLogins[this.selectedLoginOption - LoginOption.IMPORTED_LOGINS]
 
-                    // Existing connections cannot be Builder IDs, they are filtered out in the client.
+                    // Imported connections cannot be Builder IDs, they are filtered out in the client.
                     const error = await client.startEnterpriseSetup(
                         selectedConnection.startUrl,
                         selectedConnection.region,
@@ -517,14 +517,14 @@ export default defineComponent({
             this.regions = regions
         },
         async emitUpdate(cause?: string) {},
-        async updateExistingConnections() {
+        async updateImportedConnections() {
             // fetch existing connections of AWS toolkit in Amazon Q
             // or fetch existing connections of Amazon Q in AWS Toolkit
             // to reuse connections in AWS Toolkit & Amazon Q
             const sharedConnections = await client.fetchConnections()
             sharedConnections?.forEach((connection, index) => {
-                this.existingLogins.push({
-                    id: LoginOption.EXISTING_LOGINS + index,
+                this.importedLogins.push({
+                    id: LoginOption.IMPORTED_LOGINS + index,
                     text: this.app === 'TOOLKIT' ? 'Used by Amazon Q' : 'Used by AWS Toolkit',
                     title: isBuilderId(connection.startUrl)
                         ? 'AWS Builder ID'
@@ -546,8 +546,8 @@ export default defineComponent({
         },
         async preselectLoginOption() {
             // Select the first available option for Login
-            if (this.existingLogins.length > 0) {
-                this.selectedLoginOption = LoginOption.EXISTING_LOGINS
+            if (this.importedLogins.length > 0) {
+                this.selectedLoginOption = LoginOption.IMPORTED_LOGINS
             } else if (this.app === 'AMAZONQ') {
                 this.selectedLoginOption = LoginOption.BUILDER_ID
             } else if (this.app === 'TOOLKIT') {
