@@ -121,6 +121,9 @@ export interface ConnectionStateChangeEvent {
 
 export type AuthType = Auth
 
+export type DeletedConnection = { connId: Connection['id']; storedProfile?: StoredProfile }
+type DeclaredConnection = Pick<SsoProfile, 'ssoRegion' | 'startUrl'> & { source: string }
+
 export class Auth implements AuthService, ConnectionManager {
     readonly #ssoCache = getCache()
     readonly #validationErrors = new Map<Connection['id'], Error>()
@@ -128,7 +131,7 @@ export class Auth implements AuthService, ConnectionManager {
     readonly #onDidChangeActiveConnection = new vscode.EventEmitter<StatefulConnection | undefined>()
     readonly #onDidChangeConnectionState = new vscode.EventEmitter<ConnectionStateChangeEvent>()
     readonly #onDidUpdateConnection = new vscode.EventEmitter<StatefulConnection>()
-    readonly #onDidDeleteConnection = new vscode.EventEmitter<Connection['id']>()
+    readonly #onDidDeleteConnection = new vscode.EventEmitter<DeletedConnection>()
     public readonly onDidChangeActiveConnection = this.#onDidChangeActiveConnection.event
     public readonly onDidChangeConnectionState = this.#onDidChangeConnectionState.event
     public readonly onDidUpdateConnection = this.#onDidUpdateConnection.event
@@ -149,6 +152,14 @@ export class Auth implements AuthService, ConnectionManager {
 
     public get hasConnections() {
         return this.store.listProfiles().length !== 0
+    }
+
+    /**
+     * Map startUrl -> declared connections
+     */
+    private readonly _declaredConnections: { [key: string]: DeclaredConnection } = {}
+    public get declaredConnections() {
+        return Object.values(this._declaredConnections)
     }
 
     public async restorePreviousSession(): Promise<Connection | undefined> {
@@ -325,7 +336,7 @@ export class Auth implements AuthService, ConnectionManager {
             }
         }
 
-        this.#onDidDeleteConnection.fire(connId)
+        this.#onDidDeleteConnection.fire({ connId, storedProfile: profile })
     }
 
     /**
@@ -359,7 +370,7 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     /**
-     * @warning Only intended for Dev mode purposes
+     * @warning Only intended for Dev mode purposes.
      *
      * Put the SSO connection in to an expired state
      */
@@ -1015,6 +1026,22 @@ export class Auth implements AuthService, ConnectionManager {
             await this.store.deleteProfile(id)
             await this.store.setCurrentProfileId(undefined)
         }
+    }
+
+    public declareConnectionFromApi(conn: Pick<AwsConnection, 'startUrl' | 'ssoRegion'>, source: string) {
+        getLogger().debug(`Declared connection '${conn.startUrl}' from ${source}.`)
+        this._declaredConnections[conn.startUrl] = {
+            startUrl: conn.startUrl,
+            ssoRegion: conn.ssoRegion,
+            source,
+        }
+    }
+
+    public undeclareConnectionFromApi(conn: Pick<AwsConnection, 'startUrl'>) {
+        getLogger().debug(
+            `Undeclared connection '${conn.startUrl}' from ${this._declaredConnections[conn.startUrl].source}`
+        )
+        delete this._declaredConnections[conn.startUrl]
     }
 }
 /**
