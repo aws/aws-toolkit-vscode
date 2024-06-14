@@ -271,6 +271,42 @@ export function getTelemetryResult(error: unknown | undefined): Result {
     return 'Failed'
 }
 
+/** Gets the (partial) error message detail for the `reasonDesc` field. */
+export function getTelemetryReasonDesc(err: unknown | undefined): string | undefined {
+    if (err === undefined) {
+        return undefined
+    }
+
+    const e = err as any
+    // error_description is a non-standard SDK field added by OIDC service.
+    // It has improved messages, so prefer it if found.
+    // https://github.com/aws/aws-toolkit-jetbrains/commit/cc9ed87fa9391dd39ac05cbf99b4437112fa3d10
+    //
+    // Example:
+    //
+    //      [error] API response (oidc.us-east-1.amazonaws.com /token): {
+    //        name: 'InvalidGrantException',
+    //        '$fault': 'client',
+    //        '$metadata': {
+    //          httpStatusCode: 400,
+    //          requestId: '7f5af448-5af7-45f2-8e47-5808deaea4ab',
+    //          extendedRequestId: undefined,
+    //          cfId: undefined
+    //        },
+    //        error: 'invalid_grant',
+    //        error_description: 'Invalid refresh token provided',
+    //        message: 'UnknownError'
+    //      }
+    const msg = e?.error_description?.trim() ? e?.error_description?.trim() : e?.message?.trim()
+
+    if (typeof msg === 'string') {
+        // Truncate to 200 chars.
+        return msg !== '' ? msg.substring(0, 200) : undefined
+    }
+
+    return undefined
+}
+
 export function getTelemetryReason(error: unknown | undefined): string | undefined {
     // Currently the `code` field is favored over the error name even though both are useful
     // for describing the reason. We're only using a single `reason` field and it's just simpler
@@ -281,6 +317,7 @@ export function getTelemetryReason(error: unknown | undefined): string | undefin
     } else if (error instanceof CancellationError) {
         return error.agent
     } else if (error instanceof ToolkitError) {
+        // TODO: prefer the error.error field if present? (see comment in `getTelemetryReasonDesc`)
         return getTelemetryReason(error.cause) ?? error.code ?? error.name
     } else if (error instanceof Error) {
         return (error as { code?: string }).code ?? error.name

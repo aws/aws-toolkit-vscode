@@ -12,6 +12,7 @@ import { hasProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { SsoToken, ClientRegistration } from './model'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import { DevSettings } from '../../shared/settings'
+import { onceChanged } from '../../shared/utilities/functionUtils'
 
 interface RegistrationKey {
     readonly startUrl: string
@@ -105,8 +106,8 @@ export function getTokenCache(directory = getCacheDir()): KeyedCache<SsoAccess> 
         }
     }
 
-    const logger = (message: string) => getLogger().debug(`SSO token cache: ${message}`)
-    const cache = createDiskCache<StoredToken, string>((key: string) => getTokenCacheFile(directory, key), logger)
+    const logIfChanged = onceChanged((message: string) => getLogger().debug(`SSO token cache: ${message}`))
+    const cache = createDiskCache<StoredToken, string>((key: string) => getTokenCacheFile(directory, key), logIfChanged)
 
     return mapCache(cache, read, write)
 }
