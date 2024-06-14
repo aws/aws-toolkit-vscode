@@ -6,7 +6,7 @@
 import assert from 'assert'
 import { SpawnOptions } from 'child_process'
 
-import { isError } from 'lodash'
+import { _IsError } from '../../../../shared/utilities/objectUtils'
 import {
     makeRequiredSamCliProcessInvokeOptions,
     SamCliProcessInvokeOptions,
@@ -101,7 +101,7 @@ export async function assertLogContainsBadExitInformation(
 
     const logText = logger
         .getLoggedEntries()
-        .filter(x => !isError(x))
+        .filter(x => !_IsError(x))
         .join('\n')
     expectedTexts.forEach(expectedText => {
         assert.ok(logText.includes(expectedText.text), expectedText.verifyMessage)

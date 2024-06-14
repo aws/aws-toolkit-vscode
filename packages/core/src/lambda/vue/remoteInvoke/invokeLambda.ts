@@ -5,7 +5,6 @@
 
 import { _Blob } from 'aws-sdk/clients/lambda'
 import { readFileSync } from 'fs'
-import * as _ from 'lodash'
 import * as vscode from 'vscode'
 import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambdaClient'
 import { ExtContext } from '../../../shared/extensions'

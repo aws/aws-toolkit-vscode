@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as _ from 'lodash'
 import * as os from 'os'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
@@ -15,6 +14,7 @@ import { extensionVersion, getCodeCatalystDevEnvId } from './vscode/env'
 import { DevSettings } from './settings'
 import globals from './extensionGlobals'
 import { once } from './utilities/functionUtils'
+import { _Throttle } from './utilities/objectUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -337,7 +337,7 @@ export class ExtensionUserActivity implements vscode.Disposable {
      */
     constructor(delay: number = 10_000, customEvents?: vscode.Event<any>[]) {
         // This ensures we don't fire a user activity event more than once per delay.
-        const throttledEmit = _.throttle(
+        const throttledEmit = _Throttle(
             (event: vscode.Event<any>) => {
                 this.activityEvent.fire()
                 getLogger().debug(`ExtensionUserActivity: event fired "${event.name}"`)

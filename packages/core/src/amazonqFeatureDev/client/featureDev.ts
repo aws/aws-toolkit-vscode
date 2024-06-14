@@ -4,7 +4,7 @@
  */
 
 import { Service, Token } from 'aws-sdk'
-import { omit } from 'lodash'
+import { _Omit } from '../../shared/utilities/objectUtils'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import globals from '../../shared/extensionGlobals'
@@ -104,7 +104,7 @@ export class FeatureDevClient {
                 uploadIntent: 'TASK_ASSIST_PLANNING',
                 contentLength,
             }
-            getLogger().debug(`Executing createUploadUrl with %O`, omit(params, 'contentChecksum'))
+            getLogger().debug(`Executing createUploadUrl with %O`, _Omit(params, 'contentChecksum'))
             const response = await client.createUploadUrl(params).promise()
             getLogger().debug(`${featureName}: Created upload url: %O`, {
                 uploadId: response.uploadId,

@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as _ from 'lodash'
 import { Iot } from 'aws-sdk'
 import { parse } from '@aws-sdk/util-arn-parser'
 import { getLogger } from '../logger'

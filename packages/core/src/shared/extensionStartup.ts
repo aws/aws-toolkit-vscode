@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as _ from 'lodash'
+import { _Template } from './utilities/objectUtils'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
@@ -57,7 +57,7 @@ export async function createQuickStartWebview(
         { enableScripts: true }
     )
 
-    const baseTemplateFn = _.template(BaseTemplates.simpleHtml)
+    const baseTemplateFn = _Template(BaseTemplates.simpleHtml)
 
     const htmlBody = convertExtensionRootTokensToPath(
         await fsCommon.readFileAsString(path.join(context.extensionPath, actualPage)),

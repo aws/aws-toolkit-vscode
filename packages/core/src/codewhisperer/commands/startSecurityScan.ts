@@ -36,7 +36,7 @@ import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { AuthUtil } from '../util/authUtil'
 import path from 'path'
 import { ZipMetadata, ZipUtil } from '../util/zipUtil'
-import { debounce } from 'lodash'
+import { _Debounce } from '../../shared/utilities/objectUtils'
 import { once } from '../../shared/utilities/functionUtils'
 import { randomUUID } from '../../common/crypto'
 import { CodeAnalysisScope } from '../models/constants'
@@ -84,7 +84,7 @@ export function startSecurityScanWithProgress(
     )
 }
 
-export const debounceStartSecurityScan = debounce(
+export const debounceStartSecurityScan = _Debounce(
     startSecurityScan,
     CodeWhispererConstants.autoScanDebounceDelaySeconds * 1000
 )

@@ -11,7 +11,7 @@ import { ChatControllerEventEmitters, GumbyController } from './chat/controller/
 import { AppToWebViewMessageDispatcher } from './chat/views/connector/connector'
 import { Messenger } from './chat/controller/messenger/messenger'
 import { UIMessageListener } from './chat/views/actions/uiMessageListener'
-import { debounce } from 'lodash'
+import { _Debounce } from '../shared/utilities/objectUtils'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { showTransformationHub } from './commands'
 import { transformByQState } from '../codewhisperer/models/model'
@@ -50,7 +50,7 @@ export function init(appContext: AmazonQAppInitContext) {
         'gumby'
     )
 
-    const debouncedEvent = debounce(async () => {
+    const debouncedEvent = _Debounce(async () => {
         const authenticated = (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'
         let authenticatingSessionID = ''
 

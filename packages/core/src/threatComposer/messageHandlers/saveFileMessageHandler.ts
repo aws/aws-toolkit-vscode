@@ -14,7 +14,7 @@ import {
 } from '../types'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
-import _ from 'lodash'
+import { _IsEqual } from '../../shared/utilities/objectUtils'
 
 /**
  * Handler for saving a file message from the webview.
@@ -126,7 +126,7 @@ export async function autoSaveFileMessageHandler(request: SaveFileRequestMessage
 
                 const currentState = JSON.parse(request.fileContents)
 
-                if (!_.isEqual(previousState, currentState)) {
+                if (!_IsEqual(previousState, currentState)) {
                     context.autoSaveFileState[filePath] = { fileContents: request.fileContents }
 
                     await saveWorkspace(context, request.fileContents)

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import _ = require('lodash')
+import { _CloneDeep, _IsEmpty, _IsEqual, _Get, _KeysIn, _Set, _IsString } from '../../shared/utilities/objectUtils'
 import { SchemaCodeGenUtils, toValidIdentifier } from '../../eventSchemas/models/schemaCodeGenUtils'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 
@@ -41,17 +41,17 @@ export async function buildSchemaTemplateParameters(schemaName: string, registry
     const schemaNode = JSON.parse(response.Content!)
     const latestSchemaVersion = response.SchemaVersion
     // Standard OpenAPI specification for AwsEventNode
-    const awsEventNode = _.get(schemaNode, components.concat('.', schemas, '.', awsEvent))
+    const awsEventNode = _Get(schemaNode, components.concat('.', schemas, '.', awsEvent))
 
     // Derive source from custom OpenAPI metadata provided by Schemas service
-    let source = _.get(awsEventNode, xAmazonEventSource)
-    if (!_.isString(source)) {
+    let source = _Get(awsEventNode, xAmazonEventSource)
+    if (!_IsString(source)) {
         source = defaultEventSource
     }
 
     // Derive detail type from custom OpenAPI metadata provided by Schemas service
-    let detailType = _.get(awsEventNode, xAmazonEventDetailType)
-    if (!_.isString(detailType)) {
+    let detailType = _Get(awsEventNode, xAmazonEventDetailType)
+    if (!_IsString(detailType)) {
         detailType = defaultEventDetailType
     }
 
@@ -87,17 +87,17 @@ function buildSchemaPackageHierarchy(schemaName: string) {
 }
 
 function buildRootSchemaEventName(schemaNode: any, awsEventNode: any) {
-    const refValue = _.get(awsEventNode, properties.concat('.', detail, '.', ref))
+    const refValue = _Get(awsEventNode, properties.concat('.', detail, '.', ref))
 
-    if (_.isString(refValue) && refValue.includes(componentsSchemasPath)) {
+    if (_IsString(refValue) && refValue.includes(componentsSchemasPath)) {
         const awsEventDetailRef = refValue.split(componentsSchemasPath).pop()
-        if (!_.isEmpty(awsEventDetailRef)) {
+        if (!_IsEmpty(awsEventDetailRef)) {
             return toValidIdentifier(awsEventDetailRef!)
         }
     }
 
-    const schemaRoots = _.keysIn(_.get(schemaNode, components.concat('.', schemas)))
-    if (!_.isEmpty(schemaRoots)) {
+    const schemaRoots = _KeysIn(_Get(schemaNode, components.concat('.', schemas)))
+    if (!_IsEmpty(schemaRoots)) {
         return toValidIdentifier(schemaRoots[0])
     }
 

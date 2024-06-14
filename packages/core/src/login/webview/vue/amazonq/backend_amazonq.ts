@@ -20,7 +20,7 @@ import { VSCODE_EXTENSION_ID } from '../../../../shared/extensions'
 import { getLogger } from '../../../../shared/logger'
 import { Auth } from '../../../../auth'
 import { ToolkitError } from '../../../../shared/errors'
-import { debounce } from 'lodash'
+import { _Debounce } from '../../../../shared/utilities/objectUtils'
 import { AuthError, AuthFlowState, userCancelled } from '../types'
 import { builderIdStartUrl } from '../../../../auth/sso/model'
 
@@ -289,7 +289,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
          * state.
          */
         function createThrottle(callback: () => void) {
-            return debounce(callback, 500)
+            return _Debounce(callback, 500)
         }
     }
 }

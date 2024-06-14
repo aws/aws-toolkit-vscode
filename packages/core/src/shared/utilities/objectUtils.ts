@@ -75,10 +75,13 @@ export const _IsEqual = (x: { [x: string]: any }, y: { [x: string]: any }): bool
         : x === y
 }
 
-export const _IsEmpty = <T extends object>(obj: T): boolean => {
-    if (obj === undefined) {
+export const _IsEmpty = <T extends object | string | undefined>(obj: T): boolean => {
+    if (obj === undefined || obj === null) {
         return true
-    } // handle null and undefined
+    }
+    if (typeof obj === 'string') {
+        return obj.length === 0
+    }
     if (typeof obj === 'object') {
         if (Array.isArray(obj)) {
             return obj.length === 0
@@ -89,4 +92,112 @@ export const _IsEmpty = <T extends object>(obj: T): boolean => {
         }
     }
     return false
+}
+
+export const _IsString = (value: any): value is string => {
+    return typeof value === 'string'
+}
+
+export const _KeysIn = <T extends object>(obj: T): string[] => {
+    return Object.keys(obj)
+}
+
+interface ThrottleOptions {
+    leading?: boolean
+    trailing?: boolean
+}
+
+export const _Throttle = <T extends (...args: any[]) => any>(
+    func: T,
+    limit: number,
+    options: ThrottleOptions = {}
+): T => {
+    let inThrottle: boolean
+    let lastArgs: any[] | undefined = undefined
+
+    const { leading = true, trailing = true } = options
+
+    return function (this: any, ...args: any[]) {
+        if (inThrottle) {
+            if (trailing) {
+                lastArgs = args
+            }
+            return
+        }
+
+        const callNow = !leading || (leading && !inThrottle)
+
+        if (callNow) {
+            func.apply(this, args)
+        }
+
+        inThrottle = true
+
+        setTimeout(() => {
+            if (lastArgs) {
+                func.apply(this, lastArgs)
+                lastArgs = undefined
+            }
+            inThrottle = false
+        }, limit)
+    } as T
+}
+
+export const _Template = (str: string) => {
+    return (data: Record<string, any>): string => {
+        const regex = /<%=([\s\S]+?)%>/g
+        let match
+        let output = ''
+        let lastIndex = 0
+
+        const evaluate = (expression: string): string => {
+            try {
+                // Use a template literal to evaluate the expression
+                return String(eval(`(function() { return ${expression} })()`))
+            } catch (err) {
+                console.error(`Error evaluating expression: ${expression}`)
+                return ''
+            }
+        }
+
+        while ((match = regex.exec(str))) {
+            output += str.slice(lastIndex, match.index)
+            output += evaluate(match[1])
+            lastIndex = match.index + match[0].length
+        }
+
+        output += str.slice(lastIndex)
+
+        return output
+    }
+}
+
+export const _Debounce = <T extends (...args: any[]) => any>(func: T, delay: number): { cancel: () => void } & T => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
+
+    const debouncedFunc = function (this: any, ...args: any[]) {
+        clearTimeout(timeoutId)
+
+        timeoutId = setTimeout(() => {
+            func.apply(this, args)
+        }, delay)
+    } as T
+
+    const cancel = () => {
+        clearTimeout(timeoutId)
+    }
+
+    return Object.assign(debouncedFunc, { cancel })
+}
+
+export const _Omit = <T extends object, K extends keyof T>(obj: T, ...keys: K[]): Omit<T, K> => {
+    const shallowCopy = { ...obj }
+    keys.forEach(key => {
+        delete shallowCopy[key]
+    })
+    return shallowCopy
+}
+
+export const _IsError = (value: any): value is Error => {
+    return value instanceof Error
 }

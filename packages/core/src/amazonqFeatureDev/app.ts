@@ -18,7 +18,7 @@ import { AppToWebViewMessageDispatcher } from './views/connector/connector'
 import globals from '../shared/extensionGlobals'
 import { ChatSessionStorage } from './storages/chatSession'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
-import { debounce } from 'lodash'
+import { _Debounce } from '../shared/utilities/objectUtils'
 
 export function init(appContext: AmazonQAppInitContext) {
     const featureDevChatControllerEventEmitters: ChatControllerEventEmitters = {
@@ -81,7 +81,7 @@ export function init(appContext: AmazonQAppInitContext) {
         'featuredev'
     )
 
-    const debouncedEvent = debounce(async () => {
+    const debouncedEvent = _Debounce(async () => {
         const authenticated = (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'
         let authenticatingSessionIDs: string[] = []
         if (authenticated) {

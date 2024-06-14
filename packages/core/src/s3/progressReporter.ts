@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { inspect } from 'util'
-import { throttle } from 'lodash'
+import { _Throttle } from '../shared/utilities/objectUtils'
 import { getLogger } from '../shared/logger/logger'
 import bytes from 'bytes'
 
@@ -32,7 +32,7 @@ export function progressReporter(
 ): (loadedBytes: number) => void {
     const { totalBytes, reportMessage, minIntervalMillis } = options
     const reporter = new ProgressReporter(progress, { totalBytes, reportMessage })
-    const reportProgressThrottled = throttle(
+    const reportProgressThrottled = _Throttle(
         () => reporter.report(),
         minIntervalMillis ?? defaultReportingIntervalMillis,
         { leading: true, trailing: false }

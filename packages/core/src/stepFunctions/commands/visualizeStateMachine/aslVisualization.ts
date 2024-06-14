@@ -5,7 +5,7 @@
 
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
-import { debounce } from 'lodash'
+import { _Debounce } from '../../../shared/utilities/objectUtils'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { getLogger, Logger } from '../../../shared/logger'
@@ -141,7 +141,7 @@ export class AslVisualization {
             })
         )
 
-        const debouncedUpdate = debounce(this.sendUpdateMessage.bind(this), 500)
+        const debouncedUpdate = _Debounce(this.sendUpdateMessage.bind(this), 500)
 
         this.disposables.push(
             vscode.workspace.onDidChangeTextDocument(async textDocumentEvent => {
