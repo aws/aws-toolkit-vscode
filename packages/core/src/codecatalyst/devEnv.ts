@@ -287,6 +287,7 @@ export class InactivityMessage implements vscode.Disposable {
         // Show a new message every minute
         this.progressTimeout = new Timeout(oneMin)
         this.progressTimeout.token.onCancellationRequested(c => {
+            getLogger().debug('InactivityMessage.show: CancelEvent.agent=%s', c.agent)
             if (c.agent === 'user') {
                 // User clicked the 'Cancel' button, indicate they are active.
                 userIsActive()

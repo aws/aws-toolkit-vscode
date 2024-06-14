@@ -8,7 +8,7 @@ import got, { HTTPError } from 'got'
 import globals from '../extensionGlobals'
 import { getLogger } from '../logger/logger'
 import { getCodeCatalystDevEnvId } from '../vscode/env'
-import { ExtensionUserActivity } from '../extensionUtilities'
+import { UserActivity } from '../extensionUtilities'
 
 const environmentAuthToken = '__MDE_ENV_API_AUTHORIZATION_TOKEN'
 const environmentEndpoint = process.env['__MDE_ENVIRONMENT_API'] ?? 'http://127.0.0.1:1339'
@@ -135,15 +135,15 @@ export class DevEnvActivity implements vscode.Disposable {
     private ideActivityListener: vscode.Disposable | undefined
     /** The last known activity timestamp, but there could be a newer one on the server. */
     private lastLocalActivity: number | undefined
-    private extensionUserActivity: ExtensionUserActivity
-    private static _defaultExtensionUserActivity: ExtensionUserActivity | undefined
+    private extensionUserActivity: UserActivity
+    private static _defaultUserActivity: UserActivity | undefined
 
     static readonly activityUpdateDelay = 10_000
 
     /** Gets a new DevEnvActivity, or undefined if service is failed. */
     static async create(
         client: DevEnvClient,
-        extensionUserActivity?: ExtensionUserActivity
+        extensionUserActivity?: UserActivity
     ): Promise<DevEnvActivity | undefined> {
         try {
             await client.getActivity()
@@ -157,14 +157,12 @@ export class DevEnvActivity implements vscode.Disposable {
         return new DevEnvActivity(client, extensionUserActivity)
     }
 
-    private constructor(private readonly client: DevEnvClient, extensionUserActivity?: ExtensionUserActivity) {
-        this.extensionUserActivity = extensionUserActivity ?? this.defaultExtensionUserActivity
+    private constructor(private readonly client: DevEnvClient, extensionUserActivity?: UserActivity) {
+        this.extensionUserActivity = extensionUserActivity ?? this.defaultUserActivity
     }
 
-    private get defaultExtensionUserActivity(): ExtensionUserActivity {
-        return (DevEnvActivity._defaultExtensionUserActivity ??= new ExtensionUserActivity(
-            DevEnvActivity.activityUpdateDelay
-        ))
+    private get defaultUserActivity(): UserActivity {
+        return (DevEnvActivity._defaultUserActivity ??= new UserActivity(DevEnvActivity.activityUpdateDelay))
     }
 
     /** Send activity timestamp to the MDE environment endpoint. */
