@@ -5,13 +5,7 @@
 
 import globals from '../extensionGlobals'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
-import {
-    DocDBClient,
-    DescribeDBClustersCommand,
-    DBCluster,
-    DocDBClientConfig,
-    DescribeGlobalClustersCommand,
-} from '@aws-sdk/client-docdb'
+import { DocDBClient, DocDBClientConfig, DBCluster, DescribeDBClustersCommand } from '@aws-sdk/client-docdb'
 
 export type DocumentDBClient = InterfaceNoSymbol<DefaultDocumentDBClient>
 
@@ -29,19 +23,13 @@ export class DefaultDocumentDBClient {
 
     public async listClusters(): Promise<DBCluster[]> {
         const client = await this.getClient()
-        let results: DBCluster[] = []
-
         const input = {
             Filters: [{ Name: 'engine', Values: ['docdb'] }],
         }
 
-        let command = new DescribeDBClustersCommand(input)
+        const command = new DescribeDBClustersCommand(input)
         const response = await client.send(command)
-        results = response.DBClusters ?? []
 
-        command = new DescribeGlobalClustersCommand(input)
-        const response2 = await client.send(command)
-
-        return results.concat(response2.DBClusters ?? [])
+        return response.DBClusters ?? []
     }
 }
