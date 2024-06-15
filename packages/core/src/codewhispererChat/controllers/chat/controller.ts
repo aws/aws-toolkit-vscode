@@ -2,6 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
 import { Event as VSCodeEvent, Uri } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
