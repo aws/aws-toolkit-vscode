@@ -10,11 +10,10 @@ import { createCommonButtons } from '../../shared/ui/buttons'
 import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../models/models'
 import { RedshiftWarehouseNode } from '../explorer/redshiftWarehouseNode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
+import { ClustersMessageResponse, DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
 import { Region } from '../../shared/regions/endpoints'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { createRegionPrompter } from '../../shared/ui/common/region'
-import { ClustersMessage } from 'aws-sdk/clients/redshift'
 import { Prompter } from '../../shared/ui/prompter'
 import { ListSecretsResponse } from 'aws-sdk/clients/secretsmanager'
 import { SecretsManagerClient } from '../../shared/clients/secretsManagerClient'
@@ -212,9 +211,8 @@ async function* fetchWarehouses(redshiftClient: DefaultRedshiftClient) {
     let hasMoreProvisioned = true
     while (hasMoreProvisioned || hasMoreServerless) {
         if (hasMoreProvisioned) {
-            const provisionedResponse: ClustersMessage = await redshiftClient.describeProvisionedClusters(
-                provisionedToken
-            )
+            const { clustersMessageResponse: provisionedResponse }: ClustersMessageResponse =
+                await redshiftClient.describeProvisionedClusters(provisionedToken)
             provisionedToken = provisionedResponse.Marker
             hasMoreProvisioned = provisionedToken !== undefined
             if (provisionedResponse.Clusters) {
@@ -229,7 +227,9 @@ async function* fetchWarehouses(redshiftClient: DefaultRedshiftClient) {
             }
         }
         if (hasMoreServerless) {
-            const serverlessResponse = await redshiftClient.listServerlessWorkgroups(serverlessToken)
+            const { listWorkgroupsResponse: serverlessResponse } = await redshiftClient.listServerlessWorkgroups(
+                serverlessToken
+            )
             serverlessToken = serverlessResponse.nextToken
             hasMoreServerless = serverlessToken !== undefined
             if (serverlessResponse.workgroups) {

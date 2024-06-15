@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../shared/treeview/utils'
+import { TreeShim, createErrorItem, makeChildrenNodes } from '../../shared/treeview/utils'
 import { inspect } from 'util'
 import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
 import { RedshiftWarehouseNode } from './redshiftWarehouseNode'
@@ -16,6 +16,7 @@ import { RedshiftWarehouseType } from '../models/models'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 import { ChildNodeLoader, ChildNodePage } from '../../awsexplorer/childNodeLoader'
+import { UnknownError } from '../../shared/errors'
 
 /**
  * An AWS Explorer node representing Redshift.
@@ -53,10 +54,10 @@ export class RedshiftNode extends AWSTreeNodeBase implements LoadMoreNode {
      * @param token compositeContinuationToken (@link: CompositeContinuationToken) stringified
      * @returns
      */
-    private async loadPage(token?: string): Promise<ChildNodePage<RedshiftWarehouseNode>> {
+    private async loadPage(token?: string): Promise<ChildNodePage<AWSTreeNodeBase>> {
         let newProvisionedToken: string
         let newServerlessToken: string
-        let newChildrenNodes: RedshiftWarehouseNode[] = []
+        let newChildrenNodes: AWSTreeNodeBase[] = []
         if (token) {
             const compositeContinuationToken = JSON.parse(token) as CompositeContinuationToken
             ;[newChildrenNodes, newProvisionedToken, newServerlessToken] = await this.loadNodes(
@@ -85,17 +86,16 @@ export class RedshiftNode extends AWSTreeNodeBase implements LoadMoreNode {
 
     private async loadNodes(
         compositeContinuationToken: CompositeContinuationToken | undefined
-    ): Promise<[RedshiftWarehouseNode[], string, string]> {
-        const childNodes: RedshiftWarehouseNode[] = []
+    ): Promise<[AWSTreeNodeBase[], string, string]> {
+        const childNodes: AWSTreeNodeBase[] = []
         let newServerlessToken: string = ''
         let newProvisionedToken: string = ''
         // provisionedToken can be undefined (first time load) or non-empty (more results available). If it's empty, we've loaded all
         if (compositeContinuationToken === undefined || compositeContinuationToken.provisionedToken !== '') {
-            const response = await this.redshiftClient.describeProvisionedClusters(
-                compositeContinuationToken?.provisionedToken
-            )
-            if (response.Clusters) {
-                const provisionedNodes = response.Clusters?.map(cluster => {
+            const { clustersMessageResponse, error: clustersError } =
+                await this.redshiftClient.describeProvisionedClusters(compositeContinuationToken?.provisionedToken)
+            if (clustersMessageResponse.Clusters?.length && !clustersError) {
+                const provisionedNodes: RedshiftWarehouseNode[] = clustersMessageResponse.Clusters?.map(cluster => {
                     return new RedshiftWarehouseNode(
                         this,
                         {
@@ -106,16 +106,19 @@ export class RedshiftNode extends AWSTreeNodeBase implements LoadMoreNode {
                     )
                 })
                 childNodes.push(...provisionedNodes)
-                newProvisionedToken = response.Marker ?? ''
+                newProvisionedToken = clustersMessageResponse.Marker ?? ''
+            }
+            if (clustersError) {
+                const converted = UnknownError.cast(clustersError)
+                childNodes.push(new TreeShim(createErrorItem(converted)))
             }
         }
         // serverlessToken can be undefined (first time load) or non-empty (more results available). If it's empty, we've loaded all
         if (compositeContinuationToken === undefined || compositeContinuationToken.serverlessToken !== '') {
-            const response = await this.redshiftClient.listServerlessWorkgroups(
-                compositeContinuationToken?.serverlessToken
-            )
-            if (response.workgroups) {
-                const serverlessNodes: RedshiftWarehouseNode[] = response.workgroups?.map(workgroup => {
+            const { listWorkgroupsResponse, error: workgroupsError } =
+                await this.redshiftClient.listServerlessWorkgroups(compositeContinuationToken?.serverlessToken)
+            if (listWorkgroupsResponse.workgroups.length && !workgroupsError) {
+                const serverlessNodes: RedshiftWarehouseNode[] = listWorkgroupsResponse.workgroups?.map(workgroup => {
                     return new RedshiftWarehouseNode(
                         this,
                         { arn: workgroup.workgroupArn, name: workgroup.workgroupName } as AWSResourceNode,
@@ -123,7 +126,11 @@ export class RedshiftNode extends AWSTreeNodeBase implements LoadMoreNode {
                     )
                 })
                 childNodes.push(...serverlessNodes)
-                newServerlessToken = response.nextToken ?? ''
+                newServerlessToken = listWorkgroupsResponse.nextToken ?? ''
+            }
+            if (workgroupsError) {
+                const converted = UnknownError.cast(workgroupsError)
+                childNodes.push(new TreeShim(createErrorItem(converted)))
             }
         }
         return [childNodes, newProvisionedToken, newServerlessToken]

@@ -69,13 +69,13 @@ describe('DefaultRedshiftClient', function () {
         it('without nextToken should not set Marker', async () => {
             const response = await defaultRedshiftClient.describeProvisionedClusters()
             describeClustersStub.alwaysCalledWith({ Marker: undefined, MaxRecords: 20 })
-            assert.deepStrictEqual(response.Clusters, [])
+            assert.deepStrictEqual(response.clustersMessageResponse.Clusters, [])
         })
 
         it('with nextToken should set the Marker', async () => {
             const response = await defaultRedshiftClient.describeProvisionedClusters(nextToken)
             describeClustersStub.alwaysCalledWith({ Marker: nextToken, MaxRecords: 20 })
-            assert.deepStrictEqual(response.Clusters, [])
+            assert.deepStrictEqual(response.clustersMessageResponse.Clusters, [])
         })
     })
 
@@ -91,13 +91,13 @@ describe('DefaultRedshiftClient', function () {
         it('without nextToken should not set nextToken in RedshiftServerless request', async () => {
             const response = await defaultRedshiftClient.listServerlessWorkgroups()
             listServerlessWorkgroupsStub.alwaysCalledWith({ nextToken: undefined, maxResults: 20 })
-            assert.deepStrictEqual(response.workgroups, [])
+            assert.deepStrictEqual(response.listWorkgroupsResponse.workgroups, [])
         })
 
         it('with nextToken should set nextToken in RedshiftServerless request', async () => {
             const response = await defaultRedshiftClient.listServerlessWorkgroups(nextToken)
             listServerlessWorkgroupsStub.alwaysCalledWith({ nextToken: nextToken, maxResults: 20 })
-            assert.deepStrictEqual(response.workgroups, [])
+            assert.deepStrictEqual(response.listWorkgroupsResponse.workgroups, [])
         })
     })
 
