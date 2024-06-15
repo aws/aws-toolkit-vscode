@@ -22,6 +22,7 @@ import {
 import { convertDateToTimestamp } from '../../shared/utilities/textUtilities'
 import {
     createZipManifest,
+    downloadAndExtractResultArchive,
     downloadHilResultArchive,
     findDownloadArtifactStep,
     getArtifactsFromProgressUpdate,
@@ -54,6 +55,7 @@ import {
     JobStartError,
     ModuleUploadError,
     PollJobError,
+    TransformationPreBuildError,
 } from '../../amazonqGumby/errors'
 import { ChatSessionManager } from '../../amazonqGumby/chat/storages/chatSession'
 import {
@@ -377,6 +379,12 @@ export async function openHilPomFile() {
     )
 }
 
+export async function openBuildLogFile() {
+    const logFilePath = transformByQState.getPreBuildLogFilePath()
+    const doc = await vscode.workspace.openTextDocument(logFilePath)
+    await vscode.window.showTextDocument(doc)
+}
+
 export async function terminateHILEarly(jobID: string) {
     // Call resume with "REJECTED" state which will put our service
     // back into the normal flow and will not trigger HIL again for this step
@@ -501,13 +509,27 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
         await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForPlanGenerated)
     } catch (error) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToCompleteJobNotification}`, error)
+
         if (!transformByQState.getJobFailureErrorNotification()) {
             transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToCompleteJobNotification)
         }
         if (!transformByQState.getJobFailureErrorChatMessage()) {
             transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToCompleteJobChatMessage)
         }
-        throw new PollJobError()
+
+        // Since we don't yet have a good way of knowing what the error was,
+        // we try to fetch any build failure artifacts that may exist so that we can optionally
+        // show them to the user if they exist.
+        const tmpDir = path.join(os.tmpdir(), 'q-transformation-build-logs')
+        await downloadAndExtractResultArchive(jobId, undefined, tmpDir, 'Logs')
+        const pathToLog = path.join(tmpDir, 'buildCommandOutput.log')
+        transformByQState.setPreBuildLogFilePath(pathToLog)
+
+        if (fs.existsSync(pathToLog)) {
+            throw new TransformationPreBuildError()
+        } else {
+            throw new PollJobError()
+        }
     }
     let plan = undefined
     try {
@@ -696,6 +718,14 @@ export async function cleanupTransformationJob() {
         CodeTransformTelemetryState.instance.getStartTime()
     )
     CodeTransformTelemetryState.instance.resetCodeTransformMetaDataField()
+}
+
+export async function resetDebugArtifacts() {
+    const buildLogPath = transformByQState.getPreBuildLogFilePath()
+    if (buildLogPath && fs.existsSync(buildLogPath)) {
+        fs.rmSync(path.dirname(transformByQState.getPreBuildLogFilePath()), { recursive: true, force: true })
+    }
+    transformByQState.setPreBuildLogFilePath('')
 }
 
 export async function stopTransformByQ(

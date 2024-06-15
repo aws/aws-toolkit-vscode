@@ -5,5 +5,11 @@
 
 import { runToolkitTests } from './launchTestUtilities'
 void (async () => {
-    await runToolkitTests('unit', 'dist/src/test/index.js')
+    const relativeEntrypoint = process.argv[2]
+    if (!relativeEntrypoint) {
+        throw new Error('A path relative to core is required')
+    }
+
+    const relativeWorkspaceFolder = process.argv[3]
+    await runToolkitTests('unit', relativeEntrypoint, relativeWorkspaceFolder)
 })()

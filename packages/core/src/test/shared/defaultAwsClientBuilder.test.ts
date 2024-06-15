@@ -23,7 +23,7 @@ describe('DefaultAwsClientBuilder', function () {
     describe('createAndConfigureSdkClient', function () {
         it('includes Toolkit user-agent if no options are specified', async function () {
             const service = await builder.createAwsService(Service)
-            const clientId = await getClientId(new FakeMemento())
+            const clientId = getClientId(new FakeMemento())
 
             assert.strictEqual(!!service.config.customUserAgent, true)
             assert.strictEqual(
@@ -34,7 +34,7 @@ describe('DefaultAwsClientBuilder', function () {
 
         it('adds Client-Id to user agent', async function () {
             const service = await builder.createAwsService(Service)
-            const clientId = await getClientId(new FakeMemento())
+            const clientId = getClientId(new FakeMemento())
             const regex = new RegExp(`ClientId/${clientId}`)
             assert.ok(service.config.customUserAgent?.match(regex))
         })

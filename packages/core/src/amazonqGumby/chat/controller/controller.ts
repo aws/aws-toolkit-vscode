@@ -20,9 +20,11 @@ import {
     compileProject,
     finishHumanInTheLoop,
     getValidCandidateProjects,
+    openBuildLogFile,
     openHilPomFile,
     postTransformationJob,
     processTransformFormInput,
+    resetDebugArtifacts,
     startTransformByQ,
     stopTransformByQ,
     validateCanCompileProject,
@@ -35,6 +37,7 @@ import {
     ModuleUploadError,
     NoJavaProjectsFoundError,
     NoMavenJavaProjectsFoundError,
+    TransformationPreBuildError,
 } from '../../errors'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import MessengerUtils, { ButtonActions, GumbyCommands } from './messenger/messengerUtils'
@@ -280,6 +283,8 @@ export class GumbyController {
                 await cleanupTransformationJob()
                 break
             case ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW:
+                this.resetTransformationChatFlow()
+                await resetDebugArtifacts()
                 this.messenger.sendCommandMessage({ ...message, command: GumbyCommands.CLEAR_CHAT })
                 await this.transformInitiated(message)
                 break
@@ -292,6 +297,10 @@ export class GumbyController {
                 break
             case ButtonActions.OPEN_FILE:
                 await openHilPomFile()
+                break
+            case ButtonActions.OPEN_BUILD_LOG:
+                await openBuildLogFile()
+                this.messenger.sendViewBuildLog(message.tabID)
                 break
         }
     }
@@ -454,6 +463,15 @@ export class GumbyController {
             this.resetTransformationChatFlow()
         } else if (message.error instanceof JobStartError) {
             this.resetTransformationChatFlow()
+        } else if (message.error instanceof TransformationPreBuildError) {
+            this.messenger.sendJobSubmittedMessage(message.tabID, true)
+            this.messenger.sendAsyncEventProgress(
+                message.tabID,
+                true,
+                undefined,
+                GumbyNamedMessages.JOB_FAILED_IN_PRE_BUILD
+            )
+            this.messenger.sendViewBuildLog(message.tabID)
         }
     }
 

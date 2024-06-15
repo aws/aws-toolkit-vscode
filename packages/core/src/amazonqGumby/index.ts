@@ -4,3 +4,6 @@
  */
 
 export { activate } from './activation'
+export { default as DependencyVersions } from './models/dependencies'
+export { default as MessengerUtils } from './chat/controller/messenger/messengerUtils'
+export * from './errors'

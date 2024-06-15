@@ -244,7 +244,7 @@ export const artifactTypeSource = 'SourceCode'
 
 export const codeScanFindingsSchema = 'codescan/findings/1.0'
 
-export const autoScanDebounceDelaySeconds = 5
+export const autoScanDebounceDelaySeconds = 15
 
 export const codewhispererDiagnosticSourceLabel = 'Amazon Q '
 

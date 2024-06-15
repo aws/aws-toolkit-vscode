@@ -4,7 +4,7 @@
  */
 
 import { DevEnvironment } from '../shared/clients/codecatalystClient'
-import { DevEnvActivity } from '../shared/clients/devenvClient'
+import { DevEnvActivity, DevEnvClient } from '../shared/clients/devenvClient'
 import globals from '../shared/extensionGlobals'
 import * as vscode from 'vscode'
 import { Timeout, waitUntil } from '../shared/utilities/timeoutUtils'
@@ -15,208 +15,202 @@ import { CodeCatalystAuthenticationProvider } from './auth'
 import { getThisDevEnv } from './model'
 import { isInDevEnv } from '../shared/vscode/env'
 import { shared } from '../shared/utilities/functionUtils'
+import { DevSettings } from '../shared/settings'
 
-/**
- * This class exists due to complexities with starting the {@link DevEnvActivity} Hearbeat mechanism.
- * All logic to start it is contained within this class.
- */
+/** Starts the {@link DevEnvActivity} Hearbeat mechanism. */
 export class DevEnvActivityStarter {
+    private static _instance: DevEnvActivityStarter | undefined = undefined
+
     /**
-     * Trys to start the Dev Env Activity Heartbeat mechanism.
+     * Trys to start the {@link DevEnvActivity} heartbeat.
      * This mechanism keeps the Dev Env from timing out.
      */
-    public static register(authProvider: CodeCatalystAuthenticationProvider) {
+    public static init(authProvider: CodeCatalystAuthenticationProvider) {
         if (!isInDevEnv()) {
-            getLogger().debug('codecatalyst: not in a devenv, not registering DevEnvActivityHeartbeatStarter')
+            getLogger().debug('codecatalyst: not in a devenv, skipping DevEnvActivity setup')
             return
         }
 
-        DevEnvActivityStarter.authProvider = authProvider
-        void DevEnvActivityStarter.instance.tryStartDevEnvActivityHeartbeatWithRetry()
+        DevEnvActivityStarter._instance ??= new DevEnvActivityStarter(authProvider)
+        DevEnvActivityStarter._instance.retryStartActivityHeartbeat().catch(e => {
+            getLogger().error('retryStartActivityHeartbeat failed: %s', (e as Error).message)
+        })
     }
 
-    /** If true, the Activity Heartbeat is running */
-    private didStart: boolean = false
+    private devEnvActivity: DevEnvActivity | undefined = undefined
+    private onDidChangeAuth: ReturnType<typeof this.authProvider.onDidChangeActiveConnection>
 
-    protected constructor(private readonly authProvider: CodeCatalystAuthenticationProvider) {}
-
-    private static _instance: DevEnvActivityStarter | undefined = undefined
-    private static get instance(): DevEnvActivityStarter {
-        return (DevEnvActivityStarter._instance ??= new DevEnvActivityStarter(DevEnvActivityStarter.getAuthProvider()))
+    protected constructor(private readonly authProvider: CodeCatalystAuthenticationProvider) {
+        this.onDidChangeAuth = authProvider.onDidChangeActiveConnection(() => {
+            this.tryStartActivityHeartbeat(true).catch(e => {
+                getLogger().error('tryStartActivityHeartbeat failed: %s', (e as Error).message)
+            })
+        })
+        globals.context.subscriptions.push(this.onDidChangeAuth)
     }
 
     /**
-     * Keeps executing {@link DevEnvActivityStarter.tryStartDevEnvActivityHeartbeat} on an interval until it succeeds.
+     * Keeps executing {@link DevEnvActivityStarter.tryStartActivityHeartbeat} on an interval until it succeeds.
      * After a certain amount of time this will stop retrying.
      */
-    private async tryStartDevEnvActivityHeartbeatWithRetry() {
+    private async retryStartActivityHeartbeat() {
         return waitUntil(
             async () => {
-                await this.tryStartDevEnvActivityHeartbeat()
-                return this.didStart
+                await this.tryStartActivityHeartbeat(false)
+                return !!this.devEnvActivity
             },
             { interval: 20_000, timeout: 60_000 * 5 }
         )
     }
 
     /** Trys to start the Activity Heartbeat mechanism */
-    private tryStartDevEnvActivityHeartbeat = shared(async () => {
-        if (this.didStart) {
+    private tryStartActivityHeartbeat = shared(async (reauth: boolean) => {
+        if (!!this.devEnvActivity && !reauth) {
             return
         }
 
         const thisDevenv = (await getThisDevEnv(this.authProvider))?.unwrapOrElse(err => {
-            getLogger().warn('codecatalyst: failed to get current Dev Enviroment: %s', err)
+            getLogger().warn('codecatalyst: failed to get current devenv: %s', err)
             return undefined
         })
 
-        if (!thisDevenv) {
+        if (!thisDevenv && reauth) {
+            getLogger().warn('codecatalyst: failed to get devenv after reauthenticate attempt')
+            return
+        } else if (!thisDevenv) {
             const connection = this.authProvider.activeConnection
             if (connection) {
                 void vscode.window
-                    .showErrorMessage(
-                        'CodeCatalyst: Reauthenticate your connection or the Dev Environment will time out.',
-                        'Reauthenticate'
-                    )
+                    .showErrorMessage('CodeCatalyst: Reauthenticate your connection.', 'Reauthenticate')
                     .then(async res => {
                         if (res !== 'Reauthenticate') {
                             return
                         }
                         await this.authProvider.auth.reauthenticate(connection)
-                        void this.tryStartDevEnvActivityHeartbeat()
                     })
-
-                getLogger().warn('codecatalyst: dev env needs reauth to not time out')
-            } else {
-                getLogger().warn(`codecatalyst: dev env needs a connection to not time out`)
             }
-            return
+            getLogger().warn(
+                'codecatalyst: starting DevEnvActivity heartbeat without auth (unknown inactivityTimeoutMinutes)'
+            )
         }
 
-        const maxInactivityMinutes = thisDevenv.summary.inactivityTimeoutMinutes
-        if (!shouldTrackUserActivity(maxInactivityMinutes)) {
-            getLogger().debug(
-                `codecatalyst: not tracking user inactivity due to inactivity minutes being: ${maxInactivityMinutes}`
+        const devenvTimeoutMs = DevSettings.instance.get('devenvTimeoutMs', 0)
+        if (devenvTimeoutMs) {
+            getLogger().warn('codecatalyst: using devenvTimeoutMs=%d', devenvTimeoutMs)
+        }
+        // If user is not authenticated, assume 15 minutes.
+        const inactivityTimeoutMin =
+            devenvTimeoutMs > 0 ? devenvTimeoutMs / 60000 : thisDevenv?.summary.inactivityTimeoutMinutes ?? 15
+        if (!shouldSendActivity(inactivityTimeoutMin)) {
+            getLogger().info(
+                `codecatalyst: disabling DevEnvActivity heartbeat: configured to never timeout (inactivityTimeoutMinutes=${inactivityTimeoutMin})`
             )
             return
         }
 
-        const devEnvActivity = await DevEnvActivity.instanceIfActivityTrackingEnabled(thisDevenv.devenvClient)
+        const devEnvActivity = await DevEnvActivity.create(thisDevenv?.devenvClient ?? DevEnvClient.instance)
         if (!devEnvActivity) {
-            getLogger().debug(`codecatalyst: not tracking user inactivity since activity api is not enabled`)
+            getLogger().error('codecatalyst: failed to start DevEnvActivity heartbeat, devenv may timeout')
             return
+        }
+
+        if (this.devEnvActivity) {
+            // Special case: user authenticated, so reinitialize with the correct `inactivityTimeoutMinutes`.
+            this.devEnvActivity.dispose()
         }
 
         // Everything is good, we can start the activity heartbeat now
         devEnvActivity.setUpdateActivityOnIdeActivity(true)
-        const inactivityMessage = new InactivityMessage()
-        await inactivityMessage.setupMessage(maxInactivityMinutes, devEnvActivity)
 
-        globals.context.subscriptions.push(inactivityMessage, devEnvActivity)
-        this.didStart = true
-    })
-
-    private static authProvider: CodeCatalystAuthenticationProvider | undefined = undefined
-    private static getAuthProvider() {
-        if (!this.authProvider) {
-            throw new Error('DevEnvActivityHeartbeatStarter authProvider is not set')
+        // Setup the "shutdown imminent" message. Skip this if we aren't authenticated, because we
+        // don't know the actual `inactivityTimeoutMinutes`.
+        if (thisDevenv) {
+            const inactivityMessage = new InactivityMessage()
+            await inactivityMessage.init(inactivityTimeoutMin, devEnvActivity)
+            globals.context.subscriptions.push(inactivityMessage)
+            this.onDidChangeAuth.dispose() // Don't need to wait for reauth now.
+            getLogger().debug('codecatalyst: setup InactivityMessage')
         }
-        return this.authProvider
-    }
+
+        globals.context.subscriptions.push(devEnvActivity)
+        this.devEnvActivity = devEnvActivity
+    })
 }
 
-/** If we should be sending the dev env activity timestamps to track user activity */
-export function shouldTrackUserActivity(maxInactivityMinutes: DevEnvironment['inactivityTimeoutMinutes']): boolean {
-    // This value is a static value initialized when the dev env is first created.
-    //
-    // If it is updated, the dev env is restarted and this extension will restarted and grab the latest value.
-    // Due to this, we do not need to keep track of this value since the
-    //
-    // For more info see: https://docs.aws.amazon.com/codecatalyst/latest/APIReference/API_UpdateDevEnvironment.html#codecatalyst-UpdateDevEnvironment-request-inactivityTimeoutMinutes
-    return maxInactivityMinutes > 0
+/**
+ * Should we send activity heartbeat?
+ *
+ * If inactivityTimeoutMinutes=0 then it never expires, so Toolkit doesn't need to send heartbeat.
+ */
+export function shouldSendActivity(inactivityTimeoutMin: DevEnvironment['inactivityTimeoutMinutes']): boolean {
+    // This value is initialized when the dev env is first created. If it is updated, MDE restarts
+    // the dev env and this extension will grab the new value on startup.
+    // https://docs.aws.amazon.com/codecatalyst/latest/APIReference/API_UpdateDevEnvironment.html#codecatalyst-UpdateDevEnvironment-request-inactivityTimeoutMinutes
+    return inactivityTimeoutMin > 0
 }
 
+/** Shows a "Dev env will shutdown in x minutes due to inactivity" warning. */
 export class InactivityMessage implements vscode.Disposable {
-    #message: Message | undefined
-    #nextWholeMinute: NodeJS.Timeout | undefined
-    #beforeMessageShown: NodeJS.Timeout | undefined
-
-    /** Indicates to show first message 5 minutes before shutdown */
-    static readonly firstMessageBeforeShutdown = 5
+    #showMessageTimer: NodeJS.Timeout | undefined
+    private progressTimeout = new Timeout(1)
+    /** Show a message this many minutes before auto-shutdown. */
+    public readonly shutdownWarningThreshold = 5
 
     /**
-     * Sets up all messages that are displayed to the user when the dev env is inactive and starts to get close to shutdown.
+     * Creates a timer which will show warning messsage(s) when the dev env is nearing auto-shutdown because of inactivity.
      *
-     * @param maxInactivityMinutes The # of minutes a CodeCatalyst Dev Env can be inactive till it shuts down.
-     * @param devEnvActivity The DevEnvActivity client
-     * @param relativeMinuteMillis How many milliseconds we want a "minute" to be. This is
-     *                             useful for testing purposes.
+     * @param maxInactivityMinutes Maximum inactivity allowed before auto-shutdown.
+     * @param devEnvActivity DevEnvActivity client
+     * @param oneMin Milliseconds in a "minute". Used in tests.
      */
-    async setupMessage(
+    async init(
         maxInactivityMinutes: DevEnvironment['inactivityTimeoutMinutes'],
         devEnvActivity: DevEnvActivity,
-        relativeMinuteMillis: number = 60_000
+        oneMin: number = 60_000
     ) {
-        devEnvActivity.onActivityUpdate(async latestActivityTimestamp => {
-            this._setupMessage(maxInactivityMinutes, latestActivityTimestamp, devEnvActivity, relativeMinuteMillis)
-        })
-
         // Send an initial update to the dev env on startup
         await devEnvActivity.sendActivityUpdate()
-    }
 
-    private _setupMessage(
-        maxInactivityMinutes: number,
-        latestTimestamp: number,
-        devEnvActivity: DevEnvActivity,
-        relativeMinuteMillis: number
-    ) {
-        this.clearOldMessage()
+        // Reset (redefine) the timer whenever user is active.
+        devEnvActivity.onActivityUpdate(async lastActivity => {
+            this.clear()
 
-        const { millisToWait, minutesSinceTimestamp } = this.millisUntilNextWholeMinute(
-            latestTimestamp,
-            relativeMinuteMillis
-        )
-        const minutesUntilShutdown = maxInactivityMinutes - minutesSinceTimestamp
-        const minutesUntilFirstMessage = minutesUntilShutdown - InactivityMessage.firstMessageBeforeShutdown
+            const { millisToWait, minutesSinceActivity } = this.millisUntilNextWholeMinute(lastActivity, oneMin)
+            const minutesUntilShutdown = Math.round(maxInactivityMinutes - minutesSinceActivity)
+            const minutesUntilMessage = Math.round(Math.max(0, minutesUntilShutdown - this.shutdownWarningThreshold))
+            const timerInterval = millisToWait + minutesUntilMessage * oneMin
 
-        /** Wait until we are {@link InactivityMessage.firstMessageBeforeShutdown} minutes before shutdown. */
-        this.#beforeMessageShown = globals.clock.setTimeout(() => {
-            const userIsActive = () => {
-                devEnvActivity.sendActivityUpdate().catch(e => {
-                    getLogger().error('DevEnvActivity.sendActivityUpdate failed: %s', (e as Error).message)
-                })
+            if (timerInterval <= 10 * oneMin || DevSettings.instance.get('devenvTimeoutMs', 0)) {
+                getLogger().debug(
+                    'InactivityMessage: minutesUntilMessage=%d timerInterval=%d',
+                    minutesUntilMessage,
+                    timerInterval
+                )
             }
 
-            const willRefreshOnStaleTimestamp = async () => await devEnvActivity.isLocalActivityStale()
+            /** Wait until we are {@link InactivityMessage.shutdownWarningThreshold} minutes before shutdown. */
+            this.#showMessageTimer = globals.clock.setTimeout(() => {
+                const userIsActive = () => {
+                    devEnvActivity.sendActivityUpdate().catch(e => {
+                        getLogger().error('DevEnvActivity.sendActivityUpdate failed: %s', (e as Error).message)
+                    })
+                }
 
-            this.message()
-                .show(
-                    minutesSinceTimestamp + minutesUntilFirstMessage,
-                    minutesUntilShutdown - minutesUntilFirstMessage,
+                const willRefreshOnStaleTimestamp = async () => await devEnvActivity.isLocalActivityStale()
+
+                this.clear()
+                this.show(
+                    devEnvActivity,
+                    Math.round(Math.max(0, minutesSinceActivity + minutesUntilMessage)),
+                    Math.round(Math.max(0, minutesUntilShutdown - minutesUntilMessage)),
                     userIsActive,
                     willRefreshOnStaleTimestamp,
-                    relativeMinuteMillis
-                )
-                .catch(e => {
-                    getLogger().error('Message.show failed: %s', (e as Error).message)
+                    oneMin
+                ).catch(e => {
+                    getLogger().error('InactivityMessage.show failed: %s', (e as Error).message)
                 })
-        }, millisToWait + minutesUntilFirstMessage * relativeMinuteMillis)
-    }
-
-    private clearOldMessage() {
-        if (this.#nextWholeMinute) {
-            clearTimeout(this.#nextWholeMinute)
-            this.#nextWholeMinute = undefined
-        }
-        if (this.#beforeMessageShown) {
-            clearTimeout(this.#beforeMessageShown)
-            this.#beforeMessageShown = undefined
-        }
-        if (this.#message) {
-            this.#message.dispose()
-            this.#message = undefined
-        }
+            }, timerInterval)
+        })
     }
 
     /**
@@ -228,33 +222,20 @@ export class InactivityMessage implements vscode.Disposable {
      *
      * Eg:
      *   - 1 minute and 29 seconds have passed since the given timestamp.
-     *   - returns { millisToWait: 31_000, minutesSinceTimestamp: 2}
+     *   - returns { millisToWait: 31_000, minutesSinceActivity: 2}
      */
     private millisUntilNextWholeMinute(
         latestTimestamp: number,
-        relativeMinuteMillis: number
-    ): { millisToWait: number; minutesSinceTimestamp: number } {
-        const millisSinceLastTimestamp = Date.now() - latestTimestamp
-        const millisSinceLastWholeMinute = millisSinceLastTimestamp % relativeMinuteMillis
+        oneMin: number
+    ): { millisToWait: number; minutesSinceActivity: number } {
+        const millisSinceLastActivity = Date.now() - latestTimestamp
+        const millisToNextMinute = millisSinceLastActivity % oneMin
 
-        const millisToWait = millisSinceLastWholeMinute !== 0 ? relativeMinuteMillis - millisSinceLastWholeMinute : 0
-        const minutesSinceTimestamp = (millisSinceLastTimestamp + millisToWait) / relativeMinuteMillis
+        const millisToWait = millisToNextMinute !== 0 ? oneMin - millisToNextMinute : 0
+        const minutesSinceActivity = (millisSinceLastActivity + millisToWait) / oneMin
 
-        return { millisToWait, minutesSinceTimestamp }
+        return { millisToWait, minutesSinceActivity }
     }
-
-    private message() {
-        this.clearOldMessage()
-        return (this.#message = new Message())
-    }
-
-    dispose() {
-        this.clearOldMessage()
-    }
-}
-
-class Message implements vscode.Disposable {
-    private currentWarningMessageTimeout: Timeout | undefined
 
     /**
      * Show the warning message
@@ -265,33 +246,35 @@ class Message implements vscode.Disposable {
      * @param willRefreshOnStaleTimestamp sanity checks with the dev env api that the latest activity timestamp
      *                                    is the same as what this client has locally. If stale, the warning message
      *                                    will be refreshed asynchronously. Returns true if the message will be refreshed.
-     * @param relativeMinuteMillis How many milliseconds we want a "minute" to be. This is
-     *                             useful for testing purposes.
+     * @param oneMin Milliseconds in a "minute". Used in tests.
      */
     async show(
+        devEnvActivity: DevEnvActivity,
         minutesUserWasInactive: number,
         minutesUntilShutdown: number,
         userIsActive: () => void,
         willRefreshOnStaleTimestamp: () => Promise<boolean>,
-        relativeMinuteMillis: number
+        oneMin: number
     ) {
-        this.clearExistingMessage()
-        // Show a new message every minute
-        this.currentWarningMessageTimeout = new Timeout(1 * relativeMinuteMillis)
+        getLogger().debug(
+            'InactivityMessage.show: minutesUserWasInactive=%d minutesUntilShutdown=%d',
+            minutesUserWasInactive,
+            minutesUntilShutdown
+        )
+
+        // Hide any current message.
+        this.progressTimeout.dispose()
 
         if (await willRefreshOnStaleTimestamp()) {
             return
         }
 
         if (minutesUntilShutdown <= 1) {
-            // Recursive base case, with only 1 minute left we do not want to show warning messages anymore,
-            // since we will show a shutdown message instead.
-            this.clearExistingMessage()
-
-            const imHere = `I'm here!`
+            const imHere = "I'm here!"
             return vscode.window
                 .showWarningMessage(
                     `Your CodeCatalyst Dev Environment has been inactive for ${minutesUserWasInactive} minutes, and will stop soon.`,
+                    { modal: true },
                     imHere
                 )
                 .then(res => {
@@ -301,52 +284,57 @@ class Message implements vscode.Disposable {
                 })
         }
 
-        this.currentWarningMessageTimeout.token.onCancellationRequested(c => {
+        // Show a new message every minute
+        this.progressTimeout = new Timeout(oneMin)
+        this.progressTimeout.token.onCancellationRequested(c => {
+            getLogger().debug('InactivityMessage.show: CancelEvent.agent=%s', c.agent)
             if (c.agent === 'user') {
                 // User clicked the 'Cancel' button, indicate they are active.
                 userIsActive()
             } else {
                 // The message timed out, show the updated message.
                 void this.show(
+                    devEnvActivity,
                     minutesUserWasInactive + 1,
                     minutesUntilShutdown - 1,
                     userIsActive,
                     willRefreshOnStaleTimestamp,
-                    relativeMinuteMillis
+                    oneMin
                 )
             }
         })
-
         if (isCloud9()) {
             // C9 does not support message with progress, so just show a warning message.
             return vscode.window
-                .showWarningMessage(
-                    this.buildInactiveWarningMessage(minutesUserWasInactive, minutesUntilShutdown),
-                    'Cancel'
-                )
+                .showWarningMessage(this.getMessage(minutesUserWasInactive, minutesUntilShutdown), 'Cancel')
                 .then(() => {
-                    this.currentWarningMessageTimeout!.cancel()
+                    this.progressTimeout.cancel()
                 })
         } else {
+            // Show cancellable "progress" message.
             return void showMessageWithCancel(
-                this.buildInactiveWarningMessage(minutesUserWasInactive, minutesUntilShutdown),
-                this.currentWarningMessageTimeout
+                this.getMessage(minutesUserWasInactive, minutesUntilShutdown),
+                this.progressTimeout
             )
         }
     }
 
-    clearExistingMessage() {
-        if (this.currentWarningMessageTimeout) {
-            this.currentWarningMessageTimeout.dispose()
-            this.currentWarningMessageTimeout = undefined
+    /** Cancels or disposes the existing message and timer. */
+    clear() {
+        // This also dismisses the message if it is currently displaying.
+        this.progressTimeout.cancel()
+
+        if (this.#showMessageTimer) {
+            clearTimeout(this.#showMessageTimer)
+            this.#showMessageTimer = undefined
         }
     }
 
     dispose() {
-        this.clearExistingMessage()
+        this.clear()
     }
 
-    private buildInactiveWarningMessage(inactiveMinutes: number, remainingMinutes: number) {
-        return `Your CodeCatalyst Dev Environment has been inactive for ${inactiveMinutes} minutes, shutting it down in ${remainingMinutes} minutes.`
+    private getMessage(inactiveMinutes: number, remainingMinutes: number) {
+        return `Your CodeCatalyst Dev Environment has been inactive for ${inactiveMinutes} minutes, and will stop in ${remainingMinutes} minutes.`
     }
 }
