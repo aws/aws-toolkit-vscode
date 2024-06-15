@@ -66,7 +66,10 @@ export async function activate(context: ExtensionContext) {
         Auth.instance.onDidChangeConnectionState
     )
     if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
-        LspController.instance.installLspZipIfNotInstalled(context).then(() => {
+        LspController.instance.installLspZipIfNotInstalled(context).then(succeed => {
+            if (!succeed) {
+                return
+            }
             setImmediate(() => {
                 try {
                     activateLsp(context).then(() => {

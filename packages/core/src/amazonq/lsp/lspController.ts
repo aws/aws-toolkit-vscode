@@ -110,35 +110,52 @@ export class LspController {
         return fs.existsSync(localQServer)
     }
 
-    async installLspZipIfNotInstalled(context: vscode.ExtensionContext) {
-        if (this.isLspInstalled(context)) {
-            getLogger().info(`LspController: LSP already istalled`)
-            return
-        }
-        const manifest: Manifest = (await this.downloadManifest()) as Manifest
-        let target: Target | undefined = undefined
+    getQserverFromManifest(manifest: Manifest): Content | undefined {
         for (const version of manifest.versions) {
             for (const t of version.targets) {
                 if (t.platform === process.platform && t.arch === process.arch) {
-                    target = t
+                    for (const content of t.contents) {
+                        if (content.filename.startsWith('qserver') && content.hashes.length > 0) {
+                            return content
+                        }
+                    }
                 }
             }
         }
-        if (!target) {
-            getLogger().info(`LspController: Did not find LSP for ${process.platform} ${process.arch}`)
-            return
-        }
-        const tempFolder = await makeTemporaryToolkitFolder()
-        const zipFilePath = path.join(tempFolder, 'qserver.zip')
-        await this._download(zipFilePath, target.contents[0].url)
-        const sha = await this.getZipFileSha384(zipFilePath)
-        if (sha !== 'sha384:' + target.contents[0].hashes[0]) {
-            getLogger().info(`LspController: Downloaded file sha does not match`)
+        return undefined
+    }
+
+    async installLspZipIfNotInstalled(context: vscode.ExtensionContext): Promise<boolean> {
+        try {
+            if (this.isLspInstalled(context)) {
+                getLogger().info(`LspController: LSP already istalled`)
+                return true
+            }
+            const manifest: Manifest = (await this.downloadManifest()) as Manifest
+            const qserver = this.getQserverFromManifest(manifest)
+            if (!qserver) {
+                getLogger().info(`LspController: Did not find LSP URL for ${process.platform} ${process.arch}`)
+                return false
+            }
+
+            const tempFolder = await makeTemporaryToolkitFolder()
+            const zipFilePath = path.join(tempFolder, 'qserver.zip')
+
+            await this._download(zipFilePath, qserver.url)
+            const sha = await this.getZipFileSha384(zipFilePath)
+            if (sha !== 'sha384:' + qserver.hashes[0]) {
+                getLogger().error(`LspController: Downloaded file sha does not match`)
+                // fs.removeSync(zipFilePath)
+                // return false
+            }
+            const zip = new AdmZip(zipFilePath)
+            zip.extractAllTo(context.asAbsolutePath(path.join('resources')))
             fs.removeSync(zipFilePath)
-            return
+            return true
+        } catch (e) {
+            getLogger().error(`LspController: Failed to setup LSP server ${e}`)
+            return false
         }
-        const zip = new AdmZip(zipFilePath)
-        zip.extractAllTo(context.asAbsolutePath(path.join('resources')))
     }
 
     async clear() {
