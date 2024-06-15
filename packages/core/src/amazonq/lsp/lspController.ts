@@ -6,12 +6,12 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as fs from 'fs-extra'
-import { getLogger } from '../shared/logger/logger'
-import { CurrentWsFolders, collectFilesForIndex } from '../shared/utilities/workspaceUtils'
-import * as CodeWhispererConstants from '../codewhisperer/models/constants'
+import { getLogger } from '../../shared/logger/logger'
+import { CurrentWsFolders, collectFilesForIndex } from '../../shared/utilities/workspaceUtils'
+import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import fetch from 'node-fetch'
-import { clear, indexFiles, query } from './lsp/lspClient'
-import { SystemUtilities } from '../shared/systemUtilities'
+import { clear, indexFiles, query } from './lspClient'
+import { SystemUtilities } from '../../shared/systemUtilities'
 import AdmZip from 'adm-zip'
 import { RelevantTextDocument } from '@amzn/codewhisperer-streaming'
 
@@ -28,10 +28,11 @@ export interface Chunk {
     readonly content: string
     readonly context?: string
     readonly relativePath?: string
+    readonly programmingLanguage?: string
 }
 
-export class Search {
-    static #instance: Search
+export class LspController {
+    static #instance: LspController
 
     public static get instance() {
         return (this.#instance ??= new this())
@@ -104,67 +105,25 @@ export class Search {
         clear('')
     }
 
-    filenameToPl(filePath: string) {
-        // (python|javascript|java|csharp|typescript|c|cpp|go|kotlin|php|ruby|rust|scala|shell|sql|json|yaml|vue|tf|tsx|jsx|plaintext)
-        const extName = path.basename(filePath).split('.').pop()?.toLocaleLowerCase()
-        let pl = ''
-        if (!extName) {
-            pl = 'plaintext'
-        }
-        switch (extName) {
-            case 'js':
-            case 'mjs':
-                return 'javascript'
-            case 'ts':
-            case 'mts':
-                return 'typescript'
-            case 'c':
-                return 'c'
-            case 'cpp':
-            case 'c++':
-                return 'cpp'
-            case 'py':
-                return 'python'
-            case 'java':
-                return 'java'
-            case 'cs':
-                return 'csharp'
-            case 'go':
-                return 'go'
-            case 'kt':
-                return 'kotlin'
-            case 'php':
-                return 'php'
-            case 'rb':
-                return 'ruby'
-            case 'rs':
-                return 'rust'
-            case 'scala':
-                return 'scala'
-            case 'sh':
-                return 'shell'
-            case 'tf':
-                return 'tf'
-            case 'json':
-                return 'json'
-            default:
-                return 'plaintext'
-        }
-        return pl
-    }
-
     async query(s: string): Promise<RelevantTextDocument[]> {
         const cs: Chunk[] = await query(s)
         const resp: RelevantTextDocument[] = []
         cs.forEach(chunk => {
             const text = chunk.context ? chunk.context : chunk.content
-            resp.push({
-                text: text,
-                relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
-                programmingLanguage: {
-                    languageName: this.filenameToPl(chunk.filePath),
-                },
-            })
+            if (chunk.programmingLanguage) {
+                resp.push({
+                    text: text,
+                    relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
+                    programmingLanguage: {
+                        languageName: chunk.programmingLanguage,
+                    },
+                })
+            } else {
+                resp.push({
+                    text: text,
+                    relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
+                })
+            }
         })
         return resp
     }
@@ -190,6 +149,4 @@ export class Search {
             getLogger().info(`NEW: Finish building vector index of project`)
         }
     }
-
-    async updateIndex(filepath: string) {}
 }

@@ -18,7 +18,7 @@ import { Commands, placeholder } from '../shared/vscode/commands2'
 import { focusAmazonQPanel, focusAmazonQPanelKeybinding } from '../codewhispererChat/commands/registerCommands'
 import { TryChatCodeLensProvider, tryChatCodeLensCommand } from '../codewhispererChat/editor/codelens'
 import { activate as activateLsp } from './lsp/lspClient'
-import { Search } from './search'
+import { LspController } from './lsp/lspController'
 import { CodeWhispererSettings } from '../codewhisperer/util/codewhispererSettings'
 import { getLogger } from '../shared'
 import { Auth } from '../auth'
@@ -66,13 +66,17 @@ export async function activate(context: ExtensionContext) {
         Auth.instance.onDidChangeConnectionState
     )
     if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
-        Search.instance.installLspZipIfNotInstalled(context).then(() => {
-            setImmediate(() =>
-                activateLsp(context).then(() => {
-                    getLogger().info('LSP activated')
-                    Search.instance.buildIndex()
-                })
-            )
+        LspController.instance.installLspZipIfNotInstalled(context).then(() => {
+            setImmediate(() => {
+                try {
+                    activateLsp(context).then(() => {
+                        getLogger().info('LSP activated')
+                        LspController.instance.buildIndex()
+                    })
+                } catch (e) {
+                    getLogger().error(`LSP failed to activate ${e}`)
+                }
+            })
         })
     }
 }

@@ -44,7 +44,7 @@ import { triggerPayloadToChatRequest } from './chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { randomUUID } from '../../../common/crypto'
-import { Search } from '../../../amazonq/search'
+import { LspController } from '../../../amazonq/lsp/lspController'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
 
 export interface ChatControllerMessagePublishers {
@@ -559,7 +559,7 @@ export class ChatController {
                 triggerPayload.message = triggerPayload.message.slice(10)
             }
             if (CodeWhispererSettings.instance.isLocalIndexEnabled() && userIntentEnableProjectContext) {
-                triggerPayload.relevantTextDocuments = await Search.instance.query(triggerPayload.message)
+                triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
                 if (triggerPayload.relevantTextDocuments.length > 0) {
                     triggerPayload.hasProjectLevelContext = true
                 }
