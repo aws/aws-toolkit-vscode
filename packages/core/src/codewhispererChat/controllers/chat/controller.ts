@@ -537,15 +537,6 @@ export class ChatController {
 
         this.messenger.sendStaticTextResponse(responseType, triggerID, tabID)
     }
-    async getPrompt(triggerPayload: TriggerPayload) {
-        try {
-            const msg = triggerPayload.message
-            if (msg) {
-            }
-        } catch (e: any) {
-            getLogger().error(`failed to get prompt: ${(e as Error).message}`)
-        }
-    }
 
     private async generateResponse(triggerPayload: TriggerPayload, triggerID: string) {
         // Loop while we waiting for tabID to be set
