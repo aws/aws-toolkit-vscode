@@ -15,6 +15,8 @@ import { clear, indexFiles, query } from './lspClient'
 import AdmZip from 'adm-zip'
 import { RelevantTextDocument } from '@amzn/codewhisperer-streaming'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
+import { activate as activateLsp } from './lspClient'
 
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -125,7 +127,7 @@ export class LspController {
         return undefined
     }
 
-    async installLspZipIfNotInstalled(context: vscode.ExtensionContext): Promise<boolean> {
+    async tryInstallLsp(context: vscode.ExtensionContext): Promise<boolean> {
         try {
             if (this.isLspInstalled(context)) {
                 getLogger().info(`LspController: LSP already istalled`)
@@ -205,5 +207,26 @@ export class LspController {
             )
             getLogger().debug(`LspController: Finish building vector index of project`)
         }
+    }
+
+    async trySetupLsp(context: vscode.ExtensionContext) {
+        if (!CodeWhispererSettings.instance.isLocalIndexEnabled()) {
+            return
+        }
+        LspController.instance.tryInstallLsp(context).then(succeed => {
+            if (!succeed) {
+                return
+            }
+            setImmediate(() => {
+                try {
+                    activateLsp(context).then(() => {
+                        getLogger().info('LspController: LSP activated')
+                        LspController.instance.buildIndex()
+                    })
+                } catch (e) {
+                    getLogger().error(`LspController: LSP failed to activate ${e}`)
+                }
+            })
+        })
     }
 }

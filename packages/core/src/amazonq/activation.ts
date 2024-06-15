@@ -22,10 +22,7 @@ import { listCodeWhispererCommandsWalkthrough } from '../codewhisperer/ui/status
 import { Commands, placeholder } from '../shared/vscode/commands2'
 import { focusAmazonQPanel, focusAmazonQPanelKeybinding } from '../codewhispererChat/commands/registerCommands'
 import { TryChatCodeLensProvider, tryChatCodeLensCommand } from '../codewhispererChat/editor/codelens'
-import { activate as activateLsp } from './lsp/lspClient'
 import { LspController } from './lsp/lspController'
-import { CodeWhispererSettings } from '../codewhisperer/util/codewhispererSettings'
-import { getLogger } from '../shared'
 import { Auth } from '../auth'
 import { learnMoreUri } from '../codewhisperer/models/constants'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
@@ -72,23 +69,7 @@ export async function activate(context: ExtensionContext) {
         appInitContext.onDidChangeAmazonQVisibility.event,
         Auth.instance.onDidChangeConnectionState
     )
-    if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
-        LspController.instance.installLspZipIfNotInstalled(context).then(succeed => {
-            if (!succeed) {
-                return
-            }
-            setImmediate(() => {
-                try {
-                    activateLsp(context).then(() => {
-                        getLogger().info('LSP activated')
-                        LspController.instance.buildIndex()
-                    })
-                } catch (e) {
-                    getLogger().error(`LSP failed to activate ${e}`)
-                }
-            })
-        })
-    }
+    LspController.instance.trySetupLsp(context)
 }
 
 function registerApps(appInitContext: AmazonQAppInitContext) {

@@ -306,7 +306,7 @@ export async function collectFiles(
     sourcePaths: string[],
     workspaceFolders: CurrentWsFolders,
     respectGitIgnore: boolean = true,
-    maxSize = 200 * 1024 * 1024 // 200 MB,
+    maxSize = 200 * 1024 * 1024 // 200 MB
 ): Promise<
     {
         workspaceFolder: vscode.WorkspaceFolder
@@ -361,7 +361,7 @@ export async function collectFiles(
                 )
             }
 
-            let fileContent = await readFile(file)
+            const fileContent = await readFile(file)
 
             if (fileContent === undefined) {
                 continue
@@ -536,7 +536,7 @@ export async function collectFilesForIndex(
 
     const isLanguageSupported = (filename: string) => {
         const k =
-            /\.(js|ts|java|py|rb|cpp|tsx|jsx|cc|c|h|html|json|css|md|php|swift|rs|scala|yaml|tf|sql|sh|go|yml|kt|smithy|config|kts|gradle|cfg|xml)$/i
+            /\.(js|ts|java|py|rb|cpp|tsx|jsx|cc|c|h|html|json|css|md|php|swift|rs|scala|yaml|tf|sql|sh|go|yml|kt|smithy|config|kts|gradle|cfg|xml|vue)$/i
         return k.test(filename) || filename.endsWith('Config')
     }
 
