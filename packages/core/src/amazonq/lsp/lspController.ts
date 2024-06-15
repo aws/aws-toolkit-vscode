@@ -6,14 +6,15 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as fs from 'fs-extra'
+import * as crypto from 'crypto'
 import { getLogger } from '../../shared/logger/logger'
 import { CurrentWsFolders, collectFilesForIndex } from '../../shared/utilities/workspaceUtils'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import fetch from 'node-fetch'
 import { clear, indexFiles, query } from './lspClient'
-import { SystemUtilities } from '../../shared/systemUtilities'
 import AdmZip from 'adm-zip'
 import { RelevantTextDocument } from '@amzn/codewhisperer-streaming'
+import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -29,6 +30,31 @@ export interface Chunk {
     readonly context?: string
     readonly relativePath?: string
     readonly programmingLanguage?: string
+}
+
+interface Content {
+    filename: string
+    url: string
+    hashes: string[]
+    bytes: number
+}
+
+interface Target {
+    platform: string
+    arch: string
+    contents: Content[]
+}
+
+interface Manifest {
+    manifestSchemaVersion: string
+    artifactId: string
+    artifactDescription: string
+    isManifestDeprecated: boolean
+    versions: {
+        serverVersion: string
+        isDelisted: boolean
+        targets: Target[]
+    }[]
 }
 
 export class LspController {
@@ -60,45 +86,59 @@ export class LspController {
         })
     }
 
-    isLspInstalled() {
-        const extPath = path.join(SystemUtilities.getHomeDirectory(), '.vscode', 'extensions')
-        const localQServer = path.join(extPath, 'qserver')
+    async downloadManifest() {
+        const res = await fetch('https://aws-toolkit-language-servers.amazonaws.com/temp/manifest.json', {
+            headers: {
+                'User-Agent': 'curl/7.68.0',
+            },
+        })
+        if (!res.ok) {
+            throw new Error(`Failed to download. Error: ${JSON.stringify(res)}`)
+        }
+        return res.json()
+    }
+
+    async getZipFileSha384(filePath: string): Promise<string> {
+        const fileBuffer = await fs.promises.readFile(filePath)
+        const hash = crypto.createHash('sha384')
+        hash.update(fileBuffer)
+        return hash.digest('hex')
+    }
+
+    isLspInstalled(context: vscode.ExtensionContext) {
+        const localQServer = context.asAbsolutePath(path.join('resources', 'qserver'))
         return fs.existsSync(localQServer)
     }
 
     async installLspZipIfNotInstalled(context: vscode.ExtensionContext) {
-        const localQServer = context.asAbsolutePath(path.join('resources', 'qserver'))
-        const zipFilePath = context.asAbsolutePath(path.join('resources', 'qserver.zip'))
-        if (!fs.existsSync(localQServer)) {
-            const zip = new AdmZip(zipFilePath)
-            zip.extractAllTo(context.asAbsolutePath(path.join('resources')))
+        if (this.isLspInstalled(context)) {
+            getLogger().info(`LspController: LSP already istalled`)
+            return
         }
-    }
-
-    async installLspZip() {
-        const extPath = path.join(SystemUtilities.getHomeDirectory(), '.vscode', 'extensions')
-        const localQServer = path.join(extPath, 'qserver')
-        if (fs.existsSync(localQServer)) {
-            getLogger().info(`Found qserver at ${localQServer}`)
-            return localQServer
-        }
-
-        try {
-            const fname = `qserver-${process.platform}-${process.arch}.zip`
-            const s3Path = `https://github.com/leigaol/test-qserver/releases/download/0.1/${fname}`
-            // use aws api, aws credentials, allow
-            const localFile = path.join(SystemUtilities.getHomeDirectory(), '.vscode', 'extensions', fname)
-            if (fs.existsSync(localFile)) {
-                getLogger().info(`Found qserver.zip at ${localFile}`)
-                return localFile
+        const manifest: Manifest = (await this.downloadManifest()) as Manifest
+        let target: Target | undefined = undefined
+        for (const version of manifest.versions) {
+            for (const t of version.targets) {
+                if (t.platform === process.platform && t.arch === process.arch) {
+                    target = t
+                }
             }
-            await this._download(localFile, s3Path)
-            const zip = new AdmZip(localFile)
-            zip.extractAllTo(extPath)
-            return localFile
-        } catch (e) {
-            getLogger().error(`Failed to download qserver: ${e}`)
         }
+        if (!target) {
+            getLogger().info(`LspController: Did not find LSP for ${process.platform} ${process.arch}`)
+            return
+        }
+        const tempFolder = await makeTemporaryToolkitFolder()
+        const zipFilePath = path.join(tempFolder, 'qserver.zip')
+        await this._download(zipFilePath, target.contents[0].url)
+        const sha = await this.getZipFileSha384(zipFilePath)
+        if (sha !== 'sha384:' + target.contents[0].hashes[0]) {
+            getLogger().info(`LspController: Downloaded file sha does not match`)
+            fs.removeSync(zipFilePath)
+            return
+        }
+        const zip = new AdmZip(zipFilePath)
+        zip.extractAllTo(context.asAbsolutePath(path.join('resources')))
     }
 
     async clear() {
@@ -129,7 +169,7 @@ export class LspController {
     }
 
     async buildIndex() {
-        getLogger().info(`NEW: Starting to build vector index of project`)
+        getLogger().debug(`LspController: Starting to build vector index of project`)
         const projPaths = getProjectPaths()
         projPaths.sort()
         if (projPaths.length > 0) {
@@ -140,13 +180,13 @@ export class LspController {
                 true,
                 CodeWhispererConstants.projectIndexSizeLimitBytes
             )
-            getLogger().info(`NEW: Found ${files.length} files in current project ${getProjectPaths()}`)
+            getLogger().debug(`LspController: Found ${files.length} files in current project ${getProjectPaths()}`)
             await indexFiles(
                 files.map(f => f.fileUri.fsPath),
                 projRoot,
                 false
             )
-            getLogger().info(`NEW: Finish building vector index of project`)
+            getLogger().debug(`LspController: Finish building vector index of project`)
         }
     }
 }
