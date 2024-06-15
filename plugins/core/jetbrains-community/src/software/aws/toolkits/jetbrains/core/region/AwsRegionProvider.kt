@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.core.region
 
 import com.intellij.openapi.components.service
-import org.slf4j.event.Level
 import software.amazon.awssdk.regions.providers.AwsProfileRegionProvider
 import software.amazon.awssdk.regions.providers.AwsRegionProviderChain
 import software.amazon.awssdk.regions.providers.SystemSettingsRegionProvider
@@ -13,9 +12,7 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.PartitionParser
 import software.aws.toolkits.core.region.ServiceEndpointResource
 import software.aws.toolkits.core.region.ToolkitRegionProvider
-import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.inputStream
-import software.aws.toolkits.core.utils.logWhenNull
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider
 import software.aws.toolkits.resources.BundledResources
@@ -45,12 +42,12 @@ class AwsRegionProvider : ToolkitRegionProvider() {
     override fun defaultPartition(): AwsPartition = partitions().getValue(defaultRegion().partitionId)
 
     override fun defaultRegion(): AwsRegion {
-        val regionIdFromChain = LOG.tryOrNull("Failed to find default region in chain", level = Level.WARN) {
+        val regionIdFromChain = tryOrNull {
             regionChain.region.id()
         }
 
         val regionFromChain = regionIdFromChain?.let { regionId ->
-            LOG.logWhenNull("Could not find $regionId in endpoint data") {
+            tryOrNull {
                 this[regionId]
             }
         }
@@ -63,7 +60,6 @@ class AwsRegionProvider : ToolkitRegionProvider() {
 
     companion object {
         private const val DEFAULT_REGION = "us-east-1"
-        private val LOG = getLogger<AwsRegionProvider>()
 
         @JvmStatic
         fun getInstance(): ToolkitRegionProvider = service()

@@ -18,7 +18,6 @@ import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileSsoSessionIdentifier
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
-import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import java.util.Collections
 
 typealias ToolkitAuthManager = migration.software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
@@ -304,5 +303,5 @@ data class ToolkitAuthManagerState(
 data class LastLoginIdcInfo(
     var profileName: String = "",
     var startUrl: String = "",
-    var region: String = AwsRegionProvider.getInstance().defaultRegion().id
+    var region: String = ""
 )

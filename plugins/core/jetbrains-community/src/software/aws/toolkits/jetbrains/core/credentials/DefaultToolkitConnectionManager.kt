@@ -9,8 +9,6 @@ import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.project.Project
-import software.aws.toolkits.core.utils.debug
-import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.pinning.ConnectionPinningManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.FeatureWithPinnedConnection
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
@@ -87,19 +85,9 @@ class DefaultToolkitConnectionManager : ToolkitConnectionManager, PersistentStat
     }
 
     override fun connectionStateForFeature(feature: FeatureWithPinnedConnection): BearerTokenAuthState {
-        val conn = activeConnectionForFeature(feature) as? AwsBearerTokenConnection? ?: run {
-            getLogger<DefaultToolkitConnectionManager>().debug {
-                """
-                    isFeatureEnabled: Feature $feature is not connected
-                    ActiveConnectionForFeature=${activeConnectionForFeature(feature)}
-                """.trimIndent()
-            }
-            return BearerTokenAuthState.NOT_AUTHENTICATED
-        }
-        val provider = conn.getConnectionSettings().tokenProvider.delegate as? BearerTokenProvider ?: run {
-            getLogger<DefaultToolkitConnectionManager>().debug { "isFeatureEnabled: provider can't be cast to BearerTokenProvider" }
-            return BearerTokenAuthState.NOT_AUTHENTICATED
-        }
+        val conn = activeConnectionForFeature(feature) as? AwsBearerTokenConnection? ?: return BearerTokenAuthState.NOT_AUTHENTICATED
+        val provider = conn.getConnectionSettings().tokenProvider.delegate as? BearerTokenProvider ?: return BearerTokenAuthState.NOT_AUTHENTICATED
+
         return provider.state()
     }
 

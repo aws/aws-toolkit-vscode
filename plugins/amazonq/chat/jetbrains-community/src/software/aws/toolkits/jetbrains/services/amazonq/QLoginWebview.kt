@@ -221,7 +221,12 @@ class QWebviewBrowser(val project: Project, private val parentDisposable: Dispos
         }
 
         // previous login
-        val lastLoginIdcInfo = ToolkitAuthManager.getInstance().getLastLoginIdcInfo()
+        val lastLoginIdcInfo = ToolkitAuthManager.getInstance().getLastLoginIdcInfo().apply {
+            // set default option as us-east-1
+            if (this.region.isBlank()) {
+                this.region = AwsRegionProvider.getInstance().defaultRegion().id
+            }
+        }
 
         // available regions
         val regions = AwsRegionProvider.getInstance().allRegionsForService("sso").values.let {
