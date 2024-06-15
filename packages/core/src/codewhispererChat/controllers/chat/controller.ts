@@ -2,7 +2,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as vscode from 'vscode'
 import { Event as VSCodeEvent, Uri } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
@@ -551,12 +550,18 @@ export class ChatController {
     private async generateResponse(triggerPayload: TriggerPayload, triggerID: string) {
         // Loop while we waiting for tabID to be set
         if (triggerPayload.message) {
-            if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
+            let userIntentEnableProjectContext = false
+            if (triggerPayload.message.startsWith('@ws')) {
+                userIntentEnableProjectContext = true
+                triggerPayload.message = triggerPayload.message.slice(3)
+            } else if (triggerPayload.message.startsWith('@workspace')) {
+                userIntentEnableProjectContext = true
+                triggerPayload.message = triggerPayload.message.slice(10)
+            }
+            if (CodeWhispererSettings.instance.isLocalIndexEnabled() && userIntentEnableProjectContext) {
                 triggerPayload.relevantTextDocuments = await Search.instance.query(triggerPayload.message)
                 if (triggerPayload.relevantTextDocuments.length > 0) {
                     triggerPayload.hasProjectLevelContext = true
-                } else {
-                    getLogger().info(`No Relevant code`)
                 }
             }
         }

@@ -104,17 +104,65 @@ export class Search {
         clear('')
     }
 
+    filenameToPl(filePath: string) {
+        // (python|javascript|java|csharp|typescript|c|cpp|go|kotlin|php|ruby|rust|scala|shell|sql|json|yaml|vue|tf|tsx|jsx|plaintext)
+        const extName = path.basename(filePath).split('.').pop()?.toLocaleLowerCase()
+        let pl = ''
+        if (!extName) {
+            pl = 'plaintext'
+        }
+        switch (extName) {
+            case 'js':
+            case 'mjs':
+                return 'javascript'
+            case 'ts':
+            case 'mts':
+                return 'typescript'
+            case 'c':
+                return 'c'
+            case 'cpp':
+            case 'c++':
+                return 'cpp'
+            case 'py':
+                return 'python'
+            case 'java':
+                return 'java'
+            case 'cs':
+                return 'csharp'
+            case 'go':
+                return 'go'
+            case 'kt':
+                return 'kotlin'
+            case 'php':
+                return 'php'
+            case 'rb':
+                return 'ruby'
+            case 'rs':
+                return 'rust'
+            case 'scala':
+                return 'scala'
+            case 'sh':
+                return 'shell'
+            case 'tf':
+                return 'tf'
+            case 'json':
+                return 'json'
+            default:
+                return 'plaintext'
+        }
+        return pl
+    }
+
     async query(s: string): Promise<RelevantTextDocument[]> {
         const cs: Chunk[] = await query(s)
         const resp: RelevantTextDocument[] = []
         cs.forEach(chunk => {
             const text = chunk.context ? chunk.context : chunk.content
-            const extName = path.basename(chunk.filePath).split('.').pop()?.toLocaleLowerCase()
             resp.push({
                 text: text,
                 relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
                 programmingLanguage: {
-                    languageName: extName,
+                    languageName: this.filenameToPl(chunk.filePath),
                 },
             })
         })

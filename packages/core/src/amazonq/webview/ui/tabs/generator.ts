@@ -36,13 +36,13 @@ export class TabDataGenerator {
             'unknown',
             `Hi, I'm Amazon Q. I can answer your software development questions. 
         Ask me to explain, debug, or optimize your code. 
-        You can enter \`/\` to see a list of quick actions.`,
+        You can enter \`/\` to see a list of quick actions. Add @workspace or @ws at the beginning of your message to enhance Q response with entire workspace files`,
         ],
         [
             'cwc',
             `Hi, I'm Amazon Q. I can answer your software development questions. 
         Ask me to explain, debug, or optimize your code. 
-        You can enter \`/\` to see a list of quick actions.`,
+        You can enter \`/\` to see a list of quick actions. Add @workspace or @ws at the beginning of your message to enhance Q response with entire workspace files`,
         ],
         [
             'featuredev',
