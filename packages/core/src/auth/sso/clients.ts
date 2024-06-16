@@ -35,6 +35,7 @@ import { HttpRequest, HttpResponse } from '@smithy/protocol-http'
 import { StandardRetryStrategy, defaultRetryDecider } from '@smithy/middleware-retry'
 import { AuthenticationFlow } from './model'
 import { toSnakeCase } from '../../shared/utilities/textUtilities'
+import { getUserAgent } from '../../shared/telemetry/util'
 
 export class OidcClient {
     public constructor(private readonly client: SSOOIDC, private readonly clock: { Date: typeof Date }) {}
@@ -87,18 +88,28 @@ export class OidcClient {
 
         return {
             ...selectFrom(response, 'accessToken', 'refreshToken', 'tokenType'),
+            requestId: response.$metadata.requestId,
             expiresAt: new this.clock.Date(response.expiresIn * 1000 + this.clock.Date.now()),
         }
     }
 
     public static create(region: string) {
         const updatedRetryDecider = (err: SdkError) => {
-            // Check the default retry conditions
             if (defaultRetryDecider(err)) {
                 return true
             }
 
-            // Custom retry rules
+            // Sessions may "expire" earlier than expected due to network faults.
+            // TODO: add more cases from node_modules/@aws-sdk/client-sso-oidc/dist-types/models/models_0.d.ts
+            // ExpiredTokenException
+            // InternalServerException
+            // InvalidClientException
+            // InvalidRequestException
+            // SlowDownException
+            // UnsupportedGrantTypeException
+            // InvalidRequestRegionException
+            // InvalidRedirectUriException
+            // InvalidRedirectUriException
             return err.name === 'InvalidGrantException'
         }
         const client = new SSOOIDC({
@@ -108,6 +119,7 @@ export class OidcClient {
                 () => Promise.resolve(3), // Maximum number of retries
                 { retryDecider: updatedRetryDecider }
             ),
+            customUserAgent: getUserAgent({ includePlatform: true, includeClientId: true }),
         })
 
         addLoggingMiddleware(client)
@@ -214,6 +226,7 @@ export class SsoClient {
             new SSO({
                 region,
                 endpoint: DevSettings.instance.get('endpoints', {})['sso'],
+                customUserAgent: getUserAgent({ includePlatform: true, includeClientId: true }),
             }),
             provider
         )

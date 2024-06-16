@@ -731,6 +731,7 @@ const devSettings = {
     codewhispererService: Record(String, String),
     ssoCacheDirectory: String,
     autofillStartUrl: String,
+    webAuth: Boolean,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
 type AwsDevSetting = keyof ResolvedDevSettings
