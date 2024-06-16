@@ -109,6 +109,7 @@ export class LspController {
 
     isLspInstalled(context: vscode.ExtensionContext) {
         const localQServer = context.asAbsolutePath(path.join('resources', 'qserver'))
+        console.log(localQServer)
         return fs.existsSync(localQServer)
     }
 
@@ -144,9 +145,11 @@ export class LspController {
             const zipFilePath = path.join(tempFolder, 'qserver.zip')
 
             await this._download(zipFilePath, qserver.url)
-            const sha = await this.getZipFileSha384(zipFilePath)
-            if (sha !== 'sha384:' + qserver.hashes[0]) {
-                getLogger().error(`LspController: Downloaded file sha does not match`)
+            const sha384 = await this.getZipFileSha384(zipFilePath)
+            if ('sha384:' + sha384 !== qserver.hashes[0]) {
+                getLogger().error(
+                    `LspController: Downloaded file sha ${sha384} does not match manifest ${qserver.hashes[0]}.`
+                )
                 // fs.removeSync(zipFilePath)
                 // return false
             }
