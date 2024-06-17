@@ -28,9 +28,9 @@ import {
 } from '../../../codewhisperer/models/constants'
 import * as model from '../../../codewhisperer/models/model'
 import { CodewhispererSecurityScan } from '../../../shared/telemetry/telemetry.gen'
-import { getFetchStubWithResponse } from '../../common/request.test'
 import * as errors from '../../../shared/errors'
 import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
+import { getFetchStubWithResponse } from '../../index'
 
 const mockCreateCodeScanResponse = {
     $response: {

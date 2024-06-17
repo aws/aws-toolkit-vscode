@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { assertTelemetry, tryRegister } from '../../../testUtil'
+import { assertTelemetry } from '../../../testUtil'
 import { AmazonQLoginWebview } from '../../../../login/webview/vue/amazonq/backend_amazonq'
-import { openAmazonQWalkthrough } from '../../../../amazonq/onboardingPage/walkthrough'
 import { CancellationError } from '../../../../shared/utilities/timeoutUtils'
 import { TelemetryMetadata } from '../../../../login/webview/vue/types'
 
@@ -15,10 +14,6 @@ describe('Amazon Q Login', function () {
     const startUrl = 'fakeUrl'
 
     let backend: AmazonQLoginWebview
-
-    before(function () {
-        tryRegister(openAmazonQWalkthrough)
-    })
 
     beforeEach(function () {
         backend = new AmazonQLoginWebview()

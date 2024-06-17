@@ -376,3 +376,14 @@ export function getRandomString(length = 32) {
     }
     return text
 }
+
+/**
+ * Convert a base 64 string to a base 64 url string
+ *
+ * See: https://datatracker.ietf.org/doc/html/rfc4648#section-5
+ * @param base64 a base 64 string
+ * @returns a base 64 url string
+ */
+export function toBase64URL(base64: string) {
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}

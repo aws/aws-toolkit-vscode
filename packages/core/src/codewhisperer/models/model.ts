@@ -381,6 +381,7 @@ export class TransformByQState {
 
     private planFilePath: string = ''
     private summaryFilePath: string = ''
+    private preBuildLogFilePath: string = ''
 
     private resultArchiveFilePath: string = ''
     private projectCopyFilePath: string = ''
@@ -439,6 +440,10 @@ export class TransformByQState {
 
     public getProjectPath() {
         return this.projectPath
+    }
+
+    public getPreBuildLogFilePath() {
+        return this.preBuildLogFilePath
     }
 
     public getStartTime() {
@@ -635,6 +640,10 @@ export class TransformByQState {
 
     public setPlanSteps(steps: TransformationSteps) {
         this.planSteps = steps
+    }
+
+    public setPreBuildLogFilePath(path: string) {
+        this.preBuildLogFilePath = path
     }
 
     public resetPlanSteps() {

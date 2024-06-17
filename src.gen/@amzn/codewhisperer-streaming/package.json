@@ -3,7 +3,6 @@
     "description": "@amzn/codewhisperer-streaming client",
     "version": "0.0.1",
     "scripts": {
-        "postinstall": "npm run build",
         "build": "concurrently 'npm:build:cjs' 'npm:build:es' 'npm:build:types'",
         "build:cjs": "tsc -p tsconfig.cjs.json",
         "build:docs": "typedoc",
@@ -11,7 +10,8 @@
         "build:types": "tsc -p tsconfig.types.json",
         "build:types:downlevel": "downlevel-dts dist-types dist-types/ts3.4",
         "clean": "rimraf ./dist-* && rimraf *.tsbuildinfo",
-        "prepack": "npm run clean && npm run build"
+        "prepack": "npm run clean && npm run build",
+        "postinstall": "npm run build"
     },
     "main": "./dist-cjs/index.js",
     "types": "./dist-types/index.d.ts",

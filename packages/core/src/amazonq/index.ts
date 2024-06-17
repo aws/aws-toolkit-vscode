@@ -6,6 +6,11 @@
 export { activate } from './activation'
 export { DefaultAmazonQAppInitContext } from './apps/initContext'
 export { TabType } from './webview/ui/storages/tabsStorage'
+export { MessagePublisher } from './messages/messagePublisher'
+export { MessageListener } from './messages/messageListener'
+export { AuthController } from './auth/controller'
+export { showAmazonQWalkthroughOnce } from './onboardingPage/walkthrough'
+export { openAmazonQWalkthrough } from './onboardingPage/walkthrough'
 
 /**
  * main from createMynahUI is a purely browser dependency. Due to this

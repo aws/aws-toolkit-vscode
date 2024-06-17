@@ -56,8 +56,8 @@
             </svg>
         </div>
         <div class="text">
-            <div class="title">{{ itemTitle }}</div>
-            <div class="p" v-if="itemText">{{ itemText }}</div>
+            <div class="title" :title="itemTitle">{{ itemTitle }}</div>
+            <div class="p" v-if="itemText" :title="itemText">{{ itemText }}</div>
         </div>
     </div>
 </template>
@@ -116,6 +116,9 @@ export default defineComponent({
 
 .title {
     font-size: var(--font-size-base);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .text {
@@ -123,6 +126,7 @@ export default defineComponent({
     flex-direction: column;
     font-size: var(--font-size-sm);
     justify-content: center;
+    overflow: hidden;
 }
 
 .vscode-dark .text {
