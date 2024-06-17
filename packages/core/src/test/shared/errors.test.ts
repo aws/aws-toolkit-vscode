@@ -4,10 +4,20 @@
  */
 
 import assert from 'assert'
-import { getTelemetryReason, getTelemetryResult, resolveErrorMessageToDisplay, ToolkitError } from '../../shared/errors'
+import vscode from 'vscode'
+import {
+    findAwsErrorInCausalChain,
+    findPrioritizedAwsError,
+    getErrorMsg,
+    getTelemetryReason,
+    getTelemetryResult,
+    resolveErrorMessageToDisplay,
+    ToolkitError,
+} from '../../shared/errors'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { UnauthorizedException } from '@aws-sdk/client-sso'
 import { AWSError } from 'aws-sdk'
+import { AccessDeniedException } from '@aws-sdk/client-sso-oidc'
 
 describe('ToolkitError', function () {
     it('can store an error message', function () {
@@ -218,6 +228,83 @@ describe('Telemetry', function () {
             const error2 = new ToolkitError('', { cause: error1 })
             assert.strictEqual(getTelemetryReason(error2), 'ErrorCode')
         })
+    })
+})
+
+describe('util', function () {
+    // Error containing `error_description`.
+    function fakeAwsError_accessDenied() {
+        const e = new AccessDeniedException({
+            error: 'access_denied',
+            message: 'accessdenied message',
+            $metadata: {
+                attempts: 3,
+                requestId: 'or62s79n-r9ps-41pq-n755-r6920p56r4so',
+                totalRetryDelay: 3000,
+                httpStatusCode: 403,
+            },
+        }) as any
+        e.name = 'accessdenied-name'
+        e.code = 'accessdenied-code'
+        e.error_description = 'access_denied error_description'
+        e.time = new Date()
+        return e as AccessDeniedException
+    }
+
+    // Error NOT containing `error_description`.
+    function fakeAwsError_unauth() {
+        const e = new UnauthorizedException({
+            message: 'unauthorized message',
+            $metadata: {
+                attempts: 3,
+                requestId: 'be62f79a-e9cf-41cd-a755-e6920c56e4fb',
+                totalRetryDelay: 3000,
+                httpStatusCode: 403,
+            },
+        }) as any
+        e.name = 'unauthorized-name'
+        e.code = 'unauthorized-code'
+        e.time = new Date()
+        return e as UnauthorizedException
+    }
+
+    function fakeErrorChain() {
+        try {
+            throw new Error('generic error 1')
+        } catch (e1) {
+            try {
+                const e = fakeAwsError_accessDenied()
+                ;(e as any).cause = e1
+                throw e
+            } catch (e2) {
+                try {
+                    throw ToolkitError.chain(e2, 'ToolkitError message', {
+                        documentationUri: vscode.Uri.parse(
+                            'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html'
+                        ),
+                    })
+                } catch (e3) {
+                    const e = fakeAwsError_unauth()
+                    ;(e as any).cause = e3
+                    return e
+                }
+            }
+        }
+    }
+
+    it('getErrorMsg()', function () {
+        assert.deepStrictEqual(getErrorMsg(fakeErrorChain()), 'unauthorized message')
+        assert.deepStrictEqual(getErrorMsg(findAwsErrorInCausalChain(fakeErrorChain())), 'unauthorized message')
+        assert.deepStrictEqual(getErrorMsg(findPrioritizedAwsError(fakeErrorChain())), 'x')
+    })
+    it('findAwsErrorInCausalChain()', function () {
+        // assert.deepStrictEqual()
+    })
+    it('findPrioritizedAwsError()', function () {
+        // assert.deepStrictEqual()
+    })
+    it('formatError()', function () {
+        // assert.deepStrictEqual()
     })
 })
 
