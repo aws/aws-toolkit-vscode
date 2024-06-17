@@ -150,8 +150,8 @@ export class LspController {
                 getLogger().error(
                     `LspController: Downloaded file sha ${sha384} does not match manifest ${qserver.hashes[0]}.`
                 )
-                // fs.removeSync(zipFilePath)
-                // return false
+                fs.removeSync(zipFilePath)
+                return false
             }
             const zip = new AdmZip(zipFilePath)
             zip.extractAllTo(context.asAbsolutePath(path.join('resources')))
