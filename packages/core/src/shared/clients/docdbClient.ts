@@ -4,6 +4,9 @@
  */
 
 import globals from '../extensionGlobals'
+import { getLogger } from '../logger'
+import { getUserAgent } from '../telemetry/util'
+import { ToolkitError } from '../errors'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
 import { DocDBClient, DocDBClientConfig, DBCluster, DescribeDBClustersCommand } from '@aws-sdk/client-docdb'
 
@@ -15,6 +18,7 @@ export class DefaultDocumentDBClient {
     public async getClient(): Promise<DocDBClient> {
         const credentials = await globals.awsContext.getCredentials()
         const config: DocDBClientConfig = {
+            customUserAgent: await getUserAgent({ includePlatform: true, includeClientId: true }),
             credentials: credentials,
             region: this.regionCode,
         }
@@ -22,14 +26,18 @@ export class DefaultDocumentDBClient {
     }
 
     public async listClusters(): Promise<DBCluster[]> {
+        getLogger().debug('ListClusters called')
         const client = await this.getClient()
-        const input = {
-            Filters: [{ Name: 'engine', Values: ['docdb'] }],
+
+        try {
+            const input = {
+                Filters: [{ Name: 'engine', Values: ['docdb'] }],
+            }
+            const command = new DescribeDBClustersCommand(input)
+            const response = await client.send(command)
+            return response.DBClusters ?? []
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to get DocumentDB clusters')
         }
-
-        const command = new DescribeDBClustersCommand(input)
-        const response = await client.send(command)
-
-        return response.DBClusters ?? []
     }
 }

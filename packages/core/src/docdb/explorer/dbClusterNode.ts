@@ -8,6 +8,11 @@ import { inspect } from 'util'
 import { DBCluster } from '@aws-sdk/client-docdb'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
+/**
+ * An AWS Explorer node representing DocumentDB clusters.
+ *
+ * Contains instances for a specific cluster as child nodes.
+ */
 export class DBClusterNode extends AWSTreeNodeBase {
     constructor(readonly cluster: DBCluster) {
         super(cluster.DBClusterIdentifier ?? '[Cluster]', vscode.TreeItemCollapsibleState.Collapsed)
