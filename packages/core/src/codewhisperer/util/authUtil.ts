@@ -24,7 +24,6 @@ import {
     scopesFeatureDev,
     scopesGumby,
     isIdcSsoConnection,
-    AwsConnection,
     hasExactScopes,
 } from '../../auth/connection'
 import { getLogger } from '../../shared/logger'
@@ -149,26 +148,6 @@ export class AuthUtil {
             'aws.codewhisperer.connectionExpired',
             this.isConnectionExpired()
         )
-    }
-
-    /* Callback used by Amazon Q to delete connection status & scope when this deletion is made by AWS Toolkit
-     ** 1. NO event should be emitted from this deletion
-     ** 2. Should update the context key to update UX
-     */
-    public async onDeleteConnection(id: string) {
-        await this.secondaryAuth.onDeleteConnection(id)
-        await this.setVscodeContextProps()
-        await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
-    }
-
-    /* Callback used by Amazon Q to delete connection status & scope when this deletion is made by AWS Toolkit
-     ** 1. NO event should be emitted from this deletion
-     ** 2. Should update the context key to update UX
-     */
-    public async onUpdateConnection(connection: AwsConnection) {
-        await this.auth.onConnectionUpdate(connection)
-        await this.setVscodeContextProps()
-        await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
     }
 
     public reformatStartUrl(startUrl: string | undefined) {
@@ -432,25 +411,6 @@ export class AuthUtil {
         }
 
         return state
-    }
-
-    /**
-     * From the given connections, returns a connection that has some connection to Q.
-     *
-     * HACK: There is an edge case where we want to connect to the connection that only has
-     *       the old CW scopes, but not all Q scopes. So this function at the bare minimum returns
-     *       a connection if it has some CW scopes.
-     */
-    findMinimalQConnection(connections: AwsConnection[]): AwsConnection | undefined {
-        const hasQScopes = (c: AwsConnection) => codeWhispererCoreScopes.every(s => c.scopes?.includes(s))
-        const score = (c: AwsConnection) => Number(hasQScopes(c)) * 10 + Number(c.state === 'valid')
-        connections.sort(function (a, b) {
-            return score(b) - score(a)
-        })
-        if (hasQScopes(connections[0])) {
-            return connections[0]
-        }
-        return undefined
     }
 }
 

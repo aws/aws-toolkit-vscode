@@ -81,22 +81,22 @@
                 </svg>
             </button>
             <div class="auth-container-section">
-                <div class="existing-logins" v-if="existingLogins.length > 0">
+                <div class="imported-logins" v-if="importedLogins.length > 0">
                     <div class="header bottomMargin">Connect with an existing account:</div>
-                    <div v-for="(existingLogin, index) in existingLogins" :key="index">
+                    <div v-for="(importedLogin, index) in importedLogins" :key="index">
                         <SelectableItem
                             @toggle="toggleItemSelection"
-                            :isSelected="selectedLoginOption === LoginOption.EXISTING_LOGINS + index"
-                            :itemId="LoginOption.EXISTING_LOGINS + index"
-                            :itemText="existingLogin.text"
-                            :itemTitle="existingLogin.title"
-                            :itemType="existingLogin.type"
+                            :isSelected="selectedLoginOption === LoginOption.IMPORTED_LOGINS + index"
+                            :itemId="LoginOption.IMPORTED_LOGINS + index"
+                            :itemText="importedLogin.text"
+                            :itemTitle="importedLogin.title"
+                            :itemType="importedLogin.type"
                             class="selectable-item bottomMargin"
                         ></SelectableItem>
                     </div>
                     <div class="header">Or, choose a sign-in option:</div>
                 </div>
-                <div class="header bottomMargin" v-if="existingLogins.length == 0">Choose a sign-in option:</div>
+                <div class="header bottomMargin" v-if="importedLogins.length == 0">Choose a sign-in option:</div>
                 <SelectableItem
                     v-if="app === 'AMAZONQ'"
                     @toggle="toggleItemSelection"
@@ -275,7 +275,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import SelectableItem from './selectableItem.vue'
-import { LoginOption, AuthError } from './types'
+import { LoginOption } from './types'
 import { CommonAuthWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { Region } from '../../../shared/regions/endpoints'
@@ -289,10 +289,6 @@ function validateSsoUrlFormat(url: string) {
     const regex =
         /^(https?:\/\/(.+)\.awsapps\.com\/start|https?:\/\/identitycenter\.amazonaws\.com\/ssoins-[\da-zA-Z]{16})$/
     return regex.test(url)
-}
-
-function isBuilderId(url: string) {
-    return url === 'https://view.awsapps.com/start'
 }
 
 function getCredentialId(loginOption: LoginOption) {
@@ -312,21 +308,18 @@ const authUiClickOptionMap = {
     [LoginOption.BUILDER_ID]: 'auth_builderIdOption',
     [LoginOption.ENTERPRISE_SSO]: 'auth_idcOption',
     [LoginOption.IAM_CREDENTIAL]: 'auth_credentialsOption',
-    [LoginOption.EXISTING_LOGINS]: 'auth_existingAuthOption',
+    [LoginOption.IMPORTED_LOGINS]: 'auth_existingAuthOption',
 }
 
 function getUiClickEvent(loginOption: LoginOption) {
     return (authUiClickOptionMap as any)[loginOption]
 }
 
-interface ExistingLogin {
+interface ImportedLogin {
     id: number
     text: string
     title: string
-    connectionId: string
     type: number
-
-    // used internally
     startUrl: string
     region: string
 }
@@ -347,7 +340,8 @@ export default defineComponent({
     },
     data() {
         return {
-            existingLogins: [] as ExistingLogin[],
+            existingStartUrls: [] as string[],
+            importedLogins: [] as ImportedLogin[],
             selectedLoginOption: LoginOption.NONE,
             stage: 'START' as Stage,
             regions: [] as Region[],
@@ -368,7 +362,8 @@ export default defineComponent({
 
     async mounted() {
         this.fetchRegions()
-        await this.updateExistingConnections()
+        await this.updateImportedConnections()
+        await this.updateExistingStartUrls()
 
         // Reset gathered telemetry data each time we view the login page.
         // The webview panel is reset on each view of the login page by design.
@@ -376,6 +371,7 @@ export default defineComponent({
 
         // Pre-select the first available login option
         await this.preselectLoginOption()
+        this.handleUrlInput() // validate the default startUrl
     },
     methods: {
         toggleItemSelection(itemId: number) {
@@ -425,11 +421,17 @@ export default defineComponent({
                     this.stage = 'SSO_FORM'
                     this.$nextTick(() => document.getElementById('startUrl')!.focus())
                     await client.storeMetricMetadata({ awsRegion: this.selectedRegion })
-                } else if (this.selectedLoginOption >= LoginOption.EXISTING_LOGINS) {
+                } else if (this.selectedLoginOption >= LoginOption.IMPORTED_LOGINS) {
                     this.stage = 'AUTHENTICATING'
                     const selectedConnection =
-                        this.existingLogins[this.selectedLoginOption - LoginOption.EXISTING_LOGINS]
-                    const error = await client.useConnection(selectedConnection.connectionId, false)
+                        this.importedLogins[this.selectedLoginOption - LoginOption.IMPORTED_LOGINS]
+
+                    // Imported connections cannot be Builder IDs, they are filtered out in the client.
+                    const error = await client.startEnterpriseSetup(
+                        selectedConnection.startUrl,
+                        selectedConnection.region,
+                        this.app
+                    )
                     if (error) {
                         this.stage = 'START'
                         void client.errorNotification(error)
@@ -446,16 +448,7 @@ export default defineComponent({
                 }
                 this.stage = 'AUTHENTICATING'
 
-                // First check if the user tried submitting a connection that was already displayed as existing.
-                const existingConn = this.existingLogins.find(conn => conn.startUrl === this.startUrl)
-
-                let error: AuthError | undefined
-                if (existingConn !== undefined) {
-                    error = await client.useConnection(existingConn.connectionId, false)
-                } else {
-                    error = await client.startEnterpriseSetup(this.startUrl, this.selectedRegion, this.app)
-                }
-
+                const error = await client.startEnterpriseSetup(this.startUrl, this.selectedRegion, this.app)
                 if (error) {
                     this.stage = 'START'
                     void client.errorNotification(error)
@@ -492,14 +485,7 @@ export default defineComponent({
             if (this.startUrl && !validateSsoUrlFormat(this.startUrl)) {
                 this.startUrlError =
                     'URLs must start with http:// or https://. Example: https://d-xxxxxxxxxx.awsapps.com/start'
-            } else if (
-                this.startUrl &&
-                this.existingLogins.some(conn => conn.startUrl === this.startUrl && conn.region !== this.selectedRegion)
-            ) {
-                // Here, the user provided a startUrl that is already displayed as an existing option (in the previous screen).
-                // If the selectedRegion differs from the region in the existing connection, then we can display this error.
-                // Otherwise, we would have skipped this codepath and we will just re-use the existing connection since it is the same
-                // as what the user provided.
+            } else if (this.startUrl && this.existingStartUrls.some(url => url === this.startUrl)) {
                 this.startUrlError =
                     'A connection for this start URL already exists. Sign out before creating a new one.'
             } else {
@@ -510,7 +496,6 @@ export default defineComponent({
             }
         },
         handleRegionInput(event: any) {
-            this.handleUrlInput() // startUrl validity depends on region, see handleUriInput() for details
             void client.storeMetricMetadata({
                 awsRegion: event.target.value,
             })
@@ -530,35 +515,26 @@ export default defineComponent({
             this.regions = regions
         },
         async emitUpdate(cause?: string) {},
-        async updateExistingConnections() {
+        async updateImportedConnections() {
             // fetch existing connections of AWS toolkit in Amazon Q
             // or fetch existing connections of Amazon Q in AWS Toolkit
             // to reuse connections in AWS Toolkit & Amazon Q
             const sharedConnections = await client.fetchConnections()
             sharedConnections?.forEach((connection, index) => {
-                this.existingLogins.push({
-                    id: LoginOption.EXISTING_LOGINS + index,
+                this.importedLogins.push({
+                    id: LoginOption.IMPORTED_LOGINS + index,
                     text: this.app === 'TOOLKIT' ? 'Used by Amazon Q' : 'Used by AWS Toolkit',
-                    title: isBuilderId(connection.startUrl)
-                        ? 'AWS Builder ID'
-                        : `IAM Identity Center ${connection.startUrl}`,
-                    connectionId: connection.id,
-                    type: isBuilderId(connection.startUrl) ? LoginOption.BUILDER_ID : LoginOption.ENTERPRISE_SSO,
+                    title: `IAM Identity Center ${connection.startUrl}`,
+                    type: LoginOption.ENTERPRISE_SSO,
                     startUrl: connection.startUrl,
                     region: connection.ssoRegion,
                 })
             })
 
-            // If Toolkit has usable connections, instead auto connect Q using toolkit connection.
-            // Keep in mind that a "usable" connection is one with at least the CW core scopes (inline, ...)
-            if (sharedConnections && sharedConnections.length > 0) {
-                const conn = await client.findUsableConnection(sharedConnections)
-                if (conn) {
-                    await client.useConnection(conn.id, true)
-                }
-            }
-
             this.$forceUpdate()
+        },
+        async updateExistingStartUrls() {
+            this.existingStartUrls = (await client.listSsoConnections()).map(conn => conn.startUrl)
         },
         async getDefaultStartUrl() {
             return await client.getDefaultStartUrl()
@@ -568,8 +544,8 @@ export default defineComponent({
         },
         async preselectLoginOption() {
             // Select the first available option for Login
-            if (this.existingLogins.length > 0) {
-                this.selectedLoginOption = LoginOption.EXISTING_LOGINS
+            if (this.importedLogins.length > 0) {
+                this.selectedLoginOption = LoginOption.IMPORTED_LOGINS
             } else if (this.app === 'AMAZONQ') {
                 this.selectedLoginOption = LoginOption.BUILDER_ID
             } else if (this.app === 'TOOLKIT') {
