@@ -107,11 +107,6 @@
     <depends optional="true" config-file="ext-python.xml">com.intellij.modules.python</depends>
     <depends optional="true" config-file="ext-json.xml">com.intellij.modules.json</depends>
     <depends optional="true" config-file="ext-gateway.xml">com.jetbrains.gateway</depends>
-    <depends optional="true" config-file="ext-scala.xml">org.intellij.scala</depends>
-    <depends optional="true" config-file="ext-kotlin.xml">org.jetbrains.kotlin</depends>
-    <depends optional="true" config-file="ext-shell.xml">com.jetbrains.sh</depends>
-    <depends optional="true" config-file="ext-rust-deprecated.xml">org.rust.lang</depends>
-    <depends optional="true" config-file="ext-rust.xml">com.jetbrains.rust</depends>
 
     <xi:include href="services/caws.xml" xpointer="xpointer(/idea-plugin/*)">
         <xi:fallback/>
