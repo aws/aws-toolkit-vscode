@@ -242,7 +242,7 @@ export const artifactTypeSource = 'SourceCode'
 
 export const codeScanFindingsSchema = 'codescan/findings/1.0'
 
-export const autoScanDebounceDelaySeconds = 5
+export const autoScanDebounceDelaySeconds = 15
 
 export const codewhispererDiagnosticSourceLabel = 'Amazon Q '
 
@@ -526,7 +526,13 @@ export const noJavaHomeFoundChatMessage =
     'Sorry, I could not locate your Java installation. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites).'
 
 export const errorUploadingWithExpiredUrl =
-    "Sorry, I was unable to upload your project. The upload error may have been caused by the expiration of the S3 pre-signed URL that was used to upload code artifacts to Q Code Transformation. The S3 pre-signed URL expires in 30 minutes. This could be caused by any delays introduced by intermediate services in your network infrastructure. Please investigate your network configuration and consider allowlisting 'amazonq-code-transformation-us-east-1-c6160f047e0.s3.amazonaws.com' to skip any scanning that might delay the upload."
+    "The upload error may have been caused by the expiration of the S3 pre-signed URL that was used to upload code artifacts to Q Code Transformation. The S3 pre-signed URL expires in 30 minutes. This could be caused by any delays introduced by intermediate services in your network infrastructure. Please investigate your network configuration and consider allowlisting 'amazonq-code-transformation-us-east-1-c6160f047e0.s3.amazonaws.com' to skip any scanning that might delay the upload."
+
+export const socketConnectionFailed =
+    'Please check your network connectivity or firewall configuration, and then try again.'
+
+export const selfSignedCertificateError =
+    'This might have been caused by your IDE not trusting the certificate of your HTTP proxy. Ensure all certificates for your proxy client have been configured in your IDE, and then retry transformation.'
 
 export const errorStoppingJobChatMessage = 'Sorry, I could not stop the transformation.'
 

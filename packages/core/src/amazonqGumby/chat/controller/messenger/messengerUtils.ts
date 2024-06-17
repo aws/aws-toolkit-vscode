@@ -21,6 +21,7 @@ export enum ButtonActions {
     CANCEL_JAVA_HOME_FORM = 'gumbyJavaHomeFormCancel',
     CONFIRM_START_TRANSFORMATION_FLOW = 'gumbyStartTransformation',
     OPEN_FILE = 'gumbyOpenFile',
+    OPEN_BUILD_LOG = 'gumbyOpenBuildLog',
 }
 
 export enum GumbyCommands {

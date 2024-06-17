@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q inline suggestions: remember `Pause Auto-Suggestions` after IDE restart"
-}

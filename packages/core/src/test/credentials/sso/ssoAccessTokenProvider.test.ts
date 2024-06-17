@@ -134,7 +134,9 @@ describe('SsoAccessTokenProvider', function () {
 
         it('refreshes expired tokens', async function () {
             const refreshedToken = createToken(hourInMs, { accessToken: 'newToken' })
-            oidcClient.createToken.resolves(refreshedToken)
+            oidcClient.createToken.resolves({
+                ...refreshedToken,
+            } as any)
 
             const refreshableToken = createToken(-hourInMs, { refreshToken: 'refreshToken' })
             const validRegistation = createRegistration(hourInMs)
@@ -209,7 +211,9 @@ describe('SsoAccessTokenProvider', function () {
             if (!opts?.skipAuthorization) {
                 oidcClient.startDeviceAuthorization.resolves(authorization)
             }
-            oidcClient.createToken.resolves(token)
+            oidcClient.createToken.resolves({
+                ...token,
+            } as any)
 
             return { token, registration, authorization }
         }
