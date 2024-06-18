@@ -1,11 +1,17 @@
 <!-- This Vue File is the login webview of AWS Toolkit and Amazon Q.-->
 <template>
-    <div v-bind:class="[disabled ? 'disabled-form' : '']" class="auth-container" @click="handleDocumentClick">
+    <div
+        v-bind:class="[disabled ? 'disabled-form' : '']"
+        class="auth-container"
+        :data-app="app"
+        @click="handleDocumentClick"
+        v-if="stage !== 'CONNECTED'"
+    >
         <div class="logoIcon bottomMargin">
             <!-- Icon -->
 
             <svg
-                v-if="app === 'AMAZONQ' && stage !== 'CONNECTED'"
+                v-if="app === 'AMAZONQ'"
                 width="71"
                 height="71"
                 viewBox="0 0 71 71"
@@ -46,7 +52,7 @@
                 </defs>
             </svg>
             <svg
-                v-if="app === 'TOOLKIT' && stage !== 'CONNECTED'"
+                v-if="app === 'TOOLKIT'"
                 width="100"
                 height="80"
                 viewBox="0 0 54 40"
@@ -226,7 +232,6 @@
             </div>
         </template>
 
-        <template v-if="stage === 'CONNECTED'"> </template>
         <template v-if="stage === 'AWS_PROFILE'">
             <button class="back-button bottomMargin" @click="handleBackButtonClick">
                 <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -622,6 +627,16 @@ export default defineComponent({
     position: absolute;
     top: var(--auth-container-top);
     width: 260px;
+}
+
+.auth-container[data-app='AMAZONQ'] {
+    border-radius: 11px;
+    background: rgba(30, 30, 30, 0.8);
+    padding: 15px;
+}
+
+.vscode-light .auth-container[data-app='AMAZONQ'] {
+    background: rgba(255, 255, 255, 1);
 }
 
 .header {
