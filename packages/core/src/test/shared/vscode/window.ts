@@ -344,9 +344,9 @@ export function createTestWindow(workspace = vscode.workspace): Window & TestWin
 
     function waitForMessage(expected: string | RegExp, timeout: number = 5000) {
         return new Promise<ShownMessage>((resolve, reject) => {
-            const alreadyShown = state.shownMessages.find(m => m.visible && m.message.match(expected))
-            if (alreadyShown) {
-                return resolve(alreadyShown)
+            const found = state.shownMessages.find(m => m.visible && m.message.match(expected))
+            if (found) {
+                return resolve(found)
             }
 
             const sub = emitters.onDidShowMessage.event(shownMessage => {
@@ -357,7 +357,12 @@ export function createTestWindow(workspace = vscode.workspace): Window & TestWin
             })
             setTimeout(() => {
                 sub.dispose()
-                reject(new Error(`Timed out waiting for message: ${expected}`))
+                const gotMsgs = state.shownMessages.map(v => v.message)
+                const got =
+                    gotMsgs.length > 0
+                        ? `, displayed:\n${JSON.stringify(gotMsgs, undefined, 4)}`
+                        : ' (no messages displayed)'
+                reject(new Error(`Timed out waiting for message: ${expected}${got}`))
             }, timeout)
         })
     }
