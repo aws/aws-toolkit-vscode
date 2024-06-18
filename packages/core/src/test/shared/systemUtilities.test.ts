@@ -8,8 +8,10 @@ import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
+import * as sinon from 'sinon'
 import * as utils from 'util'
 
+import * as pathUtils from '../../shared/utilities/pathUtils'
 import { EnvironmentVariables } from '../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../shared/systemUtilities'
@@ -23,10 +25,12 @@ describe('SystemUtilities', function () {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
         tempFolder = await makeTemporaryToolkitFolder()
+        sinon.stub(pathUtils, 'isValidPath').returns(true)
     })
 
     after(async function () {
         await fs.remove(tempFolder)
+        sinon.restore()
     })
 
     describe('getHomeDirectory', function () {
@@ -34,7 +38,7 @@ describe('SystemUtilities', function () {
             const env = process.env as EnvironmentVariables
 
             env.HOME = 'c:\\qwerty'
-            assert.strictEqual(SystemUtilities.getHomeDirectory(), 'c:\\qwerty')
+            assert.strictEqual(SystemUtilities.getHomeDirectory(), path.resolve('c:\\qwerty'))
         })
 
         it('gets USERPROFILE if set and HOME is not set', async function () {
@@ -42,7 +46,7 @@ describe('SystemUtilities', function () {
 
             delete env.HOME
             env.USERPROFILE = 'c:\\profiles\\qwerty'
-            assert.strictEqual(SystemUtilities.getHomeDirectory(), 'c:\\profiles\\qwerty')
+            assert.strictEqual(SystemUtilities.getHomeDirectory(), path.resolve('c:\\profiles\\qwerty'))
         })
 
         it('gets HOMEPATH if set and HOME and USERPROFILE are not set', async function () {

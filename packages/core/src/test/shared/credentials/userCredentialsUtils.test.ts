@@ -19,17 +19,28 @@ import {
 import { UserCredentialsUtils } from '../../../shared/credentials/userCredentialsUtils'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import * as pathUtils from '../../../shared/utilities/pathUtils'
+import { getConfigFilename, getCredentialsFilename } from '../../../auth/credentials/sharedCredentialsFile'
 
 describe('UserCredentialsUtils', function () {
     let tempFolder: string
+    const defaultConfigFileName = getConfigFilename()
+    const defaultCredentialsFilename = getCredentialsFilename()
 
     before(async function () {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
         tempFolder = await makeTemporaryToolkitFolder()
+        sinon.stub(pathUtils, 'isValidPath').returns(true)
     })
 
     afterEach(async function () {
+        if (fs.existsSync(defaultConfigFileName)) {
+            await fs.rm(defaultConfigFileName)
+        }
+        if (fs.existsSync(defaultCredentialsFilename)) {
+            await fs.rm(defaultCredentialsFilename)
+        }
         sinon.restore()
     })
 
@@ -113,6 +124,7 @@ describe('UserCredentialsUtils', function () {
                 profileName: profileName,
                 secretKey: 'ABC',
             }
+            createCredentialsFile(credentialsFilename, [profileName])
             await UserCredentialsUtils.generateCredentialsFile(creds)
 
             const sharedConfigFiles = await loadSharedConfigFiles({ credentials: Uri.file(credentialsFilename) })

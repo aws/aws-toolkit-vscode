@@ -5,6 +5,8 @@
 
 import * as os from 'os'
 import * as _path from 'path'
+import { getLogger } from '../logger'
+import { isWeb } from '../extensionGlobals'
 
 export const driveLetterRegex = /^[a-zA-Z]\:/
 
@@ -125,4 +127,25 @@ export function getDriveLetter(path: string): string {
     }
 
     return fullpath.substring(0, 1)
+}
+
+/**
+ * Checks if the provided path is valid and exists.
+ * @todo: Migrate fs.existsSync to fsCommon.exists
+ *
+ * @param {string} [path] - The path to be checked. If not provided, defaults to an empty string.
+ * @returns {boolean} Returns true if the path is valid and exists, otherwise returns false.
+ */
+export function isValidPath(path?: string): boolean {
+    if (isWeb()) {
+        return !!path
+    }
+
+    const fs = require('fs')
+
+    if (path && path.length !== 0 && fs.existsSync(path)) {
+        return true
+    }
+    getLogger().error('Invalid path %s', path)
+    return false
 }
