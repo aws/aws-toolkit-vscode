@@ -129,7 +129,7 @@
                 "amazonQ.localWorkspaceIndex": {
                     "type": "boolean",
                     "markdownDescription": "%AWS.configuration.description.amazonq.localWorkspaceIndex%",
-                    "default": true,
+                    "default": false,
                     "scope": "application"
                 }
             }

@@ -75,6 +75,7 @@ export async function activate(extensionContext: ExtensionContext) {
         initializationOptions: {
             handledSchemaProtocols: ['file', 'untitled'], // language server only loads file-URI. Fetching schemas with other protocols ('http'...) are made on the client.
             provideFormatter: false, // tell the server to not provide formatting capability and ignore the `aws.stepfunctions.asl.format.enable` setting.
+            extensionPath: extensionContext.extensionPath,
         },
     }
 
