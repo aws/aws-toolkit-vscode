@@ -9,9 +9,14 @@ import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.testFramework.ApplicationRule
 import com.intellij.util.concurrency.AppExecutorUtil
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
+import software.amazon.awssdk.services.toolkittelemetry.model.AWSProduct
+import software.aws.toolkits.jetbrains.services.telemetry.PluginResolver
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -69,5 +74,17 @@ class ThreadingUtilsKtTest {
         assertThatThrownBy {
             sleepWithCancellation(Duration.ofHours(3), indicator)
         }.isInstanceOf<ProcessCanceledException>()
+    }
+
+    @Test
+    fun `pluginAwareExecuteOnPooledThread inherits plugin resolver`() {
+        val pluginResolver = mockk<PluginResolver> {
+            every { product } returns AWSProduct.AMAZON_Q_FOR_JET_BRAINS
+        }
+        PluginResolver.setThreadLocal(pluginResolver)
+
+        pluginAwareExecuteOnPooledThread {
+            assertEquals(PluginResolver.fromCurrentThread().product, AWSProduct.AMAZON_Q_FOR_JET_BRAINS)
+        }.get()
     }
 }

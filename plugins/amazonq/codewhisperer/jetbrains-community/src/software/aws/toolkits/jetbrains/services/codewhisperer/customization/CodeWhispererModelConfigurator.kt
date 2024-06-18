@@ -26,6 +26,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.calculateIfIamIdentityCenterConnection
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.jetbrains.utils.notifyWarn
+import software.aws.toolkits.jetbrains.utils.pluginAwareExecuteOnPooledThread
 import software.aws.toolkits.resources.message
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicBoolean
@@ -206,7 +207,7 @@ class DefaultCodeWhispererModelConfigurator : CodeWhispererModelConfigurator, Pe
                 true -> true
 
                 null -> run {
-                    ApplicationManager.getApplication().executeOnPooledThread {
+                    pluginAwareExecuteOnPooledThread {
                         listCustomizations(project, passive = true)
                     }
 
@@ -215,7 +216,7 @@ class DefaultCodeWhispererModelConfigurator : CodeWhispererModelConfigurator, Pe
 
                 false -> run {
                     if (forceUpdate) {
-                        ApplicationManager.getApplication().executeOnPooledThread {
+                        pluginAwareExecuteOnPooledThread {
                             listCustomizations(project, passive = true)
                         }
                     }

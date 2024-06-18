@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.core.executables
 
 import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
@@ -19,6 +18,7 @@ import software.aws.toolkits.core.utils.lastModified
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance.ExecutableWithPath
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
+import software.aws.toolkits.jetbrains.utils.pluginAwareExecuteOnPooledThread
 import software.aws.toolkits.resources.message
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -115,11 +115,11 @@ class DefaultExecutableManager : PersistentStateComponent<ExecutableStateList>, 
 
     override fun getExecutable(type: ExecutableType<*>): CompletionStage<ExecutableInstance> {
         val future = CompletableFuture<ExecutableInstance>()
-        ApplicationManager.getApplication().executeOnPooledThread {
+        pluginAwareExecuteOnPooledThread {
             val loaded = internalState[type.id]
             if (loaded == null) {
                 future.complete(load(type, null))
-                return@executeOnPooledThread
+                return@pluginAwareExecuteOnPooledThread
             }
 
             val (persisted, instance, lastValidated) = loaded
@@ -143,7 +143,7 @@ class DefaultExecutableManager : PersistentStateComponent<ExecutableStateList>, 
 
     override fun setExecutablePath(type: ExecutableType<*>, path: Path): CompletionStage<ExecutableInstance> {
         val future = CompletableFuture<ExecutableInstance>()
-        ApplicationManager.getApplication().executeOnPooledThread {
+        pluginAwareExecuteOnPooledThread {
             val executable = validateAndSave(type, path, false)
             future.complete(executable)
         }

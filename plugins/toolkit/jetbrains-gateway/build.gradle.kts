@@ -47,10 +47,11 @@ dependencies {
     // link against :j-c: and rely on :intellij:buildPlugin to pull in :j-c:instrumentedJar, but gateway variant when runIde/buildPlugin from :jetbrains-gateway
     compileOnly(project(":plugin-toolkit:jetbrains-core"))
     gatewayOnlyRuntimeOnly(project(":plugin-toolkit:jetbrains-core", "gatewayArtifacts"))
-
     // delete when fully split
     gatewayOnlyRuntimeOnly(project(":plugin-core:core"))
     gatewayOnlyRuntimeOnly(project(":plugin-core:jetbrains-community"))
+    gatewayOnlyRuntimeOnly(project(":plugin-core:resources"))
+    gatewayOnlyRuntimeOnly(project(":plugin-core:sdk-codegen"))
 
     testImplementation(project(path = ":plugin-core:core", configuration = "testArtifacts"))
     testImplementation(project(":plugin-core:core"))

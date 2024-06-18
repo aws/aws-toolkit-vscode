@@ -82,6 +82,7 @@ import software.aws.toolkits.jetbrains.utils.isInjectedText
 import software.aws.toolkits.jetbrains.utils.isQExpired
 import software.aws.toolkits.jetbrains.utils.isRunningOnCWNotSupportedRemoteBackend
 import software.aws.toolkits.jetbrains.utils.notifyWarn
+import software.aws.toolkits.jetbrains.utils.pluginAwareExecuteOnPooledThread
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
 import software.aws.toolkits.telemetry.CodewhispererSuggestionState
@@ -110,7 +111,7 @@ class CodeWhispererService {
         if (isQExpired(project)) {
             // say the connection is un-refreshable if refresh fails for 3 times
             val shouldReauth = if (refreshFailure < MAX_REFRESH_ATTEMPT) {
-                ApplicationManager.getApplication().executeOnPooledThread<Boolean> {
+                pluginAwareExecuteOnPooledThread {
                     promptReAuth(project)
                 }.get().also { success ->
                     if (!success) {

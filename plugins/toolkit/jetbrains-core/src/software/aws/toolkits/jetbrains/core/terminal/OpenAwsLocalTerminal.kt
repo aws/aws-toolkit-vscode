@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.core.terminal
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.util.ExceptionUtil
@@ -24,6 +23,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ConnectionState
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialsIdentifier
 import software.aws.toolkits.jetbrains.core.experiments.ToolkitExperiment
 import software.aws.toolkits.jetbrains.core.experiments.isEnabled
+import software.aws.toolkits.jetbrains.utils.pluginAwareExecuteOnPooledThread
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AwsTelemetry
 import software.aws.toolkits.telemetry.Result
@@ -48,13 +48,13 @@ class OpenAwsLocalTerminal : DumbAwareAction(
         when (val state = AwsConnectionManager.getInstance(project).connectionState) {
             is ConnectionState.ValidConnection -> {
                 val connection = state.connection
-                ApplicationManager.getApplication().executeOnPooledThread {
+                pluginAwareExecuteOnPooledThread {
                     val credentials = try {
                         connection.credentials.resolveCredentials()
                     } catch (e: Exception) {
                         LOG.error(e) { message("aws.terminal.exception.failed_to_resolve_credentials", ExceptionUtil.getThrowableText(e)) }
                         AwsTelemetry.openLocalTerminal(project, result = Result.Failed)
-                        return@executeOnPooledThread
+                        return@pluginAwareExecuteOnPooledThread
                     }
                     runInEdt {
                         val runner = AwsLocalTerminalRunner(project, connection.shortName) { envs ->

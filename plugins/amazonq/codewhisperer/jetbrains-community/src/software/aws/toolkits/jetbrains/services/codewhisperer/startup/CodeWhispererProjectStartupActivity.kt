@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.startup
 
 import com.intellij.codeInsight.lookup.LookupManagerListener
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupActivity
 import kotlinx.coroutines.delay
@@ -26,6 +25,7 @@ import software.aws.toolkits.jetbrains.utils.isQConnected
 import software.aws.toolkits.jetbrains.utils.isQExpired
 import software.aws.toolkits.jetbrains.utils.isRunningOnCWNotSupportedRemoteBackend
 import software.aws.toolkits.jetbrains.utils.notifyWarn
+import software.aws.toolkits.jetbrains.utils.pluginAwareExecuteOnPooledThread
 import software.aws.toolkits.resources.message
 
 // TODO: add logics to check if we want to remove recommendation suspension date when user open the IDE
@@ -66,7 +66,7 @@ class CodeWhispererProjectStartupActivity : StartupActivity.DumbAware {
         initFeatureConfigPollingJob(project)
 
         calculateIfIamIdentityCenterConnection(project) {
-            ApplicationManager.getApplication().executeOnPooledThread {
+            pluginAwareExecuteOnPooledThread {
                 CodeWhispererModelConfigurator.getInstance().listCustomizations(project, passive = true)
             }
         }

@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.schemas.search
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.schemas.SchemasClient
@@ -13,6 +12,7 @@ import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.getResource
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
+import software.aws.toolkits.jetbrains.utils.pluginAwareExecuteOnPooledThread
 
 class SchemaSearchExecutor(
     private val project: Project,
@@ -24,7 +24,7 @@ class SchemaSearchExecutor(
         incrementalResultsCallback: OnSearchResultReturned,
         registrySearchErrorCallback: OnSearchResultError
     ) {
-        ApplicationManager.getApplication().executeOnPooledThread {
+        pluginAwareExecuteOnPooledThread {
             try {
                 val results = doSingleSearch(registryName, searchText)
                 incrementalResultsCallback(results.map { SchemaSearchResultWithRegistry(it.name, it.versions, registryName) })

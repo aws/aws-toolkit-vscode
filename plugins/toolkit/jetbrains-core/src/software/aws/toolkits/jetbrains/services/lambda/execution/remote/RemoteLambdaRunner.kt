@@ -11,11 +11,11 @@ import com.intellij.execution.runners.AsyncProgramRunner
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.RunContentBuilder
 import com.intellij.execution.ui.RunContentDescriptor
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
+import software.aws.toolkits.jetbrains.utils.pluginAwareExecuteOnPooledThread
 
 class RemoteLambdaRunner : AsyncProgramRunner<RunnerSettings>() {
     override fun getRunnerId(): String = "Remote AWS Lambda"
@@ -26,7 +26,7 @@ class RemoteLambdaRunner : AsyncProgramRunner<RunnerSettings>() {
     override fun execute(environment: ExecutionEnvironment, state: RunProfileState): Promise<RunContentDescriptor?> {
         val runPromise = AsyncPromise<RunContentDescriptor?>()
         val remoteState = state as RemoteLambdaState
-        ApplicationManager.getApplication().executeOnPooledThread {
+        pluginAwareExecuteOnPooledThread {
             try {
                 val executionResult = remoteState.execute(environment.executor, this)
                 val builder = RunContentBuilder(executionResult, environment)

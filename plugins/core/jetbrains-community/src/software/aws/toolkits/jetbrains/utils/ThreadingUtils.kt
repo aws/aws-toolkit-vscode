@@ -14,7 +14,9 @@ import com.intellij.openapi.util.ThrowableComputable
 import com.intellij.util.ExceptionUtil
 import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.util.concurrency.Semaphore
+import software.aws.toolkits.jetbrains.services.telemetry.PluginResolver
 import java.time.Duration
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
 // There is a new/experimental API in IJ SDK, but replicate a simpler one here till we can use it
@@ -70,5 +72,17 @@ fun sleepWithCancellation(sleepAmount: Duration, indicator: ProgressIndicator?) 
         ProgressIndicatorUtils.awaitWithCheckCanceled(semaphore, indicator)
     } finally {
         future.cancel(true)
+    }
+}
+
+fun <T> pluginAwareExecuteOnPooledThread(action: () -> T): Future<T> {
+    /**
+     * Ensures plugin resolution references parent thread plugin resolver since
+     * worker thread will not contain original call stack. Necessary for telemetry.
+     */
+    val pluginResolver = PluginResolver.fromCurrentThread()
+    return ApplicationManager.getApplication().executeOnPooledThread<T> {
+        PluginResolver.setThreadLocal(pluginResolver)
+        action()
     }
 }

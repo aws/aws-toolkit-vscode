@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.core.credentials.profiles
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.AsyncFileListener
 import com.intellij.openapi.vfs.LocalFileSystem
@@ -16,6 +15,7 @@ import software.amazon.awssdk.profiles.ProfileFileLocation
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
+import software.aws.toolkits.jetbrains.utils.pluginAwareExecuteOnPooledThread
 import java.nio.file.Paths
 
 typealias ProfileWatcher = migration.software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileWatcher
@@ -62,7 +62,7 @@ class DefaultProfileWatcher : AsyncFileListener, Disposable, ProfileWatcher {
             object : AsyncFileListener.ChangeApplier {
                 override fun afterVfsChange() {
                     // Off load this, since this is called under a write lock
-                    ApplicationManager.getApplication().executeOnPooledThread {
+                    pluginAwareExecuteOnPooledThread {
                         listeners.forEach { it() }
                     }
                 }

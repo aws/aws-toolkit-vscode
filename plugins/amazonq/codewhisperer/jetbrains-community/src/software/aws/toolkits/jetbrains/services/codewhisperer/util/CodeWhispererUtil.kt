@@ -35,6 +35,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.isTeleme
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.utils.isQExpired
 import software.aws.toolkits.jetbrains.utils.notifyError
+import software.aws.toolkits.jetbrains.utils.pluginAwareExecuteOnPooledThread
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
 import software.aws.toolkits.telemetry.CodewhispererGettingStartedTask
@@ -239,7 +240,7 @@ object CodeWhispererUtil {
     fun reconnectCodeWhisperer(project: Project) {
         val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
         if (connection !is ManagedBearerSsoConnection) return
-        ApplicationManager.getApplication().executeOnPooledThread {
+        pluginAwareExecuteOnPooledThread {
             reauthConnectionIfNeeded(project, connection)
         }
     }

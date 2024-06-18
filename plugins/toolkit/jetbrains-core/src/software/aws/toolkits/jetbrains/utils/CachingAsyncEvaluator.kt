@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.utils
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.progress.ProcessCanceledException
 import org.jetbrains.annotations.TestOnly
 import org.jetbrains.concurrency.AsyncPromise
@@ -55,7 +54,7 @@ abstract class CachingAsyncEvaluator<TEntry, TReturn> {
         }
 
         if (promise == asyncPromise) {
-            ApplicationManager.getApplication().executeOnPooledThread {
+            pluginAwareExecuteOnPooledThread {
                 try {
                     val result = getValue(entry)
                     asyncPromise.setResult(result)

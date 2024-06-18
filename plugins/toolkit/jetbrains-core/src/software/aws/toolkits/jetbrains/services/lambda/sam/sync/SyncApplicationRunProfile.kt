@@ -17,7 +17,6 @@ import com.intellij.execution.process.ProcessTerminatedListener
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.ProgramRunner
 import com.intellij.execution.ui.RunContentManager
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
@@ -26,6 +25,7 @@ import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.services.lambda.sam.getSamCli
 import software.aws.toolkits.jetbrains.services.lambda.sam.samSyncCommand
+import software.aws.toolkits.jetbrains.utils.pluginAwareExecuteOnPooledThread
 import java.io.IOException
 import java.nio.charset.Charset
 import java.nio.file.Path
@@ -78,7 +78,7 @@ class SyncApplicationRunProfile(
                             if (event.text.contains("[Y/n]:") && isDevStack) {
                                 insertAssertionNow = true
                                 isDevStack = false
-                                ApplicationManager.getApplication().executeOnPooledThread {
+                                pluginAwareExecuteOnPooledThread {
                                     try {
                                         while (insertAssertionNow) {
                                             processHandler.processInput?.write("Y\n".toByteArray(Charset.defaultCharset()))

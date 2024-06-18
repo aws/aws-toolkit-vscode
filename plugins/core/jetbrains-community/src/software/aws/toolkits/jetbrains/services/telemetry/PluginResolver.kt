@@ -6,6 +6,10 @@ package software.aws.toolkits.jetbrains.services.telemetry
 import com.intellij.ide.plugins.PluginManagerCore
 import software.amazon.awssdk.services.toolkittelemetry.model.AWSProduct
 
+/**
+ * Responsible for resolving the plugin descriptor and determining the AWS product
+ * and version based on the stack trace of the calling thread or a provided stack trace.
+ */
 class PluginResolver private constructor(callerStackTrace: Array<StackTraceElement>) {
     private val pluginDescriptor by lazy {
         callerStackTrace
@@ -24,8 +28,25 @@ class PluginResolver private constructor(callerStackTrace: Array<StackTraceEleme
         get() = pluginDescriptor?.version ?: "unknown"
 
     companion object {
-        fun fromCurrentThread() = PluginResolver(Thread.currentThread().stackTrace)
+        private val threadLocalResolver = ThreadLocal<PluginResolver>()
 
+        /**
+         * Creates a new PluginResolver instance off the current thread's stack trace, or retrieves
+         * the thread-local resolver if one is set.
+         */
+        fun fromCurrentThread() = threadLocalResolver.get() ?: PluginResolver(Thread.currentThread().stackTrace)
+
+        /**
+         * Creates a new PluginResolver instance from a provided stack trace.
+         */
         fun fromStackTrace(stackTrace: Array<StackTraceElement>) = PluginResolver(stackTrace)
+
+        /**
+         * Sets a PluginResolver instance to a thread-local for the current thread.
+         * This value will be retrieved by subsequent calls to fromCurrentThread.
+         */
+        fun setThreadLocal(value: PluginResolver) {
+            threadLocalResolver.set(value)
+        }
     }
 }

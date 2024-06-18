@@ -11,7 +11,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataKey
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.event.EditorMouseEvent
 import com.intellij.openapi.editor.event.EditorMouseEventArea
@@ -45,6 +44,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.runIfIdcConnectionOrTelemetryEnabled
 import software.aws.toolkits.jetbrains.utils.applyPatch
 import software.aws.toolkits.jetbrains.utils.notifyError
+import software.aws.toolkits.jetbrains.utils.pluginAwareExecuteOnPooledThread
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
 import java.awt.Dimension
@@ -330,7 +330,7 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
         includesFix: Boolean?
     ) {
         runIfIdcConnectionOrTelemetryEnabled(project) {
-            ApplicationManager.getApplication().executeOnPooledThread {
+            pluginAwareExecuteOnPooledThread {
                 try {
                     val response = CodeWhispererClientAdaptor.getInstance(project)
                         .sendCodeScanRemediationTelemetry(

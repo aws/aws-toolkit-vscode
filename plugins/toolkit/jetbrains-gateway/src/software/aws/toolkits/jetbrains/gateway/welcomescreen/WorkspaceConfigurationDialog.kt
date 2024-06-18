@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.gateway.welcomescreen
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.ui.DialogBuilder
@@ -27,6 +26,7 @@ import software.aws.toolkits.jetbrains.gateway.cawsEnvironmentTimeout
 import software.aws.toolkits.jetbrains.gateway.ideVersionComboBox
 import software.aws.toolkits.jetbrains.services.caws.InactivityTimeout
 import software.aws.toolkits.jetbrains.services.caws.loadParameterDescriptions
+import software.aws.toolkits.jetbrains.utils.pluginAwareExecuteOnPooledThread
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodecatalystTelemetry
 import software.aws.toolkits.telemetry.CodecatalystUpdateDevEnvironmentLocationType
@@ -93,11 +93,11 @@ class WorkspaceConfigurationDialog private constructor(cawsClient: CodeCatalystC
                 dialog.setPreferredFocusComponent(content)
                 dialog.setOkText(message("general.update_button"))
                 dialog.setOkOperation {
-                    ApplicationManager.getApplication().executeOnPooledThread {
+                    pluginAwareExecuteOnPooledThread {
                         val errors = content.panel.validateAll()
                         errors.firstOrNull()?.let {
                             dialog.setErrorText(it.message, it.component)
-                            return@executeOnPooledThread
+                            return@pluginAwareExecuteOnPooledThread
                         }
                         content.panel.apply()
 

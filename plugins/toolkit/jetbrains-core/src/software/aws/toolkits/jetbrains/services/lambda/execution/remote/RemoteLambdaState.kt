@@ -14,7 +14,6 @@ import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.ProgramRunner
 import com.intellij.json.JsonLanguage
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
 import com.intellij.psi.search.GlobalSearchScopes
 import software.amazon.awssdk.core.SdkBytes
@@ -22,6 +21,7 @@ import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.LogType
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.utils.formatText
+import software.aws.toolkits.jetbrains.utils.pluginAwareExecuteOnPooledThread
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.LambdaTelemetry
 import software.aws.toolkits.telemetry.Result
@@ -53,7 +53,7 @@ class RemoteLambdaState(
         override fun startNotify() {
             super.startNotify()
 
-            ApplicationManager.getApplication().executeOnPooledThread { invokeLambda(this) }
+            pluginAwareExecuteOnPooledThread { invokeLambda(this) }
         }
 
         override fun getProcessInput(): OutputStream? = null

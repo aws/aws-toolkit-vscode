@@ -10,6 +10,7 @@ import com.intellij.openapi.project.Project
 import software.aws.toolkits.core.utils.AttributeBagKey
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.jetbrains.utils.pluginAwareExecuteOnPooledThread
 import java.io.OutputStream
 
 /**
@@ -51,7 +52,7 @@ class StepExecutor(
     fun<T : Any> addContext(key: AttributeBagKey<T>, value: T) = context.putAttribute(key, value)
 
     private fun startWorkflow() {
-        ApplicationManager.getApplication().executeOnPooledThread {
+        pluginAwareExecuteOnPooledThread {
             execute(context, WorkflowEmitterWrapper(messageEmitter), processHandler)
         }
     }

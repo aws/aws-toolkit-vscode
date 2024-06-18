@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix an issue where worker threads are unable to properly resolve the calling plugin, resulting in invalid telemetry data"
+}

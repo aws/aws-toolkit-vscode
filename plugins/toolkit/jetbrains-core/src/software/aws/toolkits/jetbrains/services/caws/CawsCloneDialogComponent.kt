@@ -8,7 +8,6 @@ import com.intellij.dvcs.repo.ClonePathProvider
 import com.intellij.dvcs.ui.CloneDvcsValidationUtils
 import com.intellij.dvcs.ui.SelectChildTextFieldWithBrowseButton
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
@@ -46,6 +45,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sono.lazilyGetUserId
 import software.aws.toolkits.jetbrains.services.caws.pat.generateAndStorePat
 import software.aws.toolkits.jetbrains.services.caws.pat.patExists
 import software.aws.toolkits.jetbrains.ui.connection.CawsLoginOverlay
+import software.aws.toolkits.jetbrains.utils.pluginAwareExecuteOnPooledThread
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodecatalystTelemetry
 import java.net.URI
@@ -83,7 +83,7 @@ class CawsCloneDialogComponent(
 
     override fun doClone(checkoutListener: CheckoutProvider.Listener) {
         val repository = repoList.selectedValue ?: throw RuntimeException("Repository was not selected")
-        ApplicationManager.getApplication().executeOnPooledThread {
+        pluginAwareExecuteOnPooledThread {
             val userId = lazilyGetUserId()
             try {
                 // TODO: show progress bar here so it doesn't look like we're stuck

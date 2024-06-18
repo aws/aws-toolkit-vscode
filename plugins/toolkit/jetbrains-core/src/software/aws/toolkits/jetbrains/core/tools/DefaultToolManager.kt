@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.core.tools
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.progress.PerformInBackgroundOption
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
@@ -23,6 +22,7 @@ import software.aws.toolkits.core.utils.readText
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.tools.ToolManager.Companion.MANAGED_TOOL_INSTALL_ROOT
 import software.aws.toolkits.jetbrains.utils.assertIsNonDispatchThread
+import software.aws.toolkits.jetbrains.utils.pluginAwareExecuteOnPooledThread
 import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AwsTelemetry
@@ -57,7 +57,7 @@ class DefaultToolManager @NonInjectable internal constructor(private val clock: 
         if (type is ManagedToolType<V>) {
             val managedTool = checkForInstalledTool(type)
             if (managedTool != null) {
-                ApplicationManager.getApplication().executeOnPooledThread {
+                pluginAwareExecuteOnPooledThread {
                     checkForUpdates(type)
                 }
                 return managedTool
