@@ -48,7 +48,7 @@ import globals from './shared/extensionGlobals'
 import { Experiments, Settings, showSettingsFailedMsg } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { telemetry } from './shared/telemetry/telemetry'
-import { Auth } from './auth/auth'
+import { Auth, SessionSeparationPrompt } from './auth/auth'
 import { registerSubmitFeedback } from './feedback/vue/submitFeedback'
 import { activateCommon, deactivateCommon, emitUserState } from './extensionCommon'
 import { learnMoreAmazonQCommand, qExtensionPageCommand, dismissQTree } from './amazonq/explorer/amazonQChildrenNodes'
@@ -129,8 +129,13 @@ export async function activate(context: vscode.ExtensionContext) {
         for (const conn of await Auth.instance.listConnections()) {
             if (isSsoConnection(conn) && hasScopes(conn, codeWhispererCoreScopes)) {
                 await Auth.instance.forgetConnection(conn)
+                await SessionSeparationPrompt.instance.showForCommand('aws.toolkit.auth.manageConnections')
             }
         }
+
+        // Display last prompt if connections were forgotten in prior sessions
+        // but the user did not interact or sign in again. Useful in case the user misses it the first time.
+        await SessionSeparationPrompt.instance.showAnyPreviousPrompt()
 
         await activateCloudFormationTemplateRegistry(context)
 
