@@ -362,8 +362,8 @@ export default defineComponent({
 
     async mounted() {
         this.fetchRegions()
-        await this.updateImportedConnections()
         await this.updateExistingStartUrls()
+        await this.updateImportedConnections()
 
         // Reset gathered telemetry data each time we view the login page.
         // The webview panel is reset on each view of the login page by design.
@@ -520,16 +520,18 @@ export default defineComponent({
             // or fetch existing connections of Amazon Q in AWS Toolkit
             // to reuse connections in AWS Toolkit & Amazon Q
             const sharedConnections = await client.fetchConnections()
-            sharedConnections?.forEach((connection, index) => {
-                this.importedLogins.push({
-                    id: LoginOption.IMPORTED_LOGINS + index,
-                    text: this.app === 'TOOLKIT' ? 'Used by Amazon Q' : 'Used by AWS Toolkit',
-                    title: `IAM Identity Center ${connection.startUrl}`,
-                    type: LoginOption.ENTERPRISE_SSO,
-                    startUrl: connection.startUrl,
-                    region: connection.ssoRegion,
+            sharedConnections
+                ?.filter(c => !this.existingStartUrls.includes(c.startUrl))
+                .forEach((connection, index) => {
+                    this.importedLogins.push({
+                        id: LoginOption.IMPORTED_LOGINS + index,
+                        text: this.app === 'TOOLKIT' ? 'Used by Amazon Q' : 'Used by AWS Toolkit',
+                        title: `IAM Identity Center ${connection.startUrl}`,
+                        type: LoginOption.ENTERPRISE_SSO,
+                        startUrl: connection.startUrl,
+                        region: connection.ssoRegion,
+                    })
                 })
-            })
 
             this.$forceUpdate()
         },
