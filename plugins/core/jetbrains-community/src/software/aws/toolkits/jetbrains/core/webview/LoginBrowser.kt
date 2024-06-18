@@ -96,6 +96,11 @@ abstract class LoginBrowser(
                 reason = e.message,
                 credentialSourceId = CredentialSourceId.AwsId
             )
+            AuthTelemetry.addConnection(
+                result = Result.Failed,
+                credentialSourceId = CredentialSourceId.AwsId,
+                reason = e.message
+            )
         }
         val onSuccess: () -> Unit = {
             AwsTelemetry.loginWithBrowser(
