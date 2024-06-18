@@ -44,6 +44,11 @@ export async function clear(request: string) {
     }
 }
 
+export async function getUsage() {
+    if (client) {
+    }
+}
+
 export async function activate(extensionContext: ExtensionContext) {
     const toDispose = extensionContext.subscriptions
 
@@ -86,23 +91,24 @@ export async function activate(extensionContext: ExtensionContext) {
     toDispose.push(disposable)
 
     let savedDocument: vscode.Uri | undefined = undefined
-    const d2 = vscode.workspace.onDidSaveTextDocument(document => {
-        if (document.uri.scheme !== 'file') {
-            return
-        }
-        savedDocument = document.uri
-    })
 
-    const d3 = vscode.window.onDidChangeActiveTextEditor(editor => {
-        if (savedDocument && editor && editor.document.uri.fsPath !== savedDocument.fsPath) {
-            client?.sendNotification('textDocument/didClose', {
-                textDocument: { uri: savedDocument.toString() },
-            })
-        }
-    })
-
-    toDispose.push(d2)
-    toDispose.push(d3)
+    toDispose.push(
+        vscode.workspace.onDidSaveTextDocument(document => {
+            if (document.uri.scheme !== 'file') {
+                return
+            }
+            savedDocument = document.uri
+        })
+    )
+    toDispose.push(
+        vscode.window.onDidChangeActiveTextEditor(editor => {
+            if (savedDocument && editor && editor.document.uri.fsPath !== savedDocument.fsPath) {
+                client?.sendNotification('textDocument/didClose', {
+                    textDocument: { uri: savedDocument.toString() },
+                })
+            }
+        })
+    )
     return client.onReady().then(() => {
         const disposableFunc = { dispose: () => rangeFormatting?.dispose() as void }
         toDispose.push(disposableFunc)

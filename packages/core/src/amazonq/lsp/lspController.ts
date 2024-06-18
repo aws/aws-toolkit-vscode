@@ -39,6 +39,7 @@ interface Content {
     url: string
     hashes: string[]
     bytes: number
+    serverVersion?: string
 }
 
 interface Target {
@@ -58,6 +59,10 @@ interface Manifest {
         targets: Target[]
     }[]
 }
+// TODO: use new Url
+const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/temp/manifest.json'
+// this LSP client in Q extension is only going to work with these LSP server versions
+const supportedLspServerVersions = ['0.0.1']
 
 export class LspController {
     static #instance: LspController
@@ -89,7 +94,7 @@ export class LspController {
     }
 
     async downloadManifest() {
-        const res = await fetch('https://aws-toolkit-language-servers.amazonaws.com/temp/manifest.json', {
+        const res = await fetch(manifestUrl, {
             headers: {
                 'User-Agent': 'curl/7.68.0',
             },
@@ -114,11 +119,21 @@ export class LspController {
     }
 
     getQserverFromManifest(manifest: Manifest): Content | undefined {
+        if (manifest.isManifestDeprecated) {
+            return undefined
+        }
         for (const version of manifest.versions) {
+            if (version.isDelisted) {
+                continue
+            }
+            if (!supportedLspServerVersions.includes(version.serverVersion)) {
+                continue
+            }
             for (const t of version.targets) {
                 if (t.platform === process.platform && t.arch === process.arch) {
                     for (const content of t.contents) {
                         if (content.filename.startsWith('qserver') && content.hashes.length > 0) {
+                            content.serverVersion = version.serverVersion
                             return content
                         }
                     }
