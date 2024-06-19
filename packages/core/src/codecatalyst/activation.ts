@@ -26,6 +26,7 @@ import { DevEnvActivityStarter } from './devEnv'
 import { learnMoreCommand, onboardCommand, reauth } from './explorer'
 import { isInDevEnv } from '../shared/vscode/env'
 import { hasExactScopes } from '../auth/connection'
+import { SessionSeparationPrompt } from '../auth/auth'
 
 const localize = nls.loadMessageBundle()
 
@@ -49,6 +50,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
     // TODO: Remove after some time?
     if (authProvider.isConnected() && !hasExactScopes(authProvider.activeConnection!, defaultScopes)) {
         await authProvider.secondaryAuth.forgetConnection()
+        await SessionSeparationPrompt.instance.showForCommand('aws.codecatalyst.manageConnections')
     }
 
     ctx.extensionContext.subscriptions.push(
