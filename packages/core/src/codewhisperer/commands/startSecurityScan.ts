@@ -310,11 +310,9 @@ export async function emitCodeScanTelemetry(
 
 export function errorPromptHelper(error: SecurityScanError, scope: CodeAnalysisScope) {
     if (scope === CodeAnalysisScope.PROJECT) {
-        if (error.code === 'ContentLengthError') {
-            void vscode.window.showWarningMessage(ProjectSizeExceededErrorMessage, ok)
-        } else {
-            void vscode.window.showWarningMessage(error.customerFacingMessage, ok)
-        }
+        const message =
+            error.code === 'ContentLengthError' ? ProjectSizeExceededErrorMessage : error.customerFacingMessage
+        void vscode.window.showWarningMessage(message, ok)
     }
 }
 
