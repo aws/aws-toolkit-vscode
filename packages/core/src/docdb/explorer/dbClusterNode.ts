@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as os from 'os'
 import * as vscode from 'vscode'
 import { inspect } from 'util'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
@@ -26,17 +27,18 @@ export class DBClusterNode extends AWSTreeNodeBase implements AWSResourceNode {
     constructor(readonly cluster: DBCluster, readonly client: DocumentDBClient) {
         super(cluster.DBClusterIdentifier ?? '[Cluster]', vscode.TreeItemCollapsibleState.Collapsed)
         this.contextValue = 'awsDocDBClusterNode'
+        this.tooltip = `${this.name}${os.EOL}Engine: ${this.cluster.EngineVersion}${os.EOL}Status: ${this.cluster.Status}`
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 const instances: DBInstance[] = (await this.client.listInstances([this.arn])).map(i => {
-                            const member = this.cluster.DBClusterMembers?.find(
+                    const member = this.cluster.DBClusterMembers?.find(
                         m => m.DBInstanceIdentifier === i.DBInstanceIdentifier
                     )
-                            return { ...i, ...member }
-                        })
+                    return { ...i, ...member }
+                })
                 const nodes = instances.map(instance => new DBInstanceNode(instance))
                 return nodes
             },
