@@ -4,6 +4,15 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "extensionInit",
+            "type": "shell",
+            "command": "echo 'extensionInit'",
+            "dependsOn": ["copyPackageJson", "watch"],
+            "presentation": {
+                "close": true
+            }
+        },
+        {
             "label": "watch",
             "type": "npm",
             "script": "watch",
@@ -13,39 +22,76 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "dependsOn": ["serve"]
+            "dependsOn": ["watchCore", "webpackCore", "serveVueCore"]
         },
         {
-            "label": "serve",
-            "type": "npm",
-            "script": "serve",
-            "group": "build",
+            "label": "watchCore",
+            "command": "npm run compileOnly -- --watch",
+            "type": "shell",
             "isBackground": true,
-            "problemMatcher": {
-                "owner": "custom",
-                "pattern": {
-                    "regexp": ".",
-                    "file": 1,
-                    "location": 2,
-                    "message": 3
-                },
-                "background": {
-                    "activeOnStart": true,
-                    "beginsPattern": "Project is running at",
-                    "endsPattern": "compiled successfully"
-                }
+            "problemMatcher": "$tsc-watch",
+            "options": {
+                "cwd": "../core"
             }
         },
         {
-            "label": "webWatch",
-            "type": "npm",
-            "script": "webWatch",
-            "detail": "Webpacks our toolkit code (with --watch) in preparation to be run in the browser",
+            "label": "webpackCore",
+            "command": "npm run webpackDev -- --watch",
+            "type": "shell",
             "isBackground": true,
-            // Since `webpack --watch` never terminates (but finishes packaging at some point),
-            // VS Code uses this to parse the CLI output to pattern match something that indicates it is done
-            "problemMatcher": "$ts-webpack-watch"
+            "problemMatcher": "$ts-webpack-watch",
+            "options": {
+                "cwd": "../core"
+            }
         },
+        {
+            "label": "serveVueCore",
+            "command": "npm run serveVue",
+            "type": "shell",
+            "detail": "Webpack + local server for Vue webview files from `core`.",
+            "isBackground": true,
+            "problemMatcher": "$ts-webpack-watch",
+            "options": {
+                "cwd": "../core"
+            }
+        },
+        {
+            "label": "copyPackageJson",
+            "type": "shell",
+            "command": "npm run copyPackageJson -- --development",
+            "isBackground": false,
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "close": true
+            }
+        },
+        {
+            "label": "restorePackageJson",
+            "type": "npm",
+            "script": "restorePackageJson",
+            "problemMatcher": [],
+            "isBackground": false,
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "close": true
+            }
+        },
+        {
+            "label": "extensionTerminate",
+            "command": "echo run terminate",
+            "type": "shell",
+            "presentation": {
+                "close": true
+            },
+            "dependsOn": ["restorePackageJson"]
+        },
+        // ---------- Start: Web Mode Tasks ----------
         {
             "label": "webRun",
             "type": "npm",
@@ -80,6 +126,31 @@
                 }
             }
         },
+        {
+            "label": "webWatch",
+            "type": "npm",
+            "script": "webWatch",
+            "detail": "Webpacks our toolkit code (with --watch) in preparation to be run in the browser",
+            "isBackground": true,
+            // Since `webpack --watch` never terminates (but finishes packaging at some point),
+            // VS Code uses this to parse the CLI output to pattern match something that indicates it is done
+            "problemMatcher": "$ts-webpack-watch",
+            "dependsOn": ["webCoreModuleWatch"]
+        },
+        {
+            "label": "webCoreModuleWatch",
+            "type": "shell",
+            "command": "npm run compileDev -- --watch",
+            "detail": "Webpacks our toolkit code as a module in preparation to be webpacked by the toolkit package",
+            "isBackground": true,
+            // Since `webpack --watch` never terminates (but finishes packaging at some point),
+            // VS Code uses this to parse the CLI output to pattern match something that indicates it is done
+            "problemMatcher": "$ts-webpack-watch",
+            "dependsOn": ["copyPackageJson"],
+            "options": {
+                "cwd": "../core"
+            }
+        },
         /**
         After we stop debugging our browser, we also want to stop the web server.
         When this task is ran it will stop the web server.
@@ -89,8 +160,10 @@
         {
             "label": "webRunTerminate",
             "command": "echo ${input:webRunTerminate}",
-            "type": "shell"
+            "type": "shell",
+            "dependsOn": ["restorePackageJson"]
         },
+        // ---------- End: Web Mode Tasks ----------
         {
             "type": "npm",
             "script": "lint",
@@ -104,7 +177,7 @@
         {
             "type": "npm",
             "script": "compile",
-            "dependsOn": ["Kill Tasks"],
+            "dependsOn": ["Kill Tasks", "copyPackageJson"],
             "problemMatcher": "$tsc"
         },
         {

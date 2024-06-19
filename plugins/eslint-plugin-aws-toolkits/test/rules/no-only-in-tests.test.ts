@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { rules } from '../..'
+import { rules } from '../../index'
 import { describeOnlyErrMsg, itOnlyErrMsg } from '../../lib/rules/no-only-in-tests'
 import { getRuleTester } from '../testUtil'
 

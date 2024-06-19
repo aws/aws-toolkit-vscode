@@ -1,0 +1,671 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import * as vscode from 'vscode'
+import globals from '../../shared/extensionGlobals'
+import { AuthorizationPendingException, SSOOIDCServiceException, SlowDownException } from '@aws-sdk/client-sso-oidc'
+import {
+    SsoToken,
+    ClientRegistration,
+    isExpired,
+    SsoProfile,
+    builderIdStartUrl,
+    openSsoPortalLink,
+    isDeprecatedAuth,
+} from './model'
+import { getCache } from './cache'
+import { hasProps, hasStringProps, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
+import { OidcClient } from './clients'
+import { loadOr } from '../../shared/utilities/cacheUtils'
+import {
+    ToolkitError,
+    getRequestId,
+    getTelemetryReason,
+    getTelemetryReasonDesc,
+    getTelemetryResult,
+    isClientFault,
+    isNetworkError,
+} from '../../shared/errors'
+import { getLogger } from '../../shared/logger'
+import { AwsLoginWithBrowser, AwsRefreshCredentials, Metric, telemetry } from '../../shared/telemetry/telemetry'
+import { indent, toBase64URL } from '../../shared/utilities/textUtilities'
+import { AuthSSOServer } from './server'
+import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
+import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
+import { randomBytes, createHash } from 'crypto'
+import { localize } from '../../shared/utilities/vsCodeUtils'
+import { randomUUID } from '../../common/crypto'
+import { isRemoteWorkspace, isWebWorkspace } from '../../shared/vscode/env'
+import { showInputBox } from '../../shared/ui/inputPrompter'
+import { DevSettings } from '../../shared/settings'
+import { onceChanged } from '../../shared/utilities/functionUtils'
+
+export const authenticationPath = 'sso/authenticated'
+
+const clientRegistrationType = 'public'
+const deviceGrantType = 'urn:ietf:params:oauth:grant-type:device_code'
+const authorizationGrantType = 'authorization_code'
+const refreshGrantType = 'refresh_token'
+
+/**
+ * See {@link DeviceFlowAuthorization} or {@link AuthFlowAuthorization} for protocol overview.
+ */
+export abstract class SsoAccessTokenProvider {
+    /**
+     * Source to pass to aws_loginWithBrowser metric. Due to the complexity of how auth can be called,
+     * there is no other easy way to pass this in without signficant refactors.
+     */
+    private static _authSource: string = 'unknown'
+    private static logIfChanged = onceChanged((s: string) => getLogger().info(s))
+
+    public static set authSource(val: string) {
+        SsoAccessTokenProvider._authSource = val
+    }
+
+    public constructor(
+        protected readonly profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
+        protected readonly cache = getCache(),
+        protected readonly oidc: OidcClient = OidcClient.create(profile.region)
+    ) {}
+
+    public async invalidate(): Promise<void> {
+        getLogger().info(`SsoAccessTokenProvider: invalidate token and registration`)
+        // Use allSettled() instead of all() to ensure all clear() calls are resolved.
+        await Promise.allSettled([
+            this.cache.token.clear(this.tokenCacheKey, 'SsoAccessTokenProvider.invalidate()'),
+            this.cache.registration.clear(this.registrationCacheKey, 'SsoAccessTokenProvider.invalidate()'),
+        ])
+    }
+
+    public async getToken(): Promise<SsoToken | undefined> {
+        const data = await this.cache.token.load(this.tokenCacheKey)
+        SsoAccessTokenProvider.logIfChanged(
+            indent(
+                `current client registration id=${data?.registration?.clientId}
+             expires at ${data?.registration?.expiresAt}
+             key = ${this.tokenCacheKey}`,
+                4,
+                true
+            )
+        )
+        if (!data || !isExpired(data.token)) {
+            return data?.token
+        }
+
+        if (data.registration && !isExpired(data.registration) && hasProps(data.token, 'refreshToken')) {
+            const refreshed = await this.refreshToken(data.token, data.registration)
+
+            return refreshed.token
+        } else {
+            await this.invalidate()
+        }
+    }
+
+    public async createToken(): Promise<SsoToken> {
+        const access = await this.runFlow()
+        const identity = this.tokenCacheKey
+        await this.cache.token.save(identity, access)
+        await setSessionCreationDate(this.tokenCacheKey, new Date())
+
+        return { ...access.token, identity }
+    }
+
+    private async runFlow() {
+        const registration = await this.getValidatedClientRegistration()
+        try {
+            return await this.authorize(registration)
+        } catch (err) {
+            if (err instanceof SSOOIDCServiceException && isClientFault(err)) {
+                await this.cache.registration.clear(
+                    this.registrationCacheKey,
+                    `client fault: SSOOIDCServiceException: ${err.message}`
+                )
+            }
+
+            throw err
+        }
+    }
+
+    private async refreshToken(token: RequiredProps<SsoToken, 'refreshToken'>, registration: ClientRegistration) {
+        const metric = {
+            sessionDuration: getSessionDuration(this.tokenCacheKey),
+            credentialType: 'bearerToken',
+            credentialSourceId: this.profile.startUrl === builderIdStartUrl ? 'awsId' : 'iamIdentityCenter',
+        }
+
+        try {
+            const clientInfo = selectFrom(registration, 'clientId', 'clientSecret')
+            const response = await this.oidc.createToken({ ...clientInfo, ...token, grantType: refreshGrantType })
+            const refreshed = this.formatToken(response, registration)
+            await this.cache.token.save(this.tokenCacheKey, refreshed)
+
+            telemetry.aws_refreshCredentials.emit({
+                result: 'Succeeded',
+                requestId: response.requestId,
+                ...metric,
+            } as AwsRefreshCredentials)
+
+            return refreshed
+        } catch (err) {
+            if (!isNetworkError(err)) {
+                telemetry.aws_refreshCredentials.emit({
+                    result: getTelemetryResult(err),
+                    reason: getTelemetryReason(err),
+                    reasonDesc: getTelemetryReasonDesc(err),
+                    requestId: getRequestId(err),
+                    ...metric,
+                } as AwsRefreshCredentials)
+
+                if (err instanceof SSOOIDCServiceException && isClientFault(err)) {
+                    await this.cache.token.clear(
+                        this.tokenCacheKey,
+                        `client fault: SSOOIDCServiceException: ${err.message}`
+                    )
+                }
+            }
+
+            throw err
+        }
+    }
+
+    protected formatToken(token: SsoToken, registration: ClientRegistration) {
+        return { token, registration, region: this.profile.region, startUrl: this.profile.startUrl }
+    }
+
+    protected get tokenCacheKey() {
+        return this.profile.identifier ?? this.profile.startUrl
+    }
+
+    protected get registrationCacheKey() {
+        return { startUrl: this.profile.startUrl, region: this.profile.region, scopes: this.profile.scopes }
+    }
+
+    /**
+     * Wraps the given function with telemetry related to the browser login.
+     */
+    protected withBrowserLoginTelemetry<T extends (...args: any[]) => any>(func: T): ReturnType<T> {
+        const run = (span: Metric<AwsLoginWithBrowser>) => {
+            span.record({
+                credentialStartUrl: this.profile.startUrl,
+                source: SsoAccessTokenProvider._authSource,
+            })
+
+            // Reset source in case there is a case where browser login was called but we forgot to set the source.
+            // We don't want to attribute the wrong source.
+            SsoAccessTokenProvider.authSource = 'unknown'
+
+            return func()
+        }
+
+        // During certain flows, eg reauthentication, we are already running within a span (run())
+        // so we don't need to create a new one.
+        const span = telemetry.spans.find(s => s.name === 'aws_loginWithBrowser')
+        if (span !== undefined) {
+            return run(span as unknown as Metric<AwsLoginWithBrowser>)
+        }
+
+        return telemetry.aws_loginWithBrowser.run(span => {
+            return run(span)
+        })
+    }
+
+    protected abstract authorize(registration: ClientRegistration): Promise<{
+        token: SsoToken
+        registration: ClientRegistration
+        region: string
+        startUrl: string
+    }>
+
+    /**
+     * If the registration already exists locally, it
+     * will be validated before being returned. Otherwise, a client registration is
+     * created and returned.
+     */
+    protected abstract getValidatedClientRegistration(): Promise<ClientRegistration>
+    protected abstract registerClient(): Promise<ClientRegistration>
+
+    public static create(
+        profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
+        cache = getCache(),
+        oidc: OidcClient = OidcClient.create(profile.region),
+        useDeviceFlow: () => boolean = () => {
+            /**
+             * Device code flow is neccessary when:
+             * 1. We are in a workspace connected through ssh (codecatalyst, etc)
+             * 2. We are connected to a remote backend through the web browser (code server, openshift dev spaces)
+             *
+             * Since we are unable to serve the final authorization page
+             */
+            return isRemoteWorkspace() || isWebWorkspace()
+        }
+    ) {
+        if (DevSettings.instance.get('webAuth', false) && isWebWorkspace()) {
+            return new WebAuthorization(profile, cache, oidc)
+        }
+        if (useDeviceFlow()) {
+            return new DeviceFlowAuthorization(profile, cache, oidc)
+        }
+        return new AuthFlowAuthorization(profile, cache, oidc)
+    }
+}
+
+const backoffDelayMs = 5000
+async function pollForTokenWithProgress<T extends { requestId?: string }>(
+    fn: () => Promise<T>,
+    authorization: Awaited<ReturnType<OidcClient['startDeviceAuthorization']>>,
+    interval = authorization.interval ?? backoffDelayMs
+) {
+    async function poll(token: vscode.CancellationToken) {
+        while (
+            authorization.expiresAt.getTime() - globals.clock.Date.now() > interval &&
+            !token.isCancellationRequested
+        ) {
+            try {
+                const res = await fn()
+                telemetry.record({
+                    requestId: res.requestId,
+                })
+                return res
+            } catch (err) {
+                if (!hasStringProps(err, 'name')) {
+                    throw err
+                }
+
+                if (err instanceof SlowDownException) {
+                    interval += backoffDelayMs
+                } else if (!(err instanceof AuthorizationPendingException)) {
+                    throw err
+                }
+            }
+
+            await sleep(interval)
+        }
+
+        // TODO: verify that this emits telemetry
+        throw new ToolkitError('Timed-out waiting for browser login flow to complete', {
+            code: 'TimedOut',
+        })
+    }
+
+    return vscode.window.withProgress(
+        {
+            title: localize(
+                'AWS.auth.loginWithBrowser.messageDetail',
+                'Confirm code "{0}" in the login page opened in your web browser.',
+                authorization.userCode
+            ),
+            cancellable: true,
+            location: vscode.ProgressLocation.Notification,
+        },
+        (_, token) =>
+            Promise.race([
+                poll(token),
+                new Promise<never>((_, reject) =>
+                    token.onCancellationRequested(() => reject(new CancellationError('user')))
+                ),
+            ])
+    )
+}
+
+const sessionCreationDateKey = '#sessionCreationDates'
+async function setSessionCreationDate(id: string, date: Date, memento = globals.context.globalState) {
+    try {
+        await memento.update(sessionCreationDateKey, {
+            ...memento.get(sessionCreationDateKey),
+            [id]: date.getTime(),
+        })
+    } catch (err) {
+        getLogger().verbose('auth: failed to set session creation date: %s', err)
+    }
+}
+
+function getSessionCreationDate(id: string, memento = globals.context.globalState): number | undefined {
+    return memento.get(sessionCreationDateKey, {} as Record<string, number>)[id]
+}
+
+function getSessionDuration(id: string, memento = globals.context.globalState) {
+    const creationDate = getSessionCreationDate(id, memento)
+
+    return creationDate !== undefined ? Date.now() - creationDate : undefined
+}
+
+/**
+ *  SSO "device code" flow (RFC: https://tools.ietf.org/html/rfc8628)
+ *    1. Get a client id (SSO-OIDC identifier, formatted per RFC6749).
+ *       - Toolkit code: {@link SsoAccessTokenProvider.registerClient}
+ *          - Calls {@link OidcClient.registerClient}
+ *       - RETURNS:
+ *         - ClientSecret
+ *         - ClientId
+ *         - ClientSecretExpiresAt
+ *       - Client registration is valid for potentially months and creates state
+ *         server-side, so the client SHOULD cache them to disk.
+ *    2. Start device authorization.
+ *       - Toolkit code: {@link SsoAccessTokenProvider.authorize}
+ *          - Calls {@link OidcClient.startDeviceAuthorization}
+ *       - RETURNS (RFC: https://tools.ietf.org/html/rfc8628#section-3.2):
+ *         - DeviceCode             : Device verification code
+ *         - UserCode               : User verification code
+ *         - VerificationUri        : User verification URI on the authorization server
+ *         - VerificationUriComplete: User verification URI including the `user_code`
+ *         - ExpiresIn              : Lifetime (seconds) of `device_code` and `user_code`
+ *         - Interval               : Minimum time (seconds) the client SHOULD wait between polling intervals.
+ *    3. Poll for the access token.
+ *       - Toolkit code: {@link SsoAccessTokenProvider.authorize}
+ *          - Calls {@link pollForTokenWithProgress}
+ *       - RETURNS:
+ *         - AccessToken
+ *         - ExpiresIn
+ *         - RefreshToken (optional)
+ *    4. (Repeat) Tokens SHOULD be refreshed if expired and a refresh token is available.
+ *        - Toolkit code: {@link SsoAccessTokenProvider.refreshToken}
+ *          - Calls {@link OidcClient.createToken}
+ *        - RETURNS:
+ *         - AccessToken
+ *         - ExpiresIn
+ *         - RefreshToken (optional)
+ */
+export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
+    constructor(
+        profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
+        cache = getCache(),
+        oidc: OidcClient = OidcClient.create(profile.region)
+    ) {
+        super(profile, cache, oidc)
+    }
+
+    override async registerClient(): Promise<ClientRegistration> {
+        const companyName = getIdeProperties().company
+        return this.oidc.registerClient(
+            {
+                clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
+                clientType: clientRegistrationType,
+                scopes: this.profile.scopes,
+            },
+            this.profile.startUrl
+        )
+    }
+
+    override async authorize(
+        registration: ClientRegistration
+    ): Promise<{ token: SsoToken; registration: ClientRegistration; region: string; startUrl: string }> {
+        // This will NOT throw on expired clientId/Secret, but WILL throw on invalid clientId/Secret
+        const authorization = await this.oidc.startDeviceAuthorization({
+            startUrl: this.profile.startUrl,
+            clientId: registration.clientId,
+            clientSecret: registration.clientSecret,
+        })
+
+        const openBrowserAndWaitUntilComplete = async () => {
+            if (!(await openSsoPortalLink(this.profile.startUrl, authorization))) {
+                throw new CancellationError('user')
+            }
+
+            return await pollForTokenWithProgress(
+                () =>
+                    this.oidc.createToken({
+                        clientId: registration.clientId,
+                        clientSecret: registration.clientSecret,
+                        deviceCode: authorization.deviceCode,
+                        grantType: deviceGrantType,
+                    }),
+                authorization
+            )
+        }
+
+        const token = this.withBrowserLoginTelemetry(() => openBrowserAndWaitUntilComplete())
+
+        return this.formatToken(await token, registration)
+    }
+
+    /**
+     * If the registration already exists locally, it
+     * will be validated before being returned. Otherwise, a client registration is
+     * created and returned.
+     */
+    override async getValidatedClientRegistration(): Promise<ClientRegistration> {
+        const cacheKey = this.registrationCacheKey
+        const cachedRegistration = await this.cache.registration.load(cacheKey)
+
+        // Clear cached if registration is expired
+        if (cachedRegistration && isExpired(cachedRegistration)) {
+            await this.invalidate()
+        }
+
+        return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+    }
+}
+
+/**
+ *  SSO "authorization code" + PKCE flow (https://oauth.net/2/grant-types/authorization-code/)
+ *   1. `grant_type = authorization_code`
+ *   2. Clients exchange an authorization code for an access token.
+ *       1. After the user returns to the client via the redirect URL, the application will get the authorization code from the URL and use it to request an access token.
+ *   3. PKCE https://oauth.net/2/pkce/
+ *       1. PKCE-enhanced Authorization Code Flow prevents CSRF and authorization code injection attacks, by introducing a *secret* created by the client, that can be verified by the authorization server.
+ *       2. PKCE does not add any new responses, so clients can always use the PKCE extension even if an authorization server does not support it.
+ *   4. LIFECYCLE
+ *       1. CLIENT CREATES AN APP (ONE-TIME)
+ *           1. Client creates an "app": server returns a `client_id` for use in all future sessions. (expires in 90 days)
+ *       2. PKCE SEQUENCE:
+ *           1. Client app generates a random secret (`code_verifier`) per authorization request.
+ *           2. Client: AUTHORIZATION REQUEST: `registerClient()`: client sends SHA256 hash (`code_challenge_method`) of the secret (`code_challenge`) in the authorization request.
+ *               1. PARAMETERS:
+ *                   1. `response_type=code`: indicates that your client expects to receive an authorization code.
+ *                   2. `client_id`
+ *                   3. `redirect_uri`: Server will navigate the user to this URL, after appending `?code=…`. Typically `http://127.0.0.1/…` but may be remote (`https://vscode.dev/…`) or custom URI scheme (`vscode://…`).
+ *                   4. `state=1234zyx`: CSRF token. Random string generated by your (client) application, which you’ll verify later.
+ *                   5. `code_challenge`: See above.
+ *                   6. `code_challenge_method=S256`: either "plain" or "S256".
+ *           3. Server: website redirects the user to `<redirect_uri>?code=…&state=…`.
+ *               1. Client verifies the `state` (CSRF token).
+ *               2. Client gets the `code`. Can later exchange it for a "token set" (access token, refresh token and id token).
+ *           4. Client: ACCESS TOKEN REQUEST ("AUTHORIZATION CODE EXCHANGE"): `createToken()`: client exchanges the authorization code for an access token and sends the un-hashed secret (`code_verifier`), which the server can hash and compare to the original hash, to verify the createToken() request came from the actual client.
+ *               1. PARAMETERS:
+ *                   1. `grant_type=authorization_code`
+ *                   2. `client_id`
+ *                   3. `redirect_uri`: See above.
+ *                   4. `code`: Authorization code obtained from the redirect.
+ *                   5. `client_secret` (optional): The application’s registered client secret if it was issued a secret.
+ *                   6. `code_verifier`: See above.
+ *           5. Server: transforms the provided `code_verifier` using the same hash method (`code_challenge_method`), then compares it to the stored `code_challenge` string.
+ *               1. If the verifier matches the expected value, server issues an access token.
+ *               2. If there is a problem, server responds with `invalid_grant` error.
+ */
+class AuthFlowAuthorization extends SsoAccessTokenProvider {
+    constructor(
+        profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
+        cache = getCache(),
+        oidc: OidcClient
+    ) {
+        super(profile, cache, oidc)
+    }
+
+    override async registerClient(): Promise<ClientRegistration> {
+        const companyName = getIdeProperties().company
+        return this.oidc.registerClient(
+            {
+                // All AWS extensions (Q, Toolkit) for a given IDE use the same client name.
+                clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
+                clientType: clientRegistrationType,
+                scopes: this.profile.scopes,
+                grantTypes: [authorizationGrantType, refreshGrantType],
+                redirectUris: ['http://127.0.0.1/oauth/callback'],
+                issuerUrl: this.profile.startUrl,
+            },
+            this.profile.startUrl,
+            'auth code'
+        )
+    }
+
+    override async authorize(
+        registration: ClientRegistration
+    ): Promise<{ token: SsoToken; registration: ClientRegistration; region: string; startUrl: string }> {
+        const state = randomUUID()
+        const authServer = AuthSSOServer.init(state)
+
+        try {
+            await authServer.start()
+
+            const token = await this.withBrowserLoginTelemetry(async () => {
+                const redirectUri = authServer.redirectUri
+
+                const codeVerifier = randomBytes(32).toString('base64url')
+                const codeChallenge = createHash('sha256').update(codeVerifier).digest().toString('base64url')
+
+                const location = await this.oidc.authorize({
+                    responseType: 'code',
+                    clientId: registration.clientId,
+                    redirectUri: redirectUri,
+                    scopes: this.profile.scopes ?? [],
+                    state,
+                    codeChallenge,
+                    codeChallengeMethod: 'S256',
+                })
+
+                await vscode.env.openExternal(vscode.Uri.parse(location))
+
+                const authorizationCode = await authServer.waitForAuthorization()
+                if (authorizationCode.isErr()) {
+                    throw authorizationCode.err()
+                }
+
+                const res = await this.oidc.createToken({
+                    clientId: registration.clientId,
+                    clientSecret: registration.clientSecret,
+                    grantType: authorizationGrantType,
+                    redirectUri,
+                    codeVerifier,
+                    code: authorizationCode.unwrap(),
+                })
+                telemetry.record({ requestId: res.requestId })
+
+                return res
+            })
+
+            return this.formatToken(token, registration)
+        } finally {
+            // Temporary delay to make sure the auth ui was displayed to the user before closing
+            // inspired by https://github.com/microsoft/vscode/blob/a49c81edea6647684eee87d204e50feed9c455f6/extensions/github-authentication/src/flows.ts#L262
+            setTimeout(() => {
+                authServer.close().catch(e => {
+                    getLogger().error(
+                        'AuthFlowAuthorization: AuthSSOServer.close() failed: %s: %s',
+                        (e as Error).name,
+                        (e as Error).message
+                    )
+                })
+            }, 5000)
+        }
+    }
+
+    /**
+     * If the registration already exists locally, it
+     * will be validated before being returned. Otherwise, a client registration is
+     * created and returned.
+     */
+    override async getValidatedClientRegistration(): Promise<ClientRegistration> {
+        const cacheKey = this.registrationCacheKey
+        const cachedRegistration = await this.cache.registration.load(cacheKey)
+
+        // Clear cached if registration is expired or it uses a deprecate auth version (device code)
+        if (cachedRegistration && (isExpired(cachedRegistration) || isDeprecatedAuth(cachedRegistration))) {
+            await this.invalidate()
+        }
+
+        return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+    }
+}
+
+/**
+ * Alternative to {@link AuthFlowAuthorization} for demo/testing purposes.
+ *
+ * Allows user to enter the code manually after completing the authorization flow.
+ */
+class WebAuthorization extends SsoAccessTokenProvider {
+    private redirectUri = 'http://127.0.0.1:54321/oauth/callback'
+
+    constructor(
+        profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
+        cache = getCache(),
+        oidc: OidcClient
+    ) {
+        super(profile, cache, oidc)
+    }
+
+    override async registerClient(): Promise<ClientRegistration> {
+        const companyName = getIdeProperties().company
+        return this.oidc.registerClient(
+            {
+                // All AWS extensions (Q, Toolkit) for a given IDE use the same client name.
+                clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
+                clientType: clientRegistrationType,
+                scopes: this.profile.scopes,
+                grantTypes: [authorizationGrantType, refreshGrantType],
+                redirectUris: [this.redirectUri],
+                issuerUrl: this.profile.startUrl,
+            },
+            this.profile.startUrl,
+            'web auth code'
+        )
+    }
+
+    override async authorize(
+        registration: ClientRegistration
+    ): Promise<{ token: SsoToken; registration: ClientRegistration; region: string; startUrl: string }> {
+        const state = randomUUID()
+
+        const token = await this.withBrowserLoginTelemetry(async () => {
+            const codeVerifier = toBase64URL(randomBytes(32).toString('base64'))
+            const codeChallenge = toBase64URL(createHash('sha256').update(codeVerifier).digest().toString('base64'))
+
+            const location = await this.oidc.authorize({
+                responseType: 'code',
+                clientId: registration.clientId,
+                // we aren't running on localhost so we can't see the what ports are free
+                redirectUri: this.redirectUri,
+                scopes: this.profile.scopes ?? [],
+                state,
+                codeChallenge,
+                codeChallengeMethod: 'S256',
+            })
+
+            await vscode.env.openExternal(vscode.Uri.parse(location))
+
+            const inputBox = await showInputBox({
+                title: 'Authorization Input',
+                placeholder: 'Input the authorization code',
+                validateInput: (val: string) => {
+                    if (val.length === 0) {
+                        return 'At least one character is required'
+                    }
+                    return undefined
+                },
+            })
+
+            return this.oidc.createToken({
+                clientId: registration.clientId,
+                clientSecret: registration.clientSecret,
+                grantType: authorizationGrantType,
+                redirectUri: this.redirectUri,
+                codeVerifier,
+                code: inputBox,
+            })
+        })
+
+        return this.formatToken(token, registration)
+    }
+
+    override async getValidatedClientRegistration(): Promise<ClientRegistration> {
+        const cacheKey = this.registrationCacheKey
+        const cachedRegistration = await this.cache.registration.load(cacheKey)
+
+        if (cachedRegistration && (isExpired(cachedRegistration) || cachedRegistration.flow !== 'web auth code')) {
+            await this.invalidate()
+        }
+
+        return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+    }
+}

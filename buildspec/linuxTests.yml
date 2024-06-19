@@ -8,6 +8,11 @@ env:
     shell: bash
     variables:
         AWS_TOOLKIT_TEST_NO_COLOR: '1'
+        # Required dir overrides, otherwise the test will likely fail due to too long path names.
+        # E.g. WARNING: IPC handle <path> is longer than 107 chars, try a shorter --user-data-dir
+        # followed by Error: Could not delete obsolete instance handle Error: ENOENT: no such file or directory, unlink <path>
+        AWS_TOOLKIT_TEST_CACHE_DIR: '/tmp/.vscode-test/'
+        AWS_TOOLKIT_TEST_USER_DIR: '/tmp/.vscode-test/user-data/'
 
 phases:
     install:
@@ -25,12 +30,12 @@ phases:
     build:
         commands:
             - export HOME=/home/codebuild-user
-            # TODO: remove this after lint.yml is enabled in codebuild.
-            - |
-                if [ "$VSCODE_TEST_VERSION" = 'insiders' ] ; then
-                    npm run testCompile
-                    npm run lint
-                fi
+            # TODO: Enable if we run into issues with GHA linting or remove.
+            # - |
+            #     if [ "$VSCODE_TEST_VERSION" = 'insiders' ] ; then
+            #         npm run testCompile
+            #         npm run lint
+            #     fi
             - |
                 {
                     # Ensure that "foo | run_and_report" fails correctly.

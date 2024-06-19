@@ -14,6 +14,7 @@ import {
 import { CodeWhispererStreamingServiceException as __BaseException } from "../models/CodeWhispererStreamingServiceException";
 import {
   AccessDeniedException,
+  AppStudioState,
   AssistantResponseEvent,
   AssistantResponseMessage,
   BinaryMetadataEvent,
@@ -27,8 +28,12 @@ import {
   Diagnostic,
   DocumentSymbol,
   EditorState,
+  EnvState,
+  EnvironmentVariable,
+  ExportContext,
   FollowupPrompt,
   FollowupPromptEvent,
+  GitState,
   InternalServerException,
   InvalidStateEvent,
   MessageMetadataEvent,
@@ -36,15 +41,20 @@ import {
   ProgrammingLanguage,
   Range,
   Reference,
+  RelevantTextDocument,
   ResourceNotFoundException,
   ResultArchiveStream,
   RuntimeDiagnostic,
+  ServiceQuotaExceededException,
+  ShellHistoryEntry,
+  ShellState,
   Span,
   SupplementaryWebLink,
   SupplementaryWebLinksEvent,
   TextDocument,
   TextDocumentDiagnostic,
   ThrottlingException,
+  TransformationExportContext,
   UserInputMessage,
   UserInputMessageContext,
   ValidationException,
@@ -85,6 +95,7 @@ export const se_ExportResultArchiveCommand = async(
   let resolvedPath = `${basePath?.endsWith('/') ? basePath.slice(0, -1) : (basePath || '')}` + "/exportResultArchive";
   let body: any;
   body = JSON.stringify(take(input, {
+    'exportContext': _ => _json(_),
     'exportId': [],
     'exportIntent': [],
   }));
@@ -114,6 +125,7 @@ export const se_GenerateAssistantResponseCommand = async(
   let body: any;
   body = JSON.stringify(take(input, {
     'conversationState': _ => _json(_),
+    'profileArn': [],
   }));
   return new __HttpRequest({
     protocol,
@@ -310,6 +322,9 @@ const de_ExportResultArchiveCommandError = async(
         case "ResourceNotFoundException":
         case "com.amazon.aws.codewhisperer#ResourceNotFoundException":
           throw await de_ResourceNotFoundExceptionRes(parsedOutput, context);
+        case "ServiceQuotaExceededException":
+        case "com.amazon.aws.codewhisperer#ServiceQuotaExceededException":
+          throw await de_ServiceQuotaExceededExceptionRes(parsedOutput, context);
         case "ThrottlingException":
         case "com.amazon.aws.codewhisperer#ThrottlingException":
           throw await de_ThrottlingExceptionRes(parsedOutput, context);
@@ -406,6 +421,27 @@ const de_ExportResultArchiveCommandError = async(
         });
         Object.assign(contents, doc);
         const exception = new ResourceNotFoundException({
+          $metadata: deserializeMetadata(parsedOutput),
+          ...contents
+        });
+        return __decorateServiceException(exception, parsedOutput.body);
+      };
+
+      /**
+       * deserializeAws_restJson1ServiceQuotaExceededExceptionRes
+       */
+      const de_ServiceQuotaExceededExceptionRes = async (
+        parsedOutput: any,
+        context: __SerdeContext
+      ): Promise<ServiceQuotaExceededException> => {
+        const contents: any = map({
+        });
+        const data: any = parsedOutput.body;
+        const doc = take(data, {
+          'message': __expectString,
+        });
+        Object.assign(contents, doc);
+        const exception = new ServiceQuotaExceededException({
           $metadata: deserializeMetadata(parsedOutput),
           ...contents
         });
@@ -615,6 +651,8 @@ const de_ExportResultArchiveCommandError = async(
         Object.assign(contents, _json(data));
         return contents;
       }
+      // se_AppStudioState omitted.
+
       // se_AssistantResponseMessage omitted.
 
       // se_ChatHistory omitted.
@@ -633,7 +671,17 @@ const de_ExportResultArchiveCommandError = async(
 
       // se_EditorState omitted.
 
+      // se_EnvironmentVariable omitted.
+
+      // se_EnvironmentVariables omitted.
+
+      // se_EnvState omitted.
+
+      // se_ExportContext omitted.
+
       // se_FollowupPrompt omitted.
+
+      // se_GitState omitted.
 
       // se_Position omitted.
 
@@ -645,7 +693,17 @@ const de_ExportResultArchiveCommandError = async(
 
       // se_References omitted.
 
+      // se_RelevantDocumentList omitted.
+
+      // se_RelevantTextDocument omitted.
+
       // se_RuntimeDiagnostic omitted.
+
+      // se_ShellHistory omitted.
+
+      // se_ShellHistoryEntry omitted.
+
+      // se_ShellState omitted.
 
       // se_Span omitted.
 
@@ -656,6 +714,8 @@ const de_ExportResultArchiveCommandError = async(
       // se_TextDocument omitted.
 
       // se_TextDocumentDiagnostic omitted.
+
+      // se_TransformationExportContext omitted.
 
       // se_UserInputMessage omitted.
 

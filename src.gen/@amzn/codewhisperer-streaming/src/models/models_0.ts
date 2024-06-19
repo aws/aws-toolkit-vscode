@@ -114,6 +114,7 @@ export class ThrottlingException extends __BaseException {
  * @enum
  */
 export const ValidationExceptionReason = {
+  CONTENT_LENGTH_EXCEEDS_THRESHOLD: "CONTENT_LENGTH_EXCEEDS_THRESHOLD",
   INVALID_CONVERSATION_ID: "INVALID_CONVERSATION_ID",
 } as const
 /**
@@ -147,6 +148,55 @@ export class ValidationException extends __BaseException {
     this.reason = opts.reason;
   }
 }
+
+/**
+ * @public
+ * Description of a user's context when they are calling Q Chat from AppStudio
+ */
+export interface AppStudioState {
+  /**
+   * @public
+   * The namespace of the context. Examples: 'ui.Button', 'ui.Table.DataSource', 'ui.Table.RowActions.Button', 'logic.invokeAWS', 'logic.JavaScript'
+   */
+  namespace: string | undefined;
+
+  /**
+   * @public
+   * The name of the property. Examples: 'visibility', 'disability', 'value', 'code'
+   */
+  propertyName: string | undefined;
+
+  /**
+   * @public
+   * The value of the property.
+   */
+  propertyValue?: string;
+
+  /**
+   * @public
+   * Context about how the property is used
+   */
+  propertyContext: string | undefined;
+}
+
+/**
+ * @internal
+ */
+export const AppStudioStateFilterSensitiveLog = (obj: AppStudioState): any => ({
+  ...obj,
+  ...(obj.namespace && { namespace:
+    SENSITIVE_STRING
+  }),
+  ...(obj.propertyName && { propertyName:
+    SENSITIVE_STRING
+  }),
+  ...(obj.propertyValue && { propertyValue:
+    SENSITIVE_STRING
+  }),
+  ...(obj.propertyContext && { propertyContext:
+    SENSITIVE_STRING
+  }),
+})
 
 /**
  * @public
@@ -823,6 +873,49 @@ export namespace CursorState {
 
 /**
  * @public
+ * Represents an IDE retrieved relevant Text Document / File
+ */
+export interface RelevantTextDocument {
+  /**
+   * @public
+   * Filepath relative to the root of the workspace
+   */
+  relativeFilePath: string | undefined;
+
+  /**
+   * @public
+   * The text document's language identifier.
+   */
+  programmingLanguage?: ProgrammingLanguage;
+
+  /**
+   * @public
+   * Content of the text document
+   */
+  text?: string;
+
+  /**
+   * @public
+   * DocumentSymbols parsed from a text document
+   */
+  documentSymbols?: (DocumentSymbol)[];
+}
+
+/**
+ * @internal
+ */
+export const RelevantTextDocumentFilterSensitiveLog = (obj: RelevantTextDocument): any => ({
+  ...obj,
+  ...(obj.relativeFilePath && { relativeFilePath:
+    SENSITIVE_STRING
+  }),
+  ...(obj.text && { text:
+    SENSITIVE_STRING
+  }),
+})
+
+/**
+ * @public
  * Represents the state of an Editor
  */
 export interface EditorState {
@@ -837,6 +930,12 @@ export interface EditorState {
    * Position of the cursor
    */
   cursorState?: CursorState;
+
+  /**
+   * @public
+   * Represents IDE provided relevant files
+   */
+  relevantDocuments?: (RelevantTextDocument)[];
 }
 
 /**
@@ -849,6 +948,191 @@ export const EditorStateFilterSensitiveLog = (obj: EditorState): any => ({
   }),
   ...(obj.cursorState && { cursorState:
     obj.cursorState
+  }),
+  ...(obj.relevantDocuments && { relevantDocuments:
+    obj.relevantDocuments.map(
+      item =>
+      RelevantTextDocumentFilterSensitiveLog(item)
+    )
+  }),
+})
+
+/**
+ * @public
+ * An environment variable
+ */
+export interface EnvironmentVariable {
+  /**
+   * @public
+   * The key of an environment variable
+   */
+  key?: string;
+
+  /**
+   * @public
+   * The value of an environment variable
+   */
+  value?: string;
+}
+
+/**
+ * @internal
+ */
+export const EnvironmentVariableFilterSensitiveLog = (obj: EnvironmentVariable): any => ({
+  ...obj,
+  ...(obj.key && { key:
+    SENSITIVE_STRING
+  }),
+  ...(obj.value && { value:
+    SENSITIVE_STRING
+  }),
+})
+
+/**
+ * @public
+ * State related to the user's environment
+ */
+export interface EnvState {
+  /**
+   * @public
+   * The name of the operating system in use
+   */
+  operatingSystem?: string;
+
+  /**
+   * @public
+   * The current working directory of the environment
+   */
+  currentWorkingDirectory?: string;
+
+  /**
+   * @public
+   * The environment variables set in the current environment
+   */
+  environmentVariables?: (EnvironmentVariable)[];
+}
+
+/**
+ * @internal
+ */
+export const EnvStateFilterSensitiveLog = (obj: EnvState): any => ({
+  ...obj,
+  ...(obj.currentWorkingDirectory && { currentWorkingDirectory:
+    SENSITIVE_STRING
+  }),
+  ...(obj.environmentVariables && { environmentVariables:
+    obj.environmentVariables.map(
+      item =>
+      EnvironmentVariableFilterSensitiveLog(item)
+    )
+  }),
+})
+
+/**
+ * @public
+ * State related to the Git VSC
+ */
+export interface GitState {
+  /**
+   * @public
+   * The output of the command `git status --porcelain=v1 -b`
+   */
+  status?: string;
+}
+
+/**
+ * @internal
+ */
+export const GitStateFilterSensitiveLog = (obj: GitState): any => ({
+  ...obj,
+  ...(obj.status && { status:
+    SENSITIVE_STRING
+  }),
+})
+
+/**
+ * @public
+ * An single entry in the shell history
+ */
+export interface ShellHistoryEntry {
+  /**
+   * @public
+   * The shell command that was run
+   */
+  command: string | undefined;
+
+  /**
+   * @public
+   * The directory the command was ran in
+   */
+  directory?: string;
+
+  /**
+   * @public
+   * The exit code of the command after it finished
+   */
+  exitCode?: number;
+
+  /**
+   * @public
+   * The stdout from the command
+   */
+  stdout?: string;
+
+  /**
+   * @public
+   * The stderr from the command
+   */
+  stderr?: string;
+}
+
+/**
+ * @internal
+ */
+export const ShellHistoryEntryFilterSensitiveLog = (obj: ShellHistoryEntry): any => ({
+  ...obj,
+  ...(obj.command && { command:
+    SENSITIVE_STRING
+  }),
+  ...(obj.directory && { directory:
+    SENSITIVE_STRING
+  }),
+  ...(obj.stdout && { stdout:
+    SENSITIVE_STRING
+  }),
+  ...(obj.stderr && { stderr:
+    SENSITIVE_STRING
+  }),
+})
+
+/**
+ * @public
+ * Represents the state of a shell
+ */
+export interface ShellState {
+  /**
+   * @public
+   * The name of the current shell
+   */
+  shellName: string | undefined;
+
+  /**
+   * @public
+   * The history previous shell commands for the current shell
+   */
+  shellHistory?: (ShellHistoryEntry)[];
+}
+
+/**
+ * @internal
+ */
+export const ShellStateFilterSensitiveLog = (obj: ShellState): any => ({
+  ...obj,
+  ...(obj.shellHistory && { shellHistory:
+    obj.shellHistory.map(
+      item =>
+      ShellHistoryEntryFilterSensitiveLog(item)
+    )
   }),
 })
 
@@ -865,6 +1149,30 @@ export interface UserInputMessageContext {
 
   /**
    * @public
+   * Shell state chat message context.
+   */
+  shellState?: ShellState;
+
+  /**
+   * @public
+   * Git state chat message context.
+   */
+  gitState?: GitState;
+
+  /**
+   * @public
+   * Environment state chat message context.
+   */
+  envState?: EnvState;
+
+  /**
+   * @public
+   * The state of a user's AppStudio UI when sending a message.
+   */
+  appStudioContext?: AppStudioState;
+
+  /**
+   * @public
    * Diagnostic chat message context.
    */
   diagnostic?: Diagnostic;
@@ -877,6 +1185,18 @@ export const UserInputMessageContextFilterSensitiveLog = (obj: UserInputMessageC
   ...obj,
   ...(obj.editorState && { editorState:
     EditorStateFilterSensitiveLog(obj.editorState)
+  }),
+  ...(obj.shellState && { shellState:
+    ShellStateFilterSensitiveLog(obj.shellState)
+  }),
+  ...(obj.gitState && { gitState:
+    GitStateFilterSensitiveLog(obj.gitState)
+  }),
+  ...(obj.envState && { envState:
+    EnvStateFilterSensitiveLog(obj.envState)
+  }),
+  ...(obj.appStudioContext && { appStudioContext:
+    AppStudioStateFilterSensitiveLog(obj.appStudioContext)
   }),
   ...(obj.diagnostic && { diagnostic:
     DiagnosticFilterSensitiveLog(obj.diagnostic)
@@ -1340,6 +1660,8 @@ export interface ConversationState {
    * Trigger Reason for Chat
    */
   chatTriggerType: ChatTriggerType | string | undefined;
+
+  customizationArn?: string;
 }
 
 /**
@@ -1357,6 +1679,73 @@ export const ConversationStateFilterSensitiveLog = (obj: ConversationState): any
     ChatMessageFilterSensitiveLog(obj.currentMessage)
   }),
 })
+
+/**
+ * @public
+ * @enum
+ */
+export const TransformationDownloadArtifactType = {
+  CLIENT_INSTRUCTIONS: "ClientInstructions",
+  LOGS: "Logs",
+} as const
+/**
+ * @public
+ */
+export type TransformationDownloadArtifactType = typeof TransformationDownloadArtifactType[keyof typeof TransformationDownloadArtifactType]
+
+/**
+ * @public
+ * Transformation export context
+ */
+export interface TransformationExportContext {
+  downloadArtifactId: string | undefined;
+  downloadArtifactType: TransformationDownloadArtifactType | string | undefined;
+}
+
+/**
+ * @public
+ * Export Context
+ */
+export type ExportContext =
+  | ExportContext.TransformationExportContextMember
+  | ExportContext.$UnknownMember
+
+/**
+ * @public
+ */
+export namespace ExportContext {
+
+  /**
+   * @public
+   * Transformation export context
+   */
+  export interface TransformationExportContextMember {
+    transformationExportContext: TransformationExportContext;
+    $unknown?: never;
+  }
+
+  /**
+   * @public
+   */
+  export interface $UnknownMember {
+    transformationExportContext?: never;
+    $unknown: [string, any];
+  }
+
+  export interface Visitor<T> {
+    transformationExportContext: (value: TransformationExportContext) => T;
+    _: (name: string, value: any) => T;
+  }
+
+  export const visit = <T>(
+    value: ExportContext,
+    visitor: Visitor<T>
+  ): T => {
+    if (value.transformationExportContext !== undefined) return visitor.transformationExportContext(value.transformationExportContext);
+    return visitor._(value.$unknown[0], value.$unknown[1]);
+  }
+
+}
 
 /**
  * @public
@@ -1471,6 +1860,26 @@ export const ResultArchiveStreamFilterSensitiveLog = (obj: ResultArchiveStream):
 
 /**
  * @public
+ * This exception is thrown when request was denied due to caller exceeding their usage limits
+ */
+export class ServiceQuotaExceededException extends __BaseException {
+  readonly name: "ServiceQuotaExceededException" = "ServiceQuotaExceededException";
+  readonly $fault: "client" = "client";
+  /**
+   * @internal
+   */
+  constructor(opts: __ExceptionOptionType<ServiceQuotaExceededException, __BaseException>) {
+    super({
+      name: "ServiceQuotaExceededException",
+      $fault: "client",
+      ...opts
+    });
+    Object.setPrototypeOf(this, ServiceQuotaExceededException.prototype);
+  }
+}
+
+/**
+ * @public
  * Represents a Workspace state uploaded to S3 for Async Code Actions
  */
 export interface WorkspaceState {
@@ -1503,6 +1912,8 @@ export interface GenerateAssistantResponseRequest {
    * Structure to represent the current state of a chat conversation.
    */
   conversationState: ConversationState | undefined;
+
+  profileArn?: string;
 }
 
 /**
@@ -1554,6 +1965,12 @@ export interface ExportResultArchiveRequest {
    * Export Intent
    */
   exportIntent: ExportIntent | string | undefined;
+
+  /**
+   * @public
+   * Export Context
+   */
+  exportContext?: ExportContext;
 }
 
 /**

@@ -7,7 +7,7 @@ version: 0.2
 phases:
     install:
         runtime-versions:
-            nodejs: 16
+            nodejs: 20
         commands:
             - apt-get update
             - apt-get install -y libsecret-1-dev
@@ -16,15 +16,26 @@ phases:
         commands:
             # Check for implicit env vars passed from the release pipeline.
             - test -n "${VS_MARKETPLACE_PAT}"
+            - test -n "${TARGET_EXTENSION}"
 
     build:
         commands:
+            - echo "TARGET_EXTENSION=${TARGET_EXTENSION}"
             # pull in the build artifacts
             - cp -r ${CODEBUILD_SRC_DIR_buildPipeline}/* .
             - |
+                UPLOAD_TARGET=$(ls *.vsix)
+            - |
+                echo "Publishing to vscode marketplace: $UPLOAD_TARGET"
                 if [ "$STAGE" != "prod" ]; then
-                  echo "Stage is not production, skipping publish step"
-                  exit 0
+                  echo "SKIPPED (stage=${STAGE}): 'npx vsce publish --pat xxx --packagePath ${UPLOAD_TARGET}'"
+                else
+                  npx vsce publish --pat "$VS_MARKETPLACE_PAT" --packagePath "$UPLOAD_TARGET"
                 fi
-                UPLOAD_TARGET=$(ls aws-toolkit-vscode*.vsix)
-                npx vsce publish --pat "$VS_MARKETPLACE_PAT" --packagePath "$UPLOAD_TARGET"
+            - |
+                echo "Publishing to openvsx marketplace: $UPLOAD_TARGET"
+                if [ "$STAGE" != "prod" ]; then
+                  echo "SKIPPED (stage=${STAGE}): 'npx --yes ovsx publish --pat xxx "${UPLOAD_TARGET}"'"
+                else
+                  npx --yes ovsx publish --pat "$OVSX_PAT" "$UPLOAD_TARGET"
+                fi

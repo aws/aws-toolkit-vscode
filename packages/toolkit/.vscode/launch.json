@@ -21,8 +21,9 @@
                 "WEBPACK_DEVELOPER_SERVER": "http://localhost:8080"
             },
             "envFile": "${workspaceFolder}/.local.env",
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "watch"
+            "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
+            "preLaunchTask": "extensionInit",
+            "postDebugTask": "extensionTerminate"
         },
         {
             /** Handles the entire process of building and running the toolkit extension in the browser. **/
@@ -46,147 +47,45 @@
             "postDebugTask": "webRunTerminate"
         },
         {
-            "name": "Extension (webpack)",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "npm: compile"
-        },
-        {
-            "name": "Extension Tests",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--disable-extensions",
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/test/index",
-                "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
-            ],
-            "env": {
-                "DEVELOPMENT_PATH": "${workspaceFolder}",
-                "AWS_TOOLKIT_AUTOMATION": "local"
-            },
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
-        },
-        {
-            "name": "Extension Tests (current file)",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--disable-extensions",
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/test/index.js",
-                "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
-            ],
-            "env": {
-                "TEST_FILE": "${relativeFile}",
-                "DEVELOPMENT_PATH": "${workspaceFolder}",
-                "AWS_TOOLKIT_AUTOMATION": "local"
-            },
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
-        },
-        {
-            "name": "Extension Tests (web)",
-            "type": "extensionHost",
-            "debugWebWorkerHost": true,
-            "request": "launch",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionDevelopmentKind=web",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/testWeb/testRunner",
-                "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
-            ],
-            "outFiles": ["${workspaceFolder}/dist/src/**/*.js"],
-            "preLaunchTask": "webWatch"
-        },
-        {
-            "name": "Integration Tests",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "${workspaceFolder}/dist/src/testFixtures/workspaceFolder",
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/testInteg/index.js"
-            ],
-            "env": {
-                "DEVELOPMENT_PATH": "${workspaceFolder}",
-                "AWS_TOOLKIT_AUTOMATION": "local"
-            },
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
-        },
-        {
-            "name": "Integration Tests (current file)",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "${workspaceFolder}/dist/src/testFixtures/workspaceFolder",
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/testInteg/index.js"
-            ],
-            "env": {
-                "TEST_FILE": "${relativeFile}",
-                "DEVELOPMENT_PATH": "${workspaceFolder}",
-                "AWS_TOOLKIT_AUTOMATION": "local"
-            },
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
-        },
-        {
-            "name": "E2E Test (current file)",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "${workspaceFolder}/dist/src/testFixtures/workspaceFolder",
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/testE2E/index.js"
-            ],
-            "env": {
-                "TEST_FILE": "${relativeFile}",
-                "DEVELOPMENT_PATH": "${workspaceFolder}",
-                "AWS_TOOLKIT_AUTOMATION": "local"
-            },
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
-        },
-        {
             "name": "Test Lint",
             "type": "node",
             "request": "launch",
             "program": "${workspaceFolder}/scripts/lint/testLint.ts",
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"
-        },
-        {
-            "name": "Attach to ASL Server",
-            "type": "node",
-            "request": "attach",
-            "port": 6009,
-            "restart": true,
-            "outFiles": ["${workspaceRoot}/dist/src/stepFunctions/asl/**.js"]
-        },
-        {
-            "name": "Attach to SSM Document Language Server",
-            "type": "node",
-            "request": "attach",
-            "port": 6010,
-            "restart": true,
-            "outFiles": ["${workspaceRoot}/dist/src/ssmDocument/ssm/ssmServer.js"]
         }
+        // ---- We do not need the following currently, and we want to reduce clutter. Re-enable if necessary ----
+        // {
+        //     "name": "Extension (webpack)",
+        //     "type": "extensionHost",
+        //     "request": "launch",
+        //     "runtimeExecutable": "${execPath}",
+        //     "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+        //     "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
+        //     "preLaunchTask": "npm: compile",
+        //     "postDebugTask": "terminate"
+        // },
+        // {
+        //     "name": "Attach to ASL Server",
+        //     "type": "node",
+        //     "request": "attach",
+        //     "port": 6009,
+        //     "restart": true,
+        //     "outFiles": ["${workspaceRoot}/dist/src/stepFunctions/asl/**.js"]
+        // },
+        // {
+        //     "name": "Attach to SSM Document Language Server",
+        //     "type": "node",
+        //     "request": "attach",
+        //     "port": 6010,
+        //     "restart": true,
+        //     "outFiles": ["${workspaceRoot}/dist/src/ssmDocument/ssm/ssmServer.js"],
+        // }
     ],
     "compounds": [
-        {
-            "name": "Extension + Attach to SSM Document Language Server",
-            "configurations": ["Extension", "Attach to SSM Document Language Server"]
-        }
+        // {
+        //     "name": "Extension + Attach to SSM Document Language Server",
+        //     "configurations": ["Extension", "Attach to SSM Document Language Server"]
+        // }
     ]
 }

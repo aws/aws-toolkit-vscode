@@ -1,0 +1,18 @@
+{
+	"date": "2024-04-04",
+	"version": "2.18.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Feature Dev: Fix followups after hitting iteration limit"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Code Transformation: remove Transform button from side panel, use /transform in chat now"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Code Transformation: allow \"Start a new transformation\" button in chat to work after job fails"
+		}
+	]
+}

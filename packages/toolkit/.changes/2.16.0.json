@@ -1,0 +1,46 @@
+{
+	"date": "2024-03-21",
+	"version": "2.16.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: UI notification \"no suggestion\" not shown correctly"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Lower chance of project upload failures when using Q CodeTransform."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "FeatureDev: Rejected files are excluded when generated code is accepted by the customer"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix CodeWhisperer API call failure in SageMaker Code Editor"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: Improve UI to indicate CodeWhisperer is generating suggestions"
+		},
+		{
+			"type": "Feature",
+			"description": "Q CodeTransformation: show prompt to submit feedback at end of job"
+		},
+		{
+			"type": "Feature",
+			"description": "Improved performance: SSM Documents and Step Functions LSP clients/servers are now started only when they are needed."
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: Improve UI to walk through new CodeWhisperer users how-to"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer/Q actions are now available from the status bar menu instead of a dedicated panel."
+		},
+		{
+			"type": "Feature",
+			"description": "Expose listConnections API in AWS Toolkit"
+		}
+	]
+}

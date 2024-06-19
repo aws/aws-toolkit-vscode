@@ -1,5 +1,6 @@
 * @aws/aws-ides-team
-packages/toolkit/src/codewhisperer/ @aws/codewhisperer-team
-packages/toolkit/src/amazonqFeatureDev/ @aws/earlybird
-packages/toolkit/src/codewhispererChat/ @aws/aws-mynah
-packages/toolkit/src/amazonq/ @aws/aws-mynah
+packages/core/src/codewhisperer/ @aws/codewhisperer-team
+packages/core/src/amazonqFeatureDev/ @aws/earlybird
+packages/core/src/codewhispererChat/ @aws/dexp
+packages/core/src/amazonq/ @aws/dexp
+packages/core/src/accessanalyzer/ @aws/access-analyzer

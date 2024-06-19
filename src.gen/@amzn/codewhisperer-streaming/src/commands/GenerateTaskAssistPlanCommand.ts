@@ -97,6 +97,53 @@ export interface GenerateTaskAssistPlanCommandOutput extends GenerateTaskAssistP
  *                   },
  *                 },
  *               },
+ *               relevantDocuments: [ // RelevantDocumentList
+ *                 { // RelevantTextDocument
+ *                   relativeFilePath: "STRING_VALUE", // required
+ *                   programmingLanguage: {
+ *                     languageName: "STRING_VALUE", // required
+ *                   },
+ *                   text: "STRING_VALUE",
+ *                   documentSymbols: [
+ *                     {
+ *                       name: "STRING_VALUE", // required
+ *                       type: "DECLARATION" || "USAGE", // required
+ *                       source: "STRING_VALUE",
+ *                     },
+ *                   ],
+ *                 },
+ *               ],
+ *             },
+ *             shellState: { // ShellState
+ *               shellName: "STRING_VALUE", // required
+ *               shellHistory: [ // ShellHistory
+ *                 { // ShellHistoryEntry
+ *                   command: "STRING_VALUE", // required
+ *                   directory: "STRING_VALUE",
+ *                   exitCode: Number("int"),
+ *                   stdout: "STRING_VALUE",
+ *                   stderr: "STRING_VALUE",
+ *                 },
+ *               ],
+ *             },
+ *             gitState: { // GitState
+ *               status: "STRING_VALUE",
+ *             },
+ *             envState: { // EnvState
+ *               operatingSystem: "STRING_VALUE",
+ *               currentWorkingDirectory: "STRING_VALUE",
+ *               environmentVariables: [ // EnvironmentVariables
+ *                 { // EnvironmentVariable
+ *                   key: "STRING_VALUE",
+ *                   value: "STRING_VALUE",
+ *                 },
+ *               ],
+ *             },
+ *             appStudioContext: { // AppStudioState
+ *               namespace: "STRING_VALUE", // required
+ *               propertyName: "STRING_VALUE", // required
+ *               propertyValue: "STRING_VALUE",
+ *               propertyContext: "STRING_VALUE", // required
  *             },
  *             diagnostic: { // Diagnostic Union: only one key present
  *               textDocumentDiagnostic: { // TextDocumentDiagnostic
@@ -178,6 +225,53 @@ export interface GenerateTaskAssistPlanCommandOutput extends GenerateTaskAssistP
  *                 end: "<Position>", // required
  *               },
  *             },
+ *             relevantDocuments: [
+ *               {
+ *                 relativeFilePath: "STRING_VALUE", // required
+ *                 programmingLanguage: {
+ *                   languageName: "STRING_VALUE", // required
+ *                 },
+ *                 text: "STRING_VALUE",
+ *                 documentSymbols: [
+ *                   {
+ *                     name: "STRING_VALUE", // required
+ *                     type: "DECLARATION" || "USAGE", // required
+ *                     source: "STRING_VALUE",
+ *                   },
+ *                 ],
+ *               },
+ *             ],
+ *           },
+ *           shellState: {
+ *             shellName: "STRING_VALUE", // required
+ *             shellHistory: [
+ *               {
+ *                 command: "STRING_VALUE", // required
+ *                 directory: "STRING_VALUE",
+ *                 exitCode: Number("int"),
+ *                 stdout: "STRING_VALUE",
+ *                 stderr: "STRING_VALUE",
+ *               },
+ *             ],
+ *           },
+ *           gitState: {
+ *             status: "STRING_VALUE",
+ *           },
+ *           envState: {
+ *             operatingSystem: "STRING_VALUE",
+ *             currentWorkingDirectory: "STRING_VALUE",
+ *             environmentVariables: [
+ *               {
+ *                 key: "STRING_VALUE",
+ *                 value: "STRING_VALUE",
+ *               },
+ *             ],
+ *           },
+ *           appStudioContext: {
+ *             namespace: "STRING_VALUE", // required
+ *             propertyName: "STRING_VALUE", // required
+ *             propertyValue: "STRING_VALUE",
+ *             propertyContext: "STRING_VALUE", // required
  *           },
  *           diagnostic: {//  Union: only one key present
  *             textDocumentDiagnostic: {
@@ -227,6 +321,7 @@ export interface GenerateTaskAssistPlanCommandOutput extends GenerateTaskAssistP
  *       },
  *     },
  *     chatTriggerType: "MANUAL" || "DIAGNOSTIC", // required
+ *     customizationArn: "STRING_VALUE",
  *   },
  *   workspaceState: { // WorkspaceState
  *     uploadId: "STRING_VALUE", // required
@@ -292,6 +387,9 @@ export interface GenerateTaskAssistPlanCommandOutput extends GenerateTaskAssistP
  *
  * @throws {@link InternalServerException} (server fault)
  *  This exception is thrown when an unexpected error occurred during the processing of a request.
+ *
+ * @throws {@link ServiceQuotaExceededException} (client fault)
+ *  This exception is thrown when request was denied due to caller exceeding their usage limits
  *
  * @throws {@link ThrottlingException} (client fault)
  *  This exception is thrown when request was denied due to request throttling.

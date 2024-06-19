@@ -1,0 +1,30 @@
+{
+	"date": "2024-02-29",
+	"version": "2.12.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q: Static analysis of document symbols used as context in Amazon Q requests must filter tree-sitter \"extra\" CST nodes (comments) in order to avoid crashes which freeze the chat panel"
+		},
+		{
+			"type": "Feature",
+			"description": "Enable node 20 for SAM create and local Lambda debugging"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q CodeTransform: show link to documentation after errors"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: Improve percentage code written metrics to include user multi character input"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: Add startUrl to security scan telemetry"
+		},
+		{
+			"type": "Feature",
+			"description": "UI: Improve text description in login page"
+		}
+	]
+}

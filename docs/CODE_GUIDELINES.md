@@ -117,7 +117,7 @@ that is a net cost.
 
 ### Exceptions
 
-_See also [ARCHITECTURE.md](./ARCHITECTURE.md#exceptions)._
+_See also [arch_develop.md](./arch_develop.md#exceptions)._
 
 -   Bubble-up error conditions, do not sink them to random hidden places (such as
     logs only), expecting callers to figure out the failure mode. If a caller
@@ -183,7 +183,7 @@ _See also [ARCHITECTURE.md](./ARCHITECTURE.md#exceptions)._
 
     -   [Testing Refresh Button](https://github.com/aws/aws-toolkit-vscode/blob/b34c8f7650c862c388992781844695b014b5d974/src/test/shared/ui/prompters/rolePrompter.test.ts#L58-L65)
 
--   Use [`testCommand`](../packages/toolkit/src/test/shared/vscode/testUtils.ts) for testing commands created by `Commands.declare`
+-   Use [`testCommand`](../packages/core/src/test/shared/vscode/testUtils.ts) for testing commands created by `Commands.declare`
     -   Prefer executing the real command directly when possible
 
 ## Code guidelines

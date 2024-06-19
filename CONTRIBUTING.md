@@ -9,8 +9,9 @@ codebase and sending pull requests.
 ## Getting Started
 
 This project is set up as a typescript monorepo. The documentation throughout this project
-is referring to the subproject in [`packages/toolkit/`](./packages/toolkit/). For more information,
-see [ARCHITECTURE.md](./docs/ARCHITECTURE.md#monorepo-structure)
+is referring to the subprojects [`packages/toolkit/`](./packages/toolkit/) and [`packages/core/`](./packages/core/).
+See [arch_develop.md](./docs/arch_develop.md#monorepo-structure) to understand the
+structure of this package before contributing.
 
 ### Find things to do
 
@@ -28,7 +29,8 @@ To develop this project, install these dependencies:
 -   [Git](https://git-scm.com/downloads)
     -   (optional) Set `git blame` to ignore noise-commits: `git config blame.ignoreRevsFile .git-blame-ignore-revs`
 -   [AWS `git secrets`](https://github.com/awslabs/git-secrets)
--   (required for Web mode) [TypeScript + Webpack Problem Matcher](https://marketplace.visualstudio.com/items?itemName=amodio.tsl-problem-matcher)
+-   [TypeScript + Webpack Problem Matcher](https://marketplace.visualstudio.com/items?itemName=amodio.tsl-problem-matcher)
+    -   Not installing will result in the following error during building: `Error: Invalid problemMatcher reference: $ts-webpack-watch`
 -   (optional) [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
 -   (optional) [Docker](https://docs.docker.com/get-docker/)
 
@@ -40,8 +42,8 @@ Then clone the repository and install NPM packages:
 
 ### Run
 
-Due to the monorepo structure of the project, you can run the extension in VSCode by either opening the
-`aws-toolkit-vscode/packages/toolkit` folder directly, or adding it as a root folder in the VSCode Workspace.
+Due to the monorepo structure of the project, you must have the `aws-toolkit-vscode/packages/toolkit` folder open as root folder in the workspace.
+The easiest way to open the project: File > Open Workspace from File > choose `aws-toolkit-vscode/aws-toolkit-vscode.code-workspace`
 
 To run the extension from VSCode as a Node.js app:
 
@@ -87,6 +89,7 @@ You can also use these NPM tasks (see `npm run` for the full list):
 
 ### Guidelines
 
+-   Architecture: [arch_overview.md](./docs/arch_overview.md)
 -   Project patterns and practices: [CODE_GUIDELINES.md](./docs/CODE_GUIDELINES.md)
 -   [VS Code Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
     -   [Webview guidance](https://code.visualstudio.com/api/ux-guidelines/webviews)
@@ -161,9 +164,8 @@ See [web.md](./docs/web.md) for working with the web mode implementation of the 
 See [TESTPLAN.md](./docs/TESTPLAN.md) to understand the project's test
 structure, mechanics and philosophy.
 
-You can run tests directly from VSCode. Due to the monorepo structure of the project, you must either open
-the `aws-toolkit-vscode/packages/toolkit/` folder directly, or add it as a root folder in the VSCode Workspace.
-Then:
+You can run tests directly from VSCode. Due to the monorepo structure of the project, you must have the `aws-toolkit-vscode/packages/toolkit` folder open as root folder in the workspace.
+The easiest way to open the project: File > Open Workspace from File > choose `aws-toolkit-vscode/aws-toolkit-vscode.code-workspace`
 
 1. Select `View > Debug`, or select the Debug pane from the sidebar.
 2. From the dropdown at the top of the Debug pane, select the `Extension Tests` configuration.
@@ -247,26 +249,30 @@ To send a pull request:
 
 ### Changelog
 
-Pull requests that change customer-facing behavior (in any _describable_ way) should include
-a changelog item(s). Update the changelog via:
+Pull requests that change **customer-impacting behavior** must include a changelog item(s). Run one
+or both of the following commands:
 
-    npm run newChange
+    # For changes relevant to Amazon Q:
+    npm run newChange -w packages/amazonq
+
+    # For changes relevant to AWS Toolkit:
+    npm run newChange -w packages/toolkit
 
 > [!TIP]
-> To update an _existing_ changelog item, just edit its `.changes/next-release/….json` file, you
-> don't need to re-run `npm run newChange`.
-
-Guidelines:
-
--   If there are multiple unrelated changes, run `npm run newChange` for each change.
--   Describe the change in a way that is meaningful to the _customer_.
-    -   ❌ `Remove the cache when the connection wizard is re-launched`
-    -   ✅ `Connection wizard sometimes shows the old (stale) connection`
--   "Bug Fix" changes should describe the _problem being fixed_. This tends to produce simpler,
-    more-intuitive descriptions. It's redundant to say "Fixed" in the description, because the
-    generated changelog will say that. Example:
-    -   ❌ `Fixed S3 bug which caused filenames to be uppercase`
-    -   ✅ `S3 filenames are always uppercase`
+>
+> -   Describe the change in a way that is _meaningful to the customer_. If you can't describe the _customer impact_ then it probably shouldn't be in the changelog.
+>     -   ❌ `Update telemetry definitions` (not customer-impacting)
+>     -   ✅ `Faster startup after VSCode restarts`
+>     -   ❌ `Remove the cache when the connection wizard is re-launched` (code internals are not relevant to customers)
+>     -   ✅ `Connection wizard sometimes shows the old (stale) connection`
+> -   "Bug Fix" changes should describe the _problem being fixed_. This tends to produce simpler,
+>     more-intuitive descriptions. It's redundant to say "Fixed" in the description, because the
+>     generated changelog will say that. Example:
+>     -   ❌ `Fixed S3 bug which caused filenames to be uppercase`
+>     -   ✅ `S3 filenames are always uppercase`
+> -   To update an _existing_ changelog item, just edit its `.changes/next-release/….json` file, you don't need to re-run `npm run newChange`.
+> -   If there are multiple unrelated changes, run `npm run newChange` for each change.
+> -   Include the feature that the change affects, Q, CodeWhisperer, etc.
 
 ### Commit messages
 
@@ -314,9 +320,14 @@ The `aws.dev.forceDevMode` setting enables or disables Toolkit "dev mode". Witho
 
 ### Logging
 
--   Use the `aws.dev.logfile` setting to set the logfile path to a fixed location, so you can easily
-    follow and filter the logfile using shell tools like `tail` and `grep`. For example in
-    settings.json,
+-   Use `getLogger()` to log debugging messages, warnings, etc.
+    -   Example: `getLogger().error('topic: widget failed: %O', { foo: 'bar', baz: 42 })`
+-   Log messages are written to the extension Output channel, which you can view in vscode by visiting the "Output" panel and selecting `AWS Toolkit Logs` or `Amazon Q Logs`.
+-   While viewing the Output channel (`AWS Toolkit Logs` or `Amazon Q Logs`) in vscode:
+    -   Click the "gear" icon to [select a log level](https://github.com/aws/aws-toolkit-vscode/pull/4859) ("Debug", "Info", "Error", …).
+    -   Click the "..." icon to open the log file.
+-   Use the `aws.dev.logfile` setting to set the logfile path to a fixed location, so you can follow
+    and filter logs using shell tools like `tail` and `grep`. For example in settings.json,
     ```
     "aws.dev.logfile": "~/awstoolkit.log",
     ```
@@ -327,7 +338,6 @@ The `aws.dev.forceDevMode` setting enables or disables Toolkit "dev mode". Witho
 -   Use the `AWS (Developer): Watch Logs` command to watch and filter Toolkit logs (including
     telemetry) in VSCode.
     -   Only available if you enabled "dev mode" (`aws.dev.forceDevMode` setting, see above).
-    -   Sets `aws.logLevel` to "debug".
     -   Enter text in the Debug Console filter box to show only log messages with that text. <br/>
         <img src="./docs/images/debug-console-filter.png" alt="VSCode Debug Console" width="320"/>
 
@@ -420,7 +430,7 @@ Unlike the user setting overrides, not all of these environment variables have t
 
 #### Lambda
 
--   `AUTH_UTIL_LAMBDA_ARN`: The Amazon Resource Name (ARN) of the lambda function
+-   `AUTH_UTIL_LAMBDA_ARN`: The Auth Util Lambda is used to log into using Builder ID/IdC automatically when running e2e tests. This is the arn that points to the auth util lambda.
 
 #### ECS
 
@@ -436,8 +446,10 @@ Unlike the user setting overrides, not all of these environment variables have t
 -   `GITHUB_ACTION`: The name of the current GitHub Action workflow step that is running
 -   `CODEBUILD_BUILD_ID`: The unique ID of the current CodeBuild build that is executing
 -   `AWS_TOOLKIT_AUTOMATION`: If tests are currently being ran
--   `DEVELOPMENT_PATH`: The path to the aws toolkit vscode project
+-   `TEST_SSO_STARTURL`: The start url you want to use on E2E tests
+-   `TEST_SSO_REGION`: The region for the start url you want to use on E2E tests
 -   `AWS_TOOLKIT_TEST_NO_COLOR`: If the tests should include colour in their output
+-   `DEVELOPMENT_PATH`: The path to the aws toolkit vscode project
 -   `TEST_DIR` - The directory where the test runner should find the tests
 
 ### SAM/CFN ("goformation") JSON schema
@@ -515,7 +527,13 @@ requests just from the model/types.
 
 ### Webview dev-server
 
-Webviews can be hot-reloaded (updated without restarting the extension) by running a developer server provided by webpack. This server is started automatically when running the `Extension` launch configuration. You can also start it by running `npm serve`. Note that only frontend components will be updated; if you change backend code you will still need to restart the development extension.
+Webviews can be refreshed to show changes to `.vue` code when running in Debug mode. You do not have to
+reload the Debug VS Code window.
+
+-   Use `Command Palette` -> `Reload Webviews`
+-   Only the frontend `.vue` changes will be reflected. If changing any backend code you must restart Debug mode.
+
+This works by continuously building the final Vue webview files (`webpack watch`) and then serving them through a local server (`webpack serve`). Whenever a webview is loaded it will grab the latest build from the server.
 
 ### Font generation
 
@@ -534,8 +552,7 @@ As a simple example, let's say I wanted to add a new icon for CloudWatch log str
 ### VSCode Marketplace
 
 The [marketplace page](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.aws-toolkit-vscode)
-is defined in `README.quickstart.vscode.md` (which replaces `README.md` during
-the release automation). The `vsce` package tool always [replaces relative image paths](https://github.com/microsoft/vscode-vsce/blob/9478dbd11ea2e7adb23ec72923e889c7bb215263/src/package.ts#L885)
+is defined in `packages/toolkit/README.md`. The `vsce` package tool always [replaces relative image paths](https://github.com/microsoft/vscode-vsce/blob/9478dbd11ea2e7adb23ec72923e889c7bb215263/src/package.ts#L885)
 with URLs pointing to `HEAD` on GitHub (`https://github.com/aws/aws-toolkit-vscode/raw/HEAD/…/foo.gif`).
 
 Note therefore:
@@ -595,6 +612,9 @@ There are several ways to make pre-production changes available on a "preview" o
     also forces the Toolkit to declare version `99.0` (since "private beta" has no semver and to
     avoid unwanted auto-updating from VSCode marketplace). Beta builds of the Toolkit automatically
     query the URL once per session per day.
+    -   Beta users may want to run the `Extensions: Disable Auto Update for All Extensions` command
+        [disable VSCode's auto-update feature](https://code.visualstudio.com/docs/editor/extension-marketplace#_extension-autoupdate),
+        to avoid ovewriting the beta Toolkit with the marketplace release.
 
 ## Code of Conduct
 

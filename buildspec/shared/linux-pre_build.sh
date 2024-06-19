@@ -22,4 +22,5 @@ if [ "$TOOLKITS_CODEARTIFACT_DOMAIN" ] && [ "$TOOLKITS_CODEARTIFACT_REPO" ] && [
 fi
 
 # TODO: move this to the "install" phase?
+export NODE_OPTIONS=--max-old-space-size=8192
 npm 2>&1 ci | run_and_report 2 'npm WARN deprecated' 'Deprecated dependencies must be updated.'

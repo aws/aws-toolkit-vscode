@@ -2,9 +2,9 @@
 // If you are looking for the base config for subprojects, see packages/tsconfig.packages.json
 {
     "compilerOptions": {
-        "module": "commonjs",
+        "module": "node16",
         "target": "es2021",
-        "moduleResolution": "node",
+        "moduleResolution": "node16",
         "rootDir": ".",
         "resolveJsonModule": true,
         "strict": true,

@@ -1,0 +1,14 @@
+{
+	"date": "2024-04-30",
+	"version": "3.1.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Installation error when installing amazon q in remote AND you have the extension locally"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Application Composer: Support template file watching outside of the workspace."
+		}
+	]
+}

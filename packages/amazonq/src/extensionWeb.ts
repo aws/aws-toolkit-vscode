@@ -3,11 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import { activateShared } from './extensionShared'
+import type { ExtensionContext } from 'vscode'
+import { activateWebShared } from 'aws-core-vscode/webShared'
+import { activateAmazonQCommon, deactivateCommon } from './extensionCommon'
 
-export async function activate(context: vscode.ExtensionContext) {
-    await activateShared()
+export async function activate(context: ExtensionContext) {
+    await activateWebShared(context)
+    await activateAmazonQCommon(context, true)
 }
 
-export async function deactivate() {}
+export async function deactivate() {
+    await deactivateCommon()
+}
