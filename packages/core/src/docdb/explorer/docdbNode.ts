@@ -27,7 +27,7 @@ export class DocumentDBNode extends AWSTreeNodeBase {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 const clusters = await this.client.listClusters()
-                return clusters.map(cluster => new DBClusterNode(cluster))
+                return clusters.map(cluster => new DBClusterNode(cluster, this.client))
             },
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.docdb.noClusters', '[No Clusters found]')),
