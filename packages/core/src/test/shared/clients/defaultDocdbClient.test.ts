@@ -5,7 +5,6 @@
 
 import assert from 'assert'
 import sinon, { SinonStub } from 'sinon'
-import { ToolkitError } from '../../../shared/errors'
 import { DefaultDocumentDBClient, DocumentDBClient } from '../../../shared/clients/docdbClient'
 
 describe('DefaultDocumentDBClient', function () {
@@ -17,6 +16,7 @@ describe('DefaultDocumentDBClient', function () {
         sdkStub = sinon.stub().resolves({
             send: sinon.stub().resolves({
                 DBClusters: [],
+                DBInstances: [],
             }),
         })
     })
@@ -44,6 +44,26 @@ describe('DefaultDocumentDBClient', function () {
             })
 
             await assert.rejects(async () => await client.listClusters())
+        })
+    })
+
+    describe('listInstance', function () {
+        it('gets a list of instances', async function () {
+            const client = createClient()
+            const result = await client.listInstances()
+
+            assert.ok(result)
+            assert.equal(0, result.length)
+            assert(sdkStub.calledOnce)
+        })
+
+        it('throws an Error on failure', async function () {
+            const client = createClient()
+            client.getClient = sinon.stub().resolves({
+                send: sinon.stub().throws(),
+            })
+
+            await assert.rejects(async () => await client.listInstances())
         })
     })
 })
