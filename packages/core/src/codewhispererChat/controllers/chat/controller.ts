@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { Event as VSCodeEvent, Uri } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
@@ -550,10 +551,23 @@ export class ChatController {
                 userIntentEnableProjectContext = true
                 triggerPayload.message = triggerPayload.message.slice(10)
             }
-            if (CodeWhispererSettings.instance.isLocalIndexEnabled() && userIntentEnableProjectContext) {
-                triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
-                if (triggerPayload.relevantTextDocuments.length > 0) {
-                    triggerPayload.hasProjectLevelContext = true
+            if (userIntentEnableProjectContext) {
+                if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
+                    triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
+                    if (triggerPayload.relevantTextDocuments.length > 0) {
+                        triggerPayload.hasProjectLevelContext = true
+                    }
+                } else {
+                    void vscode.window
+                        .showInformationMessage('Please enable local indexing in Settings', 'Open Settings')
+                        .then(resp => {
+                            if (resp === 'Open Settings') {
+                                void vscode.commands.executeCommand(
+                                    'workbench.action.openSettings',
+                                    `@id:amazonQ.amazonQ.localWorkspaceIndex`
+                                )
+                            }
+                        })
                 }
             }
         }

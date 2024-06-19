@@ -69,7 +69,7 @@ export async function activate(context: ExtensionContext) {
         appInitContext.onDidChangeAmazonQVisibility.event,
         Auth.instance.onDidChangeConnectionState
     )
-    LspController.instance.trySetupLsp(context)
+    void LspController.instance.trySetupLsp(context)
 }
 
 function registerApps(appInitContext: AmazonQAppInitContext) {
