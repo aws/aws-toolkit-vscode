@@ -10,11 +10,14 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as nls from 'vscode-nls'
+import * as cp from 'child_process'
+import * as crypto from 'crypto'
 
 import { Disposable, ExtensionContext } from 'vscode'
 
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient'
 import { ClearRequestType, IndexRequestType, QueryRequestType } from './types'
+import { Writable } from 'stream'
 
 const localize = nls.loadMessageBundle()
 let client: LanguageClient | undefined = undefined
@@ -49,6 +52,16 @@ export async function getUsage() {
     }
 }
 
+const identityKey = crypto.randomBytes(32).toString('base64')
+
+export function writeEncryptionInit(stream: Writable): void {
+    const request = {
+        key: identityKey,
+    }
+    stream.write(JSON.stringify(request))
+    stream.write('\n')
+}
+
 export async function activate(extensionContext: ExtensionContext) {
     const toDispose = extensionContext.subscriptions
 
@@ -57,14 +70,19 @@ export async function activate(extensionContext: ExtensionContext) {
     let serverModule = path.join(extensionContext.extensionPath, 'resources/qserver/lspServer.js')
     // The debug options for the server
     // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
-    const debugOptions = { execArgv: ['--nolazy', '--inspect=6009', '--preserve-symlinks'] }
+    const debugOptions = { execArgv: ['--nolazy', '--inspect=6009', '--preserve-symlinks', '--stdio'] }
+
+    const child = cp.spawn('node', [serverModule, ...debugOptions.execArgv])
+    writeEncryptionInit(child.stdin)
 
     // If the extension is launch in debug mode the debug server options are use
     // Otherwise the run options are used
-    const serverOptions: ServerOptions = {
+    let serverOptions: ServerOptions = {
         run: { module: serverModule, transport: TransportKind.ipc },
         debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions },
     }
+
+    serverOptions = () => Promise.resolve(child)
 
     const documentSelector = [{ scheme: 'file', language: '*' }]
 

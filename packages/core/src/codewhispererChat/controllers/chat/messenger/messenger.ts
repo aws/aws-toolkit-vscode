@@ -126,7 +126,7 @@ export class Messenger {
             )
         }
         this.telemetryHelper.setResponseStreamStartTime(tabID)
-        if (triggerPayload.hasProjectLevelContext) {
+        if (triggerPayload.relevantTextDocuments && triggerPayload.relevantTextDocuments.length > 0) {
             this.telemetryHelper.setResponseFromRequestWithProjectContext(messageID)
         }
 

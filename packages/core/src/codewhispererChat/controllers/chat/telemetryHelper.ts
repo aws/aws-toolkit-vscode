@@ -299,7 +299,10 @@ export class CWCTelemetryHelper {
         }
     }
 
-    public recordStartConversation(triggerEvent: TriggerEvent, triggerPayload: TriggerPayload) {
+    public recordStartConversation(
+        triggerEvent: TriggerEvent,
+        triggerPayload: TriggerPayload & { projectContextQueryLatencyMs?: number }
+    ) {
         if (triggerEvent.tabID === undefined) {
             return
         }
@@ -319,7 +322,10 @@ export class CWCTelemetryHelper {
             cwsprChatHasCodeSnippet: triggerPayload.codeSelection && !triggerPayload.codeSelection.isEmpty,
             cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
             credentialStartUrl: AuthUtil.instance.startUrl,
-            cwsprChatHasProjectLevelContext: triggerPayload.hasProjectLevelContext,
+            cwsprChatHasProjectLevelContext: triggerPayload.relevantTextDocuments
+                ? triggerPayload.relevantTextDocuments.length > 0
+                : false,
+            cwsprChatProjectLevelContextQueryLatencyInMs: triggerPayload.projectContextQueryLatencyMs,
         })
     }
 
@@ -348,7 +354,9 @@ export class CWCTelemetryHelper {
             cwsprChatResponseLength: message.messageLength,
             cwsprChatConversationType: 'Chat',
             credentialStartUrl: AuthUtil.instance.startUrl,
-            cwsprChatHasProjectLevelContext: triggerPayload.hasProjectLevelContext,
+            cwsprChatHasProjectLevelContext: triggerPayload.relevantTextDocuments
+                ? triggerPayload.relevantTextDocuments.length > 0
+                : false,
         }
 
         telemetry.amazonq_addMessage.emit(event)
@@ -370,7 +378,9 @@ export class CWCTelemetryHelper {
                         requestLength: event.cwsprChatRequestLength,
                         responseLength: event.cwsprChatResponseLength,
                         numberOfCodeBlocks: event.cwsprChatResponseCodeSnippetCount,
-                        hasProjectLevelContext: triggerPayload.hasProjectLevelContext,
+                        hasProjectLevelContext: triggerPayload.relevantTextDocuments
+                            ? triggerPayload.relevantTextDocuments.length > 0
+                            : false,
                     },
                 },
             })

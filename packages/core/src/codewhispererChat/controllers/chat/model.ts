@@ -140,7 +140,6 @@ export interface TriggerPayload {
     readonly codeQuery: CodeQuery | undefined
     readonly userIntent: UserIntent | undefined
     relevantTextDocuments?: RelevantTextDocument[]
-    hasProjectLevelContext?: boolean
 }
 
 export interface InsertedCode {

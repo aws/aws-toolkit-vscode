@@ -540,7 +540,10 @@ export class ChatController {
         this.messenger.sendStaticTextResponse(responseType, triggerID, tabID)
     }
 
-    private async generateResponse(triggerPayload: TriggerPayload, triggerID: string) {
+    private async generateResponse(
+        triggerPayload: TriggerPayload & { projectContextQueryLatencyMs?: number },
+        triggerID: string
+    ) {
         // Loop while we waiting for tabID to be set
         if (triggerPayload.message) {
             let userIntentEnableProjectContext = false
@@ -553,10 +556,9 @@ export class ChatController {
             }
             if (userIntentEnableProjectContext) {
                 if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
+                    const start = performance.now()
                     triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
-                    if (triggerPayload.relevantTextDocuments.length > 0) {
-                        triggerPayload.hasProjectLevelContext = true
-                    }
+                    triggerPayload.projectContextQueryLatencyMs = performance.now() - start
                 } else {
                     void vscode.window
                         .showInformationMessage('Please enable local indexing in Settings', 'Open Settings')

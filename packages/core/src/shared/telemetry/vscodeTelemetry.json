@@ -160,6 +160,26 @@
             "description": "true if query has project level context."
         },
         {
+            "name": "cwsprChatProjectLevelContextQueryLatencyInMs",
+            "type": "int",
+            "description": "query latency in ms for local project context"
+        },
+        {
+            "name": "amazonqIndexFileSizeInMB",
+            "type": "int",
+            "description": "Index size in MB"
+        },
+        {
+            "name": "amazonqIndexFileCount",
+            "type": "int",
+            "description": "Files indexed"
+        },
+        {
+            "name": "amazonqIndexMemoryUsageInMB",
+            "type": "int",
+            "description": "Memory usage of index"
+        },
+        {
             "name": "cwsprChatProgrammingLanguage",
             "type": "string",
             "description": "Programming language associated with the message"
@@ -726,6 +746,31 @@
                 {
                     "type": "cwsprChatHasProjectLevelContext",
                     "required": false
+                },
+                {
+                    "type": "cwsprChatProjectLevelContextQueryLatencyInMs",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_indexWorkspace",
+            "description": "Indexing of local workspace",
+            "metadata": [
+                {
+                    "type": "duration"
+                },
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "amazonqIndexFileSizeInMB"
+                },
+                {
+                    "type": "amazonqIndexFileCount"
+                },
+                {
+                    "type": "amazonqIndexMemoryUsageInMB"
                 }
             ]
         },

@@ -17,6 +17,7 @@ import { RelevantTextDocument } from '@amzn/codewhisperer-streaming'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
 import { activate as activateLsp } from './lspClient'
+import { telemetry } from '../../shared/telemetry'
 
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -207,9 +208,13 @@ export class LspController {
 
     async buildIndex() {
         getLogger().debug(`LspController: Starting to build vector index of project`)
+        const start = performance.now()
         const projPaths = getProjectPaths()
         projPaths.sort()
-        if (projPaths.length > 0) {
+        try {
+            if (projPaths.length === 0) {
+                throw Error('No project')
+            }
             const projRoot = projPaths[0]
             const files = await collectFilesForIndex(
                 projPaths,
@@ -224,6 +229,22 @@ export class LspController {
                 false
             )
             getLogger().debug(`LspController: Finish building vector index of project`)
+            telemetry.amazonq_indexWorkspace.emit({
+                duration: performance.now() - start,
+                result: 'Succeeded',
+                amazonqIndexFileCount: files.length,
+                amazonqIndexMemoryUsageInMB: 0,
+                amazonqIndexFileSizeInMB: 0,
+            })
+        } catch (e) {
+            getLogger().error(`LspController: Failed to build vector index of project`)
+            telemetry.amazonq_indexWorkspace.emit({
+                duration: performance.now() - start,
+                result: 'Failed',
+                amazonqIndexFileCount: 0,
+                amazonqIndexMemoryUsageInMB: 0,
+                amazonqIndexFileSizeInMB: 0,
+            })
         }
     }
 
