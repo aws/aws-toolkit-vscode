@@ -2,8 +2,11 @@
     <div
         class="item-container-base"
         tabindex="0"
-        :class="{ selected: isSelected, hovering: isHovering }"
+        :class="{ selected: isSelected, hovering: isHovering, focussed: isFocused }"
+        :title="itemTitle"
+        @blur="hideFocus"
         @click="toggleSelection"
+        @focus="showFocus"
         @keydown.enter="toggleSelection"
         @mouseover="isHovering = true"
         @mouseout="isHovering = false"
@@ -56,7 +59,7 @@
             </svg>
         </div>
         <div class="text">
-            <div class="title" :title="itemTitle">{{ itemTitle }}</div>
+            <div class="title">{{ itemTitle }}</div>
             <div class="p" v-if="itemText" :title="itemText">{{ itemText }}</div>
         </div>
     </div>
@@ -83,6 +86,7 @@ export default defineComponent({
             itemText: this.itemText,
             isSelected: this.isSelected,
             isHovering: false,
+            isFocused: false,
 
             // v-ifs above should be based on itemId with LoginOption, but that doesn't cover existing connections whose LoginOption > than the max option
             LoginOption,
@@ -92,6 +96,16 @@ export default defineComponent({
     methods: {
         toggleSelection() {
             this.$emit('toggle', this.itemId)
+        },
+        hideFocus(event: Event) {
+            event.stopPropagation()
+            this.isFocused = false
+        },
+        showFocus(event: Event) {
+            event.stopPropagation()
+            if (!this.isHovering) {
+                this.isFocused = true
+            }
         },
     },
 })
@@ -106,6 +120,29 @@ export default defineComponent({
     user-select: none;
     /* Some items do not have itemText, so we need a consistent height for all items */
     height: 50px;
+    position: relative;
+}
+.item-container-base.focussed::before {
+    content: attr(title);
+    cursor: default;
+    display: block;
+    font-size: var(--font-size-sm);
+    height: auto;
+    max-width: 130px;
+    padding: 5px;
+    position: absolute;
+    right: 0;
+    transform: translate(0, -100%);
+    word-break: break-all;
+}
+
+.vscode-dark .item-container-base.focussed:before {
+    background-color: white;
+    color: rgba(0, 0, 0, 0.8);
+}
+.vscode-light .item-container-base.focussed:before {
+    background-color: black;
+    color: rgba(255, 255, 255, 0.8);
 }
 
 .hovering {
