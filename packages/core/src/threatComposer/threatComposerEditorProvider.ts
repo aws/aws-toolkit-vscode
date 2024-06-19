@@ -124,43 +124,36 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         webviewPanel: vscode.WebviewPanel,
         _token: vscode.CancellationToken
     ): Promise<void> {
-        const threatComposerSettings = vscode.workspace.getConfiguration('aws').threatComposer
+        await telemetry.threatComposer_opened.run(async span => {
+            if (!this.webviewHtml) {
+                await this.fetchWebviewHtml()
+            }
 
-        if (threatComposerSettings.defaultEditor) {
-            await telemetry.threatComposer_opened.run(async span => {
-                if (!this.webviewHtml) {
-                    await this.fetchWebviewHtml()
+            if (clientId === '') {
+                clientId = getClientId(globals.context.globalState)
+            }
+            // Attempt to retrieve existing visualization if it exists.
+            const existingVisualization = this.getExistingVisualization(document.uri.fsPath)
+            if (existingVisualization) {
+                existingVisualization.showPanel()
+            } else {
+                // Existing visualization does not exist, construct new visualization
+                try {
+                    const fileId = getStringHash(`${document.uri.fsPath}${clientId}`)
+                    const newVisualization = new ThreatComposerEditor(
+                        document,
+                        webviewPanel,
+                        this.extensionContext,
+                        fileId,
+                        this.getWebviewContent
+                    )
+                    this.handleNewVisualization(document.uri.fsPath, newVisualization)
+                } catch (err) {
+                    this.handleErr(err as Error)
+                    throw new ToolkitError((err as Error).message, { code: 'Failed to Open Threat Composer' })
                 }
-
-                if (clientId === '') {
-                    clientId = getClientId(globals.context.globalState)
-                }
-                // Attempt to retrieve existing visualization if it exists.
-                const existingVisualization = this.getExistingVisualization(document.uri.fsPath)
-                if (existingVisualization) {
-                    existingVisualization.showPanel()
-                } else {
-                    // Existing visualization does not exist, construct new visualization
-                    try {
-                        const fileId = getStringHash(`${document.uri.fsPath}${clientId}`)
-                        const newVisualization = new ThreatComposerEditor(
-                            document,
-                            webviewPanel,
-                            this.extensionContext,
-                            fileId,
-                            this.getWebviewContent
-                        )
-                        this.handleNewVisualization(document.uri.fsPath, newVisualization)
-                    } catch (err) {
-                        this.handleErr(err as Error)
-                        throw new ToolkitError((err as Error).message, { code: 'Failed to Open Threat Composer' })
-                    }
-                }
-            })
-        } else {
-            await vscode.commands.executeCommand('vscode.openWith', document.uri, 'default')
-            webviewPanel.dispose()
-        }
+            }
+        })
     }
 
     protected handleErr(err: Error): void {
