@@ -29,6 +29,8 @@ import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { AuthUtil } from '../codewhisperer'
 import { ConnectionStateChangeEvent } from '../auth/auth'
 import { telemetry } from '../shared/telemetry'
+import { CodeWhispererSettings } from '../codewhisperer/util/codewhispererSettings'
+import { debounce } from '../shared/utilities/functionUtils'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = DefaultAmazonQAppInitContext.instance
@@ -57,7 +59,17 @@ export async function activate(context: ExtensionContext) {
         listCodeWhispererCommandsWalkthrough.register(),
         focusAmazonQPanel.register(),
         focusAmazonQPanelKeybinding.register(),
-        tryChatCodeLensCommand.register()
+        tryChatCodeLensCommand.register(),
+        vscode.workspace.onDidChangeConfiguration(async configurationChangeEvent => {
+            if (configurationChangeEvent.affectsConfiguration('amazonQ.localWorkspaceIndex')) {
+                if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
+                    const setupLsp = debounce(async () => {
+                        void LspController.instance.trySetupLsp(context)
+                    }, 5000)
+                    void setupLsp()
+                }
+            }
+        })
     )
 
     Commands.register('aws.amazonq.learnMore', () => {

@@ -70,8 +70,6 @@ import { securityScanLanguageContext } from './util/securityScanLanguageContext'
 import { registerWebviewErrorHandler } from '../webviews/server'
 import { logAndShowWebviewError } from '../shared/utilities/logAndShowUtils'
 import { openSettings } from '../shared/settings'
-import { LspController } from '../amazonq/lsp/lspController'
-import { debounce } from '../shared/utilities/functionUtils'
 
 let localize: nls.LocalizeFunc
 
@@ -181,15 +179,6 @@ export async function activate(context: ExtContext): Promise<void> {
 
             if (configurationChangeEvent.affectsConfiguration('http.proxy')) {
                 updateUserProxyUrl()
-            }
-
-            if (configurationChangeEvent.affectsConfiguration('amazonQ.localWorkspaceIndex')) {
-                if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
-                    const setupLsp = debounce(async () => {
-                        void LspController.instance.trySetupLsp(context.extensionContext)
-                    }, 5000)
-                    void setupLsp()
-                }
             }
         }),
         /**
