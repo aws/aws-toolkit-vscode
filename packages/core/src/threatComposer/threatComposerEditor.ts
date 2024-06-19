@@ -18,7 +18,10 @@ const localize = nls.loadMessageBundle()
 /**
  * The main class for the Threat Composer Editor. This class handles the creation and management
  * of the webview panel for the Threat Composer Editor. It also handles the communication
- * between the webview and the extension context.
+ * between the webview and the extension context. This class also stores the state of the
+ * tc.json file, that is being edited in the webview panel, in the property 'fileStates'. The
+ * 'autoSaveFileStates' property is used to store local changes that are being made in the
+ * webview panel.
  */
 export class ThreatComposerEditor {
     public readonly documentUri: vscode.Uri
@@ -30,11 +33,10 @@ export class ThreatComposerEditor {
     public workSpacePath: string
     public defaultTemplatePath: string
     public defaultTemplateName: string
-    // fileWatches is used to monitor template file changes and achieve bi-direction sync
-    public fileWatches: Record<string, FileWatchInfo>
-
-    // autoSaveFileWatches is used to monitor local file changes and achieve bi-direction sync
-    public autoSaveFileWatches: Record<string, FileWatchInfo>
+    // fileStates is used to store the state of the file being edited and achieve bi-direction sync
+    public fileStates: Record<string, FileWatchInfo>
+    // autoSaveFileStates is used to store local changes that are being made in the webview panel.
+    public autoSaveFileStates: Record<string, FileWatchInfo>
     private getWebviewContent: () => Promise<string>
 
     public constructor(
@@ -47,8 +49,8 @@ export class ThreatComposerEditor {
         this.getWebviewContent = getWebviewContent
         this.documentUri = textDocument.uri
         this.webviewPanel = webviewPanel
-        this.fileWatches = {}
-        this.autoSaveFileWatches = {}
+        this.fileStates = {}
+        this.autoSaveFileStates = {}
         this.workSpacePath = path.dirname(textDocument.uri.fsPath)
         this.defaultTemplatePath = textDocument.uri.fsPath
         this.defaultTemplateName = path.basename(this.defaultTemplatePath)
@@ -105,8 +107,8 @@ export class ThreatComposerEditor {
             workSpacePath: this.workSpacePath,
             defaultTemplatePath: this.defaultTemplatePath,
             defaultTemplateName: this.defaultTemplateName,
-            fileStates: this.fileWatches,
-            autoSaveFileState: this.autoSaveFileWatches,
+            fileStates: this.fileStates,
+            autoSaveFileState: this.autoSaveFileStates,
             loaderNotification: undefined,
             fileId: this.fileId,
         }
