@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.ide.ActivityTracker
+import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
@@ -76,6 +77,7 @@ class DefaultToolkitConnectionManager : ToolkitConnectionManager, PersistentStat
 
             null
         } ?: defaultConnection?.let {
+            if (ApplicationInfo.getInstance().build.productCode == "GW") return null
             if (feature.supportsConnectionType(it)) {
                 return it
             }
