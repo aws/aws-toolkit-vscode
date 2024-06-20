@@ -197,6 +197,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
      * Clears the connection in use without deleting it or logging out.
      */
     public async forgetConnection() {
+        getLogger().debug('running SecondaryAuth:forgetConnection()')
         await this.clearSavedConnection()
         await this.clearActiveConnection()
     }
