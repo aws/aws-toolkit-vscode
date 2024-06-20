@@ -261,5 +261,14 @@
     "AWS.amazonq.learnMore": "Learn More About Amazon Q",
     "AWS.amazonq.codewhisperer.title": "Amazon Q",
     "AWS.amazonq.toggleCodeSuggestion": "Toggle Auto-Suggestions",
-    "AWS.amazonq.toggleCodeScan": "Toggle Auto-Scans"
+    "AWS.amazonq.toggleCodeScan": "Toggle Auto-Scans",
+    "AWS.toolkit.walkthrough.gWIntro.title": "Guided Workshop Introdunction",
+    "AWS.toolkit.walkthrough.create.title": "Create your project",
+    "AWS.toolkit.walkthrough.appComposer.title": "Drag components to Application Composer canvas",
+    "AWS.toolkit.walkthrough.createLambda.title": "Create your Lambda function handler",
+    "AWS.toolkit.walkthrough.localInvoke.title": "Local invoke with SAM CLI",
+    "AWS.toolkit.walkthrough.deploy.title": "Deploy your project to AWS",
+    "AWS.toolkit.walkthrough.remoteInovke.title": "Invoke your Lambda function on AWS",
+
+    "AWS.toolkit.walkthrough.gWNotSelected.description": "You have not selected a workshop yet, please go back to `Choose a guided workshop to learn more` to select a workshop first"
 }

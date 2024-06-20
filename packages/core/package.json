@@ -3631,38 +3631,273 @@
                 "when": "workspacePlatform != webworker",
                 "steps": [
                     {
+                        "id": "4",
+                        "title": "Choose your application template",
+                        "description": "Select an application template, build visually from scratch, open and existing template, or browse more application examples",
+                        "media": {
+                            "markdown": "./resources/walkthrough/images/images-lambda/theme_picker.md"
+                        },
+                        "command": "1.[REST API Microservice](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D) \n2.[Image Resizing with S3](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D)"
+                    },
+                    {
+                        "id": "5",
+                        "title": "Choose your application runtime",
+                        "description": "Select an application runtime on the side",
+                        "media": {
+                            "markdown": "./resources/walkthrough/images/images-lambda/runtime_picker.md"
+                        },
+                        "command": "1.[REST API Microservice](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D) \n2.[Image Resizing with S3](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D)"
+                    },
+                    {
+                        "id": "6",
+                        "title": "Choose path to create project",
+                        "description": "Select an path and create project\n[Create Project](command:aws.toolkit.createWalkthroughProject)",
+                        "media": {
+                            "markdown": "./resources/walkthrough/images/images-lambda/runtime_picker.md"
+                        },
+                        "command": "1.[REST API Microservice](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D) \n2.[Image Resizing with S3](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D)"
+                    },
+                    {
+                        "id": "api1",
+                        "title": "%AWS.toolkit.walkthrough.gWIntro.title%",
+                        "when": "walkthroughSelected == 'API'",
+                        "description": "In this Guided Workshop, you will do the following:\n- Create a \"Hello, World!\" Lambda function to be the backend for the API.\n- Create and test a \"Hello, World!\" API with Lambda proxy integration.\n - Debug your Lambda function with `SAM Local Invoke`\n- Deploy your project to AWS with SAM CLI\n- `Remote Invoke` and monitor with AWS Toolkit. \n[Select your runtime]()",
+                        "media": {
+                            "image": "./resources/walkthrough/images/images-lambda/API.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "s3-1",
+                        "title": "%AWS.toolkit.walkthrough.gWIntro.title%",
+                        "when": "walkthroughSelected == 'S3'",
+                        "description": "To complete this tutorial, you carry out the following steps:\n- Create source and destination Amazon S3 buckets and upload a sample image.\n- Create a Lambda function that resizes an image and outputs a thumbnail to an Amazon S3 bucket.\n- Configure a Lambda trigger that invokes your function when objects are uploaded to your source bucket.\n- Test your function, first with a dummy event, and then by uploading an image to your source bucket.\n[Select your runtime]()",
+                        "media": {
+                            "image": "./resources/walkthrough/images/images-lambda/S3.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "placeholder1",
+                        "title": "%AWS.toolkit.walkthrough.gWIntro.title%",
+                        "when": "walkthroughSelected not in aws.toolkit.availableWalkthroughs",
+                        "description": "%AWS.toolkit.walkthrough.gWNotSelected.description%",
+                        "media": {
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
                         "id": "1",
                         "title": "Setup AWS Profile",
-                        "description": "Click Toolkit extension button on the left bottom, choose to sign in with your AWS credentials\n If you haven't registered an AWS account or having trouble authenticating, please refer to the [User Guide](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/connect.html)",
+                        "description": "For demo purpose only, You won't see this step if you already have connected to AWS in actaul walkthrough\n[Connect to AWS](command:aws.toolkit.login)\nTo open the configuration wizard to connect to AWS.\n If you haven't registered an AWS account or having trouble authenticating, please refer to the [User Guide](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/connect.html)\nIf you wish to add more region to AWS toolkit, you can [add more region](command:aws.showRegion)",
                         "media": {
-                            "svg": "resources/aws-logo.svg",
-                            "altText": "test"
+                            "markdown": "./resources/walkthrough/setup-connect.md"
+                        },
+                        "command": "workbench.action.terminal.new"
+                    },
+                    {
+                        "id": "aws-cli",
+                        "title": "Setup AWS Cli",
+                        "description": "For demo purpose, You will not see this step if you already have AWS CLI in actaul walkthrough\nAWS CLI is a prerequisite for installing SAM CLI \n[Install AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)",
+                        "media": {
+                            "markdown": "./resources/walkthrough/setup-toolchain.md"
                         }
                     },
                     {
                         "id": "2",
                         "title": "Setup SAM Cli",
-                        "description": "SAM CLI need to be installed to enable working locally with your function and deploying \n[Install SAM CLI](command:toSide:workbench.action.files.newUntitledFile?%7B%22languageId%22%3A%22python%22%7D)",
+                        "description": "For demo purpose only, You won't see this step if you already have SAM CLI installed in actual walkthrough\nCLI need to be installed to enable working locally with your function and deploying \n[Install SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html)",
                         "media": {
-                            "svg": "resources/amazonq-logo.svg",
-                            "altText": "test2"
+                            "markdown": "./resources/walkthrough/setup-toolchain.md"
                         }
                     },
                     {
                         "id": "3",
                         "title": "Setup Docker for Mac",
-                        "description": "SAM CLI need to be installed to enable working locally with your function and deploying \n[Install Docker](command:toSide:workbench.action.files.newUntitledFile?%7B%22languageId%22%3A%22python%22%7D)",
+                        "description": "For demo purpose only, You won't see this step if you already have Docker installed in actual walkthrough\nDocker need to be installed to enable working locally with your function and deploying \n[Install Docker](https://docs.docker.com/engine/install/)",
                         "media": {
-                            "markdown": "resources/walkthrough/install-python-windows-8.md"
+                            "markdown": "./resources/walkthrough/setup-toolchain.md"
                         }
                     },
                     {
-                        "id": "4",
-                        "title": "Learn more",
-                        "description": "Choose one of the following walkthrough to continue learning how to deploy your local project to AWS: \n[REST API Microservice](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D) \n[Image Resizing with S3](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D) \n[Polling with SQS](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D)",
+                        "id": "api2",
+                        "title": "%AWS.toolkit.walkthrough.create.title%",
+                        "when": "walkthroughSelected == 'API'",
+                        "description": "This step should only appear when context is set to 1",
                         "media": {
-                            "svg": "resources/amazonq-logo.svg",
-                            "altText": "test2"
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "api3",
+                        "title": "%AWS.toolkit.walkthrough.appComposer.title%",
+                        "when": "walkthroughSelected == 'API'",
+                        "description": "This step should only appear when context is set to 1",
+                        "media": {
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "api4",
+                        "title": "%AWS.toolkit.walkthrough.createLambda.title%",
+                        "when": "walkthroughSelected == 'API'",
+                        "description": "This step should only appear when context is set to 1",
+                        "media": {
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "api5",
+                        "title": "%AWS.toolkit.walkthrough.localInvoke.title%",
+                        "when": "walkthroughSelected == 'API'",
+                        "description": "This step should only appear when context is set to 1",
+                        "media": {
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "api6",
+                        "title": "%AWS.toolkit.walkthrough.deploy.title%",
+                        "when": "walkthroughSelected == 'API'",
+                        "description": "This step should only appear when context is set to 1",
+                        "media": {
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "api7",
+                        "title": "%AWS.toolkit.walkthrough.remoteInovke.title%",
+                        "when": "walkthroughSelected == 'API'",
+                        "description": "This step should only appear when context is set to 1",
+                        "media": {
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "s3-2",
+                        "title": "%AWS.toolkit.walkthrough.create.title%",
+                        "when": "walkthroughSelected == 'S3'",
+                        "description": "This step should only appear when context is set to 2",
+                        "media": {
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "s3-3",
+                        "title": "%AWS.toolkit.walkthrough.appComposer.title%",
+                        "when": "walkthroughSelected == 'S3'",
+                        "description": "This step should only appear when context is set to 2",
+                        "media": {
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "s3-4",
+                        "title": "%AWS.toolkit.walkthrough.createLambda.title%",
+                        "when": "walkthroughSelected == 'S3'",
+                        "description": "This step should only appear when context is set to 2",
+                        "media": {
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "s3-5",
+                        "title": "%AWS.toolkit.walkthrough.localInvoke.title%",
+                        "when": "walkthroughSelected == 'S3'",
+                        "description": "This step should only appear when context is set to 2",
+                        "media": {
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "s3-6",
+                        "title": "%AWS.toolkit.walkthrough.deploy.title%",
+                        "when": "walkthroughSelected == 'S3'",
+                        "description": "This step should only appear when context is set to 2",
+                        "media": {
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "s3-7",
+                        "title": "%AWS.toolkit.walkthrough.remoteInovke.title%",
+                        "when": "walkthroughSelected == 'S3'",
+                        "description": "This step should only appear when context is set to 2",
+                        "media": {
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "placeholder2",
+                        "title": "%AWS.toolkit.walkthrough.create.title%",
+                        "when": "walkthroughSelected not in aws.toolkit.availableWalkthroughs",
+                        "description": "%AWS.toolkit.walkthrough.gWNotSelected.description%",
+                        "media": {
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "placeholder3",
+                        "title": "%AWS.toolkit.walkthrough.appComposer.title%",
+                        "when": "walkthroughSelected not in aws.toolkit.availableWalkthroughs",
+                        "description": "%AWS.toolkit.walkthrough.gWNotSelected.description%",
+                        "media": {
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "placeholder4",
+                        "title": "%AWS.toolkit.walkthrough.createLambda.title%",
+                        "when": "walkthroughSelected not in aws.toolkit.availableWalkthroughs",
+                        "description": "%AWS.toolkit.walkthrough.gWNotSelected.description%",
+                        "media": {
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "placeholder5",
+                        "title": "%AWS.toolkit.walkthrough.localInvoke.title%",
+                        "when": "walkthroughSelected not in aws.toolkit.availableWalkthroughs",
+                        "description": "%AWS.toolkit.walkthrough.gWNotSelected.description%",
+                        "media": {
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "placeholder6",
+                        "title": "%AWS.toolkit.walkthrough.deploy.title%",
+                        "when": "walkthroughSelected not in aws.toolkit.availableWalkthroughs",
+                        "description": "%AWS.toolkit.walkthrough.gWNotSelected.description%",
+                        "media": {
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "placeholder7",
+                        "title": "%AWS.toolkit.walkthrough.remoteInovke.title%",
+                        "when": "walkthroughSelected not in aws.toolkit.availableWalkthroughs",
+                        "description": "%AWS.toolkit.walkthrough.gWNotSelected.description%",
+                        "media": {
+                            "image": "media/image.png",
+                            "altText": "Empty image"
                         }
                     }
                 ]
