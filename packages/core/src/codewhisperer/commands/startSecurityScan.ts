@@ -31,7 +31,7 @@ import {
 import { cancel, ok } from '../../shared/localizedText'
 import { getDirSize } from '../../shared/filesystemUtilities'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { ToolkitError, isAwsError } from '../../shared/errors'
+import { ToolkitError, getTelemetryReasonDesc, isAwsError } from '../../shared/errors'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { AuthUtil } from '../util/authUtil'
 import path from 'path'
@@ -250,10 +250,11 @@ export async function startSecurityScan(
                 CodeScansState.instance.setMonthlyQuotaExceeded()
             }
         }
-        codeScanTelemetryEntry.reason =
+        codeScanTelemetryEntry.reasonDesc =
             (error as ToolkitError)?.code === 'ContentLengthError'
                 ? 'Payload size limit reached'
-                : (error as SecurityScanError).message
+                : getTelemetryReasonDesc(error)
+        codeScanTelemetryEntry.reason = (error as ToolkitError)?.code ?? 'DefaultError'
     } finally {
         codeScanState.setToNotStarted()
         codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime
