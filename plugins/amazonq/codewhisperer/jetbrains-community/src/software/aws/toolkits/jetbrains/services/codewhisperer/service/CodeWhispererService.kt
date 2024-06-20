@@ -3,9 +3,9 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.service
 
-import com.intellij.codeInsight.CodeInsightSettings
 import com.intellij.codeInsight.hint.HintManager
 import com.intellij.notification.NotificationAction
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
@@ -69,6 +69,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.popup.CodeWhispere
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererTelemetryService
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CaretMovement
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeInsightsSettingsFacade
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.SUPPLEMENTAL_CONTEXT_TIMEOUT
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getCompletionType
@@ -90,8 +91,13 @@ import software.aws.toolkits.telemetry.CodewhispererTriggerType
 import java.util.concurrent.TimeUnit
 
 @Service
-class CodeWhispererService {
+class CodeWhispererService : Disposable {
+    private val codeInsightSettingsFacade = CodeInsightsSettingsFacade()
     private var refreshFailure: Int = 0
+
+    init {
+        Disposer.register(this, codeInsightSettingsFacade)
+    }
 
     fun showRecommendationsInPopup(
         editor: Editor,
@@ -691,16 +697,8 @@ class CodeWhispererService {
     }
 
     private fun addPopupChildDisposables(popup: JBPopup) {
-        val originalTabExitsBracketsAndQuotes = CodeInsightSettings.getInstance().TAB_EXITS_BRACKETS_AND_QUOTES
-        CodeInsightSettings.getInstance().TAB_EXITS_BRACKETS_AND_QUOTES = false
-        Disposer.register(popup) {
-            CodeInsightSettings.getInstance().TAB_EXITS_BRACKETS_AND_QUOTES = originalTabExitsBracketsAndQuotes
-        }
-        val originalAutoPopupCompletionLookup = CodeInsightSettings.getInstance().AUTO_POPUP_COMPLETION_LOOKUP
-        CodeInsightSettings.getInstance().AUTO_POPUP_COMPLETION_LOOKUP = false
-        Disposer.register(popup) {
-            CodeInsightSettings.getInstance().AUTO_POPUP_COMPLETION_LOOKUP = originalAutoPopupCompletionLookup
-        }
+        codeInsightSettingsFacade.disableCodeInsightUntil(popup)
+
         Disposer.register(popup) {
             CodeWhispererPopupManager.getInstance().reset()
         }
@@ -762,6 +760,8 @@ class CodeWhispererService {
     fun showCodeWhispererErrorHint(editor: Editor, message: String) {
         HintManager.getInstance().showErrorHint(editor, message, HintManager.UNDER)
     }
+
+    override fun dispose() {}
 
     companion object {
         private val LOG = getLogger<CodeWhispererService>()

@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix IDE auto completion settings potentially overwritten by Q inline suggestion"
+}

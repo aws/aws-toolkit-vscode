@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.popup
 
-import com.intellij.codeInsight.CodeInsightSettings
 import com.intellij.codeInsight.hint.ParameterInfoController
 import com.intellij.codeInsight.lookup.LookupManager
 import com.intellij.idea.AppMode
@@ -264,14 +263,19 @@ class CodeWhispererPopupManager {
 
     fun cancelPopup(popup: JBPopup) {
         popup.cancel()
+        Disposer.dispose(popup)
     }
 
     fun closePopup(popup: JBPopup) {
         popup.closeOk(null)
+        Disposer.dispose(popup)
     }
 
     fun closePopup() {
-        myPopup?.closeOk(null)
+        myPopup?.let {
+            it.closeOk(null)
+            Disposer.dispose(it)
+        }
     }
 
     fun showPopup(
@@ -342,11 +346,6 @@ class CodeWhispererPopupManager {
                 popup.size = popup.preferredContentSize
             }
         } else {
-            val originalAutoPopupCompletionLookup = CodeInsightSettings.getInstance().AUTO_POPUP_COMPLETION_LOOKUP
-            CodeInsightSettings.getInstance().AUTO_POPUP_COMPLETION_LOOKUP = false
-            Disposer.register(popup) {
-                CodeInsightSettings.getInstance().AUTO_POPUP_COMPLETION_LOOKUP = originalAutoPopupCompletionLookup
-            }
             if (!AppMode.isRemoteDevHost()) {
                 popup.show(relativePopupLocationToEditor)
             } else {
