@@ -250,11 +250,10 @@ export async function startSecurityScan(
                 CodeScansState.instance.setMonthlyQuotaExceeded()
             }
         }
-        if ((error as ToolkitError).code == 'ContentLengthError') {
-            codeScanTelemetryEntry.reason = 'Payload size limit reached'
-        } else {
-            codeScanTelemetryEntry.reason = (error as SecurityScanError).message
-        }
+        codeScanTelemetryEntry.reason =
+            (error as ToolkitError)?.code === 'ContentLengthError'
+                ? 'Payload size limit reached'
+                : (error as SecurityScanError).message
     } finally {
         codeScanState.setToNotStarted()
         codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime

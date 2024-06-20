@@ -37,6 +37,7 @@ import {
     SecurityScanTimedOutError,
     UploadArtifactToS3Error,
 } from '../models/errors'
+import { getTelemetryReasonDesc } from '../../shared/errors'
 
 export async function listScanResults(
     client: DefaultCodeWhispererClient,
@@ -289,9 +290,10 @@ export async function uploadArtifactToS3(
         getLogger().error(
             `Amazon Q is unable to upload workspace artifacts to Amazon S3 for security scans. For more information, see the Amazon Q documentation or contact your network or organization administrator.`
         )
-        const errorMessage = (error as Error).message.includes(`"PUT" request failed with code "403"`)
+        const errorMessage = getTelemetryReasonDesc(error)?.includes(`"PUT" request failed with code "403"`)
             ? `UploadArtifactToS3Exception: "PUT" request failed with code "403"`
-            : (error as Error).message
+            : getTelemetryReasonDesc(error) ?? 'Security scan failed.'
+
         throw new UploadArtifactToS3Error(errorMessage)
     }
 }
