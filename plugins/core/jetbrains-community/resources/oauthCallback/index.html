@@ -87,11 +87,6 @@
             'footerText'
         ).innerText = `You can close this window and start using ${productName}`
 
-        const redirectUri = params.get('redirectUri')
-        if (redirectUri) {
-            window.location.replace(redirectUri)
-        }
-
         function showErrorMessage(errorText) {
             document.getElementById('approved-auth').classList.add('hidden')
             document.getElementById('denied-auth').classList.remove('hidden')
