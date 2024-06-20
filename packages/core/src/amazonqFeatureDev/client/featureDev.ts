@@ -308,4 +308,34 @@ export class FeatureDevClient {
             throw new ToolkitError((e as Error).message, { code: 'ExportResultArchiveFailed' })
         }
     }
+
+    /**
+     * This event is specific to ABTesting purposes.
+     *
+     * No need to fail currently if the event fails in the request. In addition, currently there is no need for a return value.
+     *
+     * @param conversationId
+     */
+    public async sendFeatureDevTelemetryEvent(conversationId: string) {
+        try {
+            const client = await this.getClient()
+            const params: FeatureDevProxyClient.SendTelemetryEventRequest = {
+                telemetryEvent: {
+                    featureDevEvent: {
+                        conversationId,
+                    },
+                },
+            }
+            const response = await client.sendTelemetryEvent(params).promise()
+            getLogger().debug(
+                `${featureName}: successfully sent featureDevEvent: ConversationId: ${conversationId} RequestId: ${response.$response.requestId}`
+            )
+        } catch (e) {
+            getLogger().error(
+                `${featureName}: failed to send feature dev telemetry: ${(e as Error).name}: ${
+                    (e as Error).message
+                } RequestId: ${(e as any).requestId}`
+            )
+        }
+    }
 }

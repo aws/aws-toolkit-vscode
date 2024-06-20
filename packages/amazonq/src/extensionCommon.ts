@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import * as semver from 'semver'
 import { join } from 'path'
 import {
-    CodeSuggestionsState,
     activate as activateCodeWhisperer,
     shutdown as shutdownCodeWhisperer,
     amazonQDismissedKey,
@@ -31,7 +30,7 @@ import { CommonAuthWebview } from 'aws-core-vscode/login'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 import { telemetry, ExtStartUpSources } from 'aws-core-vscode/telemetry'
 import { getAuthStatus } from './auth/util'
-import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode/common'
+import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode/extensionCommon'
 import { registerCommands } from './commands'
 
 export const amazonQContextPrefix = 'amazonq'
@@ -112,9 +111,6 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
 
     // reload webviews
     await vscode.commands.executeCommand('workbench.action.webview.reloadWebviewAction')
-
-    // enable auto suggestions on activation
-    await CodeSuggestionsState.instance.setSuggestionsEnabled(true)
 
     if (AuthUtils.ExtensionUse.instance.isFirstUse()) {
         CommonAuthWebview.authSource = ExtStartUpSources.firstStartUp

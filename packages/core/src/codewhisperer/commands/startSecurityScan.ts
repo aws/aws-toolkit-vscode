@@ -29,7 +29,6 @@ import {
     CodeScanTelemetryEntry,
 } from '../models/model'
 import { cancel, ok } from '../../shared/localizedText'
-import { getDirSize } from '../../shared/filesystemUtilities'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { isAwsError } from '../../shared/errors'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
@@ -255,7 +254,7 @@ export async function startSecurityScan(
         codeScanState.setToNotStarted()
         codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime
         codeScanTelemetryEntry.codeScanServiceInvocationsDuration = performance.now() - serviceInvocationStartTime
-        await emitCodeScanTelemetry(codeScanTelemetryEntry)
+        await emitCodeScanTelemetry(codeScanTelemetryEntry, scope)
     }
 }
 
@@ -283,16 +282,11 @@ export function showSecurityScanResults(
     }
 }
 
-export async function emitCodeScanTelemetry(codeScanTelemetryEntry: CodeScanTelemetryEntry) {
+export async function emitCodeScanTelemetry(
+    codeScanTelemetryEntry: CodeScanTelemetryEntry,
+    scope: CodeWhispererConstants.CodeAnalysisScope
+) {
     codeScanTelemetryEntry.codewhispererCodeScanProjectBytes = 0
-    const now = performance.now()
-    for (const folder of vscode.workspace.workspaceFolders ?? []) {
-        codeScanTelemetryEntry.codewhispererCodeScanProjectBytes += await getDirSize(
-            folder.uri.fsPath,
-            now,
-            CodeWhispererConstants.projectSizeCalculateTimeoutSeconds * 1000
-        )
-    }
     telemetry.codewhisperer_securityScan.emit({
         ...codeScanTelemetryEntry,
         passive: codeScanTelemetryEntry.codewhispererCodeScanScope === CodeAnalysisScope.FILE,

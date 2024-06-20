@@ -12,7 +12,7 @@ import * as sinon from 'sinon'
 import { DefaultEc2MetadataClient } from '../../shared/clients/ec2MetadataClient'
 import * as vscode from 'vscode'
 import {
-    ExtensionUserActivity,
+    UserActivity,
     getComputeRegion,
     initializeComputeRegion,
     mostRecentVersionKey,
@@ -184,7 +184,7 @@ describe('initializeComputeRegion, getComputeRegion', async function () {
     })
 })
 
-describe('ExtensionUserActivity', function () {
+describe('UserActivity', function () {
     let count: number
     let sandbox: sinon.SinonSandbox
 
@@ -209,7 +209,7 @@ describe('ExtensionUserActivity', function () {
             secondIntervalStart + 201,
             secondIntervalStart + 202,
         ]
-        const instance = new ExtensionUserActivity(throttleDelay, [
+        const instance = new UserActivity(throttleDelay, [
             ...firstInvervalMillisUntilFire.map(delayedTriggeredEvent),
             ...secondIntervalMillisUntilFire.map(delayedTriggeredEvent),
         ])
@@ -222,12 +222,12 @@ describe('ExtensionUserActivity', function () {
     describe('does not fire user activity events in specific scenarios', function () {
         let userActivitySubscriber: sinon.SinonStubbedMember<() => void>
         let _triggerUserActivity: (obj: any) => void
-        let instance: ExtensionUserActivity
+        let instance: UserActivity
 
         beforeEach(function () {
             userActivitySubscriber = sandbox.stub()
             _triggerUserActivity = () => {
-                throw Error('Called before ExtensionUserActivity was instantiated')
+                throw Error('Called before UserActivity was instantiated')
             }
         })
 
@@ -329,11 +329,10 @@ describe('ExtensionUserActivity', function () {
         }
 
         function createTriggerActivityFunc() {
-            instance = new ExtensionUserActivity(0)
+            instance = new UserActivity(0)
             instance.onUserActivity(userActivitySubscriber)
-            // Creation of the ExtensionUserActivity instance
-            // will call the stubbed event and set the value
-            // for _triggerUserActivity
+            // Creation of the UserActivity instance will call the stubbed event and set the value
+            // for _triggerUserActivity.
             return _triggerUserActivity
         }
     })

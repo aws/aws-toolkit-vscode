@@ -45,7 +45,7 @@ export interface SsoToken {
     readonly refreshToken?: string
 }
 
-export type AuthenticationFlow = 'auth code'
+export type AuthenticationFlow = 'auth code' | 'web auth code'
 
 export interface ClientRegistration {
     /**

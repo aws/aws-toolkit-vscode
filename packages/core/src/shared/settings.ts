@@ -168,6 +168,8 @@ export class Settings {
     /**
      * Returns a scoped "slice" (or "view") of the settings configuration.
      *
+     * TODO(jmkeyes): This lacks all the type checking and error handling of {@link Settings}.
+     *
      * The returned {@link Settings} interface is limited to the provided section.
      *
      * Example:
@@ -723,11 +725,13 @@ const devSettings = {
     telemetryEndpoint: String,
     telemetryUserPool: String,
     renderDebugDetails: Boolean,
+    devenvTimeoutMs: Number,
     endpoints: Record(String, String),
     codecatalystService: Record(String, String),
     codewhispererService: Record(String, String),
     ssoCacheDirectory: String,
     autofillStartUrl: String,
+    webAuth: Boolean,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
 type AwsDevSetting = keyof ResolvedDevSettings

@@ -130,7 +130,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         if (threatComposerSettings.defaultEditor) {
             await telemetry.threatComposer_opened.run(async span => {
                 if (clientId === '') {
-                    clientId = await getClientId(globals.context.globalState)
+                    clientId = getClientId(globals.context.globalState)
                 }
                 // Attempt to retrieve existing visualization if it exists.
                 const existingVisualization = this.getExistingVisualization(document.uri.fsPath)

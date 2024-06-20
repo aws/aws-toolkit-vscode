@@ -12,6 +12,7 @@ import { Logging } from './commands'
 import { resolvePath } from '../utilities/pathUtils'
 import { fsCommon } from '../../srcShared/fs'
 import { isWeb } from '../extensionGlobals'
+import { getUserAgent } from '../telemetry/util'
 
 /**
  * Activate Logger functionality for the extension.
@@ -24,7 +25,10 @@ export async function activate(
 ): Promise<void> {
     const settings = Settings.instance.getSection('aws')
     const devLogfile = settings.get('dev.logfile', '')
-    const logUri = devLogfile ? vscode.Uri.file(resolvePath(devLogfile)) : undefined
+    const logUri =
+        typeof devLogfile === 'string' && devLogfile.trim() !== ''
+            ? vscode.Uri.file(resolvePath(devLogfile))
+            : undefined
     const chanLogLevel = fromVscodeLogLevel(logChannel.logLevel)
 
     await fsCommon.mkdir(extensionContext.logUri)
@@ -41,7 +45,6 @@ export async function activate(
     })
 
     setLogger(mainLogger)
-    getLogger().info(`Log level: ${chanLogLevel}`)
 
     // Logs to "AWS Toolkit" output channel.
     setLogger(
@@ -63,7 +66,11 @@ export async function activate(
         'debugConsole'
     )
 
-    getLogger().debug(`Logging started: ${logUri ?? '(no file)'}`)
+    getLogger().info('Log level: %s%s', chanLogLevel, logUri ? `, file: ${logUri.fsPath}` : '')
+    getLogger().debug('User agent: %s', getUserAgent({ includePlatform: true, includeClientId: true }))
+    if (devLogfile && typeof devLogfile !== 'string') {
+        getLogger().error('invalid aws.dev.logfile setting')
+    }
 
     Logging.init(logUri, mainLogger, contextPrefix)
     extensionContext.subscriptions.push(Logging.instance.viewLogs, Logging.instance.viewLogsAtMessage)

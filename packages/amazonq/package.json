@@ -2,7 +2,7 @@
     "name": "amazon-q-vscode",
     "displayName": "Amazon Q",
     "description": "Amazon Q is your generative AI-powered assistant across the software development lifecycle.",
-    "version": "1.9.0-SNAPSHOT",
+    "version": "1.10.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -59,6 +59,7 @@
         "lint": "echo 'Nothing to lint yet!'",
         "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
         "testCompile": "npm run clean && npm run buildScripts && npm run compileOnly",
+        "test": "npm run testCompile && c8 ts-node ../core/scripts/test/test.ts dist/test/unit/index.js ../core/dist/src/testFixtures/workspaceFolder",
         "testE2E": "npm run testCompile && c8 ts-node ../core/scripts/test/testE2E.ts dist/test/e2e/index.js",
         "webRun": "npx @vscode/test-web --open-devtools --browserOption=--disable-web-security --waitForDebugger=9222 --extensionDevelopmentPath=. .",
         "webWatch": "npm run clean && npm run buildScripts && webpack --mode development --watch",
@@ -686,6 +687,17 @@
                 "description": "Your generative AI-powered assistant across the software development lifecycle.",
                 "steps": [
                     {
+                        "id": "aws.amazonq.walkthrough.inlineSuggestions",
+                        "title": "Get inline code suggestions",
+                        "description": "Amazon Q suggests code as you type based on your open files. Accepted suggestions from licensed code will go into the Code Reference Log.\n\n[Try Example](command:_aws.amazonq.walkthrough.inlineSuggestionsExample)\n\n**TIP: Invoke manually with opt/alt + c**",
+                        "media": {
+                            "markdown": "./resources/walkthrough/amazonq/inline.md"
+                        },
+                        "completionEvents": [
+                            "onCommand:_aws.amazonq.walkthrough.inlineSuggestionsExample"
+                        ]
+                    },
+                    {
                         "id": "aws.amazonq.walkthrough.chat",
                         "title": "Ask using chat",
                         "description": "Amazon Q answers software development questions, writes code based on your current file, and cites sources.\n\nUse the right-click menu for quick commands.\n\n**TIP: Drag and drop the Q panel to dock on the right**",
@@ -695,20 +707,15 @@
                         "completionEvents": []
                     },
                     {
-                        "id": "aws.amazonq.walkthrough.inlineSuggestions",
-                        "title": "Get inline code suggestions",
-                        "description": "Amazon Q suggests code as you type based on your open files. Accepted suggestions from licensed code will go into the Code Reference Log.\n\n[Try inline code examples](command:aws.amazonq.gettingStarted)\n\n**TIP: Invoke manually with opt/alt + c**",
-                        "media": {
-                            "markdown": "./resources/walkthrough/amazonq/inline.md"
-                        }
-                    },
-                    {
                         "id": "aws.amazonq.walkthrough.securityScan",
                         "title": "Check for security vulnerabilities",
-                        "description": "Amazon Q scans your code to identify security vulnerabilities and suggests fixes.\n\nStart a scan from the status bar menu.\n\n**TIP: identifies vulnerabilities in Python, Typescript, Ruby, AWS CDK, and more**",
+                        "description": "Amazon Q scans your code to identify security vulnerabilities and suggests fixes.\n\nStart a scan from the status bar menu.\n\n[Scan your current project](command:_aws.amazonq.walkthrough.securityScanExample)\n\nIdentifies vulnerabilities in Python, Typescript, Ruby, AWS CDK, and [more](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/q-language-ide-support.html#security-scans-language-support)",
                         "media": {
                             "markdown": "./resources/walkthrough/amazonq/scans.md"
-                        }
+                        },
+                        "completionEvents": [
+                            "onCommand:_aws.amazonq.walkthrough.securityScanExample"
+                        ]
                     },
                     {
                         "id": "aws.amazonq.walkthrough.settings",

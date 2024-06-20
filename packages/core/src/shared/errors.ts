@@ -87,6 +87,18 @@ export interface ErrorInformation {
     readonly documentationUri?: vscode.Uri
 }
 
+export class UnknownError extends Error {
+    public override readonly name = 'UnknownError'
+
+    public constructor(public readonly cause: unknown) {
+        super(String(cause))
+    }
+
+    public static cast(obj: unknown): Error {
+        return obj instanceof Error ? obj : new UnknownError(obj)
+    }
+}
+
 /**
  * Anonymous class with a pre-defined error name.
  */
@@ -217,9 +229,44 @@ export class ToolkitError extends Error implements ErrorInformation {
     }
 }
 
+export function getErrorMsg(err: Error | undefined): string | undefined {
+    if (err === undefined) {
+        return undefined
+    }
+
+    // error_description is a non-standard SDK field added by (at least) OIDC service.
+    // If present, it has better information, so prefer it to `message`.
+    // https://github.com/aws/aws-toolkit-jetbrains/commit/cc9ed87fa9391dd39ac05cbf99b4437112fa3d10
+    //
+    // Example:
+    //
+    //      [error] API response (oidc.us-east-1.amazonaws.com /token): {
+    //        name: 'InvalidGrantException',
+    //        '$fault': 'client',
+    //        '$metadata': {
+    //          httpStatusCode: 400,
+    //          requestId: '7f5af448-5af7-45f2-8e47-5808deaea4ab',
+    //          extendedRequestId: undefined,
+    //          cfId: undefined
+    //        },
+    //        error: 'invalid_grant',
+    //        error_description: 'Invalid refresh token provided',
+    //        message: 'UnknownError'
+    //      }
+    const anyDesc = (err as any).error_description
+    const errDesc = typeof anyDesc === 'string' ? anyDesc.trim() : ''
+    const msg = errDesc !== '' ? errDesc : err.message?.trim()
+
+    if (typeof msg !== 'string') {
+        return undefined
+    }
+
+    return msg
+}
+
 export function formatError(err: Error): string {
     const code = hasCode(err) && err.code !== err.name ? `[${err.code}]` : undefined
-    const parts = [`${err.name}:`, err.message, code, formatDetails(err)]
+    const parts = [`${err.name}:`, getErrorMsg(err), code, formatDetails(err)]
 
     return parts.filter(isNonNullable).join(' ')
 }
@@ -233,7 +280,7 @@ function formatDetails(err: Error): string | undefined {
         }
     } else if (isAwsError(err)) {
         details['statusCode'] = String(err.statusCode ?? '')
-        details['requestId'] = err.requestId
+        details['requestId'] = getRequestId(err)
         details['extendedRequestId'] = err.extendedRequestId
     }
 
@@ -249,18 +296,6 @@ function formatDetails(err: Error): string | undefined {
     return `(${joined})`
 }
 
-export class UnknownError extends Error {
-    public override readonly name = 'UnknownError'
-
-    public constructor(public readonly cause: unknown) {
-        super(String(cause))
-    }
-
-    public static cast(obj: unknown): Error {
-        return obj instanceof Error ? obj : new UnknownError(obj)
-    }
-}
-
 export function getTelemetryResult(error: unknown | undefined): Result {
     if (error === undefined) {
         return 'Succeeded'
@@ -269,6 +304,14 @@ export function getTelemetryResult(error: unknown | undefined): Result {
     }
 
     return 'Failed'
+}
+
+/** Gets the (partial) error message detail for the `reasonDesc` field. */
+export function getTelemetryReasonDesc(err: unknown | undefined): string | undefined {
+    const msg = getErrorMsg(err as Error)
+
+    // Truncate to 200 chars.
+    return msg && msg.length > 0 ? msg.substring(0, 200) : undefined
 }
 
 export function getTelemetryReason(error: unknown | undefined): string | undefined {
@@ -281,6 +324,7 @@ export function getTelemetryReason(error: unknown | undefined): string | undefin
     } else if (error instanceof CancellationError) {
         return error.agent
     } else if (error instanceof ToolkitError) {
+        // TODO: prefer the error.error field if present? (see comment in `getErrorMsg`)
         return getTelemetryReason(error.cause) ?? error.code ?? error.name
     } else if (error instanceof Error) {
         return (error as { code?: string }).code ?? error.name
@@ -290,23 +334,22 @@ export function getTelemetryReason(error: unknown | undefined): string | undefin
 }
 
 /**
- * Determines the appropriate error message to display to the user.
+ * Tries to build the most intuitive/relevant message to show to the user.
  *
- * We do not want to display every error message to the user, this
- * resolves what we actually want to show them based off the given
- * input.
+ * User can see the full error chain in the logs Output channel.
  */
 export function resolveErrorMessageToDisplay(error: unknown, defaultMessage: string): string {
-    const mainMessage = error instanceof ToolkitError ? error.message : defaultMessage
-    // We want to explicitly show certain AWS Error messages if they are raised
-    const prioritizedMessage = findPrioritizedAwsError(error)?.message
-    return prioritizedMessage ? `${mainMessage}: ${prioritizedMessage}` : mainMessage
+    const mainMsg = error instanceof ToolkitError ? error.message : defaultMessage
+    // Try to find the most useful/relevant error in the `cause` chain.
+    const bestErr = error ? findBestErrorInChain(error as Error) : undefined
+    const bestMsg = getErrorMsg(bestErr)
+    return bestMsg && bestMsg !== mainMsg ? `${mainMsg}: ${bestMsg}` : mainMsg
 }
 
 /**
  * Patterns that match the value of {@link AWSError.code}
  */
-export const prioritizedAwsErrors: RegExp[] = [
+const _preferredErrors: RegExp[] = [
     /^ConflictException$/,
     /^ValidationException$/,
     /^ResourceNotFoundException$/,
@@ -315,61 +358,52 @@ export const prioritizedAwsErrors: RegExp[] = [
 ]
 
 /**
- * Sometimes there are AWS specific errors that we want to explicitly
- * show to the user, these are 'prioritized' errors.
+ * Searches the `cause` chain (if any) for the most useful/relevant {@link AWSError} to surface to
+ * the user, preferring "deeper" errors (lower-level, closer to the root cause) when all else is equal.
  *
- * In certain cases we may unknowingly wrap these errors in a Toolkit error
- * as the 'cause', in return masking the the underlying error from being
- * reported to the user.
+ * These conditions determine precedence (in order):
+ * - required: AWSError type
+ * - `error_description` field
+ * - `code` matches one of `preferredErrors`
+ * - cause chain depth (the deepest error wins)
  *
- * Since we do not want developers to worry if they are allowed to wrap
- * a specific AWS error in a Toolkit error, we will instead handle
- * it in this function by extracting the 'prioritized' error if it is
- * found.
+ * @param error Error whose `cause` chain will be searched.
+ * @param preferredErrors Error `code` field must match one of these, else it is discarded. Pass `[/./]` to match any AWSError.
  *
- * @returns new ToolkitError with prioritized error message, otherwise original error
+ * @returns Best match, or `error` if a better match is not found.
  */
-export function findPrioritizedAwsError(
-    error: unknown,
-    prioritizedErrors = prioritizedAwsErrors
-): AWSError | undefined {
-    const awsError = findAwsErrorInCausalChain(error)
+export function findBestErrorInChain(error: Error, preferredErrors = _preferredErrors): Error | undefined {
+    // TODO: Base Error has 'cause' in ES2022. So does our own `ToolkitError`.
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    let bestErr: Error & { cause?: Error; error_description?: string } = error
+    let err: typeof bestErr | undefined
 
-    if (awsError === undefined || !prioritizedErrors.some(regex => regex.test(awsError.code))) {
-        return undefined
+    for (let i = 0; (err || i === 0) && i < 100; i++) {
+        err = i === 0 ? bestErr.cause : err?.cause
+
+        if (isAwsError(err)) {
+            if (!isAwsError(bestErr)) {
+                bestErr = err // Prefer AWSError.
+                continue
+            }
+
+            const errDesc = err.error_description
+            if (typeof errDesc === 'string' && errDesc.trim() !== '') {
+                bestErr = err // Prefer (deepest) error with error_description.
+                continue
+            }
+
+            // const bestErrCode = bestErr.code?.trim() ?? ''
+            // const bestErrMatches = bestErrCode !== '' && preferredErrors.some(re => re.test(bestErrCode))
+            const errCode = err.code?.trim() ?? ''
+            const errMatches = errCode !== '' && preferredErrors.some(re => re.test(errCode))
+            if (!bestErr.error_description && errMatches) {
+                bestErr = err
+            }
+        }
     }
 
-    return awsError
-}
-
-/**
- * This will search through the causal chain of errors (if it exists)
- * until it finds an {@link AWSError}.
- *
- * {@link ToolkitError} instances can wrap a 'cause', which is the underlying
- * error that caused it.
- *
- * @returns AWSError if found, otherwise undefined
- */
-export function findAwsErrorInCausalChain(error: unknown): AWSError | undefined {
-    let currentError = error
-
-    while (currentError !== undefined) {
-        if (isAwsError(currentError)) {
-            return currentError
-        }
-
-        // TODO: Base Error has 'cause' in ES2022. If we upgrade this can be made
-        // non-ToolkitError specific
-        if (currentError instanceof ToolkitError && currentError.cause !== undefined) {
-            currentError = currentError.cause
-            continue
-        }
-
-        return undefined
-    }
-
-    return undefined
+    return bestErr
 }
 
 export function isCodeWhispererStreamingServiceException(
@@ -395,7 +429,8 @@ function hasName<T>(error: T): error is T & { name: string } {
     return typeof (error as { name?: unknown }).name === 'string'
 }
 
-export function isAwsError(error: unknown): error is AWSError {
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export function isAwsError(error: unknown): error is AWSError & { error_description?: string } {
     if (error === undefined) {
         return false
     }
@@ -422,13 +457,15 @@ export function isClientFault(error: ServiceException): boolean {
     return error.$fault === 'client' && !(isThrottlingError(error) || isTransientError(error))
 }
 
-export function getRequestId(error: unknown): string | undefined {
-    if (isAwsError(error)) {
-        return error.requestId
+export function getRequestId(err: unknown): string | undefined {
+    // XXX: Checking `err instanceof ServiceException` fails for `SSOOIDCServiceException` even
+    // though it subclasses @aws-sdk/smithy-client.ServiceException
+    if (typeof (err as any)?.$metadata?.requestId === 'string') {
+        return (err as any).$metadata.requestId
     }
 
-    if (error instanceof ServiceException) {
-        return error.$metadata.requestId
+    if (isAwsError(err)) {
+        return err.requestId
     }
 }
 
