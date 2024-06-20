@@ -19,7 +19,6 @@ import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSet
 import { activate as activateLsp } from './lspClient'
 import { telemetry } from '../../shared/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { isWeb } from '../../shared/extensionGlobals'
 
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -65,7 +64,7 @@ interface Manifest {
 // TODO: use new Url
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/temp/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = ['0.0.1']
+const supportedLspServerVersions = ['0.0.2']
 
 export class LspController {
     static #instance: LspController
@@ -251,7 +250,7 @@ export class LspController {
     }
 
     async trySetupLsp(context: vscode.ExtensionContext) {
-        if (!CodeWhispererSettings.instance.isLocalIndexEnabled() || isCloud9() || isWeb()) {
+        if (!CodeWhispererSettings.instance.isLocalIndexEnabled() || isCloud9()) {
             return
         }
         LspController.instance.tryInstallLsp(context).then(succeed => {
