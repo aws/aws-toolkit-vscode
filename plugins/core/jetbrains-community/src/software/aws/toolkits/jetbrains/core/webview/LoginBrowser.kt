@@ -207,13 +207,6 @@ abstract class LoginBrowser(
         if (connection is AwsBearerTokenConnection) {
             loginWithBackgroundContext {
                 reauthConnectionIfNeeded(project, connection, onPendingToken)
-                AwsTelemetry.loginWithBrowser(
-                    project = null,
-                    isReAuth = true,
-                    result = Result.Succeeded,
-                    credentialStartUrl = connection.startUrl,
-                    credentialType = CredentialType.BearerToken
-                )
             }
         }
     }
