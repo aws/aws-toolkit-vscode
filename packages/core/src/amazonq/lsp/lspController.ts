@@ -18,6 +18,8 @@ import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
 import { activate as activateLsp } from './lspClient'
 import { telemetry } from '../../shared/telemetry'
+import { isCloud9 } from '../../shared/extensionUtilities'
+import { isWeb } from '../../shared/extensionGlobals'
 
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -249,7 +251,7 @@ export class LspController {
     }
 
     async trySetupLsp(context: vscode.ExtensionContext) {
-        if (!CodeWhispererSettings.instance.isLocalIndexEnabled()) {
+        if (!CodeWhispererSettings.instance.isLocalIndexEnabled() || isCloud9() || isWeb()) {
             return
         }
         LspController.instance.tryInstallLsp(context).then(succeed => {

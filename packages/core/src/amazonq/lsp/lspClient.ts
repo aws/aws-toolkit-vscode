@@ -106,6 +106,8 @@ export async function activate(extensionContext: ExtensionContext) {
     const debugOptions = { execArgv: ['--nolazy', '--inspect=6009', '--preserve-symlinks', '--stdio'] }
 
     const child = cp.spawn('node', [serverModule, ...debugOptions.execArgv])
+    // share an encryption key using stdin
+    // follow same practice of DEXP LSP server
     writeEncryptionInit(child.stdin)
 
     // If the extension is launch in debug mode the debug server options are use
