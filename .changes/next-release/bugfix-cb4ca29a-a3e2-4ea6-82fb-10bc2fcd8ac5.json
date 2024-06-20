@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix infinite restart loop on <=241 when an incompatible version of AWS Toolkit is installed alongside Amazon Q (#4519)"
+}

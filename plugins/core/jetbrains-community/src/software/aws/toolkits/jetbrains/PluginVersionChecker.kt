@@ -21,6 +21,7 @@ import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.AwsToolkit.TOOLKIT_PLUGIN_ID
 import software.aws.toolkits.jetbrains.core.plugin.PluginUpdateManager
 import software.aws.toolkits.resources.message
+import javax.swing.SwingUtilities
 
 class PluginVersionChecker : ApplicationInitializedListener {
     override suspend fun execute(asyncScope: CoroutineScope) {
@@ -51,19 +52,14 @@ class PluginVersionChecker : ApplicationInitializedListener {
 
         // defensively disable the old toolkit if we couldn't update it because we might deadlock during project open
         val toolkit = mismatch.firstOrNull { it.id == TOOLKIT_PLUGIN_ID && it.version?.startsWith("2.") == true }
-        val shouldDisableToolkit = (toolkit != null && updated.none { it == toolkit })
-        if (shouldDisableToolkit) {
-            LOG.info { "Attempting to disable aws.toolkit due to known incompatibility" }
-            val descriptor = toolkit?.descriptor as? IdeaPluginDescriptor
 
-            descriptor?.let {
-                PluginEnabler.getInstance().disable(listOf(descriptor))
-            } ?: LOG.warn { "Expected toolkit descriptor to be IdeaPluginDescriptor, but was ${toolkit?.descriptor}" }
-        }
-
-        if (shouldDisableToolkit || updated.isNotEmpty()) {
+        if (shouldDisableToolkit(toolkit, updated) || updated.isNotEmpty()) {
             LOG.info { "Restarting due to forced update of plugins" }
-            ApplicationManagerEx.getApplicationEx().restart(true)
+
+            // IDE invokeLater is not initialized yet
+            SwingUtilities.invokeAndWait {
+                ApplicationManagerEx.getApplicationEx().restart(true)
+            }
             return
         }
 
@@ -82,7 +78,7 @@ class PluginVersionChecker : ApplicationInitializedListener {
                         coreDescriptor?.let { descriptor -> PluginUpdateManager.updatePlugin(descriptor, EmptyProgressIndicator()) }
                     }
 
-                    PluginEnabler.getInstance().disable(
+                    PluginEnabler.HEADLESS.disable(
                         AwsToolkit.PLUGINS_INFO.values.mapNotNull {
                             val descriptor = it.descriptor as? IdeaPluginDescriptor
                             if (descriptor != null && descriptor != core.descriptor) {
@@ -95,6 +91,26 @@ class PluginVersionChecker : ApplicationInitializedListener {
                 }
             )
         }
+    }
+
+    private fun shouldDisableToolkit(toolkit: PluginInfo?, updated: List<PluginInfo>): Boolean {
+        if (toolkit != null && updated.none { it == toolkit }) {
+            LOG.info { "Attempting to disable aws.toolkit due to known incompatibility" }
+            val descriptor = toolkit.descriptor as? IdeaPluginDescriptor ?: run {
+                LOG.warn { "Expected toolkit descriptor to be IdeaPluginDescriptor, but was ${toolkit.descriptor}" }
+                return false
+            }
+
+            if (!descriptor.isEnabled) {
+                LOG.info { "Does not need to disable toolkit since it is already disabled" }
+                return false
+            }
+
+            PluginEnabler.HEADLESS.disable(listOf(descriptor))
+            return true
+        }
+
+        return false
     }
 
     companion object {
