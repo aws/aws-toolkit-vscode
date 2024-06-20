@@ -383,7 +383,7 @@ describe('startSecurityScan', function () {
         assertTelemetry('codewhisperer_securityScan', {
             codewhispererCodeScanScope: 'PROJECT',
             result: 'Failed',
-            reason: 'GetCodeScanException',
+            reason: 'CodeScanJobFailedError',
             reasonDesc: 'Security scan failed.',
             passive: false,
         } as unknown as CodewhispererSecurityScan)
