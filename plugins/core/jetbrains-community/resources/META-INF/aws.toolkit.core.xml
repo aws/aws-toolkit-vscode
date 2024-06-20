@@ -83,7 +83,9 @@
         <webHelpProvider implementation="software.aws.toolkits.jetbrains.core.help.HelpIdTranslator"/>
     </extensions>
 
-    <actions>
+    <actions resource-bundle="software.aws.toolkits.resources.MessagesBundle">
+        <action id="aws.toolkit.open.telemetry.viewer" class="software.aws.toolkits.jetbrains.services.telemetry.OpenTelemetryAction"/>
+
         <action class="software.aws.toolkits.jetbrains.core.credentials.CreateOrUpdateCredentialProfilesAction" id="aws.settings.upsertCredentials"/>
 
         <action id="q.learn.more" class="software.aws.toolkits.jetbrains.services.amazonq.explorerActions.QLearnMoreAction"/>
