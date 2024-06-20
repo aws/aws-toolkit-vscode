@@ -50,7 +50,9 @@ import software.amazon.awssdk.awscore.util.AwsHeader
 import software.amazon.awssdk.http.SdkHttpResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationStatus
+import software.amazon.awssdk.services.ssooidc.model.SsoOidcException
 import software.aws.toolkits.core.utils.exists
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerJobCompletedResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerSessionContext
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerStartJobResult
@@ -88,6 +90,7 @@ class CodeWhispererCodeModernizerSessionTest : CodeWhispererCodeModernizerTestBa
     override fun setup() {
         super.setup()
         ThreadLeakTracker.longRunningThreadCreated(ApplicationManager.getApplication(), "Process Proxy: Launcher")
+        setupConnection(BearerTokenAuthState.AUTHORIZED)
     }
 
     @Test
@@ -417,6 +420,25 @@ class CodeWhispererCodeModernizerSessionTest : CodeWhispererCodeModernizerTestBa
         doAnswer { throw AlreadyDisposedException("mock exception") }.whenever(clientAdaptorSpy).uploadArtifactToS3(any(), any(), any(), any(), any())
         val result = testSessionSpy.createModernizationJob(MavenCopyCommandsResult.Success(File("./mock/path/")))
         assertEquals(CodeModernizerStartJobResult.Disposed, result)
+    }
+
+    @Test
+    fun `CodeModernizer returns credentials expired when SsoOidcException during upload`() {
+        setupConnection(BearerTokenAuthState.AUTHORIZED)
+        doReturn(ZipCreationResult.Succeeded(File("./tst-resources/codemodernizer/test.txt")))
+            .whenever(testSessionContextSpy).createZipWithModuleFiles(any())
+        doAnswer { throw SsoOidcException.builder().build() }.whenever(clientAdaptorSpy).createGumbyUploadUrl(any())
+        val result = testSessionSpy.createModernizationJob(MavenCopyCommandsResult.Success(File("./mock/path/")))
+        assertEquals(CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.CREDENTIALS_EXPIRED), result)
+    }
+
+    @Test
+    fun `CodeModernizer returns credentials expired when expired before upload`() {
+        listOf(BearerTokenAuthState.NEEDS_REFRESH, BearerTokenAuthState.NOT_AUTHENTICATED).forEach {
+            setupConnection(it)
+            val result = testSessionSpy.createModernizationJob(MavenCopyCommandsResult.Success(File("./mock/path/")))
+            assertEquals(CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.CREDENTIALS_EXPIRED), result)
+        }
     }
 
     @Test

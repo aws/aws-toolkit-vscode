@@ -178,6 +178,13 @@ fun buildStartNewTransformFollowup(): CodeTransformChatMessageContent = CodeTran
     )
 )
 
+fun buildAuthRestoredFollowup(): CodeTransformChatMessageContent = CodeTransformChatMessageContent(
+    type = CodeTransformChatMessageType.FinalizedAnswer,
+    followUps = listOf(
+        startNewTransformFollowUp
+    )
+)
+
 fun buildUserInputChatContent(project: Project, validationResult: ValidationResult): CodeTransformChatMessageContent {
     val moduleBuildFiles = validationResult.validatedBuildFiles
 
@@ -240,24 +247,20 @@ fun buildCompileLocalFailedChatContent() = CodeTransformChatMessageContent(
 
 fun buildZipUploadFailedChatMessage(failureReason: UploadFailureReason): String {
     val resultMessage = when (failureReason) {
-        is UploadFailureReason.PRESIGNED_URL_EXPIRED -> {
-            message("codemodernizer.chat.message.upload_failed_url_expired")
-        }
-        is UploadFailureReason.HTTP_ERROR -> {
-            message("codemodernizer.chat.message.upload_failed_http_error", failureReason.statusCode)
-        }
-        is UploadFailureReason.CONNECTION_REFUSED -> {
-            message("codemodernizer.chat.message.upload_failed_connection_refused")
-        }
-        is UploadFailureReason.SSL_HANDSHAKE_ERROR -> {
-            message("codemodernizer.chat.message.upload_failed_ssl_error")
-        }
-        is UploadFailureReason.OTHER -> {
-            message("codemodernizer.chat.message.upload_failed_other", failureReason.errorMessage)
-        }
+        is UploadFailureReason.PRESIGNED_URL_EXPIRED -> message("codemodernizer.chat.message.upload_failed_url_expired")
+        is UploadFailureReason.HTTP_ERROR -> message("codemodernizer.chat.message.upload_failed_http_error", failureReason.statusCode)
+        is UploadFailureReason.CONNECTION_REFUSED -> message("codemodernizer.chat.message.upload_failed_connection_refused")
+        is UploadFailureReason.OTHER -> message("codemodernizer.chat.message.upload_failed_other", failureReason.errorMessage)
+        is UploadFailureReason.CREDENTIALS_EXPIRED -> message("q.connection.expired")
+        is UploadFailureReason.SSL_HANDSHAKE_ERROR -> message("codemodernizer.chat.message.upload_failed_ssl_error")
     }
     return resultMessage
 }
+
+fun buildAuthRestoredMessage() = CodeTransformChatMessageContent(
+    type = CodeTransformChatMessageType.FinalizedAnswer,
+    message = message("codemodernizer.chat.message.reauth_success"),
+)
 
 fun buildCompileLocalSuccessChatContent() = CodeTransformChatMessageContent(
     type = CodeTransformChatMessageType.FinalizedAnswer,
@@ -454,23 +457,31 @@ fun buildHilCannotResumeContent() = CodeTransformChatMessageContent(
     ),
 )
 
-fun buildDownloadFailureChatContent(reason: DownloadFailureReason): CodeTransformChatMessageContent {
-    val message = when (reason) {
-        is DownloadFailureReason.SSL_HANDSHAKE_ERROR -> {
-            message("codemodernizer.chat.message.download_failed_ssl", getDownloadedArtifactTextFromType(reason.artifactType))
-        }
-        is DownloadFailureReason.PROXY_WILDCARD_ERROR -> {
-            message("codemodernizer.chat.message.download_failed_wildcard", getDownloadedArtifactTextFromType(reason.artifactType))
-        }
+fun buildDownloadFailureChatContent(downloadFailureReason: DownloadFailureReason): CodeTransformChatMessageContent? {
+    val artifactText = getDownloadedArtifactTextFromType(downloadFailureReason.artifactType)
+    val message = when (downloadFailureReason) {
+        is DownloadFailureReason.SSL_HANDSHAKE_ERROR -> message(
+            "codemodernizer.chat.message.download_failed_ssl",
+            artifactText
+        )
+
+        is DownloadFailureReason.PROXY_WILDCARD_ERROR -> message(
+            "codemodernizer.chat.message.download_failed_wildcard",
+            artifactText
+        )
+
+        is DownloadFailureReason.OTHER -> message(
+            "codemodernizer.chat.message.download_failed_other",
+            artifactText,
+            downloadFailureReason.errorMessage
+        )
+        is DownloadFailureReason.CREDENTIALS_EXPIRED -> return null // credential expiry resets chat, no point emitting a message
         is DownloadFailureReason.INVALID_ARTIFACT -> {
-            if (reason.artifactType == TransformationDownloadArtifactType.CLIENT_INSTRUCTIONS) {
+            if (downloadFailureReason.artifactType == TransformationDownloadArtifactType.CLIENT_INSTRUCTIONS) {
                 message("codemodernizer.chat.message.download_failed_client_instructions_expired")
             } else {
-                message("codemodernizer.chat.message.download_failed_invalid_artifact", getDownloadedArtifactTextFromType(reason.artifactType))
+                message("codemodernizer.chat.message.download_failed_invalid_artifact", artifactText)
             }
-        }
-        is DownloadFailureReason.OTHER -> {
-            message("codemodernizer.chat.message.download_failed_other", getDownloadedArtifactTextFromType(reason.artifactType), reason.errorMessage)
         }
     }
 
@@ -478,9 +489,8 @@ fun buildDownloadFailureChatContent(reason: DownloadFailureReason): CodeTransfor
     return CodeTransformChatMessageContent(
         type = CodeTransformChatMessageType.FinalizedAnswer,
         message = message,
-        buttons = if (
-            (reason is DownloadFailureReason.SSL_HANDSHAKE_ERROR && reason.artifactType == TransformationDownloadArtifactType.CLIENT_INSTRUCTIONS) ||
-            (reason is DownloadFailureReason.OTHER && reason.artifactType == TransformationDownloadArtifactType.CLIENT_INSTRUCTIONS)
+        buttons = if (downloadFailureReason.artifactType == TransformationDownloadArtifactType.CLIENT_INSTRUCTIONS &&
+            (downloadFailureReason is DownloadFailureReason.OTHER || downloadFailureReason is DownloadFailureReason.SSL_HANDSHAKE_ERROR)
         ) {
             listOf(viewDiffButton, viewSummaryButton)
         } else {

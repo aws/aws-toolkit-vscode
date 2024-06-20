@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemAction, ChatItemType, NotificationType } from '@aws/mynah-ui-chat'
-import { ExtensionMessage } from '../commands'
-import { TabsStorage } from '../storages/tabsStorage'
-import { FollowUpGenerator } from '../followUps/generator'
-import { FormButtonIds } from '../forms/constants'
+import {ChatItem, ChatItemAction, ChatItemType, NotificationType} from '@aws/mynah-ui-chat'
+import {ExtensionMessage} from '../commands'
+import {TabsStorage, TabType} from '../storages/tabsStorage'
+import {FollowUpGenerator} from '../followUps/generator'
+import {FormButtonIds} from '../forms/constants'
 
 export interface ICodeTransformChatConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
@@ -19,6 +19,7 @@ export interface ICodeTransformChatConnectorProps {
     onStartNewTransform: (tabID: string) => void
     onUpdateAuthentication: (featureDevEnabled: boolean, codeTransformEnabled: boolean, authenticatingTabIDs: string[]) => void
     tabsStorage: TabsStorage
+    onNewTab: (tabType: TabType) => void
 }
 
 export class CodeTransformChatConnector {
@@ -30,6 +31,7 @@ export class CodeTransformChatConnector {
     private readonly onNotification
     private readonly onStartNewTransform
     private readonly onUpdateAuthentication
+    private readonly onNewTab
     private readonly tabsStorage
     private readonly followUpGenerator: FollowUpGenerator
 
@@ -44,6 +46,7 @@ export class CodeTransformChatConnector {
         this.onUpdateAuthentication = props.onUpdateAuthentication
         this.tabsStorage = props.tabsStorage
         this.followUpGenerator = new FollowUpGenerator()
+        this.onNewTab = props.onNewTab
     }
 
     followUpClicked = (tabID: string, followUp: ChatItemAction): void => {
@@ -177,6 +180,11 @@ export class CodeTransformChatConnector {
 
         if (messageData.type === 'codeTransformChatUpdateMessage') {
             this.processChatUpdateMessage(messageData)
+            return
+        }
+
+        if (messageData.type === 'codeTransformCreateTab') {
+            this.onNewTab('codetransform')
             return
         }
     }

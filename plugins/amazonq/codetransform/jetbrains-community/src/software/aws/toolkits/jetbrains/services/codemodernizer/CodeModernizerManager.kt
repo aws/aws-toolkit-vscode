@@ -4,6 +4,7 @@ package software.aws.toolkits.jetbrains.services.codemodernizer
 
 import com.intellij.notification.NotificationAction
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.PersistentStateComponent
@@ -47,6 +48,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MAVEN_CONFIGURATION_FILE_NAME
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MavenCopyCommandsResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MavenDependencyReportCommandsResult
+import software.aws.toolkits.jetbrains.services.codemodernizer.model.UploadFailureReason
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.ValidationResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.panels.managers.CodeModernizerBottomWindowPanelManager
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState
@@ -197,6 +199,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
      */
     fun addCodeModernizeUI(setSelected: Boolean = false, moduleOrProjectNameForFile: String? = null) = runInEdt {
         val appModernizerBottomWindow = getBottomToolWindow()
+        appModernizerBottomWindow.isAvailable = true
         if (!appModernizerBottomWindow.contentManager.contents.contains(codeModernizerBottomWindowPanelContent)) {
             appModernizerBottomWindow.contentManager.addContent(codeModernizerBottomWindowPanelContent)
         }
@@ -249,13 +252,13 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         CodeModernizerSessionState.getInstance(project).currentJobStopTime = Instant.MIN
     }
 
-    private fun notifyJobFailure(failureReason: String?) {
+    private fun notifyJobFailure(failureReason: String?, actions: Collection<AnAction> = listOf()) {
         val reason = failureReason ?: message("codemodernizer.notification.info.modernize_failed.unknown_failure_reason") // should not happen
         notifyStickyInfo(
             message("codemodernizer.notification.info.modernize_failed.title"),
             reason,
             project,
-            listOf(displayFeedbackNotificationAction())
+            listOf(displayFeedbackNotificationAction(), *actions.toTypedArray())
         )
     }
 
@@ -301,6 +304,8 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
     }
 
     fun resumeJob(session: CodeModernizerSession, lastJobId: JobId, currentJobResult: TransformationJob) = projectCoroutineScope(project).launch {
+        isJobSuccessfullyResumed.set(true)
+        CodeTransformMessageListener.instance.onTransformResuming()
         if (isModernizationJobActive()) {
             runInEdt { getBottomToolWindow().show() }
             return@launch
@@ -339,6 +344,8 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         isModernizationInProgress.set(false)
         managerState.flags[StateFlags.IS_ONGOING] = false
     }
+
+    fun isJobOngoingInState() = managerState.flags.getOrDefault(StateFlags.IS_ONGOING, false)
 
     fun handleLocalMavenBuildResult(mavenCopyCommandsResult: MavenCopyCommandsResult) {
         codeTransformationSession?.setLastMvnBuildResult(mavenCopyCommandsResult)
@@ -467,6 +474,9 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         }
     }
 
+    /**
+     * Silently try to resume the job, informs users only when job successfully resumed, suppresses exceptions.
+     */
     fun tryResumeJob(onProjectFirstOpen: Boolean = false) = projectCoroutineScope(project).launch {
         try {
             val notYetResumed = isResumingJob.compareAndSet(false, true)
@@ -492,40 +502,16 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             val result = session.getJobDetails(lastJobId)
             when (result.status()) {
                 TransformationStatus.COMPLETED -> {
-                    CodeTransformMessageListener.instance.onTransformResuming()
-                    notifyStickyInfo(
-                        message("codemodernizer.manager.job_finished_title"),
-                        message("codemodernizer.manager.job_finished_content"),
-                        project,
-                        listOf(
-                            displayDiffNotificationAction(lastJobId),
-                            displaySummaryNotificationAction(lastJobId),
-                            viewTransformationHubAction()
-                        )
-                    )
                     resumeJob(session, lastJobId, result)
                     setJobNotOngoing()
                 }
 
                 TransformationStatus.PARTIALLY_COMPLETED -> {
-                    CodeTransformMessageListener.instance.onTransformResuming()
-                    notifyStickyInfo(
-                        message("codemodernizer.notification.info.modernize_failed.title"),
-                        message("codemodernizer.manager.job_failed_content", result.reason()),
-                        project,
-                        listOf(
-                            displayDiffNotificationAction(lastJobId),
-                            displaySummaryNotificationAction(lastJobId),
-                            displayFeedbackNotificationAction(),
-                            viewTransformationHubAction()
-                        )
-                    )
                     resumeJob(session, lastJobId, result)
                     setJobNotOngoing()
                 }
 
                 TransformationStatus.UNKNOWN_TO_SDK_VERSION -> {
-                    CodeTransformMessageListener.instance.onTransformResuming()
                     notifyStickyInfo(
                         message("codemodernizer.notification.warn.on_resume.unknown_status_response.title"),
                         message("codemodernizer.notification.warn.on_resume.unknown_status_response.content"),
@@ -534,13 +520,11 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 }
 
                 TransformationStatus.STOPPED, TransformationStatus.STOPPING -> {
-                    CodeTransformMessageListener.instance.onTransformResuming()
+                    // If user stopped the last job, there is no need for us to resume the job
                     setJobNotOngoing()
                 }
 
                 else -> {
-                    isJobSuccessfullyResumed.set(true)
-                    CodeTransformMessageListener.instance.onTransformResuming()
                     resumeJob(session, lastJobId, result)
                     notifyStickyInfo(
                         message("codemodernizer.manager.job_ongoing_title"),
@@ -559,10 +543,6 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         } finally {
             isResumingJob.set(false)
         }
-    }
-
-    private fun viewTransformationHubAction() = NotificationAction.createSimple(message("codemodernizer.notification.info.modernize_complete.view_summary")) {
-        getBottomToolWindow().show()
     }
 
     private fun resumeJobNotificationAction(session: CodeModernizerSession, lastJobId: JobId, currentJobResult: TransformationJob) =
@@ -593,9 +573,24 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                 result.failureReason
             )
 
-            is CodeModernizerJobCompletedResult.ZipUploadFailed -> notifyJobFailure(
-                message("codemodernizer.notification.warn.upload_failed", result.failureReason.toString()),
-            )
+            is CodeModernizerJobCompletedResult.ZipUploadFailed -> {
+                if (result.failureReason is UploadFailureReason.CREDENTIALS_EXPIRED) {
+                    setJobNotOngoing()
+                    CodeTransformMessageListener.instance.onCheckAuth()
+                    notifyJobFailure(
+                        message("codemodernizer.notification.warn.upload_failed_expired_credentials.content"),
+                        listOf(
+                            NotificationAction.createSimpleExpiring(message("codemodernizer.notification.warn.action.reauthenticate")) {
+                                CodeTransformMessageListener.instance.onReauthStarted()
+                            }
+                        )
+                    )
+                } else {
+                    notifyJobFailure(
+                        message("codemodernizer.notification.warn.upload_failed", result.failureReason.toString()),
+                    )
+                }
+            }
 
             is CodeModernizerJobCompletedResult.RetryableFailure -> notifyJobFailure(
                 result.failureReason
@@ -901,5 +896,18 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
         }
 
         return true
+    }
+
+    /**
+     * When customer attempts to download an artifact and it fails for some reason (credential expiry etc)
+     * we need to be able to resume the job in order for customers to be able to reattempt the download.
+     * This sets the job as ongoing in the persistent state so that when tryResumeJob is triggered the
+     * IDE attempts to resume the job.
+     */
+    fun handleResumableDownloadArtifactFailure(job: JobId) {
+        // handle the case when user clicks long living notification but has a new job running
+        val session = this.codeTransformationSession ?: return
+        if (session.getActiveJobId() != job) return
+        setJobOngoing(job, session.sessionContext)
     }
 }

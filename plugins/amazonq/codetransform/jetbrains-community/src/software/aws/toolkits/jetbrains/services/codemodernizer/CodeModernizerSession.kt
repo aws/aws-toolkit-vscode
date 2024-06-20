@@ -19,6 +19,7 @@ import software.amazon.awssdk.services.codewhispererruntime.model.Transformation
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationStatus
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationUserActionStatus
 import software.amazon.awssdk.services.codewhispererstreaming.model.TransformationDownloadArtifactType
+import software.amazon.awssdk.services.ssooidc.model.SsoOidcException
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
@@ -31,6 +32,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModerni
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerSessionContext
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerStartJobResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeTransformHilDownloadArtifact
+import software.aws.toolkits.jetbrains.services.codemodernizer.model.DownloadArtifactResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MavenCopyCommandsResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MavenDependencyReportCommandsResult
@@ -42,6 +44,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.utils.STATES_AFTE
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.STATES_AFTER_STARTED
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getModuleOrProjectNameForFile
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getPathToHilDependencyReportDir
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.isValidCodeTransformConnection
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.pollTransformationStatusAndPlan
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.toTransformationLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanSession
@@ -146,6 +149,10 @@ class CodeModernizerSession(
         val payload: File?
 
         // Generate zip file
+        if (!isValidCodeTransformConnection(sessionContext.project)) {
+            // Creating zip can take some time, so quit early
+            return CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.CREDENTIALS_EXPIRED)
+        }
         try {
             if (isDisposed.get()) {
                 LOG.warn { "Disposed when about to create zip to upload" }
@@ -181,6 +188,9 @@ class CodeModernizerSession(
         }
 
         // Create upload url and upload zip
+        if (!isValidCodeTransformConnection(sessionContext.project)) {
+            return CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.CREDENTIALS_EXPIRED)
+        }
         var uploadId = ""
         try {
             if (shouldStop.get()) {
@@ -218,6 +228,10 @@ class CodeModernizerSession(
                 state.currentJobStatus = TransformationStatus.FAILED
                 return CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.OTHER(e.localizedMessage.toString()))
             }
+        } catch (e: SsoOidcException) {
+            state.putJobHistory(sessionContext, TransformationStatus.FAILED)
+            state.currentJobStatus = TransformationStatus.FAILED
+            return CodeModernizerStartJobResult.ZipUploadFailed(UploadFailureReason.CREDENTIALS_EXPIRED)
         } catch (e: SdkClientException) {
             // Errors from code whisperer client will always be thrown as SdkClientException
             state.putJobHistory(sessionContext, TransformationStatus.FAILED)
@@ -486,7 +500,7 @@ class CodeModernizerSession(
                         // This is a short term solution to check if build log is available by attempting to download it.
                         // In the long term, we should check if build log is available from transformation metadata.
                         val downloadArtifactResult = artifactHandler.downloadArtifact(jobId, TransformationDownloadArtifactType.LOGS, true)
-                        if (downloadArtifactResult.artifact != null) {
+                        if (downloadArtifactResult is DownloadArtifactResult.Success) {
                             val failureReason = result.jobDetails?.reason() ?: message("codemodernizer.notification.warn.maven_failed.content")
                             return CodeModernizerJobCompletedResult.JobFailedInitialBuild(jobId, failureReason, true)
                         } else {

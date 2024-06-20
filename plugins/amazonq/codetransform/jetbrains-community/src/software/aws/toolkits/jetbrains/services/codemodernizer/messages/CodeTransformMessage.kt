@@ -207,6 +207,11 @@ data class CodeTransformChatUpdateMessage(
     type = "codeTransformChatUpdateMessage",
 )
 
+object CodeTransformCreateTab :
+    CodeTransformUiMessage(
+        tabId = null,
+        type = "codeTransformCreateTab",
+    )
 enum class CodeTransformChatMessageType {
     Prompt,
     PendingAnswer,

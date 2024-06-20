@@ -9,6 +9,7 @@ import com.intellij.openapi.vfs.VirtualFileManager
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationLanguage
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationStatus
 import software.aws.toolkits.core.TokenConnectionSettings
+import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
@@ -42,6 +43,15 @@ fun refreshToken(project: Project) {
     val provider = (connection?.getConnectionSettings() as TokenConnectionSettings).tokenProvider.delegate as BearerTokenProvider
     provider.refresh()
 }
+
+fun getQTokenProvider(project: Project) = (
+    ToolkitConnectionManager
+        .getInstance(project)
+        .activeConnectionForFeature(QConnection.getInstance()) as? AwsBearerTokenConnection
+    )
+    ?.getConnectionSettings()
+    ?.tokenProvider
+    ?.delegate as? BearerTokenProvider
 
 fun openTroubleshootingGuideNotificationAction(targetUrl: String) = OpenBrowserAction(
     message("codemodernizer.notification.info.view_troubleshooting_guide"),

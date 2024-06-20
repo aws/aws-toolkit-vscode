@@ -50,6 +50,14 @@ class CodeTransformMessageListener {
         _messages.tryEmit(CodeTransformActionMessage(CodeTransformCommand.AuthRestored))
     }
 
+    fun onCheckAuth() {
+        _messages.tryEmit(CodeTransformActionMessage(CodeTransformCommand.CheckAuth))
+    }
+
+    fun onReauthStarted() {
+        _messages.tryEmit(CodeTransformActionMessage(CodeTransformCommand.ReauthStarted))
+    }
+
     // provide singleton access
     companion object {
         val instance = CodeTransformMessageListener()

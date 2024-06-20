@@ -9,6 +9,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.messages.CodeTran
 import software.aws.toolkits.jetbrains.services.codemodernizer.messages.CodeTransformChatMessageContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.messages.CodeTransformChatMessageType
 import software.aws.toolkits.jetbrains.services.codemodernizer.messages.CodeTransformChatUpdateMessage
+import software.aws.toolkits.jetbrains.services.codemodernizer.messages.CodeTransformCreateTab
 import software.aws.toolkits.jetbrains.services.codemodernizer.messages.CodeTransformNotificationMessage
 import software.aws.toolkits.jetbrains.services.codemodernizer.session.ChatSessionStorage
 import software.aws.toolkits.jetbrains.services.cwc.messages.ChatMessageType
@@ -107,6 +108,8 @@ class CodeTransformChatHelper(
             )
         )
     }
+
+    suspend fun createNewCodeTransformTab() = messagePublisher.publish(CodeTransformCreateTab)
 
     suspend fun chatDelayShort() {
         delay(500)

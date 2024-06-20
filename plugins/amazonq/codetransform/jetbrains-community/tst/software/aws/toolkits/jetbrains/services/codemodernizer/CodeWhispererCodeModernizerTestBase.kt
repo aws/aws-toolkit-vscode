@@ -46,6 +46,8 @@ import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.sso.DeviceAuthorizationGrantToken
+import software.aws.toolkits.jetbrains.core.credentials.sso.PKCEAuthorizationGrantToken
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerArtifact
@@ -304,6 +306,31 @@ open class CodeWhispererCodeModernizerTestBase(
         doNothing().whenever(codeModernizerManagerSpy).notifyTransformationFailedToStop()
         doReturn(Path("/test/pom.xml")).whenever(emptyPomFileSpy).toNioPath()
         validJDK8CustomerSelection = CustomerSelection(emptyPomFileSpy, JavaSdkVersion.JDK_1_8, JavaSdkVersion.JDK_17)
+    }
+
+    fun setupConnection(authState: BearerTokenAuthState) {
+        val accessToken = PKCEAuthorizationGrantToken(aString(), aString(), aString(), aString(), Instant.MAX, Instant.now())
+
+        val provider = mock<BearerTokenProvider> {
+            doReturn(accessToken).whenever(it).refresh()
+            doReturn(accessToken).whenever(it).currentToken()
+            doReturn(authState).whenever(it).state()
+        }
+
+        val mockBearerProvider = mock<ToolkitBearerTokenProvider> {
+            doReturn(provider).whenever(it).delegate
+        }
+
+        val connectionSettingsMock = mock<TokenConnectionSettings> {
+            whenever(it.tokenProvider).thenReturn(mockBearerProvider)
+        }
+
+        val toolkitConnection = mock<AwsBearerTokenConnection> {
+            doReturn(connectionSettingsMock).whenever(it).getConnectionSettings()
+        }
+        doReturn(toolkitConnection).whenever(toolkitConnectionManager).activeConnectionForFeature(any())
+
+        projectRule.project.replaceService(ToolkitConnectionManager::class.java, toolkitConnectionManager, disposableRule.disposable)
     }
 
     companion object {
