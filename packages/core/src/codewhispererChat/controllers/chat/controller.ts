@@ -566,7 +566,7 @@ export class ChatController {
                             if (resp === 'Open Settings') {
                                 void vscode.commands.executeCommand(
                                     'workbench.action.openSettings',
-                                    `@id:amazonQ.amazonQ.localWorkspaceIndex`
+                                    `@id:amazonQ.localWorkspaceIndex`
                                 )
                             }
                         })

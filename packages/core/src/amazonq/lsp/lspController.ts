@@ -147,7 +147,7 @@ export class LspController {
     async tryInstallLsp(context: vscode.ExtensionContext): Promise<boolean> {
         try {
             if (this.isLspInstalled(context)) {
-                getLogger().info(`LspController: LSP already istalled`)
+                getLogger().info(`LspController: LSP already installed`)
                 return true
             }
             const manifest: Manifest = (await this.downloadManifest()) as Manifest
@@ -180,7 +180,7 @@ export class LspController {
     }
 
     async clear() {
-        clear('')
+        clear('clear')
     }
 
     async query(s: string): Promise<RelevantTextDocument[]> {
@@ -207,7 +207,7 @@ export class LspController {
     }
 
     async buildIndex() {
-        getLogger().debug(`LspController: Starting to build vector index of project`)
+        getLogger().info(`LspController: Starting to build vector index of project`)
         const start = performance.now()
         const projPaths = getProjectPaths()
         projPaths.sort()
@@ -222,7 +222,7 @@ export class LspController {
                 true,
                 CodeWhispererConstants.projectIndexSizeLimitBytes
             )
-            getLogger().debug(`LspController: Found ${files.length} files in current project ${getProjectPaths()}`)
+            getLogger().info(`LspController: Found ${files.length} files in current project ${getProjectPaths()}`)
             await indexFiles(
                 files.map(f => f.fileUri.fsPath),
                 projRoot,

@@ -5,11 +5,13 @@
 
 import { RequestType } from 'vscode-languageserver'
 
-export type IndexRequest = {
+export type IndexRequestPayload = {
     filePaths: string[]
     rootPath: string
     refresh: boolean
 }
+
+export type IndexRequest = string
 
 export const IndexRequestType: RequestType<IndexRequest, any, any> = new RequestType('lsp/index')
 
@@ -20,3 +22,7 @@ export const ClearRequestType: RequestType<ClearRequest, any, any> = new Request
 export type QueryRequest = string
 
 export const QueryRequestType: RequestType<QueryRequest, any, any> = new RequestType('lsp/query')
+
+export type UpdateIndexRequest = string
+
+export const UpdateIndexRequestType: RequestType<UpdateIndexRequest, any, any> = new RequestType('lsp/updateIndex')

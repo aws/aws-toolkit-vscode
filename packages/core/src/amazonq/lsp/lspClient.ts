@@ -12,37 +12,56 @@ import * as path from 'path'
 import * as nls from 'vscode-nls'
 import * as cp from 'child_process'
 import * as crypto from 'crypto'
+import * as jose from 'jose'
 
 import { Disposable, ExtensionContext } from 'vscode'
 
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient'
-import { ClearRequestType, IndexRequestType, QueryRequestType } from './types'
+import { ClearRequestType, IndexRequestType, QueryRequestType, UpdateIndexRequestType } from './types'
 import { Writable } from 'stream'
 
 const localize = nls.loadMessageBundle()
 let client: LanguageClient | undefined = undefined
 
+const key = crypto.randomBytes(32)
+
+async function encrypt(payload: string) {
+    return await new jose.CompactEncrypt(new TextEncoder().encode(payload))
+        .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
+        .encrypt(key)
+}
+
 export async function indexFiles(request: string[], rootPath: string, refresh: boolean) {
     if (client) {
-        const resp = await client.sendRequest(IndexRequestType, {
-            filePaths: request,
-            rootPath: rootPath,
-            refresh: refresh,
-        })
+        const encryptedRequest = await encrypt(
+            JSON.stringify({
+                filePaths: request,
+                rootPath: rootPath,
+                refresh: refresh,
+            })
+        )
+        const resp = await client.sendRequest(IndexRequestType, encryptedRequest)
         return resp
     }
 }
 
 export async function query(request: string) {
     if (client) {
-        const resp = await client.sendRequest(QueryRequestType, request)
+        const resp = await client.sendRequest(
+            QueryRequestType,
+            await encrypt(
+                JSON.stringify({
+                    query: request,
+                })
+            )
+        )
         return resp
     }
 }
 
 export async function clear(request: string) {
     if (client) {
-        const resp = await client.sendRequest(ClearRequestType, request)
+        const resp = await client.sendRequest(ClearRequestType, await encrypt(JSON.stringify({})))
         return resp
     }
 }
@@ -52,11 +71,25 @@ export async function getUsage() {
     }
 }
 
-const identityKey = crypto.randomBytes(32).toString('base64')
+export async function updateIndex(filePath: string) {
+    if (client) {
+        const resp = await client.sendRequest(
+            UpdateIndexRequestType,
+            await encrypt(
+                JSON.stringify({
+                    filePath: filePath,
+                })
+            )
+        )
+        return resp
+    }
+}
 
 export function writeEncryptionInit(stream: Writable): void {
     const request = {
-        key: identityKey,
+        version: '1.0',
+        mode: 'JWT',
+        key: key.toString('base64'),
     }
     stream.write(JSON.stringify(request))
     stream.write('\n')
@@ -122,9 +155,7 @@ export async function activate(extensionContext: ExtensionContext) {
     toDispose.push(
         vscode.window.onDidChangeActiveTextEditor(editor => {
             if (savedDocument && editor && editor.document.uri.fsPath !== savedDocument.fsPath) {
-                client?.sendNotification('textDocument/didClose', {
-                    textDocument: { uri: savedDocument.toString() },
-                })
+                updateIndex(savedDocument.fsPath)
             }
         })
     )
