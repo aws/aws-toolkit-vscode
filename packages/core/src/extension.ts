@@ -128,6 +128,9 @@ export async function activate(context: vscode.ExtensionContext) {
         // TODO: Remove after some time?
         for (const conn of await Auth.instance.listConnections()) {
             if (isSsoConnection(conn) && hasScopes(conn, codeWhispererCoreScopes)) {
+                getLogger().debug(
+                    `forgetting connection: ${conn.id} with starturl/scopes: ${conn.startUrl} / ${conn.scopes}`
+                )
                 await Auth.instance.forgetConnection(conn)
                 await SessionSeparationPrompt.instance.showForCommand('aws.toolkit.auth.manageConnections')
             }

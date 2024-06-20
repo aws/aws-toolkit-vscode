@@ -10,7 +10,7 @@ import { ExtContext } from '../shared/extensions'
 import { CodeCatalystRemoteSourceProvider } from './repos/remoteSourceProvider'
 import { CodeCatalystCommands, codecatalystConnectionsCmd } from './commands'
 import { GitExtension } from '../shared/extensions/git'
-import { CodeCatalystAuthenticationProvider, defaultScopes } from './auth'
+import { CodeCatalystAuthenticationProvider } from './auth'
 import { registerDevfileWatcher, updateDevfileCommand } from './devfile'
 import { DevEnvClient } from '../shared/clients/devenvClient'
 import { watchRestartingDevEnvs } from './reconnect'
@@ -25,7 +25,7 @@ import { getLogger } from '../shared/logger/logger'
 import { DevEnvActivityStarter } from './devEnv'
 import { learnMoreCommand, onboardCommand, reauth } from './explorer'
 import { isInDevEnv } from '../shared/vscode/env'
-import { hasExactScopes } from '../auth/connection'
+import { hasScopes, scopesCodeWhispererCore } from '../auth/connection'
 import { SessionSeparationPrompt } from '../auth/auth'
 
 const localize = nls.loadMessageBundle()
@@ -46,9 +46,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
     await authProvider.restore()
 
-    // Forget Amazon Q connections while we transition to separate auth sessions per extension
+    // Forget Amazon Q connections while we transition to separate auth sessions per extension.
+    // Note: credentials on disk in the dev env cannot have Q scopes, so it will never be forgotten.
     // TODO: Remove after some time?
-    if (authProvider.isConnected() && !hasExactScopes(authProvider.activeConnection!, defaultScopes)) {
+    if (authProvider.isConnected() && hasScopes(authProvider.activeConnection!, scopesCodeWhispererCore)) {
         await authProvider.secondaryAuth.forgetConnection()
         await SessionSeparationPrompt.instance.showForCommand('aws.codecatalyst.manageConnections')
     }
