@@ -2,7 +2,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import {
     AppToWebViewMessageDispatcher,
@@ -32,7 +31,12 @@ import { CodeScanIssue } from '../../../../codewhisperer/models/model'
 import { marked } from 'marked'
 import { JSDOM } from 'jsdom'
 
-export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
+export type StaticTextResponseType =
+    | 'quick-action-help'
+    | 'onboarding-help'
+    | 'transform'
+    | 'help'
+    | 'project-context-help'
 
 export class Messenger {
     public constructor(
@@ -373,6 +377,9 @@ export class Messenger {
                     },
                 ]
                 followUpsHeader = 'Try Examples:'
+                break
+            case 'project-context-help':
+                message = `Please enable local workspace indexing in Amazon Q Settings.`
                 break
         }
 

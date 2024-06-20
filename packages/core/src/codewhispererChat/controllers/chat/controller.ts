@@ -2,7 +2,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import * as vscode from 'vscode'
 import { Event as VSCodeEvent, Uri } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
@@ -404,7 +403,6 @@ export class ChatController {
             this.messenger.sendErrorMessage('chatMessage should be set', message.tabID, undefined)
             return
         }
-
         try {
             switch (message.command) {
                 case 'follow-up-was-clicked':
@@ -544,36 +542,6 @@ export class ChatController {
         triggerPayload: TriggerPayload & { projectContextQueryLatencyMs?: number },
         triggerID: string
     ) {
-        // Loop while we waiting for tabID to be set
-        if (triggerPayload.message) {
-            let userIntentEnableProjectContext = false
-            if (triggerPayload.message.startsWith('@ws')) {
-                userIntentEnableProjectContext = true
-                triggerPayload.message = triggerPayload.message.slice(3)
-            } else if (triggerPayload.message.startsWith('@workspace')) {
-                userIntentEnableProjectContext = true
-                triggerPayload.message = triggerPayload.message.slice(10)
-            }
-            if (userIntentEnableProjectContext) {
-                if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
-                    const start = performance.now()
-                    triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
-                    triggerPayload.projectContextQueryLatencyMs = performance.now() - start
-                } else {
-                    void vscode.window
-                        .showInformationMessage('Please enable local indexing in Settings', 'Open Settings')
-                        .then(resp => {
-                            if (resp === 'Open Settings') {
-                                void vscode.commands.executeCommand(
-                                    'workbench.action.openSettings',
-                                    `@id:amazonQ.localWorkspaceIndex`
-                                )
-                            }
-                        })
-                }
-            }
-        }
-
         const triggerEvent = this.triggerEventsStorage.getTriggerEvent(triggerID)
         if (triggerEvent === undefined) {
             return
@@ -601,6 +569,31 @@ export class ChatController {
         ) {
             await this.messenger.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
             return
+        }
+        // Loop while we waiting for tabID to be set
+        if (triggerPayload.message) {
+            let userIntentEnableProjectContext = false
+            if (triggerPayload.message.startsWith('@ws')) {
+                userIntentEnableProjectContext = true
+                triggerPayload.message = triggerPayload.message.slice(3)
+            } else if (triggerPayload.message.startsWith('@workspace')) {
+                userIntentEnableProjectContext = true
+                triggerPayload.message = triggerPayload.message.slice(10)
+            }
+            if (userIntentEnableProjectContext) {
+                if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
+                    const start = performance.now()
+                    triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
+                    triggerPayload.projectContextQueryLatencyMs = performance.now() - start
+                } else {
+                    this.messenger.sendStaticTextResponse('project-context-help', triggerID, tabID)
+                    void vscode.commands.executeCommand(
+                        'workbench.action.openSettings',
+                        `@id:amazonQ.localWorkspaceIndex`
+                    )
+                    return
+                }
+            }
         }
 
         const request = triggerPayloadToChatRequest(triggerPayload)
