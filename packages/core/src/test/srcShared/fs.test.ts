@@ -10,7 +10,7 @@ import { existsSync, mkdirSync, promises as fsPromises, readFileSync, rmSync } f
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { fsCommon } from '../../srcShared/fs'
 import * as os from 'os'
-import { isMinimumVersion } from '../../shared/vscode/env'
+import { isMinVscode } from '../../shared/vscode/env'
 import Sinon from 'sinon'
 import * as extensionUtilities from '../../shared/extensionUtilities'
 import { toFile } from '../testUtil'
@@ -93,7 +93,7 @@ describe('FileSystem', function () {
                 console.log('Skipping since windows does not support mode permissions')
                 return this.skip()
             }
-            if (isMinimumVersion()) {
+            if (isMinVscode()) {
                 console.log('Skipping since min version has different error message')
                 return this.skip()
             }
