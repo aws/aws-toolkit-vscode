@@ -1,0 +1,20 @@
+{
+  "date" : "2024-06-21",
+  "version" : "3.12",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Fix an issue where worker threads are unable to properly resolve the calling plugin, resulting in invalid telemetry data"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Chat: Fixed broken code blocks with typewriter text in list items."
+  }, {
+    "type" : "bugfix",
+    "description" : "Feature Development: update /dev welcome message"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix IDE auto completion settings potentially overwritten by Q inline suggestion"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix infinite restart loop on <=241 when an incompatible version of AWS Toolkit is installed alongside Amazon Q (#4519)"
+  } ]
+}

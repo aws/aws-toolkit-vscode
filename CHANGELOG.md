@@ -1,3 +1,10 @@
+# _3.12_ (2024-06-21)
+- **(Bug Fix)** Fix an issue where worker threads are unable to properly resolve the calling plugin, resulting in invalid telemetry data
+- **(Bug Fix)** Amazon Q Chat: Fixed broken code blocks with typewriter text in list items.
+- **(Bug Fix)** Feature Development: update /dev welcome message
+- **(Bug Fix)** Fix IDE auto completion settings potentially overwritten by Q inline suggestion
+- **(Bug Fix)** Fix infinite restart loop on <=241 when an incompatible version of AWS Toolkit is installed alongside Amazon Q ([#4519](https://github.com/aws/aws-toolkit-jetbrains/issues/4519))
+
 # _3.11_ (2024-06-13)
 - **(Feature)** Amazon Q Code Transform: Allow user to view transformation build log
 - **(Bug Fix)** Fix intermittent validation exception from CodeWhisperer service for improperly formed request
