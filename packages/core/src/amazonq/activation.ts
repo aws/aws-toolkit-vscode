@@ -23,10 +23,6 @@ import { Commands, placeholder } from '../shared/vscode/commands2'
 import { focusAmazonQPanel, focusAmazonQPanelKeybinding } from '../codewhispererChat/commands/registerCommands'
 import { TryChatCodeLensProvider, tryChatCodeLensCommand } from '../codewhispererChat/editor/codelens'
 import { Auth } from '../auth'
-import { learnMoreUri } from '../codewhisperer/models/constants'
-import { openUrl } from '../shared/utilities/vsCodeUtils'
-import { AuthUtil } from '../codewhisperer'
-import { ConnectionStateChangeEvent } from '../auth/auth'
 import { telemetry } from '../shared/telemetry'
 
 export async function activate(context: ExtensionContext) {
@@ -64,10 +60,7 @@ export async function activate(context: ExtensionContext) {
     })
 
     await activateBadge()
-    void setupAuthNotification(
-        appInitContext.onDidChangeAmazonQVisibility.event,
-        Auth.instance.onDidChangeConnectionState
-    )
+    void setupAuthNotification()
 }
 
 function registerApps(appInitContext: AmazonQAppInitContext) {
@@ -80,85 +73,38 @@ function registerApps(appInitContext: AmazonQAppInitContext) {
  * Display a notification to user for Log In.
  *
  * Authentication Notification is displayed when:
- * - The user closes the Amazon Q chat panel, and
- * - The user has not performed any authentication action.
+ * - User is not authenticated
+ * - Once every session
  *
- * Error Notification is displayed when:
- * - The user closes the Amazon Q chat panel, and
- * - The user attempts an authentication action but is not logged in.
- *
- * @param {Event} onAmazonQChatVisibility - Event indicating the visibility status of the Amazon Q chat.
- * @param {Event} onDidUpdateConnection - Event indicating the authentication connection update.
  */
-async function setupAuthNotification(
-    onAmazonQChatVisibility: vscode.Event<boolean>,
-    onDidUpdateConnection: vscode.Event<ConnectionStateChangeEvent | undefined>
-) {
-    let isAmazonQVisible = true // Assume Chat is open by default.
+async function setupAuthNotification() {
     let notificationDisplayed = false // Auth Notification should be displayed only once.
-    let authConnection: ConnectionStateChangeEvent
-
-    // Updates the visibility state of the Amazon Q chat.
-    const updateVisibility = async (visible: boolean) => {
-        isAmazonQVisible = visible
-        await tryShowNotification()
-    }
-
-    // Updates the source of the connection for Amazon Q sign in.
-    const updateConnection = async (connection: ConnectionStateChangeEvent | undefined) => {
-        if (connection) {
-            authConnection = connection
-            await tryShowNotification()
-        }
-    }
-
-    const disposables: vscode.Disposable[] = [
-        onAmazonQChatVisibility(updateVisibility),
-        onDidUpdateConnection(updateConnection),
-    ]
+    await tryShowNotification()
 
     async function tryShowNotification() {
-        if (notificationDisplayed || Auth.instance.activeConnection) {
+        // Do not show the notification if the IDE starts and user is already authenticated.
+        if (Auth.instance.activeConnection) {
+            notificationDisplayed = true
+        }
+
+        if (notificationDisplayed) {
             return
         }
 
         const source = 'authNotification'
+        const buttonAction = 'Sign In'
+        notificationDisplayed = true
 
-        if (!isAmazonQVisible && !authConnection && !AuthUtil.instance.isConnectionExpired()) {
-            const buttonAction = 'Sign In'
-            notificationDisplayed = true
-            disposables.forEach(item => item.dispose())
+        telemetry.toolkit_showNotification.emit({
+            component: 'editor',
+            id: source,
+            reason: 'notLoggedIn',
+            result: 'Succeeded',
+        })
+        const selection = await vscode.window.showWarningMessage('Start using Amazon Q', buttonAction)
 
-            telemetry.toolkit_showNotification.emit({
-                component: 'editor',
-                id: source,
-                reason: 'notLoggedIn',
-                result: 'Succeeded',
-            })
-            const selection = await vscode.window.showWarningMessage('Start using Amazon Q', buttonAction)
-
-            if (selection === buttonAction) {
-                void focusAmazonQPanel.execute(placeholder, source)
-            }
-        } else if (!isAmazonQVisible && authConnection.state === 'authenticating') {
-            const buttonAction = 'Open documentation'
-            notificationDisplayed = true
-            disposables.forEach(item => item.dispose())
-
-            telemetry.toolkit_showNotification.emit({
-                component: 'editor',
-                id: source,
-                reason: 'authenticating',
-                result: 'Succeeded',
-            })
-            const selection = await vscode.window.showWarningMessage(
-                'See Amazon Q documentation for help on signing in',
-                buttonAction
-            )
-
-            if (selection === buttonAction) {
-                void openUrl(vscode.Uri.parse(`${learnMoreUri}#q-in-IDE-setup-bid`), source)
-            }
+        if (selection === buttonAction) {
+            void focusAmazonQPanel.execute(placeholder, source)
         }
     }
 }
