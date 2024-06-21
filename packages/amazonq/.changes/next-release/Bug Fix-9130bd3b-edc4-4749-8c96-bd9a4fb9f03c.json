@@ -1,4 +1,4 @@
 {
-	"type": "Bug Fix",
-	"description": "update login screen and auth notification"
+	"type": "Feature",
+	"description": "UX: New style for the login window"
 }
