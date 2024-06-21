@@ -87,8 +87,6 @@ export default defineComponent({
             isSelected: this.isSelected,
             isHovering: false,
             isFocused: false,
-
-            // v-ifs above should be based on itemId with LoginOption, but that doesn't cover existing connections whose LoginOption > than the max option
             LoginOption,
         }
     },

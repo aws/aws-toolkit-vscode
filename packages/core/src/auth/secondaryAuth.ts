@@ -130,11 +130,11 @@ export class SecondaryAuth<T extends Connection = Connection> {
             getLogger().error('handleConnectionChanged() failed: %s', (e as Error).message)
         })
         this.auth.onDidChangeActiveConnection(handleConnectionChanged)
-        this.auth.onDidDeleteConnection(async (deletedConnId: Connection['id']) => {
-            if (deletedConnId === this.#activeConnection?.id) {
+        this.auth.onDidDeleteConnection(async event => {
+            if (event.connId === this.#activeConnection?.id) {
                 await this.clearActiveConnection()
             }
-            if (deletedConnId === this.#savedConnection?.id) {
+            if (event.connId === this.#savedConnection?.id) {
                 // Our saved connection does not exist anymore, delete the reference to it.
                 await this.clearSavedConnection()
             }
@@ -189,14 +189,27 @@ export class SecondaryAuth<T extends Connection = Connection> {
         }
     }
 
+    /**
+     * @warning Intended for a single use case where we need to let one service "forget" about a
+     * connection but leave it intact for other services. This may have unintended consequences.
+     * Use `deleteConnection()` instead.
+     *
+     * Clears the connection in use without deleting it or logging out.
+     */
+    public async forgetConnection() {
+        getLogger().debug('running SecondaryAuth:forgetConnection()')
+        await this.clearSavedConnection()
+        await this.clearActiveConnection()
+    }
+
     /** Stop using the saved connection and fallback to using the active connection, if it is usable. */
-    private async clearSavedConnection() {
+    public async clearSavedConnection() {
         await this.memento.update(this.key, undefined)
         this.#savedConnection = undefined
         this.#onDidChangeActiveConnection.fire(this.activeConnection)
     }
 
-    private async clearActiveConnection() {
+    public async clearActiveConnection() {
         this.#activeConnection = undefined
         if (this.#savedConnection) {
             /**
@@ -253,17 +266,6 @@ export class SecondaryAuth<T extends Connection = Connection> {
             return conn
         }
     }
-
-    // Used by Amazon Q to delete connection status & scope when this deletion is made by AWS Toolkit
-    // NO event should be emitted from this deletion to avoid infinite loop
-    public async onDeleteConnection(id: string) {
-        await this.auth.onDeleteConnection(id)
-        if (id === this.activeConnection?.id) {
-            await this.memento.update(this.key, undefined)
-            this.#savedConnection = undefined
-            this.#activeConnection = undefined
-        }
-    }
 }
 
 /**
@@ -283,16 +285,7 @@ export async function addScopes(conn: SsoConnection, extraScopes: string[], auth
     const oldScopes = conn.scopes ?? []
     const newScopes = Array.from(new Set([...oldScopes, ...extraScopes]))
 
-    const updateConnectionScopes = (scopes: string[]) => {
-        return auth.updateConnection(conn, {
-            type: 'sso',
-            scopes,
-            startUrl: conn.startUrl,
-            ssoRegion: conn.ssoRegion,
-        })
-    }
-
-    const updatedConn = await updateConnectionScopes(newScopes)
+    const updatedConn = await setScopes(conn, newScopes, auth)
 
     try {
         return await auth.reauthenticate(updatedConn, false)
@@ -301,7 +294,16 @@ export async function addScopes(conn: SsoConnection, extraScopes: string[], auth
         // InvalidGrantException, etc), then we need to revert to the old connection scopes. Otherwise,
         // this could soft-lock users into a broken connection that cannot be re-authenticated without
         // first deleting the connection.
-        await updateConnectionScopes(oldScopes)
+        await setScopes(conn, oldScopes, auth)
         throw e
     }
+}
+
+export function setScopes(conn: SsoConnection, scopes: string[], auth = Auth.instance): Promise<SsoConnection> {
+    return auth.updateConnection(conn, {
+        type: 'sso',
+        scopes,
+        startUrl: conn.startUrl,
+        ssoRegion: conn.ssoRegion,
+    })
 }
