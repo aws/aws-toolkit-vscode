@@ -565,6 +565,10 @@ export class PermissionsError extends ToolkitError {
 }
 
 export function isNetworkError(err?: unknown): err is Error & { code: string } {
+    if (isVSCodeProxyError(err)) {
+        return true
+    }
+
     if (!hasCode(err)) {
         return false
     }
@@ -583,4 +587,18 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
         'ENOBUFS', // client side memory issue during http request?
         'EADDRNOTAVAIL', // port not available/allowed?
     ].includes(err.code)
+}
+
+/**
+ * This error occurs on a network call if the user has set up a proxy in the
+ * VS Code settings but the proxy is not reachable.
+ *
+ * Setting ID: http.proxy
+ */
+function isVSCodeProxyError(err?: unknown): boolean {
+    if (!(err instanceof Error)) {
+        return false
+    }
+
+    return err.name === 'Error' && err.message.startsWith('Failed to establish a socket connection to proxies')
 }
