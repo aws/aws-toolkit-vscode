@@ -62,9 +62,14 @@ function fakeAwsErrorUnauth() {
     return e as UnauthorizedException
 }
 
-function fakeErrorChain() {
+/** Creates a deep "cause chain", to test that error handler correctly gets the most relevant error. */
+function fakeErrorChain(rootCause?: Error) {
     try {
-        throw new Error('generic error 1')
+        if (rootCause) {
+            throw rootCause
+        } else {
+            throw new Error('generic error 1')
+        }
     } catch (e1) {
         try {
             const e = fakeAwsErrorAccessDenied()
@@ -72,15 +77,13 @@ function fakeErrorChain() {
             throw e
         } catch (e2) {
             try {
-                throw ToolkitError.chain(e2, 'ToolkitError message', {
-                    documentationUri: vscode.Uri.parse(
-                        'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html'
-                    ),
-                })
-            } catch (e3) {
                 const e = fakeAwsErrorUnauth()
-                ;(e as any).cause = e3
+                ;(e as any).cause = e2
                 return e
+            } catch (e3) {
+                throw ToolkitError.chain(e3, 'ToolkitError message', {
+                    documentationUri: vscode.Uri.parse('https://docs.aws.amazon.com/toolkit-for-vscode/'),
+                })
             }
         }
     }

@@ -50,7 +50,7 @@ import { ReferenceInlineProvider } from './service/referenceInlineProvider'
 import { disposeSecurityDiagnostic, securityScanRender } from './service/diagnosticsProvider'
 import { SecurityPanelViewProvider, openEditorAtRange } from './views/securityPanelViewProvider'
 import { RecommendationHandler } from './service/recommendationHandler'
-import { Commands, registerCommandsWithVSCode } from '../shared/vscode/commands2'
+import { Commands, registerCommandErrorHandler, registerDeclaredCommands } from '../shared/vscode/commands2'
 import { InlineCompletionService, refreshStatusBar } from './service/inlineCompletionService'
 import { isInlineCompletionEnabled } from './util/commonUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
@@ -68,7 +68,7 @@ import { Container } from './service/serviceContainer'
 import { debounceStartSecurityScan } from './commands/startSecurityScan'
 import { securityScanLanguageContext } from './util/securityScanLanguageContext'
 import { registerWebviewErrorHandler } from '../webviews/server'
-import { logAndShowWebviewError } from '../shared/utilities/logAndShowUtils'
+import { logAndShowError, logAndShowWebviewError } from '../shared/utilities/logAndShowUtils'
 import { openSettings } from '../shared/settings'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 
@@ -93,8 +93,9 @@ export async function activate(context: ExtContext): Promise<void> {
         await enableDefaultConfigCloud9()
     }
 
-    registerCommandsWithVSCode(
-        context.extensionContext,
+    // TODO: is this indirection useful?
+    registerDeclaredCommands(
+        context.extensionContext.subscriptions,
         CodeWhispererCommandDeclarations.instance,
         new CodeWhispererCommandBackend(context.extensionContext)
     )
@@ -105,9 +106,13 @@ export async function activate(context: ExtContext): Promise<void> {
     const securityPanelViewProvider = new SecurityPanelViewProvider(context.extensionContext)
     activateSecurityScan()
 
-    /**
-     * Register the webview error handler for Amazon Q
-     */
+    // TODO: this is already done in packages/core/src/extensionCommon.ts, why doesn't amazonq use that?
+    registerCommandErrorHandler((info, error) => {
+        const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
+        void logAndShowError(localize, error, info.id, defaultMessage)
+    })
+
+    // TODO: this is already done in packages/core/src/extensionCommon.ts, why doesn't amazonq use that?
     registerWebviewErrorHandler((error: unknown, webviewId: string, command: string) => {
         logAndShowWebviewError(localize, error, webviewId, command)
     })
@@ -304,7 +309,8 @@ export async function activate(context: ExtContext): Promise<void> {
 
     if (auth.isConnectionExpired()) {
         auth.showReauthenticatePrompt().catch(e => {
-            getLogger().error('showReauthenticatePrompt failed: %s', (e as Error).message)
+            const defaulMsg = localize('AWS.generic.message.error', 'Failed to reauth:')
+            void logAndShowError(localize, e, 'showReauthenticatePrompt', defaulMsg)
         })
     }
     if (auth.isValidEnterpriseSsoInUse()) {
