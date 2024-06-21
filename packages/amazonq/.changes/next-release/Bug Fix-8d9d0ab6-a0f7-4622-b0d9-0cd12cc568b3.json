@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Amazon Q Chat: Fixed broken code blocks with typewriter text in list items."
+}
