@@ -11,6 +11,7 @@ import {
     getErrorMsg,
     getTelemetryReason,
     getTelemetryResult,
+    isNetworkError,
     resolveErrorMessageToDisplay,
     ToolkitError,
 } from '../../shared/errors'
@@ -415,5 +416,18 @@ describe('util', function () {
         assert.deepStrictEqual(getErrorMsg(err), 'aws validation msg 1')
         ;(err as any).error_description = 'aws error desc 1'
         assert.deepStrictEqual(getErrorMsg(err), 'aws error desc 1')
+    })
+
+    it('isNetworkError()', function () {
+        assert.deepStrictEqual(
+            isNetworkError(new Error('Failed to establish a socket connection to proxies BLAH BLAH BLAH')),
+            true,
+            'Did not return "true" on a VS Code Proxy error'
+        )
+        assert.deepStrictEqual(
+            isNetworkError(new Error('I am NOT a network error')),
+            false,
+            'Incorrectly indicated as network error'
+        )
     })
 })
