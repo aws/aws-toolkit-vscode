@@ -10,12 +10,14 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.registry.Registry
 import software.amazon.awssdk.auth.token.credentials.SdkTokenProvider
+import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.amazon.awssdk.services.ssooidc.model.AuthorizationPendingException
 import software.amazon.awssdk.services.ssooidc.model.CreateTokenResponse
 import software.amazon.awssdk.services.ssooidc.model.InvalidClientException
 import software.amazon.awssdk.services.ssooidc.model.InvalidRequestException
 import software.amazon.awssdk.services.ssooidc.model.SlowDownException
+import software.amazon.awssdk.services.ssooidc.model.SsoOidcException
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
@@ -335,45 +337,87 @@ class SsoAccessTokenProvider(
         }
     }
 
+    private fun sendFailedRefreshCredentialsMetricIfNeeded(
+        currentToken: AccessToken,
+        reason: String,
+        reasonDesc: String,
+        requestId: String? = null
+    ) {
+        val tokenCreationTime = currentToken.createdAt
+        val sessionDuration = Duration.between(Instant.now(clock), tokenCreationTime)
+        val credentialSourceId = if (currentToken.ssoUrl == SONO_URL) CredentialSourceId.AwsId else CredentialSourceId.IamIdentityCenter
+
+        if (tokenCreationTime != Instant.EPOCH) {
+            AwsTelemetry.refreshCredentials(
+                project = null,
+                result = Result.Failed,
+                sessionDuration = sessionDuration.toHours().toInt(),
+                credentialSourceId = credentialSourceId,
+                reason = reason,
+                reasonDesc = reasonDesc,
+                requestId = requestId
+            )
+        }
+    }
+
     fun refreshToken(currentToken: AccessToken): AccessToken {
         if (currentToken.refreshToken == null) {
-            val tokenCreationTime = currentToken.createdAt
-
-            if (tokenCreationTime != Instant.EPOCH) {
-                val sessionDuration = Duration.between(Instant.now(clock), tokenCreationTime)
-                val credentialSourceId = if (currentToken.ssoUrl == SONO_URL) CredentialSourceId.AwsId else CredentialSourceId.IamIdentityCenter
-                AwsTelemetry.refreshCredentials(
-                    project = null,
-                    result = Result.Failed,
-                    sessionDuration = sessionDuration.toHours().toInt(),
-                    credentialSourceId = credentialSourceId,
-                    reason = "Null refresh token"
-                )
-            }
-
-            throw InvalidRequestException.builder().message("Requested token refresh, but refresh token was null").build()
+            val message = "Requested token refresh, but refresh token was null"
+            sendFailedRefreshCredentialsMetricIfNeeded(
+                currentToken,
+                reason = "Null refresh token",
+                reasonDesc = message
+            )
+            throw InvalidRequestException.builder().message(message).build()
         }
 
         val registration = when (currentToken) {
             is DeviceAuthorizationGrantToken -> loadDagClientRegistration()
             is PKCEAuthorizationGrantToken -> loadPkceClientRegistration()
-        } ?: throw InvalidClientException.builder().message("Unable to load client registration").build()
-
-        val newToken = client.createToken {
-            it.clientId(registration.clientId)
-            it.clientSecret(registration.clientSecret)
-            it.grantType(REFRESH_GRANT_TYPE)
-            it.refreshToken(currentToken.refreshToken)
+        }
+        if (registration == null) {
+            val message = "Unable to load client registration"
+            sendFailedRefreshCredentialsMetricIfNeeded(
+                currentToken,
+                reason = "Null client registration",
+                reasonDesc = message
+            )
+            throw InvalidClientException.builder().message(message).build()
         }
 
-        val token = when (currentToken) {
-            is DeviceAuthorizationGrantToken -> newToken.toDAGAccessToken(currentToken.createdAt)
-            is PKCEAuthorizationGrantToken -> newToken.toPKCEAccessToken(currentToken.createdAt)
+        try {
+            val newToken = client.createToken {
+                it.clientId(registration.clientId)
+                it.clientSecret(registration.clientSecret)
+                it.grantType(REFRESH_GRANT_TYPE)
+                it.refreshToken(currentToken.refreshToken)
+            }
+
+            val token = when (currentToken) {
+                is DeviceAuthorizationGrantToken -> newToken.toDAGAccessToken(currentToken.createdAt)
+                is PKCEAuthorizationGrantToken -> newToken.toPKCEAccessToken(currentToken.createdAt)
+            }
+
+            saveAccessToken(token)
+
+            return token
+        } catch (e: Exception) {
+            val requestId = when (e) {
+                is AwsServiceException -> e.requestId()
+                else -> null
+            }
+            val message = when (e) {
+                is AwsServiceException -> e.awsErrorDetails().errorMessage()
+                else -> e.message ?: "Unknown error"
+            }
+            sendFailedRefreshCredentialsMetricIfNeeded(
+                currentToken,
+                reason = "Refresh access token request failed",
+                reasonDesc = message,
+                requestId = requestId
+            )
+            throw e
         }
-
-        saveAccessToken(token)
-
-        return token
     }
 
     private fun loadDagClientRegistration(): ClientRegistration? =
