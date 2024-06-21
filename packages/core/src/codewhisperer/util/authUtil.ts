@@ -442,8 +442,8 @@ export class AuthUtil {
      *       a connection if it has some CW scopes.
      */
     findMinimalQConnection(connections: AwsConnection[]): AwsConnection | undefined {
-        const hasQScopes = (c: AwsConnection) => codeWhispererCoreScopes.every(s => c.scopes?.includes(s))
-        const score = (c: AwsConnection) => Number(hasQScopes(c)) * 10 + Number(c.state === 'valid')
+        const hasQScopes = (c?: AwsConnection) => codeWhispererCoreScopes.every(s => !!c?.scopes?.includes(s))
+        const score = (c?: AwsConnection) => Number(hasQScopes(c)) * 10 + Number(c?.state === 'valid')
         connections.sort(function (a, b) {
             return score(b) - score(a)
         })
