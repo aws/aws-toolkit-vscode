@@ -688,6 +688,7 @@ export interface CodeScanTelemetryEntry {
     codeScanServiceInvocationsDuration: number
     result: Result
     reason?: string
+    reasonDesc?: string
     codewhispererCodeScanTotalIssues: number
     codewhispererCodeScanIssuesWithFixes: number
     credentialStartUrl: string | undefined
