@@ -272,6 +272,8 @@ private fun reauthProviderIfNeeded(
                     credentialSourceId = CredentialSourceId.AwsId,
                     reason = e.message
                 )
+
+                throw e
             }
         }
     }
