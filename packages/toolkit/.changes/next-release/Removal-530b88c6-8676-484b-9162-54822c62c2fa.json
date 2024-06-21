@@ -1,4 +1,0 @@
-{
-	"type": "Removal",
-	"description": "Auth: No longer share SSO sessions with Amazon Q."
-}
