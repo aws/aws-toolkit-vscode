@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { globals } from '../../shared'
 import { getLogger } from '../../shared/logger/logger'
 import { AmazonqApproachInvoke, AmazonqCodeGenerationInvoke, Metric } from '../../shared/telemetry/telemetry'
 import { LLMResponseType } from '../types'
@@ -41,7 +42,9 @@ export class TelemetryHelper {
             amazonqGenerateApproachLatency: performance.now() - this.generateApproachLastInvocationTime,
             amazonqGenerateApproachResponseType: responseType,
         }
-        getLogger().debug(`recordUserApproachTelemetry: %O`, event)
+        if (globals.telemetry.telemetryEnabled) {
+            getLogger().debug(`recordUserApproachTelemetry: %O`, event)
+        }
         span.record(event)
     }
 
