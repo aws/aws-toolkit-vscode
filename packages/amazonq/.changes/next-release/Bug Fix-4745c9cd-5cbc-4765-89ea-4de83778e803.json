@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q /dev command: Fix file rejections for files outside of src/"
-}
