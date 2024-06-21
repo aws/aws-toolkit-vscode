@@ -61,6 +61,7 @@ export class Session {
             await this.setupConversation(msg)
             this.preloaderFinished = true
             this.messenger.sendAsyncEventProgress(this.tabID, true, undefined)
+            await this.proxyClient.sendFeatureDevTelemetryEvent(this.conversationId) // send the event only once per conversation.
         }
     }
 
