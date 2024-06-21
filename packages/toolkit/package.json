@@ -1990,6 +1990,10 @@
                 {
                     "command": "aws.toolkit.viewLogs",
                     "group": "1_help@5"
+                },
+                {
+                    "command": "aws.toolkit.walkthrough",
+                    "group": "1_help@6"
                 }
             ],
             "file/newFile": [
@@ -2882,6 +2886,16 @@
                 }
             },
             {
+                "command": "aws.toolkit.walkthrough",
+                "title": "Learn more from walkthrough",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
                 "command": "aws.quickStart",
                 "title": "%AWS.command.quickStart%",
                 "category": "%AWS.title%",
@@ -3615,48 +3629,9 @@
                         "command": "1.[REST API Microservice](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D) \n2.[Image Resizing with S3](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D)"
                     },
                     {
-                        "id": "6",
-                        "title": "Choose path to create project",
-                        "description": "Select an path and create project\n[Create Project](command:aws.toolkit.createWalkthroughProject)",
-                        "media": {
-                            "markdown": "./resources/walkthrough/images/images-lambda/runtime_picker.md"
-                        },
-                        "command": "1.[REST API Microservice](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D) \n2.[Image Resizing with S3](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D)"
-                    },
-                    {
-                        "id": "api1",
-                        "title": "%AWS.toolkit.walkthrough.gWIntro.title%",
-                        "when": "walkthroughSelected == 'API'",
-                        "description": "In this Guided Workshop, you will do the following:\n- Create a \"Hello, World!\" Lambda function to be the backend for the API.\n- Create and test a \"Hello, World!\" API with Lambda proxy integration.\n - Debug your Lambda function with `SAM Local Invoke`\n- Deploy your project to AWS with SAM CLI\n- `Remote Invoke` and monitor with AWS Toolkit. \n[Select your runtime]()",
-                        "media": {
-                            "image": "./resources/walkthrough/images/images-lambda/API.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "s3-1",
-                        "title": "%AWS.toolkit.walkthrough.gWIntro.title%",
-                        "when": "walkthroughSelected == 'S3'",
-                        "description": "To complete this tutorial, you carry out the following steps:\n- Create source and destination Amazon S3 buckets and upload a sample image.\n- Create a Lambda function that resizes an image and outputs a thumbnail to an Amazon S3 bucket.\n- Configure a Lambda trigger that invokes your function when objects are uploaded to your source bucket.\n- Test your function, first with a dummy event, and then by uploading an image to your source bucket.\n[Select your runtime]()",
-                        "media": {
-                            "image": "./resources/walkthrough/images/images-lambda/S3.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "placeholder1",
-                        "title": "%AWS.toolkit.walkthrough.gWIntro.title%",
-                        "when": "walkthroughSelected not in aws.toolkit.availableWalkthroughs",
-                        "description": "%AWS.toolkit.walkthrough.gWNotSelected.description%",
-                        "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
                         "id": "1",
                         "title": "Setup AWS Profile",
-                        "description": "For demo purpose, You will not see this step if you already have connected to AWS in actaul walkthrough\n[Connect to AWS](command:aws.toolkit.login)\nTo open the configuration wizard to connect to AWS.\n If you haven't registered an AWS account or having trouble authenticating, please refer to the [User Guide](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/connect.html)\nIf you wish to add more region to AWS toolkit, you can [add more region](command:aws.showRegion)",
+                        "description": "For demo purpose only, You won't see this step if you already have connected to AWS in actaul walkthrough\n[Connect to AWS](command:aws.toolkit.login)\nTo open the configuration wizard to connect to AWS.\n If you haven't registered an AWS account or having trouble authenticating, please refer to the [User Guide](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/connect.html)\nIf you wish to add more region to AWS toolkit, you can [add more region](command:aws.showRegion)",
                         "media": {
                             "markdown": "./resources/walkthrough/setup-connect.md"
                         },
@@ -3673,7 +3648,7 @@
                     {
                         "id": "2",
                         "title": "Setup SAM Cli",
-                        "description": "For demo purpose, You will not see this step if you already have SAM CLI installed in actual walkthrough\nCLI need to be installed to enable working locally with your function and deploying \n[Install SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html)",
+                        "description": "For demo purpose only, You won't see this step if you already have SAM CLI installed in actual walkthrough\nCLI need to be installed to enable working locally with your function and deploying \n[Install SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html)",
                         "media": {
                             "markdown": "./resources/walkthrough/setup-toolchain.md"
                         }
@@ -3681,20 +3656,19 @@
                     {
                         "id": "3",
                         "title": "Setup Docker for Mac",
-                        "description": "For demo purpose, You will not see this step if you already have Docker installed in actual walkthrough\nDocker need to be installed to enable working locally with your function and deploying \n[Install Docker](https://docs.docker.com/engine/install/)",
+                        "description": "For demo purpose only, You won't see this step if you already have Docker installed in actual walkthrough\nDocker need to be installed to enable working locally with your function and deploying \n[Install Docker](https://docs.docker.com/engine/install/)",
                         "media": {
                             "markdown": "./resources/walkthrough/setup-toolchain.md"
                         }
                     },
                     {
-                        "id": "api2",
-                        "title": "%AWS.toolkit.walkthrough.create.title%",
-                        "when": "walkthroughSelected == 'API'",
-                        "description": "This step should only appear when context is set to 1",
+                        "id": "6",
+                        "title": "Choose path to create project",
+                        "description": "Select an path and create project\n[Create Project](command:aws.toolkit.createWalkthroughProject)",
                         "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
+                            "markdown": "./resources/walkthrough/images/images-lambda/runtime_picker.md"
+                        },
+                        "command": "1.[REST API Microservice](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D) \n2.[Image Resizing with S3](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D)"
                     },
                     {
                         "id": "api3",
@@ -3741,16 +3715,6 @@
                         "title": "%AWS.toolkit.walkthrough.remoteInovke.title%",
                         "when": "walkthroughSelected == 'API'",
                         "description": "This step should only appear when context is set to 1",
-                        "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "s3-2",
-                        "title": "%AWS.toolkit.walkthrough.create.title%",
-                        "when": "walkthroughSelected == 'S3'",
-                        "description": "This step should only appear when context is set to 2",
                         "media": {
                             "image": "media/image.png",
                             "altText": "Empty image"

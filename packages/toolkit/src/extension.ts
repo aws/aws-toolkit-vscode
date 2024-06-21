@@ -46,17 +46,30 @@ export async function activate(context: ExtensionContext) {
         return walkthroughRuntime
     })
 
+    Commands.register(`aws.toolkit.walkthrough`, async () => {
+        vscode.commands.executeCommand(
+            'workbench.action.openWalkthrough',
+            'amazonwebservices.aws-toolkit-vscode#lambdaWelcome'
+        )
+    })
+
     const createWalkthroughProject = Commands.declare('aws.toolkit.createWalkthroughProject', () => () => {
         const walkthroughSelected = context.globalState.get('walkthroughSelected')
         const walkthroughRuntime = context.globalState.get('walkthroughRuntime')
 
         console.log(walkthroughSelected, walkthroughRuntime)
 
-        const options: vscode.OpenDialogOptions = {
+        let options: vscode.OpenDialogOptions = {
             canSelectMany: false,
             openLabel: 'Open',
             canSelectFiles: false,
             canSelectFolders: true,
+        }
+
+        // open file selector in current workspace
+        const wsFolders = vscode.workspace.workspaceFolders
+        if (wsFolders) {
+            options.defaultUri = wsFolders[0]?.uri
         }
 
         vscode.window.showOpenDialog(options).then(fileUri => {
