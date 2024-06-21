@@ -39,7 +39,7 @@ export enum LoginOption {
     BUILDER_ID,
     ENTERPRISE_SSO,
     IAM_CREDENTIAL,
-    EXISTING_LOGINS,
+    IMPORTED_LOGINS,
 }
 
 /**
