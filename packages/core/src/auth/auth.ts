@@ -53,11 +53,11 @@ import {
     createBuilderIdProfile,
     createSsoProfile,
     hasScopes,
-    isValidCodeCatalystConnection,
     loadIamProfilesIntoStore,
     loadLinkedProfilesIntoStore,
     scopesSsoAccountAccess,
     AwsConnection,
+    scopesCodeWhispererCore,
 } from './connection'
 import { isSageMaker, isCloud9, isAmazonQ } from '../shared/extensionUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
@@ -528,8 +528,8 @@ export class Auth implements AuthService, ConnectionManager {
                 })
             }
 
-            // XXX: never drop tokens in a dev environment
-            if (getCodeCatalystDevEnvId() === undefined) {
+            // XXX: never drop tokens in a dev environment, unless you are Amazon Q!
+            if (getCodeCatalystDevEnvId() === undefined || isAmazonQ()) {
                 await provider.invalidate()
             }
         } else if (profile.type === 'iam') {
@@ -882,9 +882,11 @@ export class Auth implements AuthService, ConnectionManager {
 
         // When opening a Dev Environment, use the environment token if no other CodeCatalyst
         // credential is in use. This token only has CC permissions currently!
-        if (getCodeCatalystDevEnvId() !== undefined) {
+        if (!isAmazonQ() && getCodeCatalystDevEnvId() !== undefined) {
             const connections = await this.listConnections()
-            const shouldInsertDevEnvCredential = !connections.some(isValidCodeCatalystConnection)
+            const shouldInsertDevEnvCredential = !connections.some(
+                c => c.type === 'sso' && hasScopes(c, scopesCodeCatalyst) && !hasScopes(c, scopesCodeWhispererCore)
+            )
 
             if (shouldInsertDevEnvCredential) {
                 // Insert a profile based on the `~/.aws/config` sso-session:
@@ -1067,6 +1069,7 @@ export class SessionSeparationPrompt {
                 )
                 .then(async resp => {
                     await telemetry.toolkit_invokeAction.run(async () => {
+                        telemetry.record({ source: 'sessionSeparationNotification' })
                         if (resp === 'Sign In') {
                             telemetry.record({ action: 'signIn' })
                             await vscode.commands.executeCommand(cmd)
