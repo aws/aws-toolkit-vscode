@@ -120,6 +120,9 @@ export class OidcClient {
                 { retryDecider: updatedRetryDecider }
             ),
             customUserAgent: getUserAgent({ includePlatform: true, includeClientId: true }),
+            requestHandler: {
+                requestTimeout: 30_000,
+            },
         })
 
         addLoggingMiddleware(client)
