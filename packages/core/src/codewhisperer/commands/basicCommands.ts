@@ -39,7 +39,7 @@ import { SecurityIssueHoverProvider } from '../service/securityIssueHoverProvide
 import { SecurityIssueCodeActionProvider } from '../service/securityIssueCodeActionProvider'
 import { SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
 import { SystemUtilities } from '../../shared/systemUtilities'
-import { ToolkitError } from '../../shared/errors'
+import { ToolkitError, getTelemetryReason, getTelemetryReasonDesc } from '../../shared/errors'
 import { isRemoteWorkspace } from '../../shared/vscode/env'
 import { isBuilderIdConnection } from '../../auth/connection'
 import globals from '../../shared/extensionGlobals'
@@ -396,7 +396,8 @@ export const applySecurityFix = Commands.declare(
         } catch (err) {
             getLogger().error(`Apply fix command failed. ${err}`)
             applyFixTelemetryEntry.result = 'Failed'
-            applyFixTelemetryEntry.reason = err as string
+            applyFixTelemetryEntry.reason = getTelemetryReason(err)
+            applyFixTelemetryEntry.reasonDesc = getTelemetryReasonDesc(err)
         } finally {
             telemetry.codewhisperer_codeScanIssueApplyFix.emit(applyFixTelemetryEntry)
             TelemetryHelper.instance.sendCodeScanRemediationsEvent(
@@ -406,7 +407,7 @@ export const applySecurityFix = Commands.declare(
                 issue.findingId,
                 issue.ruleId,
                 source,
-                applyFixTelemetryEntry.reason,
+                applyFixTelemetryEntry.reasonDesc,
                 applyFixTelemetryEntry.result,
                 !!issue.suggestedFixes.length
             )

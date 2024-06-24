@@ -6,7 +6,8 @@
 //
 // Creates an artifact that can be given to users for testing alpha/beta builds:
 //
-//     aws-toolkit-vscode-99.0.0-xxxxxxx.vsix
+//     aws-toolkit-vscode-99.0.0-gxxxxxxx.vsix
+//     or amazon-q-vscode-99.0.0-gxxxxxxx.vsix
 //
 // Where `xxxxxxx` is the first 7 characters of the commit hash that produced the artifact.
 //
