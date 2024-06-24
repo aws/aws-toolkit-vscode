@@ -26,3 +26,12 @@ export const QueryRequestType: RequestType<QueryRequest, any, any> = new Request
 export type UpdateIndexRequest = string
 
 export const UpdateIndexRequestType: RequestType<UpdateIndexRequest, any, any> = new RequestType('lsp/updateIndex')
+
+export type GetUsageRequest = string
+
+export const GetUsageRequestType: RequestType<GetUsageRequest, any, any> = new RequestType('lsp/getUsage')
+
+export interface Usage {
+    memoryUsage: number
+    cpuUsage: number
+}

@@ -17,7 +17,14 @@ import * as jose from 'jose'
 import { Disposable, ExtensionContext } from 'vscode'
 
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient'
-import { ClearRequestType, IndexRequestType, QueryRequestType, UpdateIndexRequestType } from './types'
+import {
+    ClearRequestType,
+    GetUsageRequestType,
+    IndexRequestType,
+    QueryRequestType,
+    UpdateIndexRequestType,
+    Usage,
+} from './types'
 import { Writable } from 'stream'
 
 const localize = nls.loadMessageBundle()
@@ -66,8 +73,9 @@ export async function clear(request: string) {
     }
 }
 
-export async function getUsage() {
+export async function getLspServerUsage(): Promise<Usage | undefined> {
     if (client) {
+        return (await client.sendRequest(GetUsageRequestType, '')) as Usage
     }
 }
 

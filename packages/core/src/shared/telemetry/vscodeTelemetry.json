@@ -177,7 +177,12 @@
         {
             "name": "amazonqIndexMemoryUsageInMB",
             "type": "int",
-            "description": "Memory usage of index"
+            "description": "Memory usage of LSP server"
+        },
+        {
+            "name": "amazonqIndexCpuUsagePercentage",
+            "type": "int",
+            "description": "Cpu usage of LSP server"
         },
         {
             "name": "cwsprChatProgrammingLanguage",
@@ -770,7 +775,12 @@
                     "type": "amazonqIndexFileCount"
                 },
                 {
-                    "type": "amazonqIndexMemoryUsageInMB"
+                    "type": "amazonqIndexMemoryUsageInMB",
+                    "required": false
+                },
+                {
+                    "type": "amazonqIndexCpuUsagePercentage",
+                    "required": false
                 }
             ]
         },
