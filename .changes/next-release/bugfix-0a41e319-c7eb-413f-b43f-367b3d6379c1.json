@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix refresh token failure due to null aws error details"
-}

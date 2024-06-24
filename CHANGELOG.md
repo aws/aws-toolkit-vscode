@@ -1,3 +1,6 @@
+# _3.13_ (2024-06-24)
+- **(Bug Fix)** Fix refresh token failure due to null aws error details
+
 # _3.12_ (2024-06-21)
 - **(Bug Fix)** Fix an issue where worker threads are unable to properly resolve the calling plugin, resulting in invalid telemetry data
 - **(Bug Fix)** Amazon Q Chat: Fixed broken code blocks with typewriter text in list items.
