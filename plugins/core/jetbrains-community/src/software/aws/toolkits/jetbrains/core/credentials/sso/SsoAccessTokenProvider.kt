@@ -406,7 +406,7 @@ class SsoAccessTokenProvider(
                 else -> null
             }
             val message = when (e) {
-                is AwsServiceException -> e.awsErrorDetails().errorMessage()
+                is AwsServiceException -> e.awsErrorDetails()?.errorMessage() ?: "Unknown error"
                 else -> e.message ?: "Unknown error"
             }
             sendFailedRefreshCredentialsMetricIfNeeded(

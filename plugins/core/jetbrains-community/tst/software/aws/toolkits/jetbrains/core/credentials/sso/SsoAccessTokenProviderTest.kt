@@ -24,6 +24,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.amazon.awssdk.services.ssooidc.model.AuthorizationPendingException
 import software.amazon.awssdk.services.ssooidc.model.CreateTokenRequest
@@ -298,6 +299,31 @@ class SsoAccessTokenProviderTest {
         verify(ssoCache).loadClientRegistration(argThat { region == ssoRegion })
         verify(ssoOidcClient).createToken(any<CreateTokenRequest>())
         verify(ssoCache).saveAccessToken(argThat<DeviceGrantAccessTokenCacheKey> { startUrl == ssoUrl }, eq(refreshedToken))
+    }
+
+    @Test
+    fun `refresh access token error handling does not fail if AWS error details are missing`() {
+        val expirationClientRegistration = clock.instant().plusSeconds(120)
+        setupCacheStub(expirationClientRegistration)
+
+        val accessToken = DeviceAuthorizationGrantToken(ssoUrl, ssoRegion, "dummyToken", "refreshToken", clock.instant())
+        ssoCache.stub {
+            on(
+                ssoCache.loadAccessToken(argThat<DeviceGrantAccessTokenCacheKey> { startUrl == ssoUrl })
+            ).thenReturn(
+                accessToken
+            )
+        }
+
+        ssoOidcClient.stub {
+            on(
+                ssoOidcClient.createToken(refreshTokenRequest())
+            )
+                .thenThrow(AwsServiceException.builder().build())
+        }
+
+        assertThatThrownBy { runBlocking { sut.refreshToken(sut.accessToken()) } }
+            .isInstanceOf(AwsServiceException::class.java)
     }
 
     @Test
