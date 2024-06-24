@@ -9,11 +9,12 @@ import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.core.utils.test.aString
-import software.aws.toolkits.core.utils.test.hasOnlyElementsOfType
+import software.aws.toolkits.core.utils.test.hasOnlyElementsOfTypeKt
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.RdsExplorerRootNode
 import software.aws.toolkits.jetbrains.services.rds.resources.LIST_SUPPORTED_CLUSTERS
 import software.aws.toolkits.jetbrains.services.rds.resources.LIST_SUPPORTED_INSTANCES
+import software.aws.toolkits.jetbrains.utils.allSatisfyKt
 
 class RdsExplorerNodeTest {
     @JvmField
@@ -48,8 +49,8 @@ class RdsExplorerNodeTest {
         val databasesNames = instances.values + clusters.values
         assertThat(serviceRootNode.children)
             .hasSize(databasesNames.size)
-            .hasOnlyElementsOfType<RdsNode>()
-            .allSatisfy {
+            .hasOnlyElementsOfTypeKt<RdsNode>()
+            .allSatisfyKt {
                 assertThat(it.resourceType()).isEqualTo("instance")
             }.extracting<String> {
                 it.database.identifier
@@ -75,7 +76,7 @@ class RdsExplorerNodeTest {
         val serviceRootNode = sut.buildServiceRootNode(projectRule.project)
 
         assertThat(serviceRootNode.children)
-            .hasOnlyElementsOfType<RdsNode>()
+            .hasOnlyElementsOfTypeKt<RdsNode>()
             .extracting<RdsDatabase> {
                 it.database
             }.containsOnly(db)

@@ -7,6 +7,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
 import software.aws.toolkits.jetbrains.utils.isInstanceOf
+import software.aws.toolkits.jetbrains.utils.satisfiesKt
 
 class SemanticVersionTest {
     @Test
@@ -31,7 +32,7 @@ class SemanticVersionTest {
 
     @Test
     fun `parts are correct`() {
-        assertThat(SemanticVersion(1, 2, 3)).satisfies {
+        assertThat(SemanticVersion(1, 2, 3)).satisfiesKt {
             assertThat(it.major).isEqualTo(1)
             assertThat(it.minor).isEqualTo(2)
             assertThat(it.patch).isEqualTo(3)

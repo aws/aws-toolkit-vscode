@@ -21,6 +21,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sso.DeviceGrantAccessTok
 import software.aws.toolkits.jetbrains.core.credentials.sso.DiskCache
 import software.aws.toolkits.jetbrains.utils.extensions.SsoLogin
 import software.aws.toolkits.jetbrains.utils.extensions.SsoLoginExtension
+import software.aws.toolkits.jetbrains.utils.satisfiesKt
 import java.nio.file.Path
 import java.time.Instant
 
@@ -74,7 +75,7 @@ class InteractiveBearerTokenProviderIntegrationTest {
             id = "test"
         )
 
-        assertThat(sut.resolveToken()).satisfies {
+        assertThat(sut.resolveToken()).satisfiesKt {
             assertThat(it).isNotNull()
             assertThat(it).isNotEqualTo(initialToken)
         }

@@ -23,6 +23,7 @@ import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTem
 import software.aws.toolkits.jetbrains.services.cloudformation.LambdaFunction
 import software.aws.toolkits.jetbrains.services.cloudformation.SamFunction
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.satisfiesKt
 import software.aws.toolkits.resources.message
 import java.io.File
 
@@ -133,7 +134,7 @@ Parameters:
         runInEdtAndWait {
             assertThat(template.parameters().toList()).hasSize(2)
             val tableTag = template.parameters().firstOrNull { it.logicalName == "TableTag" }
-            assertThat(tableTag).notNull.satisfies { tag ->
+            assertThat(tableTag).notNull.satisfiesKt { tag ->
                 assertThat(tag.defaultValue()).isNull()
                 assertThat(tag.description()).isNotNull()
                 assertThat(tag.constraintDescription()).isNull()

@@ -26,6 +26,7 @@ import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.services.sts.StsResources
 import software.aws.toolkits.jetbrains.utils.deserializeState
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.satisfiesKt
 import software.aws.toolkits.jetbrains.utils.serializeState
 import java.nio.file.Files
 import java.util.concurrent.CompletableFuture
@@ -89,7 +90,7 @@ class DefaultAwsConnectionManagerTest {
         manager.noStateLoaded()
         manager.waitUntilConnectionStateIsStable()
 
-        assertThat(manager.selectedCredentialIdentifier).notNull.satisfies {
+        assertThat(manager.selectedCredentialIdentifier).notNull.satisfiesKt {
             assertThat(it.id).isEqualTo(credentials.id)
         }
     }
@@ -112,7 +113,7 @@ class DefaultAwsConnectionManagerTest {
 
         manager.waitUntilConnectionStateIsStable()
 
-        assertThat(manager.selectedRegion).notNull.satisfies {
+        assertThat(manager.selectedRegion).notNull.satisfiesKt {
             assertThat(it.id).isEqualTo("us-west-2")
         }
     }

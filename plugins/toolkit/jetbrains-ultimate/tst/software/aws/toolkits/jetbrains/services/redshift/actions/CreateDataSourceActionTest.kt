@@ -18,6 +18,7 @@ import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
 import software.aws.toolkits.jetbrains.services.redshift.auth.CLUSTER_ID_PROPERTY
 import software.aws.toolkits.jetbrains.services.redshift.auth.IamAuth
 import software.aws.toolkits.jetbrains.services.redshift.createDatasource
+import software.aws.toolkits.jetbrains.utils.satisfiesKt
 
 class CreateDataSourceActionTest {
     @Rule
@@ -53,7 +54,7 @@ class CreateDataSourceActionTest {
                 .dbName(dbName)
                 .build()
         )
-        assertThat(registry.newDataSources).singleElement().satisfies {
+        assertThat(registry.newDataSources).singleElement().satisfiesKt {
             assertThat(it.isTemporary).isFalse()
             assertThat(it.sslCfg?.myEnabled).isTrue()
             assertThat(it.url).isEqualTo("jdbc:redshift://$address:$port/$dbName")

@@ -22,6 +22,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import software.aws.toolkits.jetbrains.utils.satisfiesKt
 
 class BuildViewStepEmitterTest {
     @Rule
@@ -43,7 +44,7 @@ class BuildViewStepEmitterTest {
             verify(buildView).onEvent(eq(PARENT_ID), capture())
 
             assertThat(allValues).hasSize(1)
-            assertThat(firstValue).satisfies {
+            assertThat(firstValue).satisfiesKt {
                 assertThat(it.parentId).isEqualTo(PARENT_ID)
             }.isInstanceOfSatisfying(StartEvent::class.java) {
                 assertThat(it.message).isEqualTo(stepId)
@@ -64,7 +65,7 @@ class BuildViewStepEmitterTest {
             verify(buildView).onEvent(eq(PARENT_ID), capture())
 
             assertThat(allValues).hasSize(1)
-            assertThat(firstValue).satisfies {
+            assertThat(firstValue).satisfiesKt {
                 assertThat(it.parentId).isEqualTo(parentId)
                 assertThat(it.id).isEqualTo(stepId)
             }.isInstanceOfSatisfying(FinishEvent::class.java) {
@@ -88,21 +89,21 @@ class BuildViewStepEmitterTest {
 
             assertThat(allValues).hasSize(3)
 
-            assertThat(firstValue).satisfies {
+            assertThat(firstValue).satisfiesKt {
                 assertThat(it.parentId).isEqualTo(parentId)
             }.isInstanceOfSatisfying(OutputBuildEvent::class.java) {
                 assertThat(it.message).isEqualTo("ChildStep has failed: Test exception")
                 assertThat(it.isStdOut).isFalse()
             }
 
-            assertThat(secondValue).satisfies {
+            assertThat(secondValue).satisfiesKt {
                 assertThat(it.parentId).isEqualTo(stepId)
             }.isInstanceOfSatisfying(OutputBuildEvent::class.java) {
                 assertThat(it.message).isEqualTo("ChildStep has failed: Test exception")
                 assertThat(it.isStdOut).isFalse()
             }
 
-            assertThat(thirdValue).satisfies {
+            assertThat(thirdValue).satisfiesKt {
                 assertThat(it.parentId).isEqualTo(parentId)
                 assertThat(it.id).isEqualTo(stepId)
             }.isInstanceOfSatisfying(FinishEvent::class.java) {
@@ -121,7 +122,7 @@ class BuildViewStepEmitterTest {
         argumentCaptor<BuildEvent>().apply {
             verify(buildView, times(2)).onEvent(eq(PARENT_ID), capture())
 
-            assertThat(firstValue).satisfies {
+            assertThat(firstValue).satisfiesKt {
                 assertThat(it.parentId).isEqualTo(parentId)
             }.isInstanceOfSatisfying(OutputBuildEvent::class.java) {
                 assertThat(it.message).contains("ParentStep has failed: java.lang.NullPointerException", "at")
@@ -139,7 +140,7 @@ class BuildViewStepEmitterTest {
         argumentCaptor<BuildEvent>().apply {
             verify(buildView, times(2)).onEvent(eq(PARENT_ID), capture())
 
-            assertThat(firstValue).satisfies {
+            assertThat(firstValue).satisfiesKt {
                 assertThat(it.parentId).isEqualTo(parentId)
             }.isInstanceOfSatisfying(OutputBuildEvent::class.java) {
                 assertThat(it.message).contains("ParentStep has been canceled")
@@ -161,7 +162,7 @@ class BuildViewStepEmitterTest {
             verify(buildView).onEvent(eq(PARENT_ID), capture())
 
             assertThat(allValues).hasSize(1)
-            assertThat(firstValue).satisfies {
+            assertThat(firstValue).satisfiesKt {
                 assertThat(it.parentId).isEqualTo(parentId)
                 assertThat(it.id).isEqualTo(stepId)
             }.isInstanceOfSatisfying(FinishEvent::class.java) {
@@ -183,14 +184,14 @@ class BuildViewStepEmitterTest {
         argumentCaptor<BuildEvent>().apply {
             verify(buildView, times(2)).onEvent(eq(PARENT_ID), capture())
 
-            assertThat(firstValue).satisfies {
+            assertThat(firstValue).satisfiesKt {
                 assertThat(it.parentId).isEqualTo(PARENT_ID)
             }.isInstanceOfSatisfying(OutputBuildEvent::class.java) {
                 assertThat(it.message).isEqualTo(message)
                 assertThat(it.isStdOut).isTrue()
             }
 
-            assertThat(secondValue).satisfies {
+            assertThat(secondValue).satisfiesKt {
                 assertThat(it.parentId).isEqualTo(stepId)
             }.isInstanceOfSatisfying(OutputBuildEvent::class.java) {
                 assertThat(it.message).isEqualTo(message)
@@ -211,14 +212,14 @@ class BuildViewStepEmitterTest {
         argumentCaptor<BuildEvent>().apply {
             verify(buildView, times(2)).onEvent(eq(PARENT_ID), capture())
 
-            assertThat(firstValue).satisfies {
+            assertThat(firstValue).satisfiesKt {
                 assertThat(it.parentId).isEqualTo(PARENT_ID)
             }.isInstanceOfSatisfying(OutputBuildEvent::class.java) {
                 assertThat(it.message).isEqualTo(message)
                 assertThat(it.isStdOut).isFalse()
             }
 
-            assertThat(secondValue).satisfies {
+            assertThat(secondValue).satisfiesKt {
                 assertThat(it.parentId).isEqualTo(stepId)
             }.isInstanceOfSatisfying(OutputBuildEvent::class.java) {
                 assertThat(it.message).isEqualTo(message)
@@ -240,7 +241,7 @@ class BuildViewStepEmitterTest {
             verify(buildView).onEvent(eq(PARENT_ID), capture())
 
             assertThat(allValues).hasSize(1)
-            assertThat(firstValue).satisfies {
+            assertThat(firstValue).satisfiesKt {
                 assertThat(it.parentId).isEqualTo(childId1)
             }.isInstanceOfSatisfying(StartEvent::class.java) {
                 assertThat(it.message).isEqualTo(childId2)
@@ -260,7 +261,7 @@ class BuildViewStepEmitterTest {
             verify(buildView).onEvent(eq(PARENT_ID), capture())
 
             assertThat(allValues).hasSize(1)
-            assertThat(firstValue).satisfies {
+            assertThat(firstValue).satisfiesKt {
                 assertThat(it.parentId).isEqualTo(PARENT_ID)
             }.isInstanceOfSatisfying(OutputBuildEvent::class.java) {
                 assertThat(it.message).isEqualTo(message)

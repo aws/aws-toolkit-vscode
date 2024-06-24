@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.utils
 
 import org.assertj.core.api.AbstractAssert
+import org.assertj.core.api.AbstractIterableAssert
 import org.assertj.core.api.AbstractThrowableAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.CompletableFutureAssert
@@ -31,10 +32,23 @@ val <T> CompletionStage<T>.value get() = toCompletableFuture().get(TIMEOUT.toMil
 
 val <T> CompletableFutureAssert<T>.hasException get() = this.wait().isCompletedExceptionally
 
+// https://github.com/assertj/assertj/issues/2357
+@Suppress("UNCHECKED_CAST")
+fun <E : Any?, I : Iterable<E>> AbstractIterableAssert<*, I, E, *>.allSatisfyKt(requirements: Consumer<E>) =
+    allSatisfy(requirements) as AbstractIterableAssert<*, I, E, *>
+
+@Suppress("UNCHECKED_CAST")
+fun <E : Any?, I : Iterable<E>> AbstractIterableAssert<*, I, E, *>.anySatisfyKt(requirements: Consumer<E>) =
+    anySatisfy(requirements) as AbstractIterableAssert<*, I, E, *>
+
+@Suppress("UNCHECKED_CAST")
+fun <T : Any?> AbstractAssert<*, T>.satisfiesKt(requirements: Consumer<T>) =
+    satisfies(requirements) as AbstractAssert<*, T>
+
 fun <SELF : AbstractThrowableAssert<SELF, ACTUAL>, ACTUAL : Throwable> AbstractThrowableAssert<SELF, ACTUAL>.hasCauseWithMessage(
     message: String
 ): AbstractThrowableAssert<SELF, ACTUAL> {
-    satisfies { parentThrowable ->
+    satisfiesKt { parentThrowable ->
         assertThat(parentThrowable.cause).isNotNull.hasMessage(message)
     }
     return this

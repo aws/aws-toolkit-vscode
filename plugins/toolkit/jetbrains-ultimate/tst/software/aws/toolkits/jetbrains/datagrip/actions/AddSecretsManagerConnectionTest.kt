@@ -17,6 +17,7 @@ import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.auth.SECRET_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.auth.SecretsManagerAuth
 import software.aws.toolkits.jetbrains.datagrip.auth.SecretsManagerDbSecret
+import software.aws.toolkits.jetbrains.utils.satisfiesKt
 
 class AddSecretsManagerConnectionTest {
     @Rule
@@ -51,7 +52,7 @@ class AddSecretsManagerConnectionTest {
             secretArn,
             "adapter"
         )
-        assertThat(registry.newDataSources).singleElement().satisfies {
+        assertThat(registry.newDataSources).singleElement().satisfiesKt {
             assertThat(it.isTemporary).isFalse()
             assertThat(it.sslCfg?.myEnabled).isTrue()
             assertThat(it.url).isEqualTo("jdbc:adapter://$address:$port")

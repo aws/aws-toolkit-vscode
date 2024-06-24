@@ -23,6 +23,7 @@ import software.aws.toolkits.core.credentials.CredentialType
 import software.aws.toolkits.core.credentials.CredentialsChangeEvent
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
 import software.aws.toolkits.core.rules.SystemPropertyHelper
+import software.aws.toolkits.jetbrains.utils.satisfiesKt
 import java.time.Duration
 import java.time.Instant
 import java.time.format.DateTimeFormatter
@@ -66,7 +67,7 @@ class ContainerCredentialProviderFactoryTest {
         sut.setUp(profileLoadCallback)
 
         assertThat(credentialChangeEvent.allValues.size).isEqualTo(1)
-        assertThat(credentialChangeEvent.firstValue).satisfies {
+        assertThat(credentialChangeEvent.firstValue).satisfiesKt {
             assertThat(it.modified).isEmpty()
             assertThat(it.removed).isEmpty()
             assertThat(it.added).hasSize(1)
@@ -80,7 +81,7 @@ class ContainerCredentialProviderFactoryTest {
         sut.setUp(profileLoadCallback)
 
         assertThat(credentialChangeEvent.allValues.size).isEqualTo(1)
-        assertThat(credentialChangeEvent.firstValue).satisfies {
+        assertThat(credentialChangeEvent.firstValue).satisfiesKt {
             assertThat(it.modified).isEmpty()
             assertThat(it.removed).isEmpty()
             assertThat(it.added).hasSize(1)

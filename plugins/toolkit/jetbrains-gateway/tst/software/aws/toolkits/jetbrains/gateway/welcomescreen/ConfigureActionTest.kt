@@ -147,7 +147,7 @@ package software.aws.toolkits.jetbrains.gateway.welcomescreen
 //        argumentCaptor<StartEnvironmentRequest>().apply {
 //            verify(client).startEnvironment(capture())
 //
-//            assertThat(firstValue.ides()).satisfies {
+//            assertThat(firstValue.ides()).satisfiesKt {
 //                assertThat(it.size).isEqualTo(1)
 //                assertThat(it.first()).isEqualTo(IdeConfiguration.builder().runtime("ecrImage").build())
 //            }

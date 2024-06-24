@@ -33,6 +33,7 @@ import software.aws.toolkits.jetbrains.services.rds.RdsDatasourceConfiguration
 import software.aws.toolkits.jetbrains.services.rds.RdsNode
 import software.aws.toolkits.jetbrains.services.rds.auth.IamAuth
 import software.aws.toolkits.jetbrains.services.sts.StsResources
+import software.aws.toolkits.jetbrains.utils.satisfiesKt
 import java.util.concurrent.CompletableFuture
 
 class CreateConfigurationActionTest {
@@ -82,7 +83,7 @@ class CreateConfigurationActionTest {
         val node = createNode()
         val registry = DataSourceRegistry(projectRule.project)
         CreateIamDataSourceAction().createDatasource(node, registry)
-        assertThat(registry.newDataSources).singleElement().satisfies {
+        assertThat(registry.newDataSources).singleElement().satisfiesKt {
             assertThat(it.isTemporary).isFalse()
             assertThat(it.username).isEqualTo(username)
         }
@@ -100,7 +101,7 @@ class CreateConfigurationActionTest {
         val node = createNode()
         val registry = DataSourceRegistry(projectRule.project)
         CreateIamDataSourceAction().createDatasource(node, registry)
-        assertThat(registry.newDataSources).singleElement().satisfies {
+        assertThat(registry.newDataSources).singleElement().satisfiesKt {
             assertThat(it.isTemporary).isFalse()
             assertThat(it.username).isEqualTo(masterUsername)
         }
@@ -119,7 +120,7 @@ class CreateConfigurationActionTest {
                 database = database
             )
         )
-        assertThat(registry.newDataSources).singleElement().satisfies {
+        assertThat(registry.newDataSources).singleElement().satisfiesKt {
             assertThat(it.isTemporary).isFalse()
             assertThat(it.url).contains(port.toString())
             assertThat(it.url).contains(address)
@@ -141,7 +142,7 @@ class CreateConfigurationActionTest {
                 database = database
             )
         )
-        assertThat(registry.newDataSources).singleElement().satisfies {
+        assertThat(registry.newDataSources).singleElement().satisfiesKt {
             assertThat(it.username).isLowerCase().isEqualTo(username.lowercase())
             assertThat(it.driverClass).contains("postgres")
             assertThat(it.url).contains(JDBC_POSTGRES)
@@ -160,7 +161,7 @@ class CreateConfigurationActionTest {
                 database = database
             )
         )
-        assertThat(registry.newDataSources).singleElement().satisfies {
+        assertThat(registry.newDataSources).singleElement().satisfiesKt {
             assertThat(it.username).isLowerCase().isEqualTo(username.lowercase())
             assertThat(it.driverClass).contains("postgres")
             assertThat(it.url).contains(JDBC_POSTGRES)
@@ -179,7 +180,7 @@ class CreateConfigurationActionTest {
                 database = database
             )
         )
-        assertThat(registry.newDataSources).singleElement().satisfies {
+        assertThat(registry.newDataSources).singleElement().satisfiesKt {
             assertThat(it.username).isEqualTo(username)
             assertThat(it.driverClass).contains("mysql")
             assertThat(it.url).contains(JDBC_MYSQL)
@@ -199,7 +200,7 @@ class CreateConfigurationActionTest {
                 database = database
             )
         )
-        assertThat(registry.newDataSources).singleElement().satisfies {
+        assertThat(registry.newDataSources).singleElement().satisfiesKt {
             assertThat(it.username).isEqualTo(username)
             assertThat(it.driverClass).contains("mariadb")
             assertThat(it.url).contains(JDBC_MYSQL_AURORA)

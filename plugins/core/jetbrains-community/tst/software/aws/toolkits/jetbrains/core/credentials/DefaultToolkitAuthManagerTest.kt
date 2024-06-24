@@ -31,6 +31,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBe
 import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.utils.isInstanceOf
 import software.aws.toolkits.jetbrains.utils.isInstanceOfSatisfying
+import software.aws.toolkits.jetbrains.utils.satisfiesKt
 
 class DefaultToolkitAuthManagerTest {
     @JvmField
@@ -90,7 +91,7 @@ class DefaultToolkitAuthManagerTest {
         )
         sut.createConnection(profile)
 
-        assertThat(sut.state?.ssoProfiles).satisfies { profiles ->
+        assertThat(sut.state?.ssoProfiles).satisfiesKt { profiles ->
             assertThat(profiles).isNotNull()
             assertThat(profiles).singleElement().isEqualTo(profile)
         }
@@ -110,7 +111,7 @@ class DefaultToolkitAuthManagerTest {
             )
         )
 
-        assertThat(sut.listConnections()).singleElement().satisfies {
+        assertThat(sut.listConnections()).singleElement().satisfiesKt {
             assertThat(it).isInstanceOfSatisfying<ManagedBearerSsoConnection> { connection ->
                 assertThat(connection.sessionName).isEqualTo("")
                 assertThat(connection.region).isEqualTo(profile.ssoRegion)
@@ -138,7 +139,7 @@ class DefaultToolkitAuthManagerTest {
             )
         )
 
-        assertThat(sut.listConnections()).singleElement().satisfies {
+        assertThat(sut.listConnections()).singleElement().satisfiesKt {
             assertThat(it).isInstanceOfSatisfying<ManagedBearerSsoConnection> { connection ->
                 assertThat(connection.sessionName).isEqualTo("")
                 assertThat(connection.region).isEqualTo(profile.ssoRegion)
@@ -164,7 +165,7 @@ class DefaultToolkitAuthManagerTest {
             )
         )
 
-        assertThat(sut.listConnections()).singleElement().satisfies {
+        assertThat(sut.listConnections()).singleElement().satisfiesKt {
             assertThat(it).isInstanceOfSatisfying<ManagedBearerSsoConnection> { connection ->
                 assertThat(connection.sessionName).isEqualTo("add")
                 assertThat(connection.region).isEqualTo("us-east-1")
@@ -182,7 +183,7 @@ class DefaultToolkitAuthManagerTest {
             )
         )
 
-        assertThat(sut.listConnections()).singleElement().satisfies {
+        assertThat(sut.listConnections()).singleElement().satisfiesKt {
             assertThat(it).isInstanceOfSatisfying<ManagedBearerSsoConnection> { connection ->
                 assertThat(connection.sessionName).isEqualTo("add")
                 assertThat(connection.region).isEqualTo("us-east-1")
@@ -332,7 +333,7 @@ class DefaultToolkitAuthManagerTest {
             val newScopes = listOf("existing1", "new1")
             loginSso(projectRule.project, "foo", "us-east-1", newScopes)
 
-            assertThat(connectionManager.activeConnection() as AwsBearerTokenConnection).satisfies { connection ->
+            assertThat(connectionManager.activeConnection() as AwsBearerTokenConnection).satisfiesKt { connection ->
                 assertThat(connection.scopes.toSet()).isEqualTo(setOf("existing1", "existing2", "existing3", "new1"))
             }
             assertThat(sut.listConnections()).singleElement().isInstanceOfSatisfying<AwsBearerTokenConnection> { connection ->

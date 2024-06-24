@@ -11,6 +11,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import software.aws.toolkits.jetbrains.utils.satisfiesKt
 import javax.swing.JLabel
 
 class ToolkitToolWindowTest {
@@ -56,7 +57,7 @@ class ToolkitToolWindowTest {
         runInEdt {
             sut.removeContent(tab)
 
-            assertThat(jbToolWindowManager.getToolWindow(sut.toolWindowId)?.contentManager).satisfies {
+            assertThat(jbToolWindowManager.getToolWindow(sut.toolWindowId)?.contentManager).satisfiesKt {
                 it!!
                 assertThat(it.contentCount).isEqualTo(1)
                 assertThat(it.getContent(0)).isEqualTo(tab2)

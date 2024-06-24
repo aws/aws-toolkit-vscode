@@ -12,6 +12,7 @@ import org.junit.jupiter.api.condition.DisabledOnOs
 import org.junit.jupiter.api.condition.OS
 import org.junit.jupiter.api.io.TempDir
 import software.aws.toolkits.core.utils.readText
+import software.aws.toolkits.core.utils.test.assertPosixPermissions
 import software.aws.toolkits.core.utils.writeText
 import java.nio.file.Files
 import java.nio.file.Path
@@ -708,10 +709,5 @@ class DiskCacheTest {
         assertThat(sut.loadAccessToken(key1))
             .usingRecursiveComparison()
             .isEqualTo(sut.loadAccessToken(key2))
-    }
-
-    private fun assertPosixPermissions(path: Path, expected: String) {
-        val perms = PosixFilePermissions.toString(Files.getPosixFilePermissions(path))
-        assertThat(perms).isEqualTo(expected)
     }
 }

@@ -22,6 +22,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.stub
 import software.aws.toolkits.core.rules.SystemPropertyHelper
 import software.aws.toolkits.jetbrains.utils.rules.NotificationListenerRule
+import software.aws.toolkits.jetbrains.utils.satisfiesKt
 import java.util.Calendar
 
 class MinimumVersionChangeTest {
@@ -108,7 +109,7 @@ class MinimumVersionChangeTest {
 
         sut.runActivity(projectRule.project)
 
-        assertThat(notifications.notifications).singleElement().satisfies {
+        assertThat(notifications.notifications).singleElement().satisfiesKt {
             assertThat(it.content).matches("""Support for [\w ]+ 2012\.3 is being deprecated .*""".toPattern())
             assertThat(it.actions).singleElement()
         }

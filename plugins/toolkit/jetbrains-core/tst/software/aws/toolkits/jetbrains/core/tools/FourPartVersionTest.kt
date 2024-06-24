@@ -7,6 +7,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
 import software.aws.toolkits.jetbrains.utils.isInstanceOf
+import software.aws.toolkits.jetbrains.utils.satisfiesKt
 
 class FourPartVersionTest {
     @Test
@@ -33,7 +34,7 @@ class FourPartVersionTest {
 
     @Test
     fun `parts are correct`() {
-        assertThat(FourPartVersion(1, 2, 3, 4)).satisfies {
+        assertThat(FourPartVersion(1, 2, 3, 4)).satisfiesKt {
             assertThat(it.major).isEqualTo(1)
             assertThat(it.minor).isEqualTo(2)
             assertThat(it.patch).isEqualTo(3)

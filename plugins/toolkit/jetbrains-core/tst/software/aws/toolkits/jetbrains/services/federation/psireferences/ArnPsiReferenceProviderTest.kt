@@ -18,6 +18,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.satisfiesKt
 
 class ArnPsiReferenceProviderTest {
     @Rule
@@ -68,7 +69,7 @@ class ArnPsiReferenceProviderTest {
             val (str, match) = pair
             assertThat(ArnPsiReferenceProvider.ARN_REGEX.findAll(str).toList())
                 .withFailMessage { "Input should have partially matched regex with single result but did not: $str" }
-                .satisfies {
+                .satisfiesKt {
                     assertThat(it).hasSize(1)
                     assertThat(it.first().value).isEqualTo(match)
                 }

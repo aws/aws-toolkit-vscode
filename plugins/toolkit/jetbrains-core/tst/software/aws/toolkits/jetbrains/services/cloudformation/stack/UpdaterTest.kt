@@ -28,6 +28,7 @@ import software.amazon.awssdk.services.cloudformation.model.StackResource
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
 import software.aws.toolkits.core.utils.delegateMock
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
+import software.aws.toolkits.jetbrains.utils.satisfiesKt
 import java.time.Duration
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
@@ -167,7 +168,7 @@ class UpdaterTest {
 
         val captor = argumentCaptor<List<StackResource>>()
         verify(treeView).fillResources(captor.capture())
-        assertThat(captor.firstValue).singleElement().satisfies {
+        assertThat(captor.firstValue).singleElement().satisfiesKt {
             assertThat(it.logicalResourceId()).isEqualTo("L1")
         }
     }
