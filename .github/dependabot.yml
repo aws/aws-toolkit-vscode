@@ -8,7 +8,9 @@ version: 2
 updates:
     - package-ecosystem: 'npm'
       directory: './packages/core/' # Location of package manifests.
-      target-branch: 'master' # Avoid updates to "staging".
+      target-branch:
+        - 'master' # Avoid updates to "staging".
+        - 'main'
       commit-message:
           prefix: 'deps'
       schedule:
@@ -26,7 +28,9 @@ updates:
                   - 'smithy*'
     - package-ecosystem: 'github-actions'
       directory: './packages/core/'
-      target-branch: 'master' # Avoid updates to "staging".
+      target-branch:
+        - 'master' # Avoid updates to "staging".
+        - 'main'
       commit-message:
           prefix: 'deps'
       schedule:
