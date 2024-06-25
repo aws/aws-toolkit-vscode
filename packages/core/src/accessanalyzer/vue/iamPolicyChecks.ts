@@ -38,7 +38,8 @@ export interface IamPolicyChecksInitialData {
     checkNoNewAccessFilePath: string
     checkNoNewAccessTextArea: string
     checkAccessNotGrantedFilePath: string
-    checkAccessNotGrantedTextArea: string
+    checkAccessNotGrantedActionsTextArea: string
+    checkAccessNotGrantedResourcesTextArea: string
     customChecksFileErrorMessage: string
     cfnParameterPath: string
     pythonToolsInstalled: boolean
@@ -95,6 +96,23 @@ export class IamPolicyChecksWebview extends VueWebview {
             }
             return ''
         }
+    }
+
+    public async readCustomChecksJsonFile(path: string): Promise<object> {
+        try {
+            const rawString = await _readCustomChecksFile(path)
+            this.onFileReadError.fire('') // Reset error message display if no error is found
+            return JSON.parse(rawString)
+        } catch (err: any) {
+            if (err instanceof PolicyChecksError && (err.code as PolicyChecksErrorCode) === 'FileReadError') {
+                this.onFileReadError.fire(err.message)
+            } else if (err instanceof SyntaxError) {
+                this.onFileReadError.fire(`JSON Parse Error: ${err.message}`)
+            } else {
+                this.onFileReadError.fire(`Unexpected Error: ${err.message}`)
+            }
+        }
+        return {}
     }
 
     public _setActiveTextEditorListener() {
@@ -393,6 +411,7 @@ export class IamPolicyChecksWebview extends VueWebview {
     public async checkAccessNotGranted(
         documentType: PolicyChecksDocumentType,
         actions: string,
+        resources: string,
         cfnParameterPath?: string
     ) {
         const document = IamPolicyChecksWebview.editedDocumentFileName
@@ -400,9 +419,14 @@ export class IamPolicyChecksWebview extends VueWebview {
         if (actions !== '') {
             // Remove spaces, line breaks, carriage returns, and tabs
             actions = actions.replace(/\s*|\t|\r|\n/gm, '')
-        } else {
+        }
+        if (resources !== '') {
+            // Remove spaces, line breaks, carriage returns, and tabs
+            resources = resources.replace(/\s*|\t|\r|\n/gm, '')
+        }
+        if (!(actions || resources)) {
             this.onCustomPolicyCheckResponse.fire([
-                IamPolicyChecksConstants.MissingReferenceDocError,
+                IamPolicyChecksConstants.MissingActionsOrResourcesError,
                 getResultCssColor('Error'),
             ])
             return
@@ -419,9 +443,13 @@ export class IamPolicyChecksWebview extends VueWebview {
                         `${this.region}`,
                         '--config',
                         `${globals.context.asAbsolutePath(defaultTerraformConfigPath)}`,
-                        '--actions',
-                        `${actions}`,
                     ]
+                    if (actions !== '') {
+                        args.push('--actions', `${actions}`)
+                    }
+                    if (resources !== '') {
+                        args.push('--resources', `${resources}`)
+                    }
                     this.executeCustomPolicyChecksCommand({
                         command,
                         args,
@@ -447,9 +475,13 @@ export class IamPolicyChecksWebview extends VueWebview {
                         `${document}`,
                         '--region',
                         `${this.region}`,
-                        '--actions',
-                        `${actions}`,
                     ]
+                    if (actions !== '') {
+                        args.push('--actions', `${actions}`)
+                    }
+                    if (resources !== '') {
+                        args.push('--resources', `${resources}`)
+                    }
                     if (cfnParameterPath !== '') {
                         args.push('--template-configuration-file', `${cfnParameterPath}`)
                     }
@@ -459,6 +491,71 @@ export class IamPolicyChecksWebview extends VueWebview {
                         cfnParameterPathExists: !!cfnParameterPath,
                         documentType,
                         checkType: 'CheckAccessNotGranted',
+                    })
+                    return
+                } else {
+                    this.onCustomPolicyCheckResponse.fire([
+                        IamPolicyChecksConstants.IncorrectFileExtension,
+                        getResultCssColor('Error'),
+                    ])
+                    return
+                }
+            }
+        }
+    }
+
+    public async checkNoPublicAccess(documentType: PolicyChecksDocumentType, cfnParameterPath?: string) {
+        const document = IamPolicyChecksWebview.editedDocumentFileName
+        customPolicyCheckDiagnosticCollection.clear()
+
+        switch (documentType) {
+            case 'Terraform Plan': {
+                if (isTerraformPlan(document)) {
+                    const command = 'tf-policy-validator'
+                    const args = [
+                        'check-no-public-access',
+                        '--template-path',
+                        `${document}`,
+                        '--region',
+                        `${this.region}`,
+                        '--config',
+                        `${globals.context.asAbsolutePath(defaultTerraformConfigPath)}`,
+                    ]
+                    this.executeCustomPolicyChecksCommand({
+                        command,
+                        args,
+                        cfnParameterPathExists: !!cfnParameterPath,
+                        documentType,
+                        checkType: 'CheckNoPublicAccess',
+                    })
+                    return
+                } else {
+                    this.onCustomPolicyCheckResponse.fire([
+                        IamPolicyChecksConstants.IncorrectFileExtension,
+                        getResultCssColor('Error'),
+                    ])
+                    return
+                }
+            }
+            case 'CloudFormation': {
+                if (isCloudFormationTemplate(document)) {
+                    const command = 'cfn-policy-validator'
+                    const args = [
+                        'check-no-public-access',
+                        '--template-path',
+                        `${document}`,
+                        '--region',
+                        `${this.region}`,
+                    ]
+                    if (cfnParameterPath !== '') {
+                        args.push('--template-configuration-file', `${cfnParameterPath}`)
+                    }
+                    this.executeCustomPolicyChecksCommand({
+                        command,
+                        args,
+                        cfnParameterPathExists: !!cfnParameterPath,
+                        documentType,
+                        checkType: 'CheckNoPublicAccess',
                     })
                     return
                 } else {
@@ -662,14 +759,18 @@ export async function renderIamPolicyChecks(context: ExtContext): Promise<void> 
             .getConfiguration()
             .get(IamPolicyChecksConstants.CfnParameterFilePathSetting)!
         let checkNoNewAccessTextArea: string = ''
-        let checkAccessNotGrantedTextArea: string = ''
+        let checkAccessNotGrantedActionsTextArea: string = ''
+        let checkAccessNotGrantedResourcesTextArea: string = ''
         let customChecksFileErrorMessage: string = ''
         try {
             if (checkNoNewAccessFilePath) {
                 checkNoNewAccessTextArea = await _readCustomChecksFile(checkNoNewAccessFilePath)
             }
             if (checkAccessNotGrantedFilePath) {
-                checkAccessNotGrantedTextArea = await _readCustomChecksFile(checkAccessNotGrantedFilePath)
+                // Parse JSON into actions & resources here
+                const accessJson = JSON.parse(await _readCustomChecksFile(checkAccessNotGrantedFilePath))
+                checkAccessNotGrantedActionsTextArea = accessJson.actions || ''
+                checkAccessNotGrantedResourcesTextArea = accessJson.resources || ''
             }
         } catch (err: any) {
             customChecksFileErrorMessage = err.message
@@ -681,7 +782,8 @@ export async function renderIamPolicyChecks(context: ExtContext): Promise<void> 
                 checkNoNewAccessFilePath: checkNoNewAccessFilePath ? checkNoNewAccessFilePath : '',
                 checkNoNewAccessTextArea,
                 checkAccessNotGrantedFilePath: checkAccessNotGrantedFilePath ? checkAccessNotGrantedFilePath : '',
-                checkAccessNotGrantedTextArea,
+                checkAccessNotGrantedActionsTextArea,
+                checkAccessNotGrantedResourcesTextArea,
                 customChecksFileErrorMessage,
                 cfnParameterPath: cfnParameterPath ? cfnParameterPath : '',
                 pythonToolsInstalled: arePythonToolsInstalled(),
@@ -758,11 +860,7 @@ function parseCliErrorMessage(message: string, documentType: PolicyChecksDocumen
         message.includes('The security token included in the request is expired')
     ) {
         return IamPolicyChecksConstants.InvalidAwsCredentials
-    } else if (
-        message.includes(
-            `Unexpected error occurred. 'AccessAnalyzer' object has no attribute 'check_access_not_granted'`
-        )
-    ) {
+    } else if (message.includes(`Unexpected error occurred. 'AccessAnalyzer' object has no attribute 'check`)) {
         return 'ERROR: The dependencies of the Python CLI tools are outdated.'
     } else if (cfnMatch?.[0]) {
         return cfnMatch[0]
