@@ -19,6 +19,7 @@ import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSet
 import { activate as activateLsp } from './lspClient'
 import { telemetry } from '../../shared/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
+import { globals } from '../../shared'
 
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -280,6 +281,17 @@ export class LspController {
                     activateLsp(context).then(() => {
                         getLogger().info('LspController: LSP activated')
                         LspController.instance.buildIndex()
+
+                        globals.clock.setInterval(async () => {
+                            const usage = await getLspServerUsage()
+                            if (usage) {
+                                getLogger().info(
+                                    `LspController: LSP server CPU ${usage.cpuUsage}%, LSP server Memory ${
+                                        usage.memoryUsage / (1024 * 1024)
+                                    }MB  `
+                                )
+                            }
+                        }, 20 * 60 * 1000)
                     })
                 } catch (e) {
                     getLogger().error(`LspController: LSP failed to activate ${e}`)
