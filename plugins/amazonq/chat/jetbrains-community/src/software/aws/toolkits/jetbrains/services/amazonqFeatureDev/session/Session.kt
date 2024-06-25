@@ -56,8 +56,8 @@ class Session(val tabID: String, val project: Project) {
         if (!preloaderFinished) {
             setupConversation(msg)
             preloaderFinished = true
-
             messenger.sendAsyncEventProgress(tabId = this.tabID, inProgress = true)
+            featureDevService.sendFeatureDevEvent(this.conversationId)
         }
     }
 

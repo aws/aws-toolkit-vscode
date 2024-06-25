@@ -9,6 +9,7 @@ import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererRuntimeException
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.GetTaskAssistCodeGenerationResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.SendTelemetryEventResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.StartTaskAssistCodeGenerationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.ValidationException
 import software.amazon.awssdk.services.codewhispererstreaming.model.CodeWhispererStreamingException
@@ -236,5 +237,18 @@ class FeatureDevService(val proxyClient: FeatureDevClient, val project: Project)
         }
 
         return parsedResult.code_generation_result
+    }
+
+    fun sendFeatureDevEvent(conversationId: String) {
+        val sendFeatureDevTelemetryEventResponse: SendTelemetryEventResponse
+        try {
+            sendFeatureDevTelemetryEventResponse = proxyClient.sendFeatureDevTelemetryEvent(conversationId)
+            val requestId = sendFeatureDevTelemetryEventResponse.responseMetadata().requestId()
+            logger.debug {
+                "$FEATURE_NAME: succesfully sent feature dev telemetry: ConversationId: $conversationId RequestId: $requestId"
+            }
+        } catch (e: Exception) {
+            logger.warn(e) { "$FEATURE_NAME: failed to send feature dev telemetry" }
+        }
     }
 }

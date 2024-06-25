@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.SystemInfo
 import kotlinx.coroutines.future.await
 import software.amazon.awssdk.services.codewhispererruntime.CodeWhispererRuntimeClient
 import software.amazon.awssdk.services.codewhispererruntime.model.ArtifactType
@@ -14,10 +15,15 @@ import software.amazon.awssdk.services.codewhispererruntime.model.CreateTaskAssi
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateTaskAssistConversationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.GetTaskAssistCodeGenerationResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.IdeCategory
+import software.amazon.awssdk.services.codewhispererruntime.model.OperatingSystem
+import software.amazon.awssdk.services.codewhispererruntime.model.OptOutPreference
+import software.amazon.awssdk.services.codewhispererruntime.model.SendTelemetryEventResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.StartTaskAssistCodeGenerationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.TaskAssistPlanningUploadContext
 import software.amazon.awssdk.services.codewhispererruntime.model.UploadContext
 import software.amazon.awssdk.services.codewhispererruntime.model.UploadIntent
+import software.amazon.awssdk.services.codewhispererruntime.model.UserContext
 import software.amazon.awssdk.services.codewhispererstreaming.CodeWhispererStreamingAsyncClient
 import software.amazon.awssdk.services.codewhispererstreaming.model.ChatMessage
 import software.amazon.awssdk.services.codewhispererstreaming.model.ChatTriggerType
@@ -35,12 +41,40 @@ import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.services.amazonq.clients.AmazonQStreamingClient
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FEATURE_EVALUATION_PRODUCT_NAME
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.calculateTotalLatency
+import software.aws.toolkits.jetbrains.services.telemetry.ClientMetadata
+import software.aws.toolkits.jetbrains.settings.AwsSettings
 import java.time.Instant
 import software.amazon.awssdk.services.codewhispererruntime.model.ChatTriggerType as SyncChatTriggerType
 
 @Service(Service.Level.PROJECT)
 class FeatureDevClient(private val project: Project) {
+    fun getTelemetryOptOutPreference() =
+        if (AwsSettings.getInstance().isTelemetryEnabled) {
+            OptOutPreference.OPTIN
+        } else {
+            OptOutPreference.OPTOUT
+        }
+
+    private val featureDevUserContext = ClientMetadata.getDefault().let {
+        val osForFeatureDev: OperatingSystem =
+            when {
+                SystemInfo.isWindows -> OperatingSystem.WINDOWS
+                SystemInfo.isMac -> OperatingSystem.MAC
+                // For now, categorize everything else as "Linux" (Linux/FreeBSD/Solaris/etc)
+                else -> OperatingSystem.LINUX
+            }
+
+        UserContext.builder()
+            .ideCategory(IdeCategory.JETBRAINS)
+            .operatingSystem(osForFeatureDev)
+            .product(FEATURE_EVALUATION_PRODUCT_NAME)
+            .clientId(it.clientId)
+            .ideVersion(it.awsVersion)
+            .build()
+    }
+
     private fun connection() = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(QConnection.getInstance())
         ?: error("Attempted to use connection while one does not exist")
 
@@ -50,6 +84,16 @@ class FeatureDevClient(private val project: Project) {
 
     private val amazonQStreamingClient
         get() = AmazonQStreamingClient.getInstance(project)
+
+    fun sendFeatureDevTelemetryEvent(conversationId: String): SendTelemetryEventResponse = bearerClient().sendTelemetryEvent { requestBuilder ->
+        requestBuilder.telemetryEvent { telemetryEventBuilder ->
+            telemetryEventBuilder.featureDevEvent {
+                it.conversationId(conversationId)
+            }
+        }
+        requestBuilder.optOutPreference(getTelemetryOptOutPreference())
+        requestBuilder.userContext(featureDevUserContext)
+    }
 
     fun createTaskAssistConversation(): CreateTaskAssistConversationResponse = bearerClient().createTaskAssistConversation(
         CreateTaskAssistConversationRequest.builder().build()

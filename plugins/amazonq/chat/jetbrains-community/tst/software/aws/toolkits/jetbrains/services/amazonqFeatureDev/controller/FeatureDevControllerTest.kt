@@ -143,6 +143,7 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
         doReturn(testAuth).`when`(authController).getAuthNeededStates(any())
         whenever(chatSessionStorage.getSession(any(), any())).thenReturn(spySession)
         whenever(featureDevClient.createTaskAssistConversation()).thenReturn(exampleCreateTaskAssistConversationResponse)
+        whenever(featureDevClient.sendFeatureDevTelemetryEvent(any())).thenReturn(exampleSendTelemetryEventResponse)
         whenever(featureDevClient.createTaskAssistUploadUrl(any(), any(), any())).thenReturn(exampleCreateUploadUrlResponse)
 
         runTest {
@@ -168,6 +169,7 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
         val message = IncomingFeatureDevMessage.FollowupClicked(followUp, testTabId, "", "test-command")
 
         whenever(featureDevClient.createTaskAssistConversation()).thenReturn(exampleCreateTaskAssistConversationResponse)
+        whenever(featureDevClient.sendFeatureDevTelemetryEvent(any())).thenReturn(exampleSendTelemetryEventResponse)
         whenever(chatSessionStorage.getSession(any(), any())).thenReturn(spySession)
         doNothing().`when`(chatSessionStorage).deleteSession(any())
 
@@ -216,6 +218,7 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
         val message = IncomingFeatureDevMessage.FollowupClicked(followUp, testTabId, "", "test-command")
 
         whenever(featureDevClient.createTaskAssistConversation()).thenReturn(exampleCreateTaskAssistConversationResponse)
+        whenever(featureDevClient.sendFeatureDevTelemetryEvent(any())).thenReturn(exampleSendTelemetryEventResponse)
         whenever(chatSessionStorage.getSession(any(), any())).thenReturn(spySession)
 
         mockkObject(AmazonqTelemetry)
@@ -243,6 +246,7 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
         } just runs
 
         whenever(featureDevClient.createTaskAssistConversation()).thenReturn(exampleCreateTaskAssistConversationResponse)
+        whenever(featureDevClient.sendFeatureDevTelemetryEvent(any())).thenReturn(exampleSendTelemetryEventResponse)
         whenever(chatSessionStorage.getSession(any(), any())).thenReturn(spySession)
         whenever(spySession.sessionState).thenReturn(
             PrepareCodeGenerationState(
@@ -403,6 +407,7 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
         val message = IncomingFeatureDevMessage.FollowupClicked(followUp, testTabId, "", "test-command")
 
         whenever(featureDevClient.createTaskAssistConversation()).thenReturn(exampleCreateTaskAssistConversationResponse)
+        whenever(featureDevClient.sendFeatureDevTelemetryEvent(any())).thenReturn(exampleSendTelemetryEventResponse)
         whenever(chatSessionStorage.getSession(any(), any())).thenReturn(spySession)
 
         mockkStatic("software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.FileUtilsKt")
@@ -431,6 +436,7 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
         val message = IncomingFeatureDevMessage.FollowupClicked(followUp, testTabId, "", "test-command")
 
         whenever(featureDevClient.createTaskAssistConversation()).thenReturn(exampleCreateTaskAssistConversationResponse)
+        whenever(featureDevClient.sendFeatureDevTelemetryEvent(any())).thenReturn(exampleSendTelemetryEventResponse)
         whenever(chatSessionStorage.getSession(any(), any())).thenReturn(spySession)
 
         mockkStatic("software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.FileUtilsKt")
@@ -464,6 +470,7 @@ class FeatureDevControllerTest : FeatureDevTestBase() {
         val message = IncomingFeatureDevMessage.FollowupClicked(followUp, testTabId, "", "test-command")
 
         whenever(featureDevClient.createTaskAssistConversation()).thenReturn(exampleCreateTaskAssistConversationResponse)
+        whenever(featureDevClient.sendFeatureDevTelemetryEvent(any())).thenReturn(exampleSendTelemetryEventResponse)
         whenever(chatSessionStorage.getSession(any(), any())).thenReturn(spySession)
 
         val folder = LightVirtualFile("${spySession.context.projectRoot.name}/path/to/sub/folder")

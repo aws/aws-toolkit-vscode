@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev
 
+const val FEATURE_EVALUATION_PRODUCT_NAME = "FeatureDev"
+
 const val FEATURE_NAME = "Amazon Q Developer Agent for software development"
 
 // Max number of times a user can attempt to retry an approach request if it fails

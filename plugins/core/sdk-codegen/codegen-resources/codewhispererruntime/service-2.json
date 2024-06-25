@@ -456,6 +456,13 @@
                 "DOWNVOTE"
             ]
         },
+        "FeatureDevEvent": {
+            "type": "structure",
+            "required": ["conversationId"],
+            "members": {
+                "conversationId": { "shape":  "ConversationId" }
+            }
+        },
         "ChatUserModificationEvent": {
             "type": "structure",
             "required": ["conversationId", "messageId", "modificationPercentage"],
@@ -1593,7 +1600,8 @@
                 "metricData":{"shape":"MetricData"},
                 "chatAddMessageEvent": { "shape": "ChatAddMessageEvent" },
                 "chatInteractWithMessageEvent": { "shape": "ChatInteractWithMessageEvent" },
-                "chatUserModificationEvent": { "shape": "ChatUserModificationEvent" }
+                "chatUserModificationEvent": { "shape": "ChatUserModificationEvent" },
+                "featureDevEvent":  { "shape":  "FeatureDevEvent" }
             },
             "union":true
         },
