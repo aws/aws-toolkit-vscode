@@ -747,7 +747,12 @@ export function findDownloadArtifactStep(transformationSteps: TransformationStep
     }
 }
 
-export async function downloadResultArchive(jobId: string, pathToArchive: string) {
+export async function downloadResultArchive(
+    jobId: string,
+    downloadArtifactId: string | undefined,
+    pathToArchive: string,
+    downloadArtifactType: TransformationDownloadArtifactType
+) {
     const cwStreamingClient = await createCodeWhispererChatStreamingClient()
 
     try {
@@ -777,7 +782,7 @@ export async function downloadAndExtractResultArchive(
 
     const pathToArchive = path.join(pathToArchiveDir, 'ExportResultsArchive.zip')
 
-    await downloadResultArchive(jobId, pathToArchive)
+    await downloadResultArchive(jobId, downloadArtifactId, pathToArchive, downloadArtifactType)
 
     let downloadErrorMessage = undefined
     try {
