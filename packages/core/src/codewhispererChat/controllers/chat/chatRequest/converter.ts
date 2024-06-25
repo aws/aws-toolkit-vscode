@@ -90,6 +90,11 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): Gen
         }
     }
 
+    var customizationArn: string | undefined = undefined
+    if (triggerPayload.customization && triggerPayload.customization.arn.length > 0) {
+        customizationArn = triggerPayload.customization.arn
+    }
+
     return {
         conversationState: {
             currentMessage: {
@@ -107,6 +112,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): Gen
                 },
             },
             chatTriggerType: 'MANUAL',
+            customizationArn: customizationArn,
         },
     }
 }
