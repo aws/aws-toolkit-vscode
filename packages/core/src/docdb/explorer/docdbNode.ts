@@ -11,6 +11,7 @@ import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { inspect } from 'util'
 import { DocumentDBClient } from '../../shared/clients/docdbClient'
 import { DBClusterNode } from './dbClusterNode'
+import { DBElasticClusterNode } from './dbElasticClusterNode'
 
 /**
  * An AWS Explorer node representing DocumentDB.
@@ -26,8 +27,14 @@ export class DocumentDBNode extends AWSTreeNodeBase {
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
+                const nodes = []
                 const clusters = await this.client.listClusters()
-                return clusters.map(cluster => new DBClusterNode(cluster, this.client))
+                nodes.push(...clusters.map(cluster => new DBClusterNode(cluster, this.client)))
+
+                const elasticClusters = await this.client.listElasticClusters()
+                nodes.push(...elasticClusters.map(cluster => new DBElasticClusterNode(cluster, this.client)))
+
+                return nodes
             },
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.docdb.noClusters', '[No Clusters found]')),

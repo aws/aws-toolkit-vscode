@@ -27,6 +27,7 @@ export class DBClusterNode extends AWSTreeNodeBase implements AWSResourceNode {
     constructor(readonly cluster: DBCluster, readonly client: DocumentDBClient) {
         super(cluster.DBClusterIdentifier ?? '[Cluster]', vscode.TreeItemCollapsibleState.Collapsed)
         this.contextValue = 'awsDocDBClusterNode'
+        this.iconPath = undefined //TODO: determine icon for regional cluster
         this.tooltip = `${this.name}${os.EOL}Engine: ${this.cluster.EngineVersion}${os.EOL}Status: ${this.cluster.Status}`
     }
 
