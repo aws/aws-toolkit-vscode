@@ -10,6 +10,7 @@ import {
     activate as activateCodeWhisperer,
     shutdown as shutdownCodeWhisperer,
     amazonQDismissedKey,
+    AuthUtil,
 } from 'aws-core-vscode/codewhisperer'
 import {
     ExtContext,
@@ -25,11 +26,10 @@ import {
     getLogger,
     getMachineId,
 } from 'aws-core-vscode/shared'
-import { initializeAuth, CredentialsStore, LoginManager, AuthUtils } from 'aws-core-vscode/auth'
+import { initializeAuth, CredentialsStore, LoginManager, AuthUtils, SsoConnection } from 'aws-core-vscode/auth'
 import { CommonAuthWebview } from 'aws-core-vscode/login'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 import { telemetry, ExtStartUpSources } from 'aws-core-vscode/telemetry'
-import { getAuthStatus } from './auth/util'
 import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode/extensionCommon'
 import { registerCommands } from './commands'
 
@@ -131,11 +131,11 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
             telemetry.record({ source: ExtStartUpSources.reload })
         }
 
-        const { authStatus, authEnabledConnections, authScopes } = await getAuthStatus()
+        const authState = (await AuthUtil.instance.getChatAuthState()).codewhispererChat
         telemetry.record({
-            authStatus,
-            authEnabledConnections,
-            authScopes,
+            authStatus: authState === 'connected' || authState === 'expired' ? authState : 'notConnected',
+            authEnabledConnections: AuthUtils.getAuthFormIdsFromConnection(AuthUtil.instance.conn).join(','),
+            authScopes: ((AuthUtil.instance.conn as SsoConnection)?.scopes ?? []).join(','),
         })
     })
 }

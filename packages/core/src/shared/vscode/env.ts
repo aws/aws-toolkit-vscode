@@ -60,10 +60,15 @@ export function isNameMangled(): boolean {
 export { extensionVersion }
 
 /**
- * Returns true if the extension is being ran on the minimum version of VS Code as defined
- * by the `engines` field in `package.json`
+ * True if the current running vscode is the minimum defined by `engines.vscode` in `package.json`.
+ *
+ * @param throwWhen Throw if minimum vscode is equal or later than this version.
  */
-export function isMinimumVersion(): boolean {
+export function isMinVscode(throwWhen?: string): boolean {
+    const minVscode = getMinVscodeVersion()
+    if (throwWhen && semver.gte(minVscode, throwWhen)) {
+        throw Error(`Min vscode ${minVscode} >= ${throwWhen}. Delete or update the code that called this.`)
+    }
     return vscode.version.startsWith(getMinVscodeVersion())
 }
 

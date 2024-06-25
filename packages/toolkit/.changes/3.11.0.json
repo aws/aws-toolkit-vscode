@@ -1,0 +1,10 @@
+{
+	"date": "2024-06-21",
+	"version": "3.11.0",
+	"entries": [
+		{
+			"type": "Removal",
+			"description": "Auth: No longer share SSO sessions with Amazon Q."
+		}
+	]
+}

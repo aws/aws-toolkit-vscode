@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Security Scan: Fixes an issue where project-scans time out for larger projects."
-}

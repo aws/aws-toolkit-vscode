@@ -31,7 +31,7 @@
             "isBackground": true,
             "problemMatcher": "$tsc-watch",
             "options": {
-                "cwd": "../core"
+                "cwd": "${workspaceFolder}/../../packages/core"
             }
         },
         {
@@ -41,7 +41,7 @@
             "isBackground": true,
             "problemMatcher": "$ts-webpack-watch",
             "options": {
-                "cwd": "../core"
+                "cwd": "${workspaceFolder}/../../packages/core"
             }
         },
         {
@@ -52,7 +52,7 @@
             "isBackground": true,
             "problemMatcher": "$ts-webpack-watch",
             "options": {
-                "cwd": "../core"
+                "cwd": "${workspaceFolder}/../../packages/core"
             }
         },
         {
@@ -148,7 +148,7 @@
             "problemMatcher": "$ts-webpack-watch",
             "dependsOn": ["copyPackageJson"],
             "options": {
-                "cwd": "../core"
+                "cwd": "${workspaceFolder}/../../packages/core"
             }
         },
         /**

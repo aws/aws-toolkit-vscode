@@ -10,10 +10,10 @@
  * To avoid having duplicate code, we copy the necessary fields from the core library to the separate toolkit
  * extension when required (e.g. debugging, packaging).
  *
- * TODO: Find a better way to do this, hopefully remove the need for this in the core library.
+ * TODO: IDE-12831 tracks work to eliminate this script.
  *
  * Args:
- *   --restore : reverts the package json changes to the original state
+ *   --restore: (XXX: this mode was inlined into the package.ts script.)
  *   --development: performs actions that should only be done during development and not production
  */
 
@@ -21,7 +21,8 @@ import * as fs from 'fs-extra'
 
 function main() {
     const args = process.argv.slice(2)
-    const restoreMode = args.includes('--restore')
+    // XXX: --restore mode was inlined into the package.ts script.
+    const restoreMode = false
 
     if (args.includes('--development')) {
         /** When we actually package the extension the null extension does not occur, so we will skip this hack */
@@ -33,12 +34,14 @@ function main() {
     const coreLibPackageJsonFile = '../core/package.json'
 
     if (restoreMode) {
-        try {
-            fs.copyFileSync(backupJsonFile, packageJsonFile)
-            fs.unlinkSync(backupJsonFile)
-        } catch (err) {
-            console.log(`Could not restore package.json. Error: ${err}`)
-        }
+        // XXX: --restore mode was inlined into the package.ts script.
+        // TODO: IDE-12831 will eliminate this entire script.
+        // try {
+        //     fs.copyFileSync(backupJsonFile, packageJsonFile)
+        //     fs.unlinkSync(backupJsonFile)
+        // } catch (err) {
+        //     console.log(`Could not restore package.json. Error: ${err}`)
+        // }
     } else {
         fs.copyFileSync(packageJsonFile, backupJsonFile)
         const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
