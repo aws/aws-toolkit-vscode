@@ -572,15 +572,9 @@ export class ChatController {
         }
         // Loop while we waiting for tabID to be set
         if (triggerPayload.message) {
-            let userIntentEnableProjectContext = false
-            if (triggerPayload.message.startsWith('@ws')) {
-                userIntentEnableProjectContext = true
-                triggerPayload.message = triggerPayload.message.slice(3)
-            } else if (triggerPayload.message.startsWith('@workspace')) {
-                userIntentEnableProjectContext = true
-                triggerPayload.message = triggerPayload.message.slice(10)
-            }
+            let userIntentEnableProjectContext = triggerPayload.message.startsWith(`@workspace`)
             if (userIntentEnableProjectContext) {
+                triggerPayload.message.replace(/@workspace/g, '')
                 if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                     const start = performance.now()
                     triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
