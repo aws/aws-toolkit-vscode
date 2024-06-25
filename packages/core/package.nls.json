@@ -74,6 +74,7 @@
     "AWS.configuration.description.amazonq.shareContentWithAWS": "When checked, your content processed by Amazon Q may be used for service improvement (except for content processed by the Amazon Q Enterprise service tier). Unchecking this box will cause AWS to delete any of your content used for that purpose. The information used to provide the Amazon Q service to you will not be affected. See the [Service Terms](https://aws.amazon.com/service-terms) for more detail.",
     "AWS.configuration.description.amazonq.importRecommendation": "Amazon Q will add import statements with inline code suggestions when necessary.",
     "AWS.configuration.description.amazonq.localWorkspaceIndex": "Amazon Q will index workspace files locally to improve chat experience.",
+    "AWS.configuration.description.amazonq.localWorkspaceIndexWorkerThreads": "Number of worker threads of Amazon Q local index process. Set to 0 to use system default worker threads for balanced performance. Please restart VS Code or reload VS Code window after changing worker threads.",
     "AWS.command.apig.copyUrl": "Copy URL",
     "AWS.command.apig.invokeRemoteRestApi": "Invoke on AWS",
     "AWS.command.apig.invokeRemoteRestApi.cn": "Invoke on Amazon",

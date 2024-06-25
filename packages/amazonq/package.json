@@ -131,6 +131,12 @@
                     "markdownDescription": "%AWS.configuration.description.amazonq.localWorkspaceIndex%",
                     "default": false,
                     "scope": "application"
+                },
+                "amazonQ.localWorkspaceIndexWorkerThreads": {
+                    "type": "number",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.localWorkspaceIndexWorkerThreads%",
+                    "default": 0,
+                    "scope": "application"
                 }
             }
         },

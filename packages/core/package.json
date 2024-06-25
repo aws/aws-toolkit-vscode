@@ -291,6 +291,12 @@
                     "default": false,
                     "scope": "application"
                 },
+                "amazonQ.localWorkspaceIndexWorkerThreads": {
+                    "type": "number",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.localWorkspaceIndexWorkerThreads%",
+                    "default": 0,
+                    "scope": "application"
+                },
                 "aws.threatComposer.defaultEditor": {
                     "type": "boolean",
                     "default": true,

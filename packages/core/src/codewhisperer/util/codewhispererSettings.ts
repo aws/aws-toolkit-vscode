@@ -9,6 +9,7 @@ const description = {
     importRecommendationForInlineCodeSuggestions: Boolean, // eslint-disable-line id-length
     shareContentWithAWS: Boolean,
     localWorkspaceIndex: Boolean,
+    localWorkspaceIndexWorkerThreads: Number,
 }
 
 export class CodeWhispererSettings extends fromExtensionManifest('amazonQ', description) {
@@ -41,6 +42,9 @@ export class CodeWhispererSettings extends fromExtensionManifest('amazonQ', desc
     }
     public isLocalIndexEnabled(): boolean {
         return this.get('localWorkspaceIndex', true)
+    }
+    public getIndexWorkerThreads(): number {
+        return this.get('localWorkspaceIndexWorkerThreads', 0)
     }
 
     static #instance: CodeWhispererSettings

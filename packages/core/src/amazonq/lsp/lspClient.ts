@@ -26,6 +26,7 @@ import {
     Usage,
 } from './types'
 import { Writable } from 'stream'
+import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
 
 const localize = nls.loadMessageBundle()
 let client: LanguageClient | undefined = undefined
@@ -113,7 +114,13 @@ export async function activate(extensionContext: ExtensionContext) {
     // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
     const debugOptions = { execArgv: ['--nolazy', '--inspect=6009', '--preserve-symlinks', '--stdio'] }
 
-    const child = cp.spawn('node', [serverModule, ...debugOptions.execArgv])
+    const workerThreads = CodeWhispererSettings.instance.getIndexWorkerThreads()
+    if (workerThreads > 0 && workerThreads < 100) {
+        process.env.Q_WORKER_THREADS = workerThreads.toString()
+    }
+    const child = cp.spawn('node', [serverModule, ...debugOptions.execArgv], {
+        env: process.env,
+    })
     // share an encryption key using stdin
     // follow same practice of DEXP LSP server
     writeEncryptionInit(child.stdin)
