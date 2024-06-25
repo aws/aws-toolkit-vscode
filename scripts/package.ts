@@ -86,6 +86,22 @@ function isBeta(): boolean {
 }
 
 /**
+ * Restores package.json after `scripts/build/handlePackageJson.ts` overwrote it.
+ *
+ * TODO: remove this after IDE-12831 is resolved.
+ */
+function restorePackageJson() {
+    const packageJsonFile = './package.json'
+    const backupJsonFile = `${packageJsonFile}.handlePackageJson.bk`
+
+    if (fs.existsSync(backupJsonFile)) {
+        fs.copyFileSync(backupJsonFile, packageJsonFile)
+        fs.unlinkSync(backupJsonFile)
+        console.log(`package.ts: restored package.json from ${backupJsonFile}`)
+    }
+}
+
+/**
  * Gets a suffix to append to the version-string, or empty for release builds.
  *
  * TODO: use `git describe` instead.
@@ -177,6 +193,7 @@ function main() {
             fs.copyFileSync(backupWebpackConfigFile, webpackConfigJsFile)
             fs.unlinkSync(backupWebpackConfigFile)
         }
+        restorePackageJson()
     }
 }
 
