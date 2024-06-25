@@ -40,7 +40,7 @@ jobs:
             #   run: echo 'TAG_NAME=prerelease' >> $GITHUB_ENV
             - if: github.event_name == 'workflow_dispatch'
               run: echo "TAG_NAME=${{ github.event.inputs.tag_name }}" >> $GITHUB_ENV
-            - if: github.ref_name != 'master' || github.ref_name != 'main'
+            - if: github.ref_name != 'master' && github.ref_name != 'main'
               run: |
                   TAG_NAME=${{ github.ref_name }}
                   FEAT_NAME=$(echo $TAG_NAME | sed 's/feature\///')
