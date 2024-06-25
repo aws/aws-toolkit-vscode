@@ -49,7 +49,7 @@ export class DBClusterNode extends AWSTreeNodeBase implements AWSResourceNode {
         })
     }
 
-    public status(): string | undefined {
+    public get status(): string | undefined {
         return this.cluster.Status
     }
 

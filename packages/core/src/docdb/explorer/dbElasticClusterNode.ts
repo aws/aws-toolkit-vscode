@@ -20,11 +20,11 @@ export class DBElasticClusterNode extends AWSTreeNodeBase implements AWSResource
         super(cluster.clusterName ?? '[Cluster]', vscode.TreeItemCollapsibleState.None)
         this.contextValue = 'awsDocDBElasticClusterNode'
         this.iconPath = new vscode.ThemeIcon('layers-dot') //TODO: determine icon for elastic cluster
-        this.tooltip = `${this.name}\nStatus: ${this.cluster.status}`
+        this.tooltip = `${this.name}\nStatus: ${this.status}`
     }
 
-    public status(): string | undefined {
-        return this.cluster.status
+    public get status(): string | undefined {
+        return this.cluster.status?.toLowerCase()
     }
 
     public [inspect.custom](): string {
