@@ -7,7 +7,6 @@ import path from 'path'
 import { CodeWhispererStreaming, ExportResultArchiveCommandInput } from '@amzn/codewhisperer-streaming'
 import { ToolkitError } from '../errors'
 import { CodeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { transformByQState } from '../../codewhisperer/models/model'
 import { calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { telemetry } from '../telemetry/telemetry'
 import { fsCommon } from '../../srcShared/fs'
@@ -55,7 +54,7 @@ export async function downloadExportResultArchive(
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'ExportResultArchive',
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformJobId: transformByQState.getJobId(),
+            codeTransformJobId: exportResultArchiveArgs.exportId,
             codeTransformApiErrorMessage: downloadErrorMessage,
             codeTransformRequestId: e.requestId ?? '',
             result: MetadataResult.Fail,
@@ -66,7 +65,7 @@ export async function downloadExportResultArchive(
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'ExportResultArchive',
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformJobId: transformByQState.getJobId(),
+            codeTransformJobId: exportResultArchiveArgs.exportId,
             codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
             codeTransformTotalByteSize: totalDownloadBytes,
             codeTransformRequestId: result?.$metadata.requestId,
