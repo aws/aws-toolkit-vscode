@@ -106,7 +106,7 @@ export const javapOutputToTelemetryValue = (javapCommandLineOutput: string) => {
 
 export const calculateTotalLatency = (startTime: number): number => Date.now() - startTime
 
-type GumbyAPIresponse =
+type CodeTransformAPIresponse =
     | CreateUploadUrlResponse
     | ResumeTransformationResponse
     | StopTransformationResponse
@@ -119,7 +119,7 @@ export class TelemetryHelper {
         return CodeTransformTelemetryState.instance.getSessionId()
     }
 
-    static async callApi<T extends GumbyAPIresponse>(parameters: {
+    static async callApi<T extends CodeTransformAPIresponse>(parameters: {
         apiCall: () => Promise<PromiseResult<T, AWSError>>
         apiName: CodeTransformApiNames
         errorReason: string
@@ -163,7 +163,7 @@ export class TelemetryHelper {
 
             let requestId = telemetryUndefined
             try {
-                requestId = (result as PromiseResult<GumbyAPIresponse, AWSError>).$response.requestId
+                requestId = (result as PromiseResult<CodeTransformAPIresponse, AWSError>).$response.requestId
             } catch (_) {
                 // noop
             }

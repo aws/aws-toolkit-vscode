@@ -17,10 +17,12 @@ import {
     FolderInfo,
     TransformationCandidateProject,
     ZipManifest,
+    TransformByQStatus,
 } from '../models/model'
-import { convertDateToTimestamp, getStringHash } from '../../shared/utilities/textUtilities'
+import { convertDateToTimestamp } from '../../shared/utilities/textUtilities'
 import {
     createZipManifest,
+    downloadAndExtractResultArchive,
     downloadHilResultArchive,
     findDownloadArtifactStep,
     getArtifactsFromProgressUpdate,
@@ -41,19 +43,9 @@ import {
     prepareProjectDependencies,
     runMavenDependencyUpdateCommands,
 } from '../service/transformByQ/transformMavenHandler'
-import {
-    CodeTransformCancelSrcComponents,
-    CodeTransformJavaSourceVersionsAllowed,
-    CodeTransformJavaTargetVersionsAllowed,
-    telemetry,
-} from '../../shared/telemetry/telemetry'
+import { CodeTransformCancelSrcComponents, telemetry } from '../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import {
-    CancelActionPositions,
-    JDKToTelemetryValue,
-    calculateTotalLatency,
-    telemetryUndefined,
-} from '../../amazonqGumby/telemetry/codeTransformTelemetry'
+import { CancelActionPositions, calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
@@ -63,6 +55,7 @@ import {
     JobStartError,
     ModuleUploadError,
     PollJobError,
+    TransformationPreBuildError,
 } from '../../amazonqGumby/errors'
 import { ChatSessionManager } from '../../amazonqGumby/chat/storages/chatSession'
 import {
@@ -187,10 +180,8 @@ export async function startTransformByQ() {
     } catch (error: any) {
         await transformationJobErrorHandler(error)
     } finally {
-        if (transformByQState.isCancelled()) {
-            await postTransformationJob()
-            await cleanupTransformationJob()
-        }
+        await postTransformationJob()
+        await cleanupTransformationJob()
     }
 }
 
@@ -216,7 +207,7 @@ export async function humanInTheLoopRetryLogic(jobId: string) {
         }
     } catch (error) {
         // TODO if we encounter error in HIL, do we stop job?
-        await finalizeTransformByQ(status)
+        await finalizeTransformByQ('FAILED')
         // bubble up error to callee function
         throw error
     }
@@ -228,9 +219,6 @@ export async function finalizeTransformByQ(status: string) {
         await finalizeTransformationJob(status)
     } catch (error: any) {
         await transformationJobErrorHandler(error)
-    } finally {
-        await postTransformationJob()
-        await cleanupTransformationJob()
     }
 }
 
@@ -276,7 +264,7 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
         const { transformationStep, progressUpdate } = findDownloadArtifactStep(transformationSteps)
 
         if (!transformationStep || !progressUpdate) {
-            throw new Error('No HIL Transformation Step found')
+            throw new Error('Transformation step or progress update is undefined')
         }
 
         const { artifactId, artifactType } = getArtifactsFromProgressUpdate(progressUpdate)
@@ -402,7 +390,7 @@ export async function finishHumanInTheLoop(selectedDependency?: string) {
     let hilResult: MetadataResult = MetadataResult.Pass
     try {
         if (!selectedDependency) {
-            throw new Error('No user action')
+            throw new Error('No dependency selected')
         }
         const humanInTheLoopManager = HumanInTheLoopManager.instance
         const manifestFileValues = humanInTheLoopManager.getManifestFileValues()
@@ -484,7 +472,8 @@ export async function startTransformationJob(uploadId: string) {
         getLogger().info(`CodeTransformation: jobId: ${jobId}`)
     } catch (error) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToStartJobNotification}`, error)
-        if ((error as Error).message.includes('too many active running jobs')) {
+        const errorMessage = (error as Error).message
+        if (errorMessage.includes('too many active running jobs')) {
             transformByQState.setJobFailureErrorNotification(
                 CodeWhispererConstants.failedToStartJobTooManyJobsNotification
             )
@@ -492,8 +481,12 @@ export async function startTransformationJob(uploadId: string) {
                 CodeWhispererConstants.failedToStartJobTooManyJobsChatMessage
             )
         } else {
-            transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToStartJobNotification)
-            transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToStartJobChatMessage)
+            transformByQState.setJobFailureErrorNotification(
+                `${CodeWhispererConstants.failedToStartJobNotification} ${errorMessage}`
+            )
+            transformByQState.setJobFailureErrorChatMessage(
+                `${CodeWhispererConstants.failedToStartJobChatMessage} ${errorMessage}`
+            )
         }
         throw new JobStartError()
     }
@@ -515,7 +508,20 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
         if (!transformByQState.getJobFailureErrorChatMessage()) {
             transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToCompleteJobChatMessage)
         }
-        throw new PollJobError()
+
+        // Since we don't yet have a good way of knowing what the error was,
+        // we try to fetch any build failure artifacts that may exist so that we can optionally
+        // show them to the user if they exist.
+        const tmpDir = path.join(os.tmpdir(), 'q-transformation-build-logs')
+        await downloadAndExtractResultArchive(jobId, undefined, tmpDir, 'Logs')
+        const pathToLog = path.join(tmpDir, 'buildCommandOutput.log')
+        transformByQState.setPreBuildLogFilePath(pathToLog)
+
+        if (fs.existsSync(pathToLog)) {
+            throw new TransformationPreBuildError()
+        } else {
+            throw new PollJobError()
+        }
     }
     let plan = undefined
     try {
@@ -596,24 +602,6 @@ export async function setTransformationToRunningState() {
         convertDateToTimestamp(new Date(CodeTransformTelemetryState.instance.getStartTime()))
     )
 
-    const projectPath = transformByQState.getProjectPath()
-    let projectId = telemetryUndefined
-    if (projectPath !== undefined) {
-        projectId = getStringHash(projectPath)
-    }
-
-    telemetry.codeTransform_jobStartedCompleteFromPopupDialog.emit({
-        codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-        codeTransformJavaSourceVersionsAllowed: JDKToTelemetryValue(
-            transformByQState.getSourceJDKVersion()!
-        ) as CodeTransformJavaSourceVersionsAllowed,
-        codeTransformJavaTargetVersionsAllowed: JDKToTelemetryValue(
-            transformByQState.getTargetJDKVersion()
-        ) as CodeTransformJavaTargetVersionsAllowed,
-        codeTransformProjectId: projectId,
-        result: MetadataResult.Pass,
-    })
-
     await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-transformation-hub')
 }
 
@@ -656,7 +644,7 @@ export async function postTransformationJob() {
         codeTransformRunTimeLatency: durationInMs,
         codeTransformLocalMavenVersion: mavenVersionInfoMessage,
         codeTransformLocalJavaVersion: javaVersionInfoMessage,
-        result: resultStatusMessage === 'Succeeded' ? MetadataResult.Pass : MetadataResult.Fail,
+        result: resultStatusMessage === TransformByQStatus.Succeeded ? MetadataResult.Pass : MetadataResult.Fail,
         reason: resultStatusMessage,
     })
 
