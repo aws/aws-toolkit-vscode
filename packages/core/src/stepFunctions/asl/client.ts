@@ -26,6 +26,7 @@ import {
     TextEdit,
     window,
     workspace,
+    EventEmitter,
 } from 'vscode'
 
 import {
@@ -50,6 +51,9 @@ interface Settings {
         resultLimit?: number
     }
 }
+
+const ASLInit = new EventEmitter<void>()
+export const onASLInit = ASLInit.event
 
 /**
  * Starts the ASL LSP client/server and creates related resources (vscode `OutputChannel`,
@@ -166,6 +170,8 @@ export async function activate(extensionContext: ExtensionContext) {
                 `${message}\nUse setting 'aws.stepfunctions.asl.maxItemsComputed' to configure the limit.`
             )
         })
+        ASLInit.fire()
+        ASLInit.dispose()
     })
 }
 
