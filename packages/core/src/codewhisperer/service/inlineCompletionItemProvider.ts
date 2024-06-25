@@ -173,7 +173,12 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
             if (matchedCount >= 2 || this.nextToken !== '') {
                 const result = [item]
                 for (let j = 0; j < matchedCount - 1; j++) {
-                    result.push({ insertText: `${item.insertText}${j}`, range: item.range })
+                    result.push({
+                        insertText: `${
+                            typeof item.insertText === 'string' ? item.insertText : item.insertText.value
+                        }${j}`,
+                        range: item.range,
+                    })
                 }
                 return result
             }

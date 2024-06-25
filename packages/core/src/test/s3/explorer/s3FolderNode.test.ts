@@ -27,7 +27,7 @@ describe('S3FolderNode', function () {
     let config: TestSettings
 
     function assertFolderNode(node: AWSTreeNodeBase | LoadMoreNode, expectedFolder: Folder): void {
-        assert.ok(node instanceof S3FolderNode, `Node ${node} should be a Folder Node`)
+        assert.ok(node instanceof S3FolderNode, `Node ${String(node)} should be a Folder Node`)
         assert.deepStrictEqual((node as S3FolderNode).bucket, bucket)
         assert.deepStrictEqual((node as S3FolderNode).folder, expectedFolder)
     }

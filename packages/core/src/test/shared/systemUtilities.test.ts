@@ -14,7 +14,7 @@ import { EnvironmentVariables } from '../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import * as testutil from '../testUtil'
-import { PermissionsError, isFileNotFoundError } from '../../shared/errors'
+import { PermissionsError, formatError, isFileNotFoundError } from '../../shared/errors'
 
 describe('SystemUtilities', function () {
     let tempFolder: string
@@ -156,7 +156,10 @@ describe('SystemUtilities', function () {
                     const dirPath = path.join(tempFolder, `dir${runCounter}`)
                     await fs.mkdir(dirPath, { mode: 0o677 })
                     const err = await SystemUtilities.writeFile(path.join(dirPath, 'foo'), 'foo').catch(e => e)
-                    assertError(err, PermissionsError)
+                    assert.match(
+                        formatError(err),
+                        /incorrect permissions. Expected rwx, found rw-. \[InvalidPermissions\] \(isOwner: true; mode: drw-r.xr-x [^ ]* \d+\)/
+                    )
                     assert.strictEqual(err.uri.fsPath, vscode.Uri.file(dirPath).fsPath)
                     assert.strictEqual(err.expected, '*wx')
                     assert.strictEqual(err.actual, 'rw-')
@@ -166,6 +169,10 @@ describe('SystemUtilities', function () {
                     const dirPath = path.join(tempFolder, `dir${runCounter}`)
                     await fs.mkdir(dirPath, { mode: 0o577 })
                     const err = await SystemUtilities.writeFile(path.join(dirPath, 'foo'), 'foo').catch(e => e)
+                    assert.match(
+                        formatError(err),
+                        /incorrect permissions. Expected rwx, found r-x. \[InvalidPermissions\] \(isOwner: true; mode: dr-xr.xr-x [^ ]* \d+\)/
+                    )
                     assertError(err, PermissionsError)
                     assert.strictEqual(err.uri.fsPath, vscode.Uri.file(dirPath).fsPath)
                     assert.strictEqual(err.expected, '*wx')
@@ -176,6 +183,10 @@ describe('SystemUtilities', function () {
                     const filePath = path.join(tempFolder, `file${runCounter}`)
                     await fs.writeFile(filePath, 'foo', { mode: 0o400 })
                     const err = await SystemUtilities.writeFile(filePath, 'foo2').catch(e => e)
+                    assert.match(
+                        formatError(err),
+                        /incorrect permissions. Expected rw-, found r--. \[InvalidPermissions\] \(isOwner: true; mode: -r-------- [^ ]* \d+\)/
+                    )
                     assertError(err, PermissionsError)
                     assert.strictEqual(err.uri.fsPath, vscode.Uri.file(filePath).fsPath)
                     assert.strictEqual(err.expected, '*w*')
@@ -186,6 +197,10 @@ describe('SystemUtilities', function () {
                     const filePath = path.join(tempFolder, `file${runCounter}`)
                     await fs.writeFile(filePath, 'foo', { mode: 0o200 })
                     const err = await SystemUtilities.readFile(filePath).catch(e => e)
+                    assert.match(
+                        formatError(err),
+                        /incorrect permissions. Expected rw-, found -w-. \[InvalidPermissions\] \(isOwner: true; mode: --w------- [^ ]* \d+\)/
+                    )
                     assertError(err, PermissionsError)
                     assert.strictEqual(err.uri.fsPath, vscode.Uri.file(filePath).fsPath)
                     assert.strictEqual(err.expected, 'r**')
@@ -210,6 +225,10 @@ describe('SystemUtilities', function () {
                     it('fails to delete without `u+w` on the parent', async function () {
                         await fs.chmod(dirPath, 0o577)
                         const err = await SystemUtilities.delete(filePath).catch(e => e)
+                        assert.match(
+                            formatError(err),
+                            /incorrect permissions. Expected rwx, found r-x. \[InvalidPermissions\] \(isOwner: true; mode: dr-xrwxrwx [^ ]* \d+\)/
+                        )
                         assertError(err, PermissionsError)
                         assert.strictEqual(err.uri.fsPath, vscode.Uri.file(dirPath).fsPath)
                         assert.strictEqual(err.expected, '*wx')
@@ -219,6 +238,10 @@ describe('SystemUtilities', function () {
                     it('fails to delete without `u+x` on the parent', async function () {
                         await fs.chmod(dirPath, 0o677)
                         const err = await SystemUtilities.delete(filePath).catch(e => e)
+                        assert.match(
+                            formatError(err),
+                            /incorrect permissions. Expected rwx, found rw-. \[InvalidPermissions\] \(isOwner: true; mode: drw-rwxrwx [^ ]* \d+\)/
+                        )
                         assertError(err, PermissionsError)
                         assert.strictEqual(err.uri.fsPath, vscode.Uri.file(dirPath).fsPath)
                         assert.strictEqual(err.expected, '*wx')

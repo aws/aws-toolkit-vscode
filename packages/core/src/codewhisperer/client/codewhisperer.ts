@@ -83,6 +83,7 @@ export type ListCodeScanFindingsRequest = Readonly<
 export type SupplementalContext = Readonly<
     CodeWhispererClient.SupplementalContext | CodeWhispererUserClient.SupplementalContext
 >
+// eslint-disable-next-line @typescript-eslint/no-duplicate-type-constituents
 export type ArtifactType = Readonly<CodeWhispererClient.ArtifactType | CodeWhispererUserClient.ArtifactType>
 export type ArtifactMap = Readonly<CodeWhispererClient.ArtifactMap | CodeWhispererUserClient.ArtifactMap>
 export type ListCodeScanFindingsResponse =
@@ -257,7 +258,7 @@ export class DefaultCodeWhispererClient {
                 ideCategory: 'VSCODE',
                 operatingSystem: this.getOperatingSystem(),
                 product: 'CodeWhisperer', // TODO: update this?
-                clientId: await getClientId(globals.context.globalState),
+                clientId: getClientId(globals.context.globalState),
                 ideVersion: extensionVersion,
             },
         }
@@ -274,7 +275,7 @@ export class DefaultCodeWhispererClient {
                 ideCategory: 'VSCODE',
                 operatingSystem: this.getOperatingSystem(),
                 product: 'CodeWhisperer', // TODO: update this?
-                clientId: await getClientId(globals.context.globalState),
+                clientId: getClientId(globals.context.globalState),
                 ideVersion: extensionVersion,
             },
         }

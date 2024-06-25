@@ -1,3 +1,36 @@
+## 1.10.0 2024-06-21
+
+- **Bug Fix** Security Scan: Fixes an issue where project-scans time out for larger projects.
+- **Bug Fix** Amazon Q /dev command: Fix file rejections for files outside of src/
+- **Bug Fix** Feature Development: update /dev welcome message
+- **Bug Fix** Amazon Q Chat: Fixed broken code blocks with typewriter text in list items.
+- **Feature** UX: New style for the login window
+- **Removal** Auth: No longer share SSO sessions with AWS Toolkit.
+
+## 1.9.0 2024-06-14
+
+- **Bug Fix** Amazon Q inline suggestions: remember `Pause Auto-Suggestions` after IDE restart
+- **Bug Fix** Amazon Q /dev command: stop showing spinner when there is an error.
+- **Bug Fix** Security Scan: Fixes an issue where auto-scans cause the editor to become unresponsive for larger projects.
+- **Bug Fix** Fix(Amazon Q Code Transformation): show more detailed error messages for proxy issues
+- **Feature** Amazon Q Code Transform: Allow user to view transformation build log
+
+## 1.8.0 2024-06-07
+
+- **Bug Fix** fix(featureDev): fix file rejection for multi-workspaces
+- **Feature** The `Send to Amazon Q` [context menu](https://github.com/aws/aws-toolkit-vscode/assets/371007/ce4c61a4-1b58-48ee-8500-56667d45dd7d) was renamed to `Amazon Q`
+- **Feature** Amazon Q Transform: Increase project upload size limit to 2GB
+- **Feature** feat(featureDev): generated plan being shown from top
+- **Feature** Add additional commands for Amazon Q.
+
+## 1.7.0 2024-05-30
+
+- **Bug Fix** Feature Development: File rejection is not rejecting a file when code is generated
+- **Bug Fix** Security Scan: Improved accuracy when applying security fixes
+- **Bug Fix** Amazon Q Code Transformation: show more specific error messages on failure cases
+- **Feature** Security Scan: Support for scanning files outside of workspaces.
+- **Feature** Amazon Q now publishes to Open VSX: https://open-vsx.org/namespace/amazonwebservices
+
 ## 1.6.0 2024-05-21
 
 - **Bug Fix** Amazon Q Chat: Inside chat body, if there is a code block inside a list item it shows <br/> tags

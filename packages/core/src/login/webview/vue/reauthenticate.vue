@@ -7,7 +7,7 @@ The goal is to have all state managed outside of this Vue file. Instead all stat
 and the final results are retrieved by the frontend. For this Component to update the root Component must refresh it.
 -->
 <template>
-    <div v-show="doShow" id="reauthenticate-container">
+    <div v-show="doShow" id="reauthenticate-container" :data-app="app">
         <!-- Icon -->
         <div id="icon-container">
             <svg
@@ -147,14 +147,25 @@ export default defineComponent({
 })
 </script>
 <style>
+@import './base.css';
+
 #reauthenticate-container {
-    display: flex;
-    flex-direction: column;
-    /* All items are centered vertically */
-    justify-content: center;
-    /* The full height of the screen */
-    height: 100%;
+    height: auto;
+    margin: auto;
+    position: absolute;
+    top: var(--auth-container-top);
     width: 100%;
+}
+
+#reauthenticate-container[data-app='AMAZONQ'] {
+    border-radius: 11px;
+    background: rgba(30, 30, 30, 0.8);
+    padding: 15px;
+    width: 70%;
+}
+
+.vscode-light .auth-container[data-app='AMAZONQ'] {
+    background: rgba(255, 255, 255, 1);
 }
 
 /* Immediate children */

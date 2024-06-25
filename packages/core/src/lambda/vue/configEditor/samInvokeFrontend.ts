@@ -204,7 +204,7 @@ export default defineComponent({
             }
             this.containerBuild = config.sam?.containerBuild ?? false
             this.skipNewImageCheck = config.sam?.skipNewImageCheck ?? false
-            this.msg = `Loaded config ${config}`
+            this.msg = `Loaded config: ${config.name}`
             this.company = company
         },
         loadPayload() {

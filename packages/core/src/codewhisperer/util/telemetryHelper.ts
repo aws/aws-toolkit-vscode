@@ -529,17 +529,11 @@ export class TelemetryHelper {
             codewhispererLanguage: session.language,
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
+            codewhispererCustomizationArn: getSelectedCustomization().arn,
         })
     }
     public sendCodeScanEvent(languageId: string, jobId: string) {
         getLogger().debug(`start sendCodeScanEvent: jobId: "${jobId}", languageId: "${languageId}"`)
-
-        let codewhispererRuntimeLanguage: string = languageId
-        if (codewhispererRuntimeLanguage === 'jsx') {
-            codewhispererRuntimeLanguage = 'javascript'
-        } else if (codewhispererRuntimeLanguage === 'tsx') {
-            codewhispererRuntimeLanguage = 'typescript'
-        }
 
         client
             .sendTelemetryEvent({

@@ -4,3 +4,24 @@
  */
 
 export { activate } from './activation'
+export { DefaultAmazonQAppInitContext } from './apps/initContext'
+export { TabType } from './webview/ui/storages/tabsStorage'
+export { MessagePublisher } from './messages/messagePublisher'
+export { MessageListener } from './messages/messageListener'
+export { AuthController } from './auth/controller'
+export { showAmazonQWalkthroughOnce } from './onboardingPage/walkthrough'
+export { openAmazonQWalkthrough } from './onboardingPage/walkthrough'
+
+/**
+ * main from createMynahUI is a purely browser dependency. Due to this
+ * we need to create a wrapper function that will dynamically execute it
+ * while only running on browser instances (like the e2e tests). If we
+ * just export it regularly we will get "ReferenceError: self is not defined"
+ */
+export function createMynahUI(ideApi: any, amazonQEnabled: boolean) {
+    if (typeof window !== 'undefined') {
+        const mynahUI = require('./webview/ui/main')
+        return mynahUI.createMynahUI(ideApi, amazonQEnabled)
+    }
+    throw new Error('Not implemented for node')
+}

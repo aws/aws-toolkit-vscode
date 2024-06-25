@@ -6,7 +6,7 @@ import { SinonStub, SinonStubbedInstance, SinonStubbedMember, createSandbox, cre
 import assert from 'assert'
 import * as vscode from 'vscode'
 
-import { ExtensionUserActivity } from '../../../shared/extensionUtilities'
+import { UserActivity } from '../../../shared/extensionUtilities'
 import { DevEnvClient, DevEnvActivity } from '../../../shared/clients/devenvClient'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 
@@ -40,9 +40,9 @@ describe('DevEnvActivity', function () {
 
         devEnvClientStub = createStubInstance(DevEnvClient)
 
-        devEnvActivity = (await DevEnvActivity.instanceIfActivityTrackingEnabled(
+        devEnvActivity = (await DevEnvActivity.create(
             devEnvClientStub as unknown as DevEnvClient,
-            new ExtensionUserActivity(0, [userActivityEvent])
+            new UserActivity(0, [userActivityEvent])
         ))!
     })
 
@@ -56,9 +56,9 @@ describe('DevEnvActivity', function () {
 
     it('does not allow instance to be created if activity API not working', async function () {
         devEnvClientStub.getActivity.throws()
-        const instance = await DevEnvActivity.instanceIfActivityTrackingEnabled(
+        const instance = await DevEnvActivity.create(
             devEnvClientStub as unknown as DevEnvClient,
-            new ExtensionUserActivity(0, [userActivityEvent])
+            new UserActivity(0, [userActivityEvent])
         )
         assert.strictEqual(instance, undefined)
     })

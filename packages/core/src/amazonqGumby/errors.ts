@@ -38,13 +38,19 @@ export class ZipExceedsSizeLimitError extends ToolkitError {
 
 export class AlternateDependencyVersionsNotFoundError extends Error {
     constructor() {
-        super('No available versions for update')
+        super('No available versions for dependency update')
     }
 }
 
 export class JobStoppedError extends Error {
     constructor(readonly requestId: string) {
         super('Job was rejected, stopped, or failed')
+    }
+}
+
+export class TransformationPreBuildError extends Error {
+    constructor() {
+        super('Job failed to build after submission')
     }
 }
 

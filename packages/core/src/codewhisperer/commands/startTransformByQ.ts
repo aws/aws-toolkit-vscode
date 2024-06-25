@@ -384,6 +384,12 @@ export async function openHilPomFile() {
     )
 }
 
+export async function openBuildLogFile() {
+    const logFilePath = transformByQState.getPreBuildLogFilePath()
+    const doc = await vscode.workspace.openTextDocument(logFilePath)
+    await vscode.window.showTextDocument(doc)
+}
+
 export async function terminateHILEarly(jobID: string) {
     // Call resume with "REJECTED" state which will put our service
     // back into the normal flow and will not trigger HIL again for this step
@@ -576,7 +582,7 @@ export async function setTransformationToRunningState() {
     await setContextVariables()
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.reset')
     transformByQState.setToRunning()
-    jobPlanProgress['startJob'] = StepProgress.Pending
+    jobPlanProgress['uploadCode'] = StepProgress.Pending
     jobPlanProgress['buildCode'] = StepProgress.Pending
     jobPlanProgress['generatePlan'] = StepProgress.Pending
     jobPlanProgress['transformCode'] = StepProgress.Pending
@@ -613,8 +619,8 @@ export async function setTransformationToRunningState() {
 
 export async function postTransformationJob() {
     updateJobHistory()
-    if (jobPlanProgress['startJob'] !== StepProgress.Succeeded) {
-        jobPlanProgress['startJob'] = StepProgress.Failed
+    if (jobPlanProgress['uploadCode'] !== StepProgress.Succeeded) {
+        jobPlanProgress['uploadCode'] = StepProgress.Failed
     }
     if (jobPlanProgress['buildCode'] !== StepProgress.Succeeded) {
         jobPlanProgress['buildCode'] = StepProgress.Failed
@@ -716,6 +722,14 @@ export async function cleanupTransformationJob() {
         CodeTransformTelemetryState.instance.getStartTime()
     )
     CodeTransformTelemetryState.instance.resetCodeTransformMetaDataField()
+}
+
+export async function resetDebugArtifacts() {
+    const buildLogPath = transformByQState.getPreBuildLogFilePath()
+    if (buildLogPath && fs.existsSync(buildLogPath)) {
+        fs.rmSync(path.dirname(transformByQState.getPreBuildLogFilePath()), { recursive: true, force: true })
+    }
+    transformByQState.setPreBuildLogFilePath('')
 }
 
 export async function stopTransformByQ(

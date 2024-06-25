@@ -362,3 +362,28 @@ export function convertDateToTimestamp(date: Date) {
         minute: '2-digit',
     })
 }
+
+/**
+ * A helper function to generate a random string for a specified length
+ *
+ * @param length - The length of the generated string. Defaults to 32 if length not provided.
+ */
+export function getRandomString(length = 32) {
+    let text = ''
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+    for (let i = 0; i < length; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length))
+    }
+    return text
+}
+
+/**
+ * Convert a base 64 string to a base 64 url string
+ *
+ * See: https://datatracker.ietf.org/doc/html/rfc4648#section-5
+ * @param base64 a base 64 string
+ * @returns a base 64 url string
+ */
+export function toBase64URL(base64: string) {
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}

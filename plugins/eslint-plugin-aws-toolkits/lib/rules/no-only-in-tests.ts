@@ -8,18 +8,17 @@
  * This rule prevents us from accidentially committing this to the public repo.
  */
 
-import { ESLintUtils } from '@typescript-eslint/utils'
+import { ESLintUtils, TSESTree } from '@typescript-eslint/utils'
 import { AST_NODE_TYPES } from '@typescript-eslint/types'
-import { CallExpression, Identifier, MemberExpression } from '@typescript-eslint/types/dist/generated/ast-spec'
 import { Rule } from 'eslint'
 
-function isValidExpression(node: CallExpression): MemberExpression | undefined {
+function isValidExpression(node: TSESTree.CallExpression): TSESTree.MemberExpression | undefined {
     const isValid =
         node.callee.type === AST_NODE_TYPES.MemberExpression &&
         node.callee.object.type === AST_NODE_TYPES.Identifier &&
         node.callee.property.type === AST_NODE_TYPES.Identifier
 
-    return isValid ? (node.callee as MemberExpression) : undefined
+    return isValid ? (node.callee as TSESTree.MemberExpression) : undefined
 }
 
 export const describeOnlyErrMsg = 'mocha test `.only()` not allowed for `describe`'
@@ -29,7 +28,7 @@ export default ESLintUtils.RuleCreator.withoutDocs({
     meta: {
         docs: {
             description: "disallow mocha's only() from being published in test code",
-            recommended: 'error',
+            recommended: 'recommended',
         },
         messages: {
             describeOnlyErrMsg,
@@ -46,9 +45,9 @@ export default ESLintUtils.RuleCreator.withoutDocs({
                 if (!isValidExpression(node)) {
                     return
                 }
-                const expr = node.callee as MemberExpression
-                const property = expr.property as Identifier
-                const object = expr.object as Identifier
+                const expr = node.callee as TSESTree.MemberExpression
+                const property = expr.property as TSESTree.Identifier
+                const object = expr.object as TSESTree.Identifier
 
                 if (property.name !== 'only') {
                     return

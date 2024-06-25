@@ -133,7 +133,7 @@ export async function addTelemetryEnvVar(options: SpawnOptions | undefined): Pro
     return {
         ...options,
         env: {
-            AWS_TOOLING_USER_AGENT: await getUserAgent({ includeClientId: false }),
+            AWS_TOOLING_USER_AGENT: getUserAgent({ includeClientId: false }),
             ...samEnv,
             ...options?.env,
         },

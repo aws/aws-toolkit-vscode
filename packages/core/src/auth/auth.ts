@@ -53,13 +53,13 @@ import {
     createBuilderIdProfile,
     createSsoProfile,
     hasScopes,
-    isValidCodeCatalystConnection,
     loadIamProfilesIntoStore,
     loadLinkedProfilesIntoStore,
     scopesSsoAccountAccess,
     AwsConnection,
+    scopesCodeWhispererCore,
 } from './connection'
-import { isSageMaker, isCloud9 } from '../shared/extensionUtilities'
+import { isSageMaker, isCloud9, isAmazonQ } from '../shared/extensionUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { randomUUID } from '../common/crypto'
 
@@ -114,12 +114,15 @@ function keyedDebounce<T, U extends any[], K extends string = string>(
     }
 }
 
-interface ConnectionStateChangeEvent {
+export interface ConnectionStateChangeEvent {
     readonly id: Connection['id']
     readonly state: ProfileMetadata['connectionState']
 }
 
 export type AuthType = Auth
+
+export type DeletedConnection = { connId: Connection['id']; storedProfile?: StoredProfile }
+type DeclaredConnection = Pick<SsoProfile, 'ssoRegion' | 'startUrl'> & { source: string }
 
 export class Auth implements AuthService, ConnectionManager {
     readonly #ssoCache = getCache()
@@ -128,7 +131,7 @@ export class Auth implements AuthService, ConnectionManager {
     readonly #onDidChangeActiveConnection = new vscode.EventEmitter<StatefulConnection | undefined>()
     readonly #onDidChangeConnectionState = new vscode.EventEmitter<ConnectionStateChangeEvent>()
     readonly #onDidUpdateConnection = new vscode.EventEmitter<StatefulConnection>()
-    readonly #onDidDeleteConnection = new vscode.EventEmitter<Connection['id']>()
+    readonly #onDidDeleteConnection = new vscode.EventEmitter<DeletedConnection>()
     public readonly onDidChangeActiveConnection = this.#onDidChangeActiveConnection.event
     public readonly onDidChangeConnectionState = this.#onDidChangeConnectionState.event
     public readonly onDidUpdateConnection = this.#onDidUpdateConnection.event
@@ -149,6 +152,14 @@ export class Auth implements AuthService, ConnectionManager {
 
     public get hasConnections() {
         return this.store.listProfiles().length !== 0
+    }
+
+    /**
+     * Map startUrl -> declared connections
+     */
+    private readonly _declaredConnections: { [key: string]: DeclaredConnection } = {}
+    public get declaredConnections() {
+        return Object.values(this._declaredConnections)
     }
 
     public async restorePreviousSession(): Promise<Connection | undefined> {
@@ -282,10 +293,17 @@ export class Auth implements AuthService, ConnectionManager {
         }
 
         const id = randomUUID()
+        void this.updateConnectionState(id, 'authenticating')
+
         const tokenProvider = this.getSsoTokenProvider(id, {
             ...profile,
             metadata: { connectionState: 'unauthenticated' },
         })
+
+        // Remove the split session logout prompt, if it exists.
+        if (!isAmazonQ()) {
+            await globals.context.globalState.update(SessionSeparationPrompt.instance.dismissKey, true)
+        }
 
         try {
             ;(await tokenProvider.getToken()) ?? (await tokenProvider.createToken())
@@ -323,7 +341,24 @@ export class Auth implements AuthService, ConnectionManager {
             }
         }
 
-        this.#onDidDeleteConnection.fire(connId)
+        this.#onDidDeleteConnection.fire({ connId, storedProfile: profile })
+    }
+
+    /**
+     * @warning Intended for a specific use case. May have unintended side effects. Use `deleteConnection()` instead.
+     *
+     * Forget about a connection without logging out, invalidating it, or deleting it from disk.
+     */
+    public async forgetConnection(connection: Pick<Connection, 'id'>): Promise<void> {
+        const connId = connection.id
+        const profile = this.store.getProfile(connId)
+        if (profile) {
+            await this.store.deleteProfile(connId)
+            if (profile.type === 'sso') {
+                await this.clearStaleLinkedIamConnections()
+            }
+        }
+        this.#onDidDeleteConnection.fire({ connId, storedProfile: profile })
     }
 
     private async clearStaleLinkedIamConnections() {
@@ -340,7 +375,7 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     /**
-     * @warning Only intended for Dev mode purposes
+     * @warning Only intended for Dev mode purposes.
      *
      * Put the SSO connection in to an expired state
      */
@@ -493,8 +528,8 @@ export class Auth implements AuthService, ConnectionManager {
                 })
             }
 
-            // XXX: never drop tokens in a dev environment
-            if (getCodeCatalystDevEnvId() === undefined) {
+            // XXX: never drop tokens in a dev environment, unless you are Amazon Q!
+            if (getCodeCatalystDevEnvId() === undefined || isAmazonQ()) {
                 await provider.invalidate()
             }
         } else if (profile.type === 'iam') {
@@ -506,6 +541,12 @@ export class Auth implements AuthService, ConnectionManager {
 
     private async updateConnectionState(id: Connection['id'], connectionState: ProfileMetadata['connectionState']) {
         getLogger().info(`auth: Updating connection state of ${id} to ${connectionState}`)
+
+        if (connectionState === 'authenticating') {
+            this.#onDidChangeConnectionState.fire({ id, state: connectionState })
+            return
+        }
+
         const oldProfile = this.store.getProfileOrThrow(id)
         if (oldProfile.metadata.connectionState === connectionState) {
             return oldProfile
@@ -841,9 +882,11 @@ export class Auth implements AuthService, ConnectionManager {
 
         // When opening a Dev Environment, use the environment token if no other CodeCatalyst
         // credential is in use. This token only has CC permissions currently!
-        if (getCodeCatalystDevEnvId() !== undefined) {
+        if (!isAmazonQ() && getCodeCatalystDevEnvId() !== undefined) {
             const connections = await this.listConnections()
-            const shouldInsertDevEnvCredential = !connections.some(isValidCodeCatalystConnection)
+            const shouldInsertDevEnvCredential = !connections.some(
+                c => c.type === 'sso' && hasScopes(c, scopesCodeCatalyst) && !hasScopes(c, scopesCodeWhispererCore)
+            )
 
             if (shouldInsertDevEnvCredential) {
                 // Insert a profile based on the `~/.aws/config` sso-session:
@@ -916,22 +959,7 @@ export class Auth implements AuthService, ConnectionManager {
             : `${localizedText.iamIdentityCenter} (${truncatedUrl})`
     }
 
-    // Used by Amazon Q to re-use connection from AWS Toolkit listConnection API response
-    public async createConnectionFromApi(connection: AwsConnection) {
-        getLogger().info(`Reusing connection ${connection.id}`)
-        const profile = {
-            type: connection.type,
-            ssoRegion: connection.ssoRegion,
-            scopes: connection.scopes,
-            startUrl: connection.startUrl,
-        } as SsoProfile
-        const id = connection.id
-        const storedProfile = await this.store.addProfile(id, profile)
-        await this.updateConnectionState(id, connection.state)
-        return this.getSsoConnection(id, storedProfile)
-    }
-
-    // Used by AWS Toolkit to update connection status & scope when this connection is updated by Amazon Q
+    // Used by AWS Toolkit to update connection status & scope when this connection is updated by another extension.
     // If such connection does not exist, create one with same id.
     // Otherwise, update its scope and/or state.
     public async setConnectionFromApi(connection: AwsConnection) {
@@ -963,35 +991,23 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
-    // Used by Amazon Q to update connection status & scope when this connection is updated by AWS Toolkit
-    // do not create connection in Q for each change event from Toolkit
-    public async onConnectionUpdate(connection: AwsConnection) {
-        const conn = await this.getConnection({ id: connection.id })
-        if (conn) {
-            const profile = {
-                type: connection.type,
-                ssoRegion: connection.ssoRegion,
-                scopes: connection.scopes,
-                startUrl: connection.startUrl,
-            } as SsoProfile
-            await this.store.updateProfile(connection.id, profile)
-
-            await this.store.updateMetadata(connection.id, { connectionState: connection.state })
+    public declareConnectionFromApi(conn: Pick<AwsConnection, 'startUrl' | 'ssoRegion'>, source: string) {
+        getLogger().debug(`Declared connection '${conn.startUrl}' from ${source}.`)
+        this._declaredConnections[conn.startUrl] = {
+            startUrl: conn.startUrl,
+            ssoRegion: conn.ssoRegion,
+            source,
         }
     }
 
-    // Used by Amazon Q to delete connection status & scope when this deletion is made by AWS Toolkit
-    // NO event should be emitted from this deletion
-    // Do not actually perform the delete because toolkit has done the deletion
-    // Delete the momento states only.
-    public async onDeleteConnection(id: string) {
-        const profile = this.store.getProfile(id)
-        if (profile) {
-            await this.store.deleteProfile(id)
-            await this.store.setCurrentProfileId(undefined)
-        }
+    public undeclareConnectionFromApi(conn: Pick<AwsConnection, 'startUrl'>) {
+        getLogger().debug(
+            `Undeclared connection '${conn.startUrl}' from ${this._declaredConnections[conn.startUrl].source}`
+        )
+        delete this._declaredConnections[conn.startUrl]
     }
 }
+
 /**
  * Returns true if credentials are provided by the environment (ex. via ~/.aws/)
  *
@@ -1003,4 +1019,72 @@ export function hasVendedIamCredentials(isC9?: boolean, isSM?: boolean) {
     isC9 ??= isCloud9()
     isSM ??= isSageMaker()
     return isSM || isC9
+}
+
+type LoginCommand = 'aws.toolkit.auth.manageConnections' | 'aws.codecatalyst.manageConnections'
+/**
+ * Temporary class that handles notifiting users who were logged out as part of
+ * splitting auth sessions between extensions.
+ *
+ * TODO: Remove after some time.
+ */
+export class SessionSeparationPrompt {
+    public readonly dismissKey = 'aws.toolkit.separationPromptDismissed'
+    private readonly loginCmdKey = 'aws.toolkit.separationPromptCommand'
+
+    // Local variable handles per session displays, e.g. we forgot a CodeCatalyst connection AND
+    // an Explorer only connection. We only want to display once in this case.
+    // However, we don't want to set this at the global state level until a user interacts with the
+    // notification in case they miss it the first time.
+    #separationPromptDisplayed = false
+
+    /**
+     * Open a prompt for that last used command name (or do nothing if no command name has ever been passed),
+     * which is useful to redisplay the prompt after reloads in case a user misses it.
+     */
+    public async showAnyPreviousPrompt() {
+        const cmd = globals.context.globalState.get<string>(this.loginCmdKey)
+        return cmd ? await this.showForCommand(cmd as LoginCommand) : undefined
+    }
+
+    /**
+     * Displays a sign in prompt to the user if they have been logged out of the Toolkit as part of
+     * separating auth sessions between extensions. It will executed the passed command for sign in,
+     * (e.g. codecatalyst sign in vs explorer)
+     */
+    public async showForCommand(cmd: LoginCommand) {
+        if (this.#separationPromptDisplayed || globals.context.globalState.get<boolean>(this.dismissKey)) {
+            return
+        }
+
+        await globals.context.globalState.update(this.loginCmdKey, cmd)
+
+        await telemetry.toolkit_showNotification.run(async () => {
+            telemetry.record({ id: 'sessionSeparation' })
+            this.#separationPromptDisplayed = true
+            void vscode.window
+                .showWarningMessage(
+                    'Amazon Q and AWS Toolkit no longer share connections. Please sign in again to use AWS Toolkit.',
+                    'Sign In'
+                )
+                .then(async resp => {
+                    await telemetry.toolkit_invokeAction.run(async () => {
+                        telemetry.record({ source: 'sessionSeparationNotification' })
+                        if (resp === 'Sign In') {
+                            telemetry.record({ action: 'signIn' })
+                            await vscode.commands.executeCommand(cmd)
+                        } else {
+                            telemetry.record({ action: 'dismiss' })
+                        }
+
+                        await globals.context.globalState.update(this.dismissKey, true)
+                    })
+                })
+        })
+    }
+
+    static #instance: SessionSeparationPrompt
+    public static get instance() {
+        return (this.#instance ??= new SessionSeparationPrompt())
+    }
 }

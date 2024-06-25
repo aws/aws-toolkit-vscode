@@ -6,10 +6,9 @@ import { ToolkitError } from '../../shared/errors'
 import {
     DefaultCodeScanErrorMessage,
     FileSizeExceededErrorMessage,
-    NoWorkspaceFoundErrorMessage,
     ProjectSizeExceededErrorMessage,
-    InvalidSourceFilesErrorMessage,
     UploadArtifactToS3ErrorMessage,
+    noSourceFilesErrorMessage,
 } from './constants'
 
 export class SecurityScanError extends ToolkitError {
@@ -38,19 +37,13 @@ export class DefaultError extends SecurityScanError {
 
 export class InvalidSourceZipError extends SecurityScanError {
     constructor() {
-        super('Failed to create valid source zip', 'InvalidSourceFiles', InvalidSourceFilesErrorMessage)
+        super('Failed to create valid source zip', 'InvalidSourceZip', DefaultCodeScanErrorMessage)
     }
 }
 
-export class NoWorkspaceFolderFoundError extends SecurityScanError {
+export class NoSourceFilesError extends SecurityScanError {
     constructor() {
-        super('No workspace folders found', 'NoWorkspaceFound', NoWorkspaceFoundErrorMessage)
-    }
-}
-
-export class InvalidSourceFilesError extends SecurityScanError {
-    constructor() {
-        super('Project does not contain valid files to scan', 'InvalidSourceZip', DefaultCodeScanErrorMessage)
+        super('Project does not contain valid files to scan', 'NoSourceFilesError', noSourceFilesErrorMessage)
     }
 }
 
@@ -86,6 +79,6 @@ export class SecurityScanTimedOutError extends SecurityScanError {
 
 export class CodeScanJobFailedError extends SecurityScanError {
     constructor() {
-        super('Security scan job failed.', 'CodeScanJobFailedError', DefaultCodeScanErrorMessage)
+        super('Security scan failed.', 'CodeScanJobFailedError', DefaultCodeScanErrorMessage)
     }
 }

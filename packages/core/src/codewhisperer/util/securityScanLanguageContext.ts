@@ -43,7 +43,7 @@ export class SecurityScanLanguageContext {
 
     public isLanguageSupported(languageId: string): boolean {
         const lang = this.normalizeLanguage(languageId)
-        return lang !== undefined
+        return lang !== undefined && lang !== 'plaintext'
     }
 }
 
