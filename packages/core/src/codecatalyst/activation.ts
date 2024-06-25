@@ -18,13 +18,15 @@ import { ToolkitPromptSettings } from '../shared/settings'
 import { dontShow } from '../shared/localizedText'
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { Commands } from '../shared/vscode/commands2'
-import { createClient, getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
+import { getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { isDevenvVscode } from './utils'
 import { codeCatalystConnectCommand, getThisDevEnv } from './model'
 import { getLogger } from '../shared/logger/logger'
 import { DevEnvActivityStarter } from './devEnv'
 import { learnMoreCommand, onboardCommand, reauth } from './explorer'
 import { isInDevEnv } from '../shared/vscode/env'
+import { hasScopes, scopesCodeWhispererCore } from '../auth/connection'
+import { SessionSeparationPrompt } from '../auth/auth'
 
 const localize = nls.loadMessageBundle()
 
@@ -44,15 +46,12 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
     await authProvider.restore()
 
-    // if connection is shared with CodeWhisperer, check if CodeCatalyst scopes are expired
-    if (authProvider.activeConnection && authProvider.isSharedConn()) {
-        try {
-            await createClient(authProvider.activeConnection, undefined, undefined, undefined, {
-                showReauthPrompt: false,
-            })
-        } catch (err) {
-            getLogger().info('codecatalyst: createClient failed during activation: %s', err)
-        }
+    // Forget Amazon Q connections while we transition to separate auth sessions per extension.
+    // Note: credentials on disk in the dev env cannot have Q scopes, so it will never be forgotten.
+    // TODO: Remove after some time?
+    if (authProvider.isConnected() && hasScopes(authProvider.activeConnection!, scopesCodeWhispererCore)) {
+        await authProvider.secondaryAuth.forgetConnection()
+        await SessionSeparationPrompt.instance.showForCommand('aws.codecatalyst.manageConnections')
     }
 
     ctx.extensionContext.subscriptions.push(

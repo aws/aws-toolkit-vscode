@@ -79,6 +79,6 @@ export class SecurityScanTimedOutError extends SecurityScanError {
 
 export class CodeScanJobFailedError extends SecurityScanError {
     constructor() {
-        super('Security scan job failed.', 'CodeScanJobFailedError', DefaultCodeScanErrorMessage)
+        super('Security scan failed.', 'CodeScanJobFailedError', DefaultCodeScanErrorMessage)
     }
 }

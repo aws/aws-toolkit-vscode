@@ -1,3 +1,12 @@
+## 1.10.0 2024-06-21
+
+- **Bug Fix** Security Scan: Fixes an issue where project-scans time out for larger projects.
+- **Bug Fix** Amazon Q /dev command: Fix file rejections for files outside of src/
+- **Bug Fix** Feature Development: update /dev welcome message
+- **Bug Fix** Amazon Q Chat: Fixed broken code blocks with typewriter text in list items.
+- **Feature** UX: New style for the login window
+- **Removal** Auth: No longer share SSO sessions with AWS Toolkit.
+
 ## 1.9.0 2024-06-14
 
 - **Bug Fix** Amazon Q inline suggestions: remember `Pause Auto-Suggestions` after IDE restart

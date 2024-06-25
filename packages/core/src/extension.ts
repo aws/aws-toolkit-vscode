@@ -48,17 +48,18 @@ import globals from './shared/extensionGlobals'
 import { Experiments, Settings, showSettingsFailedMsg } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { telemetry } from './shared/telemetry/telemetry'
-import { Auth } from './auth/auth'
+import { Auth, SessionSeparationPrompt } from './auth/auth'
 import { registerSubmitFeedback } from './feedback/vue/submitFeedback'
 import { activateCommon, deactivateCommon, emitUserState } from './extensionCommon'
 import { learnMoreAmazonQCommand, qExtensionPageCommand, dismissQTree } from './amazonq/explorer/amazonQChildrenNodes'
-import { AuthUtil, isPreviousQUser } from './codewhisperer/util/authUtil'
+import { AuthUtil, codeWhispererCoreScopes, isPreviousQUser } from './codewhisperer/util/authUtil'
 import { installAmazonQExtension } from './codewhisperer/commands/basicCommands'
 import { isExtensionInstalled, VSCODE_EXTENSION_ID } from './shared/utilities'
 import { amazonQInstallDismissedKey } from './codewhisperer/models/constants'
 import { ExtensionUse } from './auth/utils'
 import { ExtStartUpSources } from './shared/telemetry'
 import { activate as activateThreatComposerEditor } from './threatComposer/activation'
+import { isSsoConnection, hasScopes } from './auth/connection'
 
 let localize: nls.LocalizeFunc
 
@@ -120,6 +121,25 @@ export async function activate(context: vscode.ExtensionContext) {
         } else {
             await vscode.commands.executeCommand('setContext', 'aws.isSageMaker', true)
         }
+
+        // Clean up remaining logins after codecatalyst activated and ran its cleanup.
+        // Because we are splitting auth sessions by extension, we can't use Amazon Q
+        // connections anymore.
+        // TODO: Remove after some time?
+        for (const conn of await Auth.instance.listConnections()) {
+            if (isSsoConnection(conn) && hasScopes(conn, codeWhispererCoreScopes)) {
+                getLogger().debug(
+                    `forgetting connection: ${conn.id} with starturl/scopes: ${conn.startUrl} / %O`,
+                    conn.scopes
+                )
+                await Auth.instance.forgetConnection(conn)
+                await SessionSeparationPrompt.instance.showForCommand('aws.toolkit.auth.manageConnections')
+            }
+        }
+
+        // Display last prompt if connections were forgotten in prior sessions
+        // but the user did not interact or sign in again. Useful in case the user misses it the first time.
+        await SessionSeparationPrompt.instance.showAnyPreviousPrompt()
 
         await activateCloudFormationTemplateRegistry(context)
 
