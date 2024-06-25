@@ -251,7 +251,7 @@ export async function preTransformationUploadCode() {
         transformByQState.setPayloadFilePath(payloadFilePath)
         uploadId = await uploadPayload(payloadFilePath)
     } catch (err) {
-        const errorMessage = `Failed to upload code due to ${(err as Error).message}`
+        const errorMessage = `Failed to upload code due to: ${(err as Error).message}`
         transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToUploadProjectNotification)
 
         transformByQState.getChatControllers()?.errorThrown.fire({
