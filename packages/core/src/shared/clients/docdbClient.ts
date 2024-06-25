@@ -9,6 +9,13 @@ import { getUserAgent } from '../telemetry/util'
 import { ToolkitError } from '../errors'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
 import * as DocDB from '@aws-sdk/client-docdb'
+import { ClusterInList, DocDBElasticClient, ListClustersCommand } from '@aws-sdk/client-docdb-elastic'
+
+/**
+ * <p>A list of Amazon DocumentDB clusters.</p>
+ * @public
+ */
+export interface DBElasticCluster extends ClusterInList {}
 
 export interface DBInstance extends DocDB.DBInstance {
     IsClusterWriter?: boolean
@@ -19,14 +26,23 @@ export type DocumentDBClient = InterfaceNoSymbol<DefaultDocumentDBClient>
 export class DefaultDocumentDBClient {
     public constructor(public readonly regionCode: string) {}
 
-    public async getClient(): Promise<DocDB.DocDBClient> {
+    private async getSdkConfig() {
         const credentials = await globals.awsContext.getCredentials()
-        const config: DocDB.DocDBClientConfig = {
+        return {
             customUserAgent: await getUserAgent({ includePlatform: true, includeClientId: true }),
             credentials: credentials,
             region: this.regionCode,
         }
+    }
+
+    public async getClient(): Promise<DocDB.DocDBClient> {
+        const config = await this.getSdkConfig()
         return new DocDB.DocDBClient(config)
+    }
+
+    public async getElasticClient(): Promise<DocDBElasticClient> {
+        const config = await this.getSdkConfig()
+        return new DocDBElasticClient(config)
     }
 
     public async listClusters(): Promise<DocDB.DBCluster[]> {
@@ -59,6 +75,19 @@ export class DefaultDocumentDBClient {
             return response.DBInstances ?? []
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to get DocumentDB instances')
+        }
+    }
+
+    public async listElasticClusters(): Promise<DBElasticCluster[]> {
+        getLogger().debug('ListElasticClusters called')
+        const client = await this.getElasticClient()
+
+        try {
+            const command = new ListClustersCommand()
+            const response = await client.send(command)
+            return response.clusters ?? []
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to get DocumentDB elastic clusters')
         }
     }
 }
