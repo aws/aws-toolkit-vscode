@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.core.webview
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.blockingContext
@@ -13,10 +15,13 @@ import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.annotations.VisibleForTesting
+import org.slf4j.event.Level
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.credentials.AuthProfile
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
@@ -37,6 +42,7 @@ import software.aws.toolkits.telemetry.CredentialType
 import software.aws.toolkits.telemetry.FeatureId
 import software.aws.toolkits.telemetry.Result
 import java.util.concurrent.Future
+import java.util.function.Function
 
 data class BrowserState(val feature: FeatureId, val browserCancellable: Boolean = false, val requireReauth: Boolean = false)
 
@@ -47,7 +53,22 @@ abstract class LoginBrowser(
 ) {
     abstract val jcefBrowser: JBCefBrowserBase
 
+    protected val jcefHandler = Function<String, JBCefJSQuery.Response> {
+        val obj = LOG.tryOrNull("${this::class.simpleName} unable deserialize login browser message: $it", Level.ERROR) {
+            objectMapper.readValue<BrowserMessage>(it)
+        }
+
+        handleBrowserMessage(obj)
+
+        null
+    }
+
     protected var currentAuthorization: PendingAuthorization? = null
+
+    @VisibleForTesting
+    internal val objectMapper = jacksonObjectMapper()
+
+    abstract fun handleBrowserMessage(message: BrowserMessage?)
 
     protected data class BearerConnectionSelectionSettings(val currentSelection: AwsBearerTokenConnection, val onChange: (AwsBearerTokenConnection) -> Unit)
 
@@ -70,6 +91,9 @@ abstract class LoginBrowser(
             it.executeJavaScript(jsScript, it.url, 0)
         }
     }
+
+    // TODO: Dumb and will be addressed in followup PRs
+    protected fun writeValueAsString(o: Any) = objectMapper.writeValueAsString(o)
 
     protected fun cancelLogin() {
         // Essentially Authorization becomes a mutable that allows browser and auth to communicate canceled
