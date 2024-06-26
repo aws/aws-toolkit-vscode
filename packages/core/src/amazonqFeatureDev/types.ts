@@ -44,8 +44,6 @@ export enum FollowUpTypes {
 
 export type SessionStatePhase = DevPhase.INIT | DevPhase.APPROACH | DevPhase.CODEGEN
 
-export type AnswerType = 'answer' | 'answer-part' | 'answer-stream' | 'system-prompt'
-
 export type CurrentWsFolders = [vscode.WorkspaceFolder, ...vscode.WorkspaceFolder[]]
 
 export interface SessionState {
