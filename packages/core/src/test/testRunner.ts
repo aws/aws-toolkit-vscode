@@ -36,15 +36,15 @@ export async function runTests(
         }
 
         /**
-         * Node's `require` will always cache modules based off case-sensitive paths, regardless
-         * of the underlying file system. This is normally not a problem, but VS Code also happens
-         * to normalize paths on Windows to use lowercase drive letters when using its bootstrap loader.
-         * This means that each module ends up getting loaded twice, once by the extension and once
-         * by any test code, causing all sorts of bizarre behavior during tests unless you normalize
-         * paths like below.
+         * Node's `require` caches modules by case-sensitive paths, regardless of the underlying
+         * file system. This is normally not a problem, but VS Code also happens to normalize paths
+         * on Windows to use lowercase drive letters when using its bootstrap loader. This means
+         * that each module ends up getting loaded twice, once by the extension and once by any test
+         * code, causing all sorts of bizarre behavior during tests unless you normalize paths like
+         * below.
          *
          * In multi root npm workspaces on windows it looks like imports into other npm workspace packages
-         * makes the loaded module id an uppercase drive letter in the node require cache.
+         * makes the loaded module id an uppercase drive letter in the node require cache. #5154
          *
          * E.g. when we import a file from core the module ids inside of amazonq/toolkits node require
          * cache are something like:
@@ -55,8 +55,8 @@ export async function runTests(
          *  - c:\${pathToWorkspace}\packages\core\myfile.js
          *
          * This can cause things like globals to be undefined, since tests inside of amazonq/toolkit
-         * are looking for upper case module ids, whereas tests inside of core are always looking
-         * for lower case module ids (since the tests live inside of core itself)
+         * are looking for uppercase module ids, whereas tests inside of core are always looking for
+         * lower case module ids (since the tests live inside of core itself)
          */
         const [drive, ...rest] = abs.split(':')
         return rest.length === 0
