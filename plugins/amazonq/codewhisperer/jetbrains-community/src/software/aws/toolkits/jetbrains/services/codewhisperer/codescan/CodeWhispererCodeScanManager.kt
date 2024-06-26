@@ -282,13 +282,14 @@ class CodeWhispererCodeScanManager(val project: Project) {
                 isProjectScanInProgress.set(false)
             }
             val errorMessage = handleError(coroutineContext, e, scope)
-            codeScanResponseContext = codeScanResponseContext.copy(reason = errorMessage)
-        } catch (e: Exception) {
+            codeScanResponseContext = codeScanResponseContext.copy(reasonDesc = errorMessage)
+            codeScanResponseContext = codeScanResponseContext.copy(reason = "DefaultError")
+        } catch (e: CodeScanException) {
             if (scope == CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
                 isProjectScanInProgress.set(false)
             }
-            val errorMessage = handleException(coroutineContext, e, scope)
-            codeScanResponseContext = codeScanResponseContext.copy(reason = errorMessage)
+            codeScanResponseContext = codeScanResponseContext.copy(reasonDesc = handleException(coroutineContext, e, scope))
+            codeScanResponseContext = codeScanResponseContext.copy(reason = e.code ?: "DefaultError")
         } finally {
             // After code scan
             afterCodeScan(scope)
@@ -337,7 +338,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
     private fun getCodeScanExceptionMessage(e: CodeWhispererCodeScanException): String? {
         val message = e.message
         return when {
-            message.isNullOrBlank() -> null
+            message.isBlank() -> null
             message == message("codewhisperer.codescan.invalid_source_zip_telemetry") -> {
                 message("codewhisperer.codescan.run_scan_error")
             }
@@ -346,8 +347,12 @@ class CodeWhispererCodeScanManager(val project: Project) {
     }
 
     private fun getCodeScanServerExceptionMessage(e: CodeWhispererCodeScanServerException): String? =
-        e.message?.takeIf { it.startsWith("UploadArtifactToS3Exception:") }
-            ?.let { message("codewhisperer.codescan.upload_to_s3_failed") }
+        e.code?.let {
+            when (it) {
+                "UploadArtifactToS3Error" -> message("codewhisperer.codescan.upload_to_s3_failed")
+                else -> null
+            }
+        }
 
     fun handleException(coroutineContext: CoroutineContext, e: Exception, scope: CodeWhispererConstants.CodeAnalysisScope): String {
         val errorMessage = when (e) {

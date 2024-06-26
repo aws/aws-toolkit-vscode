@@ -155,6 +155,34 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsigh
     }
 
     @Test
+    fun `test getTelemetryErrorMessage should return the correct error message`() {
+        val exceptions = listOf(
+            Exception("Resource not found."),
+            Exception("Service returned HTTP status code 407"),
+            Exception("Service returned HTTP status code 403"),
+            Exception("invalid_grant: Invalid token provided"),
+            Exception("Connect timed out"),
+            Exception("Encountered an unexpected error when processing the request, please try again."),
+            Exception("Some other error message")
+        )
+
+        val expectedMessages = listOf(
+            "Resource not found.",
+            "Service returned HTTP status code 407",
+            "Service returned HTTP status code 403",
+            "invalid_grant: Invalid token provided",
+            "Unable to execute HTTP request: Connect timed out",
+            "Encountered an unexpected error when processing the request, please try again.",
+            "Some other error message"
+        )
+
+        exceptions.forEachIndexed { index, exception ->
+            val actualMessage = codeScanSessionSpy.getTelemetryErrorMessage(exception)
+            assertThat(expectedMessages[index]).isEqualTo(actualMessage)
+        }
+    }
+
+    @Test
     fun `test run() - happypath`() {
         assertNotNull(sessionConfigSpy)
         runBlocking {
