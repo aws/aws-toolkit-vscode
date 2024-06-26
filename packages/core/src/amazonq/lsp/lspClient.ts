@@ -103,6 +103,9 @@ export function writeEncryptionInit(stream: Writable): void {
     stream.write(JSON.stringify(request))
     stream.write('\n')
 }
+type EnvType = {
+    [key: string]: string | undefined
+}
 
 export async function activate(extensionContext: ExtensionContext) {
     const toDispose = extensionContext.subscriptions
@@ -115,12 +118,20 @@ export async function activate(extensionContext: ExtensionContext) {
     const debugOptions = { execArgv: ['--nolazy', '--inspect=6009', '--preserve-symlinks', '--stdio'] }
 
     const workerThreads = CodeWhispererSettings.instance.getIndexWorkerThreads()
+    let child: cp.ChildProcessWithoutNullStreams | undefined = undefined
     if (workerThreads > 0 && workerThreads < 100) {
-        process.env.Q_WORKER_THREADS = workerThreads.toString()
+        const env: EnvType = {
+            Q_WORKER_THREADS: workerThreads.toString(),
+            // must have PATH otherwise it throws Error: spawn node ENOENT" when using child_process in Node.js
+            PATH: process.env.PATH,
+        }
+        child = cp.spawn('node', [serverModule, ...debugOptions.execArgv], {
+            env: env,
+        })
+    } else {
+        child = cp.spawn('node', [serverModule, ...debugOptions.execArgv])
     }
-    const child = cp.spawn('node', [serverModule, ...debugOptions.execArgv], {
-        env: process.env,
-    })
+
     // share an encryption key using stdin
     // follow same practice of DEXP LSP server
     writeEncryptionInit(child.stdin)
@@ -132,7 +143,7 @@ export async function activate(extensionContext: ExtensionContext) {
         debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions },
     }
 
-    serverOptions = () => Promise.resolve(child)
+    serverOptions = () => Promise.resolve(child!!)
 
     const documentSelector = [{ scheme: 'file', language: '*' }]
 
