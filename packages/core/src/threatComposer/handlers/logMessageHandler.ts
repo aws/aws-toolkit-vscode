@@ -6,7 +6,7 @@
 import { Command, LogMessage, Message, MessageType, WebviewContext } from '../types'
 import { getLogger } from '../../shared/logger'
 import * as vscode from 'vscode'
-import { sendThreatComposerErrored } from './emitTelemetryMessageHandler'
+import { sendThreatComposerErrored } from './webviewTelemetryHandler'
 
 /**
  * Handler for logging messages from the webview.
