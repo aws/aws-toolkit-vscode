@@ -21,7 +21,7 @@ export { Prompter } from './ui/prompter'
 export { VirtualFileSystem } from './virtualFilesystem'
 export { VirtualMemoryFile } from './virtualMemoryFile'
 export { AmazonqCreateUpload, Metric } from './telemetry/telemetry'
-export { getClientId } from './telemetry/util'
+export { getClientId, getOperatingSystem } from './telemetry/util'
 export { extensionVersion } from './vscode/env'
 export { cast } from './utilities/typeConstructors'
 export {

@@ -25,6 +25,8 @@ import { ToolkitError, isAwsError, isCodeWhispererStreamingServiceException } fr
 import { getCodewhispererConfig } from '../../codewhisperer/client/codewhisperer'
 import { LLMResponseType } from '../types'
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
+import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
+import { extensionVersion } from '../../shared/vscode/env'
 
 // Create a client for featureDev proxy client based off of aws sdk v2
 export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClient> {
@@ -324,6 +326,14 @@ export class FeatureDevClient {
                     featureDevEvent: {
                         conversationId,
                     },
+                },
+                optOutPreference: getOptOutPreference(),
+                userContext: {
+                    ideCategory: 'VSCODE',
+                    operatingSystem: getOperatingSystem(),
+                    product: 'FeatureDev', // Should be the same as in JetBrains
+                    clientId: getClientId(globals.context.globalState),
+                    ideVersion: extensionVersion,
                 },
             }
             const response = await client.sendTelemetryEvent(params).promise()
