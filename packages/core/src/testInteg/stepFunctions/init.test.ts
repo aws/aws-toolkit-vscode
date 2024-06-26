@@ -4,25 +4,20 @@
  */
 
 import assert from 'assert'
-import { fsCommon } from '../../srcShared/fs'
-import { openATextEditorWithText } from '../../test/testUtil'
-import { makeTemporaryToolkitFolder } from '../../shared'
+import { createTestWorkspaceFolder, openATextEditorWithText } from '../../test/testUtil'
 import vscode from 'vscode'
 import { ASLLanguageClient } from '../../stepFunctions/asl/client'
 
-describe('initialization', async function () {
+describe('stepFunctions ASL LSP', async function () {
     let tempFolder: string
 
     beforeEach(async function () {
         // Make a temp folder for all these tests
-        tempFolder = await makeTemporaryToolkitFolder()
+        const d = await createTestWorkspaceFolder()
+        tempFolder = d.uri.fsPath
     })
 
-    afterEach(async function () {
-        await fsCommon.delete(tempFolder)
-    })
-
-    it('inits', async function () {
+    it('init', async function () {
         const stateMachineFileText = `{
 
 }`

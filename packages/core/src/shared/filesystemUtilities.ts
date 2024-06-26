@@ -102,6 +102,7 @@ export async function tryRemoveFolder(folder?: string): Promise<boolean> {
     return true
 }
 
+/** Note: In tests use `createTestWorkspaceFolder` instead. */
 export const makeTemporaryToolkitFolder = async (...relativePathParts: string[]) => {
     if (relativePathParts.length === 0) {
         relativePathParts.push('vsctk')
