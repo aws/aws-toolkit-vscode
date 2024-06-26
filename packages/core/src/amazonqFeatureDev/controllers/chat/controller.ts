@@ -16,15 +16,20 @@ import {
     ContentLengthError,
     MonthlyConversationLimitError,
     PlanIterationLimitError,
+    PrepareRepoFailedError,
     SelectedFolderNotInWorkspaceFolderError,
+    TabIdNotFoundError,
+    UploadCodeError,
+    UserMessageNotFoundError,
     WorkspaceFolderNotFoundError,
     createUserFacingErrorMessage,
+    denyListedErrors,
 } from '../../errors'
 import { defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
 import { featureName } from '../../constants'
 import { ChatSessionStorage } from '../../storages/chatSession'
-import { FollowUpTypes, SessionStatePhase } from '../../types'
+import { DevPhase, FollowUpTypes, SessionStatePhase } from '../../types'
 import { Messenger } from './messenger/messenger'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
@@ -164,7 +169,7 @@ export class FeatureDevController {
         const session = await this.sessionStorage.getSession(tabId)
 
         switch (session?.state.phase) {
-            case 'Approach':
+            case DevPhase.APPROACH:
                 if (vote === 'upvote') {
                     telemetry.amazonq_approachThumbsUp.emit({
                         amazonqConversationId: session?.conversationId,
@@ -181,7 +186,7 @@ export class FeatureDevController {
                     })
                 }
                 break
-            case 'Codegen':
+            case DevPhase.CODEGEN:
                 if (vote === 'upvote') {
                     telemetry.amazonq_codeGenerationThumbsUp.emit({
                         amazonqConversationId: session?.conversationId,
@@ -197,6 +202,142 @@ export class FeatureDevController {
                         credentialStartUrl: AuthUtil.instance.startUrl,
                     })
                 }
+                break
+        }
+    }
+
+    private processErrorChatMessage = (err: any, message: any, session: Session | undefined) => {
+        const skipTitle = true
+        const errorMessage = createUserFacingErrorMessage(
+            `${featureName} request failed: ${err.cause?.message ?? err.message}`
+        )
+
+        let sendErrorMessage = true
+        let defaultMessage = ''
+        const isDenyListedError = denyListedErrors.some(err => errorMessage.includes(err))
+
+        switch (err.code) {
+            case ContentLengthError.name:
+                this.messenger.sendErrorMessage(
+                    err.message,
+                    message.tabID,
+                    this.retriesRemaining(session),
+                    undefined,
+                    session?.conversationIdUnsafe
+                )
+                this.messenger.sendAnswer({
+                    type: 'system-prompt',
+                    tabID: message.tabID,
+                    followUps: [
+                        {
+                            pillText: 'Choose another folder in your workspace',
+                            type: 'ModifyDefaultSourceFolder',
+                            status: 'info',
+                        },
+                    ],
+                })
+                break
+            case MonthlyConversationLimitError.name:
+                this.messenger.sendMonthlyLimitError(message.tabID)
+                break
+
+            case PlanIterationLimitError.name:
+                this.messenger.sendAnswer({
+                    type: 'answer',
+                    tabID: message.tabID,
+                    message: err.message,
+                })
+                this.messenger.sendAnswer({
+                    type: 'system-prompt',
+                    tabID: message.tabID,
+                    followUps: [
+                        {
+                            pillText: 'Discuss a new plan',
+                            type: FollowUpTypes.NewTask,
+                            status: 'info',
+                        },
+                        {
+                            pillText: 'Generate code',
+                            type: FollowUpTypes.GenerateCode,
+                            status: 'info',
+                        },
+                    ],
+                })
+                break
+            case UploadCodeError.name:
+            case UserMessageNotFoundError.name:
+                this.messenger.sendAnswer({
+                    type: 'answer',
+                    tabID: message.tabID,
+                    message: err.message,
+                })
+                break
+
+            case TabIdNotFoundError.name:
+            case PrepareRepoFailedError.name:
+                this.messenger.sendErrorMessage(
+                    errorMessage,
+                    message.tabID,
+                    this.retriesRemaining(session),
+                    session?.state.phase,
+                    session?.conversationIdUnsafe,
+                    skipTitle
+                )
+                break
+            case CodeIterationLimitError.name:
+                this.messenger.sendAnswer({
+                    type: 'answer',
+                    tabID: message.tabID,
+                    message: err.message,
+                })
+                this.messenger.sendAnswer({
+                    type: 'system-prompt',
+                    tabID: message.tabID,
+                    followUps: [
+                        {
+                            pillText: 'Insert code',
+                            type: FollowUpTypes.InsertCode,
+                            icon: 'ok' as MynahIcons,
+                            status: 'success',
+                        },
+                    ],
+                })
+                break
+            default:
+                switch (session?.state.phase) {
+                    case DevPhase.APPROACH:
+                        if (isDenyListedError) {
+                            defaultMessage = `I'm sorry, I'm having trouble generating a plan. Please try again.`
+                        } else {
+                            defaultMessage = `I'm sorry, I ran into an issue while trying to approach the problem. Please try again.`
+                        }
+                        break
+                    case DevPhase.CODEGEN:
+                        if (isDenyListedError) {
+                            defaultMessage = `I'm sorry, I'm having trouble generating your code and can't continue at the moment. Please try again later, and share feedback to help me improve.`
+                            sendErrorMessage = false
+                            this.messenger.sendAnswer({
+                                type: 'answer',
+                                tabID: message.tabID,
+                                message: defaultMessage,
+                            })
+                        } else {
+                            defaultMessage = `I'm sorry, I ran into an issue while trying to generate your code. Please try again.`
+                        }
+                        break
+                }
+
+                if (sendErrorMessage) {
+                    this.messenger.sendErrorMessage(
+                        defaultMessage?.length ? defaultMessage : errorMessage,
+                        message.tabID,
+                        this.retriesRemaining(session),
+                        session?.state.phase,
+                        session?.conversationIdUnsafe,
+                        skipTitle
+                    )
+                }
+
                 break
         }
     }
@@ -223,7 +364,6 @@ export class FeatureDevController {
             getLogger().debug(`${featureName}: Processing message: ${message.message}`)
 
             session = await this.sessionStorage.getSession(message.tabID)
-
             const authState = await AuthUtil.instance.getChatAuthState()
             if (authState.amazonQ !== 'connected') {
                 await this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
@@ -232,93 +372,16 @@ export class FeatureDevController {
             }
 
             switch (session.state.phase) {
-                case 'Init':
-                case 'Approach':
+                case DevPhase.INIT:
+                case DevPhase.APPROACH:
                     await this.onApproachGeneration(session, message.message, message.tabID)
                     break
-                case 'Codegen':
+                case DevPhase.CODEGEN:
                     await this.onCodeGeneration(session, message.message, message.tabID)
                     break
             }
         } catch (err: any) {
-            if (err instanceof ContentLengthError) {
-                this.messenger.sendErrorMessage(
-                    err.message,
-                    message.tabID,
-                    this.retriesRemaining(session),
-                    undefined,
-                    session?.conversationIdUnsafe
-                )
-                this.messenger.sendAnswer({
-                    type: 'system-prompt',
-                    tabID: message.tabID,
-                    followUps: [
-                        {
-                            pillText: 'Select files for context',
-                            type: 'ModifyDefaultSourceFolder',
-                            status: 'info',
-                        },
-                    ],
-                })
-            } else if (err instanceof MonthlyConversationLimitError) {
-                this.messenger.sendMonthlyLimitError(message.tabID)
-            } else if (err instanceof PlanIterationLimitError) {
-                this.messenger.sendErrorMessage(
-                    err.message,
-                    message.tabID,
-                    this.retriesRemaining(session),
-                    undefined,
-                    session?.conversationIdUnsafe
-                )
-                this.messenger.sendAnswer({
-                    type: 'system-prompt',
-                    tabID: message.tabID,
-                    followUps: [
-                        {
-                            pillText: 'Discuss a new plan',
-                            type: FollowUpTypes.NewTask,
-                            status: 'info',
-                        },
-                        {
-                            pillText: 'Generate code',
-                            type: FollowUpTypes.GenerateCode,
-                            status: 'info',
-                        },
-                    ],
-                })
-            } else if (err instanceof CodeIterationLimitError) {
-                this.messenger.sendErrorMessage(
-                    err.message,
-                    message.tabID,
-                    this.retriesRemaining(session),
-                    undefined,
-                    session?.conversationIdUnsafe
-                )
-                this.messenger.sendAnswer({
-                    type: 'system-prompt',
-                    tabID: message.tabID,
-                    followUps: [
-                        {
-                            pillText: 'Insert code',
-                            type: FollowUpTypes.InsertCode,
-                            icon: 'ok' as MynahIcons,
-                            status: 'success',
-                        },
-                    ],
-                })
-            } else {
-                const errorMessage = createUserFacingErrorMessage(
-                    `${featureName} request failed: ${err.cause?.message ?? err.message}`
-                )
-                this.messenger.sendErrorMessage(
-                    errorMessage,
-                    message.tabID,
-                    this.retriesRemaining(session),
-                    session?.state.phase,
-                    session?.conversationIdUnsafe
-                )
-            }
-
+            this.processErrorChatMessage(err, message, session)
             // Lock the chat input until they explicitly click one of the follow ups
             this.messenger.sendChatInputEnabled(message.tabID, false)
         }
@@ -589,7 +652,7 @@ export class FeatureDevController {
 
     private getFollowUpOptions(phase: SessionStatePhase | undefined): ChatItemAction[] {
         switch (phase) {
-            case 'Approach':
+            case DevPhase.APPROACH:
                 return [
                     {
                         pillText: 'Generate code',
@@ -597,7 +660,7 @@ export class FeatureDevController {
                         status: 'info',
                     },
                 ]
-            case 'Codegen':
+            case DevPhase.CODEGEN:
                 return [
                     {
                         pillText: 'Insert code',

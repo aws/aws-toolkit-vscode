@@ -3,10 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { DeletedFileInfo, FollowUpTypes, NewFileInfo, SessionStatePhase } from '../../../types'
-import { CodeReference } from '../../../../amazonq/webview/ui/apps/amazonqCommonsConnector'
+import { DeletedFileInfo, DevPhase, FollowUpTypes, NewFileInfo, SessionStatePhase } from '../../../types'
 import { AuthFollowUpType, AuthMessageDataMap } from '../../../../amazonq/auth/model'
-import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import {
     ChatMessage,
     AsyncEventProgressMessage,
@@ -23,6 +21,8 @@ import { AppToWebViewMessageDispatcher } from '../../../views/connector/connecto
 import { ChatItemAction } from '@aws/mynah-ui'
 import { messageWithConversationId } from '../../../userFacingText'
 import { MessengerTypes, ErrorMessages, Placeholders } from './constants'
+import { FeatureAuthState } from '../../../../codewhisperer'
+import { CodeReference } from '../../../../codewhispererChat/view/connector/connector'
 export class Messenger {
     public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}
 
@@ -63,7 +63,8 @@ export class Messenger {
         tabID: string,
         retries: number,
         phase?: SessionStatePhase,
-        conversationId?: string
+        conversationId?: string,
+        skipTitle?: boolean
     ) {
         if (retries === 0) {
             this.sendAnswer({
@@ -85,25 +86,42 @@ export class Messenger {
             })
             return
         }
-
         switch (phase) {
-            case 'Approach':
-                this.dispatcher.sendErrorMessage(
-                    new ErrorMessage(
-                        ErrorMessages.tryAgain,
-                        errorMessage + messageWithConversationId(conversationId),
-                        tabID
+            case DevPhase.APPROACH:
+                if (skipTitle) {
+                    this.sendAnswer({
+                        type: 'answer',
+                        tabID: tabID,
+                        message: errorMessage,
+                    })
+                } else {
+                    this.dispatcher.sendErrorMessage(
+                        new ErrorMessage(
+                            `Sorry, we're experiencing an issue on our side. Would you like to try again?`,
+                            errorMessage + messageWithConversationId(conversationId),
+                            tabID
+                        )
                     )
-                )
+                }
+
                 break
-            case 'Codegen':
-                this.dispatcher.sendErrorMessage(
-                    new ErrorMessage(
-                        ErrorMessages.tryAgain,
-                        errorMessage + messageWithConversationId(conversationId),
-                        tabID
+            case DevPhase.CODEGEN:
+                if (skipTitle) {
+                    this.sendAnswer({
+                        type: 'answer',
+                        tabID: tabID,
+                        message: errorMessage,
+                    })
+                } else {
+                    this.dispatcher.sendErrorMessage(
+                        new ErrorMessage(
+                            `Sorry, we're experiencing an issue on our side. Would you like to try again?`,
+                            errorMessage + messageWithConversationId(conversationId),
+                            tabID
+                        )
                     )
-                )
+                }
+
                 break
             default:
                 // used to send generic error messages when we don't want to send the response as part of a phase

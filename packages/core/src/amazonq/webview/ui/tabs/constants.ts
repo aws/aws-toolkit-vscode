@@ -24,7 +24,7 @@ export const TabTypeDataMap: Record<TabType, TabTypeData> = {
     featuredev: {
         title: 'Q - Dev',
         placeholder: 'Describe your task or issue in as much detail as possible',
-        welcome: `Hi, I'm the Amazon Q Developer Agent for software development.
+        welcome: `Welcome to the agent for software development.
 
     I can generate code to implement new functionality across your workspace. We'll start by discussing an implementation plan, and then we can review and regenerate code based on your feedback.
 

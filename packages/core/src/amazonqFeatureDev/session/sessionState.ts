@@ -17,6 +17,7 @@ import { IllegalStateTransition, UserMessageNotFoundError } from '../errors'
 import {
     CurrentWsFolders,
     DeletedFileInfo,
+    DevPhase,
     FollowUpTypes,
     NewFileInfo,
     NewFileZipContents,
@@ -38,12 +39,9 @@ import { collectFiles, getWorkspaceFoldersByPrefixes } from '../../shared/utilit
 
 export class ConversationNotStartedState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
-    public readonly phase = 'Init'
+    public readonly phase = DevPhase.INIT
 
-    constructor(
-        public approach: string,
-        public tabID: string
-    ) {
+    constructor(public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.approach = ''
     }
@@ -55,12 +53,8 @@ export class ConversationNotStartedState implements Omit<SessionState, 'uploadId
 
 export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
-    public readonly phase = 'Approach'
-    constructor(
-        private config: Omit<SessionStateConfig, 'uploadId'>,
-        public approach: string,
-        public tabID: string
-    ) {
+    public readonly phase = DevPhase.APPROACH
+    constructor(private config: Omit<SessionStateConfig, 'uploadId'>, public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
 
@@ -99,7 +93,7 @@ export class RefinementState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
     public readonly conversationId: string
     public readonly uploadId: string
-    public readonly phase = 'Approach'
+    public readonly phase = DevPhase.APPROACH
 
     constructor(
         private config: SessionStateConfig,
@@ -226,14 +220,11 @@ abstract class CodeGenBase {
     private pollCount = 180
     private requestDelay = 10000
     readonly tokenSource: vscode.CancellationTokenSource
-    public phase: SessionStatePhase = 'Codegen'
+    public phase: SessionStatePhase = DevPhase.CODEGEN
     public readonly conversationId: string
     public readonly uploadId: string
 
-    constructor(
-        protected config: SessionStateConfig,
-        public tabID: string
-    ) {
+    constructor(protected config: SessionStateConfig, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.conversationId = config.conversationId
         this.uploadId = config.uploadId
@@ -282,6 +273,15 @@ abstract class CodeGenBase {
                 case 'predict-failed':
                 case 'debate-failed':
                 case 'Failed': {
+                    /** 
+                     * 
+                     * TODO: Here we need to implement the granular error handling for 
+                     *  Code generation GuardrailsException
+                        Code generation PromptRefusalException
+                        Code generation EmptyPatchException
+                        Code generation ThrottlingException
+                     * 
+                     * */
                     throw new ToolkitError('Code generation failed', { code: 'CodeGenFailed' })
                 }
                 default: {
@@ -379,11 +379,7 @@ export class MockCodeGenState implements SessionState {
     public readonly conversationId: string
     public readonly uploadId: string
 
-    constructor(
-        private config: SessionStateConfig,
-        public approach: string,
-        public tabID: string
-    ) {
+    constructor(private config: SessionStateConfig, public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.filePaths = []
         this.deletedFiles = []
@@ -460,7 +456,7 @@ export class MockCodeGenState implements SessionState {
 
 export class PrepareCodeGenState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
-    public readonly phase = 'Codegen'
+    public readonly phase = DevPhase.CODEGEN
     public uploadId: string
     public conversationId: string
     constructor(

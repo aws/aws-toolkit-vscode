@@ -24,6 +24,12 @@ export interface SessionStateInteraction {
     interaction: Interaction
 }
 
+export enum DevPhase {
+    INIT = 'Init',
+    APPROACH = 'Approach',
+    CODEGEN = 'Codegen',
+}
+
 export enum FollowUpTypes {
     GenerateCode = 'GenerateCode',
     InsertCode = 'InsertCode',
@@ -36,7 +42,9 @@ export enum FollowUpTypes {
     SendFeedback = 'SendFeedback',
 }
 
-export type SessionStatePhase = 'Init' | 'Approach' | 'Codegen'
+export type SessionStatePhase = DevPhase.INIT | DevPhase.APPROACH | DevPhase.CODEGEN
+
+export type AnswerType = 'answer' | 'answer-part' | 'answer-stream' | 'system-prompt'
 
 export type CurrentWsFolders = [vscode.WorkspaceFolder, ...vscode.WorkspaceFolder[]]
 
