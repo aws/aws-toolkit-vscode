@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { env, Memento, version } from 'vscode'
+import * as os from 'os'
 import { getLogger } from '../logger'
 import { fromExtensionManifest, migrateSetting, Settings } from '../settings'
 import { memoize } from '../utilities/functionUtils'
@@ -261,3 +262,28 @@ export const ExtStartUpSources = {
 } as const
 
 export type ExtStartUpSource = (typeof ExtStartUpSources)[keyof typeof ExtStartUpSources]
+
+/**
+ * Useful for populating the sendTelemetryEvent request from codewhisperer's api for publishing custom telemetry events for AB Testing.
+ *
+ * Returns one of the enum values of OptOutPreferences model (see SendTelemetryRequest model in the codebase)
+ */
+export function getOptOutPreference() {
+    return globals.telemetry.telemetryEnabled ? 'OPTIN' : 'OPTOUT'
+}
+
+/**
+ * Useful for populating the sendTelemetryEvent request from codewhisperer's api for publishing custom telemetry events for AB Testing.
+ *
+ * Returns one of the enum values of the OperatingSystem model (see SendTelemetryRequest model in the codebase)
+ */
+export function getOperatingSystem(): 'MAC' | 'WINDOWS' | 'LINUX' {
+    const osId = os.platform() // 'darwin', 'win32', 'linux', etc.
+    if (osId === 'darwin') {
+        return 'MAC'
+    } else if (osId === 'win32') {
+        return 'WINDOWS'
+    } else {
+        return 'LINUX'
+    }
+}

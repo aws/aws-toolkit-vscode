@@ -11,10 +11,9 @@ import {
     AuthUtil,
     codeWhispererClient,
 } from 'aws-core-vscode/codewhisperer'
-import { globals, getClientId } from 'aws-core-vscode/shared'
+import { globals, getClientId, getOperatingSystem } from 'aws-core-vscode/shared'
 import { AWSError, Request } from 'aws-sdk'
 import { createSpyClient } from 'aws-core-vscode/test'
-import * as os from 'os'
 
 describe('codewhisperer', async function () {
     let clientSpy: CodeWhispererUserClient
@@ -122,17 +121,6 @@ describe('codewhisperer', async function () {
         await codeWhispererClient.sendTelemetryEvent({ telemetryEvent: userTriggerDecisionPayload })
         sinon.assert.calledWith(clientSpyStub, sinon.match({ userContext: expectedUserContext }))
     })
-
-    function getOperatingSystem(): string {
-        const osId = os.platform() // 'darwin', 'win32', 'linux', etc.
-        if (osId === 'darwin') {
-            return 'MAC'
-        } else if (osId === 'win32') {
-            return 'WINDOWS'
-        } else {
-            return 'LINUX'
-        }
-    }
 
     async function sendTelemetryEventOptoutCheckHelper(
         payload: TelemetryEvent,
