@@ -13,6 +13,7 @@ import {
     getTelemetryResult,
     isNetworkError,
     resolveErrorMessageToDisplay,
+    scrubNames,
     ToolkitError,
 } from '../../shared/errors'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
@@ -432,5 +433,54 @@ describe('util', function () {
             false,
             'Incorrectly indicated as network error'
         )
+    })
+
+    it('scrubNames()', async function () {
+        const fakeUser = 'jdoe123'
+        assert.deepStrictEqual(scrubNames('', fakeUser), '')
+        assert.deepStrictEqual(scrubNames('a ./ b', fakeUser), 'a ././ b') // TODO: fix this
+        assert.deepStrictEqual(scrubNames('a ../ b', fakeUser), 'a .././ b') // TODO: fix this
+        assert.deepStrictEqual(scrubNames('a /.. b', fakeUser), 'a /.. b') // TODO: fix this
+        assert.deepStrictEqual(scrubNames('a //..// b', fakeUser), 'a //..//.// b') // TODO: fix this
+        assert.deepStrictEqual(scrubNames('a / b', fakeUser), 'a / b')
+        assert.deepStrictEqual(scrubNames('a ~/ b', fakeUser), 'a ~/ b')
+        assert.deepStrictEqual(scrubNames('a //// b', fakeUser), 'a //// b')
+        assert.deepStrictEqual(scrubNames('a .. b', fakeUser), 'a .. b')
+        assert.deepStrictEqual(scrubNames('a . b', fakeUser), 'a . b')
+        assert.deepStrictEqual(scrubNames('      lots      of         space       ', 'space'), 'lots of x')
+        assert.deepStrictEqual(
+            scrubNames(
+                'Failed to save c:/fooß/aïböcß/aób∑c/∑ö/ππ¨p/ö/a/bar123öabc/baz.txt EACCES no permissions (error!)',
+                fakeUser
+            ),
+            'Failed to save c:/xß/xï/xó/x∑/xπ/xö/x/xö/x.txt EACCES no permissions (error!)'
+        )
+        assert.deepStrictEqual(
+            scrubNames('user: jdoe123 file: C:/Users/user1/.aws/sso/cache/abc123.json (regex: /foo/)', fakeUser),
+            'user: x file: C:/Users/x/.aws/sso/cache/x.json (regex: /x/)'
+        )
+        assert.deepStrictEqual(scrubNames('/Users/user1/foo.jso (?)', fakeUser), '/Users/x/x.jso (?)')
+        assert.deepStrictEqual(scrubNames('/Users/user1/foo.js (?)', fakeUser), '/Users/x/x.js (?)')
+        assert.deepStrictEqual(scrubNames('/Users/user1/foo.longextension (?)', fakeUser), '/Users/x/x (?)')
+        assert.deepStrictEqual(scrubNames('c:\\fooß\\bar\\baz.txt', fakeUser), 'c:/xß/x/x.txt')
+        assert.deepStrictEqual(
+            scrubNames('uhh c:\\path with\\ spaces \\baz.. hmm...', fakeUser),
+            'uhh c:/x x/ spaces /x hmm...'
+        )
+        assert.deepStrictEqual(
+            scrubNames('unc path: \\\\server$\\pipename\\etc END', fakeUser),
+            'unc path: //x$/x/x END'
+        )
+        assert.deepStrictEqual(
+            scrubNames('c:\\Users\\user1\\.aws\\sso\\cache\\abc123.json jdoe123 abc', fakeUser),
+            'c:/Users/x/.aws/sso/cache/x.json x abc'
+        )
+        assert.deepStrictEqual(
+            scrubNames('unix /home/jdoe123/.aws/config failed', fakeUser),
+            'unix /home/x/.aws/config failed'
+        )
+        assert.deepStrictEqual(scrubNames('unix ~jdoe123/.aws/config failed', fakeUser), 'unix ~x/.aws/config failed')
+        assert.deepStrictEqual(scrubNames('unix ../../.aws/config failed', fakeUser), 'unix ../../.aws/config failed')
+        assert.deepStrictEqual(scrubNames('unix ~/.aws/config failed', fakeUser), 'unix ~/.aws/config failed')
     })
 })

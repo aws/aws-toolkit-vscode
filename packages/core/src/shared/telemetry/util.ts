@@ -208,7 +208,6 @@ export function validateMetricEvent(event: MetricDatum, fatal: boolean) {
  * This function is designed to let AWS Toolkit and Amazon Q share
  * the same telemetry client id.
  */
-
 export async function setupTelemetryId(extensionContext: vscode.ExtensionContext) {
     try {
         if (isWeb()) {

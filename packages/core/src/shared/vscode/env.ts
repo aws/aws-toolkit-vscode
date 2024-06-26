@@ -5,6 +5,7 @@
 
 import * as semver from 'semver'
 import * as vscode from 'vscode'
+import * as os from 'os'
 import * as packageJson from '../../../package.json'
 import { getLogger } from '../logger'
 import { onceChanged } from '../utilities/functionUtils'
@@ -182,4 +183,22 @@ export async function getMachineId(): Promise<string> {
     }
     const proc = new ChildProcess('hostname', [], { collect: true, logging: 'no' })
     return (await proc.run()).stdout.trim() ?? 'unknown-host'
+}
+
+let username: string | undefined
+
+/** Gets the current system username, or undefined in web-mode. */
+export function getUsername(): string | undefined {
+    if (isWeb()) {
+        return undefined
+    }
+
+    if (username !== undefined) {
+        return username
+    }
+
+    const userInfo = os.userInfo({ encoding: 'utf-8' })
+    username = userInfo.username
+
+    return userInfo.username
 }
