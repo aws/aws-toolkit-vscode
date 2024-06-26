@@ -284,11 +284,6 @@
                     "markdownDescription": "%AWS.configuration.description.amazonq.shareContentWithAWS%",
                     "default": true,
                     "scope": "application"
-                },
-                "aws.threatComposer.defaultEditor": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "%AWS.configuration.description.threatComposer.defaultEditor%"
                 }
             }
         },
