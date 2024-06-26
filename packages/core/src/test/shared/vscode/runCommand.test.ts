@@ -143,11 +143,17 @@ describe('runCommand', function () {
                 this.skip()
             }
 
-            const pat =
-                os.platform() === 'linux'
-                    ? // vscode error not raised on linux? 💩
-                      /EISDIR: illegal operation on a directory/
-                    : /EEXIST: file already exists/
+            const pat = (() => {
+                switch (os.platform()) {
+                    case 'linux':
+                        // vscode error not raised on linux? 💩
+                        return /EISDIR: illegal operation on a directory/
+                    case 'win32':
+                        return /EPERM: operation not permitted/
+                    default:
+                        return /EEXIST: file already exists/
+                }
+            })()
             await runAndWaitForMessage(pat, async () => {
                 // Try to write to the current directory. 💩
                 const err = await SystemUtilities.writeFile('.', 'foo').catch(e => e)
@@ -174,7 +180,12 @@ describe('runCommand', function () {
         })
 
         it('toolkit `PermissionsError`', async function () {
-            const viewLogsDialog = getTestWindow().waitForMessage(/incorrect permissions. Expected rw-, found r--/)
+            const expectedMsg =
+                os.platform() === 'win32'
+                    ? /EPERM: operation not permitted/
+                    : /incorrect permissions. Expected rw-, found r--/
+
+            const viewLogsDialog = getTestWindow().waitForMessage(expectedMsg)
 
             await Promise.all([
                 viewLogsDialog.then(dialog => dialog.close()),
@@ -190,7 +201,9 @@ describe('runCommand', function () {
         })
 
         it('nodejs EACCES (not wrapped by toolkit `PermissionsError`)', async function () {
-            const viewLogsDialog = getTestWindow().waitForMessage(/EACCES: permission denied/)
+            const expectedMsg =
+                os.platform() === 'win32' ? /EPERM: operation not permitted/ : /EACCES: permission denied/
+            const viewLogsDialog = getTestWindow().waitForMessage(expectedMsg)
 
             await Promise.all([
                 viewLogsDialog.then(dialog => dialog.close()),

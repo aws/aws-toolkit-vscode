@@ -523,3 +523,17 @@ tester.bar.assertDoesNotShow() // True since `foo` is not assigned an explicit v
 tester.foo.applyInput('Hello, world!') // Manipulate 'user' state
 tester.bar.assertShow() // True since 'foo' has a defined value
 ```
+
+## Module path debugging
+
+Node has an environment variable `NODE_DEBUG=module` that helps to debug module imports. This can be helpful on windows, which can load node modules into uppercase or lower case drive letters, depending on the drive letter of the parent module.
+
+You can enable this by adding `"NODE_DEBUG": "module"` into the env of your launch config that you are using.
+
+When enabled you can see the file that the import is looking for, the module load request, and the relative file requested.
+
+```
+MODULE 88184: looking for ["/aws-toolkit-vscode/packages/core/dist/src"]
+MODULE 88184: Module._load REQUEST ./codewhisperer/commands/basicCommands parent: /aws-toolkit-vscode/packages/core/dist/src/extension.js
+MODULE 88184: RELATIVE: requested: ./codewhisperer/commands/basicCommands from parent.id /aws-toolkit-vscode/packages/core/dist/src/extension.js
+```
