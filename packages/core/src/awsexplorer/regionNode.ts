@@ -32,6 +32,8 @@ import { Ec2ParentNode } from '../awsService/ec2/explorer/ec2ParentNode'
 import { DevSettings } from '../shared/settings'
 import { Ec2Client } from '../shared/clients/ec2Client'
 import { isCloud9 } from '../shared/extensionUtilities'
+import { DynamoDbInstanceNode } from '../dynamoDb/explorer/dynamoDbInstanceNode'
+import { DynamoDbClient } from '../shared/clients/dynamoDbClient'
 
 interface ServiceNode {
     allRegions?: boolean
@@ -110,6 +112,11 @@ const serviceCandidates: ServiceNode[] = [
         allRegions: true,
         serviceId: 'cloudcontrol',
         createFn: (regionCode: string) => new ResourcesNode(regionCode),
+    },
+    {
+        allRegions: true,
+        serviceId: 'dynamodb',
+        createFn: (regionCode: string) => new DynamoDbInstanceNode(regionCode, new DynamoDbClient(regionCode)),
     },
 ]
 
