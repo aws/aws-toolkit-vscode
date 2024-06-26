@@ -5,9 +5,10 @@
 
 import * as vscode from 'vscode'
 import { env, Memento, version } from 'vscode'
+import * as os from 'os'
 import { getLogger } from '../logger'
 import { fromExtensionManifest, migrateSetting, Settings } from '../settings'
-import { shared } from '../utilities/functionUtils'
+import { memoize } from '../utilities/functionUtils'
 import { isInDevEnv, extensionVersion, isAutomation, isRemoteWorkspace } from '../vscode/env'
 import { addTypeName } from '../utilities/typeConstructors'
 import globals, { isWeb } from '../extensionGlobals'
@@ -84,8 +85,11 @@ export function convertLegacy(value: unknown): boolean {
     }
 }
 
-export const getClientId = shared(
-    async (globalState: Memento, isTelemetryEnabled = new TelemetryConfig().isEnabled(), isTest?: false) => {
+export const getClientId = memoize(
+    /**
+     * @param nonce Dummy parameter to allow tests to defeat memoize().
+     */
+    (globalState: Memento, isTelemetryEnabled = new TelemetryConfig().isEnabled(), isTest?: false, nonce?: string) => {
         if (isTest ?? isAutomation()) {
             return 'ffffffff-ffff-ffff-ffff-ffffffffffff'
         }
@@ -96,12 +100,14 @@ export const getClientId = shared(
             let clientId = globalState.get<string>(telemetryClientIdGlobalStatekey)
             if (!clientId) {
                 clientId = randomUUID()
-                await globalState.update(telemetryClientIdGlobalStatekey, clientId)
+                globalState.update(telemetryClientIdGlobalStatekey, clientId).then(undefined, e => {
+                    getLogger().error('getClientId: globalState.update failed: %O', e)
+                })
             }
             return clientId
-        } catch (error) {
+        } catch (e) {
+            getLogger().error('getClientId: failed to create client id: %O', e)
             const clientId = '00000000-0000-0000-0000-000000000000'
-            getLogger().error('Could not create a client id. Reason: %O ', error)
             return clientId
         }
     }
@@ -114,10 +120,10 @@ export const platformPair = () => `${env.appName.replace(/\s/g, '-')}/${version}
  *
  * Omits the platform and `ClientId` pairs by default.
  */
-export async function getUserAgent(
+export function getUserAgent(
     opt?: { includePlatform?: boolean; includeClientId?: boolean },
     globalState = globals.context.globalState
-): Promise<string> {
+): string {
     const pairs = isAmazonQ()
         ? [`AmazonQ-For-VSCode/${extensionVersion}`]
         : [`AWS-Toolkit-For-VSCode/${extensionVersion}`]
@@ -127,7 +133,7 @@ export async function getUserAgent(
     }
 
     if (opt?.includeClientId) {
-        const clientId = await getClientId(globalState)
+        const clientId = getClientId(globalState)
         pairs.push(`ClientId/${clientId}`)
     }
 
@@ -203,7 +209,6 @@ export function validateMetricEvent(event: MetricDatum, fatal: boolean) {
  * This function is designed to let AWS Toolkit and Amazon Q share
  * the same telemetry client id.
  */
-
 export async function setupTelemetryId(extensionContext: vscode.ExtensionContext) {
     try {
         if (isWeb()) {
@@ -236,9 +241,8 @@ export async function setupTelemetryId(extensionContext: vscode.ExtensionContext
                 getLogger().debug(`telemetry: Write telemetry client id to env ${currentClientId}`)
                 process.env[telemetryClientIdEnvKey] = currentClientId
             } else {
-                const clientId = randomUUID()
+                const clientId = getClientId(globals.context.globalState)
                 getLogger().debug(`telemetry: Setup telemetry client id ${clientId}`)
-                await globals.context.globalState.update(telemetryClientIdGlobalStatekey, clientId)
                 process.env[telemetryClientIdEnvKey] = clientId
             }
         }
@@ -258,3 +262,28 @@ export const ExtStartUpSources = {
 } as const
 
 export type ExtStartUpSource = (typeof ExtStartUpSources)[keyof typeof ExtStartUpSources]
+
+/**
+ * Useful for populating the sendTelemetryEvent request from codewhisperer's api for publishing custom telemetry events for AB Testing.
+ *
+ * Returns one of the enum values of OptOutPreferences model (see SendTelemetryRequest model in the codebase)
+ */
+export function getOptOutPreference() {
+    return globals.telemetry.telemetryEnabled ? 'OPTIN' : 'OPTOUT'
+}
+
+/**
+ * Useful for populating the sendTelemetryEvent request from codewhisperer's api for publishing custom telemetry events for AB Testing.
+ *
+ * Returns one of the enum values of the OperatingSystem model (see SendTelemetryRequest model in the codebase)
+ */
+export function getOperatingSystem(): 'MAC' | 'WINDOWS' | 'LINUX' {
+    const osId = os.platform() // 'darwin', 'win32', 'linux', etc.
+    if (osId === 'darwin') {
+        return 'MAC'
+    } else if (osId === 'win32') {
+        return 'WINDOWS'
+    } else {
+        return 'LINUX'
+    }
+}

@@ -241,7 +241,8 @@ async function showProgressWithTimeout(
                         return new Promise(timeout.onCompletion)
                     })
                 } catch (e) {
-                    getLogger().error('report(): progressPromise failed', e)
+                    const err = e as Error
+                    getLogger().error('report(): progressPromise failed: %s: %s', err.name, err.message)
                     reject(e)
                 }
             }, showAfterMs)

@@ -381,6 +381,7 @@ export class TransformByQState {
 
     private planFilePath: string = ''
     private summaryFilePath: string = ''
+    private preBuildLogFilePath: string = ''
 
     private resultArchiveFilePath: string = ''
     private projectCopyFilePath: string = ''
@@ -439,6 +440,10 @@ export class TransformByQState {
 
     public getProjectPath() {
         return this.projectPath
+    }
+
+    public getPreBuildLogFilePath() {
+        return this.preBuildLogFilePath
     }
 
     public getStartTime() {
@@ -637,6 +642,10 @@ export class TransformByQState {
         this.planSteps = steps
     }
 
+    public setPreBuildLogFilePath(path: string) {
+        this.preBuildLogFilePath = path
+    }
+
     public resetPlanSteps() {
         this.planSteps = undefined
     }
@@ -679,6 +688,7 @@ export interface CodeScanTelemetryEntry {
     codeScanServiceInvocationsDuration: number
     result: Result
     reason?: string
+    reasonDesc?: string
     codewhispererCodeScanTotalIssues: number
     codewhispererCodeScanIssuesWithFixes: number
     credentialStartUrl: string | undefined

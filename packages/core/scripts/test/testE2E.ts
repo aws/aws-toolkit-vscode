@@ -9,5 +9,7 @@ void (async () => {
     if (!relativeEntrypoint) {
         throw new Error('Relative entrypoint is required')
     }
-    await runToolkitTests('e2e', relativeEntrypoint)
+
+    const relativeWorkspaceFolder = process.argv[3]
+    await runToolkitTests('e2e', relativeEntrypoint, relativeWorkspaceFolder)
 })()

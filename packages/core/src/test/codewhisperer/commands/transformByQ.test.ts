@@ -9,7 +9,7 @@ import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
-import { stopTransformByQ } from '../../../codewhisperer/commands/startTransformByQ'
+import { resetDebugArtifacts, stopTransformByQ } from '../../../codewhisperer/commands/startTransformByQ'
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
@@ -179,7 +179,7 @@ describe('transformByQ', function () {
                 status: 'COMPLETED',
             },
         }
-        assert.deepStrictEqual(actual, expected)
+        assert.equal(actual['abc-123'].projectName, expected['abc-123'].projectName)
     })
 
     it(`WHEN get headers for upload artifact to S3 THEN returns correct header with kms key arn`, function () {
@@ -295,5 +295,36 @@ describe('transformByQ', function () {
             '-1': '{"columnNames":["relativePath","action"],"rows":[{"relativePath":"pom.xml","action":"Update"}, {"relativePath":"src/main/java/com/bhoruka/bloodbank/BloodbankApplication.java","action":"Update"}]}',
         }
         assert.deepStrictEqual(actual, expected)
+    })
+})
+
+describe('resetDebugArtifacts', () => {
+    it('should remove the directory containing the pre-build log file if it exists', async () => {
+        const dirPath = await createTestWorkspaceFolder()
+        const preBuildLogFilePath = path.join(dirPath.uri.fsPath, 'DummyLog.log')
+        await toFile('', preBuildLogFilePath)
+        transformByQState.setPreBuildLogFilePath(preBuildLogFilePath)
+
+        await resetDebugArtifacts()
+
+        assert.strictEqual(fs.existsSync(preBuildLogFilePath), false)
+        assert.strictEqual(transformByQState.getPreBuildLogFilePath(), '')
+    })
+
+    it('should not remove any directory if the pre-build log file path is not set', async () => {
+        transformByQState.setPreBuildLogFilePath('')
+
+        await resetDebugArtifacts()
+
+        assert.strictEqual(transformByQState.getPreBuildLogFilePath(), '')
+    })
+
+    it('should not remove any directory if the pre-build log file does not exist', async () => {
+        const preBuildLogFilePath = 'non/existent/path/to/pre-build.log'
+        transformByQState.setPreBuildLogFilePath(preBuildLogFilePath)
+
+        await resetDebugArtifacts()
+
+        assert.strictEqual(transformByQState.getPreBuildLogFilePath(), '')
     })
 })

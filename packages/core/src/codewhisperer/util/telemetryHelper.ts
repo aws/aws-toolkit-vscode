@@ -535,13 +535,6 @@ export class TelemetryHelper {
     public sendCodeScanEvent(languageId: string, jobId: string) {
         getLogger().debug(`start sendCodeScanEvent: jobId: "${jobId}", languageId: "${languageId}"`)
 
-        let codewhispererRuntimeLanguage: string = languageId
-        if (codewhispererRuntimeLanguage === 'jsx') {
-            codewhispererRuntimeLanguage = 'javascript'
-        } else if (codewhispererRuntimeLanguage === 'tsx') {
-            codewhispererRuntimeLanguage = 'typescript'
-        }
-
         client
             .sendTelemetryEvent({
                 telemetryEvent: {

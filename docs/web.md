@@ -62,6 +62,17 @@ do the following:
 
 Now when you run the extension in the browser it will do CORS checks.
 
+## Running in [vscode.dev](https://vscode.dev)
+
+The following will explain how to get your latest local development changes running in the actual `vscode.dev`. Use this if you want to test on an actual VS Code Web instance.
+
+1. Build the extension. We need the Web mode entrypoint file to exist.
+2. OPTIONAL: Start up your browser with security disabled. Certain functionalities do not support CORS and will fail otherwise.
+    - On MacOS from the CLI is similar to `/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --disable-web-security`
+3. `cd` to the extension you want to test in `packages/`. Eg: `packages/amazonq/`.
+    - We need to do this since the following command hosts your build from the `cwd`.
+4. Follow the [VS Code documentation](https://code.visualstudio.com/api/extension-guides/web-extensions#test-your-web-extension-in-vscode.dev) for setting up certs, serving your the latest changes, and installing the extension to `vscode.dev`.
+
 ## Testing in VSCode Web Mode
 
 The following steps will result in a VSCode Extension window running

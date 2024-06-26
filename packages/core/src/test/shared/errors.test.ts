@@ -4,10 +4,91 @@
  */
 
 import assert from 'assert'
-import { getTelemetryReason, getTelemetryResult, resolveErrorMessageToDisplay, ToolkitError } from '../../shared/errors'
+import vscode from 'vscode'
+import {
+    findBestErrorInChain,
+    formatError,
+    getErrorMsg,
+    getTelemetryReason,
+    getTelemetryResult,
+    isNetworkError,
+    resolveErrorMessageToDisplay,
+    scrubNames,
+    ToolkitError,
+} from '../../shared/errors'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { UnauthorizedException } from '@aws-sdk/client-sso'
 import { AWSError } from 'aws-sdk'
+import { AccessDeniedException } from '@aws-sdk/client-sso-oidc'
+
+class TestAwsError extends Error implements AWSError {
+    constructor(readonly code: string, message: string, readonly time: Date) {
+        super(message)
+    }
+}
+
+// Error containing `error_description`.
+function fakeAwsErrorAccessDenied() {
+    const e = new AccessDeniedException({
+        error: 'access_denied',
+        message: 'accessdenied message',
+        $metadata: {
+            attempts: 3,
+            requestId: 'or62s79n-r9ps-41pq-n755-r6920p56r4so',
+            totalRetryDelay: 3000,
+            httpStatusCode: 403,
+        },
+    }) as any
+    e.name = 'accessdenied-name'
+    e.code = 'accessdenied-code'
+    e.error_description = 'access_denied error_description'
+    e.time = new Date()
+    return e as AccessDeniedException
+}
+
+// Error NOT containing `error_description`.
+function fakeAwsErrorUnauth() {
+    const e = new UnauthorizedException({
+        message: 'unauthorized message',
+        $metadata: {
+            attempts: 3,
+            requestId: 'be62f79a-e9cf-41cd-a755-e6920c56e4fb',
+            totalRetryDelay: 3000,
+            httpStatusCode: 403,
+        },
+    }) as any
+    e.name = 'unauthorized-name'
+    e.code = 'unauthorized-code'
+    e.time = new Date()
+    return e as UnauthorizedException
+}
+
+/** Creates a deep "cause chain", to test that error handler correctly gets the most relevant error. */
+function fakeErrorChain(rootCause?: Error) {
+    try {
+        if (rootCause) {
+            throw rootCause
+        } else {
+            throw new Error('generic error 1')
+        }
+    } catch (e1) {
+        try {
+            const e = fakeAwsErrorAccessDenied()
+            ;(e as any).cause = e1
+            throw e
+        } catch (e2) {
+            try {
+                const e = fakeAwsErrorUnauth()
+                ;(e as any).cause = e2
+                return e
+            } catch (e3) {
+                throw ToolkitError.chain(e3, 'ToolkitError message', {
+                    documentationUri: vscode.Uri.parse('https://docs.aws.amazon.com/toolkit-for-vscode/'),
+                })
+            }
+        }
+    }
+}
 
 describe('ToolkitError', function () {
     it('can store an error message', function () {
@@ -227,74 +308,179 @@ describe('resolveErrorMessageToDisplay()', function () {
     const toolkitErrorMessage = 'Toolkit error message'
     const awsErrorMessage = 'AWS error message'
 
-    it('returns default message if no error is given', function () {
+    const errorTime: Date = new Date()
+    const preferredErrors: string[] = [
+        'ServiceQuotaExceededException',
+        'ConflictException',
+        'ValidationException',
+        'ResourceNotFoundException',
+    ]
+    const prioritiziedAwsErrors: TestAwsError[] = preferredErrors.map(name => {
+        return new TestAwsError(name, awsErrorMessage, errorTime)
+    })
+
+    // Sanity check specific errors are resolved as expected
+    prioritiziedAwsErrors.forEach(error => {
+        it(`resolves ${error.code} message when provided directly`, function () {
+            const message = resolveErrorMessageToDisplay(error, defaultMessage)
+            assert.strictEqual(message, `${defaultMessage}: ${awsErrorMessage}`)
+        })
+    })
+
+    it('gets default message if no error is given', function () {
         const message = resolveErrorMessageToDisplay(undefined, defaultMessage)
         assert.strictEqual(message, defaultMessage)
     })
 
-    it('returns default message if normal error is given', function () {
+    it('gets default message if normal Error is given', function () {
         const message = resolveErrorMessageToDisplay(new Error(normalErrorMessage), defaultMessage)
-        assert.strictEqual(message, defaultMessage)
+        const expected = `${defaultMessage}: ${normalErrorMessage}`
+        assert.strictEqual(message, expected)
     })
 
-    it('returns toolkit message if toolkit error is given', function () {
+    it('gets ToolkitError if given', function () {
         const message = resolveErrorMessageToDisplay(new ToolkitError(toolkitErrorMessage), defaultMessage)
         assert.strictEqual(message, toolkitErrorMessage)
     })
 
-    describe('prioritized AWS errors', function () {
-        class TestAwsError extends Error implements AWSError {
-            constructor(readonly code: string, message: string, readonly time: Date) {
-                super(message)
-            }
-        }
+    it('gets AWSError nested in a ToolkitError cause', function () {
+        const awsError = prioritiziedAwsErrors[0]
+        const toolkitError = new ToolkitError(toolkitErrorMessage, { cause: awsError })
 
-        const errorTime: Date = new Date()
-        const prioritizedAwsErrorNames: string[] = [
-            'ServiceQuotaExceededException',
-            'ConflictException',
-            'ValidationException',
-            'ResourceNotFoundException',
-        ]
-        const prioritiziedAwsErrors: TestAwsError[] = prioritizedAwsErrorNames.map(name => {
-            return new TestAwsError(name, awsErrorMessage, errorTime)
-        })
+        const message = resolveErrorMessageToDisplay(toolkitError, defaultMessage)
 
-        // Sanity check specific errors are resolved as expected
-        prioritiziedAwsErrors.forEach(error => {
-            it(`resolves ${error.code} message when provided directly`, function () {
-                const message = resolveErrorMessageToDisplay(error, defaultMessage)
-                assert.strictEqual(message, `${defaultMessage}: ${awsErrorMessage}`)
-            })
-        })
+        assert.strictEqual(message, `${toolkitErrorMessage}: ${awsErrorMessage}`)
+    })
 
-        it('resolves AWS Error when nested in a ToolkitError cause', function () {
-            const awsError = prioritiziedAwsErrors[0]
-            const toolkitError = new ToolkitError(toolkitErrorMessage, { cause: awsError })
+    it('gets AWSError nested multiple levels in a ToolkitError cause', function () {
+        const awsError = prioritiziedAwsErrors[0]
+        const toolkitErrorTail = new ToolkitError(`${toolkitErrorMessage}-tail`, { cause: awsError })
+        const toolkitErrorMiddle = new ToolkitError(`${toolkitErrorMessage}-middle`, { cause: toolkitErrorTail })
+        const toolkitErrorHead = new ToolkitError(`${toolkitErrorMessage}-head`, { cause: toolkitErrorMiddle })
 
-            const message = resolveErrorMessageToDisplay(toolkitError, defaultMessage)
+        const message = resolveErrorMessageToDisplay(toolkitErrorHead, defaultMessage)
 
-            assert.strictEqual(message, `${toolkitErrorMessage}: ${awsErrorMessage}`)
-        })
+        assert.strictEqual(message, `${toolkitErrorMessage}-head: ${awsErrorMessage}`)
+    })
 
-        it('resolves AWS Error when nested multiple levels in a ToolkitError cause', function () {
-            const awsError = prioritiziedAwsErrors[0]
-            const toolkitErrorTail = new ToolkitError(`${toolkitErrorMessage}-tail`, { cause: awsError })
-            const toolkitErrorMiddle = new ToolkitError(`${toolkitErrorMessage}-middle`, { cause: toolkitErrorTail })
-            const toolkitErrorHead = new ToolkitError(`${toolkitErrorMessage}-head`, { cause: toolkitErrorMiddle })
+    it('gets first error if no preferred error in cause-chain', function () {
+        const err1 = new Error(`${toolkitErrorMessage}-middle`)
+        const err2 = new Error(`${toolkitErrorMessage}-head`)
+        ;(err2 as any).cause = err1
 
-            const message = resolveErrorMessageToDisplay(toolkitErrorHead, defaultMessage)
+        const expected = `${defaultMessage}: ${toolkitErrorMessage}-head`
+        assert.strictEqual(resolveErrorMessageToDisplay(err2, defaultMessage), expected)
+    })
 
-            assert.strictEqual(message, `${toolkitErrorMessage}-head: ${awsErrorMessage}`)
-        })
+    it('prefers AWSError matching preferredErrors', function () {
+        const awsErr1 = new TestAwsError('ValidationException', 'validation msg', errorTime)
+        const awsErr2 = new TestAwsError('NonPrioritizedAwsException', 'nonprioritized msg', errorTime)
+        ;(awsErr2 as any).cause = awsErr1
+        const err3 = new ToolkitError(toolkitErrorMessage, { cause: awsErr2 })
 
-        it('resolves toolkit message if cause is non-prioritized AWS error', function () {
-            const nonPrioritizedAwsError = new TestAwsError('NonPrioritizedAwsException', awsErrorMessage, errorTime)
-            const toolkitError = new ToolkitError(toolkitErrorMessage, { cause: nonPrioritizedAwsError })
+        const expected = `${toolkitErrorMessage}: validation msg`
+        assert.strictEqual(resolveErrorMessageToDisplay(err3, defaultMessage), expected)
+        ;(awsErr2 as any).cause = new Error('foo')
+        assert.strictEqual(
+            resolveErrorMessageToDisplay(err3, defaultMessage),
+            `${toolkitErrorMessage}: nonprioritized msg`
+        )
+    })
+})
 
-            const message = resolveErrorMessageToDisplay(toolkitError, defaultMessage)
+describe('util', function () {
+    it('findBestErrorInChain()', function () {
+        // assert.deepStrictEqual(getErrorMsg(findBestErrorInChain(fakeErrorChain())), 'access_denied error_description')
 
-            assert.strictEqual(message, toolkitErrorMessage)
-        })
+        const err1 = new TestAwsError('ValidationException', 'aws validation msg 1', new Date())
+        const err2 = new TestAwsError('ValidationException', 'aws validation msg 2', new Date())
+        ;(err2 as any).cause = err1
+        const err3 = new Error('err msg 3')
+        ;(err3 as any).cause = err2
+        assert.strictEqual(findBestErrorInChain(err3), err1)
+        ;(err2 as any).error_description = 'aws error desc 2'
+        assert.strictEqual(findBestErrorInChain(err3), err2)
+    })
+
+    it('formatError()', function () {
+        assert.deepStrictEqual(
+            formatError(fakeErrorChain()),
+            'unauthorized-name: unauthorized message [unauthorized-code] (requestId: be62f79a-e9cf-41cd-a755-e6920c56e4fb)'
+        )
+    })
+
+    it('getErrorMsg()', function () {
+        assert.deepStrictEqual(getErrorMsg(fakeErrorChain()), 'unauthorized message')
+        assert.deepStrictEqual(getErrorMsg(undefined), undefined)
+        const err = new TestAwsError('ValidationException', 'aws validation msg 1', new Date())
+        assert.deepStrictEqual(getErrorMsg(err), 'aws validation msg 1')
+        ;(err as any).error_description = ''
+        assert.deepStrictEqual(getErrorMsg(err), 'aws validation msg 1')
+        ;(err as any).error_description = {}
+        assert.deepStrictEqual(getErrorMsg(err), 'aws validation msg 1')
+        ;(err as any).error_description = 'aws error desc 1'
+        assert.deepStrictEqual(getErrorMsg(err), 'aws error desc 1')
+    })
+
+    it('isNetworkError()', function () {
+        assert.deepStrictEqual(
+            isNetworkError(new Error('Failed to establish a socket connection to proxies BLAH BLAH BLAH')),
+            true,
+            'Did not return "true" on a VS Code Proxy error'
+        )
+        assert.deepStrictEqual(
+            isNetworkError(new Error('I am NOT a network error')),
+            false,
+            'Incorrectly indicated as network error'
+        )
+    })
+
+    it('scrubNames()', async function () {
+        const fakeUser = 'jdoe123'
+        assert.deepStrictEqual(scrubNames('', fakeUser), '')
+        assert.deepStrictEqual(scrubNames('a ./ b', fakeUser), 'a ././ b') // TODO: fix this
+        assert.deepStrictEqual(scrubNames('a ../ b', fakeUser), 'a .././ b') // TODO: fix this
+        assert.deepStrictEqual(scrubNames('a /.. b', fakeUser), 'a /.. b') // TODO: fix this
+        assert.deepStrictEqual(scrubNames('a //..// b', fakeUser), 'a //..//.// b') // TODO: fix this
+        assert.deepStrictEqual(scrubNames('a / b', fakeUser), 'a / b')
+        assert.deepStrictEqual(scrubNames('a ~/ b', fakeUser), 'a ~/ b')
+        assert.deepStrictEqual(scrubNames('a //// b', fakeUser), 'a //// b')
+        assert.deepStrictEqual(scrubNames('a .. b', fakeUser), 'a .. b')
+        assert.deepStrictEqual(scrubNames('a . b', fakeUser), 'a . b')
+        assert.deepStrictEqual(scrubNames('      lots      of         space       ', 'space'), 'lots of x')
+        assert.deepStrictEqual(
+            scrubNames(
+                'Failed to save c:/fooß/aïböcß/aób∑c/∑ö/ππ¨p/ö/a/bar123öabc/baz.txt EACCES no permissions (error!)',
+                fakeUser
+            ),
+            'Failed to save c:/xß/xï/xó/x∑/xπ/xö/x/xö/x.txt EACCES no permissions (error!)'
+        )
+        assert.deepStrictEqual(
+            scrubNames('user: jdoe123 file: C:/Users/user1/.aws/sso/cache/abc123.json (regex: /foo/)', fakeUser),
+            'user: x file: C:/Users/x/.aws/sso/cache/x.json (regex: /x/)'
+        )
+        assert.deepStrictEqual(scrubNames('/Users/user1/foo.jso (?)', fakeUser), '/Users/x/x.jso (?)')
+        assert.deepStrictEqual(scrubNames('/Users/user1/foo.js (?)', fakeUser), '/Users/x/x.js (?)')
+        assert.deepStrictEqual(scrubNames('/Users/user1/foo.longextension (?)', fakeUser), '/Users/x/x (?)')
+        assert.deepStrictEqual(scrubNames('c:\\fooß\\bar\\baz.txt', fakeUser), 'c:/xß/x/x.txt')
+        assert.deepStrictEqual(
+            scrubNames('uhh c:\\path with\\ spaces \\baz.. hmm...', fakeUser),
+            'uhh c:/x x/ spaces /x hmm...'
+        )
+        assert.deepStrictEqual(
+            scrubNames('unc path: \\\\server$\\pipename\\etc END', fakeUser),
+            'unc path: //x$/x/x END'
+        )
+        assert.deepStrictEqual(
+            scrubNames('c:\\Users\\user1\\.aws\\sso\\cache\\abc123.json jdoe123 abc', fakeUser),
+            'c:/Users/x/.aws/sso/cache/x.json x abc'
+        )
+        assert.deepStrictEqual(
+            scrubNames('unix /home/jdoe123/.aws/config failed', fakeUser),
+            'unix /home/x/.aws/config failed'
+        )
+        assert.deepStrictEqual(scrubNames('unix ~jdoe123/.aws/config failed', fakeUser), 'unix ~x/.aws/config failed')
+        assert.deepStrictEqual(scrubNames('unix ../../.aws/config failed', fakeUser), 'unix ../../.aws/config failed')
+        assert.deepStrictEqual(scrubNames('unix ~/.aws/config failed', fakeUser), 'unix ~/.aws/config failed')
     })
 })

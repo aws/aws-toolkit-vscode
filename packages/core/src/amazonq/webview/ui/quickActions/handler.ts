@@ -158,11 +158,6 @@ export class QuickActionHandler {
                     body: realPromptText,
                 })
 
-                this.mynahUI.addChatItem(affectedTabId, {
-                    type: ChatItemType.ANSWER_STREAM,
-                    body: '',
-                })
-
                 this.mynahUI.updateStore(affectedTabId, {
                     loadingChat: true,
                     promptInputDisabledState: true,

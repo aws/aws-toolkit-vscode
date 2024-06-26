@@ -63,6 +63,15 @@ export function hasScopes(target: SsoConnection | SsoProfile | string[], scopes:
     return scopes?.every(s => (Array.isArray(target) ? target : target.scopes)?.includes(s))
 }
 
+/**
+ * Stricter version of hasScopes that checks for all and only all of the predicate scopes.
+ * Not optimized, but the set of possible scopes is currently very small (< 8)
+ */
+export function hasExactScopes(target: SsoConnection | SsoProfile | string[], scopes: string[]): boolean {
+    const targetScopes = Array.isArray(target) ? target : target.scopes ?? []
+    return scopes.length === targetScopes.length && scopes.every(s => targetScopes.includes(s))
+}
+
 export function createBuilderIdProfile(
     scopes = [...scopesSsoAccountAccess]
 ): SsoProfile & { readonly scopes: string[] } {

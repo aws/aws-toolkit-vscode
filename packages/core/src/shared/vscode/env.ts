@@ -5,6 +5,7 @@
 
 import * as semver from 'semver'
 import * as vscode from 'vscode'
+import * as os from 'os'
 import * as packageJson from '../../../package.json'
 import { getLogger } from '../logger'
 import { onceChanged } from '../utilities/functionUtils'
@@ -60,10 +61,15 @@ export function isNameMangled(): boolean {
 export { extensionVersion }
 
 /**
- * Returns true if the extension is being ran on the minimum version of VS Code as defined
- * by the `engines` field in `package.json`
+ * True if the current running vscode is the minimum defined by `engines.vscode` in `package.json`.
+ *
+ * @param throwWhen Throw if minimum vscode is equal or later than this version.
  */
-export function isMinimumVersion(): boolean {
+export function isMinVscode(throwWhen?: string): boolean {
+    const minVscode = getMinVscodeVersion()
+    if (throwWhen && semver.gte(minVscode, throwWhen)) {
+        throw Error(`Min vscode ${minVscode} >= ${throwWhen}. Delete or update the code that called this.`)
+    }
     return vscode.version.startsWith(getMinVscodeVersion())
 }
 
@@ -94,6 +100,10 @@ export function isInDevEnv(): boolean {
 
 export function isRemoteWorkspace(): boolean {
     return vscode.env.remoteName === 'ssh-remote'
+}
+
+export function isWebWorkspace(): boolean {
+    return vscode.env.uiKind === vscode.UIKind.Web
 }
 
 export function getCodeCatalystProjectName(): string | undefined {
@@ -173,4 +183,22 @@ export async function getMachineId(): Promise<string> {
     }
     const proc = new ChildProcess('hostname', [], { collect: true, logging: 'no' })
     return (await proc.run()).stdout.trim() ?? 'unknown-host'
+}
+
+let username: string | undefined
+
+/** Gets the current system username, or undefined in web-mode. */
+export function getUsername(): string | undefined {
+    if (isWeb()) {
+        return undefined
+    }
+
+    if (username !== undefined) {
+        return username
+    }
+
+    const userInfo = os.userInfo({ encoding: 'utf-8' })
+    username = userInfo.username
+
+    return userInfo.username
 }

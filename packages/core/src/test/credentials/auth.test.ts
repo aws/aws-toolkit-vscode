@@ -19,6 +19,7 @@ import { UserCredentialsUtils } from '../../shared/credentials/userCredentialsUt
 import { getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
 import { Connection, isIamConnection, isSsoConnection, scopesSsoAccountAccess } from '../../auth/connection'
 import { AuthNode, createDeleteConnectionButton, promptForConnection } from '../../auth/utils'
+import { isMinVscode } from '../../shared/vscode/env'
 
 const ssoProfile = createSsoProfile()
 const scopedSsoProfile = createSsoProfile({ scopes: ['foo'] })
@@ -502,6 +503,10 @@ describe('Auth', function () {
         })
 
         it('reauthenticates a connection if the user selects an expired one', async function () {
+            if (isMinVscode('1.83.0')) {
+                this.skip()
+            }
+
             getTestWindow().onDidShowQuickPick(async picker => {
                 await picker.untilReady()
                 const connItem = picker.findItemOrThrow(/IAM Identity Center/)

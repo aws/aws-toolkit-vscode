@@ -20,9 +20,11 @@ import {
     compileProject,
     finishHumanInTheLoop,
     getValidCandidateProjects,
+    openBuildLogFile,
     openHilPomFile,
     postTransformationJob,
     processTransformFormInput,
+    resetDebugArtifacts,
     startTransformByQ,
     stopTransformByQ,
     validateCanCompileProject,
@@ -35,6 +37,7 @@ import {
     ModuleUploadError,
     NoJavaProjectsFoundError,
     NoMavenJavaProjectsFoundError,
+    TransformationPreBuildError,
 } from '../../errors'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import MessengerUtils, { ButtonActions, GumbyCommands } from './messenger/messengerUtils'
@@ -50,6 +53,7 @@ import { CodeTransformTelemetryState } from '../../telemetry/codeTransformTeleme
 import { getAuthType } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
 import DependencyVersions from '../../models/dependencies'
 import { getStringHash } from '../../../shared/utilities/textUtilities'
+import { getTelemetryReasonDesc } from '../../../shared/errors'
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
 export interface ChatControllerEventEmitters {
@@ -230,7 +234,7 @@ export class GumbyController {
 
     private async validateProjectsWithReplyOnError(message: any): Promise<TransformationCandidateProject[]> {
         let telemetryJavaVersion = JDKToTelemetryValue(JDKVersion.UNSUPPORTED) as CodeTransformJavaSourceVersionsAllowed
-        let errorCode = undefined
+        let err
         try {
             const validProjects = await getValidCandidateProjects()
             if (validProjects.length > 0) {
@@ -239,23 +243,24 @@ export class GumbyController {
                 telemetryJavaVersion = JDKToTelemetryValue(javaVersion) as CodeTransformJavaSourceVersionsAllowed
             }
             return validProjects
-        } catch (err: any) {
-            if (err instanceof NoJavaProjectsFoundError) {
+        } catch (e: any) {
+            if (e instanceof NoJavaProjectsFoundError) {
                 this.messenger.sendUnrecoverableErrorResponse('no-java-project-found', message.tabID)
-            } else if (err instanceof NoMavenJavaProjectsFoundError) {
+            } else if (e instanceof NoMavenJavaProjectsFoundError) {
                 this.messenger.sendUnrecoverableErrorResponse('no-maven-java-project-found', message.tabID)
             } else {
                 this.messenger.sendUnrecoverableErrorResponse('no-project-found', message.tabID)
             }
-            errorCode = err.code
+            err = e
         } finally {
             // New projectDetails metric should always be fired whether the project was valid or invalid
             telemetry.codeTransform_projectDetails.emit({
                 passive: true,
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformLocalJavaVersion: telemetryJavaVersion,
-                result: errorCode ? MetadataResult.Fail : MetadataResult.Pass,
-                reason: errorCode,
+                result: err?.code ? MetadataResult.Fail : MetadataResult.Pass,
+                reason: err?.code,
+                reasonDesc: getTelemetryReasonDesc(err),
             })
         }
         return []
@@ -271,7 +276,7 @@ export class GumbyController {
                 this.messenger.sendJobFinishedMessage(message.tabID, CodeWhispererConstants.jobCancelledChatMessage)
                 break
             case ButtonActions.VIEW_TRANSFORMATION_HUB:
-                await vscode.commands.executeCommand(GumbyCommands.FOCUS_TRANSFORMATION_HUB)
+                await vscode.commands.executeCommand(GumbyCommands.FOCUS_TRANSFORMATION_HUB, CancelActionPositions.Chat)
                 this.messenger.sendJobSubmittedMessage(message.tabID)
                 break
             case ButtonActions.STOP_TRANSFORMATION_JOB:
@@ -280,6 +285,8 @@ export class GumbyController {
                 await cleanupTransformationJob()
                 break
             case ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW:
+                this.resetTransformationChatFlow()
+                await resetDebugArtifacts()
                 this.messenger.sendCommandMessage({ ...message, command: GumbyCommands.CLEAR_CHAT })
                 await this.transformInitiated(message)
                 break
@@ -292,6 +299,10 @@ export class GumbyController {
                 break
             case ButtonActions.OPEN_FILE:
                 await openHilPomFile()
+                break
+            case ButtonActions.OPEN_BUILD_LOG:
+                await openBuildLogFile()
+                this.messenger.sendViewBuildLog(message.tabID)
                 break
         }
     }
@@ -451,11 +462,18 @@ export class GumbyController {
             this.messenger.sendKnownErrorResponse('no-alternate-dependencies-found', message.tabID)
             await this.continueTransformationWithoutHIL(message)
         } else if (message.error instanceof ModuleUploadError) {
-            this.messenger.sendUnrecoverableErrorResponse('upload-to-s3-failed', message.tabID)
             this.resetTransformationChatFlow()
         } else if (message.error instanceof JobStartError) {
-            this.messenger.sendUnrecoverableErrorResponse('job-start-failed', message.tabID)
             this.resetTransformationChatFlow()
+        } else if (message.error instanceof TransformationPreBuildError) {
+            this.messenger.sendJobSubmittedMessage(message.tabID, true)
+            this.messenger.sendAsyncEventProgress(
+                message.tabID,
+                true,
+                undefined,
+                GumbyNamedMessages.JOB_FAILED_IN_PRE_BUILD
+            )
+            this.messenger.sendViewBuildLog(message.tabID)
         }
     }
 

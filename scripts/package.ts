@@ -6,7 +6,8 @@
 //
 // Creates an artifact that can be given to users for testing alpha/beta builds:
 //
-//     aws-toolkit-vscode-99.0.0-xxxxxxx.vsix
+//     aws-toolkit-vscode-99.0.0-gxxxxxxx.vsix
+//     or amazon-q-vscode-99.0.0-gxxxxxxx.vsix
 //
 // Where `xxxxxxx` is the first 7 characters of the commit hash that produced the artifact.
 //
@@ -86,6 +87,22 @@ function isBeta(): boolean {
 }
 
 /**
+ * Restores package.json after `scripts/build/handlePackageJson.ts` overwrote it.
+ *
+ * TODO: remove this after IDE-12831 is resolved.
+ */
+function restorePackageJson() {
+    const packageJsonFile = './package.json'
+    const backupJsonFile = `${packageJsonFile}.handlePackageJson.bk`
+
+    if (fs.existsSync(backupJsonFile)) {
+        fs.copyFileSync(backupJsonFile, packageJsonFile)
+        fs.unlinkSync(backupJsonFile)
+        console.log(`package.ts: restored package.json from ${backupJsonFile}`)
+    }
+}
+
+/**
  * Gets a suffix to append to the version-string, or empty for release builds.
  *
  * TODO: use `git describe` instead.
@@ -99,7 +116,8 @@ function getVersionSuffix(feature: string, debug: boolean): string {
     const debugSuffix = debug ? '-debug' : ''
     const featureSuffix = feature === '' ? '' : `-${feature}`
     const commitId = child_process.execFileSync('git', ['rev-parse', '--short=7', 'HEAD']).toString().trim()
-    const commitSuffix = commitId ? `-${commitId}` : ''
+    // Commit id is prefixed with "g" because "-0abc123" is not a valid semver prerelease, and will cause vsce to fail.
+    const commitSuffix = commitId ? `-g${commitId}` : ''
     return `${debugSuffix}${featureSuffix}${commitSuffix}`
 }
 
@@ -176,6 +194,7 @@ function main() {
             fs.copyFileSync(backupWebpackConfigFile, webpackConfigJsFile)
             fs.unlinkSync(backupWebpackConfigFile)
         }
+        restorePackageJson()
     }
 }
 

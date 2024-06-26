@@ -5,7 +5,7 @@
 
 import { DeletedFileInfo, FollowUpTypes, NewFileInfo, SessionStatePhase } from '../../../types'
 import { CodeReference } from '../../../../amazonq/webview/ui/apps/amazonqCommonsConnector'
-import { AuthFollowUpType, expiredText, enableQText, reauthenticateText } from '../../../../amazonq/auth/model'
+import { AuthFollowUpType, AuthMessageDataMap } from '../../../../amazonq/auth/model'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import {
     ChatMessage,
@@ -22,13 +22,13 @@ import {
 import { AppToWebViewMessageDispatcher } from '../../../views/connector/connector'
 import { ChatItemAction } from '@aws/mynah-ui'
 import { messageWithConversationId } from '../../../userFacingText'
-
+import { MessengerTypes, ErrorMessages, Placeholders } from './constants'
 export class Messenger {
     public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}
 
     public sendAnswer(params: {
         message?: string
-        type: 'answer' | 'answer-part' | 'answer-stream' | 'system-prompt'
+        type: MessengerTypes
         followUps?: ChatItemAction[]
         tabID: string
         canBeVoted?: boolean
@@ -53,9 +53,9 @@ export class Messenger {
         this.sendAnswer({
             type: 'answer',
             tabID: tabID,
-            message: `Sorry, you have reached the monthly limit for feature development. You can try again next month.`,
+            message: ErrorMessages.monthlyLimitReached,
         })
-        this.sendUpdatePlaceholder(tabID, 'Chat input is disabled')
+        this.sendUpdatePlaceholder(tabID, Placeholders.chatInputDisabled)
     }
 
     public sendErrorMessage(
@@ -69,7 +69,7 @@ export class Messenger {
             this.sendAnswer({
                 type: 'answer',
                 tabID: tabID,
-                message: `I'm sorry, I'm having technical difficulties and can't continue at the moment. Please try again later, and share feedback to help me improve.`,
+                message: ErrorMessages.technicalDifficulties,
             })
             this.sendAnswer({
                 message: undefined,
@@ -90,7 +90,7 @@ export class Messenger {
             case 'Approach':
                 this.dispatcher.sendErrorMessage(
                     new ErrorMessage(
-                        `Sorry, we're experiencing an issue on our side. Would you like to try again?`,
+                        ErrorMessages.tryAgain,
                         errorMessage + messageWithConversationId(conversationId),
                         tabID
                     )
@@ -99,7 +99,7 @@ export class Messenger {
             case 'Codegen':
                 this.dispatcher.sendErrorMessage(
                     new ErrorMessage(
-                        `Sorry, we're experiencing an issue on our side. Would you like to try again?`,
+                        ErrorMessages.tryAgain,
                         errorMessage + messageWithConversationId(conversationId),
                         tabID
                     )
@@ -109,7 +109,7 @@ export class Messenger {
                 // used to send generic error messages when we don't want to send the response as part of a phase
                 this.dispatcher.sendErrorMessage(
                     new ErrorMessage(
-                        `Sorry, we encountered a problem when processing your request.`,
+                        ErrorMessages.processingIssue,
                         errorMessage + messageWithConversationId(conversationId),
                         tabID
                     )
@@ -170,20 +170,21 @@ export class Messenger {
 
     public async sendAuthNeededExceptionMessage(credentialState: FeatureAuthState, tabID: string) {
         let authType: AuthFollowUpType = 'full-auth'
-        let message = reauthenticateText
-        if (credentialState.amazonQ === 'disconnected') {
-            authType = 'full-auth'
-            message = reauthenticateText
-        }
+        let message = AuthMessageDataMap[authType].message
 
-        if (credentialState.amazonQ === 'unsupported') {
-            authType = 'use-supported-auth'
-            message = enableQText
-        }
-
-        if (credentialState.amazonQ === 'expired') {
-            authType = 're-auth'
-            message = expiredText
+        switch (credentialState.amazonQ) {
+            case 'disconnected':
+                authType = 'full-auth'
+                message = AuthMessageDataMap[authType].message
+                break
+            case 'unsupported':
+                authType = 'use-supported-auth'
+                message = AuthMessageDataMap[authType].message
+                break
+            case 'expired':
+                authType = 're-auth'
+                message = AuthMessageDataMap[authType].message
+                break
         }
 
         this.dispatcher.sendAuthNeededExceptionMessage(new AuthNeededException(message, authType, tabID))

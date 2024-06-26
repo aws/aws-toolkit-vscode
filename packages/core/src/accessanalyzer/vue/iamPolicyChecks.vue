@@ -15,10 +15,10 @@
                         <p>Install Python 3.6+</p>
                     </li>
                     <li>
-                        <code> pip install cfn-policy-validator==0.0.32 </code>
+                        <code> pip install cfn-policy-validator==0.0.33 </code>
                     </li>
                     <li>
-                        <code> pip install tf-policy-validator==0.0.7 </code>
+                        <code> pip install tf-policy-validator==0.0.8 </code>
                     </li>
                     <li>
                         <p>Provide IAM Roles Credentials</p>
@@ -133,7 +133,8 @@
             <div style="display: block">
                 <p>
                     Validate your policy against your specified security standards using IAM Access Analyzer custom
-                    policy checks. You can check against a reference policy or a list of IAM actions.
+                    policy checks. You can check for new access against a reference policy, whether access is granted to
+                    a list of IAM actions and/or resource ARNs, or public access to supported resource types.
                 </p>
                 <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/access-analyzer-custom-policy-checks.html"
                     >More about Custom Policy Checks</a
@@ -147,6 +148,7 @@
                             <select id="select-check-type" style="margin-bottom: 5px" v-on:change="setCheckType">
                                 <option value="CheckAccessNotGranted">CheckAccessNotGranted</option>
                                 <option value="CheckNoNewAccess">CheckNoNewAccess</option>
+                                <option value="CheckNoPublicAccess">CheckNoPublicAccess</option>
                             </select>
                         </div>
                         <div
@@ -215,9 +217,14 @@
                 </div>
                 <div v-if="checkType == 'CheckAccessNotGranted'">
                     <div>
-                        <label for="input-path" style="display: block; margin-bottom: 3px"
-                            >Provide a reference file containing a list of actions</label
-                        >
+                        <label for="input-path" style="display: block; margin-bottom: 3px">
+                            Provide a reference JSON file containing actions and/or resources. The file should be
+                            structured as follows:
+                            <code
+                                >{"actions": ["action1", "action2", "action3"], "resources": ["resource1", "resource2",
+                                "resource3"]}</code
+                            >
+                        </label>
                         <input
                             type="text"
                             style="
@@ -228,7 +235,7 @@
                                 width: 70%;
                             "
                             id="input-path"
-                            placeholder="List of actions file path"
+                            placeholder="File path to JSON file"
                             v-on:change="setCheckAccessNotGrantedFilePath"
                             v-model="initialData.checkAccessNotGrantedFilePath"
                         />
@@ -247,10 +254,25 @@
                                 font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial,
                                     sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;
                             "
-                            rows="30"
-                            v-on:change="setCheckAccessNotGrantedTextArea"
-                            v-model="initialData.checkAccessNotGrantedTextArea"
+                            rows="15"
+                            v-on:change="setcheckAccessNotGrantedActionsTextArea"
+                            v-model="initialData.checkAccessNotGrantedActionsTextArea"
                             placeholder="List of actions"
+                        ></textarea>
+                    </div>
+                    <div>
+                        <label style="margin-bottom: 3px">Enter a comma-separated list of resource ARNs</label>
+                        <textarea
+                            style="
+                                width: 100%;
+                                margin-bottom: 10px;
+                                font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial,
+                                    sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;
+                            "
+                            rows="15"
+                            v-on:change="setcheckAccessNotGrantedResourcesTextArea"
+                            v-model="initialData.checkAccessNotGrantedResourcesTextArea"
+                            placeholder="List of resource ARNs"
                         ></textarea>
                     </div>
                 </div>
@@ -302,14 +324,16 @@ export default defineComponent({
             checkNoNewAccessFilePath: '',
             checkNoNewAccessTextArea: '',
             checkAccessNotGrantedFilePath: '',
-            checkAccessNotGrantedTextArea: '',
+            checkAccessNotGrantedActionsTextArea: '',
+            checkAccessNotGrantedResourcesTextArea: '',
             customChecksFileErrorMessage: '',
             cfnParameterPath: '',
             pythonToolsInstalled: false,
         },
         inputPath: '',
         checkAccessNotGrantedPathPlaceholder: 'List of actions file path',
-        checkAccessNotGrantedTextAreaPlaceholder: 'Enter a list of actions',
+        checkAccessNotGrantedActionsTextAreaPlaceholder: 'Enter a list of actions',
+        checkAccessNotGrantedResourcesTextAreaPlaceholder: 'Enter a list of resource ARNs',
         validatePolicyResponse: '',
         validatePolicyResponseColor: 'var(--vscode-errorForeground)',
         customPolicyCheckResponse: '',
@@ -334,9 +358,14 @@ export default defineComponent({
         client.onChangeCheckAccessNotGrantedFilePath((data: string) => {
             this.initialData.checkAccessNotGrantedFilePath = data
             client
-                .readCustomChecksFile(this.initialData.checkAccessNotGrantedFilePath)
+                .readCustomChecksJsonFile(this.initialData.checkAccessNotGrantedFilePath)
                 .then(response => {
-                    this.initialData.checkAccessNotGrantedTextArea = response
+                    this.initialData.checkAccessNotGrantedActionsTextArea = response.actions
+                        ? response.actions.toString()
+                        : ''
+                    this.initialData.checkAccessNotGrantedResourcesTextArea = response.resources
+                        ? response.resources.toString()
+                        : ''
                 })
                 .catch(err => console.log(err))
         })
@@ -390,14 +419,23 @@ export default defineComponent({
             client.emitUiClick('accessanalyzer_selectCheckAccessNotGrantedFilePath')
             this.initialData.checkAccessNotGrantedFilePath = event.target.value
             client
-                .readCustomChecksFile(this.initialData.checkAccessNotGrantedFilePath)
+                .readCustomChecksJsonFile(this.initialData.checkAccessNotGrantedFilePath)
                 .then(response => {
-                    this.initialData.checkAccessNotGrantedTextArea = response
+                    this.initialData.checkAccessNotGrantedActionsTextArea = response.actions
+                        ? response.actions.toString()
+                        : ''
+                    this.initialData.checkAccessNotGrantedResourcesTextArea = response.resources
+                        ? response.resources.toString()
+                        : ''
                 })
                 .catch(err => console.log(err))
         },
-        setCheckAccessNotGrantedTextArea: function (event: any) {
-            this.initialData.checkAccessNotGrantedTextArea = event.target.value
+        setcheckAccessNotGrantedActionsTextArea: function (event: any) {
+            this.initialData.checkAccessNotGrantedActionsTextArea = event.target.value
+            this.initialData.checkAccessNotGrantedFilePath = ''
+        },
+        setcheckAccessNotGrantedResourcesTextArea: function (event: any) {
+            this.initialData.checkAccessNotGrantedResourcesTextArea = event.target.value
             this.initialData.checkAccessNotGrantedFilePath = ''
         },
         setCfnParameterFilePath: function (event: any) {
@@ -427,7 +465,13 @@ export default defineComponent({
             } else if (this.checkType == 'CheckAccessNotGranted') {
                 await client.checkAccessNotGranted(
                     this.documentType as PolicyChecksDocumentType,
-                    this.initialData.checkAccessNotGrantedTextArea,
+                    this.initialData.checkAccessNotGrantedActionsTextArea,
+                    this.initialData.checkAccessNotGrantedResourcesTextArea,
+                    this.initialData.cfnParameterPath
+                )
+            } else if (this.checkType == 'CheckNoPublicAccess') {
+                await client.checkNoPublicAccess(
+                    this.documentType as PolicyChecksDocumentType,
                     this.initialData.cfnParameterPath
                 )
             }

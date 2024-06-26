@@ -206,7 +206,7 @@ export class DefaultTelemetryService {
     private async createDefaultPublisher(): Promise<TelemetryPublisher | undefined> {
         try {
             // grab our clientId and generate one if it doesn't exist
-            const clientId = await getClientId(this.context.globalState)
+            const clientId = getClientId(this.context.globalState)
             // grab our Cognito identityId
             const poolId = DefaultTelemetryClient.config.identityPool
             const identityMapJson = this.context.globalState.get<string>(
@@ -291,7 +291,7 @@ export class DefaultTelemetryService {
     private static async readEventsFromCache(cachePath: string): Promise<MetricDatum[]> {
         try {
             if ((await fsCommon.existsFile(cachePath)) === false) {
-                getLogger().info(`telemetry cache not found: '${cachePath}'`)
+                getLogger().debug('telemetry cache not found, skipping')
 
                 return []
             }

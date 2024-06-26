@@ -4,7 +4,7 @@
  */
 
 import { SinonSandbox, createSandbox } from 'sinon'
-import { assertTelemetry, tryRegister } from '../../../testUtil'
+import { assertTelemetry } from '../../../testUtil'
 import assert from 'assert'
 import { createBuilderIdProfile, createSsoProfile, createTestAuth } from '../../../credentials/testUtil'
 import { Auth } from '../../../../auth'
@@ -12,7 +12,6 @@ import { AmazonQLoginWebview } from '../../../../login/webview/vue/amazonq/backe
 import { isBuilderIdConnection, isIdcSsoConnection } from '../../../../auth/connection'
 import { amazonQScopes, AuthUtil } from '../../../../codewhisperer/util/authUtil'
 import { getOpenExternalStub } from '../../../globalSetup.test'
-import { openAmazonQWalkthrough } from '../../../../amazonq/onboardingPage/walkthrough'
 
 // TODO: remove auth page and tests
 describe('Amazon Q Login', function () {
@@ -23,10 +22,6 @@ describe('Amazon Q Login', function () {
     let auth: ReturnType<typeof createTestAuth>
     let authUtil: AuthUtil
     let backend: AmazonQLoginWebview
-
-    before(function () {
-        tryRegister(openAmazonQWalkthrough)
-    })
 
     beforeEach(function () {
         sandbox = createSandbox()

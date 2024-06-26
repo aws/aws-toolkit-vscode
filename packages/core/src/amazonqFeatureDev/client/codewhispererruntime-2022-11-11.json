@@ -1036,6 +1036,15 @@
             },
             "documentation": "<p>Represents the state of an Editor</p>"
         },
+        "FeatureDevEvent": {
+            "type": "structure",
+            "required": ["conversationId"],
+            "members": {
+                "conversationId": {
+                    "shape": "ConversationId"
+                }
+            }
+        },
         "FeatureEvaluation": {
             "type": "structure",
             "required": ["feature", "variation", "value"],
@@ -1918,6 +1927,9 @@
                 },
                 "metricData": {
                     "shape": "MetricData"
+                },
+                "featureDevEvent": {
+                    "shape": "FeatureDevEvent"
                 }
             },
             "union": true
@@ -2198,6 +2210,12 @@
                 },
                 "product": {
                     "shape": "UserContextProductString"
+                },
+                "clientId": {
+                    "shape": "UUID"
+                },
+                "ideVersion": {
+                    "shape": "String"
                 }
             }
         },

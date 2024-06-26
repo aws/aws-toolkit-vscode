@@ -1,21 +1,21 @@
-[![Twitter Follow](https://img.shields.io/twitter/follow/aws?logo=twitter&style=social)](https://twitter.com/awscloud)
-[![Youtube Channel Views](https://img.shields.io/youtube/channel/views/UCd6MoB9NC6uYN2grvUNT-Zg?style=social)](https://www.youtube.com/@amazonwebservices)
-[![Try Amazon Q free trial](https://img.shields.io/badge/Try%20Amazon%20Q-Free%20trial-success)](https://aws.amazon.com/q/developer/?editor=vscode)
-![Marketplace Downloads](https://img.shields.io/vscode-marketplace/d/AmazonWebServices.amazon-q-vscode.svg)
-
-# Inline code suggestions
-
-Code faster with inline code suggestions as you type.
+![Try Amazon Q Free Tier](https://img.shields.io/badge/Try%20Amazon%20Q-Free%20Tier-success?style=flat-square)
+[![Twitter Follow](https://img.shields.io/badge/follow-@aws-1DA1F2?style=flat-square&logo=aws&logoColor=white&label=Follow)](https://x.com/awscloud)
+[![Youtube Channel Views](https://img.shields.io/youtube/channel/views/UCd6MoB9NC6uYN2grvUNT-Zg?style=flat-square&logo=youtube&label=Youtube)](https://www.youtube.com/@amazonwebservices)
+![Marketplace Installs](https://img.shields.io/vscode-marketplace/i/AmazonWebServices.amazon-q-vscode.svg?label=Installs&style=flat-square)
 
 # Getting Started
 
-**Free Tier** - create or log in with an AWS Builder ID (no AWS account needed!).
+**Free Tier** - create or log in with an AWS Builder ID (a personal profile from AWS).
 
 **Pro Tier** - if your organization is on the Amazon Q Developer Pro tier, log in with single sign-on.
 
 ![Authentication gif](https://raw.githubusercontent.com/aws/aws-toolkit-vscode/HEAD/docs/marketplace/vscode/amazonq/auth-Q.gif)
 
 # Features
+
+## Inline code suggestions
+
+Code faster with inline code suggestions as you type.
 
 ![Inline code suggestion demo](https://raw.githubusercontent.com/aws/aws-toolkit-vscode/HEAD/docs/marketplace/vscode/amazonq/inline.gif)
 

@@ -242,7 +242,7 @@ export function assertTelemetry<K extends MetricName>(
     const expectedList = Array.isArray(expected) ? expected : [expected]
     const query = { metricName: name }
     const metadata = globals.telemetry.logger.query(query)
-    assert.ok(metadata.length > 0, `telemetry not found for metric name: "${name}"`)
+    assert.ok(metadata.length > 0, `telemetry metric not found: "${name}"`)
 
     for (let i = 0; i < expectedList.length; i++) {
         const metric = expectedList[i]
@@ -254,9 +254,9 @@ export function assertTelemetry<K extends MetricName>(
             k => ((expectedCopy as any)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
         )
 
-        const msg = `telemetry item ${i + 1} (of ${
+        const msg = `telemetry metric ${i + 1} (of ${
             expectedList.length
-        }) not found (in the expected order) for metric name: "${name}" `
+        }) not found (in the expected order): "${name}" `
         partialDeepCompare(metadata[i], expectedCopy, msg)
 
         // Check this explicitly because we deleted it above.
