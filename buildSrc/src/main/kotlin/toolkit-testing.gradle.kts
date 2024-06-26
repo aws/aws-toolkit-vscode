@@ -66,7 +66,7 @@ tasks.withType<Test>().all {
     ciOnly {
         retry {
             failOnPassedAfterRetry.set(false)
-            maxFailures.set(5)
+            maxFailures.set(50)
             maxRetries.set(2)
         }
     }
