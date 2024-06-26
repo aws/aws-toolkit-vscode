@@ -8,6 +8,7 @@ import {
     AuthNeededException,
     CodeReference,
     EditorContextCommandMessage,
+    OpenSettingsMessage,
     QuickActionMessage,
 } from '../../../view/connector/connector'
 import { EditorContextCommandType } from '../../../commands/registerCommands'
@@ -378,9 +379,6 @@ export class Messenger {
                 ]
                 followUpsHeader = 'Try Examples:'
                 break
-            case 'project-context-help':
-                message = `Please enable local workspace indexing in Amazon Q Settings.`
-                break
         }
 
         this.dispatcher.sendChatMessage(
@@ -469,5 +467,9 @@ export class Messenger {
         this.dispatcher.sendErrorMessage(
             new ErrorMessage('An error occurred while processing your request.', message.trimEnd().trimStart(), tabID)
         )
+    }
+
+    public sendOpenSettingsMessage(triggerId: string, tabID: string) {
+        this.dispatcher.sendOpenSettingsMessage(new OpenSettingsMessage(tabID))
     }
 }

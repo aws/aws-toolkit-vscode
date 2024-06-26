@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { Connector } from './connector'
-import { ChatItem, ChatItemType, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui'
+import { ChatItem, ChatItemType, MynahIcons, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui'
 import { ChatPrompt } from '@aws/mynah-ui/dist/static'
 import { TabsStorage, TabType } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
@@ -316,6 +316,27 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             connector.onUpdateTabType(newTabID)
 
             mynahUI.updateStore(newTabID, tabDataGenerator.getTabData(tabType, true))
+        },
+        onOpenSettingsMessage(tabId: string) {
+            mynahUI.addChatItem(tabId, {
+                type: ChatItemType.ANSWER,
+                body: `You need to enable local workspace index in Amazon Q settings.`,
+                buttons: [
+                    {
+                        id: 'open-settings',
+                        text: 'Open settings',
+                        icon: MynahIcons.EXTERNAL,
+                        keepCardAfterClick: false,
+                        status: 'info',
+                    },
+                ],
+            })
+            tabsStorage.updateTabStatus(tabId, 'free')
+            mynahUI.updateStore(tabId, {
+                loadingChat: false,
+                promptInputDisabledState: tabsStorage.isTabDead(tabId),
+            })
+            return
         },
     })
 

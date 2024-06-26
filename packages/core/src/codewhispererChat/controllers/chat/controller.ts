@@ -2,7 +2,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as vscode from 'vscode'
 import { Event as VSCodeEvent, Uri } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
@@ -580,11 +579,8 @@ export class ChatController {
                     triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
                     triggerPayload.projectContextQueryLatencyMs = performance.now() - start
                 } else {
-                    this.messenger.sendStaticTextResponse('project-context-help', triggerID, tabID)
-                    void vscode.commands.executeCommand(
-                        'workbench.action.openSettings',
-                        `@id:amazonQ.localWorkspaceIndex`
-                    )
+                    this.messenger.sendOpenSettingsMessage(triggerID, tabID)
+
                     return
                 }
             }

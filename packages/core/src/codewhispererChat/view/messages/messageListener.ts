@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import * as vscode from 'vscode'
 import { MessageListener } from '../../../amazonq/messages/messageListener'
 import { ExtensionMessage } from '../../../amazonq/webview/ui/commands'
 import { AuthController } from '../../../amazonq/auth/controller'
@@ -95,7 +95,13 @@ export class UIMessageListener {
             case 'footer-info-link-click':
                 this.processFooterInfoLinkClick(msg)
                 break
+            case 'open-settings':
+                this.processOpenSettings(msg)
         }
+    }
+
+    private processOpenSettings(msg: any) {
+        void vscode.commands.executeCommand('workbench.action.openSettings', `@id:amazonQ.localWorkspaceIndex`)
     }
 
     private processAuthFollowUpWasClicked(msg: any) {
