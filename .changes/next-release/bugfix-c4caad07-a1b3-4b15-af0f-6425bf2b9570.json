@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Rewrite integration with the New Solution dialog in Rider to use the new API."
+}

@@ -1,0 +1,8 @@
+<!-- Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin>
+    <extensions defaultExtensionNs="com.intellij">
+        <projectTemplateProviderNew implementation="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetSamProjectProvider" order="last"/>
+    </extensions>
+</idea-plugin>
