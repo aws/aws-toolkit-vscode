@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Update client user error messages and refactor controller error handling"
+	"description": "Amazon Q /dev command: improve user error messages"
 }
