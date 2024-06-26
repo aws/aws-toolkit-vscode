@@ -97,7 +97,7 @@ export class Messenger {
                 } else {
                     this.dispatcher.sendErrorMessage(
                         new ErrorMessage(
-                            `Sorry, we're experiencing an issue on our side. Would you like to try again?`,
+                            ErrorMessages.tryAgain,
                             errorMessage + messageWithConversationId(conversationId),
                             tabID
                         )
@@ -115,7 +115,7 @@ export class Messenger {
                 } else {
                     this.dispatcher.sendErrorMessage(
                         new ErrorMessage(
-                            `Sorry, we're experiencing an issue on our side. Would you like to try again?`,
+                            ErrorMessages.tryAgain,
                             errorMessage + messageWithConversationId(conversationId),
                             tabID
                         )
