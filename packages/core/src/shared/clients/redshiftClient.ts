@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Redshift, RedshiftServerless, RedshiftData } from 'aws-sdk'
+import { Redshift, RedshiftServerless, RedshiftData, AWSError } from 'aws-sdk'
 import globals from '../extensionGlobals'
 import { ClusterCredentials, ClustersMessage, GetClusterCredentialsMessage } from 'aws-sdk/clients/redshift'
 import {
@@ -31,6 +31,16 @@ export interface ExecuteQueryResponse {
     executionId: string
 }
 
+export interface ServerlessWorkgroupsResponse {
+    listWorkgroupsResponse: ListWorkgroupsResponse
+    error?: AWSError
+}
+
+export interface ClustersMessageResponse {
+    clustersMessageResponse: ClustersMessage
+    error?: AWSError
+}
+
 //Type definition for Provisioned and Serverless
 export class DefaultRedshiftClient {
     public constructor(
@@ -45,30 +55,46 @@ export class DefaultRedshiftClient {
     ) {}
 
     // eslint-disable-next-line require-yield
-    public async describeProvisionedClusters(nextToken?: string): Promise<ClustersMessage> {
+    public async describeProvisionedClusters(nextToken?: string): Promise<ClustersMessageResponse> {
         const redshiftClient = await this.redshiftClientProvider(this.regionCode)
         const request: Redshift.DescribeClustersMessage = {
             Marker: nextToken,
             MaxRecords: 20,
         }
-        const response = await redshiftClient.describeClusters(request).promise()
-        if (response.Clusters) {
-            response.Clusters = response.Clusters.filter(
+        const response: ClustersMessageResponse = await redshiftClient
+            .describeClusters(request)
+            .promise()
+            .then(res => ({ clustersMessageResponse: res }))
+            .catch(e => ({
+                clustersMessageResponse: { Clusters: [] },
+                error: e,
+            }))
+        const { Clusters } = response.clustersMessageResponse
+        if (Clusters) {
+            response.clustersMessageResponse.Clusters = Clusters.filter(
                 cluster => cluster.ClusterAvailabilityStatus?.toLowerCase() === 'available'
             )
         }
         return response
     }
 
-    public async listServerlessWorkgroups(nextToken?: string): Promise<ListWorkgroupsResponse> {
+    public async listServerlessWorkgroups(nextToken?: string): Promise<ServerlessWorkgroupsResponse> {
         const redshiftServerlessClient = await this.redshiftServerlessClientProvider(this.regionCode)
         const request: RedshiftServerless.ListWorkgroupsRequest = {
             nextToken: nextToken,
             maxResults: 20,
         }
-        const response = await redshiftServerlessClient.listWorkgroups(request).promise()
-        if (response.workgroups) {
-            response.workgroups = response.workgroups.filter(
+        const response: ServerlessWorkgroupsResponse = await redshiftServerlessClient
+            .listWorkgroups(request)
+            .promise()
+            .then(res => ({ listWorkgroupsResponse: res }))
+            .catch(e => ({
+                listWorkgroupsResponse: { workgroups: [] },
+                error: e,
+            }))
+        const { workgroups } = response.listWorkgroupsResponse
+        if (workgroups) {
+            response.listWorkgroupsResponse.workgroups = workgroups.filter(
                 workgroup => workgroup.status?.toLowerCase() === 'available'
             )
         }
