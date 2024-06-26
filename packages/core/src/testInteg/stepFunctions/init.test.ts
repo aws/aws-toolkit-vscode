@@ -8,7 +8,7 @@ import { fsCommon } from '../../srcShared/fs'
 import { openATextEditorWithText } from '../../test/testUtil'
 import { makeTemporaryToolkitFolder } from '../../shared'
 import vscode from 'vscode'
-import { onASLInit } from '../../stepFunctions/asl/client'
+import { ASLLanguageClient } from '../../stepFunctions/asl/client'
 
 describe('initialization', async function () {
     let tempFolder: string
@@ -29,7 +29,7 @@ describe('initialization', async function () {
         const fileName = 'stepfunction.asl'
         const editor = await openATextEditorWithText(stateMachineFileText, fileName, tempFolder)
         await new Promise(resolve => {
-            onASLInit(() => {
+            ASLLanguageClient.onASLInit(() => {
                 resolve(undefined)
             })
         })
