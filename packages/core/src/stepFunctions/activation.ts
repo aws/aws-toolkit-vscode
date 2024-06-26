@@ -11,7 +11,6 @@ const localize = nls.loadMessageBundle()
 import { join } from 'path'
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
-import { activate as activateASL } from './asl/client'
 import { createStateMachineFromTemplate } from './commands/createStateMachineFromTemplate'
 import { publishStateMachine } from './commands/publishStateMachine'
 import { AslVisualizationManager } from './commands/visualizeStateMachine/aslVisualizationManager'
@@ -23,6 +22,7 @@ import { renderCdkStateMachineGraph } from './commands/visualizeStateMachine/ren
 import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { PerfLog } from '../shared/logger/logger'
+import { ASLLanguageClient } from './asl/client'
 
 /**
  * Activate Step Functions related functionality for the extension.
@@ -43,7 +43,7 @@ export async function activate(
     onDidOpenAslDoc = vscode.window.onDidChangeActiveTextEditor(async e => {
         if (e?.document && ASL_FORMATS.includes(e.document.languageId)) {
             const perflog = new PerfLog('stepFunctions: start LSP client/server')
-            await activateASL(extensionContext)
+            await ASLLanguageClient.create(extensionContext)
             perflog.done()
             onDidOpenAslDoc?.dispose() // Handler should only run once.
         }
