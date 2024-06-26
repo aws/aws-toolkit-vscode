@@ -212,7 +212,7 @@ export class FeatureDevController {
             `${featureName} request failed: ${err.cause?.message ?? err.message}`
         )
 
-        let sendErrorMessage = true
+        let isSendErrorMessage = true
         let defaultMessage = ''
         const isDenyListedError = denyListedErrors.some(err => errorMessage.includes(err))
 
@@ -315,7 +315,7 @@ export class FeatureDevController {
                     case DevPhase.CODEGEN:
                         if (isDenyListedError) {
                             defaultMessage = `I'm sorry, I'm having trouble generating your code and can't continue at the moment. Please try again later, and share feedback to help me improve.`
-                            sendErrorMessage = false
+                            isSendErrorMessage = false
                             this.messenger.sendAnswer({
                                 type: 'answer',
                                 tabID: message.tabID,
@@ -327,7 +327,7 @@ export class FeatureDevController {
                         break
                 }
 
-                if (sendErrorMessage) {
+                if (isSendErrorMessage) {
                     this.messenger.sendErrorMessage(
                         defaultMessage?.length ? defaultMessage : errorMessage,
                         message.tabID,
