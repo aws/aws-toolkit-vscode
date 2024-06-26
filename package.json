@@ -55,8 +55,8 @@
         "eslint-config-prettier": "9.1",
         "eslint-plugin-aws-toolkits": "file:plugins/eslint-plugin-aws-toolkits",
         "eslint-plugin-header": "^3.1.1",
-        "eslint-plugin-unicorn": "^50.0.1",
         "eslint-plugin-security-node": "^1.1.4",
+        "eslint-plugin-unicorn": "^50.0.1",
         "husky": "^9.0.7",
         "prettier": "^2.8.8",
         "prettier-plugin-sh": "^0.12.8",
@@ -69,6 +69,7 @@
         "webpack-merge": "^5.10.0"
     },
     "dependencies": {
+        "@aws-toolkits/telemetry": "^1.0.219",
         "vscode-nls": "^5.2.0",
         "vscode-nls-dev": "^4.0.4"
     }
