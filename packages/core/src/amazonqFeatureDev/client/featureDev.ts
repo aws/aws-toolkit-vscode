@@ -20,6 +20,7 @@ import {
     MonthlyConversationLimitError,
     PlanIterationLimitError,
     UnknownApiError,
+    ZipFileError,
 } from '../errors'
 import { ToolkitError, isAwsError, isCodeWhispererStreamingServiceException } from '../../shared/errors'
 import { getCodewhispererConfig } from '../../codewhisperer/client/codewhisperer'
@@ -27,6 +28,8 @@ import { LLMResponseType } from '../types'
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
 
 // Create a client for featureDev proxy client based off of aws sdk v2
+const zippedFileError = 'zipped file is corrupted';
+const repoSizeError = 'repo size is exceeding the limits';
 export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClient> {
     const bearerToken = await AuthUtil.instance.getBearerToken()
     const cwsprConfig = getCodewhispererConfig()
@@ -184,6 +187,13 @@ export class FeatureDevClient {
                     e.name === 'ServiceQuotaExceededException'
                 ) {
                     throw new PlanIterationLimitError()
+                } else if (
+                    e.name === 'ValidationException' &&
+                    e.message.includes(repoSizeError)
+                ) {
+                    throw new ContentLengthError()
+                } else if (e.name === 'ValidationException' && e.message.includes(zippedFileError)) {
+                    throw new ZipFileError()
                 }
                 throw new ApiError(
                     e.message,
@@ -230,6 +240,18 @@ export class FeatureDevClient {
                     e.code === 'ServiceQuotaExceededException')
             ) {
                 throw new CodeIterationLimitError()
+            } else if (
+                isAwsError(e) &&
+                e.code === 'ValidationException' &&
+                e.message.includes(repoSizeError)
+            ) {
+                throw new ContentLengthError()
+            } else if (
+                isAwsError(e) &&
+                e.code === 'ValidationException' &&
+                e.message.includes(zippedFileError)
+            ) {
+                throw new ZipFileError()
             }
             throw new ToolkitError((e as Error).message, { code: 'StartCodeGenerationFailed' })
         }
