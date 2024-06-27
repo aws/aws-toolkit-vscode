@@ -3,12 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { DeletedFileInfo, DevPhase, FollowUpTypes, NewFileInfo, SessionStatePhase } from '../../../types'
+import { DeletedFileInfo, FollowUpTypes, NewFileInfo } from '../../../types'
 import { AuthFollowUpType, AuthMessageDataMap } from '../../../../amazonq/auth/model'
 import {
     ChatMessage,
     AsyncEventProgressMessage,
-    ErrorMessage,
     CodeResultMessage,
     UpdatePlaceholderMessage,
     ChatInputEnabledMessage,
@@ -77,67 +76,24 @@ export class Messenger {
         errorMessage: string,
         tabID: string,
         retries: number,
-        phase?: SessionStatePhase,
         conversationId?: string,
-        skipTitle?: boolean
+        showDefaultMessage?: boolean
     ) {
         if (retries === 0) {
             this.sendAnswer({
                 type: 'answer',
                 tabID: tabID,
-                message: ErrorMessages.technicalDifficulties,
+                message: showDefaultMessage ? errorMessage : ErrorMessages.technicalDifficulties,
             })
             this.sendFeedback(tabID)
             return
         }
-        switch (phase) {
-            case DevPhase.APPROACH:
-                if (skipTitle) {
-                    this.sendAnswer({
-                        type: 'answer',
-                        tabID: tabID,
-                        message: errorMessage + messageWithConversationId(conversationId),
-                    })
-                } else {
-                    this.dispatcher.sendErrorMessage(
-                        new ErrorMessage(
-                            ErrorMessages.tryAgain,
-                            errorMessage + messageWithConversationId(conversationId),
-                            tabID
-                        )
-                    )
-                }
 
-                break
-            case DevPhase.CODEGEN:
-                if (skipTitle) {
-                    this.sendAnswer({
-                        type: 'answer',
-                        tabID: tabID,
-                        message: errorMessage + messageWithConversationId(conversationId),
-                    })
-                } else {
-                    this.dispatcher.sendErrorMessage(
-                        new ErrorMessage(
-                            ErrorMessages.tryAgain,
-                            errorMessage + messageWithConversationId(conversationId),
-                            tabID
-                        )
-                    )
-                }
-
-                break
-            default:
-                // used to send generic error messages when we don't want to send the response as part of a phase
-                this.dispatcher.sendErrorMessage(
-                    new ErrorMessage(
-                        ErrorMessages.processingIssue,
-                        errorMessage + messageWithConversationId(conversationId),
-                        tabID
-                    )
-                )
-                break
-        }
+        this.sendAnswer({
+            type: 'answer',
+            tabID: tabID,
+            message: errorMessage + messageWithConversationId(conversationId),
+        })
 
         this.sendAnswer({
             message: undefined,

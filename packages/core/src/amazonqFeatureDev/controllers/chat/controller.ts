@@ -208,24 +208,21 @@ export class FeatureDevController {
     }
 
     private processErrorChatMessage = (err: any, message: any, session: Session | undefined) => {
-        const skipTitle = true
         const errorMessage = createUserFacingErrorMessage(
             `${featureName} request failed: ${err.cause?.message ?? err.message}`
         )
 
-        let isSendErrorMessageWithRetries = true
         let defaultMessage
+        const noRetries = false
         const isDenyListedError = denyListedErrors.some(err => errorMessage.includes(err))
 
         switch (err.code) {
             case ContentLengthError.name:
-                this.messenger.sendErrorMessage(
-                    err.message,
-                    message.tabID,
-                    this.retriesRemaining(session),
-                    undefined,
-                    session?.conversationIdUnsafe
-                )
+                this.messenger.sendAnswer({
+                    type: 'answer',
+                    tabID: message.tabID,
+                    message: err.message + messageWithConversationId(session?.conversationIdUnsafe),
+                })
                 this.messenger.sendAnswer({
                     type: 'system-prompt',
                     tabID: message.tabID,
@@ -265,25 +262,16 @@ export class FeatureDevController {
                     ],
                 })
                 break
+
             case UploadCodeError.name:
             case UserMessageNotFoundError.name:
-                this.messenger.sendAnswer({
-                    type: 'answer',
-                    tabID: message.tabID,
-                    message: err.message + messageWithConversationId(session?.conversationIdUnsafe),
-                })
-                this.messenger.sendFeedback(message.tabID)
-                break
-
             case TabIdNotFoundError.name:
             case PrepareRepoFailedError.name:
                 this.messenger.sendErrorMessage(
                     errorMessage,
                     message.tabID,
                     this.retriesRemaining(session),
-                    session?.state.phase,
-                    session?.conversationIdUnsafe,
-                    skipTitle
+                    session?.conversationIdUnsafe
                 )
                 break
             case CodeIterationLimitError.name:
@@ -317,29 +305,19 @@ export class FeatureDevController {
                     case DevPhase.CODEGEN:
                         if (isDenyListedError) {
                             defaultMessage = `I'm sorry, I'm having trouble generating your code and can't continue at the moment. Please try again later, and share feedback to help me improve.`
-                            isSendErrorMessageWithRetries = false
-                            this.messenger.sendAnswer({
-                                type: 'answer',
-                                tabID: message.tabID,
-                                message: defaultMessage + messageWithConversationId(session?.conversationIdUnsafe),
-                            })
-                            this.messenger.sendFeedback(message.tabID)
                         } else {
                             defaultMessage = `I'm sorry, I ran into an issue while trying to generate your code. Please try again.`
                         }
                         break
                 }
 
-                if (isSendErrorMessageWithRetries) {
-                    this.messenger.sendErrorMessage(
-                        defaultMessage ? defaultMessage : errorMessage,
-                        message.tabID,
-                        this.retriesRemaining(session),
-                        session?.state.phase,
-                        session?.conversationIdUnsafe,
-                        skipTitle
-                    )
-                }
+                this.messenger.sendErrorMessage(
+                    defaultMessage ? defaultMessage : errorMessage,
+                    message.tabID,
+                    noRetries ? 0 : this.retriesRemaining(session),
+                    session?.conversationIdUnsafe,
+                    !!defaultMessage
+                )
 
                 break
         }
@@ -348,7 +326,7 @@ export class FeatureDevController {
     // TODO add type
     private async processUserChatMessage(message: any) {
         if (message.message === undefined) {
-            this.messenger.sendErrorMessage('chatMessage should be set', message.tabID, 0, undefined, undefined)
+            this.messenger.sendErrorMessage('chatMessage should be set', message.tabID, 0, undefined)
             return
         }
 
@@ -541,7 +519,6 @@ export class FeatureDevController {
                 errorMessage,
                 message.tabID,
                 this.retriesRemaining(session),
-                session?.state.phase,
                 session?.conversationIdUnsafe
             )
         }
@@ -598,7 +575,6 @@ export class FeatureDevController {
                 createUserFacingErrorMessage(`Failed to insert code changes: ${err.message}`),
                 message.tabID,
                 this.retriesRemaining(session),
-                session?.state.phase,
                 session?.conversationIdUnsafe
             )
         }
@@ -644,7 +620,6 @@ export class FeatureDevController {
                 createUserFacingErrorMessage(`Failed to retry request: ${err.message}`),
                 message.tabID,
                 this.retriesRemaining(session),
-                session?.state.phase,
                 session?.conversationIdUnsafe
             )
         } finally {
@@ -848,7 +823,6 @@ export class FeatureDevController {
                     createUserFacingErrorMessage(err.message),
                     message.tabID,
                     this.retriesRemaining(session),
-                    session?.state.phase,
                     session?.conversationIdUnsafe
                 )
             }
