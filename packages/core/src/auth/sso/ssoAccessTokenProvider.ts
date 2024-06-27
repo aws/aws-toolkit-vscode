@@ -70,13 +70,14 @@ export abstract class SsoAccessTokenProvider {
         protected readonly oidc: OidcClient = OidcClient.create(profile.region)
     ) {}
 
-    public async invalidate(): Promise<void> {
+    public async invalidate(reason: string): Promise<void> {
         getLogger().info(`SsoAccessTokenProvider: invalidate token and registration`)
         // Use allSettled() instead of all() to ensure all clear() calls are resolved.
         await Promise.allSettled([
             this.cache.token.clear(this.tokenCacheKey, 'SsoAccessTokenProvider.invalidate()'),
             this.cache.registration.clear(this.registrationCacheKey, 'SsoAccessTokenProvider.invalidate()'),
         ])
+        await ReAuthReasonState.instance.setReason(this.profile, `invalidate():${reason}`)
     }
 
     public async getToken(): Promise<SsoToken | undefined> {
@@ -99,7 +100,7 @@ export abstract class SsoAccessTokenProvider {
 
             return refreshed.token
         } else {
-            await this.invalidate()
+            await this.invalidate('allCacheExpired')
         }
     }
 
@@ -150,9 +151,10 @@ export abstract class SsoAccessTokenProvider {
             return refreshed
         } catch (err) {
             if (!isNetworkError(err)) {
+                const reason = getTelemetryReason(err)
                 telemetry.aws_refreshCredentials.emit({
                     result: getTelemetryResult(err),
-                    reason: getTelemetryReason(err),
+                    reason,
                     reasonDesc: getTelemetryReasonDesc(err),
                     requestId: getRequestId(err),
                     ...metric,
@@ -163,6 +165,10 @@ export abstract class SsoAccessTokenProvider {
                         this.tokenCacheKey,
                         `client fault: SSOOIDCServiceException: ${err.message}`
                     )
+                    // remember why refresh failed so next reauth flow will know why reauth is needed
+                    if (reason) {
+                        await ReAuthReasonState.instance.setReason(this.profile, `refreshToken:${reason}`)
+                    }
                 }
             }
 
@@ -185,8 +191,8 @@ export abstract class SsoAccessTokenProvider {
     /**
      * Wraps the given function with telemetry related to the browser login.
      */
-    protected withBrowserLoginTelemetry<T extends (...args: any[]) => any>(func: T): ReturnType<T> {
-        const run = (span: Metric<AwsLoginWithBrowser>) => {
+    protected async withBrowserLoginTelemetry<T extends (...args: any[]) => any>(func: T): Promise<ReturnType<T>> {
+        const run = async (span: Metric<AwsLoginWithBrowser>) => {
             span.record({
                 credentialStartUrl: this.profile.startUrl,
                 source: SsoAccessTokenProvider._authSource,
@@ -196,7 +202,12 @@ export abstract class SsoAccessTokenProvider {
             // We don't want to attribute the wrong source.
             SsoAccessTokenProvider.authSource = 'unknown'
 
-            return func()
+            const result = await func()
+
+            // The browser login process has succeeded, the reason is now stale
+            await ReAuthReasonState.instance.clearReason(this.profile)
+
+            return result
         }
 
         // During certain flows, eg reauthentication, we are already running within a span (run())
@@ -431,7 +442,7 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
 
         // Clear cached if registration is expired
         if (cachedRegistration && isExpired(cachedRegistration)) {
-            await this.invalidate()
+            await this.invalidate('registrationExpired:DeviceCode')
         }
 
         return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
@@ -572,7 +583,7 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
 
         // Clear cached if registration is expired or it uses a deprecate auth version (device code)
         if (cachedRegistration && (isExpired(cachedRegistration) || isDeprecatedAuth(cachedRegistration))) {
-            await this.invalidate()
+            await this.invalidate('registrationExpired:AuthFlow')
         }
 
         return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
@@ -663,9 +674,52 @@ class WebAuthorization extends SsoAccessTokenProvider {
         const cachedRegistration = await this.cache.registration.load(cacheKey)
 
         if (cachedRegistration && (isExpired(cachedRegistration) || cachedRegistration.flow !== 'web auth code')) {
-            await this.invalidate()
+            await this.invalidate('registrationExpired:WebAuth')
         }
 
         return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+    }
+}
+
+/**
+ * Remembers the reason an SSO session was put in to a "needs reauthentication" state.
+ * The current use is for telemetry. When the user reauths, we want {@link AwsLoginWithBrowser}
+ * to know why it needed to be reauthed.
+ *
+ * The flow is to use `setReason()` to remember why the user was put in to a reauth state,
+ * then upon the next reauth use `getReason()`. Finally, use `clearReason()` if the reauth is
+ * successful.
+ */
+export class ReAuthReasonState {
+    private readonly memento: vscode.Memento
+    static readonly reasonNotSetState = 'reasonNotSet'
+
+    protected constructor(memento: vscode.Memento) {
+        this.memento = memento
+    }
+
+    static #instance: ReAuthReasonState
+    static get instance() {
+        return (this.#instance ??= new ReAuthReasonState(globals.context.globalState))
+    }
+
+    async getReason(profile: Pick<SsoProfile, 'identifier' | 'startUrl'>): Promise<string> {
+        return this.memento.get<string>(this.createKey(profile), ReAuthReasonState.reasonNotSetState)
+    }
+
+    async setReason(profile: Pick<SsoProfile, 'identifier' | 'startUrl'>, reason: string): Promise<void> {
+        return this.memento.update(this.createKey(profile), reason)
+    }
+
+    async clearReason(profile: Pick<SsoProfile, 'identifier' | 'startUrl'>): Promise<void> {
+        return this.memento.update(this.createKey(profile), undefined)
+    }
+
+    /**
+     * Note: We probably want to get rid of using the `startUrl` as the identifier (instead making identifier a required field),
+     * but it seems that we need it for historical purposes.
+     */
+    private createKey(profile: Pick<SsoProfile, 'identifier' | 'startUrl'>) {
+        return `reauthReason:${profile.identifier ?? profile.startUrl}`
     }
 }

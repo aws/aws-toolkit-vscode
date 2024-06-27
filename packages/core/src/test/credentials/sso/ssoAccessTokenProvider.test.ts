@@ -6,7 +6,7 @@
 import assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
-import { SsoAccessTokenProvider } from '../../../auth/sso/ssoAccessTokenProvider'
+import { ReAuthReasonState, SsoAccessTokenProvider } from '../../../auth/sso/ssoAccessTokenProvider'
 import { assertTelemetry, installFakeClock } from '../../testUtil'
 import { getCache } from '../../../auth/sso/cache'
 
@@ -102,7 +102,7 @@ describe('SsoAccessTokenProvider', function () {
             const validToken = createToken(hourInMs)
             await cache.token.save(startUrl, { region, startUrl, token: validToken })
             await cache.registration.save({ startUrl, region }, createRegistration(hourInMs))
-            await sut.invalidate()
+            await sut.invalidate('test')
 
             assert.strictEqual(await cache.token.load(startUrl), undefined)
             assert.strictEqual(await cache.registration.load({ startUrl, region }), undefined)
@@ -231,6 +231,31 @@ describe('SsoAccessTokenProvider', function () {
                 isReAuth: undefined,
                 credentialStartUrl: startUrl,
             })
+        })
+
+        it('telemetry: clears the ReAuthReason when expected during SSO flow', async function () {
+            // Note in the future we should use an `identifier` instead of `startUrl` for this test
+
+            setupFlow()
+            stubOpen()
+
+            // 1: On Failure during the SSO login process, the reauth reason is NOT cleared
+            oidcClient.createToken.rejects(new Error('random error')) // Forces failure during SSO flow
+            await ReAuthReasonState.instance.setReason({ startUrl }, 'thisReasonWillNotBeCleared')
+            await assert.rejects(sut.createToken()) // function under test
+            assert.deepStrictEqual(
+                await ReAuthReasonState.instance.getReason({ startUrl }),
+                'thisReasonWillNotBeCleared'
+            )
+
+            // 2: On Success during the SSO login process, the reauth reason is cleared
+            setupFlow() // resets any overrides from step 1
+            await ReAuthReasonState.instance.setReason({ startUrl }, 'thisReasonWillBeCleared')
+            await sut.createToken() // function under test
+            assert.deepStrictEqual(
+                await ReAuthReasonState.instance.getReason({ startUrl }),
+                ReAuthReasonState.reasonNotSetState
+            )
         })
 
         it('always creates a new token, even if already cached', async function () {

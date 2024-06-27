@@ -11,7 +11,7 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import * as localizedText from '../shared/localizedText'
 import { Credentials } from '@aws-sdk/types'
-import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
+import { ReAuthReasonState, SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { errorCode, isAwsError, isNetworkError, ToolkitError, UnknownError } from '../shared/errors'
 import { getCache } from './sso/cache'
@@ -186,7 +186,14 @@ export class Auth implements AuthService, ConnectionManager {
             // We cannot easily set isReAuth inside the createToken() call,
             // so we need to set it here.
             await telemetry.aws_loginWithBrowser.run(async span => {
-                span.record({ isReAuth: true, credentialStartUrl: profile.startUrl })
+                span.record({
+                    isReAuth: true,
+                    credentialStartUrl: profile.startUrl,
+                    reAuthReason: await ReAuthReasonState.instance.getReason({
+                        identifier: id,
+                        startUrl: profile.startUrl,
+                    }),
+                })
                 await this.authenticate(id, () => provider.createToken(), shouldInvalidate)
             })
 
@@ -386,7 +393,7 @@ export class Auth implements AuthService, ConnectionManager {
             throw new ToolkitError('Auth: Cannot force expire an IAM connection')
         }
         const provider = this.getSsoTokenProvider(conn.id, profile)
-        await provider.invalidate()
+        await provider.invalidate('devModeManualExpiration')
         // updates the state of the connection
         await this.refreshConnectionState(conn)
     }
@@ -530,7 +537,8 @@ export class Auth implements AuthService, ConnectionManager {
 
             // XXX: never drop tokens in a dev environment, unless you are Amazon Q!
             if (getCodeCatalystDevEnvId() === undefined || isAmazonQ()) {
-                await provider.invalidate()
+                // TODO: Require invalidateConnection() to require a reason and then pass it in to the following instead
+                await provider.invalidate('explicitInvalidation')
             }
         } else if (profile.type === 'iam') {
             globals.loginManager.store.invalidateCredentials(fromString(id))

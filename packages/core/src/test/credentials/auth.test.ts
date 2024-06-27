@@ -20,6 +20,7 @@ import { getCredentialsFilename } from '../../auth/credentials/sharedCredentials
 import { Connection, isIamConnection, isSsoConnection, scopesSsoAccountAccess } from '../../auth/connection'
 import { AuthNode, createDeleteConnectionButton, promptForConnection } from '../../auth/utils'
 import { isMinVscode } from '../../shared/vscode/env'
+import { ReAuthReasonState } from '../../auth/sso/ssoAccessTokenProvider'
 
 const ssoProfile = createSsoProfile()
 const scopedSsoProfile = createSsoProfile({ scopes: ['foo'] })
@@ -258,11 +259,16 @@ describe('Auth', function () {
 
         it('reauthentication is indicated in metric', async function () {
             const conn = await auth.createInvalidSsoConnection(ssoProfile)
+            await ReAuthReasonState.instance.setReason(
+                { identifier: conn.id, startUrl: ssoProfile.startUrl },
+                'myReAuthReason'
+            )
             await auth.reauthenticate(conn)
             assertTelemetry('aws_loginWithBrowser', {
                 result: 'Succeeded',
                 isReAuth: true,
                 credentialStartUrl: ssoProfile.startUrl,
+                reAuthReason: 'myReAuthReason',
             })
             assert.strictEqual(getMetrics('aws_loginWithBrowser').length, 1)
         })
