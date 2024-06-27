@@ -1,3 +1,11 @@
+## 1.11.0 2024-06-27
+
+- **Bug Fix** Amazon Q Chat: Fix for inline buttons don't have borders
+- **Bug Fix** Amazon Q Chat: Fix for some edge cases when followups appear on top without styles
+- **Bug Fix** Amazon Q Chat: Fix for prompt input removes whole word if it starts with @ character but there is no context selected
+- **Bug Fix** Amazon Q Chat: Fix for prompt input doesn't show multi line content properly after it reaches 10-15 lines
+- **Bug Fix** Amazon Q /dev command: Fix in progress experience for ongoing backend calls
+
 ## 1.10.0 2024-06-21
 
 - **Bug Fix** Security Scan: Fixes an issue where project-scans time out for larger projects.
