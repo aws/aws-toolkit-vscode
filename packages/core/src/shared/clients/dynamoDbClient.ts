@@ -14,15 +14,18 @@ export class DynamoDbClient {
         return await globals.sdkClientBuilder.createAwsService(DynamoDB, undefined, this.regionCode)
     }
 
-    public async getTables() {
-        const client = await this.createSdkClient()
+    public async *getTables(request: DynamoDB.Types.ListTablesInput = {}) {
+        const sdkClient = await this.createSdkClient()
+        const respone = await this.invokeGetTables(sdkClient, request)
+        if (respone.TableNames) {
+            yield* respone.TableNames
+        }
+    }
 
-        client.listTables((err, data) => {
-            if (err) {
-                console.error(err)
-            } else {
-                console.log(data)
-            }
-        })
+    protected async invokeGetTables(
+        sdkClient: DynamoDB,
+        request: DynamoDB.Types.ListTablesInput
+    ): Promise<DynamoDB.Types.ListTablesOutput> {
+        return sdkClient.listTables(request).promise()
     }
 }

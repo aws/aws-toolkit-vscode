@@ -3,25 +3,27 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
+import { DynamoDB } from 'aws-sdk'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { DynamoDbInstanceNode } from './dynamoDbInstanceNode'
 
 export class DynamoDbTableNode extends AWSTreeNodeBase implements AWSResourceNode {
-    public constructor(
-        public readonly parent: DynamoDbInstanceNode,
-        public readonly client: DynamoDbClient,
-        public override readonly regionCode: string
-    ) {
+    public constructor(public override readonly regionCode: string, public dynamoDbtable: DynamoDB.Types.TableName) {
         super('')
+        this.update(dynamoDbtable)
+    }
+
+    public update(dynamoDbtable: DynamoDB.Types.TableName): void {
+        this.dynamoDbtable = dynamoDbtable
+        this.label = this.dynamoDbtable || 'Failed to fetch table details'
+        this.tooltip = `${this.dynamoDbtable}`
     }
 
     public get name(): string {
-        return `(no name)`
+        return this.dynamoDbtable!
     }
 
     public get arn(): string {
-        return `arn`
+        return this.dynamoDbtable!
     }
 }
