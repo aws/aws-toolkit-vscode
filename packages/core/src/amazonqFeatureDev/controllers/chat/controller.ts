@@ -213,7 +213,7 @@ export class FeatureDevController {
         )
 
         let defaultMessage
-        const noRetries = false
+        let noRetries = false
         const isDenyListedError = denyListedErrors.some(err => errorMessage.includes(err))
 
         switch (err.code) {
@@ -305,6 +305,7 @@ export class FeatureDevController {
                     case DevPhase.CODEGEN:
                         if (isDenyListedError) {
                             defaultMessage = `I'm sorry, I'm having trouble generating your code and can't continue at the moment. Please try again later, and share feedback to help me improve.`
+                            noRetries = true
                         } else {
                             defaultMessage = `I'm sorry, I ran into an issue while trying to generate your code. Please try again.`
                         }
