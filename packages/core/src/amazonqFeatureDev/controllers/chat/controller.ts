@@ -49,6 +49,7 @@ import {
     messageWithConversationId,
 } from '../../userFacingText'
 import { getWorkspaceFoldersByPrefixes } from '../../../shared/utilities/workspaceUtils'
+import { ErrorMessages } from './messenger/constants'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -297,17 +298,17 @@ export class FeatureDevController {
                 switch (session?.state.phase) {
                     case DevPhase.APPROACH:
                         if (isDenyListedError) {
-                            defaultMessage = `I'm sorry, I'm having trouble generating a plan. Please try again.`
+                            defaultMessage = ErrorMessages.approachPhase.denyListedError
                         } else {
-                            defaultMessage = `I'm sorry, I ran into an issue while trying to approach the problem. Please try again.`
+                            defaultMessage = ErrorMessages.approachPhase.default
                         }
                         break
                     case DevPhase.CODEGEN:
                         if (isDenyListedError) {
-                            defaultMessage = `I'm sorry, I'm having trouble generating your code and can't continue at the moment. Please try again later, and share feedback to help me improve.`
+                            defaultMessage = ErrorMessages.codeGen.denyListedError
                             noRetries = true
                         } else {
-                            defaultMessage = `I'm sorry, I ran into an issue while trying to generate your code. Please try again.`
+                            defaultMessage = ErrorMessages.codeGen.default
                         }
                         break
                 }
