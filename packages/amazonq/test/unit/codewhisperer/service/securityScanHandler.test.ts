@@ -39,6 +39,7 @@ const mockCodeScanFindings = JSON.stringify([
             },
             suggestedFixes: [],
         },
+        codeSnippet: [],
     } satisfies RawCodeScanIssue,
 ])
 
@@ -85,7 +86,8 @@ describe('securityScanHandler', function () {
                 'jobId',
                 'codeScanFindingsSchema',
                 ['projectPath'],
-                CodeAnalysisScope.PROJECT
+                CodeAnalysisScope.PROJECT,
+                undefined
             )
 
             assert.equal(aggregatedCodeScanIssueList.length, 2)
@@ -107,7 +109,8 @@ describe('securityScanHandler', function () {
                 'jobId',
                 'codeScanFindingsSchema',
                 ['projectPath'],
-                CodeAnalysisScope.PROJECT
+                CodeAnalysisScope.PROJECT,
+                undefined
             )
 
             assert.equal(aggregatedCodeScanIssueList.length, 2)
