@@ -66,4 +66,32 @@ describe('DefaultDocumentDBClient', function () {
             await assert.rejects(async () => await client.listInstances())
         })
     })
+
+    describe('startCluster', function () {
+        it('sends the correct command', async function () {
+            // arrange
+            const clusterId = 'test-cluster-1'
+            const client = createClient()
+
+            // act
+            await client.startCluster(clusterId)
+
+            // assert
+            assert(sdkStub.calledOnce)
+        })
+    })
+
+    describe('stopCluster', function () {
+        it('sends the correct command', async function () {
+            // arrange
+            const clusterId = 'test-cluster-1'
+            const client = createClient()
+
+            // act
+            await client.stopCluster(clusterId)
+
+            // assert
+            assert(sdkStub.calledOnce)
+        })
+    })
 })

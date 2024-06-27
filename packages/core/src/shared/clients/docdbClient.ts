@@ -9,13 +9,17 @@ import { getUserAgent } from '../telemetry/util'
 import { ToolkitError } from '../errors'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
 import * as DocDB from '@aws-sdk/client-docdb'
-import { ClusterInList, DocDBElasticClient, ListClustersCommand } from '@aws-sdk/client-docdb-elastic'
+import * as DocDBElastic from '@aws-sdk/client-docdb-elastic'
+
+function isElasticCluster(clusterId: string): boolean {
+    return clusterId?.includes(':docdb-elastic:')
+}
 
 /**
  * <p>A list of Amazon DocumentDB clusters.</p>
  * @public
  */
-export interface DBElasticCluster extends ClusterInList {}
+export interface DBElasticCluster extends DocDBElastic.ClusterInList {}
 
 export interface DBInstance extends DocDB.DBInstance {
     IsClusterWriter?: boolean
@@ -40,9 +44,9 @@ export class DefaultDocumentDBClient {
         return new DocDB.DocDBClient(config)
     }
 
-    public async getElasticClient(): Promise<DocDBElasticClient> {
+    public async getElasticClient(): Promise<DocDBElastic.DocDBElasticClient> {
         const config = await this.getSdkConfig()
-        return new DocDBElasticClient(config)
+        return new DocDBElastic.DocDBElasticClient(config)
     }
 
     public async listClusters(): Promise<DocDB.DBCluster[]> {
@@ -83,11 +87,45 @@ export class DefaultDocumentDBClient {
         const client = await this.getElasticClient()
 
         try {
-            const command = new ListClustersCommand()
+            const command = new DocDBElastic.ListClustersCommand()
             const response = await client.send(command)
             return response.clusters ?? []
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to get DocumentDB elastic clusters')
+        }
+    }
+
+    public async startCluster(clusterId: string) {
+        getLogger().debug('StartCluster called')
+        try {
+            if (isElasticCluster(clusterId)) {
+                const client = await this.getElasticClient()
+                const command = new DocDBElastic.StartClusterCommand({ clusterArn: clusterId })
+                await client.send(command)
+            } else {
+                const client = await this.getClient()
+                const command = new DocDB.StartDBClusterCommand({ DBClusterIdentifier: clusterId })
+                await client.send(command)
+            }
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to start DocumentDB cluster')
+        }
+    }
+
+    public async stopCluster(clusterId: string) {
+        getLogger().debug('StopCluster called')
+        try {
+            if (isElasticCluster(clusterId)) {
+                const client = await this.getElasticClient()
+                const command = new DocDBElastic.StopClusterCommand({ clusterArn: clusterId })
+                await client.send(command)
+            } else {
+                const client = await this.getClient()
+                const command = new DocDB.StopDBClusterCommand({ DBClusterIdentifier: clusterId })
+                await client.send(command)
+            }
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to stop DocumentDB cluster')
         }
     }
 }

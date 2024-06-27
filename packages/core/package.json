@@ -1998,6 +1998,14 @@
                     "command": "aws.codecatalyst.signout",
                     "when": "viewItem =~ /^awsCodeCatalystNode/&& !isCloud9 && aws.codecatalyst.connected",
                     "group": "0@2"
+                },
+                {
+                    "command": "aws.docdb.startCluster",
+                    "when": "viewItem == DBClusterStoppedNode"
+                },
+                {
+                    "command": "aws.docdb.stopCluster",
+                    "when": "viewItem == DBClusterRunningNode"
                 }
             ],
             "aws.toolkit.auth": [
@@ -3541,6 +3549,20 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.docdb.startCluster",
+                "title": "%AWS.command.docdb.startCluster%",
+                "icon": "$(debug-start)",
+                "category": "%AWS.title%",
+                "enablement": "!aws.isWebExtHost && viewItem == DBClusterStoppedNode"
+            },
+            {
+                "command": "aws.docdb.stopCluster",
+                "title": "%AWS.command.docdb.stopCluster%",
+                "icon": "$(debug-stop)",
+                "category": "%AWS.title%",
+                "enablement": "!aws.isWebExtHost && viewItem == DBClusterRunningNode"
             }
         ],
         "jsonValidation": [
