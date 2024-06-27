@@ -7,9 +7,11 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AwsTelemetry
+import software.aws.toolkits.telemetry.UiTelemetry
 import java.util.UUID
 import java.util.prefs.Preferences
 
@@ -46,7 +48,10 @@ class DefaultAwsSettings : PersistentStateComponent<AwsConfiguration>, AwsSettin
         get() = state.isTelemetryEnabled ?: true
         set(value) {
             state.isTelemetryEnabled = value
-            TelemetryService.getInstance().setTelemetryEnabled(value)
+            val enablementElement = if (value) "aws_enabledTelemetry" else "aws_disabledTelemetry"
+            TelemetryService.getInstance().setTelemetryEnabled(value) {
+                UiTelemetry.click(null as Project?, enablementElement)
+            }
         }
 
     override var promptedForTelemetry: Boolean

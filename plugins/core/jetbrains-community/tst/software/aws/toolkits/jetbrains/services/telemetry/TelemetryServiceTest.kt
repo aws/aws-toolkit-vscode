@@ -79,9 +79,10 @@ class TelemetryServiceTest {
 
         val changeCountDown = CountDownLatch(1)
         val changeCaptor = argumentCaptor<Boolean>()
+        val onChangeEventCaptor = argumentCaptor<(Boolean) -> Unit>()
 
         val batcher = mock<TelemetryBatcher> {
-            on { onTelemetryEnabledChanged(changeCaptor.capture()) }
+            on { onTelemetryEnabledChanged(changeCaptor.capture(), onChangeEventCaptor.capture()) }
                 .doAnswer {
                     changeCountDown.countDown()
                 }
@@ -90,7 +91,8 @@ class TelemetryServiceTest {
         TestTelemetryService(batcher = batcher)
 
         changeCountDown.await(5, TimeUnit.SECONDS)
-        verify(batcher).onTelemetryEnabledChanged(true)
+        assertThat(onChangeEventCaptor.allValues).hasSize(1)
+        verify(batcher).onTelemetryEnabledChanged(true, onChangeEventCaptor.firstValue)
         assertThat(changeCaptor.allValues).hasSize(1)
         assertThat(changeCaptor.firstValue).isEqualTo(true)
     }
@@ -101,24 +103,33 @@ class TelemetryServiceTest {
 
         val changeCountDown = CountDownLatch(3)
         val changeCaptor = argumentCaptor<Boolean>()
+        val onChangeEventCaptor = argumentCaptor<(Boolean) -> Unit>()
 
         val batcher = mock<TelemetryBatcher>()
 
         batcher.stub {
-            on(batcher.onTelemetryEnabledChanged(changeCaptor.capture()))
+            on(batcher.onTelemetryEnabledChanged(changeCaptor.capture(), onChangeEventCaptor.capture()))
                 .doAnswer {
                     changeCountDown.countDown()
                 }
         }
 
+        val dummyEnabledEvent: (Boolean) -> Unit = {
+            assertThat(it).isTrue()
+        }
+        val dummyDisabledEvent: (Boolean) -> Unit = {
+            assertThat(it).isFalse()
+        }
         val telemetryService = TestTelemetryService(batcher = batcher)
 
-        telemetryService.setTelemetryEnabled(false)
-        telemetryService.setTelemetryEnabled(true)
+        telemetryService.setTelemetryEnabled(false, dummyDisabledEvent)
+        telemetryService.setTelemetryEnabled(true, dummyEnabledEvent)
 
         changeCountDown.await(5, TimeUnit.SECONDS)
-        verify(batcher, times(2)).onTelemetryEnabledChanged(true)
-        verify(batcher).onTelemetryEnabledChanged(false)
+        assertThat(onChangeEventCaptor.allValues).hasSize(3)
+        verify(batcher).onTelemetryEnabledChanged(true, onChangeEventCaptor.firstValue)
+        verify(batcher).onTelemetryEnabledChanged(true, dummyEnabledEvent)
+        verify(batcher).onTelemetryEnabledChanged(false, dummyDisabledEvent)
         assertThat(changeCaptor.allValues).hasSize(3)
         assertThat(changeCaptor.firstValue).isEqualTo(true)
         assertThat(changeCaptor.secondValue).isEqualTo(false)

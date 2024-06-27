@@ -19,7 +19,7 @@ interface TelemetryBatcher {
 
     fun flush(retry: Boolean)
 
-    fun onTelemetryEnabledChanged(isEnabled: Boolean)
+    fun onTelemetryEnabledChanged(isEnabled: Boolean, onChangeEvent: (Boolean) -> Unit = {})
 
     fun shutdown()
 }
@@ -111,10 +111,18 @@ class DefaultTelemetryBatcher(
         }
     }
 
-    override fun onTelemetryEnabledChanged(isEnabled: Boolean) {
-        isTelemetryEnabled.set(isEnabled)
-        if (!isEnabled) {
+    override fun onTelemetryEnabledChanged(isEnabled: Boolean, onChangeEvent: (Boolean) -> Unit) {
+        if (isEnabled) {
+            isTelemetryEnabled.set(true)
+        } else {
             eventQueue.clear()
+        }
+
+        onChangeEvent(isEnabled)
+        flush(isEnabled)
+
+        if (!isEnabled) {
+            isTelemetryEnabled.set(false)
         }
     }
 

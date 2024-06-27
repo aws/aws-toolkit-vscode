@@ -71,8 +71,8 @@ abstract class TelemetryService(private val publisher: TelemetryPublisher, priva
     private fun ConnectionSettings.activeAwsAccountIfKnown(): String? = tryOrNull { this.getResourceIfPresent(StsResources.ACCOUNT) }
 
     @Synchronized
-    fun setTelemetryEnabled(isEnabled: Boolean) {
-        batcher.onTelemetryEnabledChanged(isEnabled and TELEMETRY_ENABLED)
+    fun setTelemetryEnabled(isEnabled: Boolean, onChangeEvent: (Boolean) -> Unit = {}) {
+        batcher.onTelemetryEnabledChanged(isEnabled and TELEMETRY_ENABLED, onChangeEvent)
     }
 
     fun addListener(listener: TelemetryListener) {

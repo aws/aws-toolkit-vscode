@@ -13,10 +13,12 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyBlocking
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.stubbing.Answer
 import software.amazon.awssdk.core.exception.SdkServiceException
+import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -142,6 +144,45 @@ class TelemetryBatcherTest {
         verifyNoMoreInteractions(publisher)
 
         assertThat(batcher.eventQueue).isEmpty()
+    }
+
+    @Test
+    fun verifyEnablementCallbackTrue() {
+        val mockCallback: (Boolean) -> Unit = mock()
+
+        batcher.onTelemetryEnabledChanged(true, mockCallback)
+        verify(mockCallback, times(1)).invoke(true)
+    }
+
+    @Test
+    fun verifyEnablementCallbackFalse() {
+        val mockCallback: (Boolean) -> Unit = mock()
+
+        batcher.onTelemetryEnabledChanged(false, mockCallback)
+        verify(mockCallback, times(1)).invoke(false)
+    }
+
+    @Test
+    fun verifyCallbackMetricPublished() {
+        batcher.enqueue(createEmptyMetricEvent())
+        val publishCountDown = CountDownLatch(1)
+        val publishCaptor = argumentCaptor<Collection<MetricEvent>>()
+
+        publisher.stub {
+            onBlocking { publisher.publish(publishCaptor.capture()) }
+                .doAnswer(createPublishAnswer(publishCountDown))
+        }
+
+        val fooMetricEvent = DefaultMetricEvent.builder()
+            .createTime(Instant.now())
+            .build()
+        batcher.onTelemetryEnabledChanged(false) { batcher.enqueue(createEmptyMetricEvent()) }
+        waitForPublish(publishCountDown)
+
+        verifyBlocking(publisher) { publish(anyCollection()) }
+
+        assertThat(publishCaptor.firstValue).hasSize(1)
+        assertThat(publishCaptor.firstValue.contains(fooMetricEvent))
     }
 
     private fun createEmptyMetricEvent(): MetricEvent = DefaultMetricEvent.builder().build()
