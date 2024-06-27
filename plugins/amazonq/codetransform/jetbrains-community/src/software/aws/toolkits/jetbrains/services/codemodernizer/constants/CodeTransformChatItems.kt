@@ -7,8 +7,14 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import software.amazon.awssdk.services.codewhispererstreaming.model.TransformationDownloadArtifactType
 import software.aws.toolkits.jetbrains.services.amazonq.CODE_TRANSFORM_PREREQUISITES
+import software.aws.toolkits.jetbrains.services.amazonq.CODE_TRANSFORM_TROUBLESHOOT_DOC_ALLOW_S3_ACCESS
+import software.aws.toolkits.jetbrains.services.amazonq.CODE_TRANSFORM_TROUBLESHOOT_DOC_CONFIGURE_PROXY
+import software.aws.toolkits.jetbrains.services.amazonq.CODE_TRANSFORM_TROUBLESHOOT_DOC_DOWNLOAD_ERROR_OVERVIEW
+import software.aws.toolkits.jetbrains.services.amazonq.CODE_TRANSFORM_TROUBLESHOOT_DOC_DOWNLOAD_EXPIRED
 import software.aws.toolkits.jetbrains.services.amazonq.CODE_TRANSFORM_TROUBLESHOOT_DOC_MVN_FAILURE
 import software.aws.toolkits.jetbrains.services.amazonq.CODE_TRANSFORM_TROUBLESHOOT_DOC_PROJECT_SIZE
+import software.aws.toolkits.jetbrains.services.amazonq.CODE_TRANSFORM_TROUBLESHOOT_DOC_REMOVE_WILDCARD
+import software.aws.toolkits.jetbrains.services.amazonq.CODE_TRANSFORM_TROUBLESHOOT_DOC_UPLOAD_ERROR_OVERVIEW
 import software.aws.toolkits.jetbrains.services.codemodernizer.messages.Button
 import software.aws.toolkits.jetbrains.services.codemodernizer.messages.CodeTransformButtonId
 import software.aws.toolkits.jetbrains.services.codemodernizer.messages.CodeTransformChatMessageContent
@@ -247,12 +253,39 @@ fun buildCompileLocalFailedChatContent() = CodeTransformChatMessageContent(
 
 fun buildZipUploadFailedChatMessage(failureReason: UploadFailureReason): String {
     val resultMessage = when (failureReason) {
-        is UploadFailureReason.PRESIGNED_URL_EXPIRED -> message("codemodernizer.chat.message.upload_failed_url_expired")
-        is UploadFailureReason.HTTP_ERROR -> message("codemodernizer.chat.message.upload_failed_http_error", failureReason.statusCode)
+        is UploadFailureReason.PRESIGNED_URL_EXPIRED -> "${message(
+            "codemodernizer.chat.message.upload_failed_url_expired"
+        )}\n\n${message(
+            "codemodernizer.chat.message.validation.error.more_info",
+            CODE_TRANSFORM_TROUBLESHOOT_DOC_ALLOW_S3_ACCESS
+        )}"
+
+        is UploadFailureReason.HTTP_ERROR -> "${message(
+            "codemodernizer.chat.message.upload_failed_http_error",
+            failureReason.statusCode
+        )}\n\n${message(
+            "codemodernizer.chat.message.validation.error.more_info",
+            CODE_TRANSFORM_TROUBLESHOOT_DOC_UPLOAD_ERROR_OVERVIEW
+        )}"
+
         is UploadFailureReason.CONNECTION_REFUSED -> message("codemodernizer.chat.message.upload_failed_connection_refused")
-        is UploadFailureReason.OTHER -> message("codemodernizer.chat.message.upload_failed_other", failureReason.errorMessage)
+
+        is UploadFailureReason.OTHER -> "${message(
+            "codemodernizer.chat.message.upload_failed_other",
+            failureReason.errorMessage
+        )}\n\n${message(
+            "codemodernizer.chat.message.validation.error.more_info",
+            CODE_TRANSFORM_TROUBLESHOOT_DOC_UPLOAD_ERROR_OVERVIEW
+        )}"
+
         is UploadFailureReason.CREDENTIALS_EXPIRED -> message("q.connection.expired")
-        is UploadFailureReason.SSL_HANDSHAKE_ERROR -> message("codemodernizer.chat.message.upload_failed_ssl_error")
+
+        is UploadFailureReason.SSL_HANDSHAKE_ERROR -> "${message(
+            "codemodernizer.chat.message.upload_failed_ssl_error"
+        )}\n\n${message(
+            "codemodernizer.chat.message.validation.error.more_info",
+            CODE_TRANSFORM_TROUBLESHOOT_DOC_CONFIGURE_PROXY
+        )}"
     }
     return resultMessage
 }
@@ -459,36 +492,40 @@ fun buildHilCannotResumeContent() = CodeTransformChatMessageContent(
 
 fun buildDownloadFailureChatContent(downloadFailureReason: DownloadFailureReason): CodeTransformChatMessageContent? {
     val artifactText = getDownloadedArtifactTextFromType(downloadFailureReason.artifactType)
-    val message = when (downloadFailureReason) {
-        is DownloadFailureReason.SSL_HANDSHAKE_ERROR -> message(
-            "codemodernizer.chat.message.download_failed_ssl",
-            artifactText
+    val (message, docLink) = when (downloadFailureReason) {
+        is DownloadFailureReason.SSL_HANDSHAKE_ERROR -> Pair(
+            message("codemodernizer.chat.message.download_failed_ssl", artifactText),
+            CODE_TRANSFORM_TROUBLESHOOT_DOC_CONFIGURE_PROXY,
         )
 
-        is DownloadFailureReason.PROXY_WILDCARD_ERROR -> message(
-            "codemodernizer.chat.message.download_failed_wildcard",
-            artifactText
+        is DownloadFailureReason.PROXY_WILDCARD_ERROR -> Pair(
+            message("codemodernizer.chat.message.download_failed_wildcard", artifactText),
+            CODE_TRANSFORM_TROUBLESHOOT_DOC_REMOVE_WILDCARD,
         )
 
-        is DownloadFailureReason.OTHER -> message(
-            "codemodernizer.chat.message.download_failed_other",
-            artifactText,
-            downloadFailureReason.errorMessage
+        is DownloadFailureReason.OTHER -> Pair(
+            message("codemodernizer.chat.message.download_failed_other", artifactText, downloadFailureReason.errorMessage),
+            CODE_TRANSFORM_TROUBLESHOOT_DOC_DOWNLOAD_ERROR_OVERVIEW,
         )
         is DownloadFailureReason.CREDENTIALS_EXPIRED -> return null // credential expiry resets chat, no point emitting a message
-        is DownloadFailureReason.INVALID_ARTIFACT -> {
+        is DownloadFailureReason.INVALID_ARTIFACT ->
             if (downloadFailureReason.artifactType == TransformationDownloadArtifactType.CLIENT_INSTRUCTIONS) {
-                message("codemodernizer.chat.message.download_failed_client_instructions_expired")
+                Pair(
+                    message("codemodernizer.chat.message.download_failed_client_instructions_expired"),
+                    CODE_TRANSFORM_TROUBLESHOOT_DOC_DOWNLOAD_EXPIRED,
+                )
             } else {
-                message("codemodernizer.chat.message.download_failed_invalid_artifact", artifactText)
+                Pair(
+                    message("codemodernizer.chat.message.download_failed_invalid_artifact", artifactText),
+                    CODE_TRANSFORM_TROUBLESHOOT_DOC_DOWNLOAD_EXPIRED,
+                )
             }
-        }
     }
 
     // DownloadFailureReason.OTHER might be retryable, so including buttons to allow retry.
     return CodeTransformChatMessageContent(
         type = CodeTransformChatMessageType.FinalizedAnswer,
-        message = message,
+        message = "$message\n\n${message("codemodernizer.chat.message.validation.error.more_info", docLink)}",
         buttons = if (downloadFailureReason.artifactType == TransformationDownloadArtifactType.CLIENT_INSTRUCTIONS &&
             (downloadFailureReason is DownloadFailureReason.OTHER || downloadFailureReason is DownloadFailureReason.SSL_HANDSHAKE_ERROR)
         ) {

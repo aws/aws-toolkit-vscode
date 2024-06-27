@@ -26,7 +26,7 @@ import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineBgContext
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.NoTokenInitializedException
-import software.aws.toolkits.jetbrains.services.amazonq.CODE_TRANSFORM_TROUBLESHOOT_DOC_ARTIFACT
+import software.aws.toolkits.jetbrains.services.amazonq.CODE_TRANSFORM_TROUBLESHOOT_DOC_DOWNLOAD_ERROR_OVERVIEW
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
 import software.aws.toolkits.jetbrains.services.codemodernizer.commands.CodeTransformMessageListener
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerArtifact
@@ -319,7 +319,7 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
         project,
         listOf(
             openTroubleshootingGuideNotificationAction(
-                CODE_TRANSFORM_TROUBLESHOOT_DOC_ARTIFACT
+                CODE_TRANSFORM_TROUBLESHOOT_DOC_DOWNLOAD_ERROR_OVERVIEW
             )
         ),
     )
@@ -332,7 +332,7 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
             project,
             listOf(
                 openTroubleshootingGuideNotificationAction(
-                    CODE_TRANSFORM_TROUBLESHOOT_DOC_ARTIFACT
+                    CODE_TRANSFORM_TROUBLESHOOT_DOC_DOWNLOAD_ERROR_OVERVIEW
                 )
             ),
         )
@@ -346,7 +346,7 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
             project,
             listOf(
                 openTroubleshootingGuideNotificationAction(
-                    CODE_TRANSFORM_TROUBLESHOOT_DOC_ARTIFACT
+                    CODE_TRANSFORM_TROUBLESHOOT_DOC_DOWNLOAD_ERROR_OVERVIEW
                 )
             ),
         )

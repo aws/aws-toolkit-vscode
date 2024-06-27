@@ -328,12 +328,12 @@ class CodeModernizerSession(
         val createUploadUrlResponse = clientAdaptor.createHilUploadUrl(sha256checksum, jobId = jobId)
 
         LOG.info {
-            "Uploading zip with checksum $sha256checksum using uploadId: ${
+            "Uploading hil artifact with checksum $sha256checksum using uploadId: ${
                 createUploadUrlResponse.uploadId()
             } and size ${(payload.length() / 1000).toInt()}kB"
         }
         if (isDisposed.get()) {
-            throw AlreadyDisposedException("Disposed when about to upload zip to s3")
+            throw AlreadyDisposedException("Disposed when about to upload hil artifact to s3")
         }
         val uploadStartTime = Instant.now()
         try {
@@ -373,12 +373,12 @@ class CodeModernizerSession(
         val createUploadUrlResponse = clientAdaptor.createGumbyUploadUrl(sha256checksum)
 
         LOG.info {
-            "Uploading zip at ${payload.path} with checksum $sha256checksum using uploadId: ${
+            "Uploading project artifact at ${payload.path} with checksum $sha256checksum using uploadId: ${
                 createUploadUrlResponse.uploadId()
             } and size ${(payload.length() / 1000).toInt()}kB"
         }
         if (isDisposed.get()) {
-            throw AlreadyDisposedException("Disposed when about to upload zip to s3")
+            throw AlreadyDisposedException("Disposed when about to upload project artifact to s3")
         }
         val uploadStartTime = Instant.now()
         try {
@@ -389,7 +389,7 @@ class CodeModernizerSession(
                 createUploadUrlResponse.kmsKeyArn().orEmpty(),
             ) { shouldStop.get() }
         } catch (e: Exception) {
-            val errorMessage = "Unexpected error when uploading artifact to S3: $e"
+            val errorMessage = "Unexpected error when uploading project artifact to S3: $e"
             LOG.error { errorMessage }
             // emit this metric here manually since we don't use callApi(), which emits its own metric
             telemetry.apiError(errorMessage, CodeTransformApiNames.UploadZip, createUploadUrlResponse.uploadId())
