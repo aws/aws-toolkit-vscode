@@ -20,10 +20,10 @@ describe('file utils', () => {
         it('returns files in the workspace as a zip', async function () {
             // these variables are a manual selection of settings for the test in order to test the collectFiles function
             const fileAmount = 2
-            const fileNamePrefix = 'file'
+            const fileNameOverride = 'file.md'
             const fileContent = 'test content'
 
-            const workspace = await createTestWorkspace(fileAmount, { fileNamePrefix, fileContent })
+            const workspace = await createTestWorkspace(fileAmount, { fileNameOverride, fileContent })
 
             const telemetry = new TelemetryHelper()
             const result = await prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {
@@ -33,6 +33,24 @@ describe('file utils', () => {
             // checksum is not the same across different test executions because some unique random folder names are generated
             assert.strictEqual(result.zipFileChecksum.length, 44)
             assert.strictEqual(telemetry.repositorySize, 24)
+        })
+
+        it('prepareRepoData ignores denied file extensions', async function () {
+            // these variables are a manual selection of settings for the test in order to test the collectFiles function
+            const fileAmount = 1
+            const fileNameOverride = 'test.mp4'
+            const fileContent = 'test content'
+
+            const workspace = await createTestWorkspace(fileAmount, { fileNameOverride, fileContent })
+            const telemetry = new TelemetryHelper()
+            const result = await prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {
+                record: () => {},
+            } as unknown as Metric<AmazonqCreateUpload>)
+
+            assert.strictEqual(Buffer.isBuffer(result.zipFileBuffer), true)
+            // checksum is not the same across different test executions because some unique random folder names are generated
+            assert.strictEqual(result.zipFileChecksum.length, 44)
+            assert.strictEqual(telemetry.repositorySize, 0)
         })
 
         // Test the logic that allows the customer to modify root source folder
