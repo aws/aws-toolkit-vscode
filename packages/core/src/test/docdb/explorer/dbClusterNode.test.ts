@@ -10,6 +10,7 @@ import { DBCluster } from '@aws-sdk/client-docdb'
 import { DBClusterNode } from '../../../docdb/explorer/dbClusterNode'
 import { DBInstanceNode } from '../../../docdb/explorer/dbInstanceNode'
 import { DBInstance, DocumentDBClient } from '../../../shared/clients/docdbClient'
+import { DocumentDBNode } from '../../../docdb/explorer/docdbNode'
 
 describe('DBClusterNode', function () {
     let mockClient: DocumentDBClient
@@ -17,6 +18,7 @@ describe('DBClusterNode', function () {
         mockClient = {} as DocumentDBClient
     })
 
+    const parentNode = {} as DocumentDBNode
     const cluster: DBCluster = { DBClusterIdentifier: 'Cluster-1' }
     const instanceA: DBInstance = { DBInstanceIdentifier: 'Instance-A' }
     const instanceB: DBInstance = { DBInstanceIdentifier: 'Instance-B' }
@@ -28,7 +30,7 @@ describe('DBClusterNode', function () {
 
     it('gets children', async function () {
         mockClient.listInstances = sinon.stub().resolves([instanceA, instanceB])
-        const node = new DBClusterNode(cluster, mockClient)
+        const node = new DBClusterNode(parentNode, cluster, mockClient)
         const [firstInstanceNode, secondInstanceNode, ...otherNodes] = await node.getChildren()
 
         assertInstanceNode(firstInstanceNode, instanceA)

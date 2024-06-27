@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import { inspect } from 'util'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { DBInstance } from '../../shared/clients/docdbClient'
+import { DBNode } from './docdbNode'
 
 /**
  * An AWS Explorer node representing a DocumentDB instance.
@@ -14,7 +15,7 @@ import { DBInstance } from '../../shared/clients/docdbClient'
 export class DBInstanceNode extends AWSTreeNodeBase {
     public name: string = this.instance.DBInstanceIdentifier ?? ''
 
-    constructor(readonly instance: DBInstance) {
+    constructor(public readonly parent: DBNode, readonly instance: DBInstance) {
         super(instance.DBInstanceIdentifier ?? '[Instance]', vscode.TreeItemCollapsibleState.None)
         this.description = this.makeDescription()
         this.contextValue = 'awsDocDBInstanceNode'

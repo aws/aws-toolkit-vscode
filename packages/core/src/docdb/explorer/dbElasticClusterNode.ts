@@ -8,6 +8,7 @@ import { inspect } from 'util'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { DBElasticCluster, DocumentDBClient } from '../../shared/clients/docdbClient'
+import { DocumentDBNode } from './docdbNode'
 
 /**
  * An AWS Explorer node representing DocumentDB elastic clusters.
@@ -16,7 +17,11 @@ export class DBElasticClusterNode extends AWSTreeNodeBase implements AWSResource
     name: string = this.cluster.clusterName ?? ''
     arn: string = this.cluster.clusterArn ?? ''
 
-    constructor(readonly cluster: DBElasticCluster, readonly client: DocumentDBClient) {
+    constructor(
+        public readonly parent: DocumentDBNode,
+        readonly cluster: DBElasticCluster,
+        readonly client: DocumentDBClient
+    ) {
         super(cluster.clusterName ?? '[Cluster]', vscode.TreeItemCollapsibleState.None)
         this.contextValue = 'awsDocDBElasticClusterNode'
         this.iconPath = new vscode.ThemeIcon('layers-dot') //TODO: determine icon for elastic cluster

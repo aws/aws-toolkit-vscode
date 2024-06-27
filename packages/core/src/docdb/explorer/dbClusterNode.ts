@@ -14,6 +14,8 @@ import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { DBInstanceNode } from './dbInstanceNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { DBInstance, DocumentDBClient } from '../../shared/clients/docdbClient'
+import { DocumentDBNode } from './docdbNode'
+
 
 /**
  * An AWS Explorer node representing DocumentDB clusters.
@@ -24,7 +26,11 @@ export class DBClusterNode extends AWSTreeNodeBase implements AWSResourceNode {
     name: string = this.cluster.DBClusterIdentifier ?? ''
     arn: string = this.cluster.DBClusterArn ?? ''
 
-    constructor(readonly cluster: DBCluster, readonly client: DocumentDBClient) {
+    constructor(
+        public readonly parent: DocumentDBNode,
+        readonly cluster: DBCluster, 
+        readonly client: DocumentDBClient
+    ) {
         super(cluster.DBClusterIdentifier ?? '[Cluster]', vscode.TreeItemCollapsibleState.Collapsed)
         this.contextValue = 'awsDocDBClusterNode'
         this.iconPath = undefined //TODO: determine icon for regional cluster
@@ -40,7 +46,7 @@ export class DBClusterNode extends AWSTreeNodeBase implements AWSResourceNode {
                     )
                     return { ...i, ...member }
                 })
-                const nodes = instances.map(instance => new DBInstanceNode(instance))
+                const nodes = instances.map(instance => new DBInstanceNode(this, instance))
                 return nodes
             },
             getNoChildrenPlaceholderNode: async () =>
