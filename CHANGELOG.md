@@ -1,3 +1,9 @@
+# _3.14_ (2024-06-27)
+- **(Bug Fix)** Q Code Transform - Add troubleshooting document links to UI messages
+- **(Bug Fix)** Security Scan: Improved telemetry error messages
+- **(Bug Fix)** Feature Development: fix in progress UX during backend calls
+- **(Bug Fix)** Rewrite integration with the New Solution dialog in Rider to use the new API.
+
 # _3.13_ (2024-06-24)
 - **(Bug Fix)** Fix refresh token failure due to null aws error details
 

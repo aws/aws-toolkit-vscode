@@ -1,0 +1,17 @@
+{
+  "date" : "2024-06-27",
+  "version" : "3.14",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Q Code Transform - Add troubleshooting document links to UI messages"
+  }, {
+    "type" : "bugfix",
+    "description" : "Security Scan: Improved telemetry error messages"
+  }, {
+    "type" : "bugfix",
+    "description" : "Feature Development: fix in progress UX during backend calls"
+  }, {
+    "type" : "bugfix",
+    "description" : "Rewrite integration with the New Solution dialog in Rider to use the new API."
+  } ]
+}
