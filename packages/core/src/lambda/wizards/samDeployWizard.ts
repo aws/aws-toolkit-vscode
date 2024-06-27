@@ -643,7 +643,10 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
      * @param context
      * @param commandArg Argument given by VSCode when the "Deploy" command was invoked from a context-menu.
      */
-    public constructor(private readonly context: SamDeployWizardContext, commandArg?: any) {
+    public constructor(
+        private readonly context: SamDeployWizardContext,
+        commandArg?: any
+    ) {
         super()
         if (commandArg && commandArg.path) {
             // "Deploy" command was invoked on a template.yaml file.
@@ -863,7 +866,10 @@ class SamTemplateQuickPickItem implements vscode.QuickPickItem {
     public description?: string
     public detail?: string
 
-    public constructor(public readonly uri: vscode.Uri, showWorkspaceFolderDetails: boolean) {
+    public constructor(
+        public readonly uri: vscode.Uri,
+        showWorkspaceFolderDetails: boolean
+    ) {
         this.label = SamTemplateQuickPickItem.getLabel(uri)
 
         if (showWorkspaceFolderDetails) {

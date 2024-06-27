@@ -205,8 +205,17 @@
                             style="
                                 width: 100%;
                                 margin-bottom: 10px;
-                                font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial,
-                                    sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;
+                                font-family:
+                                    -apple-system,
+                                    BlinkMacSystemFont,
+                                    Segoe UI,
+                                    Roboto,
+                                    Helvetica,
+                                    Arial,
+                                    sans-serif,
+                                    Apple Color Emoji,
+                                    Segoe UI Emoji,
+                                    Segoe UI Symbol;
                             "
                             rows="30"
                             v-model="initialData.checkNoNewAccessTextArea"
@@ -251,8 +260,17 @@
                             style="
                                 width: 100%;
                                 margin-bottom: 10px;
-                                font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial,
-                                    sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;
+                                font-family:
+                                    -apple-system,
+                                    BlinkMacSystemFont,
+                                    Segoe UI,
+                                    Roboto,
+                                    Helvetica,
+                                    Arial,
+                                    sans-serif,
+                                    Apple Color Emoji,
+                                    Segoe UI Emoji,
+                                    Segoe UI Symbol;
                             "
                             rows="15"
                             v-on:change="setcheckAccessNotGrantedActionsTextArea"
@@ -266,8 +284,17 @@
                             style="
                                 width: 100%;
                                 margin-bottom: 10px;
-                                font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial,
-                                    sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;
+                                font-family:
+                                    -apple-system,
+                                    BlinkMacSystemFont,
+                                    Segoe UI,
+                                    Roboto,
+                                    Helvetica,
+                                    Arial,
+                                    sans-serif,
+                                    Apple Color Emoji,
+                                    Segoe UI Emoji,
+                                    Segoe UI Symbol;
                             "
                             rows="15"
                             v-on:change="setcheckAccessNotGrantedResourcesTextArea"

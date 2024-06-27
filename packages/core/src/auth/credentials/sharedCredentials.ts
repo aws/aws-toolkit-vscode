@@ -46,7 +46,11 @@ export interface ParseResult {
 }
 
 export class ParseError extends Error {
-    public constructor(public readonly source: vscode.Uri, public readonly range: vscode.Range, message: string) {
+    public constructor(
+        public readonly source: vscode.Uri,
+        public readonly range: vscode.Range,
+        message: string
+    ) {
         const location = `${source.fsPath}:${range.start.line}:${range.start.character}`
         super(`${location}: ${message}`)
     }
