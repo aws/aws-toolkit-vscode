@@ -125,11 +125,18 @@ export async function activate(extensionContext: ExtensionContext) {
             // must have PATH otherwise it throws Error: spawn node ENOENT" when using child_process in Node.js
             PATH: process.env.PATH,
         }
-        child = cp.spawn('node', [serverModule, ...debugOptions.execArgv], {
-            env: env,
-        })
+        child = cp.spawn(
+            extensionContext.asAbsolutePath(path.join('resources', 'node')),
+            [serverModule, ...debugOptions.execArgv],
+            {
+                env: env,
+            }
+        )
     } else {
-        child = cp.spawn('node', [serverModule, ...debugOptions.execArgv])
+        child = cp.spawn(extensionContext.asAbsolutePath(path.join('resources', 'node')), [
+            serverModule,
+            ...debugOptions.execArgv,
+        ])
     }
 
     // share an encryption key using stdin

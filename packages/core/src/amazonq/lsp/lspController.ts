@@ -65,7 +65,7 @@ interface Manifest {
 
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/temp/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = ['0.0.3']
+const supportedLspServerVersions = ['0.0.4']
 
 export class LspController {
     static #instance: LspController
@@ -117,8 +117,8 @@ export class LspController {
 
     isLspInstalled(context: vscode.ExtensionContext) {
         const localQServer = context.asAbsolutePath(path.join('resources', 'qserver'))
-        console.log(localQServer)
-        return fs.existsSync(localQServer)
+        const localNodeRuntime = context.asAbsolutePath(path.join('resources', 'node'))
+        return fs.existsSync(localQServer) && fs.existsSync(localNodeRuntime)
     }
 
     getQserverFromManifest(manifest: Manifest): Content | undefined {
@@ -149,6 +149,46 @@ export class LspController {
         return undefined
     }
 
+    getNodeRuntimeFromManifest(manifest: Manifest): Content | undefined {
+        if (manifest.isManifestDeprecated) {
+            return undefined
+        }
+        for (const version of manifest.versions) {
+            if (version.isDelisted) {
+                continue
+            }
+            if (!supportedLspServerVersions.includes(version.serverVersion)) {
+                continue
+            }
+            for (const t of version.targets) {
+                if (
+                    (t.platform === process.platform || (t.platform === 'windows' && process.platform === 'win32')) &&
+                    t.arch === process.arch
+                ) {
+                    for (const content of t.contents) {
+                        if (content.filename.startsWith('node') && content.hashes.length > 0) {
+                            content.serverVersion = version.serverVersion
+                            return content
+                        }
+                    }
+                }
+            }
+        }
+        return undefined
+    }
+
+    private async hashMatch(filePath: string, content: Content) {
+        const sha384 = await this.getZipFileSha384(filePath)
+        if ('sha384:' + sha384 !== content.hashes[0]) {
+            getLogger().error(
+                `LspController: Downloaded file sha ${sha384} does not match manifest ${content.hashes[0]}.`
+            )
+            fs.removeSync(filePath)
+            return false
+        }
+        return true
+    }
+
     async tryInstallLsp(context: vscode.ExtensionContext): Promise<boolean> {
         try {
             if (this.isLspInstalled(context)) {
@@ -157,26 +197,33 @@ export class LspController {
             }
             const manifest: Manifest = (await this.downloadManifest()) as Manifest
             const qserver = this.getQserverFromManifest(manifest)
-            if (!qserver) {
+            const noderuntime = this.getNodeRuntimeFromManifest(manifest)
+            if (!qserver || !noderuntime) {
                 getLogger().info(`LspController: Did not find LSP URL for ${process.platform} ${process.arch}`)
                 return false
             }
 
             const tempFolder = await makeTemporaryToolkitFolder()
             const zipFilePath = path.join(tempFolder, 'qserver.zip')
-
             await this._download(zipFilePath, qserver.url)
-            const sha384 = await this.getZipFileSha384(zipFilePath)
-            if ('sha384:' + sha384 !== qserver.hashes[0]) {
-                getLogger().error(
-                    `LspController: Downloaded file sha ${sha384} does not match manifest ${qserver.hashes[0]}.`
-                )
-                fs.removeSync(zipFilePath)
+            const match = await this.hashMatch(zipFilePath, qserver)
+            if (!match) {
                 return false
             }
             const zip = new AdmZip(zipFilePath)
             zip.extractAllTo(context.asAbsolutePath(path.join('resources')))
             fs.removeSync(zipFilePath)
+
+            const noderuntimeFilePath = path.join(tempFolder, 'node')
+            await this._download(noderuntimeFilePath, noderuntime.url)
+
+            const match2 = await this.hashMatch(noderuntimeFilePath, noderuntime)
+            if (!match2) {
+                return false
+            }
+            fs.chmodSync(noderuntimeFilePath, 0o755)
+            fs.moveSync(noderuntimeFilePath, context.asAbsolutePath(path.join('resources', 'node')))
+
             return true
         } catch (e) {
             getLogger().error(`LspController: Failed to setup LSP server ${e}`)
