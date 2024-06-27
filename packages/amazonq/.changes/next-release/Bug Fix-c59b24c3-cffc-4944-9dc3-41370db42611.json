@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q Chat: Fix for prompt input removes whole word if it starts with @ character but there is no context selected"
-}

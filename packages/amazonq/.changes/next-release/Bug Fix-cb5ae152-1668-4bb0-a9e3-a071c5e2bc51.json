@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q Chat: Fix for prompt input doesn't show multi line content properly after it reaches 10-15 lines"
-}
