@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Step functions language server activates when editing ASL documents from previous session"
+}
