@@ -41,8 +41,8 @@ export class TabDataGenerator {
         [
             'cwc',
             `Hi, I'm Amazon Q. I can answer your software development questions. 
-        Ask me to explain, debug, or optimize your code. 
-        You can enter \`/\` to see a list of quick actions. Add @workspace to the beginning of your message to enhance Q response with entire workspace files`,
+        Ask me to explain, debug, or optimize your code. \n
+        You can enter \`/\` to see a list of quick actions. Add @workspace to beginning of your message to include your entire workspace as context.`,
         ],
         [
             'featuredev',

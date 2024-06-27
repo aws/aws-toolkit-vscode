@@ -320,7 +320,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
         onOpenSettingsMessage(tabId: string) {
             mynahUI.addChatItem(tabId, {
                 type: ChatItemType.ANSWER,
-                body: `You need to enable local workspace index in Amazon Q settings.`,
+                body: `To add your workspace as context, enable local indexing in your IDE settings. After enabling, add @workspace to your question, and I'll generate a response using your workspace as context.`,
                 buttons: [
                     {
                         id: 'open-settings',
