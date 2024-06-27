@@ -41,6 +41,7 @@ import { isRemoteWorkspace, isWebWorkspace } from '../../shared/vscode/env'
 import { showInputBox } from '../../shared/ui/inputPrompter'
 import { DevSettings } from '../../shared/settings'
 import { onceChanged } from '../../shared/utilities/functionUtils'
+import { MemoryMap } from '../../shared/utilities/map'
 
 export const authenticationPath = 'sso/authenticated'
 
@@ -67,16 +68,18 @@ export abstract class SsoAccessTokenProvider {
     public constructor(
         protected readonly profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
         protected readonly cache = getCache(),
-        protected readonly oidc: OidcClient = OidcClient.create(profile.region)
+        protected readonly oidc: OidcClient = OidcClient.create(profile.region),
+        protected readonly reAuthState: ReAuthState = ReAuthState.instance
     ) {}
 
-    public async invalidate(): Promise<void> {
+    public async invalidate(reason: string): Promise<void> {
         getLogger().info(`SsoAccessTokenProvider: invalidate token and registration`)
         // Use allSettled() instead of all() to ensure all clear() calls are resolved.
         await Promise.allSettled([
             this.cache.token.clear(this.tokenCacheKey, 'SsoAccessTokenProvider.invalidate()'),
             this.cache.registration.clear(this.registrationCacheKey, 'SsoAccessTokenProvider.invalidate()'),
         ])
+        this.reAuthState.set(this.profile, { reAuthReason: `invalidate():${reason}` })
     }
 
     public async getToken(): Promise<SsoToken | undefined> {
@@ -99,7 +102,7 @@ export abstract class SsoAccessTokenProvider {
 
             return refreshed.token
         } else {
-            await this.invalidate()
+            await this.invalidate('allCacheExpired')
         }
     }
 
@@ -115,7 +118,14 @@ export abstract class SsoAccessTokenProvider {
     private async runFlow(args?: CreateTokenArgs) {
         const registration = await this.getValidatedClientRegistration()
         try {
-            return await this.authorize(registration, args)
+            const result = await this.authorize(registration, args)
+
+            // Authentication in the browser is successfully done, so the reauth reason is now stale.
+            // We don't clear the reason on failure since we want to keep reporting it as the reason until
+            // reauth is a success.
+            this.reAuthState.clear(this.profile, 'reauth successful')
+
+            return result
         } catch (err) {
             if (err instanceof SSOOIDCServiceException && isClientFault(err)) {
                 await this.cache.registration.clear(
@@ -150,9 +160,10 @@ export abstract class SsoAccessTokenProvider {
             return refreshed
         } catch (err) {
             if (!isNetworkError(err)) {
+                const reason = getTelemetryReason(err)
                 telemetry.aws_refreshCredentials.emit({
                     result: getTelemetryResult(err),
-                    reason: getTelemetryReason(err),
+                    reason,
                     reasonDesc: getTelemetryReasonDesc(err),
                     requestId: getRequestId(err),
                     ...metric,
@@ -163,6 +174,10 @@ export abstract class SsoAccessTokenProvider {
                         this.tokenCacheKey,
                         `client fault: SSOOIDCServiceException: ${err.message}`
                     )
+                    // remember why refresh failed so next reauth flow will know why reauth is needed
+                    if (reason) {
+                        this.reAuthState.set(this.profile, { reAuthReason: `refresh:${reason}` })
+                    }
                 }
             }
 
@@ -194,6 +209,7 @@ export abstract class SsoAccessTokenProvider {
                 credentialStartUrl: this.profile.startUrl,
                 source: SsoAccessTokenProvider._authSource,
                 isReAuth: args?.isReAuth,
+                reAuthReason: args?.isReAuth ? this.reAuthState.get(this.profile).reAuthReason : undefined,
             })
 
             // Reset source in case there is a case where browser login was called but we forgot to set the source.
@@ -237,6 +253,7 @@ export abstract class SsoAccessTokenProvider {
         profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
         cache = getCache(),
         oidc: OidcClient = OidcClient.create(profile.region),
+        reAuthState?: ReAuthState,
         useDeviceFlow: () => boolean = () => {
             /**
              * Device code flow is neccessary when:
@@ -249,12 +266,12 @@ export abstract class SsoAccessTokenProvider {
         }
     ) {
         if (DevSettings.instance.get('webAuth', false) && isWebWorkspace()) {
-            return new WebAuthorization(profile, cache, oidc)
+            return new WebAuthorization(profile, cache, oidc, reAuthState)
         }
         if (useDeviceFlow()) {
-            return new DeviceFlowAuthorization(profile, cache, oidc)
+            return new DeviceFlowAuthorization(profile, cache, oidc, reAuthState)
         }
-        return new AuthFlowAuthorization(profile, cache, oidc)
+        return new AuthFlowAuthorization(profile, cache, oidc, reAuthState)
     }
 }
 
@@ -372,14 +389,6 @@ function getSessionDuration(id: string) {
  *         - RefreshToken (optional)
  */
 export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
-    constructor(
-        profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
-        cache = getCache(),
-        oidc: OidcClient = OidcClient.create(profile.region)
-    ) {
-        super(profile, cache, oidc)
-    }
-
     override async registerClient(): Promise<ClientRegistration> {
         const companyName = getIdeProperties().company
         return this.oidc.registerClient(
@@ -436,7 +445,7 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
 
         // Clear cached if registration is expired
         if (cachedRegistration && isExpired(cachedRegistration)) {
-            await this.invalidate()
+            await this.invalidate('registrationExpired:DeviceCode')
         }
 
         return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
@@ -480,14 +489,6 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
  *               2. If there is a problem, server responds with `invalid_grant` error.
  */
 class AuthFlowAuthorization extends SsoAccessTokenProvider {
-    constructor(
-        profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
-        cache = getCache(),
-        oidc: OidcClient
-    ) {
-        super(profile, cache, oidc)
-    }
-
     override async registerClient(): Promise<ClientRegistration> {
         const companyName = getIdeProperties().company
         return this.oidc.registerClient(
@@ -578,7 +579,7 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
 
         // Clear cached if registration is expired or it uses a deprecate auth version (device code)
         if (cachedRegistration && (isExpired(cachedRegistration) || isDeprecatedAuth(cachedRegistration))) {
-            await this.invalidate()
+            await this.invalidate('registrationExpired:AuthFlow')
         }
 
         return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
@@ -592,14 +593,6 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
  */
 class WebAuthorization extends SsoAccessTokenProvider {
     private redirectUri = 'http://127.0.0.1:54321/oauth/callback'
-
-    constructor(
-        profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
-        cache = getCache(),
-        oidc: OidcClient
-    ) {
-        super(profile, cache, oidc)
-    }
 
     override async registerClient(): Promise<ClientRegistration> {
         const companyName = getIdeProperties().company
@@ -670,9 +663,46 @@ class WebAuthorization extends SsoAccessTokenProvider {
         const cachedRegistration = await this.cache.registration.load(cacheKey)
 
         if (cachedRegistration && (isExpired(cachedRegistration) || cachedRegistration.flow !== 'web auth code')) {
-            await this.invalidate()
+            await this.invalidate('registrationExpired:WebAuth')
         }
 
         return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
     }
+}
+
+/**
+ * Remembers the reason an SSO session was put in to a "needs reauthentication" state.
+ * The current use is for telemetry. When the user reauths, we want {@link AwsLoginWithBrowser}
+ * to know why it needed to be reauthed.
+ *
+ * The flow is to use `set()` to remember why the user was put in to a reauth state,
+ * then upon the next reauth use `get()`. Finally, use `clear()` if the reauth is
+ * successful.
+ */
+export class ReAuthState extends MemoryMap<ReAuthStateKey, ReAuthStateValue> {
+    static #instance: ReAuthState
+    static get instance() {
+        return (this.#instance ??= new ReAuthState())
+    }
+    protected constructor() {
+        super()
+    }
+
+    protected override asKey(profile: ReAuthStateKey): string {
+        return profile.identifier ?? profile.startUrl
+    }
+
+    protected override get name(): string {
+        return ReAuthState.name
+    }
+
+    override get default(): ReAuthStateValue {
+        return { reAuthReason: undefined }
+    }
+}
+
+type ReAuthStateKey = Pick<SsoProfile, 'identifier' | 'startUrl'>
+type ReAuthStateValue = {
+    // the latest reason for why the connection was moved in to a "needs reauth" state
+    reAuthReason?: string
 }

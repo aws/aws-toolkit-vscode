@@ -99,7 +99,7 @@ export function createTestAuth(): TestAuth {
     async function invalidateCachedCredentials(conn: Connection) {
         if (conn.type === 'sso') {
             const provider = tokenProviders.get(conn.id)
-            await provider?.invalidate()
+            await provider?.invalidate('test')
         } else {
             globals.loginManager.store.invalidateCredentials(fromString(conn.id))
         }

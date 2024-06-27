@@ -6,12 +6,12 @@
 import assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
-import { SsoAccessTokenProvider } from '../../../auth/sso/ssoAccessTokenProvider'
+import { ReAuthState, SsoAccessTokenProvider } from '../../../auth/sso/ssoAccessTokenProvider'
 import { assertTelemetry, installFakeClock } from '../../testUtil'
 import { getCache } from '../../../auth/sso/cache'
 
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
-import { ClientRegistration, SsoToken, proceedToBrowser } from '../../../auth/sso/model'
+import { ClientRegistration, SsoProfile, SsoToken, proceedToBrowser } from '../../../auth/sso/model'
 import { OidcClient } from '../../../auth/sso/clients'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import {
@@ -39,6 +39,7 @@ describe('SsoAccessTokenProvider', function () {
     let cache: ReturnType<typeof getCache>
     let clock: FakeTimers.InstalledClock
     let tempDir: string
+    let reAuthState: TestReAuthState
 
     function createToken(timeDelta: number, extras: Partial<SsoToken> = {}) {
         return {
@@ -88,7 +89,8 @@ describe('SsoAccessTokenProvider', function () {
         oidcClient = stub(OidcClient)
         tempDir = await makeTemporaryTokenCacheFolder()
         cache = getCache(tempDir)
-        sut = SsoAccessTokenProvider.create({ region, startUrl }, cache, oidcClient, () => true)
+        reAuthState = new TestReAuthState()
+        sut = SsoAccessTokenProvider.create({ region, startUrl }, cache, oidcClient, reAuthState, () => true)
     })
 
     afterEach(async function () {
@@ -102,7 +104,7 @@ describe('SsoAccessTokenProvider', function () {
             const validToken = createToken(hourInMs)
             await cache.token.save(startUrl, { region, startUrl, token: validToken })
             await cache.registration.save({ startUrl, region }, createRegistration(hourInMs))
-            await sut.invalidate()
+            await sut.invalidate('test')
 
             assert.strictEqual(await cache.token.load(startUrl), undefined)
             assert.strictEqual(await cache.registration.load({ startUrl, region }), undefined)
@@ -230,6 +232,65 @@ describe('SsoAccessTokenProvider', function () {
                 result: 'Succeeded',
                 isReAuth: undefined,
                 credentialStartUrl: startUrl,
+            })
+        })
+
+        describe('telemetry: ReAuthReason during SSO flow', () => {
+            // Note in the future we should use an `identifier` instead of `startUrl` for this test
+            beforeEach(() => {
+                setupFlow()
+                stubOpen()
+            })
+
+            it('does not clear the reAuthReason on failed login', async () => {
+                oidcClient.createToken.rejects(new Error('random error')) // Forces failure during SSO flow
+                reAuthState.set({ startUrl }, { reAuthReason: 'thisReasonWillNotBeCleared' })
+
+                await assert.rejects(sut.createToken({isReAuth: true})) // function under test
+
+                assert.deepStrictEqual(reAuthState.get({ startUrl }), {
+                    ...reAuthState.default,
+                    reAuthReason: 'thisReasonWillNotBeCleared',
+                })
+            })
+
+            it('clears the reAuthReason on successful login', async () => {
+                reAuthState.set({ startUrl }, { reAuthReason: 'myReAuthReason' })
+
+                await sut.createToken({isReAuth: true}) // function under test
+
+                assertTelemetry('aws_loginWithBrowser', {
+                    result: 'Succeeded',
+                    credentialStartUrl: startUrl,
+                    isReAuth: true,
+                    reAuthReason: 'myReAuthReason'
+                })
+                assert.deepStrictEqual(reAuthState.exists({ startUrl }), false)
+            })
+
+            it('no reAuthReason if isReAuth is false', async () => {
+                reAuthState.set({ startUrl }, { reAuthReason: 'thisReasonWontBeUsed' })
+
+                await sut.createToken({isReAuth: false}) // function under test
+
+                assertTelemetry('aws_loginWithBrowser', {
+                    result: 'Succeeded',
+                    credentialStartUrl: startUrl,
+                    isReAuth: false,
+                })
+            })
+
+            it('telemetry does not fail is reAuthReason does not exist', async () => {
+                assert.deepStrictEqual(reAuthState.exists({startUrl}), false)
+
+                await sut.createToken({isReAuth: true}) // function under test
+
+                assertTelemetry('aws_loginWithBrowser', {
+                    result: 'Succeeded',
+                    isReAuth: true,
+                    credentialStartUrl: startUrl,
+                    reAuthReason: undefined // this does not exist, but it is fine.
+                })
             })
         })
 
@@ -397,6 +458,42 @@ describe('SsoAccessTokenProvider', function () {
                 await assert.rejects(sut.createToken(), CancellationError)
                 assert.strictEqual(getTestWindow().shownMessages.length, 2)
             })
+        })
+    })
+
+    /**
+     * Exposes protected methods so we can test them
+     */
+    class TestReAuthState extends ReAuthState {
+        constructor() {
+            super()
+        }
+
+        override asKey(profile: { readonly identifier?: string; readonly startUrl: string; }): string {
+            return super.asKey(profile)
+        }
+
+        override get default(): { reAuthReason?: string; } {
+            return super.default
+        }
+    }
+
+    describe(ReAuthState.name, function () {
+        it(`asKey()`, async () => {
+            const profile1: Pick<SsoProfile, 'identifier' | 'startUrl'> = {
+                identifier: 'abc-123',
+                startUrl: 'https://sameUrl.com',
+            }
+            const profile2: Pick<SsoProfile, 'identifier' | 'startUrl'> = {
+                startUrl: 'https://sameUrl.com',
+            }
+
+            assert.deepStrictEqual(reAuthState.asKey(profile1), profile1.identifier)
+            assert.deepStrictEqual(reAuthState.asKey(profile2), profile2.startUrl)
+        })
+
+        it('default', () => {
+            assert.deepStrictEqual(reAuthState.default, { reAuthReason: undefined })
         })
     })
 })

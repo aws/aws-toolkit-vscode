@@ -183,11 +183,11 @@ export class Auth implements AuthService, ConnectionManager {
         if (profile.type === 'sso') {
             const provider = this.getSsoTokenProvider(id, profile)
 
-            // We cannot easily set isReAuth inside the createToken() call,
+            // We cannot easily set reauth related fields inside the createToken() call,
             // so we need to set it here.
             await telemetry.aws_loginWithBrowser.run(async span => {
                 span.record({ credentialStartUrl: profile.startUrl })
-                await this.authenticate(id, () => provider.createToken({isReAuth: true}), shouldInvalidate)
+                await this.authenticate(id, () => provider.createToken({ isReAuth: true }), shouldInvalidate)
             })
 
             return this.getSsoConnection(id, profile)
@@ -386,7 +386,7 @@ export class Auth implements AuthService, ConnectionManager {
             throw new ToolkitError('Auth: Cannot force expire an IAM connection')
         }
         const provider = this.getSsoTokenProvider(conn.id, profile)
-        await provider.invalidate()
+        await provider.invalidate('devModeManualExpiration')
         // updates the state of the connection
         await this.refreshConnectionState(conn)
     }
@@ -530,7 +530,8 @@ export class Auth implements AuthService, ConnectionManager {
 
             // XXX: never drop tokens in a dev environment, unless you are Amazon Q!
             if (getCodeCatalystDevEnvId() === undefined || isAmazonQ()) {
-                await provider.invalidate()
+                // TODO: Require invalidateConnection() to require a reason and then pass it in to the following instead
+                await provider.invalidate('explicitInvalidation')
             }
         } else if (profile.type === 'iam') {
             globals.loginManager.store.invalidateCredentials(fromString(id))
