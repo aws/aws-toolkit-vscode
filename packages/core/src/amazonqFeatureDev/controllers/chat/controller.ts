@@ -46,6 +46,7 @@ import {
     sessionClosed,
     updateCode,
     logWithConversationId,
+    messageWithConversationId,
 } from '../../userFacingText'
 import { getWorkspaceFoldersByPrefixes } from '../../../shared/utilities/workspaceUtils'
 
@@ -212,8 +213,8 @@ export class FeatureDevController {
             `${featureName} request failed: ${err.cause?.message ?? err.message}`
         )
 
-        let isSendErrorMessage = true
-        let defaultMessage = ''
+        let isSendErrorMessageWithRetries = true
+        let defaultMessage
         const isDenyListedError = denyListedErrors.some(err => errorMessage.includes(err))
 
         switch (err.code) {
@@ -245,7 +246,7 @@ export class FeatureDevController {
                 this.messenger.sendAnswer({
                     type: 'answer',
                     tabID: message.tabID,
-                    message: err.message,
+                    message: err.message + messageWithConversationId(session?.conversationIdUnsafe),
                 })
                 this.messenger.sendAnswer({
                     type: 'system-prompt',
@@ -269,8 +270,9 @@ export class FeatureDevController {
                 this.messenger.sendAnswer({
                     type: 'answer',
                     tabID: message.tabID,
-                    message: err.message,
+                    message: err.message + messageWithConversationId(session?.conversationIdUnsafe),
                 })
+                this.messenger.sendFeedback(message.tabID)
                 break
 
             case TabIdNotFoundError.name:
@@ -288,7 +290,7 @@ export class FeatureDevController {
                 this.messenger.sendAnswer({
                     type: 'answer',
                     tabID: message.tabID,
-                    message: err.message,
+                    message: err.message + messageWithConversationId(session?.conversationIdUnsafe),
                 })
                 this.messenger.sendAnswer({
                     type: 'system-prompt',
@@ -315,21 +317,22 @@ export class FeatureDevController {
                     case DevPhase.CODEGEN:
                         if (isDenyListedError) {
                             defaultMessage = `I'm sorry, I'm having trouble generating your code and can't continue at the moment. Please try again later, and share feedback to help me improve.`
-                            isSendErrorMessage = false
+                            isSendErrorMessageWithRetries = false
                             this.messenger.sendAnswer({
                                 type: 'answer',
                                 tabID: message.tabID,
-                                message: defaultMessage,
+                                message: defaultMessage + messageWithConversationId(session?.conversationIdUnsafe),
                             })
+                            this.messenger.sendFeedback(message.tabID)
                         } else {
                             defaultMessage = `I'm sorry, I ran into an issue while trying to generate your code. Please try again.`
                         }
                         break
                 }
 
-                if (isSendErrorMessage) {
+                if (isSendErrorMessageWithRetries) {
                     this.messenger.sendErrorMessage(
-                        defaultMessage?.length ? defaultMessage : errorMessage,
+                        defaultMessage ? defaultMessage : errorMessage,
                         message.tabID,
                         this.retriesRemaining(session),
                         session?.state.phase,

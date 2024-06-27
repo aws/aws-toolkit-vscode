@@ -49,6 +49,21 @@ export class Messenger {
         )
     }
 
+    public sendFeedback(tabID: string) {
+        this.sendAnswer({
+            message: undefined,
+            type: 'system-prompt',
+            followUps: [
+                {
+                    pillText: 'Send feedback',
+                    type: FollowUpTypes.SendFeedback,
+                    status: 'info',
+                },
+            ],
+            tabID,
+        })
+    }
+
     public sendMonthlyLimitError(tabID: string) {
         this.sendAnswer({
             type: 'answer',
@@ -72,18 +87,7 @@ export class Messenger {
                 tabID: tabID,
                 message: ErrorMessages.technicalDifficulties,
             })
-            this.sendAnswer({
-                message: undefined,
-                type: 'system-prompt',
-                followUps: [
-                    {
-                        pillText: 'Send feedback',
-                        type: FollowUpTypes.SendFeedback,
-                        status: 'info',
-                    },
-                ],
-                tabID,
-            })
+            this.sendFeedback(tabID)
             return
         }
         switch (phase) {
@@ -92,7 +96,7 @@ export class Messenger {
                     this.sendAnswer({
                         type: 'answer',
                         tabID: tabID,
-                        message: errorMessage,
+                        message: errorMessage + messageWithConversationId(conversationId),
                     })
                 } else {
                     this.dispatcher.sendErrorMessage(
@@ -110,7 +114,7 @@ export class Messenger {
                     this.sendAnswer({
                         type: 'answer',
                         tabID: tabID,
-                        message: errorMessage,
+                        message: errorMessage + messageWithConversationId(conversationId),
                     })
                 } else {
                     this.dispatcher.sendErrorMessage(
