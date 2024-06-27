@@ -12,7 +12,11 @@ import {
 } from './constants'
 
 export class SecurityScanError extends ToolkitError {
-    constructor(error: string, code: string, public customerFacingMessage: string) {
+    constructor(
+        error: string,
+        code: string,
+        public customerFacingMessage: string
+    ) {
         super(error, { code })
     }
 }

@@ -38,7 +38,10 @@ import { toSnakeCase } from '../../shared/utilities/textUtilities'
 import { getUserAgent } from '../../shared/telemetry/util'
 
 export class OidcClient {
-    public constructor(private readonly client: SSOOIDC, private readonly clock: { Date: typeof Date }) {}
+    public constructor(
+        private readonly client: SSOOIDC,
+        private readonly clock: { Date: typeof Date }
+    ) {}
 
     public async registerClient(request: RegisterClientRequest, startUrl: string, flow?: AuthenticationFlow) {
         const response = await this.client.registerClient(request)

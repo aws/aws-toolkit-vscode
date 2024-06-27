@@ -64,7 +64,10 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     private readonly section = getSectionOrThrow(this.sections, this.profileName, 'profile')
     private readonly profile = extractDataFromSection(this.section)
 
-    public constructor(private readonly profileName: string, private readonly sections: Section[]) {}
+    public constructor(
+        private readonly profileName: string,
+        private readonly sections: Section[]
+    ) {}
 
     public getCredentialsId(): CredentialsId {
         return {

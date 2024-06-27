@@ -142,7 +142,10 @@ export class ToolkitError extends Error implements ErrorInformation {
     readonly #cause = this.info.cause
     readonly #name = this.info.name ?? super.name
 
-    public constructor(message: string, protected readonly info: ErrorInformation = {}) {
+    public constructor(
+        message: string,
+        protected readonly info: ErrorInformation = {}
+    ) {
         super(message)
         this.message = message
     }
@@ -224,7 +227,7 @@ export class ToolkitError extends Error implements ErrorInformation {
             // TypeScript does not allow the use of `this` types for generic prototype methods unfortunately
             // This implementation is equivalent to re-assignment i.e. an unbound method on the prototype
             public static override chain<
-                T extends new (...args: ConstructorParameters<NamedErrorConstructor>) => ToolkitError
+                T extends new (...args: ConstructorParameters<NamedErrorConstructor>) => ToolkitError,
             >(this: T, ...args: Parameters<NamedErrorConstructor['chain']>): InstanceType<T> {
                 return ToolkitError.chain.call(this, ...args) as InstanceType<T>
             }

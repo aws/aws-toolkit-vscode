@@ -120,7 +120,10 @@ export namespace Result {
 }
 
 export class ResultError<E> extends Error {
-    public constructor(message: string, public readonly cause: E) {
+    public constructor(
+        message: string,
+        public readonly cause: E
+    ) {
         super(message)
     }
 

@@ -59,9 +59,8 @@ export class RedshiftNode extends AWSTreeNodeBase implements LoadMoreNode {
         let newChildrenNodes: RedshiftWarehouseNode[] = []
         if (token) {
             const compositeContinuationToken = JSON.parse(token) as CompositeContinuationToken
-            ;[newChildrenNodes, newProvisionedToken, newServerlessToken] = await this.loadNodes(
-                compositeContinuationToken
-            )
+            ;[newChildrenNodes, newProvisionedToken, newServerlessToken] =
+                await this.loadNodes(compositeContinuationToken)
         } else {
             ;[newChildrenNodes, newProvisionedToken, newServerlessToken] = await this.loadNodes(undefined)
         }

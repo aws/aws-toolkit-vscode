@@ -42,7 +42,10 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
     private readonly _credentialsMru: CredentialsProfileMru
     private readonly helpButton = createHelpButton(credentialHelpUrl)
 
-    public constructor(public readonly existingProfileNames: string[], protected context: vscode.ExtensionContext) {
+    public constructor(
+        public readonly existingProfileNames: string[],
+        protected context: vscode.ExtensionContext
+    ) {
         this._credentialsMru = new CredentialsProfileMru(context)
     }
 
