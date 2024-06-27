@@ -8,6 +8,7 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { DynamoDbTableNode } from './dynamoDbTableNode'
 import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
+import { toMap, updateInPlace, toArrayAsync } from '../../shared/utilities/collectionUtils'
 
 export class DynamoDbInstanceNode extends AWSTreeNodeBase {
     protected readonly placeHolderMessage = '[No Tables Found]'
@@ -29,7 +30,13 @@ export class DynamoDbInstanceNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const tables = this.dynamoDbClient.getTables()
+        const tables = toMap(await toArrayAsync(this.dynamoDbClient.getTables()), configuration => configuration)
         console.log(tables)
+        updateInPlace(
+            this.dynamoDbTableNodes,
+            tables.keys(),
+            key => this.dynamoDbTableNodes.get(key)!,
+            key => new DynamoDbTableNode(this.regionCode, key)
+        )
     }
 }
