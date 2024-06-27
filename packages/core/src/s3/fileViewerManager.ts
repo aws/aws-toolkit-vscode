@@ -46,7 +46,10 @@ export class S3FileProvider implements FileProvider {
     private readonly _file: { -readonly [P in keyof S3File]: S3File[P] }
     public readonly onDidChange = this._onDidChange.event
 
-    public constructor(private readonly client: S3.S3Client, file: S3File) {
+    public constructor(
+        private readonly client: S3.S3Client,
+        file: S3File
+    ) {
         this._file = { ...file }
     }
 

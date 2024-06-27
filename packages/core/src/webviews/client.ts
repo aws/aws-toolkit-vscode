@@ -41,8 +41,8 @@ type ClientCommands<T> = {
     readonly [P in keyof T]: T[P] extends EventEmitter<infer P>
         ? (listener: (e: P) => void) => Promise<{ dispose: () => void }>
         : OmitThisParameter<T[P]> extends (...args: infer P) => infer R
-        ? (...args: P) => R extends Promise<any> ? R : Promise<R>
-        : never
+          ? (...args: P) => R extends Promise<any> ? R : Promise<R>
+          : never
 }
 
 export type WebviewClient<T> = ClientCommands<T>

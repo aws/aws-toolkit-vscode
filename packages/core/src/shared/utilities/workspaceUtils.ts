@@ -445,18 +445,21 @@ export function getWorkspaceFoldersByPrefixes(
         addParentFolderCount < workspaceFolderPrefixGuards.maximumFolderDepthConsidered;
         addParentFolderCount++
     ) {
-        const workspacesByPrefixes = remainingWorkspaceFoldersToMap.reduce((acc, wsFolder) => {
-            const prefix = wsFolder.preferredPrefixQueue.pop()
-            // this should never happen, as last candidates should be handled below, and the array starts non empty
-            if (prefix === undefined) {
-                throw new ToolkitError(
-                    `Encountered a folder with invalid prefix candidates (workspace folder ${wsFolder.folder.name})`
-                )
-            }
-            acc[prefix] = acc[prefix] ?? []
-            acc[prefix].push(wsFolder)
-            return acc
-        }, {} as { [key: string]: (typeof remainingWorkspaceFoldersToMap)[0][] })
+        const workspacesByPrefixes = remainingWorkspaceFoldersToMap.reduce(
+            (acc, wsFolder) => {
+                const prefix = wsFolder.preferredPrefixQueue.pop()
+                // this should never happen, as last candidates should be handled below, and the array starts non empty
+                if (prefix === undefined) {
+                    throw new ToolkitError(
+                        `Encountered a folder with invalid prefix candidates (workspace folder ${wsFolder.folder.name})`
+                    )
+                }
+                acc[prefix] = acc[prefix] ?? []
+                acc[prefix].push(wsFolder)
+                return acc
+            },
+            {} as { [key: string]: (typeof remainingWorkspaceFoldersToMap)[0][] }
+        )
         remainingWorkspaceFoldersToMap = []
         for (const [prefix, folders] of Object.entries(workspacesByPrefixes)) {
             // if a folder has a unique prefix

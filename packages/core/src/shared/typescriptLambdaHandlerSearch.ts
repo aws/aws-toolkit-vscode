@@ -28,7 +28,10 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
     // _candidateExportNodes - all "export function Xyz()" / "export const Xyz = () => {}"
     private _candidateExportNodes: ts.Node[] = []
 
-    public constructor(private readonly filename: string, private readonly fileContents: string) {
+    public constructor(
+        private readonly filename: string,
+        private readonly fileContents: string
+    ) {
         this._baseFilename = path.parse(this.filename).name
     }
 

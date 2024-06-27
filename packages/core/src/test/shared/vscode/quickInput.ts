@@ -142,8 +142,8 @@ function printMatcher<T extends vscode.QuickPickItem>(matcher: ItemMatcher<T>) {
     matcher instanceof RegExp
         ? matcher.source
         : typeof matcher === 'string'
-        ? matcher
-        : JSON.stringify(matcher, undefined, 4)
+          ? matcher
+          : JSON.stringify(matcher, undefined, 4)
 }
 
 function findItemOrThrow<T extends vscode.QuickPickItem>(picker: vscode.QuickPick<T>, item: ItemMatcher<T>): T {

@@ -80,7 +80,10 @@ export class Service {
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
 
-    public constructor(private readonly client: DefaultEcsClient, public readonly description: ECS.Service) {}
+    public constructor(
+        private readonly client: DefaultEcsClient,
+        public readonly description: ECS.Service
+    ) {}
 
     public async listContainers(): Promise<Container[]> {
         const definition = await this.getDefinition()
@@ -149,7 +152,10 @@ export class Service {
 export class Cluster {
     public readonly id = this.cluster.clusterArn!
 
-    public constructor(private readonly client: DefaultEcsClient, private readonly cluster: ECS.Cluster) {}
+    public constructor(
+        private readonly client: DefaultEcsClient,
+        private readonly cluster: ECS.Cluster
+    ) {}
 
     public listServices(): AsyncCollection<Service[]> {
         return this.client

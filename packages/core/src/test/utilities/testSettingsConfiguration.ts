@@ -11,8 +11,8 @@ import { cast, TypeConstructor } from '../../shared/utilities/typeConstructors'
 type ObjectPath<T extends Record<string, any>, K extends PropertyKey[] = []> = K extends []
     ? [keyof T]
     : IndexObject<T, K> extends Record<string, any>
-    ? K | [...K, keyof IndexObject<T, K>]
-    : K
+      ? K | [...K, keyof IndexObject<T, K>]
+      : K
 
 type IndexObject<T extends Record<string, any>, K> = K extends [infer L, ...infer R]
     ? L extends keyof T

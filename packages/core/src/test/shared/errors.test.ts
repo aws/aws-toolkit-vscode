@@ -22,7 +22,11 @@ import { AWSError } from 'aws-sdk'
 import { AccessDeniedException } from '@aws-sdk/client-sso-oidc'
 
 class TestAwsError extends Error implements AWSError {
-    constructor(readonly code: string, message: string, readonly time: Date) {
+    constructor(
+        readonly code: string,
+        message: string,
+        readonly time: Date
+    ) {
         super(message)
     }
 }

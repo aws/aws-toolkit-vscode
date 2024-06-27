@@ -156,10 +156,10 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
                     section.startsWith('-')
                         ? '--vscode-diffEditor-removedTextBackground'
                         : section.startsWith('+')
-                        ? '--vscode-diffEditor-insertedTextBackground'
-                        : section.startsWith('@@')
-                        ? '--vscode-editorMarkerNavigationInfo-headerBackground'
-                        : '--vscode-diffEditor-unchangedCodeBackground'
+                          ? '--vscode-diffEditor-insertedTextBackground'
+                          : section.startsWith('@@')
+                            ? '--vscode-editorMarkerNavigationInfo-headerBackground'
+                            : '--vscode-diffEditor-unchangedCodeBackground'
                 });">
 
 \`\`\`${section.startsWith('-') || section.startsWith('+') ? 'diff' : section.startsWith('@@') ? undefined : language}

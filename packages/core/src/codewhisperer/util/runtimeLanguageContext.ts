@@ -189,7 +189,7 @@ export class RuntimeLanguageContext {
      * @returns request with source language name mapped to cwspr runtime language
      */
     public mapToRuntimeLanguage<
-        T extends codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest
+        T extends codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest,
     >(request: T): T {
         const fileContext = request.fileContext
         const runtimeLanguage: codewhispererClient.ProgrammingLanguage = {
