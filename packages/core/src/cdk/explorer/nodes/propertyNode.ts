@@ -15,7 +15,10 @@ export class PropertyNode implements TreeNode {
     public readonly id = this.key
     public readonly resource = this.value
 
-    public constructor(private readonly key: string, private readonly value: unknown) {}
+    public constructor(
+        private readonly key: string,
+        private readonly value: unknown
+    ) {}
 
     public async getChildren(): Promise<TreeNode[]> {
         if (this.value instanceof Array || this.value instanceof Object) {

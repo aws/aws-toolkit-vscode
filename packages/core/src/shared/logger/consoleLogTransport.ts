@@ -18,7 +18,10 @@ interface LogEntry {
  * Inspired from: https://github.com/MarcoMedrano/winston-transport-browserconsole/blob/master/src/lib/BrowserConsole.ts
  */
 export class ConsoleLogTransport extends TransportStream {
-    constructor(opts?: TransportStream.TransportStreamOptions, private readonly _console = console) {
+    constructor(
+        opts?: TransportStream.TransportStreamOptions,
+        private readonly _console = console
+    ) {
         super(opts)
     }
 

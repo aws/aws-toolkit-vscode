@@ -214,8 +214,8 @@ export async function loginWithMostRecentCredentials(
     const defaultProfile = profileNames.includes(defaultName)
         ? defaultName
         : profileNames.length === 1
-        ? profileNames[0]
-        : undefined
+          ? profileNames[0]
+          : undefined
 
     if (!previousCredentialsId && profileNames.length === 0) {
         await loginManager.logout(true)

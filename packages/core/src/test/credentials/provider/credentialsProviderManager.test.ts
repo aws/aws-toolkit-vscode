@@ -19,7 +19,10 @@ import { CredentialsProviderManager } from '../../../auth/providers/credentialsP
 class TestCredentialsProviderFactory implements CredentialsProviderFactory {
     private readonly providers: CredentialsProvider[] = []
 
-    public constructor(public readonly credentialSource: CredentialsProviderType, providerSubIds: string[]) {
+    public constructor(
+        public readonly credentialSource: CredentialsProviderType,
+        providerSubIds: string[]
+    ) {
         this.providers.push(
             ...providerSubIds.map<CredentialsProvider>(subId => {
                 return makeSampleCredentialsProvider(this.credentialSource, subId, true)

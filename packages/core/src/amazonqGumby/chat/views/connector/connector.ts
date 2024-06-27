@@ -33,7 +33,11 @@ class UiMessage {
 export class ErrorMessage extends UiMessage {
     override type: GumbyMessageType = 'errorMessage'
 
-    constructor(readonly title: string, readonly message: string, tabID: string) {
+    constructor(
+        readonly title: string,
+        readonly message: string,
+        tabID: string
+    ) {
         super(tabID)
     }
 }
@@ -67,13 +71,20 @@ export class AuthenticationUpdateMessage {
     readonly sender: string = gumbyChat
     readonly type: GumbyMessageType = 'authenticationUpdateMessage'
 
-    constructor(readonly featureDevEnabled: boolean, readonly authenticatingTabIDs: string[]) {}
+    constructor(
+        readonly featureDevEnabled: boolean,
+        readonly authenticatingTabIDs: string[]
+    ) {}
 }
 
 export class AuthNeededException extends UiMessage {
     override type: GumbyMessageType = 'authNeededException'
 
-    constructor(readonly message: string, readonly authType: AuthFollowUpType, tabID: string) {
+    constructor(
+        readonly message: string,
+        readonly authType: AuthFollowUpType,
+        tabID: string
+    ) {
         super(tabID)
     }
 }
@@ -137,7 +148,10 @@ export class ChatMessage extends UiMessage {
 export class ChatInputEnabledMessage extends UiMessage {
     override type: GumbyMessageType = 'chatInputEnabledMessage'
 
-    constructor(tabID: string, readonly enabled: boolean) {
+    constructor(
+        tabID: string,
+        readonly enabled: boolean
+    ) {
         super(tabID)
     }
 }
@@ -145,7 +159,11 @@ export class ChatInputEnabledMessage extends UiMessage {
 export class SendCommandMessage extends UiMessage {
     override type: GumbyMessageType = 'sendCommandMessage'
 
-    constructor(readonly command: GumbyCommands, tabID: string, readonly eventId: string) {
+    constructor(
+        readonly command: GumbyCommands,
+        tabID: string,
+        readonly eventId: string
+    ) {
         super(tabID)
     }
 }

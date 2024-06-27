@@ -49,7 +49,7 @@ describe('addLogEvents', async function () {
                           nextToken?: string | undefined
                       ) => Promise<CloudWatchLogsEvent[]>)
                     | undefined
-                )?
+                )?,
             ]
         >()
 
@@ -93,7 +93,7 @@ describe('addLogEvents', async function () {
                           nextToken?: string | undefined
                       ) => Promise<CloudWatchLogsEvent[]>)
                     | undefined
-                )?
+                )?,
             ]
         >()
 

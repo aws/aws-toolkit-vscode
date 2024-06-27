@@ -597,7 +597,10 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
         }
     }
 
-    constructor(quickPick: DataQuickPick<T>, protected override options: ExtendedQuickPickOptions<T>) {
+    constructor(
+        quickPick: DataQuickPick<T>,
+        protected override options: ExtendedQuickPickOptions<T>
+    ) {
         super(quickPick)
 
         this.transform(selection => {

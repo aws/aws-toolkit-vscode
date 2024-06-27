@@ -20,7 +20,10 @@ class TestNode implements TreeNode<TestNode> {
     public readonly onDidChangeChildren = this.onDidChangeChildrenEmitter.event
     public readonly onDidChangeTreeItem = this.onDidChangeTreeItemEmitter.event
 
-    public constructor(public readonly id: string, private readonly tree: Tree) {}
+    public constructor(
+        public readonly id: string,
+        private readonly tree: Tree
+    ) {}
 
     public refreshChildren() {
         this.onDidChangeChildrenEmitter.fire()

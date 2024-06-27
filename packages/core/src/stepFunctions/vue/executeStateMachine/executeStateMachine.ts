@@ -28,7 +28,10 @@ export class ExecuteStateMachineWebview extends VueWebview {
 
     private readonly logger = getLogger()
 
-    public constructor(private readonly channel: vscode.OutputChannel, private readonly stateMachine: StateMachine) {
+    public constructor(
+        private readonly channel: vscode.OutputChannel,
+        private readonly stateMachine: StateMachine
+    ) {
         super(ExecuteStateMachineWebview.sourcePath)
     }
 
