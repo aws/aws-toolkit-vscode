@@ -34,6 +34,7 @@ import { getNullLogger } from '../../shared/logger/logger'
 import {
     CreateCodeScanError,
     CreateUploadUrlError,
+    DefaultError,
     InvalidSourceZipError,
     SecurityScanTimedOutError,
     UploadArtifactToS3Error,
@@ -111,36 +112,44 @@ function mapRawToCodeScanIssue(issue: RawCodeScanIssue): CodeScanIssue {
     }
 }
 
-function mapToAggregatedList(
+export function mapToAggregatedList(
     codeScanIssueMap: Map<string, RawCodeScanIssue[]>,
     json: string,
     editor: vscode.TextEditor | undefined,
     scope: CodeWhispererConstants.CodeAnalysisScope
 ) {
-    const codeScanIssues: RawCodeScanIssue[] = JSON.parse(json)
-    codeScanIssues.forEach(issue => {
-        let shouldShow = true
+    try {
+        const codeScanIssues: RawCodeScanIssue[] = JSON.parse(json)
+        const filteredIssues = codeScanIssues.filter(issue => {
+            if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE && editor) {
+                for (let i = issue.startLine; i <= issue.endLine; i++) {
+                    const line = editor.document.lineAt(i - 1)?.text
+                    const codeContent = issue.codeSnippet.find(codeIssue => codeIssue.number === i)?.content
+                    if (line !== codeContent) {
+                        return false
+                    }
+                }
+            }
+            return true
+        })
 
-        if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE && editor) {
-            shouldShow = issue.codeSnippet.every(code => {
-                const line = editor.document.lineAt(code.number - 1)
-                return line?.text === code.content
-            })
-        }
-
-        if (shouldShow) {
+        filteredIssues.forEach(issue => {
             const filePath = issue.filePath
             if (codeScanIssueMap.has(filePath)) {
-                const issueList = codeScanIssueMap.get(filePath)
-                if (issueList) {
-                    issueList.push(issue)
-                    codeScanIssueMap.set(filePath, issueList)
-                }
+                codeScanIssueMap.get(filePath)!.push(issue)
             } else {
                 codeScanIssueMap.set(filePath, [issue])
             }
+        })
+    } catch (error) {
+        if (error instanceof SyntaxError) {
+            getLogger().error('Error parsing JSON:', error)
+            throw new DefaultError(error.message)
+        } else {
+            getLogger().error('Unexpected error:', error)
+            throw error
         }
-    })
+    }
 }
 
 export async function pollScanJobStatus(

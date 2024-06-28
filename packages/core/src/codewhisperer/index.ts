@@ -74,7 +74,7 @@ export { DocumentChangedSource, KeyStrokeHandler, DefaultDocumentChangedType } f
 export { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
 export { LicenseUtil } from './util/licenseUtil'
 export { SecurityIssueProvider } from './service/securityIssueProvider'
-export { listScanResults } from './service/securityScanHandler'
+export { listScanResults, mapToAggregatedList } from './service/securityScanHandler'
 export { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
 export { TelemetryHelper } from './util/telemetryHelper'
 export { LineSelection, LineTracker } from './tracker/lineTracker'
