@@ -5,8 +5,9 @@
 
 import { Commands } from '../shared'
 import { ExtContext } from '../shared/extensions'
-import { DBNode } from './explorer/docdbNode'
-import { startCluster, stopCluster } from './commands'
+import { DBNode, DocumentDBNode } from './explorer/docdbNode'
+import { createCluster } from './commands/createCluster'
+import { startCluster, stopCluster } from './commands/commands'
 
 /**
  * Activates DocumentDB components.
@@ -14,14 +15,16 @@ import { startCluster, stopCluster } from './commands'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
+        Commands.register('aws.docdb.createCluster', async (node?: DocumentDBNode) => {
+            await createCluster(node)
+        }),
+
         Commands.register('aws.docdb.startCluster', async (node?: DBNode) => {
             await startCluster(node)
-            node?.parent.refresh()
         }),
 
         Commands.register('aws.docdb.stopCluster', async (node?: DBNode) => {
             await stopCluster(node)
-            node?.parent.refresh()
         })
     )
 }

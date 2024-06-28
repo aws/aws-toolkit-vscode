@@ -2000,6 +2000,11 @@
                     "group": "0@2"
                 },
                 {
+                    "command": "aws.docdb.createCluster",
+                    "when": "view == aws.explorer && viewItem == awsDocDBNode",
+                    "group": "inline@1"
+                },
+                {
                     "command": "aws.docdb.startCluster",
                     "when": "viewItem == DBClusterStoppedNode"
                 },
@@ -3544,6 +3549,18 @@
                 "command": "aws.newThreatComposerFile",
                 "title": "%AWS.command.threatComposer.newFile%",
                 "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.createCluster",
+                "title": "%AWS.command.docdb.createCluster%",
+                "icon": "$(add)",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
