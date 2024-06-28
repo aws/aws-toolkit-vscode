@@ -178,8 +178,28 @@ describe('securityScanHandler', function () {
 
             mapToAggregatedList(codeScanIssueMap, json, editor, CodeWhispererConstants.CodeAnalysisScope.FILE)
 
-            assert.equal(codeScanIssueMap.size, 2)
+            assert.equal(codeScanIssueMap.size, 1)
             assert.equal(codeScanIssueMap.get('file1.ts')?.length, 2)
+        })
+
+        it('should filter issues by checking the codesnippet', () => {
+            const json = JSON.stringify([
+                {
+                    filePath: 'file1.ts',
+                    startLine: 1,
+                    endLine: 2,
+                    codeSnippet: [
+                        { number: 1, content: 'line 1' },
+                        { number: 2, content: 'line 2' },
+                    ],
+                },
+                { filePath: 'file1.ts', startLine: 3, endLine: 3, codeSnippet: [{ number: 5, content: 'line 3' }] },
+            ])
+
+            mapToAggregatedList(codeScanIssueMap, json, editor, CodeWhispererConstants.CodeAnalysisScope.FILE)
+
+            assert.equal(codeScanIssueMap.size, 1)
+            assert.equal(codeScanIssueMap.get('file1.ts')?.length, 1)
         })
     })
 })
