@@ -34,7 +34,6 @@ import { getNullLogger } from '../../shared/logger/logger'
 import {
     CreateCodeScanError,
     CreateUploadUrlError,
-    DefaultError,
     InvalidSourceZipError,
     SecurityScanTimedOutError,
     UploadArtifactToS3Error,
@@ -118,38 +117,28 @@ export function mapToAggregatedList(
     editor: vscode.TextEditor | undefined,
     scope: CodeWhispererConstants.CodeAnalysisScope
 ) {
-    try {
-        const codeScanIssues: RawCodeScanIssue[] = JSON.parse(json)
-        const filteredIssues = codeScanIssues.filter(issue => {
-            if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE && editor) {
-                for (let i = issue.startLine; i <= issue.endLine; i++) {
-                    const line = editor.document.lineAt(i - 1)?.text
-                    const codeContent = issue.codeSnippet.find(codeIssue => codeIssue.number === i)?.content
-                    if (line !== codeContent) {
-                        return false
-                    }
+    const codeScanIssues: RawCodeScanIssue[] = JSON.parse(json)
+    const filteredIssues = codeScanIssues.filter(issue => {
+        if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE && editor) {
+            for (let i = issue.startLine; i <= issue.endLine; i++) {
+                const line = editor.document.lineAt(i - 1)?.text
+                const codeContent = issue.codeSnippet.find(codeIssue => codeIssue.number === i)?.content
+                if (line !== codeContent) {
+                    return false
                 }
             }
-            return true
-        })
-
-        filteredIssues.forEach(issue => {
-            const filePath = issue.filePath
-            if (codeScanIssueMap.has(filePath)) {
-                codeScanIssueMap.get(filePath)!.push(issue)
-            } else {
-                codeScanIssueMap.set(filePath, [issue])
-            }
-        })
-    } catch (error) {
-        if (error instanceof SyntaxError) {
-            getLogger().error('Error parsing JSON:', error)
-            throw new DefaultError(error.message)
-        } else {
-            getLogger().error('Unexpected error:', error)
-            throw error
         }
-    }
+        return true
+    })
+
+    filteredIssues.forEach(issue => {
+        const filePath = issue.filePath
+        if (codeScanIssueMap.has(filePath)) {
+            codeScanIssueMap.get(filePath)!.push(issue)
+        } else {
+            codeScanIssueMap.set(filePath, [issue])
+        }
+    })
 }
 
 export async function pollScanJobStatus(

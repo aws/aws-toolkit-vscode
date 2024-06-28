@@ -17,6 +17,7 @@ import {
 } from 'aws-core-vscode/codewhisperer'
 import assert from 'assert'
 import sinon from 'sinon'
+import * as vscode from 'vscode'
 import fs from 'fs'
 
 const mockCodeScanFindings = JSON.stringify([
@@ -122,17 +123,22 @@ describe('securityScanHandler', function () {
 
     describe('mapToAggregatedList', () => {
         let codeScanIssueMap: Map<string, RawCodeScanIssue[]>
-        let editor: any
+        let editor: vscode.TextEditor | undefined
 
         setup(() => {
             codeScanIssueMap = new Map()
             editor = {
                 document: {
-                    lineAt: (lineNumber: number) => ({
+                    lineAt: (lineNumber: number): vscode.TextLine => ({
+                        lineNumber: lineNumber + 1,
+                        range: new vscode.Range(0, 0, 0, 0),
+                        rangeIncludingLineBreak: new vscode.Range(0, 0, 0, 0),
+                        firstNonWhitespaceCharacterIndex: 0,
+                        isEmptyOrWhitespace: false,
                         text: `line ${lineNumber + 1}`,
                     }),
                 },
-            }
+            } as vscode.TextEditor
         })
 
         test('should aggregate issues by file path', () => {
