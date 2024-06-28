@@ -218,7 +218,7 @@ export const fileScanUploadIntent = 'AUTOMATIC_FILE_SECURITY_SCAN'
 
 export const projectScanPayloadSizeLimitBytes = 1 * Math.pow(2, 30) // 1GB
 
-export const projectIndexSizeLimitBytes = 250 * Math.pow(2, 20) // 500 MB
+export const projectIndexSizeLimitBytes = 250 * Math.pow(2, 20) // 250 MB
 
 export const projectScanUploadIntent = 'FULL_PROJECT_SECURITY_SCAN'
 
