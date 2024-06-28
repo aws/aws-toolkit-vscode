@@ -41,7 +41,7 @@ export class TabDataGenerator {
         [
             'cwc',
             `Hi, I'm Amazon Q. I can answer your software development questions. 
-        Ask me to explain, debug, or optimize your code. \n
+        Ask me to explain, debug, or optimize your code.
         You can enter \`/\` to see a list of quick actions. Add @workspace to beginning of your message to include your entire workspace as context.`,
         ],
         [
