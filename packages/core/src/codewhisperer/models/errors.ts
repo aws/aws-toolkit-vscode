@@ -31,7 +31,7 @@ export class ProjectSizeExceededError extends SecurityScanError {
 
 export class DefaultError extends SecurityScanError {
     constructor() {
-        super(`Security scan failed.`, 'DefaultError', DefaultCodeScanErrorMessage)
+        super('Security scan failed.', 'DefaultError', DefaultCodeScanErrorMessage)
     }
 }
 
