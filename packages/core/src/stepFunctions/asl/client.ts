@@ -61,6 +61,7 @@ export class ASLLanguageClient {
      * `registerDocumentRangeFormattingEditProvider`, …).
      */
     static async create(extensionContext: ExtensionContext) {
+        console.log('Starting the language client')
         const config = new StepFunctionsSettings()
         const toDispose = extensionContext.subscriptions
 
@@ -162,6 +163,7 @@ export class ASLLanguageClient {
             }
         }
 
+        console.log('Waiting for client to be ready')
         return client.onReady().then(() => {
             updateFormatterRegistration()
             const disposableFunc = { dispose: () => rangeFormatting?.dispose() as void }
@@ -173,6 +175,7 @@ export class ASLLanguageClient {
                     `${message}\nUse setting 'aws.stepfunctions.asl.maxItemsComputed' to configure the limit.`
                 )
             })
+            console.log('client is ready. Firing the event')
             this.ASLInit.fire()
         })
     }

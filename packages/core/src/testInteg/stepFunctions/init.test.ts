@@ -22,13 +22,19 @@ describe('stepFunctions ASL LSP', async function () {
 
 }`
         const fileName = 'stepfunction.asl'
+        console.log('creating the listening promise')
         const promise2 = new Promise(resolve => {
+            console.log('promise created')
             ASLLanguageClient.onASLInit(() => {
+                console.log('resolve called')
                 resolve(undefined)
             })
         })
+        console.log('opening the editor')
         const editor = await openATextEditorWithText(stateMachineFileText, fileName, tempFolder)
+        console.log('waiting for the promise')
         await promise2
+        console.log('finished waiting for the project')
         const result = (await vscode.commands.executeCommand(
             'vscode.executeCompletionItemProvider',
             editor.document.uri,
