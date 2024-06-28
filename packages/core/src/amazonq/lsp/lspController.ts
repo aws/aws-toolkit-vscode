@@ -67,6 +67,8 @@ const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/temp/man
 // this LSP client in Q extension is only going to work with these LSP server versions
 const supportedLspServerVersions = ['0.0.5']
 
+const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
+
 export class LspController {
     static #instance: LspController
 
@@ -117,7 +119,7 @@ export class LspController {
 
     isLspInstalled(context: vscode.ExtensionContext) {
         const localQServer = context.asAbsolutePath(path.join('resources', 'qserver'))
-        const localNodeRuntime = context.asAbsolutePath(path.join('resources', 'node'))
+        const localNodeRuntime = context.asAbsolutePath(path.join('resources', nodeBinName))
         return fs.existsSync(localQServer) && fs.existsSync(localNodeRuntime)
     }
 
@@ -213,8 +215,7 @@ export class LspController {
             const zip = new AdmZip(zipFilePath)
             zip.extractAllTo(context.asAbsolutePath(path.join('resources')))
             fs.removeSync(zipFilePath)
-            const nodename = process.platform === 'win32' ? 'node.exe' : 'node'
-            const noderuntimeFilePath = path.join(tempFolder, nodename)
+            const noderuntimeFilePath = path.join(tempFolder, nodeBinName)
             await this._download(noderuntimeFilePath, noderuntime.url)
 
             const match2 = await this.hashMatch(noderuntimeFilePath, noderuntime)
@@ -222,7 +223,7 @@ export class LspController {
                 return false
             }
             fs.chmodSync(noderuntimeFilePath, 0o755)
-            fs.moveSync(noderuntimeFilePath, context.asAbsolutePath(path.join('resources', nodename)))
+            fs.moveSync(noderuntimeFilePath, context.asAbsolutePath(path.join('resources', nodeBinName)))
 
             return true
         } catch (e) {
