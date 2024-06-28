@@ -208,7 +208,10 @@ export abstract class VueWebview {
             private readonly instance: InstanceType<T>
             private panel?: vscode.WebviewPanel
 
-            public constructor(protected readonly context: vscode.ExtensionContext, ...args: ConstructorParameters<T>) {
+            public constructor(
+                protected readonly context: vscode.ExtensionContext,
+                ...args: ConstructorParameters<T>
+            ) {
                 this.instance = new target(...args) as InstanceType<T>
 
                 for (const [prop, val] of Object.entries(this.instance)) {
@@ -266,7 +269,10 @@ export abstract class VueWebview {
 
             public readonly onDidResolveView = this.onDidResolveViewEmitter.event
 
-            public constructor(protected readonly context: vscode.ExtensionContext, ...args: ConstructorParameters<T>) {
+            public constructor(
+                protected readonly context: vscode.ExtensionContext,
+                ...args: ConstructorParameters<T>
+            ) {
                 this.instance = new target(...args) as InstanceType<T>
 
                 for (const [prop, val] of Object.entries(this.instance)) {

@@ -320,7 +320,10 @@ class CommandResource<T extends Callback = Callback, U extends any[] = any[]> {
     private idCounter = 0
     public readonly id = this.resource.info.id
 
-    public constructor(private readonly resource: Deferred<T, U>, private readonly commands = vscode.commands) {}
+    public constructor(
+        private readonly resource: Deferred<T, U>,
+        private readonly commands = vscode.commands
+    ) {}
 
     public get registered() {
         return !!this.subscription

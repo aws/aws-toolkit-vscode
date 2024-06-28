@@ -6,6 +6,7 @@
 import * as os from 'os'
 import * as _path from 'path'
 
+/** Matches Windows drive letter ("C:"). */
 export const driveLetterRegex = /^[a-zA-Z]\:/
 
 /**

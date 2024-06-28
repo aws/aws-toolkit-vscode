@@ -32,7 +32,10 @@ import { openUrl } from './utilities/vsCodeUtils'
 export class AwsContextCommands {
     private readonly _regionProvider: RegionProvider
 
-    public constructor(regionProvider: RegionProvider, private readonly auth: Auth) {
+    public constructor(
+        regionProvider: RegionProvider,
+        private readonly auth: Auth
+    ) {
         this._regionProvider = regionProvider
     }
 

@@ -96,7 +96,10 @@ export class InputBoxPrompter extends Prompter<string> {
         return this._lastResponse
     }
 
-    constructor(public readonly inputBox: InputBox, protected readonly options: ExtendedInputBoxOptions = {}) {
+    constructor(
+        public readonly inputBox: InputBox,
+        protected readonly options: ExtendedInputBoxOptions = {}
+    ) {
         super()
     }
 

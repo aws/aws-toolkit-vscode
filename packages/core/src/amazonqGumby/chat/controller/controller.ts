@@ -53,6 +53,7 @@ import { CodeTransformTelemetryState } from '../../telemetry/codeTransformTeleme
 import { getAuthType } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
 import DependencyVersions from '../../models/dependencies'
 import { getStringHash } from '../../../shared/utilities/textUtilities'
+import { getTelemetryReasonDesc } from '../../../shared/errors'
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
 export interface ChatControllerEventEmitters {
@@ -233,7 +234,7 @@ export class GumbyController {
 
     private async validateProjectsWithReplyOnError(message: any): Promise<TransformationCandidateProject[]> {
         let telemetryJavaVersion = JDKToTelemetryValue(JDKVersion.UNSUPPORTED) as CodeTransformJavaSourceVersionsAllowed
-        let errorCode = undefined
+        let err
         try {
             const validProjects = await getValidCandidateProjects()
             if (validProjects.length > 0) {
@@ -242,23 +243,24 @@ export class GumbyController {
                 telemetryJavaVersion = JDKToTelemetryValue(javaVersion) as CodeTransformJavaSourceVersionsAllowed
             }
             return validProjects
-        } catch (err: any) {
-            if (err instanceof NoJavaProjectsFoundError) {
+        } catch (e: any) {
+            if (e instanceof NoJavaProjectsFoundError) {
                 this.messenger.sendUnrecoverableErrorResponse('no-java-project-found', message.tabID)
-            } else if (err instanceof NoMavenJavaProjectsFoundError) {
+            } else if (e instanceof NoMavenJavaProjectsFoundError) {
                 this.messenger.sendUnrecoverableErrorResponse('no-maven-java-project-found', message.tabID)
             } else {
                 this.messenger.sendUnrecoverableErrorResponse('no-project-found', message.tabID)
             }
-            errorCode = err.code
+            err = e
         } finally {
             // New projectDetails metric should always be fired whether the project was valid or invalid
             telemetry.codeTransform_projectDetails.emit({
                 passive: true,
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformLocalJavaVersion: telemetryJavaVersion,
-                result: errorCode ? MetadataResult.Fail : MetadataResult.Pass,
-                reason: errorCode,
+                result: err?.code ? MetadataResult.Fail : MetadataResult.Pass,
+                reason: err?.code,
+                reasonDesc: getTelemetryReasonDesc(err),
             })
         }
         return []

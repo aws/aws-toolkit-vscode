@@ -214,7 +214,10 @@ class VirtualObjectFile implements FileProvider {
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChange = this.onDidChangeEmitter.event
 
-    public constructor(private readonly storage: vscode.Memento | vscode.SecretStorage, private readonly key: string) {}
+    public constructor(
+        private readonly storage: vscode.Memento | vscode.SecretStorage,
+        private readonly key: string
+    ) {}
 
     /** Emits an event indicating this file's content has changed */
     public refresh() {

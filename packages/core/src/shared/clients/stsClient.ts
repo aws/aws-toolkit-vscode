@@ -10,7 +10,10 @@ import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type StsClient = ClassToInterfaceType<DefaultStsClient>
 export class DefaultStsClient {
-    public constructor(public readonly regionCode: string, private readonly credentials?: Credentials) {}
+    public constructor(
+        public readonly regionCode: string,
+        private readonly credentials?: Credentials
+    ) {}
 
     public async assumeRole(request: STS.AssumeRoleRequest): Promise<STS.AssumeRoleResponse> {
         const sdkClient = await this.createSdkClient()

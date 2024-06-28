@@ -60,7 +60,7 @@ function handleMessage(event) {
 }
 
 function updateContent(/** @type {string} */ text) {
-    if (document.readyState === 'complete') {
+    if (document.readyState !== 'loading') {
         void render(text)
     } else {
         document.addEventListener('DOMContentLoaded', function () {

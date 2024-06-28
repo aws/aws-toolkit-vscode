@@ -13,7 +13,8 @@ import { isNonNullable } from './utilities/tsUtils'
 import type * as fs from 'fs'
 import type * as os from 'os'
 import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
-import { isAutomation } from './vscode/env'
+import { getUsername, isAutomation } from './vscode/env'
+import { driveLetterRegex } from './utilities/pathUtils'
 
 export const errorCode = {
     invalidConnection: 'InvalidConnection',
@@ -141,7 +142,10 @@ export class ToolkitError extends Error implements ErrorInformation {
     readonly #cause = this.info.cause
     readonly #name = this.info.name ?? super.name
 
-    public constructor(message: string, protected readonly info: ErrorInformation = {}) {
+    public constructor(
+        message: string,
+        protected readonly info: ErrorInformation = {}
+    ) {
         super(message)
         this.message = message
     }
@@ -223,7 +227,7 @@ export class ToolkitError extends Error implements ErrorInformation {
             // TypeScript does not allow the use of `this` types for generic prototype methods unfortunately
             // This implementation is equivalent to re-assignment i.e. an unbound method on the prototype
             public static override chain<
-                T extends new (...args: ConstructorParameters<NamedErrorConstructor>) => ToolkitError
+                T extends new (...args: ConstructorParameters<NamedErrorConstructor>) => ToolkitError,
             >(this: T, ...args: Parameters<NamedErrorConstructor['chain']>): InstanceType<T> {
                 return ToolkitError.chain.call(this, ...args) as InstanceType<T>
             }
@@ -312,9 +316,87 @@ export function getTelemetryResult(error: unknown | undefined): Result {
     return 'Failed'
 }
 
-/** Gets the (partial) error message detail for the `reasonDesc` field. */
+/**
+ * Removes potential PII from a string, for logging/telemetry.
+ *
+ * Examples:
+ * - "Failed to save c:/fooß/bar/baz.txt" => "Failed to save c:/xß/x/x.txt"
+ * - "EPERM for dir c:/Users/user1/.aws/sso/cache/abc123.json" => "EPERM for dir c:/Users/x/.aws/sso/cache/x.json"
+ */
+export function scrubNames(s: string, username?: string) {
+    let r = ''
+    const fileExtRe = /\.[^.]{1,4}$/
+    const slashdot = /^[~.]*[\/\\]*/
+
+    /** Allowlisted filepath segments. */
+    const keep = new Set<string>([
+        '~',
+        '.',
+        '..',
+        '.aws',
+        'aws',
+        'sso',
+        'cache',
+        'credentials',
+        'config',
+        'Users',
+        'users',
+        'home',
+    ])
+
+    if (username && username.length > 2) {
+        s = s.replaceAll(username, 'x')
+    }
+
+    // Replace contiguous whitespace with 1 space.
+    s = s.replace(/\s+/g, ' ')
+
+    // 1. split on whitespace.
+    // 2. scrub words that match username or look like filepaths.
+    const words = s.split(/\s+/)
+    for (const word of words) {
+        const pathSegments = word.split(/[\/\\]/)
+        if (pathSegments.length < 2) {
+            // Not a filepath.
+            r += ' ' + word
+            continue
+        }
+
+        // Replace all (non-allowlisted) ASCII filepath segments with "x".
+        // "/foo/bar/aws/sso/" => "/x/x/aws/sso/"
+        let scrubbed = ''
+        // Get the frontmatter ("/", "../", "~/", or "./").
+        const start = word.trimStart().match(slashdot)?.[0] ?? ''
+        const fileExt = word.trimEnd().match(fileExtRe)?.[0] ?? ''
+        pathSegments[0] = pathSegments[0].trimStart().replace(slashdot, '')
+        for (const seg of pathSegments) {
+            if (driveLetterRegex.test(seg)) {
+                scrubbed += seg
+            } else if (keep.has(seg)) {
+                scrubbed += '/' + seg
+            } else {
+                // Save the first non-ASCII (unicode) char, if any.
+                const nonAscii = seg.match(/[^\p{ASCII}]/u)?.[0] ?? ''
+                // Replace all chars (except [^…]) with "x" .
+                const ascii = seg.replace(/[^$[\](){}:;'" ]+/g, 'x')
+                scrubbed += `/${ascii}${nonAscii}`
+            }
+        }
+
+        r += ` ${start.replace(/\\/g, '/')}${scrubbed.replace(/^[\/\\]+/, '')}${fileExt}`
+    }
+
+    return r.trim()
+}
+
+/**
+ * Gets the (partial) error message detail for the `reasonDesc` field.
+ *
+ * @param err Error object, or message text
+ */
 export function getTelemetryReasonDesc(err: unknown | undefined): string | undefined {
-    const msg = getErrorMsg(err as Error)
+    const m = typeof err === 'string' ? err : getErrorMsg(err as Error) ?? ''
+    const msg = scrubNames(m, getUsername())
 
     // Truncate to 200 chars.
     return msg && msg.length > 0 ? msg.substring(0, 200) : undefined
