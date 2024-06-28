@@ -120,9 +120,9 @@ export function mapToAggregatedList(
     const codeScanIssues: RawCodeScanIssue[] = JSON.parse(json)
     const filteredIssues = codeScanIssues.filter(issue => {
         if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE && editor) {
-            for (let i = issue.startLine; i <= issue.endLine; i++) {
-                const line = editor.document.lineAt(i - 1)?.text
-                const codeContent = issue.codeSnippet.find(codeIssue => codeIssue.number === i)?.content
+            for (let lineNumber = issue.startLine; lineNumber <= issue.endLine; lineNumber++) {
+                const line = editor.document.lineAt(lineNumber - 1)?.text
+                const codeContent = issue.codeSnippet.find(codeIssue => codeIssue.number === lineNumber)?.content
                 if (line !== codeContent) {
                     return false
                 }
