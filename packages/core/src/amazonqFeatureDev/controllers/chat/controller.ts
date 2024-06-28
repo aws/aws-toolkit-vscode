@@ -214,7 +214,6 @@ export class FeatureDevController {
         )
 
         let defaultMessage
-        let noRetries = false
         const isDenyListedError = denyListedErrors.some(err => errorMessage.includes(err))
 
         switch (err.code) {
@@ -304,9 +303,8 @@ export class FeatureDevController {
                         }
                         break
                     case DevPhase.CODEGEN:
-                        if (isDenyListedError) {
+                        if (this.retriesRemaining(session) === 0) {
                             defaultMessage = ErrorMessages.codeGen.denyListedError
-                            noRetries = true
                         } else {
                             defaultMessage = ErrorMessages.codeGen.default
                         }
@@ -316,7 +314,7 @@ export class FeatureDevController {
                 this.messenger.sendErrorMessage(
                     defaultMessage ? defaultMessage : errorMessage,
                     message.tabID,
-                    noRetries ? 0 : this.retriesRemaining(session),
+                    this.retriesRemaining(session),
                     session?.conversationIdUnsafe,
                     !!defaultMessage
                 )
