@@ -119,6 +119,8 @@ export async function activate(extensionContext: ExtensionContext) {
 
     const workerThreads = CodeWhispererSettings.instance.getIndexWorkerThreads()
     let child: cp.ChildProcessWithoutNullStreams | undefined = undefined
+
+    const nodename = process.platform === 'win32' ? 'node.exe' : 'node'
     if (workerThreads > 0 && workerThreads < 100) {
         const env: EnvType = {
             Q_WORKER_THREADS: workerThreads.toString(),
@@ -126,14 +128,14 @@ export async function activate(extensionContext: ExtensionContext) {
             PATH: process.env.PATH,
         }
         child = cp.spawn(
-            extensionContext.asAbsolutePath(path.join('resources', 'node')),
+            extensionContext.asAbsolutePath(path.join('resources', nodename)),
             [serverModule, ...debugOptions.execArgv],
             {
                 env: env,
             }
         )
     } else {
-        child = cp.spawn(extensionContext.asAbsolutePath(path.join('resources', 'node')), [
+        child = cp.spawn(extensionContext.asAbsolutePath(path.join('resources', nodename)), [
             serverModule,
             ...debugOptions.execArgv,
         ])

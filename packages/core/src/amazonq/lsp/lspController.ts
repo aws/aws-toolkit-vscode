@@ -213,8 +213,8 @@ export class LspController {
             const zip = new AdmZip(zipFilePath)
             zip.extractAllTo(context.asAbsolutePath(path.join('resources')))
             fs.removeSync(zipFilePath)
-
-            const noderuntimeFilePath = path.join(tempFolder, 'node')
+            const nodename = process.platform === 'win32' ? 'node.exe' : 'node'
+            const noderuntimeFilePath = path.join(tempFolder, nodename)
             await this._download(noderuntimeFilePath, noderuntime.url)
 
             const match2 = await this.hashMatch(noderuntimeFilePath, noderuntime)
@@ -222,7 +222,7 @@ export class LspController {
                 return false
             }
             fs.chmodSync(noderuntimeFilePath, 0o755)
-            fs.moveSync(noderuntimeFilePath, context.asAbsolutePath(path.join('resources', 'node')))
+            fs.moveSync(noderuntimeFilePath, context.asAbsolutePath(path.join('resources', nodename)))
 
             return true
         } catch (e) {
