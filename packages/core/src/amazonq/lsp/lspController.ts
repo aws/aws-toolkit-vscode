@@ -11,7 +11,7 @@ import { getLogger } from '../../shared/logger/logger'
 import { CurrentWsFolders, collectFilesForIndex } from '../../shared/utilities/workspaceUtils'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import fetch from 'node-fetch'
-import { clear, getLspServerUsage, indexFiles, query } from './lspClient'
+import { getLspServerUsage, indexFiles, query } from './lspClient'
 import AdmZip from 'adm-zip'
 import { RelevantTextDocument } from '@amzn/codewhisperer-streaming'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
@@ -232,10 +232,6 @@ export class LspController {
         }
     }
 
-    async clear() {
-        clear('clear')
-    }
-
     async query(s: string): Promise<RelevantTextDocument[]> {
         const cs: Chunk[] = await query(s)
         const resp: RelevantTextDocument[] = []
@@ -330,16 +326,19 @@ export class LspController {
                         getLogger().info('LspController: LSP activated')
                         LspController.instance.buildIndex()
 
-                        globals.clock.setInterval(async () => {
-                            const usage = await getLspServerUsage()
-                            if (usage) {
-                                getLogger().info(
-                                    `LspController: LSP server CPU ${usage.cpuUsage}%, LSP server Memory ${
-                                        usage.memoryUsage / (1024 * 1024)
-                                    }MB  `
-                                )
-                            }
-                        }, 20 * 60 * 1000)
+                        globals.clock.setInterval(
+                            async () => {
+                                const usage = await getLspServerUsage()
+                                if (usage) {
+                                    getLogger().info(
+                                        `LspController: LSP server CPU ${usage.cpuUsage}%, LSP server Memory ${
+                                            usage.memoryUsage / (1024 * 1024)
+                                        }MB  `
+                                    )
+                                }
+                            },
+                            20 * 60 * 1000
+                        )
                     })
                 } catch (e) {
                     getLogger().error(`LspController: LSP failed to activate ${e}`)

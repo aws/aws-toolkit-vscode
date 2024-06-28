@@ -17,16 +17,10 @@ import * as jose from 'jose'
 import { Disposable, ExtensionContext } from 'vscode'
 
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient'
-import {
-    ClearRequestType,
-    GetUsageRequestType,
-    IndexRequestType,
-    QueryRequestType,
-    UpdateIndexRequestType,
-    Usage,
-} from './types'
+import { GetUsageRequestType, IndexRequestType, QueryRequestType, UpdateIndexRequestType, Usage } from './types'
 import { Writable } from 'stream'
 import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
+import { getLogger } from '../../shared'
 
 const localize = nls.loadMessageBundle()
 let client: LanguageClient | undefined = undefined
@@ -41,36 +35,39 @@ async function encrypt(payload: string) {
 
 export async function indexFiles(request: string[], rootPath: string, refresh: boolean) {
     if (client) {
-        const encryptedRequest = await encrypt(
-            JSON.stringify({
-                filePaths: request,
-                rootPath: rootPath,
-                refresh: refresh,
-            })
-        )
-        const resp = await client.sendRequest(IndexRequestType, encryptedRequest)
-        return resp
+        try {
+            const encryptedRequest = await encrypt(
+                JSON.stringify({
+                    filePaths: request,
+                    rootPath: rootPath,
+                    refresh: refresh,
+                })
+            )
+            const resp = await client.sendRequest(IndexRequestType, encryptedRequest)
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: indexFiles error: ${e}`)
+            return undefined
+        }
     }
 }
 
 export async function query(request: string) {
     if (client) {
-        const resp = await client.sendRequest(
-            QueryRequestType,
-            await encrypt(
-                JSON.stringify({
-                    query: request,
-                })
+        try {
+            const resp = await client.sendRequest(
+                QueryRequestType,
+                await encrypt(
+                    JSON.stringify({
+                        query: request,
+                    })
+                )
             )
-        )
-        return resp
-    }
-}
-
-export async function clear(request: string) {
-    if (client) {
-        const resp = await client.sendRequest(ClearRequestType, await encrypt(JSON.stringify({})))
-        return resp
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: query error: ${e}`)
+            return []
+        }
     }
 }
 
@@ -82,15 +79,20 @@ export async function getLspServerUsage(): Promise<Usage | undefined> {
 
 export async function updateIndex(filePath: string) {
     if (client) {
-        const resp = await client.sendRequest(
-            UpdateIndexRequestType,
-            await encrypt(
-                JSON.stringify({
-                    filePath: filePath,
-                })
+        try {
+            const resp = await client.sendRequest(
+                UpdateIndexRequestType,
+                await encrypt(
+                    JSON.stringify({
+                        filePath: filePath,
+                    })
+                )
             )
-        )
-        return resp
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: updateIndex error: ${e}`)
+            return undefined
+        }
     }
 }
 
@@ -103,6 +105,7 @@ export function writeEncryptionInit(stream: Writable): void {
     stream.write(JSON.stringify(request))
     stream.write('\n')
 }
+
 type EnvType = {
     [key: string]: string | undefined
 }
