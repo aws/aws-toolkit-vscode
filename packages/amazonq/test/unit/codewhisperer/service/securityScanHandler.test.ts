@@ -178,7 +178,7 @@ describe('securityScanHandler', function () {
 
             mapToAggregatedList(codeScanIssueMap, json, editor, CodeWhispererConstants.CodeAnalysisScope.FILE)
 
-            assert.equal(codeScanIssueMap.size, 1)
+            assert.equal(codeScanIssueMap.size, 2)
             assert.equal(codeScanIssueMap.get('file1.ts')?.length, 1)
         })
     })
