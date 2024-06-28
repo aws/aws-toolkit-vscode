@@ -8,3 +8,5 @@ codetransform/ @aws/elastic-gumby
 codewhisperer/ @aws/codewhisperer-team
 
 mynah-ui/ @aws/dexp
+mynah-ui/package.json @aws/dexp @aws/elastic-gumby @aws/earlybird
+mynah-ui/package-lock.json @aws/dexp @aws/elastic-gumby @aws/earlybird
