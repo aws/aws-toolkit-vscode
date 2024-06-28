@@ -296,6 +296,12 @@
                     "markdownDescription": "%AWS.configuration.description.amazonq.localWorkspaceIndexWorkerThreads%",
                     "default": 0,
                     "scope": "application"
+                },
+                "amazonQ.localWorkspaceIndexUseGPU": {
+                    "type": "boolean",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.localWorkspaceIndexUseGPU%",
+                    "default": false,
+                    "scope": "application"
                 }
             }
         },

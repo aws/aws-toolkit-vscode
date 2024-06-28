@@ -10,6 +10,7 @@ const description = {
     shareContentWithAWS: Boolean,
     localWorkspaceIndex: Boolean,
     localWorkspaceIndexWorkerThreads: Number,
+    localWorkspaceIndexUseGPU: Boolean,
 }
 
 export class CodeWhispererSettings extends fromExtensionManifest('amazonQ', description) {
@@ -41,8 +42,13 @@ export class CodeWhispererSettings extends fromExtensionManifest('amazonQ', desc
         return !value
     }
     public isLocalIndexEnabled(): boolean {
-        return this.get('localWorkspaceIndex', true)
+        return this.get('localWorkspaceIndex', false)
     }
+
+    public isLocalIndexGPUEnabled(): boolean {
+        return this.get('localWorkspaceIndexUseGPU', false)
+    }
+
     public getIndexWorkerThreads(): number {
         return this.get('localWorkspaceIndexWorkerThreads', 0)
     }
