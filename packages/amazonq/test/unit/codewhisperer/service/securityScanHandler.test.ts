@@ -125,7 +125,7 @@ describe('securityScanHandler', function () {
         let codeScanIssueMap: Map<string, RawCodeScanIssue[]>
         let editor: vscode.TextEditor | undefined
 
-        setup(() => {
+        beforeEach(() => {
             codeScanIssueMap = new Map()
             editor = {
                 document: {
@@ -141,7 +141,7 @@ describe('securityScanHandler', function () {
             } as vscode.TextEditor
         })
 
-        test('should aggregate issues by file path', () => {
+        it('should aggregate issues by file path', () => {
             const json = JSON.stringify([
                 {
                     filePath: 'file1.ts',
@@ -162,7 +162,7 @@ describe('securityScanHandler', function () {
             assert.equal(codeScanIssueMap.get('file2.ts')?.length, 1)
         })
 
-        test('should filter issues based on the scope', () => {
+        it('should filter issues based on the scope', () => {
             const json = JSON.stringify([
                 {
                     filePath: 'file1.ts',
