@@ -300,7 +300,7 @@
                 "amazonQ.localWorkspaceIndexUseGPU": {
                     "type": "boolean",
                     "markdownDescription": "%AWS.configuration.description.amazonq.localWorkspaceIndexUseGPU%",
-                    "default": false,
+                    "default": true,
                     "scope": "application"
                 }
             }

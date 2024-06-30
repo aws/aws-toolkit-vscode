@@ -106,10 +106,6 @@ export function writeEncryptionInit(stream: Writable): void {
     stream.write('\n')
 }
 
-type EnvType = {
-    [key: string]: string | undefined
-}
-
 export async function activate(extensionContext: ExtensionContext) {
     const toDispose = extensionContext.subscriptions
 
@@ -118,32 +114,28 @@ export async function activate(extensionContext: ExtensionContext) {
     let serverModule = path.join(extensionContext.extensionPath, 'resources/qserver/lspServer.js')
     // The debug options for the server
     // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
-    const debugOptions = { execArgv: ['--nolazy', '--inspect=6009', '--preserve-symlinks', '--stdio'] }
+    const debugOptions = { execArgv: ['--nolazy', '--preserve-symlinks', '--stdio'] }
 
     const workerThreads = CodeWhispererSettings.instance.getIndexWorkerThreads()
-    let child: cp.ChildProcessWithoutNullStreams | undefined = undefined
+    const gpu = CodeWhispererSettings.instance.isLocalIndexGPUEnabled()
 
-    const nodename = process.platform === 'win32' ? 'node.exe' : 'node'
-    if (workerThreads > 0 && workerThreads < 100) {
-        const env: EnvType = {
-            Q_WORKER_THREADS: workerThreads.toString(),
-            // must have PATH otherwise it throws Error: spawn node ENOENT" when using child_process in Node.js
-            PATH: process.env.PATH,
-        }
-        child = cp.spawn(
-            extensionContext.asAbsolutePath(path.join('resources', nodename)),
-            [serverModule, ...debugOptions.execArgv],
-            {
-                env: env,
-            }
-        )
+    if (gpu) {
+        process.env.Q_ENABLE_GPU = 'true'
     } else {
-        child = cp.spawn(extensionContext.asAbsolutePath(path.join('resources', nodename)), [
-            serverModule,
-            ...debugOptions.execArgv,
-        ])
+        delete process.env.Q_ENABLE_GPU
+    }
+    if (workerThreads > 0 && workerThreads < 100) {
+        process.env.Q_WORKER_THREADS = workerThreads.toString()
+    } else {
+        delete process.env.Q_WORKER_THREADS
     }
 
+    const nodename = process.platform === 'win32' ? 'node.exe' : 'node'
+
+    const child = cp.spawn(extensionContext.asAbsolutePath(path.join('resources', nodename)), [
+        serverModule,
+        ...debugOptions.execArgv,
+    ])
     // share an encryption key using stdin
     // follow same practice of DEXP LSP server
     writeEncryptionInit(child.stdin)
