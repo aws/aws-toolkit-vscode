@@ -8,12 +8,12 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { compareTreeItems, makeChildrenNodes } from '../../shared/treeview/utils'
-import { DefaultApiGatewayClient } from '../../shared/clients/apiGatewayClient'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
+import { compareTreeItems, makeChildrenNodes } from '../../../shared/treeview/utils'
+import { DefaultApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
 import { RestApi } from 'aws-sdk/clients/apigateway'
-import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
+import { toArrayAsync, toMap, updateInPlace } from '../../../shared/utilities/collectionUtils'
 import { RestApiNode } from './apiNodes'
 
 /**
