@@ -1,9 +1,10 @@
+// Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+import org.jetbrains.intellij.platform.gradle.Constants.Configurations.Attributes
 import software.aws.toolkits.gradle.ciOnly
 import software.aws.toolkits.gradle.findFolders
 import software.aws.toolkits.gradle.intellij.IdeVersions
-
-// Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-// SPDX-License-Identifier: Apache-2.0
 
 plugins {
     id("java")
@@ -31,10 +32,18 @@ sourceSets {
 
 configurations.getByName("integrationTestCompileClasspath") {
     extendsFrom(configurations.getByName(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME))
+    attributes {
+        attribute(Attributes.extracted, true)
+        attribute(Attributes.collected, true)
+    }
 }
 
 configurations.getByName("integrationTestRuntimeClasspath") {
     extendsFrom(configurations.getByName(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME))
+    attributes {
+        attribute(Attributes.extracted, true)
+        attribute(Attributes.collected, true)
+    }
     isCanBeResolved = true
 }
 
@@ -71,12 +80,6 @@ tasks.check {
 
 afterEvaluate {
     plugins.withType<ToolkitIntellijSubpluginPlugin> {
-        // weird implicit dependency issue, maybe with how the task graph works?
-        // or because tests are on the ide classpath for some reason?
-        tasks.named("classpathIndexCleanup") {
-            mustRunAfter(tasks.named("compileIntegrationTestKotlin"))
-        }
-
         // intellij plugin overrides with instrumented classes that we don't want or need
         integTestTask.configure {
             testClassesDirs = integrationTests.output.classesDirs

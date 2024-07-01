@@ -32,7 +32,7 @@ allprojects {
     configurations.all {
         resolutionStrategy {
             failOnDynamicVersions()
-            failOnChangingVersions()
+//            failOnChangingVersions()
         }
     }
 }

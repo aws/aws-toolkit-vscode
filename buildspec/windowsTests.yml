@@ -36,8 +36,8 @@ phases:
           $Env:CODEARTIFACT_AUTH_TOKEN=aws codeartifact get-authorization-token --domain $Env:CODEARTIFACT_DOMAIN_NAME --query authorizationToken --output text --duration-seconds 3600
         }
 
-         # Rider is very expensive (spikes our CI jobs to 50% CPU, so let it do the prep work in parallel, but run tests later
-        ./gradlew -PideProfileName="$Env:ALTERNATIVE_IDE_PROFILE_NAME" check :plugin-toolkit:jetbrains-rider:compileTestKotlin --info --console plain --continue
+        # Rider is very expensive (spikes our CI jobs to 50% CPU, so let it do the prep work in parallel, but run tests later
+        ./gradlew -PideProfileName="$Env:ALTERNATIVE_IDE_PROFILE_NAME" check :plugin-toolkit:jetbrains-rider:compileTestKotlin --info --console plain --continue --scan --stacktrace
         if ($LastExitCode -ne 0) {
           Write-Host "Command failed with exit code $LastExitCode"
           exit -1

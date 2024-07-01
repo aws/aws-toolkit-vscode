@@ -3,6 +3,7 @@
 
 import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import software.aws.toolkits.gradle.intellij.IdeFlavor
 import software.aws.toolkits.telemetry.generator.gradle.GenerateTelemetry
 
@@ -37,7 +38,26 @@ intellijToolkit {
     ideFlavor.set(IdeFlavor.IC)
 }
 
+// expose intellij test framework to fixture consumers
+configurations.testFixturesCompileOnlyApi {
+    extendsFrom(
+        configurations.intellijPlatformTestDependencies.get()
+    )
+}
+
+// intellij java-test-framework pollutes test classpath with extracted java plugins
+configurations.testFixturesApi {
+    exclude("com.jetbrains.intellij.java", "java")
+    exclude("com.jetbrains.intellij.java", "java-impl")
+}
+
 dependencies {
+    intellijPlatform {
+        testFramework(TestFrameworkType.Platform)
+        testFramework(TestFrameworkType.JUnit5)
+        testFramework(TestFrameworkType.Plugin.Java)
+    }
+
     compileOnlyApi(project(":plugin-core:core"))
     compileOnlyApi(libs.aws.apacheClient)
     compileOnlyApi(libs.aws.nettyClient)
@@ -50,7 +70,7 @@ dependencies {
         exclude(group = "org.apache.httpcomponents.client5")
     }
 
-    testRuntimeOnly(project(":plugin-core:core"))
+    testImplementation(project(":plugin-core:core"))
     testRuntimeOnly(project(":plugin-core:resources"))
     testRuntimeOnly(project(":plugin-core:sdk-codegen"))
 }
@@ -65,10 +85,10 @@ tasks.withType<DetektCreateBaselineTask> {
 }
 
 // hack because our test structure currently doesn't make complete sense
-tasks.prepareTestingSandbox {
+tasks.prepareTestSandbox {
     val pluginXmlJar = project(":plugin-core").tasks.jar
 
     dependsOn(pluginXmlJar)
-    intoChild(pluginName.map { "$it/lib" })
+    intoChild(intellijPlatform.projectName.map { "$it/lib" })
         .from(pluginXmlJar)
 }

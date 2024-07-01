@@ -5,9 +5,14 @@ plugins {
     id("temp-toolkit-intellij-root-conventions")
 }
 
-intellij {
-    pluginName.set("aws-toolkit-jetbrains-standalone")
-    plugins.add(project(":plugin-core"))
+intellijPlatform {
+    projectName = "aws-toolkit-jetbrains-standalone"
+}
+
+dependencies {
+    intellijPlatform {
+        localPlugin(project(":plugin-core", "pluginZip"))
+    }
 }
 
 tasks.check {

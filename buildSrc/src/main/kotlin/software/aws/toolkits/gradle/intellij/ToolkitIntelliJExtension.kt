@@ -15,12 +15,8 @@ abstract class ToolkitIntelliJExtension(private val providers: ProviderFactory) 
 
     fun ideProfile() = IdeVersions.ideProfile(providers)
 
-    fun version(): Provider<String?> = productProfile().flatMap { profile ->
-        providers.provider { profile.version() }
-    }
-
-    fun localPath(): Provider<String?> = productProfile().flatMap { profile ->
-        providers.provider { profile.localPath() }
+    fun version(): Provider<String> = productProfile().flatMap { profile ->
+        providers.provider { profile.sdkVersion }
     }
 
     fun productProfile(): Provider<out ProductProfile> = ideFlavor.flatMap { flavor ->

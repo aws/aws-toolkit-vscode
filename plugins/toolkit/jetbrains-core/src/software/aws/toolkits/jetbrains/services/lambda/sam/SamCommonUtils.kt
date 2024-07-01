@@ -15,7 +15,6 @@ import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.testFramework.runInEdtAndGet
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.yaml.YAMLFileType
@@ -28,6 +27,7 @@ import software.aws.toolkits.jetbrains.services.cloudformation.Parameter
 import software.aws.toolkits.jetbrains.services.cloudformation.validateSamTemplateHasResources
 import software.aws.toolkits.jetbrains.ui.KeyValueTextField
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
+import software.aws.toolkits.jetbrains.utils.computeOnEdt
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.ui.find
 import software.aws.toolkits.resources.message
@@ -74,7 +74,7 @@ object SamTemplateFileUtils {
 
     fun retrieveSamTemplate(e: AnActionEvent, project: Project): VirtualFile? {
         if (e.place == ToolkitPlaces.EXPLORER_TOOL_WINDOW) {
-            return runInEdtAndGet {
+            return computeOnEdt {
                 FileChooser.chooseFile(
                     FileChooserDescriptorFactory.createSingleFileDescriptor(YAMLFileType.YML),
                     project,

@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import net.bytebuddy.utility.RandomString
-import org.jetbrains.intellij.tasks.PrepareSandboxTask
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.tasks.PrepareSandboxTask
 import software.aws.toolkits.gradle.intellij.IdeFlavor
+import software.aws.toolkits.gradle.intellij.toolkitIntelliJ
 
 plugins {
     id("toolkit-kotlin-conventions")
@@ -11,15 +13,15 @@ plugins {
     id("toolkit-testing")
     id("toolkit-intellij-subplugin")
     id("toolkit-integration-testing")
-}
-
-intellij {
-    pluginName.set("aws-toolkit-jetbrains")
-    type.set("GW")
+    id("toolkit-publishing-conventions")
 }
 
 intellijToolkit {
     ideFlavor.set(IdeFlavor.GW)
+}
+
+intellijPlatform {
+    projectName = "aws-toolkit-jetbrains"
 }
 
 sourceSets {
@@ -43,7 +45,29 @@ val gatewayOnlyResourcesJar by tasks.registering(Jar::class) {
     from(processGatewayOnlyResources)
 }
 
+listOf(
+    "intellijPlatformDependency",
+    "intellijPluginVerifierIdesDependency",
+).forEach { configurationName ->
+    configurations[configurationName].dependencies.addLater(
+        toolkitIntelliJ.version().map {
+            dependencies.create(
+                group = "com.jetbrains.gateway",
+                name = "JetBrainsGateway",
+                version = it,
+            )
+        }
+    )
+}
+
 dependencies {
+    intellijPlatform {
+        pluginVerifier()
+
+        testFramework(TestFrameworkType.JUnit5)
+        testFramework(TestFrameworkType.Bundled)
+    }
+
     // link against :j-c: and rely on :intellij:buildPlugin to pull in :j-c:instrumentedJar, but gateway variant when runIde/buildPlugin from :jetbrains-gateway
     compileOnly(project(":plugin-toolkit:jetbrains-core"))
     gatewayOnlyRuntimeOnly(project(":plugin-toolkit:jetbrains-core", "gatewayArtifacts"))
@@ -59,8 +83,6 @@ dependencies {
     testRuntimeOnly(project(":plugin-toolkit:jetbrains-core", "gatewayArtifacts"))
     testImplementation(testFixtures(project(":plugin-core:jetbrains-community")))
     testImplementation(project(path = ":plugin-toolkit:jetbrains-core", configuration = "testArtifacts"))
-    testImplementation(libs.kotlin.coroutinesTest)
-    testImplementation(libs.kotlin.coroutinesDebug)
     testImplementation(libs.wiremock)
     testImplementation(libs.bundles.sshd)
 }
@@ -120,19 +142,19 @@ tasks.jar {
 }
 
 tasks.withType<PrepareSandboxTask>().all {
-    intoChild(pluginName.map { "$it/gateway-resources" })
+    intoChild(intellijPlatform.projectName.map { "$it/gateway-resources" })
         .from(gatewayResourcesDir)
 }
 
 listOf(
     tasks.prepareSandbox,
-    tasks.prepareTestingSandbox
+    tasks.prepareTestSandbox
 ).forEach {
     it.configure {
-        runtimeClasspathFiles.set(gatewayOnlyRuntimeClasspath)
+        runtimeClasspath.setFrom(gatewayOnlyRuntimeClasspath)
 
         dependsOn(gatewayOnlyResourcesJar)
-        intoChild(pluginName.map { "$it/lib" })
+        intoChild(intellijPlatform.projectName.map { "$it/lib" })
             .from(gatewayOnlyResourcesJar)
     }
 }
@@ -147,32 +169,7 @@ tasks.buildPlugin {
     archiveClassifier.set(classifier)
 }
 
-val publishToken: String by project
-val publishChannel: String by project
-tasks.publishPlugin {
-    token.set(publishToken)
-    channels.set(publishChannel.split(",").map { it.trim() })
-}
-
 tasks.integrationTest {
     val testToken = RandomString.make(32)
     environment("CWM_HOST_STATUS_OVER_HTTP_TOKEN", testToken)
-}
-
-configurations {
-    all {
-        // IDE provides netty
-        exclude("io.netty")
-    }
-
-    // Make sure we exclude stuff we either A) ships with IDE, B) we don't use to cut down on size
-    runtimeClasspath {
-        exclude(group = "org.slf4j")
-        exclude(group = "org.jetbrains.kotlin")
-        exclude(group = "org.jetbrains.kotlinx")
-    }
-}
-
-tasks.check {
-    dependsOn(tasks.verifyPlugin)
 }
