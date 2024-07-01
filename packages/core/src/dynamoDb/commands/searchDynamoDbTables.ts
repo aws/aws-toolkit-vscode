@@ -1,0 +1,78 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import * as nls from 'vscode-nls'
+import { Wizard } from '../../shared/wizards/wizard'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
+import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
+
+const localize = nls.loadMessageBundle()
+
+/**
+ * "Search DynamoDb Tables Command"
+ *
+ */
+export async function searchDynamoDbTables(source: string, dbData?: { regionName: string }): Promise<void> {
+    await telemetry.dynamodb_openTable.run(async span => {
+        const wizard = new SearchDynamoDbTablesWizard(dbData)
+        span.record({ dynamoDbResourceType: 'table', source: source })
+        const response = await wizard.run()
+        if (!response) {
+            throw new CancellationError('user')
+        }
+        console.log(response)
+    })
+}
+
+export interface SearchDynamoDbTablesWizardResponse {
+    submenuResponse: RegionSubmenuResponse<string>
+    filterPattern: string
+}
+
+export function createRegionSubmenu() {
+    return new RegionSubmenu(
+        getTablesFromRegion,
+        { title: localize('AWS.dynamoDb.searchDynamoDbTables.TableTitle', 'Select a table') },
+        { title: localize('AWS.dynamoDb.searchDynamoDbTables.regionPromptTitle', 'Select Region for DynamoDb') },
+        'DynamoDb Tables'
+    )
+}
+
+async function getTablesFromRegion(regionCode: string): Promise<DataQuickPickItem<string>[]> {
+    const client = new DynamoDbClient(regionCode)
+    const dynamoDbTables = await dynamoDbTablesToArray(client.getTables())
+    const options = dynamoDbTables.map<DataQuickPickItem<string>>(tableName => ({
+        label: tableName,
+        data: tableName,
+    }))
+    return options
+}
+
+async function dynamoDbTablesToArray(dynamoDbTables: AsyncIterableIterator<string>): Promise<string[]> {
+    const tablesArray = []
+    for await (const tableObject of dynamoDbTables) {
+        tableObject && tablesArray.push(tableObject)
+    }
+    return tablesArray
+}
+
+export class SearchDynamoDbTablesWizard extends Wizard<SearchDynamoDbTablesWizardResponse> {
+    public constructor(dbData?: { regionName: string }) {
+        super({
+            initState: {
+                submenuResponse: dbData
+                    ? {
+                          data: dbData.regionName,
+                          region: dbData.regionName,
+                      }
+                    : undefined,
+            },
+        })
+        this.form.submenuResponse.bindPrompter(createRegionSubmenu)
+    }
+}
