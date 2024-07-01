@@ -9,9 +9,9 @@ import {
     Ec2InstancePendingContext,
     Ec2InstanceRunningContext,
     Ec2InstanceStoppedContext,
-} from '../../../ec2/explorer/ec2InstanceNode'
-import { Ec2Client, Ec2Instance, getNameOfInstance } from '../../../shared/clients/ec2Client'
-import { Ec2ParentNode } from '../../../ec2/explorer/ec2ParentNode'
+} from '../../../../awsService/ec2/explorer/ec2InstanceNode'
+import { Ec2Client, Ec2Instance, getNameOfInstance } from '../../../../shared/clients/ec2Client'
+import { Ec2ParentNode } from '../../../../awsService/ec2/explorer/ec2ParentNode'
 
 describe('ec2InstanceNode', function () {
     let testNode: Ec2InstanceNode

@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { RegionSubmenu, RegionSubmenuResponse } from '../shared/ui/common/regionSubmenu'
-import { DataQuickPickItem } from '../shared/ui/pickerPrompter'
-import { Ec2Client, Ec2Instance } from '../shared/clients/ec2Client'
-import { isValidResponse } from '../shared/wizards/wizard'
-import { CancellationError } from '../shared/utilities/timeoutUtils'
-import { AsyncCollection } from '../shared/utilities/asyncCollection'
+import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
+import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
+import { Ec2Client, Ec2Instance } from '../../shared/clients/ec2Client'
+import { isValidResponse } from '../../shared/wizards/wizard'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 import { getIconCode } from './utils'
 
 export type instanceFilter = (instance: Ec2Instance) => boolean
