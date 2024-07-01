@@ -20,6 +20,7 @@ import { activate as activateLsp } from './lspClient'
 import { telemetry } from '../../shared/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { globals } from '../../shared'
+import { AuthUtil } from '../../codewhisperer'
 
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -291,6 +292,7 @@ export class LspController {
                     amazonqIndexMemoryUsageInMB: usage ? usage.memoryUsage / (1024 * 1024) : undefined,
                     amazonqIndexCpuUsagePercentage: usage ? usage.cpuUsage : undefined,
                     amazonqIndexFileSizeInMB: totalSizeBytes / (1024 * 1024),
+                    credentialStartUrl: AuthUtil.instance.startUrl,
                 })
             } else {
                 getLogger().error(`LspController: Failed to build vector index of project`)

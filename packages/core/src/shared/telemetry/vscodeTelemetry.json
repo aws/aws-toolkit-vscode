@@ -781,6 +781,10 @@
                 {
                     "type": "amazonqIndexCpuUsagePercentage",
                     "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
                 }
             ]
         },
