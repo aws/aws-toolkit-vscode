@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { makeChildrenNodes } from '../../shared/treeview/utils'
-import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import { makeChildrenNodes } from '../../../shared/treeview/utils'
+import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { Ec2InstanceNode } from './ec2InstanceNode'
-import { Ec2Client } from '../../shared/clients/ec2Client'
-import { updateInPlace } from '../../shared/utilities/collectionUtils'
+import { Ec2Client } from '../../../shared/clients/ec2Client'
+import { updateInPlace } from '../../../shared/utilities/collectionUtils'
 
 export const parentContextValue = 'awsEc2ParentNode'
 export type Ec2Node = Ec2InstanceNode | Ec2ParentNode

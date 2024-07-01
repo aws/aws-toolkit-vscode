@@ -5,16 +5,16 @@
 
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { Ec2ParentNode } from '../../../ec2/explorer/ec2ParentNode'
-import { Ec2Client, Ec2Instance } from '../../../shared/clients/ec2Client'
-import { intoCollection } from '../../../shared/utilities/collectionUtils'
+import { Ec2ParentNode } from '../../../../awsService/ec2/explorer/ec2ParentNode'
+import { Ec2Client, Ec2Instance } from '../../../../shared/clients/ec2Client'
+import { intoCollection } from '../../../../shared/utilities/collectionUtils'
 import {
     assertNodeListOnlyHasErrorNode,
     assertNodeListOnlyHasPlaceholderNode,
-} from '../../utilities/explorerNodeAssertions'
-import { Ec2InstanceNode } from '../../../ec2/explorer/ec2InstanceNode'
+} from '../../../utilities/explorerNodeAssertions'
+import { Ec2InstanceNode } from '../../../../awsService/ec2/explorer/ec2InstanceNode'
 import { EC2 } from 'aws-sdk'
-import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
+import { AsyncCollection } from '../../../../shared/utilities/asyncCollection'
 
 describe('ec2ParentNode', function () {
     let testNode: Ec2ParentNode

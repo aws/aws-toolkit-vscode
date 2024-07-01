@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import assert from 'assert'
-import { Ec2Prompter, instanceFilter } from '../../ec2/prompter'
-import { Ec2Instance } from '../../shared/clients/ec2Client'
-import { RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
-import { getIconCode } from '../../ec2/utils'
-import { Ec2Selection } from '../../ec2/prompter'
-import { AsyncCollection } from '../../shared/utilities/asyncCollection'
-import { intoCollection } from '../../shared/utilities/collectionUtils'
-import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
+import { Ec2Prompter, instanceFilter } from '../../../awsService/ec2/prompter'
+import { Ec2Instance } from '../../../shared/clients/ec2Client'
+import { RegionSubmenuResponse } from '../../../shared/ui/common/regionSubmenu'
+import { getIconCode } from '../../../awsService/ec2/utils'
+import { Ec2Selection } from '../../../awsService/ec2/prompter'
+import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
+import { intoCollection } from '../../../shared/utilities/collectionUtils'
+import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 
 describe('Ec2Prompter', async function () {
     class MockEc2Prompter extends Ec2Prompter {

@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as fs from 'fs-extra'
-import { ToolkitError } from '../shared/errors'
-import { ChildProcess } from '../shared/utilities/childProcess'
+import { ToolkitError } from '../../shared/errors'
+import { ChildProcess } from '../../shared/utilities/childProcess'
 
 export class SshKeyPair {
     private publicKeyPath: string

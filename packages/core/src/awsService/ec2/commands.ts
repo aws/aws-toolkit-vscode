@@ -7,9 +7,9 @@ import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { Ec2Node } from './explorer/ec2ParentNode'
 import { Ec2ConnectionManager } from './model'
 import { Ec2Prompter, instanceFilter, Ec2Selection } from './prompter'
-import { Ec2Instance, Ec2Client } from '../shared/clients/ec2Client'
-import { copyToClipboard } from '../shared/utilities/messages'
-import { getLogger } from '../shared/logger'
+import { Ec2Instance, Ec2Client } from '../../shared/clients/ec2Client'
+import { copyToClipboard } from '../../shared/utilities/messages'
+import { getLogger } from '../../shared/logger'
 
 export function refreshExplorer(node?: Ec2Node) {
     if (node) {

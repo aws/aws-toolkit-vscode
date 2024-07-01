@@ -5,14 +5,14 @@
 
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { Ec2ConnectionManager } from '../../ec2/model'
-import { SsmClient } from '../../shared/clients/ssmClient'
-import { Ec2Client } from '../../shared/clients/ec2Client'
-import { Ec2Selection } from '../../ec2/prompter'
-import { ToolkitError } from '../../shared/errors'
+import { Ec2ConnectionManager } from '../../../awsService/ec2/model'
+import { SsmClient } from '../../../shared/clients/ssmClient'
+import { Ec2Client } from '../../../shared/clients/ec2Client'
+import { Ec2Selection } from '../../../awsService/ec2/prompter'
+import { ToolkitError } from '../../../shared/errors'
 import { IAM } from 'aws-sdk'
-import { SshKeyPair } from '../../ec2/sshKeyPair'
-import { DefaultIamClient } from '../../shared/clients/iamClient'
+import { SshKeyPair } from '../../../awsService/ec2/sshKeyPair'
+import { DefaultIamClient } from '../../../shared/clients/iamClient'
 
 describe('Ec2ConnectClient', function () {
     let client: Ec2ConnectionManager

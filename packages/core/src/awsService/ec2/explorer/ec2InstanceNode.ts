@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { Ec2Client, getNameOfInstance } from '../../shared/clients/ec2Client'
-import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { Ec2Instance } from '../../shared/clients/ec2Client'
-import globals from '../../shared/extensionGlobals'
+import { Ec2Client, getNameOfInstance } from '../../../shared/clients/ec2Client'
+import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import { Ec2Instance } from '../../../shared/clients/ec2Client'
+import globals from '../../../shared/extensionGlobals'
 import { getIconCode } from '../utils'
 import { Ec2Selection } from '../prompter'
 import { Ec2ParentNode } from './ec2ParentNode'

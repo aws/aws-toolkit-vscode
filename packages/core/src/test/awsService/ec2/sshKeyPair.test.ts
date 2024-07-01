@@ -6,8 +6,8 @@
 import assert from 'assert'
 import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
-import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
-import { SshKeyPair } from '../../ec2/sshKeyPair'
+import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
+import { SshKeyPair } from '../../../awsService/ec2/sshKeyPair'
 
 describe('SshKeyUtility', async function () {
     let temporaryDirectory: string
