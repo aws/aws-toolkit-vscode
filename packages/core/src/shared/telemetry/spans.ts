@@ -15,7 +15,13 @@ import {
     MetricShapes,
     TelemetryBase,
 } from './telemetry.gen'
-import { getRequestId, getTelemetryReason, getTelemetryReasonDesc, getTelemetryResult } from '../errors'
+import {
+    getHttpStatusCode,
+    getRequestId,
+    getTelemetryReason,
+    getTelemetryReasonDesc,
+    getTelemetryResult,
+} from '../errors'
 import { entries, NumericKeys } from '../utilities/tsUtils'
 
 const AsyncLocalStorage: typeof AsyncLocalStorageClass =
@@ -158,7 +164,8 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
             reason: getTelemetryReason(err),
             reasonDesc: getTelemetryReasonDesc(err),
             requestId: getRequestId(err),
-        } as any as Partial<T>)
+            httpStatusCode: getHttpStatusCode(err),
+        } as Partial<T>)
 
         this.#startTime = undefined
     }
