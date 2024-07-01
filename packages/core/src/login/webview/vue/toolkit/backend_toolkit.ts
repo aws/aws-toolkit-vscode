@@ -9,7 +9,7 @@ import { getLogger } from '../../../../shared/logger'
 import { CommonAuthWebview } from '../backend'
 import { AwsConnection, Connection, createSsoProfile } from '../../../../auth/connection'
 import { Auth } from '../../../../auth/auth'
-import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
+import { CodeCatalystAuthenticationProvider } from '../../../../awsService/codecatalyst/auth'
 import { AuthError, AuthFlowState, TelemetryMetadata } from '../types'
 import { builderIdStartUrl } from '../../../../auth/sso/model'
 

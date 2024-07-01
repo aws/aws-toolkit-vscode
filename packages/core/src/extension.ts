@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import * as codecatalyst from './codecatalyst/activation'
+import * as codecatalyst from './awsService/codecatalyst/activation'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCloudWatchLogs } from './awsService/cloudWatchLogs/activation'
 import { CredentialsProviderManager } from './auth/providers/credentialsProviderManager'

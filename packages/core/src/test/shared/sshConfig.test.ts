@@ -18,7 +18,7 @@ import {
     bearerTokenCacheLocation,
     connectScriptPrefix,
     getCodeCatalystSsmEnv,
-} from '../../codecatalyst/model'
+} from '../../awsService/codecatalyst/model'
 import { StartDevEnvironmentSessionRequest } from 'aws-sdk/clients/codecatalyst'
 import { mkdir, readFile, writeFile } from 'fs-extra'
 import { SystemUtilities } from '../../shared/systemUtilities'
