@@ -4,6 +4,7 @@
  */
 
 import { DynamoDB } from 'aws-sdk'
+import { getIcon } from '../../shared/icons'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
@@ -15,8 +16,10 @@ export class DynamoDbTableNode extends AWSTreeNodeBase implements AWSResourceNod
 
     public update(dynamoDbtable: DynamoDB.Types.TableName): void {
         this.dynamoDbtable = dynamoDbtable
-        this.label = this.dynamoDbtable || 'Failed to fetch table details'
         this.tooltip = `${this.dynamoDbtable}`
+        this.contextValue = 'awsDynamoDbTableNode'
+        this.iconPath = getIcon('aws-redshift-table')
+        this.label = this.dynamoDbtable || 'Failed to fetch table details'
     }
 
     public get name(): string {
