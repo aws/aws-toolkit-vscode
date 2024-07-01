@@ -5,12 +5,12 @@
 
 import assert from 'assert'
 import * as vscode from 'vscode'
-import { DefaultEcsClient } from '../../shared/clients/ecsClient'
-import { TestSettings } from '../utilities/testSettingsConfiguration'
-import { ToolkitPromptSettings } from '../../shared/settings'
-import { Service } from '../../ecs/model'
-import { stub } from '../utilities/stubber'
-import { EcsRunCommandPrompt, toggleExecuteCommandFlag } from '../../ecs/commands'
+import { DefaultEcsClient } from '../../../shared/clients/ecsClient'
+import { TestSettings } from '../../utilities/testSettingsConfiguration'
+import { ToolkitPromptSettings } from '../../../shared/settings'
+import { Service } from '../../../awsService/ecs/model'
+import { stub } from '../../utilities/stubber'
+import { EcsRunCommandPrompt, toggleExecuteCommandFlag } from '../../../awsService/ecs/commands'
 
 describe('toggleExecuteCommandFlag', async function () {
     const settings = new ToolkitPromptSettings(new TestSettings())

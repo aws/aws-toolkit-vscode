@@ -8,10 +8,10 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { ECS } from 'aws-sdk'
-import { DefaultEcsClient } from '../shared/clients/ecsClient'
-import { ResourceTreeNode } from '../shared/treeview/resource'
-import { getIcon } from '../shared/icons'
-import { AsyncCollection } from '../shared/utilities/asyncCollection'
+import { DefaultEcsClient } from '../../shared/clients/ecsClient'
+import { ResourceTreeNode } from '../../shared/treeview/resource'
+import { getIcon } from '../../shared/icons'
+import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 import { prepareCommand } from './util'
 
 function createValidTaskFilter(containerName: string) {

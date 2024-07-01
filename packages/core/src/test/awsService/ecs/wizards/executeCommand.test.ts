@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createWizardTester, WizardTester } from '../../../test/shared/wizards/wizardTestUtils'
-import { CommandWizard, CommandWizardState } from '../../../ecs/wizards/executeCommand'
-import { Container } from '../../../ecs/model'
-import { stub } from '../../utilities/stubber'
-import { DefaultEcsClient } from '../../../shared/clients/ecsClient'
+import { createWizardTester, WizardTester } from '../../../shared/wizards/wizardTestUtils'
+import { CommandWizard, CommandWizardState } from '../../../../awsService/ecs/wizards/executeCommand'
+import { Container } from '../../../../awsService/ecs/model'
+import { stub } from '../../../utilities/stubber'
+import { DefaultEcsClient } from '../../../../shared/clients/ecsClient'
 
 describe('CreateServiceWizard', function () {
     let tester: WizardTester<CommandWizardState>

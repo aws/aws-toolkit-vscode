@@ -4,9 +4,9 @@
  */
 
 import assert from 'assert'
-import { stub } from '../utilities/stubber'
-import { checkPermissionsForSsm } from '../../ecs/util'
-import { DefaultIamClient } from '../../shared/clients/iamClient'
+import { stub } from '../../utilities/stubber'
+import { checkPermissionsForSsm } from '../../../awsService/ecs/util'
+import { DefaultIamClient } from '../../../shared/clients/iamClient'
 
 describe('checkPermissionsForSsm', function () {
     const getClient = () => stub(DefaultIamClient, { regionCode: '' })

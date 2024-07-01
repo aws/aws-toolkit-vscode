@@ -3,21 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from '../shared/extensionGlobals'
+import globals from '../../shared/extensionGlobals'
 
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { EcsClient } from '../shared/clients/ecsClient'
-import { DefaultIamClient, IamClient } from '../shared/clients/iamClient'
-import { ToolkitError } from '../shared/errors'
-import { isCloud9 } from '../shared/extensionUtilities'
-import { getOrInstallCli } from '../shared/utilities/cliUtils'
+import { EcsClient } from '../../shared/clients/ecsClient'
+import { DefaultIamClient, IamClient } from '../../shared/clients/iamClient'
+import { ToolkitError } from '../../shared/errors'
+import { isCloud9 } from '../../shared/extensionUtilities'
+import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 import { Session, TaskDefinition } from 'aws-sdk/clients/ecs'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../../shared/logger'
 import { SSM } from 'aws-sdk'
-import { fromExtensionManifest } from '../shared/settings'
-import { ecsTaskPermissionsUrl } from '../shared/constants'
+import { fromExtensionManifest } from '../../shared/settings'
+import { ecsTaskPermissionsUrl } from '../../shared/constants'
 
 interface EcsTaskIdentifer {
     readonly task: string
