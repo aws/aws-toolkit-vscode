@@ -355,10 +355,7 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
     async function* loadItems(
         excludeSso?: boolean
     ): AsyncGenerator<DataQuickPickItem<Connection | 'addNewConnection' | 'editCredentials'>[]> {
-        let connections = auth.listAndTraverseConnections()
-        if (excludeSso) {
-            connections = connections.filter(item => item.type !== 'sso')
-        }
+        const connections = auth.listAndTraverseConnections().filter(c => excludeSso && c.type === 'sso' ? false : (!type || c.type === type))
 
         let hasShownEdit = false
 

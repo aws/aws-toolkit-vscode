@@ -98,7 +98,10 @@ export async function resolveProviderWithCancel(
     })
 }
 
-export class CredentialsSettings extends fromExtensionManifest('aws', { profile: String }) {}
+export class CredentialsSettings extends fromExtensionManifest('aws', {
+    profile: String,
+    injectCredentials: Boolean,
+}) {}
 
 const errorMessageUserCancelled = localize('AWS.error.mfa.userCancelled', 'User cancelled entering authentication code')
 
