@@ -4,8 +4,8 @@
  */
 // eslint-disable-next-line header/header
 import * as vscode from 'vscode'
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { getIcon } from '../../shared/icons'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import { getIcon } from '../../../shared/icons'
 
 export class RedshiftTableNode extends AWSTreeNodeBase {
     public constructor(public readonly tableName: string) {

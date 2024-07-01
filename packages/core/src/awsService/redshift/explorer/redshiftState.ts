@@ -4,7 +4,7 @@
  */
 
 import { ConnectionParams } from '../models/models'
-import globals from '../../shared/extensionGlobals'
+import globals from '../../../shared/extensionGlobals'
 
 const redshiftConnectionsGlobalStateKey = 'aws.redshift.connections'
 

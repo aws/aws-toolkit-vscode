@@ -11,7 +11,7 @@ import { CloudWatchLogsNode } from '../awsService/cloudWatchLogs/explorer/cloudW
 import { LambdaNode } from '../lambda/explorer/lambdaNodes'
 import { S3Node } from '../s3/explorer/s3Nodes'
 import { EcrNode } from '../awsService/ecr/explorer/ecrNode'
-import { RedshiftNode } from '../redshift/explorer/redshiftNode'
+import { RedshiftNode } from '../awsService/redshift/explorer/redshiftNode'
 import { IotNode } from '../awsService/iot/explorer/iotNodes'
 import { Region } from '../shared/regions/endpoints'
 import { defaultPartition, RegionProvider } from '../shared/regions/regionProvider'

@@ -4,19 +4,22 @@
  */
 
 import sinon = require('sinon')
-import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
+import { DefaultRedshiftClient } from '../../../../shared/clients/redshiftClient'
 import { ListDatabasesResponse } from 'aws-sdk/clients/redshiftdata'
-import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../../redshift/models/models'
-import { RedshiftWarehouseNode, CreateNotebookNode } from '../../../redshift/explorer/redshiftWarehouseNode'
-import { RedshiftNode } from '../../../redshift/explorer/redshiftNode'
-import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
+import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../../../awsService/redshift/models/models'
+import {
+    RedshiftWarehouseNode,
+    CreateNotebookNode,
+} from '../../../../awsService/redshift/explorer/redshiftWarehouseNode'
+import { RedshiftNode } from '../../../../awsService/redshift/explorer/redshiftNode'
+import { AWSResourceNode } from '../../../../shared/treeview/nodes/awsResourceNode'
 import * as assert from 'assert'
-import { RedshiftDatabaseNode } from '../../../redshift/explorer/redshiftDatabaseNode'
-import { AWSCommandTreeNode } from '../../../shared/treeview/nodes/awsCommandTreeNode'
-import { RedshiftNodeConnectionWizard } from '../../../redshift/wizards/connectionWizard'
+import { RedshiftDatabaseNode } from '../../../../awsService/redshift/explorer/redshiftDatabaseNode'
+import { AWSCommandTreeNode } from '../../../../shared/treeview/nodes/awsCommandTreeNode'
+import { RedshiftNodeConnectionWizard } from '../../../../awsService/redshift/wizards/connectionWizard'
 import RedshiftData = require('aws-sdk/clients/redshiftdata')
-import { MoreResultsNode } from '../../../awsexplorer/moreResultsNode'
-import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import { MoreResultsNode } from '../../../../awsexplorer/moreResultsNode'
+import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
 
 function verifyChildNodes(childNodes: AWSTreeNodeBase[], databaseNodeCount: number, shouldHaveLoadMore: boolean) {
     assert.strictEqual(childNodes.length, databaseNodeCount + (shouldHaveLoadMore ? 1 : 0) + 1)

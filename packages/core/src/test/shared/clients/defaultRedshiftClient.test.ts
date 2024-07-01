@@ -6,7 +6,7 @@
 import { Redshift, RedshiftData, RedshiftServerless, AWSError, Request } from 'aws-sdk'
 import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
 import assert = require('assert')
-import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../../redshift/models/models'
+import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../../awsService/redshift/models/models'
 import sinon = require('sinon')
 
 function success<T>(output?: T): Request<T, AWSError> {

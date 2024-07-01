@@ -5,7 +5,7 @@
 
 import sinon = require('sinon')
 import assert = require('assert')
-import { CellStatusBarItemProvider } from '../../../redshift/notebook/cellStatusBarItemProvider'
+import { CellStatusBarItemProvider } from '../../../../awsService/redshift/notebook/cellStatusBarItemProvider'
 import * as vscode from 'vscode'
 
 describe('CellStatusBarItemProvider', function () {
