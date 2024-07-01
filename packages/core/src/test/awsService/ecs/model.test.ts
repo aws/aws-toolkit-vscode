@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Cluster, Container, Service } from '../../ecs/model'
-import { DefaultEcsClient } from '../../shared/clients/ecsClient'
-import { assertChildren, assertTreeItem } from '../shared/treeview/testUtil'
-import { createCollectionFromPages } from '../../shared/utilities/collectionUtils'
-import { stub } from '../utilities/stubber'
+import { Cluster, Container, Service } from '../../../awsService/ecs/model'
+import { DefaultEcsClient } from '../../../shared/clients/ecsClient'
+import { assertChildren, assertTreeItem } from '../../shared/treeview/testUtil'
+import { createCollectionFromPages } from '../../../shared/utilities/collectionUtils'
+import { stub } from '../../utilities/stubber'
 
 const clusterData = {
     clusterArn: 'arn:aws:ecs:us-east-1:012345678910:cluster/my-cluster',

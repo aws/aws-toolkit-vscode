@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ecsExecToolkitGuideUrl } from '../../shared/constants'
-import { codicon, getIcon } from '../../shared/icons'
-import { createCommonButtons } from '../../shared/ui/buttons'
-import { createInputBox } from '../../shared/ui/inputPrompter'
-import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
-import { localize } from '../../shared/utilities/vsCodeUtils'
-import { WIZARD_EXIT, Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
+import { ecsExecToolkitGuideUrl } from '../../../shared/constants'
+import { codicon, getIcon } from '../../../shared/icons'
+import { createCommonButtons } from '../../../shared/ui/buttons'
+import { createInputBox } from '../../../shared/ui/inputPrompter'
+import { createQuickPick, DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
+import { localize } from '../../../shared/utilities/vsCodeUtils'
+import { WIZARD_EXIT, Wizard, WIZARD_BACK } from '../../../shared/wizards/wizard'
 import { Container } from '../model'
 
 export interface CommandWizardState {

@@ -32,7 +32,7 @@ import { activate as activateApiGateway } from './awsService/apigateway/activati
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
 import { activate as activateDynamicResources } from './dynamicResources/activation'
-import { activate as activateEcs } from './ecs/activation'
+import { activate as activateEcs } from './awsService/ecs/activation'
 import { activate as activateAppRunner } from './apprunner/activation'
 import { activate as activateIot } from './iot/activation'
 import { activate as activateDev } from './dev/activation'

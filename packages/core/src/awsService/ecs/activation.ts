@@ -4,15 +4,15 @@
  */
 
 import * as vscode from 'vscode'
-import { ExtContext } from '../shared/extensions'
-import { ecsDocumentationUrl } from '../shared/constants'
-import { Commands } from '../shared/vscode/commands2'
+import { ExtContext } from '../../shared/extensions'
+import { ecsDocumentationUrl } from '../../shared/constants'
+import { Commands } from '../../shared/vscode/commands2'
 import { openTaskInTerminal, runCommandInContainer, toggleExecuteCommandFlag } from './commands'
-import { getResourceFromTreeNode } from '../shared/treeview/utils'
-import { Instance } from '../shared/utilities/typeConstructors'
+import { getResourceFromTreeNode } from '../../shared/treeview/utils'
+import { Instance } from '../../shared/utilities/typeConstructors'
 import { Service } from './model'
-import { telemetry } from '../shared/telemetry/telemetry'
-import { openUrl } from '../shared/utilities/vsCodeUtils'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { openUrl } from '../../shared/utilities/vsCodeUtils'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(runCommandInContainer.register(), openTaskInTerminal.register())
