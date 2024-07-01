@@ -7,12 +7,12 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../../shared/logger'
 import { CdkAppLocation, getApp } from '../cdkProject'
 import { ConstructNode, generateConstructNodes } from './constructNode'
-import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
-import { createPlaceholderItem } from '../../../shared/treeview/utils'
-import { getIcon } from '../../../shared/icons'
+import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
+import { createPlaceholderItem } from '../../../../shared/treeview/utils'
+import { getIcon } from '../../../../shared/icons'
 
 /**
  * Represents a CDK App
