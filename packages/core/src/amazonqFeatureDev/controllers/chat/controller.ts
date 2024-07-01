@@ -18,6 +18,7 @@ import {
     PlanIterationLimitError,
     SelectedFolderNotInWorkspaceFolderError,
     WorkspaceFolderNotFoundError,
+    ZipFileError,
     createUserFacingErrorMessage,
 } from '../../errors'
 import { defaultRetryLimit } from '../../limits'
@@ -306,6 +307,14 @@ export class FeatureDevController {
                         },
                     ],
                 })
+            } else if (err instanceof ZipFileError) {
+                this.messenger.sendErrorMessage(
+                    '',
+                    message.tabID,
+                    0,
+                    session?.state.phase,
+                    session?.conversationIdUnsafe
+                )
             } else {
                 const errorMessage = createUserFacingErrorMessage(
                     `${featureName} request failed: ${err.cause?.message ?? err.message}`
@@ -468,6 +477,34 @@ export class FeatureDevController {
             session.initCodegen()
             await this.onCodeGeneration(session, '', message.tabID)
         } catch (err: any) {
+            if (err instanceof ContentLengthError) {
+                this.messenger.sendErrorMessage(
+                    err.message,
+                    message.tabID,
+                    this.retriesRemaining(session),
+                    undefined,
+                    session?.conversationIdUnsafe
+                )
+                this.messenger.sendAnswer({
+                    type: 'system-prompt',
+                    tabID: message.tabID,
+                    followUps: [
+                        {
+                            pillText: 'Select files for context',
+                            type: 'ModifyDefaultSourceFolder',
+                            status: 'info',
+                        },
+                    ],
+                })
+            } else if (err instanceof ZipFileError) {
+                this.messenger.sendErrorMessage(
+                    '',
+                    message.tabID,
+                    0,
+                    session?.state.phase,
+                    session?.conversationIdUnsafe
+                )
+            } else {
             const errorMessage = createUserFacingErrorMessage(
                 `${featureName} request failed: ${err.cause?.message ?? err.message}`
             )
