@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createHelpButton } from '../../shared/ui/buttons'
-import { createInputBox } from '../../shared/ui/inputPrompter'
+import { createHelpButton } from '../../../shared/ui/buttons'
+import { createInputBox } from '../../../shared/ui/inputPrompter'
 import { AppRunnerServiceNode } from '../explorer/apprunnerServiceNode'
 import * as nls from 'vscode-nls'
-import { isValidResponse } from '../../shared/wizards/wizard'
-import { telemetry } from '../../shared/telemetry/telemetry'
-import { AppRunnerServiceStatus, Result } from '../../shared/telemetry/telemetry'
+import { isValidResponse } from '../../../shared/wizards/wizard'
+import { telemetry } from '../../../shared/telemetry/telemetry'
+import { AppRunnerServiceStatus, Result } from '../../../shared/telemetry/telemetry'
 const localize = nls.loadMessageBundle()
 
 function validateName(name: string) {

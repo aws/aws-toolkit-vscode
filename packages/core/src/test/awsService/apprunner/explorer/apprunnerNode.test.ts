@@ -7,12 +7,12 @@ import assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import { AppRunner } from 'aws-sdk'
-import { AppRunnerNode } from '../../../apprunner/explorer/apprunnerNode'
-import { AppRunnerServiceNode } from '../../../apprunner/explorer/apprunnerServiceNode'
-import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
-import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { installFakeClock } from '../../testUtil'
+import { AppRunnerNode } from '../../../../awsService/apprunner/explorer/apprunnerNode'
+import { AppRunnerServiceNode } from '../../../../awsService/apprunner/explorer/apprunnerServiceNode'
+import { AppRunnerClient } from '../../../../shared/clients/apprunnerClient'
+import { PlaceholderNode } from '../../../../shared/treeview/nodes/placeholderNode'
+import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
+import { installFakeClock } from '../../../testUtil'
 
 describe('AppRunnerNode', function () {
     let mockApprunnerClient: AppRunnerClient

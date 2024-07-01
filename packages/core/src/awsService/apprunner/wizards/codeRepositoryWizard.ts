@@ -5,24 +5,24 @@
 
 import { AppRunner } from 'aws-sdk'
 import * as nls from 'vscode-nls'
-import { createCommonButtons, createRefreshButton, QuickInputToggleButton } from '../../shared/ui/buttons'
-import { Remote } from '../../../types/git.d'
-import { GitExtension } from '../../shared/extensions/git'
+import { createCommonButtons, createRefreshButton, QuickInputToggleButton } from '../../../shared/ui/buttons'
+import { Remote } from '../../../../types/git.d'
+import { GitExtension } from '../../../shared/extensions/git'
 import * as vscode from 'vscode'
-import { WizardForm } from '../../shared/wizards/wizardForm'
-import { createVariablesPrompter } from '../../shared/ui/common/variablesPrompter'
-import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
+import { WizardForm } from '../../../shared/wizards/wizardForm'
+import { createVariablesPrompter } from '../../../shared/ui/common/variablesPrompter'
+import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
 import { makeDeploymentButton } from './deploymentButton'
-import { createLabelQuickPick, createQuickPick, QuickPickPrompter } from '../../shared/ui/pickerPrompter'
-import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
+import { createLabelQuickPick, createQuickPick, QuickPickPrompter } from '../../../shared/ui/pickerPrompter'
+import { createInputBox, InputBoxPrompter } from '../../../shared/ui/inputPrompter'
 import {
     apprunnerConnectionHelpUrl,
     apprunnerConfigHelpUrl,
     apprunnerRuntimeHelpUrl,
     apprunnerCreateServiceDocsUrl,
-} from '../../shared/constants'
-import { Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
-import { openUrl } from '../../shared/utilities/vsCodeUtils'
+} from '../../../shared/constants'
+import { Wizard, WIZARD_BACK } from '../../../shared/wizards/wizard'
+import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 
 const localize = nls.loadMessageBundle()
 

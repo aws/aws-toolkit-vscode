@@ -4,12 +4,12 @@
  */
 
 import { AppRunner } from 'aws-sdk'
-import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
+import { createWizardTester, WizardTester } from '../../../shared/wizards/wizardTestUtils'
 import {
     AppRunnerImageRepositoryWizard,
     ImageIdentifierForm,
     TaggedEcrRepository,
-} from '../../../apprunner/wizards/imageRepositoryWizard'
+} from '../../../../awsService/apprunner/wizards/imageRepositoryWizard'
 
 describe('AppRunnerImageRepositoryWizard', function () {
     let tester: WizardTester<AppRunner.SourceConfiguration>

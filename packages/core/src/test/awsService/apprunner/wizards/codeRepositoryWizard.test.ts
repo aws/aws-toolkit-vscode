@@ -5,18 +5,18 @@
 
 import assert from 'assert'
 import { AppRunner } from 'aws-sdk'
-import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
+import { createWizardTester, WizardTester } from '../../../shared/wizards/wizardTestUtils'
 import {
     AppRunnerCodeRepositoryWizard,
     createConnectionPrompter,
-} from '../../../apprunner/wizards/codeRepositoryWizard'
-import { DefaultAppRunnerClient } from '../../../shared/clients/apprunnerClient'
+} from '../../../../awsService/apprunner/wizards/codeRepositoryWizard'
+import { DefaultAppRunnerClient } from '../../../../shared/clients/apprunnerClient'
 import { ConnectionSummary } from 'aws-sdk/clients/apprunner'
-import { WIZARD_EXIT } from '../../../shared/wizards/wizard'
-import { apprunnerConnectionHelpUrl } from '../../../shared/constants'
-import { createQuickPickPrompterTester, QuickPickPrompterTester } from '../../shared/ui/testUtils'
-import { stub } from '../../utilities/stubber'
-import { getOpenExternalStub } from '../../globalSetup.test'
+import { WIZARD_EXIT } from '../../../../shared/wizards/wizard'
+import { apprunnerConnectionHelpUrl } from '../../../../shared/constants'
+import { createQuickPickPrompterTester, QuickPickPrompterTester } from '../../../shared/ui/testUtils'
+import { stub } from '../../../utilities/stubber'
+import { getOpenExternalStub } from '../../../globalSetup.test'
 
 describe('AppRunnerCodeRepositoryWizard', function () {
     let tester: WizardTester<AppRunner.SourceConfiguration>
