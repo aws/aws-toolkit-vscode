@@ -5,16 +5,16 @@
 
 import * as vscode from 'vscode'
 import { RestApiNode } from '../explorer/apiNodes'
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../../shared/logger'
 
-import { toArrayAsync } from '../../shared/utilities/collectionUtils'
+import { toArrayAsync } from '../../../shared/utilities/collectionUtils'
 import { Resource } from 'aws-sdk/clients/apigateway'
-import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Result } from '../../shared/telemetry/telemetry'
-import { VueWebview } from '../../webviews/main'
-import { ExtContext } from '../../shared/extensions'
-import { DefaultApiGatewayClient } from '../../shared/clients/apiGatewayClient'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { localize } from '../../../shared/utilities/vsCodeUtils'
+import { Result } from '../../../shared/telemetry/telemetry'
+import { VueWebview } from '../../../webviews/main'
+import { ExtContext } from '../../../shared/extensions'
+import { DefaultApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 interface InvokeApiMessage {
     region: string

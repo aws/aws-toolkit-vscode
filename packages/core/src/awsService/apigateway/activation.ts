@@ -7,8 +7,8 @@ import * as vscode from 'vscode'
 import { RestApiNode } from './explorer/apiNodes'
 import { invokeRemoteRestApi } from './vue/invokeRemoteRestApi'
 import { copyUrlCommand } from './commands/copyUrl'
-import { ExtContext } from '../shared/extensions'
-import { Commands } from '../shared/vscode/commands2'
+import { ExtContext } from '../../shared/extensions'
+import { Commands } from '../../shared/vscode/commands2'
 
 /**
  * Activate API Gateway functionality for the extension.

@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { listValidMethods } from '../../../apigateway/vue/invokeRemoteRestApi'
+import { listValidMethods } from '../../../../awsService/apigateway/vue/invokeRemoteRestApi'
 import { Resource } from 'aws-sdk/clients/apigateway'
 
 describe('listValidMethods', function () {

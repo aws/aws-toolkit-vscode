@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { buildDefaultApiInvokeUrl } from '../../../apigateway/commands/copyUrl'
+import { buildDefaultApiInvokeUrl } from '../../../../awsService/apigateway/commands/copyUrl'
 
 describe('buildDefaultApiInvokeUrl', function () {
     it('builds a url', async function () {

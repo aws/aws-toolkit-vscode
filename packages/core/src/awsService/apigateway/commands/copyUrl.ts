@@ -3,19 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { copyToClipboard } from '../../shared/utilities/messages'
+import { copyToClipboard } from '../../../shared/utilities/messages'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import { RestApiNode } from '../explorer/apiNodes'
-import * as picker from '../../shared/ui/picker'
+import * as picker from '../../../shared/ui/picker'
 import * as vscode from 'vscode'
 import { ProgressLocation } from 'vscode'
 
 import { Stage } from 'aws-sdk/clients/apigateway'
-import { DefaultApiGatewayClient } from '../../shared/clients/apiGatewayClient'
-import { defaultDnsSuffix, RegionProvider } from '../../shared/regions/regionProvider'
-import { getLogger } from '../../shared/logger'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { DefaultApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
+import { defaultDnsSuffix, RegionProvider } from '../../../shared/regions/regionProvider'
+import { getLogger } from '../../../shared/logger'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 interface StageInvokeUrlQuickPick extends vscode.QuickPickItem {
     // override declaration so this can't be undefined

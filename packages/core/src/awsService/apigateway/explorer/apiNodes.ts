@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
+import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { RestApi } from 'aws-sdk/clients/apigateway'
 
 export class RestApiNode extends AWSTreeNodeBase implements AWSResourceNode {

@@ -4,7 +4,7 @@
  */
 
 import { TreeItemCollapsibleState } from 'vscode'
-import { ApiGatewayNode } from '../apigateway/explorer/apiGatewayNodes'
+import { ApiGatewayNode } from '../awsService/apigateway/explorer/apiGatewayNodes'
 import { SchemasNode } from '../eventSchemas/explorer/schemasNode'
 import { CloudFormationNode } from '../lambda/explorer/cloudFormationNodes'
 import { CloudWatchLogsNode } from '../awsService/cloudWatchLogs/explorer/cloudWatchLogsNode'

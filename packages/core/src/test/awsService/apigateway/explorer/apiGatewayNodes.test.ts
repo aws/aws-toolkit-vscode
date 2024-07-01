@@ -7,12 +7,12 @@ import assert from 'assert'
 import {
     assertNodeListOnlyHasErrorNode,
     assertNodeListOnlyHasPlaceholderNode,
-} from '../../utilities/explorerNodeAssertions'
-import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
-import { ApiGatewayNode } from '../../../apigateway/explorer/apiGatewayNodes'
-import { RestApiNode } from '../../../apigateway/explorer/apiNodes'
-import { DefaultApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
-import { stub } from '../../utilities/stubber'
+} from '../../../utilities/explorerNodeAssertions'
+import { asyncGenerator } from '../../../../shared/utilities/collectionUtils'
+import { ApiGatewayNode } from '../../../../awsService/apigateway/explorer/apiGatewayNodes'
+import { RestApiNode } from '../../../../awsService/apigateway/explorer/apiNodes'
+import { DefaultApiGatewayClient } from '../../../../shared/clients/apiGatewayClient'
+import { stub } from '../../../utilities/stubber'
 
 const fakePartitionId = 'aws'
 const fakeRegionCode = 'someregioncode'

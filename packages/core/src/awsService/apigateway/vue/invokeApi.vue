@@ -48,8 +48,8 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { WebviewClientFactory } from '../../webviews/client'
-import saveData from '../../webviews/mixins/saveData'
+import { WebviewClientFactory } from '../../../webviews/client'
+import saveData from '../../../webviews/mixins/saveData'
 import { InvokeRemoteRestApiInitialData, RemoteRestInvokeWebview } from './invokeRemoteRestApi'
 
 const client = WebviewClientFactory.create<RemoteRestInvokeWebview>()
