@@ -23,8 +23,8 @@ import {
     showWelcomeMessage,
 } from './shared/extensionUtilities'
 import { getLogger, Logger } from './shared/logger/logger'
-import { activate as activateEcr } from './ecr/activation'
-import { activate as activateEc2 } from './ec2/activation'
+import { activate as activateEcr } from './awsService/ecr/activation'
+import { activate as activateEc2 } from './awsService/ec2/activation'
 import { activate as activateSam } from './shared/sam/activation'
 import { activate as activateS3 } from './s3/activation'
 import * as awsFiletypes from './shared/awsFiletypes'

@@ -4,17 +4,17 @@
  */
 
 import * as vscode from 'vscode'
-import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
+import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { EcrNode } from './ecrNode'
-import { EcrClient, EcrRepository } from '../../shared/clients/ecrClient'
+import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
 
-import { makeChildrenNodes } from '../../shared/treeview/utils'
-import { toArrayAsync } from '../../shared/utilities/collectionUtils'
-import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { localize } from '../../shared/utilities/vsCodeUtils'
+import { makeChildrenNodes } from '../../../shared/treeview/utils'
+import { toArrayAsync } from '../../../shared/utilities/collectionUtils'
+import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
+import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { EcrTagNode } from './ecrTagNode'
-import { getIcon } from '../../shared/icons'
+import { getIcon } from '../../../shared/icons'
 
 export class EcrRepositoryNode extends AWSTreeNodeBase implements AWSResourceNode {
     name: string = this.repository.repositoryName

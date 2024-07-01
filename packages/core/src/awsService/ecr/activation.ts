@@ -12,7 +12,7 @@ import { EcrNode } from './explorer/ecrNode'
 import { EcrRepositoryNode } from './explorer/ecrRepositoryNode'
 import { EcrTagNode } from './explorer/ecrTagNode'
 import { deleteTag } from './commands/deleteTag'
-import { Commands } from '../shared/vscode/commands2'
+import { Commands } from '../../shared/vscode/commands2'
 
 /**
  * Activates ECR components.

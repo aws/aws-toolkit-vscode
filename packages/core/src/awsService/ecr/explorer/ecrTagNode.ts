@@ -4,8 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { EcrClient, EcrRepository } from '../../shared/clients/ecrClient'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
 import { EcrRepositoryNode } from './ecrRepositoryNode'
 
 export class EcrTagNode extends AWSTreeNodeBase {

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { localize } from '../shared/utilities/vsCodeUtils'
+import { localize } from '../../shared/utilities/vsCodeUtils'
 
 /**
  * Validates an ECR repository name. There are actually more rules, but they aren't documented, so

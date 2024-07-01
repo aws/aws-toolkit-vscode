@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { copyToClipboard } from '../../shared/utilities/messages'
+import { copyToClipboard } from '../../../shared/utilities/messages'
 import { EcrRepositoryNode } from '../explorer/ecrRepositoryNode'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 export async function copyRepositoryUri(node: EcrRepositoryNode): Promise<void> {
     const uri = node.repository.repositoryUri

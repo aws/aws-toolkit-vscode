@@ -5,12 +5,12 @@
 
 import * as sinon from 'sinon'
 import assert from 'assert'
-import { DefaultEcrClient, EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
-import { EcrNode } from '../../../ecr/explorer/ecrNode'
-import { EcrRepositoryNode } from '../../../ecr/explorer/ecrRepositoryNode'
-import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { EcrTagNode } from '../../../ecr/explorer/ecrTagNode'
-import { assertNodeListOnlyHasErrorNode } from '../../utilities/explorerNodeAssertions'
+import { DefaultEcrClient, EcrClient, EcrRepository } from '../../../../shared/clients/ecrClient'
+import { EcrNode } from '../../../../awsService/ecr/explorer/ecrNode'
+import { EcrRepositoryNode } from '../../../../awsService/ecr/explorer/ecrRepositoryNode'
+import { PlaceholderNode } from '../../../../shared/treeview/nodes/placeholderNode'
+import { EcrTagNode } from '../../../../awsService/ecr/explorer/ecrTagNode'
+import { assertNodeListOnlyHasErrorNode } from '../../../utilities/explorerNodeAssertions'
 
 describe('EcrNode', function () {
     let ecr: EcrClient
