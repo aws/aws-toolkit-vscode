@@ -134,7 +134,7 @@ export function mapToAggregatedList(
     filteredIssues.forEach(issue => {
         const filePath = issue.filePath
         if (codeScanIssueMap.has(filePath)) {
-            codeScanIssueMap.get(filePath)!.push(issue)
+            codeScanIssueMap.get(filePath)?.push(issue)
         } else {
             codeScanIssueMap.set(filePath, [issue])
         }
