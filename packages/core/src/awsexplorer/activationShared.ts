@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { createToolView, ToolView } from './toolView'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { CdkRootNode } from '../cdk/explorer/rootNode'
+import { CdkRootNode } from '../awsService/cdk/explorer/rootNode'
 
 /**
  * Activates vscode Views (eg tree view) that work in any vscode environment (nodejs or browser).

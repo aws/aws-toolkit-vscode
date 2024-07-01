@@ -4,12 +4,12 @@
  */
 
 import * as vscode from 'vscode'
-import { cdkDocumentationUrl } from '../../shared/constants'
-import { telemetry } from '../../shared/telemetry/telemetry'
-import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
-import { createPlaceholderItem } from '../../shared/treeview/utils'
-import { localize, openUrl } from '../../shared/utilities/vsCodeUtils'
-import { Commands } from '../../shared/vscode/commands2'
+import { cdkDocumentationUrl } from '../../../shared/constants'
+import { telemetry } from '../../../shared/telemetry/telemetry'
+import { ResourceTreeDataProvider, TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
+import { createPlaceholderItem } from '../../../shared/treeview/utils'
+import { localize, openUrl } from '../../../shared/utilities/vsCodeUtils'
+import { Commands } from '../../../shared/vscode/commands2'
 import { detectCdkProjects } from './detectCdkProjects'
 import { AppNode } from './nodes/appNode'
 

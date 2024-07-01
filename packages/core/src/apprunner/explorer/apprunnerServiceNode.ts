@@ -9,7 +9,7 @@ import { AppRunner } from 'aws-sdk'
 import { AppRunnerNode } from './apprunnerNode'
 
 import { toArrayAsync, toMap } from '../../shared/utilities/collectionUtils'
-import { CloudWatchLogsBase } from '../../cloudWatchLogs/explorer/cloudWatchLogsNode'
+import { CloudWatchLogsBase } from '../../awsService/cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 

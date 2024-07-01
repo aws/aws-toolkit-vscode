@@ -8,7 +8,7 @@ import * as nls from 'vscode-nls'
 
 import * as codecatalyst from './codecatalyst/activation'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
-import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
+import { activate as activateCloudWatchLogs } from './awsService/cloudWatchLogs/activation'
 import { CredentialsProviderManager } from './auth/providers/credentialsProviderManager'
 import { SharedCredentialsProviderFactory } from './auth/providers/sharedCredentialsProviderFactory'
 import { activate as activateSchemas } from './eventSchemas/activation'

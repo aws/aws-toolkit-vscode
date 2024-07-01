@@ -4,8 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { getIcon } from '../../../shared/icons'
-import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
+import { getIcon } from '../../../../shared/icons'
+import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
 
 /*
  * Represents a property of a CDK construct. Properties can be simple key-value pairs, Arrays,

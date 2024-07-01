@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { SystemUtilities } from '../../shared/systemUtilities'
+import { SystemUtilities } from '../../../shared/systemUtilities'
 import { ConstructTree } from './tree/types'
 
 export interface CdkApp {

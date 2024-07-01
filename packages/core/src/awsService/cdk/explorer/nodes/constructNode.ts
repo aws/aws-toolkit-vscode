@@ -4,8 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { getIcon } from '../../../shared/icons'
-import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
+import { getIcon } from '../../../../shared/icons'
+import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
 import { CdkAppLocation } from '../cdkProject'
 import * as treeInspector from '../tree/treeInspector'
 import { ConstructTreeEntity } from '../tree/types'
