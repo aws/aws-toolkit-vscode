@@ -6,9 +6,9 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
-import * as detectCdkProjects from '../../../cdk/explorer/detectCdkProjects'
-import { CdkAppLocation } from '../../../cdk/explorer/cdkProject'
-import { CdkRootNode } from '../../../cdk/explorer/rootNode'
+import * as detectCdkProjects from '../../../../awsService/cdk/explorer/detectCdkProjects'
+import { CdkAppLocation } from '../../../../awsService/cdk/explorer/cdkProject'
+import { CdkRootNode } from '../../../../awsService/cdk/explorer/rootNode'
 
 describe('CdkRootNode', function () {
     it('shows CDK projects', async function () {

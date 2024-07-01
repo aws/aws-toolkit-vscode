@@ -4,8 +4,8 @@
  */
 
 import assert from 'assert'
-import * as treeInspector from '../../../cdk/explorer/tree/treeInspector'
-import { CfnResourceKeys, ConstructProps, ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
+import * as treeInspector from '../../../../awsService/cdk/explorer/tree/treeInspector'
+import { CfnResourceKeys, ConstructProps, ConstructTreeEntity } from '../../../../awsService/cdk/explorer/tree/types'
 import * as treeUtils from '../treeTestUtils'
 
 describe('TreeInspector', function () {

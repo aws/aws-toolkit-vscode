@@ -7,13 +7,13 @@ import assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
-import { detectCdkProjects } from '../../cdk/explorer/detectCdkProjects'
-import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { detectCdkProjects } from '../../../awsService/cdk/explorer/detectCdkProjects'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { saveCdkJson } from './treeTestUtils'
-import { createTestWorkspaceFolder } from '../testUtil'
-import { FakeExtensionContext } from '../fakeExtensionContext'
+import { createTestWorkspaceFolder } from '../../testUtil'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { mkdirp, writeJSON } from 'fs-extra'
-import { waitUntil } from '../../shared/utilities/timeoutUtils'
+import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 
 describe('detectCdkProjects', function () {
     const workspacePaths: string[] = []
