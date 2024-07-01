@@ -3541,6 +3541,18 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.dynamoDb.searchDynamoDbTables",
+                "title": "%AWS.command.dynamoDb.searchDynamoDbTables%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": "$(search-view-icon)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             }
         ],
         "jsonValidation": [
