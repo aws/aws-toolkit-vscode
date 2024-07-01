@@ -70,9 +70,12 @@ describe('LogDataRegistry', async function () {
 
     describe('registerInitialLog', function () {
         it('throws when attempting to register a pre-existing uri', () => {
-            assert.throws(() => {
-                registry.registerInitialLog(registeredUri)
-            }, new Error(`Already registered: ${registeredUri.toString()}`))
+            assert.throws(
+                () => {
+                    registry.registerInitialLog(registeredUri)
+                },
+                new Error(`Already registered: ${registeredUri.toString()}`)
+            )
         })
     })
 

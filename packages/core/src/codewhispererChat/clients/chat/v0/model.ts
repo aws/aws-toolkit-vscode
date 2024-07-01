@@ -59,7 +59,10 @@ class ApiDocsMetadata {
 }
 
 class CanonicalExample {
-    constructor(public url: string, public body: string) {}
+    constructor(
+        public url: string,
+        public body: string
+    ) {}
 }
 
 export interface ChatApiDocsSuggestion {

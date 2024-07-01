@@ -10,7 +10,11 @@ import { getLogger } from '../../shared/logger'
 import { isBuilderIdConnection, isIdcSsoConnection } from '../../auth/connection'
 
 export class FeatureContext {
-    constructor(public name: string, public variation: string, public value: FeatureValue) {}
+    constructor(
+        public name: string,
+        public variation: string,
+        public value: FeatureValue
+    ) {}
 }
 
 const testFeatureName = 'testFeature'

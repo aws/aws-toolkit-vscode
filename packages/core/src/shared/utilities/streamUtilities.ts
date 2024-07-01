@@ -36,7 +36,10 @@ export function streamToFile(stream: Readable, target: vscode.Uri): Promise<void
 class BufferWriter {
     private offset = 0
 
-    public constructor(private readonly buffer: Buffer | number[], private readonly finalSize?: number) {}
+    public constructor(
+        private readonly buffer: Buffer | number[],
+        private readonly finalSize?: number
+    ) {}
 
     public write(chunk: Buffer) {
         const buffer = this.buffer

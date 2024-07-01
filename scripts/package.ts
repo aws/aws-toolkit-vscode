@@ -6,7 +6,8 @@
 //
 // Creates an artifact that can be given to users for testing alpha/beta builds:
 //
-//     aws-toolkit-vscode-99.0.0-xxxxxxx.vsix
+//     aws-toolkit-vscode-99.0.0-gxxxxxxx.vsix
+//     or amazon-q-vscode-99.0.0-gxxxxxxx.vsix
 //
 // Where `xxxxxxx` is the first 7 characters of the commit hash that produced the artifact.
 //
@@ -82,6 +83,22 @@ function isBeta(): boolean {
         return !!betaUrl
     } catch {
         return false
+    }
+}
+
+/**
+ * Restores package.json after `scripts/build/handlePackageJson.ts` overwrote it.
+ *
+ * TODO: remove this after IDE-12831 is resolved.
+ */
+function restorePackageJson() {
+    const packageJsonFile = './package.json'
+    const backupJsonFile = `${packageJsonFile}.handlePackageJson.bk`
+
+    if (fs.existsSync(backupJsonFile)) {
+        fs.copyFileSync(backupJsonFile, packageJsonFile)
+        fs.unlinkSync(backupJsonFile)
+        console.log(`package.ts: restored package.json from ${backupJsonFile}`)
     }
 }
 
@@ -177,6 +194,7 @@ function main() {
             fs.copyFileSync(backupWebpackConfigFile, webpackConfigJsFile)
             fs.unlinkSync(backupWebpackConfigFile)
         }
+        restorePackageJson()
     }
 }
 

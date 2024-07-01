@@ -26,7 +26,7 @@ import { ToolkitError } from '../../../../shared/errors'
 import { keys } from '../../../../shared/utilities/tsUtils'
 import { getLogger } from '../../../../shared/logger/logger'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
-import { AuthFollowUpType, expiredText, enableQText, reauthenticateText } from '../../../../amazonq/auth/model'
+import { AuthFollowUpType, AuthMessageDataMap } from '../../../../amazonq/auth/model'
 import { userGuideURL } from '../../../../amazonq/webview/ui/texts/constants'
 import { CodeScanIssue } from '../../../../codewhisperer/models/model'
 import { marked } from 'marked'
@@ -42,23 +42,23 @@ export class Messenger {
 
     public async sendAuthNeededExceptionMessage(credentialState: FeatureAuthState, tabID: string, triggerID: string) {
         let authType: AuthFollowUpType = 'full-auth'
-        let message = reauthenticateText
+        let message = AuthMessageDataMap[authType].message
         if (
             credentialState.codewhispererChat === 'disconnected' &&
             credentialState.codewhispererCore === 'disconnected'
         ) {
             authType = 'full-auth'
-            message = reauthenticateText
+            message = AuthMessageDataMap[authType].message
         }
 
         if (credentialState.codewhispererCore === 'connected' && credentialState.codewhispererChat === 'expired') {
             authType = 'missing_scopes'
-            message = enableQText
+            message = AuthMessageDataMap[authType].message
         }
 
         if (credentialState.codewhispererChat === 'expired' && credentialState.codewhispererCore === 'expired') {
             authType = 're-auth'
-            message = expiredText
+            message = AuthMessageDataMap[authType].message
         }
 
         this.dispatcher.sendAuthNeededExceptionMessage(

@@ -13,7 +13,10 @@ import { Profile } from '../../../auth/credentials/sharedCredentials'
 import { SharedCredentialsKeys } from '../../../auth/credentials/types'
 
 class TestPrompter extends Prompter<string | undefined> {
-    public constructor(private readonly name: string, private readonly profile: Profile) {
+    public constructor(
+        private readonly name: string,
+        private readonly profile: Profile
+    ) {
         super()
     }
 

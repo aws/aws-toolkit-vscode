@@ -55,11 +55,11 @@ export function getWorkspaceFolder(dir: string): vscode.WorkspaceFolder {
 }
 
 /**
- * Creates a random, temporary workspace folder on the filesystem and returns a
- * `WorkspaceFolder` object.
+ * Creates a random, temporary workspace folder on the filesystem and returns a `WorkspaceFolder`
+ * object. The folder will be automatically deleted after tests complete.
  *
- * @param name  Optional name, defaults to "test-workspace-folder".
- * @param subDir Optional subdirectory created in the workspace folder and returned in the result.
+ * @param name  Folder name (default: "test-workspace-folder").
+ * @param subDir Subdirectory created in the workspace folder and returned in the result.
  */
 export async function createTestWorkspaceFolder(name?: string, subDir?: string): Promise<vscode.WorkspaceFolder> {
     const tempFolder = await makeTemporaryToolkitFolder()

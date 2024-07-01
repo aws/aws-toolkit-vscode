@@ -133,7 +133,7 @@ describe('SamParameterCompletionItemProvider', async function () {
         const provider = new SamParameterCompletionItemProvider(
             new MockSamParamComplItemProviderContext({
                 executeCommand: async () => undefined as any,
-                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
+                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') }) as any as vscode.WorkspaceFolder,
             })
         )
 
@@ -155,7 +155,7 @@ describe('SamParameterCompletionItemProvider', async function () {
         const provider = new SamParameterCompletionItemProvider(
             new MockSamParamComplItemProviderContext({
                 executeCommand: async <T>() => [] as any as T,
-                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
+                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') }) as any as vscode.WorkspaceFolder,
             })
         )
 
@@ -182,7 +182,7 @@ describe('SamParameterCompletionItemProvider', async function () {
         const provider = new SamParameterCompletionItemProvider(
             new MockSamParamComplItemProviderContext({
                 executeCommand: async <T>() => [templatesSymbol] as any as T,
-                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
+                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') }) as any as vscode.WorkspaceFolder,
                 loadTemplate: async () => ({
                     Parameters: {
                         MyParamName1: {
@@ -224,7 +224,7 @@ describe('SamParameterCompletionItemProvider', async function () {
         const provider = new SamParameterCompletionItemProvider(
             new MockSamParamComplItemProviderContext({
                 executeCommand: async <T>() => [templatesSymbol] as any as T,
-                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
+                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') }) as any as vscode.WorkspaceFolder,
                 loadTemplate: async () => ({
                     Parameters: {
                         MyParamName1: {
@@ -264,7 +264,7 @@ describe('SamParameterCompletionItemProvider', async function () {
         const provider = new SamParameterCompletionItemProvider(
             new MockSamParamComplItemProviderContext({
                 executeCommand: async <T>() => undefined as any,
-                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
+                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') }) as any as vscode.WorkspaceFolder,
             })
         )
 
@@ -288,7 +288,7 @@ describe('SamParameterCompletionItemProvider', async function () {
         const provider = new SamParameterCompletionItemProvider(
             new MockSamParamComplItemProviderContext({
                 executeCommand: async <T>() => [templatesSymbol] as any as T,
-                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
+                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') }) as any as vscode.WorkspaceFolder,
                 loadTemplate: async () => ({
                     Parameters: {
                         MyParamName1: {
@@ -327,7 +327,7 @@ describe('SamParameterCompletionItemProvider', async function () {
         const provider = new SamParameterCompletionItemProvider(
             new MockSamParamComplItemProviderContext({
                 executeCommand: async <T>() => [templatesSymbol] as any as T,
-                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
+                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') }) as any as vscode.WorkspaceFolder,
                 loadTemplate: async () => ({
                     Parameters: {
                         MyParamName1: {
@@ -370,7 +370,7 @@ describe('SamParameterCompletionItemProvider', async function () {
         const provider = new SamParameterCompletionItemProvider(
             new MockSamParamComplItemProviderContext({
                 executeCommand: async <T>() => [templatesSymbol] as any as T,
-                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
+                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') }) as any as vscode.WorkspaceFolder,
                 loadTemplate: async () => ({
                     Parameters: {
                         MyParamName1: {
@@ -413,7 +413,7 @@ describe('SamParameterCompletionItemProvider', async function () {
         const provider = new SamParameterCompletionItemProvider(
             new MockSamParamComplItemProviderContext({
                 executeCommand: async <T>() => [templatesSymbol] as any as T,
-                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') } as any as vscode.WorkspaceFolder),
+                getWorkspaceFolder: () => ({ uri: vscode.Uri.file('') }) as any as vscode.WorkspaceFolder,
                 loadTemplate: async () => ({
                     Parameters: {
                         MyParamName1: {

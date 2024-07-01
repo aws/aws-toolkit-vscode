@@ -76,7 +76,10 @@ export interface SelectLogStreamWizardContext {
 
 export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizardContext {
     private readonly totalSteps = 1
-    public constructor(private readonly regionCode: string, private readonly logGroupName: string) {}
+    public constructor(
+        private readonly regionCode: string,
+        private readonly logGroupName: string
+    ) {}
 
     public async pickLogStream(): Promise<LogSearchChoice> {
         const client = new DefaultCloudWatchLogsClient(this.regionCode)
