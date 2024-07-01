@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { PropertyNode } from '../../../cdk/explorer/nodes/propertyNode'
+import { PropertyNode } from '../../../../awsService/cdk/explorer/nodes/propertyNode'
 
 describe('PropertyNode', function () {
     const label = 'myProperty'
