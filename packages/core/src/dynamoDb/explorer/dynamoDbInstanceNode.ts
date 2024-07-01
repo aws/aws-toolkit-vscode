@@ -31,7 +31,6 @@ export class DynamoDbInstanceNode extends AWSTreeNodeBase {
 
     public async updateChildren(): Promise<void> {
         const tables = toMap(await toArrayAsync(this.dynamoDbClient.getTables()), configuration => configuration)
-        console.log(tables)
         updateInPlace(
             this.dynamoDbTableNodes,
             tables.keys(),

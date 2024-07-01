@@ -11,12 +11,6 @@ import { DynamoDbInstanceNode } from './explorer/dynamoDbInstanceNode'
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     context.subscriptions.push(
-        vscode.commands.registerCommand('aws.dynamoDb.openRemoteConnection', async () => {
-            await openRemoteConnection()
-        })
-    )
-
-    context.subscriptions.push(
         Commands.register(
             'aws.dynamoDb.searchDynamoDbTables',
             async (node: DynamoDbTableNode | DynamoDbInstanceNode) => {
@@ -33,8 +27,4 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             }
         )
     )
-}
-
-export async function openRemoteConnection() {
-    // do nothing
 }
