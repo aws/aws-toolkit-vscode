@@ -6,16 +6,16 @@
 import * as vscode from 'vscode'
 import * as fs from 'fs'
 import * as path from 'path'
-import { getLogger, Logger } from '../../shared/logger'
-import { localize } from '../../shared/utilities/vsCodeUtils'
-import { VueWebview } from '../../webviews/main'
-import { ExtContext } from '../../shared/extensions'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { getLogger, Logger } from '../../../shared/logger'
+import { localize } from '../../../shared/utilities/vsCodeUtils'
+import { VueWebview } from '../../../webviews/main'
+import { ExtContext } from '../../../shared/extensions'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 import { AccessAnalyzer, SharedIniFileCredentials } from 'aws-sdk'
 import { execFileSync } from 'child_process'
-import { ToolkitError } from '../../shared/errors'
-import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
-import { globals } from '../../shared'
+import { ToolkitError } from '../../../shared/errors'
+import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
+import { globals } from '../../../shared'
 import {
     IamPolicyChecksConstants,
     PolicyChecksCheckType,
@@ -26,7 +26,7 @@ import {
     PolicyChecksUiClick,
     ValidatePolicyFindingType,
 } from './constants'
-import { DefaultS3Client, parseS3Uri } from '../../shared/clients/s3Client'
+import { DefaultS3Client, parseS3Uri } from '../../../shared/clients/s3Client'
 import { ExpiredTokenException } from '@aws-sdk/client-sso-oidc'
 
 const defaultTerraformConfigPath = 'resources/policychecks-tf-default.yaml'

@@ -331,8 +331,8 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { WebviewClientFactory } from '../../webviews/client'
-import saveData from '../../webviews/mixins/saveData'
+import { WebviewClientFactory } from '../../../webviews/client'
+import saveData from '../../../webviews/mixins/saveData'
 import { IamPolicyChecksWebview } from './iamPolicyChecks'
 import { PolicyChecksDocumentType, PolicyChecksPolicyType } from './constants'
 import '@../../../resources/css/base.css'
