@@ -4,12 +4,12 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../../shared/logger'
 import { EcrNode } from '../explorer/ecrNode'
-import { localize } from '../../shared/utilities/vsCodeUtils'
-import { showViewLogsMessage } from '../../shared/utilities/messages'
+import { localize } from '../../../shared/utilities/vsCodeUtils'
+import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { validateRepositoryName } from '../utils'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 export async function createRepository(node: EcrNode): Promise<void> {
     getLogger().debug('createRepository called for %O', node)

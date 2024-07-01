@@ -4,13 +4,13 @@
  */
 
 import * as vscode from 'vscode'
-import { localize } from '../../shared/utilities/vsCodeUtils'
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../shared/treeview/utils'
-import { toArrayAsync } from '../../shared/utilities/collectionUtils'
+import { localize } from '../../../shared/utilities/vsCodeUtils'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
+import { makeChildrenNodes } from '../../../shared/treeview/utils'
+import { toArrayAsync } from '../../../shared/utilities/collectionUtils'
 import { inspect } from 'util'
-import { EcrClient } from '../../shared/clients/ecrClient'
+import { EcrClient } from '../../../shared/clients/ecrClient'
 import { EcrRepositoryNode } from './ecrRepositoryNode'
 
 /**

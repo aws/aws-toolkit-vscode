@@ -4,11 +4,11 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../../shared/logger'
 import { EcrRepositoryNode } from '../explorer/ecrRepositoryNode'
-import { localize } from '../../shared/utilities/vsCodeUtils'
-import { showViewLogsMessage } from '../../shared/utilities/messages'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { localize } from '../../../shared/utilities/vsCodeUtils'
+import { showViewLogsMessage } from '../../../shared/utilities/messages'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 export async function deleteRepository(node: EcrRepositoryNode): Promise<void> {
     getLogger().debug('DeleteRepository called for %O', node)

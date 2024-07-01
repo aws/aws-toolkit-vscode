@@ -4,8 +4,8 @@
  */
 
 import { EcrTagNode } from '../explorer/ecrTagNode'
-import { copyToClipboard } from '../../shared/utilities/messages'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { copyToClipboard } from '../../../shared/utilities/messages'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 export async function copyTagUri(node: EcrTagNode): Promise<void> {
     const uri = `${node.repository.repositoryUri}:${node.tag}`

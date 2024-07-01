@@ -5,10 +5,10 @@
 
 import * as vscode from 'vscode'
 import { EcrTagNode } from '../explorer/ecrTagNode'
-import { getLogger } from '../../shared/logger'
-import { localize } from '../../shared/utilities/vsCodeUtils'
-import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { getLogger } from '../../../shared/logger'
+import { localize } from '../../../shared/utilities/vsCodeUtils'
+import { showConfirmationMessage, showViewLogsMessage } from '../../../shared/utilities/messages'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 export async function deleteTag(node: EcrTagNode): Promise<void> {
     getLogger().debug('deleteTag called for %O', node)

@@ -6,12 +6,12 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-import { EcrRepositoryNode } from '../../../ecr/explorer/ecrRepositoryNode'
-import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
-import { EcrTagNode } from '../../../ecr/explorer/ecrTagNode'
-import { copyTagUri } from '../../../ecr/commands/copyTagUri'
-import { getTestWindow } from '../../shared/vscode/window'
-import { FakeClipboard } from '../../shared/vscode/fakeEnv'
+import { EcrRepositoryNode } from '../../../../awsService/ecr/explorer/ecrRepositoryNode'
+import { EcrClient, EcrRepository } from '../../../../shared/clients/ecrClient'
+import { EcrTagNode } from '../../../../awsService/ecr/explorer/ecrTagNode'
+import { copyTagUri } from '../../../../awsService/ecr/commands/copyTagUri'
+import { getTestWindow } from '../../../shared/vscode/window'
+import { FakeClipboard } from '../../../shared/vscode/fakeEnv'
 
 describe('copyTagUriCommand', function () {
     beforeEach(function () {

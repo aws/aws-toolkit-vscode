@@ -6,10 +6,10 @@
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import assert from 'assert'
-import { EcrNode } from '../../../ecr/explorer/ecrNode'
-import { DefaultEcrClient } from '../../../shared/clients/ecrClient'
-import { createRepository } from '../../../ecr/commands/createRepository'
-import { getTestWindow } from '../../shared/vscode/window'
+import { EcrNode } from '../../../../awsService/ecr/explorer/ecrNode'
+import { DefaultEcrClient } from '../../../../shared/clients/ecrClient'
+import { createRepository } from '../../../../awsService/ecr/commands/createRepository'
+import { getTestWindow } from '../../../shared/vscode/window'
 
 describe('createRepositoryCommand', function () {
     const ecr = new DefaultEcrClient('')

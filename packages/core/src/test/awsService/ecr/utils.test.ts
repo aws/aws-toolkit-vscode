@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { validateRepositoryName } from '../../ecr/utils'
+import { validateRepositoryName } from '../../../awsService/ecr/utils'
 
 describe('createRepositoryCommand', function () {
     it('Validates repository name starts with a lowercase letter', function () {

@@ -6,11 +6,11 @@
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import assert from 'assert'
-import { EcrNode } from '../../../ecr/explorer/ecrNode'
-import { DefaultEcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
-import { EcrRepositoryNode } from '../../../ecr/explorer/ecrRepositoryNode'
-import { deleteRepository } from '../../../ecr/commands/deleteRepository'
-import { getTestWindow } from '../../shared/vscode/window'
+import { EcrNode } from '../../../../awsService/ecr/explorer/ecrNode'
+import { DefaultEcrClient, EcrRepository } from '../../../../shared/clients/ecrClient'
+import { EcrRepositoryNode } from '../../../../awsService/ecr/explorer/ecrRepositoryNode'
+import { deleteRepository } from '../../../../awsService/ecr/commands/deleteRepository'
+import { getTestWindow } from '../../../shared/vscode/window'
 
 describe('deleteRepositoryCommand', function () {
     const repositoryName = 'reponame'

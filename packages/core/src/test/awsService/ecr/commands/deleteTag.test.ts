@@ -6,11 +6,11 @@
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import assert from 'assert'
-import { EcrTagNode } from '../../../ecr/explorer/ecrTagNode'
-import { EcrRepositoryNode } from '../../../ecr/explorer/ecrRepositoryNode'
-import { DefaultEcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
-import { deleteTag } from '../../../ecr/commands/deleteTag'
-import { assertNoErrorMessages, getTestWindow } from '../../shared/vscode/window'
+import { EcrTagNode } from '../../../../awsService/ecr/explorer/ecrTagNode'
+import { EcrRepositoryNode } from '../../../../awsService/ecr/explorer/ecrRepositoryNode'
+import { DefaultEcrClient, EcrRepository } from '../../../../shared/clients/ecrClient'
+import { deleteTag } from '../../../../awsService/ecr/commands/deleteTag'
+import { assertNoErrorMessages, getTestWindow } from '../../../shared/vscode/window'
 
 describe('deleteTag', function () {
     const repositoryName = 'reponame'
