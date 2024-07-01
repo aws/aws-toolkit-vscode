@@ -21,6 +21,7 @@ import { telemetry } from '../../shared/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { globals } from '../../shared'
 import { AuthUtil } from '../../codewhisperer'
+import { isWeb } from '../../shared/extensionGlobals'
 
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -63,10 +64,10 @@ interface Manifest {
         targets: Target[]
     }[]
 }
-
-const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/temp/manifest.json'
+const manifestUrl = 'https://ducvaeoffl85c.cloudfront.net/manifest.json'
+//const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/temp/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = ['0.0.5']
+const supportedLspServerVersions = ['0.0.6']
 
 const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
 
@@ -111,7 +112,7 @@ export class LspController {
         return res.json()
     }
 
-    async getZipFileSha384(filePath: string): Promise<string> {
+    async getFileSha384(filePath: string): Promise<string> {
         const fileBuffer = await fs.promises.readFile(filePath)
         const hash = crypto.createHash('sha384')
         hash.update(fileBuffer)
@@ -181,12 +182,21 @@ export class LspController {
     }
 
     private async hashMatch(filePath: string, content: Content) {
-        const sha384 = await this.getZipFileSha384(filePath)
+        const sha384 = await this.getFileSha384(filePath)
         if ('sha384:' + sha384 !== content.hashes[0]) {
             getLogger().error(
                 `LspController: Downloaded file sha ${sha384} does not match manifest ${content.hashes[0]}.`
             )
             fs.removeSync(filePath)
+            return false
+        }
+        return true
+    }
+
+    async downloadAndCheckHash(filePath: string, content: Content) {
+        await this._download(filePath, content.url)
+        const match = await this.hashMatch(filePath, content)
+        if (!match) {
             return false
         }
         return true
@@ -208,24 +218,21 @@ export class LspController {
 
             const tempFolder = await makeTemporaryToolkitFolder()
             const zipFilePath = path.join(tempFolder, 'qserver.zip')
-            await this._download(zipFilePath, qserver.url)
-            const match = await this.hashMatch(zipFilePath, qserver)
-            if (!match) {
+            let downloadOk = await this.downloadAndCheckHash(zipFilePath, qserver)
+            if (!downloadOk) {
                 return false
             }
             const zip = new AdmZip(zipFilePath)
             zip.extractAllTo(context.asAbsolutePath(path.join('resources')))
             fs.removeSync(zipFilePath)
-            const noderuntimeFilePath = path.join(tempFolder, nodeBinName)
-            await this._download(noderuntimeFilePath, noderuntime.url)
 
-            const match2 = await this.hashMatch(noderuntimeFilePath, noderuntime)
-            if (!match2) {
+            const noderuntimeFilePath = path.join(tempFolder, nodeBinName)
+            downloadOk = await this.downloadAndCheckHash(noderuntimeFilePath, noderuntime)
+            if (!downloadOk) {
                 return false
             }
             fs.chmodSync(noderuntimeFilePath, 0o755)
             fs.moveSync(noderuntimeFilePath, context.asAbsolutePath(path.join('resources', nodeBinName)))
-
             return true
         } catch (e) {
             getLogger().error(`LspController: Failed to setup LSP server ${e}`)
@@ -315,7 +322,7 @@ export class LspController {
     }
 
     async trySetupLsp(context: vscode.ExtensionContext) {
-        if (!CodeWhispererSettings.instance.isLocalIndexEnabled() || isCloud9()) {
+        if (!CodeWhispererSettings.instance.isLocalIndexEnabled() || isCloud9() || isWeb()) {
             return
         }
         LspController.instance.tryInstallLsp(context).then(succeed => {
