@@ -288,7 +288,7 @@ export class LspController {
                     duration: performance.now() - start,
                     result: 'Succeeded',
                     amazonqIndexFileCount: files.length,
-                    amazonqIndexMemoryUsageInMB: usage ? usage.memoryUsage : undefined,
+                    amazonqIndexMemoryUsageInMB: usage ? usage.memoryUsage / (1024 * 1024) : undefined,
                     amazonqIndexCpuUsagePercentage: usage ? usage.cpuUsage : undefined,
                     amazonqIndexFileSizeInMB: totalSizeBytes / (1024 * 1024),
                 })
