@@ -15,11 +15,14 @@ import {
     resolveErrorMessageToDisplay,
     scrubNames,
     ToolkitError,
+    UnknownError,
 } from '../../shared/errors'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { UnauthorizedException } from '@aws-sdk/client-sso'
 import { AWSError } from 'aws-sdk'
 import { AccessDeniedException } from '@aws-sdk/client-sso-oidc'
+import { OidcClient } from '../../auth/sso/clients'
+import { SamCliError } from '../../shared/sam/cli/samCliInvokerUtils'
 
 class TestAwsError extends Error implements AWSError {
     constructor(
@@ -67,31 +70,56 @@ function fakeAwsErrorUnauth() {
     return e as UnauthorizedException
 }
 
+function trySetCause(err: Error | undefined, cause: unknown) {
+    if (err && !(err instanceof ToolkitError)) {
+        ;(err as any).cause = cause
+    }
+}
+
 /** Creates a deep "cause chain", to test that error handler correctly gets the most relevant error. */
-function fakeErrorChain(rootCause?: Error) {
+export function fakeErrorChain(err1?: Error, err2?: Error, err3?: Error, err4?: Error) {
     try {
-        if (rootCause) {
-            throw rootCause
+        if (err1) {
+            throw err1
         } else {
             throw new Error('generic error 1')
         }
     } catch (e1) {
         try {
-            const e = fakeAwsErrorAccessDenied()
-            ;(e as any).cause = e1
+            const e = err2 ? err2 : new UnknownError(e1)
+            trySetCause(e, e1)
             throw e
         } catch (e2) {
             try {
-                const e = fakeAwsErrorUnauth()
-                ;(e as any).cause = e2
-                return e
+                // new Error('error 3')
+                const e = err3 ? err3 : new SamCliError('sam error', { cause: e2 as Error })
+                trySetCause(e, e2)
+                throw e
             } catch (e3) {
-                throw ToolkitError.chain(e3, 'ToolkitError message', {
-                    documentationUri: vscode.Uri.parse('https://docs.aws.amazon.com/toolkit-for-vscode/'),
-                })
+                const e = err4
+                    ? err4
+                    : ToolkitError.chain(e3, 'ToolkitError message', {
+                          documentationUri: vscode.Uri.parse('https://docs.aws.amazon.com/toolkit-for-vscode/'),
+                      })
+                trySetCause(e, e3)
+
+                return e
             }
         }
     }
+}
+
+/** Sends a (broken) request to the AWS OIDC service, to get a "real" error response. */
+export async function getAwsServiceError(): Promise<Error> {
+    const oidc = OidcClient.create('us-east-1')
+    return oidc
+        .createToken({
+            clientId: 'AWS IDE Extensions',
+            clientSecret: 'xx',
+            deviceCode: 'xx',
+            grantType: 'urn:ietf:params:oauth:grant-type:device_code',
+        })
+        .catch(e => e)
 }
 
 describe('ToolkitError', function () {
@@ -408,13 +436,20 @@ describe('util', function () {
 
     it('formatError()', function () {
         assert.deepStrictEqual(
-            formatError(fakeErrorChain()),
+            formatError(
+                fakeErrorChain(undefined, fakeAwsErrorAccessDenied(), new Error('err 3'), fakeAwsErrorUnauth())
+            ),
             'unauthorized-name: unauthorized message [unauthorized-code] (requestId: be62f79a-e9cf-41cd-a755-e6920c56e4fb)'
         )
     })
 
     it('getErrorMsg()', function () {
-        assert.deepStrictEqual(getErrorMsg(fakeErrorChain()), 'unauthorized message')
+        assert.deepStrictEqual(
+            getErrorMsg(
+                fakeErrorChain(undefined, fakeAwsErrorAccessDenied(), new Error('err 3'), fakeAwsErrorUnauth())
+            ),
+            'unauthorized message'
+        )
         assert.deepStrictEqual(getErrorMsg(undefined), undefined)
         const err = new TestAwsError('ValidationException', 'aws validation msg 1', new Date())
         assert.deepStrictEqual(getErrorMsg(err), 'aws validation msg 1')
