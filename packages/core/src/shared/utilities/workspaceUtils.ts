@@ -544,7 +544,7 @@ export async function collectFilesForIndex(
     }
 
     const isBuildOrBin = (filePath: string) => {
-        const k = /[/\\](bin|build|node_modules)[/\\]/i
+        const k = /[/\\](bin|build|node_modules|env|\.idea)[/\\]/i
         return k.test(filePath)
     }
 
@@ -579,6 +579,7 @@ export async function collectFilesForIndex(
                 fileUri: file,
                 fileSizeBytes: fileStat.size,
             })
+            console.log(file.fsPath)
         }
     }
     // prioritize upper level files
