@@ -5,7 +5,6 @@
 
 import { DynamoDB } from 'aws-sdk'
 import globals from '../extensionGlobals'
-// import { cli } from "winston/lib/winston/config"
 
 export class DynamoDbClient {
     public constructor(public readonly regionCode: string) {}
@@ -16,9 +15,9 @@ export class DynamoDbClient {
 
     public async *getTables(request: DynamoDB.Types.ListTablesInput = {}) {
         const sdkClient = await this.createSdkClient()
-        const respone = await this.invokeGetTables(sdkClient, request)
-        if (respone.TableNames) {
-            yield* respone.TableNames
+        const response = await this.invokeGetTables(sdkClient, request)
+        if (response.TableNames) {
+            yield* response.TableNames
         }
     }
 
