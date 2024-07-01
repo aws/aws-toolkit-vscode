@@ -571,7 +571,9 @@ export class ChatController {
         const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
         getLogger().info(
-            `request from tab: ${tabID} coversationID: ${session.sessionIdentifier} request: ${JSON.stringify(request)}`
+            `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${JSON.stringify(
+                request
+            )}`
         )
         let response: GenerateAssistantResponseCommandOutput | undefined = undefined
         session.createNewTokenSource()
@@ -582,7 +584,7 @@ export class ChatController {
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
 
             getLogger().info(
-                `response to tab: ${tabID} coversationID: ${session.sessionIdentifier} requestID: ${
+                `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${
                     response.$metadata.requestId
                 } metadata: ${JSON.stringify(response.$metadata)}`
             )
