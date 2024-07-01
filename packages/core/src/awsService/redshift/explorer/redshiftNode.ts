@@ -5,17 +5,17 @@
 
 // eslint-disable-next-line header/header
 import * as vscode from 'vscode'
-import { localize } from '../../shared/utilities/vsCodeUtils'
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../shared/treeview/utils'
+import { localize } from '../../../shared/utilities/vsCodeUtils'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
+import { makeChildrenNodes } from '../../../shared/treeview/utils'
 import { inspect } from 'util'
-import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
+import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
 import { RedshiftWarehouseNode } from './redshiftWarehouseNode'
 import { RedshiftWarehouseType } from '../models/models'
-import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
-import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
-import { ChildNodeLoader, ChildNodePage } from '../../awsexplorer/childNodeLoader'
+import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
+import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'
+import { ChildNodeLoader, ChildNodePage } from '../../../awsexplorer/childNodeLoader'
 
 /**
  * An AWS Explorer node representing Redshift.

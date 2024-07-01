@@ -4,10 +4,10 @@
  */
 
 import * as vscode from 'vscode'
-import { RedshiftNotebookController } from '../../../redshift/notebook/redshiftNotebookController'
+import { RedshiftNotebookController } from '../../../../awsService/redshift/notebook/redshiftNotebookController'
 import sinon = require('sinon')
 import assert = require('assert')
-import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
+import { DefaultRedshiftClient } from '../../../../shared/clients/redshiftClient'
 import { RedshiftData } from 'aws-sdk'
 
 describe('RedshiftNotebookController', () => {

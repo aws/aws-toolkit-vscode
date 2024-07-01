@@ -5,13 +5,13 @@
 
 import * as sinon from 'sinon'
 import * as assert from 'assert'
-import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
+import { DefaultRedshiftClient } from '../../../../shared/clients/redshiftClient'
 import { RedshiftData } from 'aws-sdk'
-import { RedshiftSchemaNode } from '../../../redshift/explorer/redshiftSchemaNode'
-import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../../redshift/models/models'
-import { RedshiftTableNode } from '../../../redshift/explorer/redshiftTableNode'
+import { RedshiftSchemaNode } from '../../../../awsService/redshift/explorer/redshiftSchemaNode'
+import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../../../awsService/redshift/models/models'
+import { RedshiftTableNode } from '../../../../awsService/redshift/explorer/redshiftTableNode'
 import { ListTablesResponse } from 'aws-sdk/clients/redshiftdata'
-import { MoreResultsNode } from '../../../awsexplorer/moreResultsNode'
+import { MoreResultsNode } from '../../../../awsexplorer/moreResultsNode'
 
 describe('RedshiftSchemaNode', function () {
     const sandbox = sinon.createSandbox()

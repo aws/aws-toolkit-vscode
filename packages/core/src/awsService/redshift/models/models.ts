@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Region } from '../../shared/regions/endpoints'
+import { Region } from '../../../shared/regions/endpoints'
 
 export class ConnectionParams {
     constructor(

@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from '../shared/extensionGlobals'
-import { getLogger } from '../shared/logger'
-import { showViewLogsMessage } from '../shared/utilities/messages'
+import globals from '../../shared/extensionGlobals'
+import { getLogger } from '../../shared/logger'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
 
 /**
  * Show the connection message in output channel. Log the error message if connection fails.

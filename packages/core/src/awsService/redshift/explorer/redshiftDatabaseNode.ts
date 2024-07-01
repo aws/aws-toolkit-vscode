@@ -3,17 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
-import { makeChildrenNodes } from '../../shared/treeview/utils'
-import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { localize } from '../../shared/utilities/vsCodeUtils'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
+import { makeChildrenNodes } from '../../../shared/treeview/utils'
+import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
+import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { RedshiftSchemaNode } from './redshiftSchemaNode'
 import { ConnectionParams } from '../models/models'
-import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
-import { ChildNodeLoader, ChildNodePage } from '../../awsexplorer/childNodeLoader'
-import { getIcon } from '../../shared/icons'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'
+import { ChildNodeLoader, ChildNodePage } from '../../../awsexplorer/childNodeLoader'
+import { getIcon } from '../../../shared/icons'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 import { showViewLogsFetchMessage } from '../messageUtils'
 
 export class RedshiftDatabaseNode extends AWSTreeNodeBase implements LoadMoreNode {

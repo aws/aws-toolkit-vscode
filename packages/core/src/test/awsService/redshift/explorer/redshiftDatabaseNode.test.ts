@@ -4,14 +4,14 @@
  */
 
 import sinon = require('sinon')
-import { RedshiftDatabaseNode } from '../../../redshift/explorer/redshiftDatabaseNode'
+import { RedshiftDatabaseNode } from '../../../../awsService/redshift/explorer/redshiftDatabaseNode'
 import { RedshiftData } from 'aws-sdk'
-import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
-import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../../redshift/models/models'
+import { DefaultRedshiftClient } from '../../../../shared/clients/redshiftClient'
+import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../../../awsService/redshift/models/models'
 import assert = require('assert')
-import { RedshiftSchemaNode } from '../../../redshift/explorer/redshiftSchemaNode'
-import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { MoreResultsNode } from '../../../awsexplorer/moreResultsNode'
+import { RedshiftSchemaNode } from '../../../../awsService/redshift/explorer/redshiftSchemaNode'
+import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
+import { MoreResultsNode } from '../../../../awsexplorer/moreResultsNode'
 
 describe('RedshiftDatabaseNode', function () {
     const sandbox = sinon.createSandbox()

@@ -14,7 +14,7 @@ import {
     Command,
     EventEmitter,
 } from 'vscode'
-import { getIcon } from '../../shared/icons'
+import { getIcon } from '../../../shared/icons'
 
 export class CellStatusBarItemProvider implements NotebookCellStatusBarItemProvider {
     private _item: NotebookCellStatusBarItem

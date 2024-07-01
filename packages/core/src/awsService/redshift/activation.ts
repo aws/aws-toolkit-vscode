@@ -3,20 +3,20 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { ExtContext } from '../shared/extensions'
+import { ExtContext } from '../../shared/extensions'
 import * as vscode from 'vscode'
 import { RedshiftNotebookSerializer } from './notebook/redshiftNotebookSerializer'
 import { RedshiftNotebookController } from './notebook/redshiftNotebookController'
 import { CellStatusBarItemProvider } from './notebook/cellStatusBarItemProvider'
-import { Commands } from '../shared/vscode/commands2'
+import { Commands } from '../../shared/vscode/commands2'
 import { NotebookConnectionWizard, RedshiftNodeConnectionWizard } from './wizards/connectionWizard'
 import { ConnectionParams, ConnectionType } from './models/models'
-import { DefaultRedshiftClient } from '../shared/clients/redshiftClient'
-import { localize } from '../shared/utilities/vsCodeUtils'
+import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
+import { localize } from '../../shared/utilities/vsCodeUtils'
 import { RedshiftWarehouseNode } from './explorer/redshiftWarehouseNode'
-import { ToolkitError } from '../shared/errors'
+import { ToolkitError } from '../../shared/errors'
 import { deleteConnection, updateConnectionParamsState } from './explorer/redshiftState'
-import { showViewLogsMessage } from '../shared/utilities/messages'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { showConnectionMessage } from './messageUtils'
 
 export async function activate(ctx: ExtContext): Promise<void> {

@@ -3,14 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { RedshiftNode } from '../../../redshift/explorer/redshiftNode'
-import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
-import { createWizardTester } from '../../shared/wizards/wizardTestUtils'
-import { RedshiftWarehouseType, ConnectionType } from '../../../redshift/models/models'
-import { RedshiftWarehouseNode } from '../../../redshift/explorer/redshiftWarehouseNode'
-import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
-import { NotebookConnectionWizard, RedshiftNodeConnectionWizard } from '../../../redshift/wizards/connectionWizard'
-import { RegionProvider } from '../../../shared/regions/regionProvider'
+import { RedshiftNode } from '../../../../awsService/redshift/explorer/redshiftNode'
+import { DefaultRedshiftClient } from '../../../../shared/clients/redshiftClient'
+import { createWizardTester } from '../../../shared/wizards/wizardTestUtils'
+import { RedshiftWarehouseType, ConnectionType } from '../../../../awsService/redshift/models/models'
+import { RedshiftWarehouseNode } from '../../../../awsService/redshift/explorer/redshiftWarehouseNode'
+import { AWSResourceNode } from '../../../../shared/treeview/nodes/awsResourceNode'
+import {
+    NotebookConnectionWizard,
+    RedshiftNodeConnectionWizard,
+} from '../../../../awsService/redshift/wizards/connectionWizard'
+import { RegionProvider } from '../../../../shared/regions/regionProvider'
 
 describe('redshiftNodeConnectionWizard', async function () {
     let mockRedshiftClient: DefaultRedshiftClient

@@ -3,22 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Wizard } from '../../shared/wizards/wizard'
-import { createInputBox } from '../../shared/ui/inputPrompter'
-import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../../shared/ui/pickerPrompter'
-import { createCommonButtons } from '../../shared/ui/buttons'
+import { Wizard } from '../../../shared/wizards/wizard'
+import { createInputBox } from '../../../shared/ui/inputPrompter'
+import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../../../shared/ui/pickerPrompter'
+import { createCommonButtons } from '../../../shared/ui/buttons'
 import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../models/models'
 import { RedshiftWarehouseNode } from '../explorer/redshiftWarehouseNode'
-import { localize } from '../../shared/utilities/vsCodeUtils'
-import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
-import { Region } from '../../shared/regions/endpoints'
-import { RegionProvider } from '../../shared/regions/regionProvider'
-import { createRegionPrompter } from '../../shared/ui/common/region'
+import { localize } from '../../../shared/utilities/vsCodeUtils'
+import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
+import { Region } from '../../../shared/regions/endpoints'
+import { RegionProvider } from '../../../shared/regions/regionProvider'
+import { createRegionPrompter } from '../../../shared/ui/common/region'
 import { ClustersMessage } from 'aws-sdk/clients/redshift'
-import { Prompter } from '../../shared/ui/prompter'
+import { Prompter } from '../../../shared/ui/prompter'
 import { ListSecretsResponse } from 'aws-sdk/clients/secretsmanager'
-import { SecretsManagerClient } from '../../shared/clients/secretsManagerClient'
-import { redshiftHelpUrl } from '../../shared/constants'
+import { SecretsManagerClient } from '../../../shared/clients/secretsManagerClient'
+import { redshiftHelpUrl } from '../../../shared/constants'
 
 export class RedshiftNodeConnectionWizard extends Wizard<ConnectionParams> {
     public constructor(node: RedshiftWarehouseNode) {

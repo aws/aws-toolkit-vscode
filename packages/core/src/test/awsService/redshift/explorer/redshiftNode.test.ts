@@ -4,16 +4,16 @@
  */
 // eslint-disable-next-line header/header
 import sinon = require('sinon')
-import { RedshiftNode } from '../../../redshift/explorer/redshiftNode'
-import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
+import { RedshiftNode } from '../../../../awsService/redshift/explorer/redshiftNode'
+import { DefaultRedshiftClient } from '../../../../shared/clients/redshiftClient'
 import { AWSError, Redshift, RedshiftServerless, Request } from 'aws-sdk'
 import assert = require('assert')
-import { RedshiftWarehouseNode } from '../../../redshift/explorer/redshiftWarehouseNode'
+import { RedshiftWarehouseNode } from '../../../../awsService/redshift/explorer/redshiftWarehouseNode'
 import { ClusterList, ClustersMessage } from 'aws-sdk/clients/redshift'
 import { ListWorkgroupsResponse, WorkgroupList } from 'aws-sdk/clients/redshiftserverless'
-import { RedshiftWarehouseType } from '../../../redshift/models/models'
-import { MoreResultsNode } from '../../../awsexplorer/moreResultsNode'
-import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import { RedshiftWarehouseType } from '../../../../awsService/redshift/models/models'
+import { MoreResultsNode } from '../../../../awsexplorer/moreResultsNode'
+import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
 
 function success<T>(output?: T): Request<T, AWSError> {
     return {

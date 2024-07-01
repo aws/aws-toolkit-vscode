@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { RedshiftNotebookSerializer } from '../../../redshift/notebook/redshiftNotebookSerializer'
+import { RedshiftNotebookSerializer } from '../../../../awsService/redshift/notebook/redshiftNotebookSerializer'
 import * as vscode from 'vscode'
 import assert = require('assert')
 

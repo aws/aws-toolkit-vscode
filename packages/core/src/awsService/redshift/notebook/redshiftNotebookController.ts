@@ -5,10 +5,10 @@
  */
 
 import * as vscode from 'vscode'
-import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
+import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
 import { ConnectionParams } from '../models/models'
 import { RedshiftData } from 'aws-sdk'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 export class RedshiftNotebookController {
     readonly id = 'aws-redshift-sql-notebook'
