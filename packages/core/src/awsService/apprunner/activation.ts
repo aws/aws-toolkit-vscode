@@ -5,18 +5,18 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { showViewLogsMessage } from '../shared/utilities/messages'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { AppRunnerServiceNode } from './explorer/apprunnerServiceNode'
-import { getLogger } from '../shared/logger/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { createAppRunnerService } from './commands/createService'
 import { pauseService } from './commands/pauseService'
 import { deleteService } from './commands/deleteService'
 import { createFromEcr } from './commands/createServiceFromEcr'
-import { ExtContext } from '../shared/extensions'
-import { copyToClipboard } from '../shared/utilities/messages'
-import { Commands } from '../shared/vscode/commands2'
-import { telemetry } from '../shared/telemetry/telemetry'
-import { Result } from '../shared/telemetry/telemetry'
+import { ExtContext } from '../../shared/extensions'
+import { copyToClipboard } from '../../shared/utilities/messages'
+import { Commands } from '../../shared/vscode/commands2'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { Result } from '../../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()
 

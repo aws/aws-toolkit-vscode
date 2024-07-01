@@ -4,19 +4,19 @@
  */
 
 import AsyncLock from 'async-lock'
-import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
+import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
 import { AppRunner } from 'aws-sdk'
 import { AppRunnerNode } from './apprunnerNode'
 
-import { toArrayAsync, toMap } from '../../shared/utilities/collectionUtils'
-import { CloudWatchLogsBase } from '../../awsService/cloudWatchLogs/explorer/cloudWatchLogsNode'
+import { toArrayAsync, toMap } from '../../../shared/utilities/collectionUtils'
+import { CloudWatchLogsBase } from '../../../awsService/cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
+import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 
 import * as nls from 'vscode-nls'
-import { getLogger } from '../../shared/logger'
-import { getIcon } from '../../shared/icons'
-import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
+import { getLogger } from '../../../shared/logger'
+import { getIcon } from '../../../shared/icons'
+import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 const localize = nls.loadMessageBundle()
 
 const contextBase = 'awsAppRunnerServiceNode'

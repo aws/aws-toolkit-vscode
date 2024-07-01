@@ -6,12 +6,12 @@
 import * as nls from 'vscode-nls'
 import * as vscode from 'vscode'
 
-import { QuickInputButton, QuickInputToggleButton } from '../../shared/ui/buttons'
-import { apprunnerPricingUrl } from '../../shared/constants'
-import { ToolkitPromptSettings } from '../../shared/settings'
-import { getIcon } from '../../shared/icons'
-import { dontShow } from '../../shared/localizedText'
-import { openUrl } from '../../shared/utilities/vsCodeUtils'
+import { QuickInputButton, QuickInputToggleButton } from '../../../shared/ui/buttons'
+import { apprunnerPricingUrl } from '../../../shared/constants'
+import { ToolkitPromptSettings } from '../../../shared/settings'
+import { getIcon } from '../../../shared/icons'
+import { dontShow } from '../../../shared/localizedText'
+import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 
 const localize = nls.loadMessageBundle()
 

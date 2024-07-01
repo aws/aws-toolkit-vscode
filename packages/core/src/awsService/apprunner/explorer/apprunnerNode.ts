@@ -2,16 +2,16 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { compareTreeItems, makeChildrenNodes } from '../../shared/treeview/utils'
+import { compareTreeItems, makeChildrenNodes } from '../../../shared/treeview/utils'
 import * as vscode from 'vscode'
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { AppRunnerServiceNode } from './apprunnerServiceNode'
-import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
+import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import * as nls from 'vscode-nls'
-import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
-import { getPaginatedAwsCallIter } from '../../shared/utilities/collectionUtils'
+import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
+import { getPaginatedAwsCallIter } from '../../../shared/utilities/collectionUtils'
 import { AppRunner } from 'aws-sdk'
-import globals from '../../shared/extensionGlobals'
+import globals from '../../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 

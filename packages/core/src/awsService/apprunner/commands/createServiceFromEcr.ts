@@ -4,13 +4,13 @@
  */
 
 import * as vscode from 'vscode'
-import { EcrRepositoryNode } from '../../awsService/ecr/explorer/ecrRepositoryNode'
-import { EcrTagNode } from '../../awsService/ecr/explorer/ecrTagNode'
+import { EcrRepositoryNode } from '../../../awsService/ecr/explorer/ecrRepositoryNode'
+import { EcrTagNode } from '../../../awsService/ecr/explorer/ecrTagNode'
 
 import { CreateAppRunnerServiceWizard } from '../wizards/apprunnerCreateServiceWizard'
-import { DefaultAppRunnerClient } from '../../shared/clients/apprunnerClient'
-import { telemetry } from '../../shared/telemetry/telemetry'
-import { Result } from '../../shared/telemetry/telemetry'
+import { DefaultAppRunnerClient } from '../../../shared/clients/apprunnerClient'
+import { telemetry } from '../../../shared/telemetry/telemetry'
+import { Result } from '../../../shared/telemetry/telemetry'
 
 export async function createFromEcr(
     node: EcrTagNode | EcrRepositoryNode,
