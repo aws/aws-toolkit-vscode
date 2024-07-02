@@ -11,7 +11,7 @@ import {
     shutdown as shutdownCodeWhisperer,
     amazonQDismissedKey,
     AuthUtil,
-} from 'aws-core-vscode/codewhisperer'
+} from 'aws-core-vscode/codewhispererCommon'
 import {
     ExtContext,
     initialize,
