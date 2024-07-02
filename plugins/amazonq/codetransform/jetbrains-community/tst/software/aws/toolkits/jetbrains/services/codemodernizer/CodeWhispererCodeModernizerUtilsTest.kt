@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.codemodernizer
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockkStatic
+import io.mockk.runs
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -11,10 +15,13 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import software.amazon.awssdk.services.codewhispererruntime.model.AccessDeniedException
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationProgressUpdate
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationStatus
+import software.amazon.awssdk.services.ssooidc.model.InvalidGrantException
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getTableMapping
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.pollTransformationStatusAndPlan
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.refreshToken
 import java.util.concurrent.atomic.AtomicBoolean
 
 class CodeWhispererCodeModernizerUtilsTest : CodeWhispererCodeModernizerTestBase() {
@@ -55,6 +62,88 @@ class CodeWhispererCodeModernizerUtilsTest : CodeWhispererCodeModernizerTestBase
                 TransformationStatus.STARTED,
             )
         assertThat(expected).isEqualTo(mutableList)
+    }
+
+    @Test
+    fun `refresh on access denied`() {
+        val mockAccessDeniedException = Mockito.mock(AccessDeniedException::class.java)
+
+        mockkStatic(::refreshToken)
+        every { refreshToken(any()) } just runs
+
+        Mockito.doThrow(
+            mockAccessDeniedException
+        ).doReturn(
+            exampleGetCodeMigrationResponse,
+            exampleGetCodeMigrationResponse.replace(TransformationStatus.STARTED),
+            exampleGetCodeMigrationResponse.replace(TransformationStatus.COMPLETED), // Should stop before this point
+        ).whenever(clientAdaptorSpy).getCodeModernizationJob(any())
+
+        Mockito.doReturn(exampleGetCodeMigrationPlanResponse)
+            .whenever(clientAdaptorSpy).getCodeModernizationPlan(any())
+
+        val mutableList = mutableListOf<TransformationStatus>()
+        runBlocking {
+            jobId.pollTransformationStatusAndPlan(
+                setOf(TransformationStatus.STARTED),
+                setOf(TransformationStatus.FAILED),
+                clientAdaptorSpy,
+                0,
+                0,
+                AtomicBoolean(false),
+                project
+            ) { _, status, _ ->
+                mutableList.add(status)
+            }
+        }
+        val expected =
+            listOf<TransformationStatus>(
+                exampleGetCodeMigrationResponse.transformationJob().status(),
+                TransformationStatus.STARTED,
+            )
+        assertThat(expected).isEqualTo(mutableList)
+        io.mockk.verify { refreshToken(any()) }
+    }
+
+    @Test
+    fun `refresh on invalid grant`() {
+        val mockInvalidGrantException = Mockito.mock(InvalidGrantException::class.java)
+
+        mockkStatic(::refreshToken)
+        every { refreshToken(any()) } just runs
+
+        Mockito.doThrow(
+            mockInvalidGrantException
+        ).doReturn(
+            exampleGetCodeMigrationResponse,
+            exampleGetCodeMigrationResponse.replace(TransformationStatus.STARTED),
+            exampleGetCodeMigrationResponse.replace(TransformationStatus.COMPLETED), // Should stop before this point
+        ).whenever(clientAdaptorSpy).getCodeModernizationJob(any())
+
+        Mockito.doReturn(exampleGetCodeMigrationPlanResponse)
+            .whenever(clientAdaptorSpy).getCodeModernizationPlan(any())
+
+        val mutableList = mutableListOf<TransformationStatus>()
+        runBlocking {
+            jobId.pollTransformationStatusAndPlan(
+                setOf(TransformationStatus.STARTED),
+                setOf(TransformationStatus.FAILED),
+                clientAdaptorSpy,
+                0,
+                0,
+                AtomicBoolean(false),
+                project
+            ) { _, status, _ ->
+                mutableList.add(status)
+            }
+        }
+        val expected =
+            listOf<TransformationStatus>(
+                exampleGetCodeMigrationResponse.transformationJob().status(),
+                TransformationStatus.STARTED,
+            )
+        assertThat(expected).isEqualTo(mutableList)
+        io.mockk.verify { refreshToken(any()) }
     }
 
     @Test
