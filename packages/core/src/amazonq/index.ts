@@ -12,6 +12,7 @@ export { AuthController } from './auth/controller'
 export { showAmazonQWalkthroughOnce } from './onboardingPage/walkthrough'
 export { openAmazonQWalkthrough } from './onboardingPage/walkthrough'
 export { LspController, Content } from './lsp/lspController'
+export { LspClient } from './lsp/lspClient'
 /**
  * main from createMynahUI is a purely browser dependency. Due to this
  * we need to create a wrapper function that will dynamically execute it

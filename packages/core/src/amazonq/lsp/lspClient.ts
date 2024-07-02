@@ -23,78 +23,8 @@ import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSet
 import { getLogger } from '../../shared'
 
 const localize = nls.loadMessageBundle()
-let client: LanguageClient | undefined = undefined
 
 const key = crypto.randomBytes(32)
-
-async function encrypt(payload: string) {
-    return await new jose.CompactEncrypt(new TextEncoder().encode(payload))
-        .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
-        .encrypt(key)
-}
-
-export async function indexFiles(request: string[], rootPath: string, refresh: boolean) {
-    if (client) {
-        try {
-            const encryptedRequest = await encrypt(
-                JSON.stringify({
-                    filePaths: request,
-                    rootPath: rootPath,
-                    refresh: refresh,
-                })
-            )
-            const resp = await client.sendRequest(IndexRequestType, encryptedRequest)
-            return resp
-        } catch (e) {
-            getLogger().error(`LspClient: indexFiles error: ${e}`)
-            return undefined
-        }
-    }
-}
-
-export async function query(request: string) {
-    if (client) {
-        try {
-            const resp = await client.sendRequest(
-                QueryRequestType,
-                await encrypt(
-                    JSON.stringify({
-                        query: request,
-                    })
-                )
-            )
-            return resp
-        } catch (e) {
-            getLogger().error(`LspClient: query error: ${e}`)
-            return []
-        }
-    }
-}
-
-export async function getLspServerUsage(): Promise<Usage | undefined> {
-    if (client) {
-        return (await client.sendRequest(GetUsageRequestType, '')) as Usage
-    }
-}
-
-export async function updateIndex(filePath: string) {
-    if (client) {
-        try {
-            const resp = await client.sendRequest(
-                UpdateIndexRequestType,
-                await encrypt(
-                    JSON.stringify({
-                        filePath: filePath,
-                    })
-                )
-            )
-            return resp
-        } catch (e) {
-            getLogger().error(`LspClient: updateIndex error: ${e}`)
-            return undefined
-        }
-    }
-}
 
 export function writeEncryptionInit(stream: Writable): void {
     const request = {
@@ -106,7 +36,78 @@ export function writeEncryptionInit(stream: Writable): void {
     stream.write('\n')
 }
 
+export class LspClient {
+    static #instance: LspClient
+    client: LanguageClient | undefined
+    public static get instance() {
+        return (this.#instance ??= new this())
+    }
+    constructor() {
+        this.client = undefined
+    }
+
+    async encrypt(payload: string) {
+        return await new jose.CompactEncrypt(new TextEncoder().encode(payload))
+            .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
+            .encrypt(key)
+    }
+
+    async indexFiles(request: string[], rootPath: string, refresh: boolean) {
+        try {
+            const encryptedRequest = await this.encrypt(
+                JSON.stringify({
+                    filePaths: request,
+                    rootPath: rootPath,
+                    refresh: refresh,
+                })
+            )
+            const resp = await this.client?.sendRequest(IndexRequestType, encryptedRequest)
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: indexFiles error: ${e}`)
+            return undefined
+        }
+    }
+
+    async query(request: string) {
+        try {
+            const encryptedRequest = await this.encrypt(
+                JSON.stringify({
+                    query: request,
+                })
+            )
+            const resp = await this.client?.sendRequest(QueryRequestType, encryptedRequest)
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: query error: ${e}`)
+            return []
+        }
+    }
+
+    async getLspServerUsage(): Promise<Usage | undefined> {
+        if (this.client) {
+            return (await this.client.sendRequest(GetUsageRequestType, '')) as Usage
+        }
+    }
+
+    async updateIndex(filePath: string) {
+        try {
+            const encryptedRequest = await this.encrypt(
+                JSON.stringify({
+                    filePath: filePath,
+                })
+            )
+            const resp = await this.client?.sendRequest(UpdateIndexRequestType, encryptedRequest)
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: updateIndex error: ${e}`)
+            return undefined
+        }
+    }
+}
+
 export async function activate(extensionContext: ExtensionContext) {
+    LspClient.instance
     const toDispose = extensionContext.subscriptions
 
     let rangeFormatting: Disposable | undefined
@@ -163,15 +164,15 @@ export async function activate(extensionContext: ExtensionContext) {
     }
 
     // Create the language client and start the client.
-    client = new LanguageClient(
+    LspClient.instance.client = new LanguageClient(
         'codewhisperer',
         localize('codewhisperer.server.name', 'Amazon Q Language Server'),
         serverOptions,
         clientOptions
     )
-    client.registerProposedFeatures()
+    LspClient.instance.client.registerProposedFeatures()
 
-    const disposable = client.start()
+    const disposable = LspClient.instance.client.start()
     toDispose.push(disposable)
 
     let savedDocument: vscode.Uri | undefined = undefined
@@ -187,19 +188,19 @@ export async function activate(extensionContext: ExtensionContext) {
     toDispose.push(
         vscode.window.onDidChangeActiveTextEditor(editor => {
             if (savedDocument && editor && editor.document.uri.fsPath !== savedDocument.fsPath) {
-                updateIndex(savedDocument.fsPath)
+                LspClient.instance.updateIndex(savedDocument.fsPath)
             }
         })
     )
-    return client.onReady().then(() => {
+    return LspClient.instance.client.onReady().then(() => {
         const disposableFunc = { dispose: () => rangeFormatting?.dispose() as void }
         toDispose.push(disposableFunc)
     })
 }
 
 export async function deactivate(): Promise<any> {
-    if (!client) {
+    if (!LspClient.instance.client) {
         return undefined
     }
-    return client.stop()
+    return LspClient.instance.client.stop()
 }

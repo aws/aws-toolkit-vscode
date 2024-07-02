@@ -11,7 +11,7 @@ import { getLogger } from '../../shared/logger/logger'
 import { CurrentWsFolders, collectFilesForIndex } from '../../shared/utilities/workspaceUtils'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import fetch from 'node-fetch'
-import { getLspServerUsage, indexFiles, query } from './lspClient'
+import { LspClient } from './lspClient'
 import AdmZip from 'adm-zip'
 import { RelevantTextDocument } from '@amzn/codewhisperer-streaming'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
@@ -240,7 +240,7 @@ export class LspController {
     }
 
     async query(s: string): Promise<RelevantTextDocument[]> {
-        const cs: Chunk[] = await query(s)
+        const cs: Chunk[] = await LspClient.instance.query(s)
         const resp: RelevantTextDocument[] = []
         cs.forEach(chunk => {
             const text = chunk.context ? chunk.context : chunk.content
@@ -283,14 +283,14 @@ export class LspController {
                 totalSizeBytes += files[i].fileSizeBytes
             }
             getLogger().info(`LspController: Found ${files.length} files in current project ${getProjectPaths()}`)
-            const resp = await indexFiles(
+            const resp = await LspClient.instance.indexFiles(
                 files.map(f => f.fileUri.fsPath),
                 projRoot,
                 false
             )
             if (resp) {
                 getLogger().debug(`LspController: Finish building vector index of project`)
-                const usage = await getLspServerUsage()
+                const usage = await LspClient.instance.getLspServerUsage()
                 telemetry.amazonq_indexWorkspace.emit({
                     duration: performance.now() - start,
                     result: 'Succeeded',
@@ -336,7 +336,7 @@ export class LspController {
 
                         globals.clock.setInterval(
                             async () => {
-                                const usage = await getLspServerUsage()
+                                const usage = await LspClient.instance.getLspServerUsage()
                                 if (usage) {
                                     getLogger().info(
                                         `LspController: LSP server CPU ${usage.cpuUsage}%, LSP server Memory ${
