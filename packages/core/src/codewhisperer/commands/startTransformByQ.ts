@@ -199,9 +199,8 @@ export async function startTransformByQ() {
  *  state ever engaged or we have reached our max amount of HIL retries.
  */
 export async function humanInTheLoopRetryLogic(jobId: string) {
-    let status = ''
     try {
-        status = await pollTransformationStatusUntilComplete(jobId)
+        const status = await pollTransformationStatusUntilComplete(jobId)
         if (status === 'PAUSED') {
             const hilStatusFailure = await initiateHumanInTheLoopPrompt(jobId)
             if (hilStatusFailure) {
@@ -213,9 +212,8 @@ export async function humanInTheLoopRetryLogic(jobId: string) {
             await finalizeTransformByQ(status)
         }
     } catch (error) {
-        status = 'FAILED'
         // TODO if we encounter error in HIL, do we stop job?
-        await finalizeTransformByQ(status)
+        await finalizeTransformByQ('FAILED')
         // bubble up error to callee function
         throw error
     }
@@ -254,7 +252,6 @@ export async function preTransformationUploadCode() {
         transformByQState.setJobFailureErrorChatMessage(
             `${CodeWhispererConstants.failedToUploadProjectChatMessage} ${errorMessage}`
         )
-
         transformByQState.getChatControllers()?.errorThrown.fire({
             error: new ModuleUploadError(),
             tabID: ChatSessionManager.Instance.getSession().tabID,
@@ -263,8 +260,8 @@ export async function preTransformationUploadCode() {
         throw err
     }
 
-    throwIfCancelled()
     await sleep(2000) // sleep before starting job to prevent ThrottlingException
+    throwIfCancelled()
 
     return uploadId
 }
@@ -515,7 +512,6 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
         await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForPlanGenerated)
     } catch (error) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToCompleteJobNotification}`, error)
-
         if (!transformByQState.getJobFailureErrorNotification()) {
             transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToCompleteJobNotification)
         }
@@ -767,7 +763,7 @@ export async function stopTransformByQ(
                         )
                     }
                 })
-        } catch (err) {
+        } catch {
             void vscode.window
                 .showErrorMessage(
                     CodeWhispererConstants.errorStoppingJobNotification,
@@ -782,7 +778,6 @@ export async function stopTransformByQ(
                         )
                     }
                 })
-            getLogger().error(`CodeTransformation: Error stopping transformation ${err}`)
         } finally {
             telemetry.codeTransform_jobIsCancelledByUser.emit({
                 codeTransformCancelSrcComponents: cancelSrc as CodeTransformCancelSrcComponents,
