@@ -10,11 +10,14 @@ import {
     CodeAnalysisScope,
     RawCodeScanIssue,
     listScanResults,
+    mapToAggregatedList,
     DefaultCodeWhispererClient,
     ListCodeScanFindingsResponse,
+    CodeWhispererConstants,
 } from 'aws-core-vscode/codewhisperer'
 import assert from 'assert'
 import sinon from 'sinon'
+import * as vscode from 'vscode'
 import fs from 'fs'
 
 const mockCodeScanFindings = JSON.stringify([
@@ -39,6 +42,7 @@ const mockCodeScanFindings = JSON.stringify([
             },
             suggestedFixes: [],
         },
+        codeSnippet: [],
     } satisfies RawCodeScanIssue,
 ])
 
@@ -85,7 +89,8 @@ describe('securityScanHandler', function () {
                 'jobId',
                 'codeScanFindingsSchema',
                 ['projectPath'],
-                CodeAnalysisScope.PROJECT
+                CodeAnalysisScope.PROJECT,
+                undefined
             )
 
             assert.equal(aggregatedCodeScanIssueList.length, 2)
@@ -107,11 +112,74 @@ describe('securityScanHandler', function () {
                 'jobId',
                 'codeScanFindingsSchema',
                 ['projectPath'],
-                CodeAnalysisScope.PROJECT
+                CodeAnalysisScope.PROJECT,
+                undefined
             )
 
             assert.equal(aggregatedCodeScanIssueList.length, 2)
             assert.equal(aggregatedCodeScanIssueList[0].issues.length, 3)
+        })
+    })
+
+    describe('mapToAggregatedList', () => {
+        let codeScanIssueMap: Map<string, RawCodeScanIssue[]>
+        let editor: vscode.TextEditor | undefined
+
+        beforeEach(() => {
+            codeScanIssueMap = new Map()
+            editor = {
+                document: {
+                    lineAt: (lineNumber: number): vscode.TextLine => ({
+                        lineNumber: lineNumber + 1,
+                        range: new vscode.Range(0, 0, 0, 0),
+                        rangeIncludingLineBreak: new vscode.Range(0, 0, 0, 0),
+                        firstNonWhitespaceCharacterIndex: 0,
+                        isEmptyOrWhitespace: false,
+                        text: `line ${lineNumber + 1}`,
+                    }),
+                },
+            } as vscode.TextEditor
+        })
+
+        it('should aggregate issues by file path', () => {
+            const json = JSON.stringify([
+                {
+                    filePath: 'file1.ts',
+                    startLine: 1,
+                    endLine: 2,
+                    codeSnippet: [
+                        { number: 1, content: 'line 1' },
+                        { number: 2, content: 'line 2' },
+                    ],
+                },
+                { filePath: 'file2.ts', startLine: 1, endLine: 1, codeSnippet: [{ number: 1, content: 'line 1' }] },
+            ])
+
+            mapToAggregatedList(codeScanIssueMap, json, editor, CodeWhispererConstants.CodeAnalysisScope.FILE)
+
+            assert.equal(codeScanIssueMap.size, 2)
+            assert.equal(codeScanIssueMap.get('file1.ts')?.length, 1)
+            assert.equal(codeScanIssueMap.get('file2.ts')?.length, 1)
+        })
+
+        it('should filter issues based on the scope', () => {
+            const json = JSON.stringify([
+                {
+                    filePath: 'file1.ts',
+                    startLine: 1,
+                    endLine: 2,
+                    codeSnippet: [
+                        { number: 1, content: 'line 1' },
+                        { number: 2, content: 'line 2' },
+                    ],
+                },
+                { filePath: 'file1.ts', startLine: 3, endLine: 3, codeSnippet: [{ number: 3, content: 'line 3' }] },
+            ])
+
+            mapToAggregatedList(codeScanIssueMap, json, editor, CodeWhispererConstants.CodeAnalysisScope.FILE)
+
+            assert.equal(codeScanIssueMap.size, 1)
+            assert.equal(codeScanIssueMap.get('file1.ts')?.length, 2)
         })
     })
 })
