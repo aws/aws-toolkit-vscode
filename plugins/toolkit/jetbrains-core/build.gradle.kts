@@ -5,6 +5,8 @@ import com.jetbrains.plugin.structure.intellij.utils.JDOMUtil
 import org.jdom2.Document
 import org.jdom2.output.Format
 import org.jdom2.output.XMLOutputter
+import org.jetbrains.intellij.platform.gradle.tasks.PatchPluginXmlTask
+import org.jetbrains.intellij.platform.gradle.tasks.compaion.ProcessResourcesCompanion
 import software.aws.toolkits.gradle.buildMetadata
 import software.aws.toolkits.gradle.changelog.tasks.GeneratePluginChangeLog
 import software.aws.toolkits.gradle.intellij.IdeFlavor
@@ -46,6 +48,10 @@ tasks.compileJava {
     // consistently saves 6+ minutes in CI. we do not need incremental compilation for 2 java files
     options.isIncremental = false
 }
+
+// toolkit depends on :plugin-toolkit:jetbrains-core setting the version instead of being defined on the root project
+PatchPluginXmlTask.register(project)
+ProcessResourcesCompanion.register(project)
 
 tasks.jar {
     dependsOn(changelog)

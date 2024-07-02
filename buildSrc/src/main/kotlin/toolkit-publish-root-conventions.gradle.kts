@@ -14,6 +14,7 @@ import software.aws.toolkits.gradle.isCi
 // publish-root should imply publishing-conventions, but we keep separate so that gateway always has the GW flavor
 plugins {
     id("toolkit-intellij-plugin")
+    id("org.jetbrains.intellij.platform")
 }
 
 val ideProfile = IdeVersions.ideProfile(project)
@@ -95,4 +96,11 @@ val pluginZip by configurations.creating {
 
 artifacts {
     add("pluginZip", tasks.buildPlugin)
+}
+
+tasks.runIde {
+    systemProperty("aws.toolkit.developerMode", true)
+    systemProperty("ide.plugins.snapshot.on.unload.fail", true)
+    systemProperty("memory.snapshots.path", project.rootDir)
+    systemProperty("idea.auto.reload.plugins", false)
 }

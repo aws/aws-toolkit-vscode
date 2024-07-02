@@ -33,11 +33,7 @@ phases:
 
       - chmod +x gradlew
       - su codebuild-user -c "./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME check coverageReport --info --console plain --continue -scan"
-      - ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME :plugin-toolkit:intellij-standalone:buildPlugin :plugin-core:buildPlugin :plugin-amazonq:buildPlugin :plugin-toolkit:intellij-standalone:verifyPlugin :plugin-core:verifyPlugin :plugin-amazonq:verifyPlugin
-      - |
-        if ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME projects --console plain | grep -q "Project ':plugin-toolkit:jetbrains-gateway'"; then
-          ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME :plugin-toolkit:jetbrains-gateway:buildPlugin :plugin-toolkit:jetbrains-gateway:verifyPlugin
-        fi
+      - ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME buildPlugin verifyPlugin
       - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
       - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
       - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
