@@ -39,17 +39,25 @@ export function writeEncryptionInit(stream: Writable): void {
 export class LspClient {
     static #instance: LspClient
     client: LanguageClient | undefined
+    private lspServerReady: Boolean
+
     public static get instance() {
         return (this.#instance ??= new this())
     }
+
     constructor() {
         this.client = undefined
+        this.lspServerReady = false
     }
 
     async encrypt(payload: string) {
         return await new jose.CompactEncrypt(new TextEncoder().encode(payload))
             .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
             .encrypt(key)
+    }
+
+    onClientReady() {
+        this.lspServerReady = true
     }
 
     async indexFiles(request: string[], rootPath: string, refresh: boolean) {
@@ -61,6 +69,9 @@ export class LspClient {
                     refresh: refresh,
                 })
             )
+            if (!this.lspServerReady) {
+                return undefined
+            }
             const resp = await this.client?.sendRequest(IndexRequestType, encryptedRequest)
             return resp
         } catch (e) {
@@ -76,6 +87,9 @@ export class LspClient {
                     query: request,
                 })
             )
+            if (!this.lspServerReady) {
+                return undefined
+            }
             const resp = await this.client?.sendRequest(QueryRequestType, encryptedRequest)
             return resp
         } catch (e) {
@@ -97,6 +111,9 @@ export class LspClient {
                     filePath: filePath,
                 })
             )
+            if (!this.lspServerReady) {
+                return undefined
+            }
             const resp = await this.client?.sendRequest(UpdateIndexRequestType, encryptedRequest)
             return resp
         } catch (e) {
@@ -166,14 +183,11 @@ export async function activate(extensionContext: ExtensionContext) {
     // Create the language client and start the client.
     LspClient.instance.client = new LanguageClient(
         'codewhisperer',
-        localize('codewhisperer.server.name', 'Amazon Q Language Server'),
+        localize('codewhisperer.server.name', 'Amazon Q Helper (Workspace Context)'),
         serverOptions,
         clientOptions
     )
     LspClient.instance.client.registerProposedFeatures()
-
-    const disposable = LspClient.instance.client.start()
-    toDispose.push(disposable)
 
     let savedDocument: vscode.Uri | undefined = undefined
 
@@ -195,6 +209,7 @@ export async function activate(extensionContext: ExtensionContext) {
     return LspClient.instance.client.onReady().then(() => {
         const disposableFunc = { dispose: () => rangeFormatting?.dispose() as void }
         toDispose.push(disposableFunc)
+        LspClient.instance.onClientReady()
     })
 }
 

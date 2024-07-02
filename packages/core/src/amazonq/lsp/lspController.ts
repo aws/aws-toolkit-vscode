@@ -240,9 +240,9 @@ export class LspController {
     }
 
     async query(s: string): Promise<RelevantTextDocument[]> {
-        const cs: Chunk[] = await LspClient.instance.query(s)
+        const chunks: Chunk[] | undefined = await LspClient.instance.query(s)
         const resp: RelevantTextDocument[] = []
-        cs.forEach(chunk => {
+        chunks?.forEach(chunk => {
             const text = chunk.context ? chunk.context : chunk.content
             if (chunk.programmingLanguage) {
                 resp.push({
@@ -321,9 +321,18 @@ export class LspController {
     }
 
     async trySetupLsp(context: vscode.ExtensionContext) {
-        if (!CodeWhispererSettings.instance.isLocalIndexEnabled() || isCloud9() || isWeb()) {
+        if (isCloud9() || isWeb()) {
+            // do not do anything if in Cloud9 or Web mode.
             return
         }
+
+        if (!CodeWhispererSettings.instance.isLocalIndexEnabled()) {
+            // only download LSP for users who did not turn on this feature
+            // do not start LSP server
+            LspController.instance.tryInstallLsp(context)
+            return
+        }
+
         LspController.instance.tryInstallLsp(context).then(succeed => {
             if (!succeed) {
                 return
