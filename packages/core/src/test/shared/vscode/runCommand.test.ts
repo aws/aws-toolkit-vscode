@@ -5,17 +5,63 @@
 
 import globals from '../../../shared/extensionGlobals'
 
+import os from 'os'
+import vscode from 'vscode'
+import { promises as fsPromises } from 'fs'
 import * as sinon from 'sinon'
 import assert from 'assert'
-import { ToolkitError } from '../../../shared/errors'
+import { ToolkitError, UnknownError } from '../../../shared/errors'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { Commands, defaultTelemetryThrottleMs } from '../../../shared/vscode/commands2'
 import { assertTelemetry, installFakeClock } from '../../testUtil'
 import { getTestWindow } from '../../shared/vscode/window'
+import { SystemUtilities } from '../../../shared/systemUtilities'
+import { makeTemporaryToolkitFolder } from '../../../shared'
+import path from 'path'
+import { SamCliError } from '../../../shared/sam/cli/samCliInvokerUtils'
+import * as env from '../../../shared/vscode/env'
 
-async function throwMe(error?: unknown): Promise<void | never> {
-    if (error) {
-        throw error
+async function throwMe(errorOrFn?: Error | (() => Promise<never>)): Promise<void | never> {
+    if (errorOrFn && !(errorOrFn instanceof Error)) {
+        await errorOrFn()
+    }
+
+    if (errorOrFn) {
+        throw errorOrFn
+    }
+}
+
+/** Creates a deep "cause chain", to test that error handler correctly gets the most relevant error. */
+export function fakeErrorChain(rootCause?: Error, toolkitErrors: boolean = true) {
+    try {
+        if (rootCause) {
+            throw rootCause
+        } else {
+            throw new Error('generic error 1')
+        }
+    } catch (e1) {
+        try {
+            const e = new UnknownError(e1)
+            throw e
+        } catch (e2) {
+            try {
+                const e = toolkitErrors ? new SamCliError('sam error', { cause: e2 as Error }) : new Error('error 3')
+                if (!toolkitErrors) {
+                    ;(e as any).cause = e2
+                }
+                throw e
+            } catch (e3) {
+                const e = toolkitErrors
+                    ? ToolkitError.chain(e3, 'ToolkitError message', {
+                          documentationUri: vscode.Uri.parse('https://docs.aws.amazon.com/toolkit-for-vscode/'),
+                      })
+                    : new Error('last error')
+                if (!toolkitErrors) {
+                    ;(e as any).cause = e3
+                }
+                throw e
+            }
+        }
     }
 }
 
@@ -60,6 +106,116 @@ describe('runCommand', function () {
             command: testCommand.id,
             result: 'Failed',
             reason: 'SomethingFailed',
+        })
+    })
+
+    describe('shows error', function () {
+        let tempFolder: string
+        let unwritableFile: string
+
+        before(async function () {
+            tempFolder = await makeTemporaryToolkitFolder()
+            unwritableFile = path.join(tempFolder, 'unwritableFile')
+            await fsPromises.writeFile(unwritableFile, 'foo', { mode: 0o400 })
+        })
+
+        after(async function () {
+            await SystemUtilities.delete(tempFolder, { recursive: true })
+        })
+
+        async function runAndWaitForMessage(expectedMsg: string | RegExp, willThrow: () => Promise<never>) {
+            const viewLogsDialog = getTestWindow().waitForMessage(expectedMsg)
+
+            await Promise.all([viewLogsDialog.then(dialog => dialog.close()), testCommand.execute(willThrow)])
+        }
+
+        function assertTelem(reason: string) {
+            assertTelemetry('vscode_executeCommand', {
+                passive: true,
+                command: testCommand.id,
+                result: 'Failed',
+                reason: reason,
+            })
+        }
+
+        it('vscode ISDIR', async function () {
+            if (env.isMinVscode('1.83.0')) {
+                this.skip()
+            }
+
+            const pat = (() => {
+                switch (os.platform()) {
+                    case 'linux':
+                        // vscode error not raised on linux? 💩
+                        return /EISDIR: illegal operation on a directory/
+                    case 'win32':
+                        return /EPERM: operation not permitted/
+                    default:
+                        return /EEXIST: file already exists/
+                }
+            })()
+            await runAndWaitForMessage(pat, async () => {
+                // Try to write to the current directory. 💩
+                const err = await SystemUtilities.writeFile('.', 'foo').catch(e => e)
+                const err2 = new Error('generic error')
+                ;(err2 as any).cause = err
+                throw err2
+            })
+            // TODO: commands.run() should use getBestError (if the top error is not ToolkitError)?
+            // assertTelem('FileExists')
+            assertTelem('Error')
+        })
+
+        it('nodejs ISDIR', async function () {
+            await runAndWaitForMessage(/EISDIR: illegal operation on a directory/, async () => {
+                // Try to write to the current directory. 💩
+                const err = await fsPromises.writeFile('.', 'foo').catch(e => e)
+                const err2 = new Error('generic error')
+                ;(err2 as any).cause = err
+                throw err2
+            })
+            // TODO: commands.run() should use getBestError (if the top error is not ToolkitError)?
+            // assertTelem('EISDIR')
+            assertTelem('Error')
+        })
+
+        it('toolkit `PermissionsError`', async function () {
+            const expectedMsg =
+                os.platform() === 'win32'
+                    ? /EPERM: operation not permitted/
+                    : /incorrect permissions. Expected rw-, found r--/
+
+            const viewLogsDialog = getTestWindow().waitForMessage(expectedMsg)
+
+            await Promise.all([
+                viewLogsDialog.then(dialog => dialog.close()),
+                testCommand.execute(async () => {
+                    const err = await SystemUtilities.writeFile(unwritableFile, 'bar').catch(e => e)
+                    throw fakeErrorChain(err, false)
+                }),
+            ])
+
+            // TODO: commands.run() should use getBestError (if the top error is not ToolkitError)?
+            // assertTelem('InvalidPermissions')
+            assertTelem('Error')
+        })
+
+        it('nodejs EACCES (not wrapped by toolkit `PermissionsError`)', async function () {
+            const expectedMsg =
+                os.platform() === 'win32' ? /EPERM: operation not permitted/ : /EACCES: permission denied/
+            const viewLogsDialog = getTestWindow().waitForMessage(expectedMsg)
+
+            await Promise.all([
+                viewLogsDialog.then(dialog => dialog.close()),
+                testCommand.execute(async () => {
+                    const err = await fsPromises.writeFile(unwritableFile, 'bar').catch(e => e)
+                    throw fakeErrorChain(err, false)
+                }),
+            ])
+
+            // TODO: commands.run() should use getBestError (if the top error is not ToolkitError)?
+            // assertTelem('EACCES')
+            assertTelem('Error')
         })
     })
 
@@ -153,7 +309,7 @@ describe('runCommand', function () {
                 assert.strictEqual(events.length, 1)
             })
 
-            it('sets "unset" source if it does not exist in args', async function () {
+            it('sets source="unset" if arg not provided', async function () {
                 // We do this so that an error isn't thrown but will indicate
                 // something is wrong in telemetry that needs to be fixed
                 const command = Commands.register(

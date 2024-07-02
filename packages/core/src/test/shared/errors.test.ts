@@ -11,7 +11,9 @@ import {
     getErrorMsg,
     getTelemetryReason,
     getTelemetryResult,
+    isNetworkError,
     resolveErrorMessageToDisplay,
+    scrubNames,
     ToolkitError,
 } from '../../shared/errors'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
@@ -20,7 +22,11 @@ import { AWSError } from 'aws-sdk'
 import { AccessDeniedException } from '@aws-sdk/client-sso-oidc'
 
 class TestAwsError extends Error implements AWSError {
-    constructor(readonly code: string, message: string, readonly time: Date) {
+    constructor(
+        readonly code: string,
+        message: string,
+        readonly time: Date
+    ) {
         super(message)
     }
 }
@@ -61,9 +67,14 @@ function fakeAwsErrorUnauth() {
     return e as UnauthorizedException
 }
 
-function fakeErrorChain() {
+/** Creates a deep "cause chain", to test that error handler correctly gets the most relevant error. */
+function fakeErrorChain(rootCause?: Error) {
     try {
-        throw new Error('generic error 1')
+        if (rootCause) {
+            throw rootCause
+        } else {
+            throw new Error('generic error 1')
+        }
     } catch (e1) {
         try {
             const e = fakeAwsErrorAccessDenied()
@@ -71,15 +82,13 @@ function fakeErrorChain() {
             throw e
         } catch (e2) {
             try {
-                throw ToolkitError.chain(e2, 'ToolkitError message', {
-                    documentationUri: vscode.Uri.parse(
-                        'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html'
-                    ),
-                })
-            } catch (e3) {
                 const e = fakeAwsErrorUnauth()
-                ;(e as any).cause = e3
+                ;(e as any).cause = e2
                 return e
+            } catch (e3) {
+                throw ToolkitError.chain(e3, 'ToolkitError message', {
+                    documentationUri: vscode.Uri.parse('https://docs.aws.amazon.com/toolkit-for-vscode/'),
+                })
             }
         }
     }
@@ -415,5 +424,67 @@ describe('util', function () {
         assert.deepStrictEqual(getErrorMsg(err), 'aws validation msg 1')
         ;(err as any).error_description = 'aws error desc 1'
         assert.deepStrictEqual(getErrorMsg(err), 'aws error desc 1')
+    })
+
+    it('isNetworkError()', function () {
+        assert.deepStrictEqual(
+            isNetworkError(new Error('Failed to establish a socket connection to proxies BLAH BLAH BLAH')),
+            true,
+            'Did not return "true" on a VS Code Proxy error'
+        )
+        assert.deepStrictEqual(
+            isNetworkError(new Error('I am NOT a network error')),
+            false,
+            'Incorrectly indicated as network error'
+        )
+    })
+
+    it('scrubNames()', async function () {
+        const fakeUser = 'jdoe123'
+        assert.deepStrictEqual(scrubNames('', fakeUser), '')
+        assert.deepStrictEqual(scrubNames('a ./ b', fakeUser), 'a ././ b') // TODO: fix this
+        assert.deepStrictEqual(scrubNames('a ../ b', fakeUser), 'a .././ b') // TODO: fix this
+        assert.deepStrictEqual(scrubNames('a /.. b', fakeUser), 'a /.. b') // TODO: fix this
+        assert.deepStrictEqual(scrubNames('a //..// b', fakeUser), 'a //..//.// b') // TODO: fix this
+        assert.deepStrictEqual(scrubNames('a / b', fakeUser), 'a / b')
+        assert.deepStrictEqual(scrubNames('a ~/ b', fakeUser), 'a ~/ b')
+        assert.deepStrictEqual(scrubNames('a //// b', fakeUser), 'a //// b')
+        assert.deepStrictEqual(scrubNames('a .. b', fakeUser), 'a .. b')
+        assert.deepStrictEqual(scrubNames('a . b', fakeUser), 'a . b')
+        assert.deepStrictEqual(scrubNames('      lots      of         space       ', 'space'), 'lots of x')
+        assert.deepStrictEqual(
+            scrubNames(
+                'Failed to save c:/fooß/aïböcß/aób∑c/∑ö/ππ¨p/ö/a/bar123öabc/baz.txt EACCES no permissions (error!)',
+                fakeUser
+            ),
+            'Failed to save c:/xß/xï/xó/x∑/xπ/xö/x/xö/x.txt EACCES no permissions (error!)'
+        )
+        assert.deepStrictEqual(
+            scrubNames('user: jdoe123 file: C:/Users/user1/.aws/sso/cache/abc123.json (regex: /foo/)', fakeUser),
+            'user: x file: C:/Users/x/.aws/sso/cache/x.json (regex: /x/)'
+        )
+        assert.deepStrictEqual(scrubNames('/Users/user1/foo.jso (?)', fakeUser), '/Users/x/x.jso (?)')
+        assert.deepStrictEqual(scrubNames('/Users/user1/foo.js (?)', fakeUser), '/Users/x/x.js (?)')
+        assert.deepStrictEqual(scrubNames('/Users/user1/foo.longextension (?)', fakeUser), '/Users/x/x (?)')
+        assert.deepStrictEqual(scrubNames('c:\\fooß\\bar\\baz.txt', fakeUser), 'c:/xß/x/x.txt')
+        assert.deepStrictEqual(
+            scrubNames('uhh c:\\path with\\ spaces \\baz.. hmm...', fakeUser),
+            'uhh c:/x x/ spaces /x hmm...'
+        )
+        assert.deepStrictEqual(
+            scrubNames('unc path: \\\\server$\\pipename\\etc END', fakeUser),
+            'unc path: //x$/x/x END'
+        )
+        assert.deepStrictEqual(
+            scrubNames('c:\\Users\\user1\\.aws\\sso\\cache\\abc123.json jdoe123 abc', fakeUser),
+            'c:/Users/x/.aws/sso/cache/x.json x abc'
+        )
+        assert.deepStrictEqual(
+            scrubNames('unix /home/jdoe123/.aws/config failed', fakeUser),
+            'unix /home/x/.aws/config failed'
+        )
+        assert.deepStrictEqual(scrubNames('unix ~jdoe123/.aws/config failed', fakeUser), 'unix ~x/.aws/config failed')
+        assert.deepStrictEqual(scrubNames('unix ../../.aws/config failed', fakeUser), 'unix ../../.aws/config failed')
+        assert.deepStrictEqual(scrubNames('unix ~/.aws/config failed', fakeUser), 'unix ~/.aws/config failed')
     })
 })

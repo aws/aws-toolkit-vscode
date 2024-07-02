@@ -212,9 +212,8 @@ async function* fetchWarehouses(redshiftClient: DefaultRedshiftClient) {
     let hasMoreProvisioned = true
     while (hasMoreProvisioned || hasMoreServerless) {
         if (hasMoreProvisioned) {
-            const provisionedResponse: ClustersMessage = await redshiftClient.describeProvisionedClusters(
-                provisionedToken
-            )
+            const provisionedResponse: ClustersMessage =
+                await redshiftClient.describeProvisionedClusters(provisionedToken)
             provisionedToken = provisionedResponse.Marker
             hasMoreProvisioned = provisionedToken !== undefined
             if (provisionedResponse.Clusters) {

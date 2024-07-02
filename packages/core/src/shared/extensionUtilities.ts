@@ -41,6 +41,11 @@ export function productName() {
     return isAmazonQ() ? 'Amazon Q' : `${getIdeProperties().company} Toolkit`
 }
 
+/** Gets the "AWS" or "Amazon Q" prefix (in package.json: `commands.category`). */
+export function commandsPrefix(): string {
+    return isAmazonQ() ? 'Amazon Q' : getIdeProperties().company
+}
+
 export const mostRecentVersionKey: string = 'globalsMostRecentVersion'
 
 export enum IDE {

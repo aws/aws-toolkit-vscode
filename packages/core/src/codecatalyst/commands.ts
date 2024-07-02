@@ -23,7 +23,6 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { showConfirmationMessage } from '../shared/utilities/messages'
 import { AccountStatus } from '../shared/telemetry/telemetryClient'
 import { CreateDevEnvironmentRequest, UpdateDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
-import { Auth } from '../auth/auth'
 import { SsoConnection } from '../auth/connection'
 import { isInDevEnv, isRemoteWorkspace } from '../shared/vscode/env'
 import { commandPalette } from '../codewhisperer/commands/types'
@@ -143,7 +142,7 @@ function createClientInjector(authProvider: CodeCatalystAuthenticationProvider):
             // TODO: In the future, it would be very nice to open a connection picker here.
             throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnectionBadState' })
         }
-        const validatedConn = await validateConnection(conn, authProvider.auth)
+        const validatedConn = await validateConnection(conn, authProvider)
         const client = await createClient(validatedConn)
         telemetry.record({ userId: client.identity.id })
 
@@ -157,8 +156,11 @@ function createClientInjector(authProvider: CodeCatalystAuthenticationProvider):
  * Provides the user the ability to re-authenticate if needed,
  * otherwise throwing an error.
  */
-async function validateConnection(conn: SsoConnection, auth: Auth): Promise<SsoConnection> {
-    if (auth.getConnectionState(conn) === 'valid') {
+async function validateConnection(
+    conn: SsoConnection,
+    authProvider: CodeCatalystAuthenticationProvider
+): Promise<SsoConnection> {
+    if (authProvider.auth.getConnectionState(conn) === 'valid') {
         return conn
     }
 
@@ -170,10 +172,10 @@ async function validateConnection(conn: SsoConnection, auth: Auth): Promise<SsoC
         throw new ToolkitError('User cancelled login.', { cancelled: true, code: errorCode.invalidConnection })
     }
 
-    conn = await auth.reauthenticate(conn)
+    conn = await authProvider.reauthenticate(conn)
 
     // Log in attempt failed
-    if (auth.getConnectionState(conn) !== 'valid') {
+    if (authProvider.auth.getConnectionState(conn) !== 'valid') {
         throw new ToolkitError('Login failed.', { code: errorCode.invalidConnection })
     }
 

@@ -263,7 +263,10 @@ export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
         return this
     }
 
-    constructor(readonly lambda?: LambdaFunction, readonly invokePath?: vscode.Uri) {
+    constructor(
+        readonly lambda?: LambdaFunction,
+        readonly invokePath?: vscode.Uri
+    ) {
         super({ initState: { lambda } })
     }
 }

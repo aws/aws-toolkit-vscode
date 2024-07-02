@@ -126,7 +126,10 @@ export class RegionNode extends AWSTreeNodeBase {
         return this.region.name
     }
 
-    public constructor(region: Region, private readonly regionProvider: RegionProvider) {
+    public constructor(
+        region: Region,
+        private readonly regionProvider: RegionProvider
+    ) {
         super(region.name, TreeItemCollapsibleState.Expanded)
         this.contextValue = 'awsRegionNode'
         this.region = region

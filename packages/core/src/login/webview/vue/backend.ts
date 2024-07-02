@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import globals from '../../../shared/extensionGlobals'
 import { VueWebview } from '../../../webviews/main'
 import { Region } from '../../../shared/regions/endpoints'
-import { ToolkitError } from '../../../shared/errors'
+import { getTelemetryReasonDesc, ToolkitError } from '../../../shared/errors'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { trustedDomainCancellation } from '../../../auth/sso/model'
 import { handleWebviewError } from '../../../webviews/server'
@@ -19,6 +19,7 @@ import {
     isBuilderIdConnection,
     isIamConnection,
     isIdcSsoConnection,
+    isSsoConnection,
     scopesCodeCatalyst,
     scopesCodeWhispererChat,
     scopesSsoAccountAccess,
@@ -159,15 +160,6 @@ export abstract class CommonAuthWebview extends VueWebview {
 
     abstract fetchConnections(): Promise<AwsConnection[] | undefined>
 
-    /**
-     * Re-use connection that is pushed from Amazon Q to Toolkit.
-     * @param connectionId ID of the connection to re-use
-     * @param auto indicate whether this happened automatically (true), or the result of user action (false)
-     */
-    abstract useConnection(connectionId: string, auto: boolean): Promise<AuthError | undefined>
-
-    abstract findUsableConnection(connections: AwsConnection[]): AwsConnection | undefined
-
     async errorNotification(e: AuthError) {
         void vscode.window.showInformationMessage(`${e.text}`)
     }
@@ -190,8 +182,8 @@ export abstract class CommonAuthWebview extends VueWebview {
 
     abstract signout(): Promise<void>
 
-    async listConnections(): Promise<Connection[]> {
-        return Auth.instance.listConnections()
+    async listSsoConnections(): Promise<SsoConnection[]> {
+        return (await Auth.instance.listConnections()).filter(conn => isSsoConnection(conn)) as SsoConnection[]
     }
 
     /**
@@ -235,7 +227,8 @@ export abstract class CommonAuthWebview extends VueWebview {
                 metadata.result = 'Cancelled'
             } else {
                 metadata.result = 'Failed'
-                metadata.reason = error.text
+                metadata.reason = error.id
+                metadata.reasonDesc = getTelemetryReasonDesc(error.text)
             }
         } else {
             metadata.result = 'Succeeded'

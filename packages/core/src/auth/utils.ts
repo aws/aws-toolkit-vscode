@@ -131,7 +131,7 @@ export const createBuilderIdItem = () =>
         data: 'builderId',
         onClick: () => telemetry.ui_click.emit({ elementId: 'connection_optionBuilderID' }),
         detail: `${localizedText.builderId()} is a new, personal profile for builders.`, // TODO: need a "Learn more" button ?
-    } as DataQuickPickItem<'builderId'>)
+    }) as DataQuickPickItem<'builderId'>
 
 export const createSsoItem = () =>
     ({
@@ -144,7 +144,7 @@ export const createSsoItem = () =>
         data: 'sso',
         onClick: () => telemetry.ui_click.emit({ elementId: 'connection_optionSSO' }),
         detail: `Sign in to your company's ${localizedText.iamIdentityCenter} access portal login page.`,
-    } as DataQuickPickItem<'sso'>)
+    }) as DataQuickPickItem<'sso'>
 
 export const createIamItem = () =>
     ({
@@ -152,7 +152,7 @@ export const createIamItem = () =>
         data: 'iam',
         onClick: () => telemetry.ui_click.emit({ elementId: 'connection_optionIAM' }),
         detail: 'Activates working with resources in the Explorer. Not supported by CodeWhisperer. Requires an access key ID and secret access key.',
-    } as DataQuickPickItem<'iam'>)
+    }) as DataQuickPickItem<'iam'>
 
 export async function createStartUrlPrompter(title: string, requiredScopes?: string[]) {
     const existingConnections = (await Auth.instance.listConnections()).filter(isAnySsoConnection)
@@ -441,8 +441,8 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
             const descSuffix = conn.id.startsWith('profile:')
                 ? 'configured locally (~/.aws/config)'
                 : conn.id.startsWith('sso:')
-                ? 'sourced from IAM Identity Center'
-                : 'sourced from the environment'
+                  ? 'sourced from IAM Identity Center'
+                  : 'sourced from the environment'
 
             return `IAM Credential, ${descSuffix}`
         }

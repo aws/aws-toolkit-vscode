@@ -40,7 +40,14 @@ export type DevFunction =
     | 'expireSsoConnections'
     | 'editAuthConnections'
 
+export type DevOptions = {
+    context: vscode.ExtensionContext
+    auth: Auth
+    menuOptions?: DevFunction[]
+}
+
 let targetContext: vscode.ExtensionContext
+let targetAuth: Auth
 
 /**
  * Defines AWS Toolkit developer tools.
@@ -141,20 +148,18 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
         vscode.workspace.registerTextDocumentContentProvider('aws-dev2', new DevDocumentProvider()),
         // "AWS (Developer): Open Developer Menu"
         vscode.commands.registerCommand('aws.dev.openMenu', async () => {
-            await vscode.commands.executeCommand('_aws.dev.invokeMenu', ctx)
+            await vscode.commands.executeCommand('_aws.dev.invokeMenu', { context: ctx, auth: Auth.instance })
         }),
         // Internal command to open dev menu for a specific context and options
-        vscode.commands.registerCommand(
-            '_aws.dev.invokeMenu',
-            (ctx: vscode.ExtensionContext, options: DevFunction[] = Object.keys(menuOptions) as DevFunction[]) => {
-                targetContext = ctx
-                void openMenu(
-                    entries(menuOptions)
-                        .filter(e => options.includes(e[0]))
-                        .map(e => e[1])
-                )
-            }
-        ),
+        vscode.commands.registerCommand('_aws.dev.invokeMenu', (opts: DevOptions) => {
+            targetContext = opts.context
+            targetAuth = opts.auth
+            void openMenu(
+                entries(menuOptions)
+                    .filter(e => (opts.menuOptions ?? Object.keys(menuOptions)).includes(e[0]))
+                    .map(e => e[1])
+            )
+        }),
         // "AWS (Developer): Watch Logs"
         Commands.register('aws.dev.viewLogs', async () => {
             // HACK: Use startDebugging() so we can use the DEBUG CONSOLE (which supports
@@ -209,7 +214,10 @@ class VirtualObjectFile implements FileProvider {
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChange = this.onDidChangeEmitter.event
 
-    public constructor(private readonly storage: vscode.Memento | vscode.SecretStorage, private readonly key: string) {}
+    public constructor(
+        private readonly storage: vscode.Memento | vscode.SecretStorage,
+        private readonly key: string
+    ) {}
 
     /** Emits an event indicating this file's content has changed */
     public refresh() {
@@ -404,16 +412,16 @@ async function editSsoConnections() {
 }
 
 async function deleteSsoConnections() {
-    const conns = Auth.instance.listConnections()
+    const conns = targetAuth.listConnections()
     const ssoConns = (await conns).filter(isAnySsoConnection)
-    await Promise.all(ssoConns.map(conn => Auth.instance.deleteConnection(conn)))
+    await Promise.all(ssoConns.map(conn => targetAuth.deleteConnection(conn)))
     void vscode.window.showInformationMessage(`Deleted: ${ssoConns.map(c => c.startUrl).join(', ')}`)
 }
 
 async function expireSsoConnections() {
-    const conns = Auth.instance.listConnections()
+    const conns = targetAuth.listConnections()
     const ssoConns = (await conns).filter(isAnySsoConnection)
-    await Promise.all(ssoConns.map(conn => Auth.instance.expireConnection(conn)))
+    await Promise.all(ssoConns.map(conn => targetAuth.expireConnection(conn)))
     void vscode.window.showInformationMessage(`Expired: ${ssoConns.map(c => c.startUrl).join(', ')}`)
 }
 

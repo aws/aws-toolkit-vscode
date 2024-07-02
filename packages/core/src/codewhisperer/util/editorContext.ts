@@ -16,7 +16,7 @@ import { getSelectedCustomization } from './customizationUtil'
 import { selectFrom } from '../../shared/utilities/tsUtils'
 import { checkLeftContextKeywordsForJsonAndYaml } from './commonUtil'
 import { CodeWhispererSupplementalContext } from '../models/model'
-import { getOptOutPreference } from './commonUtil'
+import { getOptOutPreference } from '../../shared/telemetry/util'
 
 let tabSize: number = getTabSizeSetting()
 

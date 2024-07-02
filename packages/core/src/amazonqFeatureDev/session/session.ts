@@ -6,7 +6,14 @@
 import * as path from 'path'
 
 import { ConversationNotStartedState, PrepareCodeGenState, PrepareRefinementState } from './sessionState'
-import type { DeletedFileInfo, Interaction, NewFileInfo, SessionState, SessionStateConfig } from '../types'
+import {
+    DevPhase,
+    type DeletedFileInfo,
+    type Interaction,
+    type NewFileInfo,
+    type SessionState,
+    type SessionStateConfig,
+} from '../types'
 import { ConversationIdNotFoundError } from '../errors'
 import { referenceLogText } from '../constants'
 import { FileSystemCommon } from '../../srcShared/fs'
@@ -61,6 +68,7 @@ export class Session {
             await this.setupConversation(msg)
             this.preloaderFinished = true
             this.messenger.sendAsyncEventProgress(this.tabID, true, undefined)
+            await this.proxyClient.sendFeatureDevTelemetryEvent(this.conversationId) // send the event only once per conversation.
         }
     }
 
@@ -214,9 +222,9 @@ export class Session {
 
     get retries() {
         switch (this.state.phase) {
-            case 'Approach':
+            case DevPhase.APPROACH:
                 return this.approachRetries
-            case 'Codegen':
+            case DevPhase.CODEGEN:
                 return this.codeGenRetries
             default:
                 return this.approachRetries
@@ -225,10 +233,10 @@ export class Session {
 
     decreaseRetries() {
         switch (this.state.phase) {
-            case 'Approach':
+            case DevPhase.APPROACH:
                 this.approachRetries -= 1
                 break
-            case 'Codegen':
+            case DevPhase.CODEGEN:
                 this.codeGenRetries -= 1
                 break
         }

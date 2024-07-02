@@ -10,6 +10,12 @@ import * as env from '../shared/vscode/env'
 // Checks project config and dependencies, to remind us to remove old things
 // when possible.
 describe('tech debt', function () {
+    function fixByDate(date: string, msg: string) {
+        const now = Date.now()
+        const cutoffDate = Date.parse(date)
+        assert.ok(now <= cutoffDate, msg)
+    }
+
     it('vscode minimum version', async function () {
         const minVscode = env.getMinVscodeVersion()
 
@@ -35,8 +41,12 @@ describe('tech debt', function () {
     })
 
     it('remove missing Amazon Q scopes edge case handling', async function () {
-        const now = Date.now()
-        const cutoffDate = Date.parse('2024-06-30')
-        assert.ok(now <= cutoffDate, 'Remove the edge case code from the commit that this test is a part of.')
+        fixByDate('2024-07-30', 'Remove the edge case code from the commit that this test is a part of.')
+    })
+
+    it('remove separate sessions login edge cases', async function () {
+        // src/auth/auth.ts:SessionSeparationPrompt
+        // forgetConnection() function and calls
+        fixByDate('2024-07-30', 'Remove the edge case code from the commit that this test is a part of.')
     })
 })

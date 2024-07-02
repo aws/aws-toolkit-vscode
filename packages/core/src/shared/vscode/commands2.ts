@@ -113,14 +113,12 @@ export interface CommandDeclarations<T> {
  * @param declarations Has the mapping of command names to the backend logic
  * @param backend The backend logic of the commands
  */
-export function registerCommandsWithVSCode<T>(
-    extContext: vscode.ExtensionContext,
+export function registerDeclaredCommands<T>(
+    disposables: { dispose(): any }[],
     declarations: CommandDeclarations<T>,
     backend: T
 ): void {
-    extContext.subscriptions.push(
-        ...Object.values<DeclaredCommand>(declarations.declared).map(c => c.register(backend))
-    )
+    disposables.push(...Object.values<DeclaredCommand>(declarations.declared).map(c => c.register(backend)))
 }
 
 /**
@@ -322,7 +320,10 @@ class CommandResource<T extends Callback = Callback, U extends any[] = any[]> {
     private idCounter = 0
     public readonly id = this.resource.info.id
 
-    public constructor(private readonly resource: Deferred<T, U>, private readonly commands = vscode.commands) {}
+    public constructor(
+        private readonly resource: Deferred<T, U>,
+        private readonly commands = vscode.commands
+    ) {}
 
     public get registered() {
         return !!this.subscription
@@ -674,7 +675,7 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
 // the extension entry-point. `Commands` form the backbone of everything else in the Toolkit.
 // This file should contain as little application-specific logic as possible.
 let errorHandler: (info: Omit<CommandInfo<any>, 'args'>, error: unknown) => void
-export function registerErrorHandler(handler: typeof errorHandler): void {
+export function registerCommandErrorHandler(handler: typeof errorHandler): void {
     if (errorHandler !== undefined) {
         throw new TypeError('Error handler has already been registered')
     }

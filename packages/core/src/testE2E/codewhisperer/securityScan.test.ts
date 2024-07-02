@@ -143,7 +143,8 @@ describe('CodeWhisperer security scan', async function () {
             scanJob.jobId,
             CodeWhispererConstants.codeScanFindingsSchema,
             projectPaths,
-            scope
+            scope,
+            editor
         )
 
         assert.deepStrictEqual(jobStatus, 'Completed')
@@ -183,7 +184,8 @@ describe('CodeWhisperer security scan', async function () {
             scanJob.jobId,
             CodeWhispererConstants.codeScanFindingsSchema,
             projectPaths,
-            scope
+            scope,
+            editor
         )
 
         assert.deepStrictEqual(jobStatus, 'Completed')

@@ -25,6 +25,8 @@ import { ToolkitError, isAwsError, isCodeWhispererStreamingServiceException } fr
 import { getCodewhispererConfig } from '../../codewhisperer/client/codewhisperer'
 import { LLMResponseType } from '../types'
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
+import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
+import { extensionVersion } from '../../shared/vscode/env'
 
 // Create a client for featureDev proxy client based off of aws sdk v2
 export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClient> {
@@ -306,6 +308,44 @@ export class FeatureDevClient {
                 }`
             )
             throw new ToolkitError((e as Error).message, { code: 'ExportResultArchiveFailed' })
+        }
+    }
+
+    /**
+     * This event is specific to ABTesting purposes.
+     *
+     * No need to fail currently if the event fails in the request. In addition, currently there is no need for a return value.
+     *
+     * @param conversationId
+     */
+    public async sendFeatureDevTelemetryEvent(conversationId: string) {
+        try {
+            const client = await this.getClient()
+            const params: FeatureDevProxyClient.SendTelemetryEventRequest = {
+                telemetryEvent: {
+                    featureDevEvent: {
+                        conversationId,
+                    },
+                },
+                optOutPreference: getOptOutPreference(),
+                userContext: {
+                    ideCategory: 'VSCODE',
+                    operatingSystem: getOperatingSystem(),
+                    product: 'FeatureDev', // Should be the same as in JetBrains
+                    clientId: getClientId(globals.context.globalState),
+                    ideVersion: extensionVersion,
+                },
+            }
+            const response = await client.sendTelemetryEvent(params).promise()
+            getLogger().debug(
+                `${featureName}: successfully sent featureDevEvent: ConversationId: ${conversationId} RequestId: ${response.$response.requestId}`
+            )
+        } catch (e) {
+            getLogger().error(
+                `${featureName}: failed to send feature dev telemetry: ${(e as Error).name}: ${
+                    (e as Error).message
+                } RequestId: ${(e as any).requestId}`
+            )
         }
     }
 }

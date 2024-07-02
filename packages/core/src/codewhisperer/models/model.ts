@@ -688,6 +688,7 @@ export interface CodeScanTelemetryEntry {
     codeScanServiceInvocationsDuration: number
     result: Result
     reason?: string
+    reasonDesc?: string
     codewhispererCodeScanTotalIssues: number
     codewhispererCodeScanIssuesWithFixes: number
     credentialStartUrl: string | undefined
@@ -714,6 +715,11 @@ export interface Remediation {
     suggestedFixes: SuggestedFix[]
 }
 
+export interface CodeLine {
+    content: string
+    number: number
+}
+
 export interface RawCodeScanIssue {
     filePath: string
     startLine: number
@@ -727,6 +733,7 @@ export interface RawCodeScanIssue {
     relatedVulnerabilities: string[]
     severity: string
     remediation: Remediation
+    codeSnippet: CodeLine[]
 }
 
 export interface CodeScanIssue {

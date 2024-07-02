@@ -498,12 +498,12 @@ type Config = Intersection<Format<SettingsProps>>
 type Join<T extends string[], S extends string> = T['length'] extends 1
     ? T[0]
     : T extends [infer L, ...infer R]
-    ? L extends string
-        ? R extends string[]
-            ? `${L}${S}${Join<R, S>}`
-            : ''
-        : ''
-    : never
+      ? L extends string
+          ? R extends string[]
+              ? `${L}${S}${Join<R, S>}`
+              : ''
+          : ''
+      : never
 
 type Select<T, K> = K extends [infer L, ...infer R]
     ? L extends keyof T

@@ -67,7 +67,10 @@ interface CreateProfileState {
 }
 
 class ProfileChecker<T extends Profile> extends Prompter<string> {
-    public constructor(private readonly name: string, private readonly profile: T) {
+    public constructor(
+        private readonly name: string,
+        private readonly profile: T
+    ) {
         super()
     }
 
