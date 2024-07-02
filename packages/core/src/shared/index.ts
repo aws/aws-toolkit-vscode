@@ -24,6 +24,10 @@ export { AmazonqCreateUpload, Metric } from './telemetry/telemetry'
 export { getClientId } from './telemetry/util'
 export { extensionVersion } from './vscode/env'
 export { cast } from './utilities/typeConstructors'
+export { createInputBox } from './ui/inputPrompter'
+export { createQuickPick } from './ui/pickerPrompter'
+export { SkipPrompter } from './ui/common/skipPrompter'
+export { Wizard, WizardState } from './wizards/wizard'
 export {
     CodewhispererUserTriggerDecision,
     CodewhispererLanguage,
