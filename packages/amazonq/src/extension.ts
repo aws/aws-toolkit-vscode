@@ -14,11 +14,14 @@ import { isExtensionActive, VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 import { registerSubmitFeedback } from 'aws-core-vscode/feedback'
 import { DevOptions } from 'aws-core-vscode/dev'
 import { Auth } from 'aws-core-vscode/auth'
+import qApi from './api'
 
 export async function activate(context: vscode.ExtensionContext) {
     // IMPORTANT: No other code should be added to this function. Place it in one of the following 2 functions where appropriate.
     await activateAmazonQCommon(context, false)
     await activateAmazonQNonCommon(context)
+
+    return qApi
 }
 
 /**

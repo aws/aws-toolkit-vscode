@@ -6,14 +6,15 @@
 import { Commands } from '../../shared/vscode/commands2'
 import { ApplicationComposerManager } from '../webviewManager'
 import vscode from 'vscode'
-import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
+import { getQAPI } from '../../amazonq/extApi'
 
 export const openTemplateInComposerCommand = Commands.declare(
     'aws.openInApplicationComposer',
     (manager: ApplicationComposerManager) => async (arg?: vscode.TextEditor | vscode.Uri) => {
-        const authState = await AuthUtil.instance.getChatAuthState()
+        const qApi = await getQAPI()
+        const authState = await qApi.authApi.getChatAuthState()
 
         let result: vscode.WebviewPanel | undefined
         await telemetry.appcomposer_openTemplate.run(async span => {

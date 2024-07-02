@@ -5,11 +5,12 @@
 
 import path from 'path'
 import { InitResponseMessage, MessageType, WebviewContext, Command } from '../types'
-import { AuthUtil } from '../../codewhisperer/util/authUtil'
+import { getQAPI } from '../../amazonq/extApi'
 
 export async function initMessageHandler(context: WebviewContext) {
     const filePath = context.defaultTemplatePath
-    const authState = await AuthUtil.instance.getChatAuthState()
+    const qApi = await getQAPI()
+    const authState = await qApi.authApi.getChatAuthState()
 
     const responseMessage: InitResponseMessage = {
         messageType: MessageType.RESPONSE,

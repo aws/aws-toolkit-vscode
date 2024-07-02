@@ -6,3 +6,4 @@
 export { FocusAreaContextExtractor } from './editor/context/focusArea/focusAreaExtractor'
 export { TryChatCodeLensProvider, resolveModifierKey, tryChatCodeLensCommand } from './editor/codelens'
 export { focusAmazonQPanel } from './commands/registerCommands'
+export { ChatSession } from './clients/chat/v0/chat'
