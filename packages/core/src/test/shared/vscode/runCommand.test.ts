@@ -217,6 +217,23 @@ describe('runCommand', function () {
             // assertTelem('EACCES')
             assertTelem('Error')
         })
+
+        it('AWS service error', async function () {
+            const expectedMsg = /x/
+            const viewLogsDialog = getTestWindow().waitForMessage(expectedMsg)
+
+            await Promise.all([
+                viewLogsDialog.then(dialog => dialog.close()),
+                testCommand.execute(async () => {
+                    const err = await SystemUtilities.writeFile(unwritableFile, 'bar').catch(e => e)
+                    throw fakeErrorChain(err, false)
+                }),
+            ])
+
+            // TODO: commands.run() should use getBestError (if the top error is not ToolkitError)?
+            // assertTelem('InvalidPermissions')
+            assertTelem('Error')
+        })
     })
 
     describe('telemetry throttling', function () {

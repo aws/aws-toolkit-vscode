@@ -22,7 +22,7 @@ import { ChatSession } from '../../../clients/chat/v0/chat'
 import { ChatException } from './model'
 import { CWCTelemetryHelper } from '../telemetryHelper'
 import { ChatPromptCommandType, TriggerPayload } from '../model'
-import { ToolkitError } from '../../../../shared/errors'
+import { getHttpStatusCode, getRequestId, ToolkitError } from '../../../../shared/errors'
 import { keys } from '../../../../shared/utilities/tsUtils'
 import { getLogger } from '../../../../shared/logger/logger'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
@@ -218,8 +218,8 @@ export class Messenger {
 
                 if (error instanceof CodeWhispererStreamingServiceException) {
                     errorMessage = error.message
-                    statusCode = error.$metadata?.httpStatusCode ?? 0
-                    requestID = error.$metadata.requestId
+                    statusCode = getHttpStatusCode(error) ?? 0
+                    requestID = getRequestId(error)
                 }
 
                 this.showChatExceptionMessage(
