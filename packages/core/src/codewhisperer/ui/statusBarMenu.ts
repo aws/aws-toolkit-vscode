@@ -62,9 +62,6 @@ function getAmazonQCodeWhispererNodes() {
         // CodeWhisperer
         createSeparator('Inline Suggestions'),
         createAutoSuggestions(autoTriggerEnabled),
-        ...(AuthUtil.instance.isValidEnterpriseSsoInUse() && AuthUtil.instance.isCustomizationFeatureEnabled
-            ? [createSelectCustomization()]
-            : []),
         createOpenReferenceLog(),
         createGettingStarted(), // "Learn" node : opens Learn CodeWhisperer page
 
@@ -75,6 +72,9 @@ function getAmazonQCodeWhispererNodes() {
 
         // Amazon Q + others
         createSeparator('Other Features'),
+        ...(AuthUtil.instance.isValidEnterpriseSsoInUse() && AuthUtil.instance.isCustomizationFeatureEnabled
+            ? [createSelectCustomization()]
+            : []),
         switchToAmazonQNode(),
     ]
 }

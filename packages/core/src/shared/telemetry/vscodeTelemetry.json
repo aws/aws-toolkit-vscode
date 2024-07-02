@@ -794,6 +794,10 @@
                 },
                 {
                     "type": "cwsprChatConversationType"
+                },
+                {
+                    "type": "codewhispererCustomizationArn",
+                    "required": false
                 }
             ]
         },

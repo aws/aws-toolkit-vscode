@@ -640,7 +640,8 @@
                 "chatTriggerType": {
                     "shape": "ChatTriggerType",
                     "documentation": "<p>Trigger Reason for Chat</p>"
-                }
+                },
+                "customizationArn": { "shape": "ResourceArn" }
             },
             "documentation": "<p>Structure to represent the current state of a chat conversation.</p>"
         },
