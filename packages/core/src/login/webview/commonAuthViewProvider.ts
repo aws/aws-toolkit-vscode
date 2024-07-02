@@ -40,7 +40,7 @@ import { registerAssetsHttpsFileSystem } from '../../amazonq/webview/assets/asse
 import { VueWebview, VueWebviewPanel } from '../../webviews/main'
 import { AmazonQLoginWebview } from './vue/amazonq/backend_amazonq'
 import { ToolkitLoginWebview } from './vue/toolkit/backend_toolkit'
-import { CodeCatalystAuthenticationProvider } from '../../codecatalyst/auth'
+import { CodeCatalystAuthenticationProvider } from '../../awsService/codecatalyst/auth'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { AuthSources } from './util'
 import { AuthFlowStates } from './vue/types'

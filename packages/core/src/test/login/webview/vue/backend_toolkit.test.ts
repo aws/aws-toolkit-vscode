@@ -15,7 +15,7 @@ import {
     CodeCatalystAuthenticationProvider,
     CodeCatalystAuthStorage,
     defaultScopes,
-} from '../../../../codecatalyst/auth'
+} from '../../../../awsService/codecatalyst/auth'
 import { FakeSecretStorage, FakeMemento } from '../../../fakeExtensionContext'
 import * as authUtils from '../../../../auth/utils'
 

@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { InactivityMessage, shouldSendActivity } from '../../codecatalyst/devEnv'
+import { InactivityMessage, shouldSendActivity } from '../../awsService/codecatalyst/devEnv'
 import * as sinon from 'sinon'
 import { sleep, waitUntil } from '../../shared/utilities/timeoutUtils'
 import { TestWindow, getTestWindow } from '../../test/shared/vscode/window'

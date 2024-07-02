@@ -20,7 +20,7 @@ import {
     ListSchemasResponse,
     ListTablesResponse,
 } from 'aws-sdk/clients/redshiftdata'
-import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../redshift/models/models'
+import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../awsService/redshift/models/models'
 import { sleep } from '../utilities/timeoutUtils'
 import { SecretsManagerClient } from './secretsManagerClient'
 import { ToolkitError } from '../errors'
