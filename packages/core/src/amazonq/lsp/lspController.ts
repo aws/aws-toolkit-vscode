@@ -39,7 +39,7 @@ export interface Chunk {
     readonly programmingLanguage?: string
 }
 
-interface Content {
+export interface Content {
     filename: string
     url: string
     hashes: string[]
@@ -47,13 +47,13 @@ interface Content {
     serverVersion?: string
 }
 
-interface Target {
+export interface Target {
     platform: string
     arch: string
     contents: Content[]
 }
 
-interface Manifest {
+export interface Manifest {
     manifestSchemaVersion: string
     artifactId: string
     artifactDescription: string
@@ -64,8 +64,7 @@ interface Manifest {
         targets: Target[]
     }[]
 }
-const manifestUrl = 'https://ducvaeoffl85c.cloudfront.net/manifest.json'
-//const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/temp/manifest.json'
+const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/temp/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
 const supportedLspServerVersions = ['0.0.6']
 
