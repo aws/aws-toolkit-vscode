@@ -10,6 +10,7 @@ import {
     CodewhispererCompletionType,
     CodewhispererLanguage,
     CodewhispererTriggerType,
+    MetricBase,
     Result,
 } from '../../shared/telemetry/telemetry'
 import { References } from '../client/codewhisperer'
@@ -673,7 +674,7 @@ export class TransformByQStoppedError extends ToolkitError {
     }
 }
 
-export interface CodeScanTelemetryEntry {
+export interface CodeScanTelemetryEntry extends MetricBase {
     codewhispererCodeScanJobId?: string
     codewhispererLanguage: CodewhispererLanguage
     codewhispererCodeScanProjectBytes?: number

@@ -522,11 +522,15 @@ function hasFault<T>(error: T): error is T & { $fault: 'client' | 'server' } {
 }
 
 function hasMetadata<T>(error: T): error is T & Pick<CodeWhispererStreamingServiceException, '$metadata'> {
-    return typeof (error as { $metadata?: unknown }).$metadata === 'object'
+    return typeof (error as { $metadata?: unknown })?.$metadata === 'object'
+}
+
+function hasResponse<T>(error: T): error is T & Pick<ServiceException, '$response'> {
+    return typeof (error as { $response?: unknown })?.$response === 'object'
 }
 
 function hasName<T>(error: T): error is T & { name: string } {
-    return typeof (error as { name?: unknown }).name === 'string'
+    return typeof (error as { name?: unknown })?.name === 'string'
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -567,6 +571,17 @@ export function getRequestId(err: unknown): string | undefined {
     if (isAwsError(err)) {
         return err.requestId
     }
+}
+
+export function getHttpStatusCode(err: unknown): number | undefined {
+    if (hasResponse(err) && err?.$response?.statusCode !== undefined) {
+        return err?.$response?.statusCode
+    }
+    if (hasMetadata(err) && err.$metadata?.httpStatusCode !== undefined) {
+        return err.$metadata?.httpStatusCode
+    }
+
+    return undefined
 }
 
 export function isFilesystemError(err: unknown): boolean {

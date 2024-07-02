@@ -21,7 +21,12 @@ import {
     PlanIterationLimitError,
     UnknownApiError,
 } from '../errors'
-import { ToolkitError, isAwsError, isCodeWhispererStreamingServiceException } from '../../shared/errors'
+import {
+    ToolkitError,
+    isAwsError,
+    isCodeWhispererStreamingServiceException,
+    getHttpStatusCode,
+} from '../../shared/errors'
 import { getCodewhispererConfig } from '../../codewhisperer/client/codewhisperer'
 import { LLMResponseType } from '../types'
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
@@ -191,7 +196,7 @@ export class FeatureDevClient {
                     e.message,
                     'GeneratePlan',
                     e.name,
-                    e.$metadata?.httpStatusCode ?? streamResponseErrors[e.name] ?? 500
+                    getHttpStatusCode(e) ?? streamResponseErrors[e.name] ?? 500
                 )
             }
 
