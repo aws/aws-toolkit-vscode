@@ -111,7 +111,7 @@ export async function uploadArtifactToS3(
     try {
         const uploadFileByteSize = (await fs.promises.stat(fileName)).size
         getLogger().info(
-            `Uploading zip at %s with checksum %s using uploadId: %s and size %s kB`,
+            `Uploading project artifact at %s with checksum %s using uploadId: %s and size %s kB`,
             fileName,
             sha256,
             resp.uploadId,
@@ -133,7 +133,7 @@ export async function uploadArtifactToS3(
         })
         getLogger().info(`CodeTransformation: Status from S3 Upload = ${response.status}`)
     } catch (e: any) {
-        let errorMessage = `The upload failed due to: ${(e as Error).message}`
+        let errorMessage = `The upload failed due to: ${(e as Error).message}. For more information, see the [Amazon Q documentation](${CodeWhispererConstants.codeTransformTroubleshootUploadError})`
         if (errorMessage.includes('Request has expired')) {
             errorMessage = CodeWhispererConstants.errorUploadingWithExpiredUrl
         } else if (errorMessage.includes('Failed to establish a socket connection')) {
@@ -749,21 +749,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
 
             const errorMessage = response.transformationJob.reason
             if (errorMessage !== undefined) {
-                if (errorMessage.includes('Monthly aggregated Lines of Code limit breached')) {
-                    transformByQState.setJobFailureErrorNotification(
-                        CodeWhispererConstants.failedToStartJobMonthlyLimitNotification
-                    )
-                    transformByQState.setJobFailureErrorChatMessage(
-                        CodeWhispererConstants.failedToStartJobMonthlyLimitChatMessage
-                    )
-                } else if (errorMessage.includes('Lines of Code limit breached for job')) {
-                    transformByQState.setJobFailureErrorNotification(
-                        CodeWhispererConstants.failedToStartJobLinesLimitNotification
-                    )
-                    transformByQState.setJobFailureErrorChatMessage(
-                        CodeWhispererConstants.failedToStartJobLinesLimitChatMessage
-                    )
-                }
                 transformByQState.setJobFailureErrorChatMessage(
                     `${CodeWhispererConstants.failedToCompleteJobGenericChatMessage} ${errorMessage}`
                 )

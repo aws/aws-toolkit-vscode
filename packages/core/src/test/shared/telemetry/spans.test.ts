@@ -9,6 +9,7 @@ import { TelemetrySpan, TelemetryTracer } from '../../../shared/telemetry/spans'
 import { MetricName, MetricShapes } from '../../../shared/telemetry/telemetry'
 import { assertTelemetry, getMetrics, installFakeClock } from '../../testUtil'
 import { selectFrom } from '../../../shared/utilities/tsUtils'
+import { getAwsServiceError } from '../errors.test'
 
 describe('TelemetrySpan', function () {
     let clock: ReturnType<typeof installFakeClock>
@@ -77,7 +78,7 @@ describe('TelemetryTracer', function () {
         tracer = new TelemetryTracer()
     })
 
-    describe('record', function () {
+    describe('record()', function () {
         it('only writes to the active span in the current context', function () {
             tracer.apigateway_copyUrl.run(() => {
                 tracer.run(metricName, () => tracer.record({ source: 'bar' }))
@@ -122,7 +123,7 @@ describe('TelemetryTracer', function () {
         })
     })
 
-    describe('instrument', function () {
+    describe('instrument()', function () {
         async function assertPositive(n: number): Promise<number> {
             if (n <= 0) {
                 throw new Error()
@@ -165,7 +166,7 @@ describe('TelemetryTracer', function () {
         })
     })
 
-    describe('increment', function () {
+    describe('increment()', function () {
         it('starts at 0 for uninitialized fields', function () {
             tracer.vscode_executeCommand.run(span => {
                 span.record({ command: 'foo' })
@@ -195,7 +196,7 @@ describe('TelemetryTracer', function () {
         })
     })
 
-    describe('run', function () {
+    describe('run()', function () {
         it('returns the result of the function', function () {
             const result = tracer.run(metricName, () => 'foo')
 
@@ -214,7 +215,27 @@ describe('TelemetryTracer', function () {
             assertTelemetry(metricName, { result: 'Succeeded', source: 'bar' })
         })
 
-        describe('nested run', function () {
+        it('records standard fields on failed service request', async function () {
+            await assert.rejects(async () => {
+                await tracer.aws_loginWithBrowser.run(async () => {
+                    throw await getAwsServiceError()
+                })
+            })
+
+            assertTelemetry('aws_loginWithBrowser', {
+                result: 'Failed',
+                reason: 'InvalidRequestException',
+                reasonDesc: 'Invalid client ID provided',
+                httpStatusCode: '400',
+            })
+            const metric = getMetrics('aws_loginWithBrowser')[0]
+            assert.match(metric.awsAccount ?? '', /not-set|n\/a|\d+/)
+            assert.match(metric.awsRegion ?? '', /not-set|\w+-\w+-\d+/)
+            assert.match(String(metric.duration) ?? '', /\d+/)
+            assert.match(metric.requestId ?? '', /[a-z0-9-]+/)
+        })
+
+        describe('nested run()', function () {
             const nestedName = 'nested_metric' as MetricName
 
             it('can record metadata in nested spans', function () {

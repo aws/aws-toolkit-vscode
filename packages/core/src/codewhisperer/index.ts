@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export { activate, shutdown } from './activation'
-export * from './util/authUtil'
+export * from './indexCommon'
+
 export * from './models/model'
 export * as model from './models/model'
-export * from './models/constants'
 export * as CodeWhispererConstants from './models/constants'
 export * from './commands/basicCommands'
 export * from './commands/types'
@@ -74,7 +73,7 @@ export { DocumentChangedSource, KeyStrokeHandler, DefaultDocumentChangedType } f
 export { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
 export { LicenseUtil } from './util/licenseUtil'
 export { SecurityIssueProvider } from './service/securityIssueProvider'
-export { listScanResults } from './service/securityScanHandler'
+export { listScanResults, mapToAggregatedList } from './service/securityScanHandler'
 export { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
 export { TelemetryHelper } from './util/telemetryHelper'
 export { LineSelection, LineTracker } from './tracker/lineTracker'

@@ -46,6 +46,7 @@ import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { randomUUID } from '../../../common/crypto'
 import { LspController } from '../../../amazonq/lsp/lspController'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
+import { getHttpStatusCode } from '../../../shared/errors'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -589,7 +590,9 @@ export class ChatController {
         const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
         getLogger().info(
-            `request from tab: ${tabID} coversationID: ${session.sessionIdentifier} request: ${JSON.stringify(request)}`
+            `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${JSON.stringify(
+                request
+            )}`
         )
         let response: GenerateAssistantResponseCommandOutput | undefined = undefined
         session.createNewTokenSource()
@@ -600,13 +603,13 @@ export class ChatController {
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
 
             getLogger().info(
-                `response to tab: ${tabID} coversationID: ${session.sessionIdentifier} requestID: ${
+                `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${
                     response.$metadata.requestId
                 } metadata: ${JSON.stringify(response.$metadata)}`
             )
             await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
         } catch (e: any) {
-            this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, e?.$metadata?.httpStatusCode ?? 0)
+            this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, getHttpStatusCode(e) ?? 0)
             // clears session, record telemetry before this call
             this.processException(e, tabID)
         }
