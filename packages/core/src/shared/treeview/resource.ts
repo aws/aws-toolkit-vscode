@@ -140,7 +140,10 @@ export class ResourceTreeNode<T extends TreeResource<unknown>, U = never> implem
 
     private loader?: PageLoader<TreeNode<U>>
 
-    public constructor(public readonly resource: T, private readonly options?: TreeNodeOptions<U>) {
+    public constructor(
+        public readonly resource: T,
+        private readonly options?: TreeNodeOptions<U>
+    ) {
         registerLoadMore()
     }
 

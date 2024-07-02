@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import globals from '../../../shared/extensionGlobals'
 import { VueWebview } from '../../../webviews/main'
 import { Region } from '../../../shared/regions/endpoints'
-import { ToolkitError } from '../../../shared/errors'
+import { getTelemetryReasonDesc, ToolkitError } from '../../../shared/errors'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { trustedDomainCancellation } from '../../../auth/sso/model'
 import { handleWebviewError } from '../../../webviews/server'
@@ -227,7 +227,8 @@ export abstract class CommonAuthWebview extends VueWebview {
                 metadata.result = 'Cancelled'
             } else {
                 metadata.result = 'Failed'
-                metadata.reason = error.text
+                metadata.reason = error.id
+                metadata.reasonDesc = getTelemetryReasonDesc(error.text)
             }
         } else {
             metadata.result = 'Succeeded'

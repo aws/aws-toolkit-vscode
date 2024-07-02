@@ -2210,6 +2210,12 @@
                 },
                 "product": {
                     "shape": "UserContextProductString"
+                },
+                "clientId": {
+                    "shape": "UUID"
+                },
+                "ideVersion": {
+                    "shape": "String"
                 }
             }
         },

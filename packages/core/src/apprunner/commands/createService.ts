@@ -25,10 +25,10 @@ export async function createAppRunnerService(node: AppRunnerNode): Promise<void>
             result.SourceConfiguration.CodeRepository !== undefined
                 ? 'repository'
                 : result.SourceConfiguration.ImageRepository !== undefined
-                ? result.SourceConfiguration.ImageRepository.ImageRepositoryType === 'ECR_PUBLIC'
-                    ? 'ecrPublic'
-                    : 'ecr'
-                : undefined
+                  ? result.SourceConfiguration.ImageRepository.ImageRepositoryType === 'ECR_PUBLIC'
+                      ? 'ecrPublic'
+                      : 'ecr'
+                  : undefined
         telemetryResult = 'Succeeded'
     } finally {
         telemetry.apprunner_createService.emit({

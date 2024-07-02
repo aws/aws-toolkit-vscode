@@ -45,7 +45,10 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
     public readonly onDidSelectItem = this._onDidSelectItem.event
     public readonly onDidUpdateProgress = this._onDidUpdateProgress.event
 
-    public constructor(message: string, private readonly options?: MessageOptions<T>) {
+    public constructor(
+        message: string,
+        private readonly options?: MessageOptions<T>
+    ) {
         this._message = message
         this.modal = !!options?.modal
         this.severity = options?.severity ?? SeverityLevel.Information

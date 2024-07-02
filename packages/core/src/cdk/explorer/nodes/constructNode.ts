@@ -16,7 +16,10 @@ export class ConstructNode implements TreeNode {
     private readonly type = treeInspector.getTypeAttributeOrDefault(this.construct, '')
     private readonly properties = treeInspector.getProperties(this.construct)
 
-    public constructor(private readonly location: CdkAppLocation, private readonly construct: ConstructTreeEntity) {}
+    public constructor(
+        private readonly location: CdkAppLocation,
+        private readonly construct: ConstructTreeEntity
+    ) {}
 
     public get resource() {
         return {

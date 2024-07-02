@@ -200,7 +200,7 @@ export async function createClient(
 
 // XXX: the backend currently rejects empty strings for `alias` so the field must be removed if falsey
 function fixAliasInRequest<
-    T extends CodeCatalyst.CreateDevEnvironmentRequest | CodeCatalyst.UpdateDevEnvironmentRequest
+    T extends CodeCatalyst.CreateDevEnvironmentRequest | CodeCatalyst.UpdateDevEnvironmentRequest,
 >(request: T): T {
     if (!request.alias) {
         delete request.alias
@@ -228,7 +228,10 @@ class CodeCatalystClientInternal {
      */
     private static userDetailsCache = new Map<UserDetails['userId'], UserDetails>()
 
-    public constructor(private readonly connection: SsoConnection, private readonly sdkClient: CodeCatalyst) {
+    public constructor(
+        private readonly connection: SsoConnection,
+        private readonly sdkClient: CodeCatalyst
+    ) {
         this.log = logger.getLogger()
     }
 
