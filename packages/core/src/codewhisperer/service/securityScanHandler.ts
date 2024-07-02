@@ -5,6 +5,7 @@
 
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { getLogger } from '../../shared/logger'
+import * as vscode from 'vscode'
 import {
     AggregatedCodeScanIssue,
     CodeScanIssue,
@@ -44,7 +45,8 @@ export async function listScanResults(
     jobId: string,
     codeScanFindingsSchema: string,
     projectPaths: string[],
-    scope: CodeWhispererConstants.CodeAnalysisScope
+    scope: CodeWhispererConstants.CodeAnalysisScope,
+    editor: vscode.TextEditor | undefined
 ) {
     const logger = getLoggerForScope(scope)
     const codeScanIssueMap: Map<string, RawCodeScanIssue[]> = new Map()
@@ -62,7 +64,7 @@ export async function listScanResults(
         })
         .promise()
     issues.forEach(issue => {
-        mapToAggregatedList(codeScanIssueMap, issue)
+        mapToAggregatedList(codeScanIssueMap, issue, editor, scope)
     })
     codeScanIssueMap.forEach((issues, key) => {
         // Project path example: /Users/username/project
@@ -109,19 +111,32 @@ function mapRawToCodeScanIssue(issue: RawCodeScanIssue): CodeScanIssue {
     }
 }
 
-function mapToAggregatedList(codeScanIssueMap: Map<string, RawCodeScanIssue[]>, json: string) {
+export function mapToAggregatedList(
+    codeScanIssueMap: Map<string, RawCodeScanIssue[]>,
+    json: string,
+    editor: vscode.TextEditor | undefined,
+    scope: CodeWhispererConstants.CodeAnalysisScope
+) {
     const codeScanIssues: RawCodeScanIssue[] = JSON.parse(json)
-    codeScanIssues.forEach(issue => {
-        if (codeScanIssueMap.has(issue.filePath)) {
-            const list = codeScanIssueMap.get(issue.filePath)
-            if (list === undefined) {
-                codeScanIssueMap.set(issue.filePath, [issue])
-            } else {
-                list.push(issue)
-                codeScanIssueMap.set(issue.filePath, list)
+    const filteredIssues = codeScanIssues.filter(issue => {
+        if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE && editor) {
+            for (let lineNumber = issue.startLine; lineNumber <= issue.endLine; lineNumber++) {
+                const line = editor.document.lineAt(lineNumber - 1)?.text
+                const codeContent = issue.codeSnippet.find(codeIssue => codeIssue.number === lineNumber)?.content
+                if (line !== codeContent) {
+                    return false
+                }
             }
+        }
+        return true
+    })
+
+    filteredIssues.forEach(issue => {
+        const filePath = issue.filePath
+        if (codeScanIssueMap.has(filePath)) {
+            codeScanIssueMap.get(filePath)?.push(issue)
         } else {
-            codeScanIssueMap.set(issue.filePath, [issue])
+            codeScanIssueMap.set(filePath, [issue])
         }
     })
 }
