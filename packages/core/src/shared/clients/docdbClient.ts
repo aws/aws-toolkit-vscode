@@ -10,6 +10,7 @@ import { ToolkitError } from '../errors'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
 import * as DocDB from '@aws-sdk/client-docdb'
 import * as DocDBElastic from '@aws-sdk/client-docdb-elastic'
+import { CreateDBClusterMessage } from '@aws-sdk/client-docdb'
 
 function isElasticCluster(clusterId: string): boolean {
     return clusterId?.includes(':docdb-elastic:')
@@ -47,6 +48,19 @@ export class DefaultDocumentDBClient {
     public async getElasticClient(): Promise<DocDBElastic.DocDBElasticClient> {
         const config = await this.getSdkConfig()
         return new DocDBElastic.DocDBElasticClient(config)
+    }
+
+    public async listEngineVersions(): Promise<DocDB.DBEngineVersion[]> {
+        getLogger().debug('ListEngineVersions called')
+        const client = await this.getClient()
+
+        try {
+            const command = new DocDB.DescribeDBEngineVersionsCommand({ Engine: 'docdb' })
+            const response = await client.send(command)
+            return response.DBEngineVersions ?? []
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to get DocumentDB engine versions')
+        }
     }
 
     public async listClusters(): Promise<DocDB.DBCluster[]> {
@@ -92,6 +106,19 @@ export class DefaultDocumentDBClient {
             return response.clusters ?? []
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to get DocumentDB elastic clusters')
+        }
+    }
+
+    public async createCluster(input: CreateDBClusterMessage): Promise<DocDB.DBCluster | undefined> {
+        getLogger().debug('CreateCluster called')
+        const client = await this.getClient()
+
+        try {
+            const command = new DocDB.CreateDBClusterCommand(input)
+            const response = await client.send(command)
+            return response.DBCluster
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to create DocumentDB cluster')
         }
     }
 

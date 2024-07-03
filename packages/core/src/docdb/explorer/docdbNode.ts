@@ -4,15 +4,16 @@
  */
 
 import * as vscode from 'vscode'
+import { inspect } from 'util'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
-import { inspect } from 'util'
 import { DocumentDBClient } from '../../shared/clients/docdbClient'
 import { DBClusterNode } from './dbClusterNode'
 import { DBElasticClusterNode } from './dbElasticClusterNode'
 import { DBInstanceNode } from './dbInstanceNode'
+import { CreateDBClusterMessage, DBCluster } from '@aws-sdk/client-docdb'
 
 export type DBNode = DBClusterNode | DBElasticClusterNode | DBInstanceNode
 
@@ -22,9 +23,12 @@ export type DBNode = DBClusterNode | DBElasticClusterNode | DBInstanceNode
  * Contains clusters for a specific region as child nodes.
  */
 export class DocumentDBNode extends AWSTreeNodeBase {
-    public constructor(private readonly client: DocumentDBClient) {
+    public override readonly regionCode: string
+
+    public constructor(public readonly client: DocumentDBClient) {
         super('DocumentDB', vscode.TreeItemCollapsibleState.Collapsed)
         this.contextValue = 'awsDocDBNode'
+        this.regionCode = client.regionCode
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
@@ -42,6 +46,10 @@ export class DocumentDBNode extends AWSTreeNodeBase {
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.docdb.noClusters', '[No Clusters found]')),
         })
+    }
+
+    public async createCluster(request: CreateDBClusterMessage): Promise<DBCluster | undefined> {
+        return await this.client.createCluster(request)
     }
 
     public [inspect.custom](): string {
