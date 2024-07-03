@@ -325,42 +325,38 @@ export class LspController {
             // do not do anything if in Cloud9 or Web mode.
             return
         }
-
-        if (!CodeWhispererSettings.instance.isLocalIndexEnabled()) {
-            // only download LSP for users who did not turn on this feature
-            // do not start LSP server
-            LspController.instance.tryInstallLsp(context)
-            return
-        }
-
-        LspController.instance.tryInstallLsp(context).then(succeed => {
-            if (!succeed) {
+        setImmediate(async () => {
+            if (!CodeWhispererSettings.instance.isLocalIndexEnabled()) {
+                // only download LSP for users who did not turn on this feature
+                // do not start LSP server
+                await LspController.instance.tryInstallLsp(context)
                 return
             }
-            setImmediate(() => {
-                try {
-                    activateLsp(context).then(() => {
-                        getLogger().info('LspController: LSP activated')
-                        LspController.instance.buildIndex()
+            const ok = await LspController.instance.tryInstallLsp(context)
+            if (!ok) {
+                return
+            }
+            try {
+                await activateLsp(context)
+                getLogger().info('LspController: LSP activated')
+                LspController.instance.buildIndex()
 
-                        globals.clock.setInterval(
-                            async () => {
-                                const usage = await LspClient.instance.getLspServerUsage()
-                                if (usage) {
-                                    getLogger().info(
-                                        `LspController: LSP server CPU ${usage.cpuUsage}%, LSP server Memory ${
-                                            usage.memoryUsage / (1024 * 1024)
-                                        }MB  `
-                                    )
-                                }
-                            },
-                            20 * 60 * 1000
-                        )
-                    })
-                } catch (e) {
-                    getLogger().error(`LspController: LSP failed to activate ${e}`)
-                }
-            })
+                globals.clock.setInterval(
+                    async () => {
+                        const usage = await LspClient.instance.getLspServerUsage()
+                        if (usage) {
+                            getLogger().info(
+                                `LspController: LSP server CPU ${usage.cpuUsage}%, LSP server Memory ${
+                                    usage.memoryUsage / (1024 * 1024)
+                                }MB  `
+                            )
+                        }
+                    },
+                    20 * 60 * 1000
+                )
+            } catch (e) {
+                getLogger().error(`LspController: LSP failed to activate ${e}`)
+            }
         })
     }
 }
