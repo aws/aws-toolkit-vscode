@@ -79,7 +79,7 @@ export const mochaHooks = {
         }
 
         // Enable telemetry features for tests. The metrics won't actually be posted.
-        globals.telemetry.telemetryEnabled = true
+        await globals.telemetry.setTelemetryEnabled(true)
         globals.telemetry.clearRecords()
         globals.telemetry.logger.clear()
         TelemetryDebounceInfo.instance.clear()
