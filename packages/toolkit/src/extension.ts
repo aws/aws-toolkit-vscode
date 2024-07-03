@@ -56,24 +56,6 @@ export async function activate(context: ExtensionContext) {
             public constructor() {
                 super()
                 const form = this.form
-                // Note that steps should only be assigned in the constructor by convention
-                // This first step will always be shown as we did not specify any dependencies
-                // form.foo.bindPrompter(() => createInputBox({ title: 'Enter a string' }))
-                // const items = [
-                //     { label: 'Python', data: 'python' },
-                //     { label: 'Node JS', data: 'node' },
-                //     { label: 'Java', data: 'java' },
-                //     { label: 'Dot Net', data: 'dotnet' }
-
-                // ]
-                // this.form.bar.bindPrompter(({foo}:{foo:any}) => {
-                //     if (foo.length <= 5) {
-                //         return new SkipPrompter('')
-                //     }
-                //     return createQuickPick(items, { title: `Select a runtime` })
-                // })
-                // Our second step is only shown if the length of `foo` is greater than 5
-                // Because of this, we typed `bar` as potentially being `undefined` in `ExampleState`
 
                 // step1: choose runtime
                 const items = [
@@ -83,10 +65,6 @@ export async function activate(context: ExtensionContext) {
                     { label: 'Dot Net', data: 'dotnet' },
                 ]
                 form.runtime.bindPrompter(() => {
-                    // if (context.globalState.get('walkthroughSelected')== undefined) {
-                    //     vscode.window.showErrorMessage('Please select a template first');
-                    //     return new SkipPrompter('')
-                    // }
                     return createQuickPick(items, { title: `Select a runtime` })
                 })
 
@@ -94,7 +72,7 @@ export async function activate(context: ExtensionContext) {
                 const wsFolders = vscode.workspace.workspaceFolders
                 const items2 = [{ label: 'Open file explorer', data: 'file-selector' }]
 
-                // at least one open workspace
+                // if at least one open workspace, add all opened workspace as options
                 if (wsFolders) {
                     for (var wsFolder of wsFolders) {
                         items2.push({ label: wsFolder.uri.fsPath, data: wsFolder.uri.fsPath })
@@ -111,7 +89,7 @@ export async function activate(context: ExtensionContext) {
         // return if undefined
         console.log(result)
         if (!result) {
-            return
+            return undefined
         }
         // select folder and create project here
         const getProjectUri = () => {
@@ -143,7 +121,7 @@ export async function activate(context: ExtensionContext) {
         if (!projectUri) {
             // exit for non-vaild uri
             console.log('exit')
-            return
+            return undefined
         }
         // create project here
         // TODO update with file fetching from serverless land

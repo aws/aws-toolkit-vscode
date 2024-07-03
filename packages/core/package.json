@@ -3692,28 +3692,30 @@
                         "command": "1.[REST API Microservice](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D) \n2.[Image Resizing with S3](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D)"
                     },
                     {
-                        "id": "5",
-                        "title": "Choose your application runtime",
-                        "description": "Select an application runtime on the side",
+                        "id": "api1",
+                        "title": "%AWS.toolkit.walkthrough.appComposer.title%",
+                        "when": "walkthroughSelected == 'API'",
+                        "description": "%AWS.toolkit.walkthrough.api.placeholder%",
                         "media": {
-                            "markdown": "./resources/walkthrough/images/images-lambda/runtime_picker.md"
-                        },
-                        "command": "1.[REST API Microservice](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D) \n2.[Image Resizing with S3](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D)"
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
                     },
                     {
-                        "id": "6",
-                        "title": "Choose path to create project",
-                        "description": "Select an path and create project\n[Create Project](command:aws.toolkit.createWalkthroughProject)",
+                        "id": "api2",
+                        "title": "%AWS.toolkit.walkthrough.appBuilder.title%",
+                        "when": "walkthroughSelected == 'API'",
+                        "description": "%AWS.toolkit.walkthrough.api.placeholder%",
                         "media": {
-                            "markdown": "./resources/walkthrough/images/images-lambda/runtime_picker.md"
-                        },
-                        "command": "1.[REST API Microservice](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D) \n2.[Image Resizing with S3](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D)"
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
                     },
                     {
                         "id": "api3",
-                        "title": "%AWS.toolkit.walkthrough.appComposer.title%",
+                        "title": "%AWS.toolkit.walkthrough.build.title%",
                         "when": "walkthroughSelected == 'API'",
-                        "description": "This step should only appear when context is set to 1",
+                        "description": "%AWS.toolkit.walkthrough.api.placeholder%",
                         "media": {
                             "image": "media/image.png",
                             "altText": "Empty image"
@@ -3721,9 +3723,9 @@
                     },
                     {
                         "id": "api4",
-                        "title": "%AWS.toolkit.walkthrough.createLambda.title%",
+                        "title": "%AWS.toolkit.walkthrough.test.title%",
                         "when": "walkthroughSelected == 'API'",
-                        "description": "This step should only appear when context is set to 1",
+                        "description": "%AWS.toolkit.walkthrough.api.placeholder%",
                         "media": {
                             "image": "media/image.png",
                             "altText": "Empty image"
@@ -3731,9 +3733,9 @@
                     },
                     {
                         "id": "api5",
-                        "title": "%AWS.toolkit.walkthrough.localInvoke.title%",
+                        "title": "%AWS.toolkit.walkthrough.debug.title%",
                         "when": "walkthroughSelected == 'API'",
-                        "description": "This step should only appear when context is set to 1",
+                        "description": "%AWS.toolkit.walkthrough.api.placeholder%",
                         "media": {
                             "image": "media/image.png",
                             "altText": "Empty image"
@@ -3743,7 +3745,7 @@
                         "id": "api6",
                         "title": "%AWS.toolkit.walkthrough.deploy.title%",
                         "when": "walkthroughSelected == 'API'",
-                        "description": "This step should only appear when context is set to 1",
+                        "description": "%AWS.toolkit.walkthrough.api.placeholder%",
                         "media": {
                             "image": "media/image.png",
                             "altText": "Empty image"
@@ -3753,117 +3755,77 @@
                         "id": "api7",
                         "title": "%AWS.toolkit.walkthrough.remoteInovke.title%",
                         "when": "walkthroughSelected == 'API'",
-                        "description": "This step should only appear when context is set to 1",
+                        "description": "%AWS.toolkit.walkthrough.api.placeholder%",
                         "media": {
                             "image": "media/image.png",
                             "altText": "Empty image"
                         }
                     },
                     {
-                        "id": "s3-3",
+                        "id": "S3-1",
                         "title": "%AWS.toolkit.walkthrough.appComposer.title%",
                         "when": "walkthroughSelected == 'S3'",
-                        "description": "This step should only appear when context is set to 2",
+                        "description": "%AWS.toolkit.walkthrough.s3.placeholder%",
                         "media": {
                             "image": "media/image.png",
                             "altText": "Empty image"
                         }
                     },
                     {
-                        "id": "s3-4",
-                        "title": "%AWS.toolkit.walkthrough.createLambda.title%",
+                        "id": "S3-2",
+                        "title": "%AWS.toolkit.walkthrough.appBuilder.title%",
                         "when": "walkthroughSelected == 'S3'",
-                        "description": "This step should only appear when context is set to 2",
+                        "description": "%AWS.toolkit.walkthrough.s3.placeholder%",
                         "media": {
                             "image": "media/image.png",
                             "altText": "Empty image"
                         }
                     },
                     {
-                        "id": "s3-5",
-                        "title": "%AWS.toolkit.walkthrough.localInvoke.title%",
+                        "id": "S3-3",
+                        "title": "%AWS.toolkit.walkthrough.build.title%",
                         "when": "walkthroughSelected == 'S3'",
-                        "description": "This step should only appear when context is set to 2",
+                        "description": "%AWS.toolkit.walkthrough.s3.placeholder%",
                         "media": {
                             "image": "media/image.png",
                             "altText": "Empty image"
                         }
                     },
                     {
-                        "id": "s3-6",
+                        "id": "S3-4",
+                        "title": "%AWS.toolkit.walkthrough.test.title%",
+                        "when": "walkthroughSelected == 'S3'",
+                        "description": "%AWS.toolkit.walkthrough.s3.placeholder%",
+                        "media": {
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "S3-5",
+                        "title": "%AWS.toolkit.walkthrough.debug.title%",
+                        "when": "walkthroughSelected == 'S3'",
+                        "description": "%AWS.toolkit.walkthrough.s3.placeholder%",
+                        "media": {
+                            "image": "media/image.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "S3-6",
                         "title": "%AWS.toolkit.walkthrough.deploy.title%",
                         "when": "walkthroughSelected == 'S3'",
-                        "description": "This step should only appear when context is set to 2",
+                        "description": "%AWS.toolkit.walkthrough.s3.placeholder%",
                         "media": {
                             "image": "media/image.png",
                             "altText": "Empty image"
                         }
                     },
                     {
-                        "id": "s3-7",
+                        "id": "S3-7",
                         "title": "%AWS.toolkit.walkthrough.remoteInovke.title%",
                         "when": "walkthroughSelected == 'S3'",
-                        "description": "This step should only appear when context is set to 2",
-                        "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "placeholder2",
-                        "title": "%AWS.toolkit.walkthrough.create.title%",
-                        "when": "walkthroughSelected not in aws.toolkit.availableWalkthroughs",
-                        "description": "%AWS.toolkit.walkthrough.gWNotSelected.description%",
-                        "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "placeholder3",
-                        "title": "%AWS.toolkit.walkthrough.appComposer.title%",
-                        "when": "walkthroughSelected not in aws.toolkit.availableWalkthroughs",
-                        "description": "%AWS.toolkit.walkthrough.gWNotSelected.description%",
-                        "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "placeholder4",
-                        "title": "%AWS.toolkit.walkthrough.createLambda.title%",
-                        "when": "walkthroughSelected not in aws.toolkit.availableWalkthroughs",
-                        "description": "%AWS.toolkit.walkthrough.gWNotSelected.description%",
-                        "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "placeholder5",
-                        "title": "%AWS.toolkit.walkthrough.localInvoke.title%",
-                        "when": "walkthroughSelected not in aws.toolkit.availableWalkthroughs",
-                        "description": "%AWS.toolkit.walkthrough.gWNotSelected.description%",
-                        "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "placeholder6",
-                        "title": "%AWS.toolkit.walkthrough.deploy.title%",
-                        "when": "walkthroughSelected not in aws.toolkit.availableWalkthroughs",
-                        "description": "%AWS.toolkit.walkthrough.gWNotSelected.description%",
-                        "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "placeholder7",
-                        "title": "%AWS.toolkit.walkthrough.remoteInovke.title%",
-                        "when": "walkthroughSelected not in aws.toolkit.availableWalkthroughs",
-                        "description": "%AWS.toolkit.walkthrough.gWNotSelected.description%",
+                        "description": "%AWS.toolkit.walkthrough.s3.placeholder%",
                         "media": {
                             "image": "media/image.png",
                             "altText": "Empty image"
