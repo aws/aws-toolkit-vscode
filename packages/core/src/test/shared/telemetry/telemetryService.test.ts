@@ -47,7 +47,7 @@ describe('TelemetryService', function () {
     async function initService(awsContext = new FakeAwsContext()): Promise<DefaultTelemetryService> {
         const newService = await DefaultTelemetryService.create(mockContext, awsContext, undefined, mockPublisher)
         newService.flushPeriod = testFlushPeriod
-        newService.telemetryEnabled = true
+        await newService.setTelemetryEnabled(true)
 
         return newService
     }
@@ -80,7 +80,7 @@ describe('TelemetryService', function () {
     })
 
     it('posts feedback', async function () {
-        service.telemetryEnabled = false
+        await service.setTelemetryEnabled(false)
         const feedback = { comment: '', sentiment: '' }
         await service.postFeedback(feedback)
 
@@ -238,23 +238,24 @@ describe('TelemetryService', function () {
         assertMetadataContainsTestAccount(metricData[0], AccountStatus.NotSet)
     })
 
-    it('events are never recorded if telemetry has been disabled', async function () {
+    it('new events are not recorded if telemetry has been disabled', async function () {
         stubGlobal()
 
-        service.telemetryEnabled = false
+        service.record(fakeMetric({ metricName: 'first' })) // emits 1 metric
+        await service.setTelemetryEnabled(false)
         await service.start()
 
-        // telemetry off: events are never recorded
-        service.record(fakeMetric({ metricName: 'name' }))
+        // telemetry off: new events are never recorded
+        service.record(fakeMetric({ metricName: 'second' })) // would emit 1 metric
         await service.shutdown()
         await clock.tickAsync(testFlushPeriod * 2)
 
-        // events are never flushed
-        assert.strictEqual(mockPublisher.flushCount, 0)
-        assert.strictEqual(mockPublisher.enqueueCount, 0)
-        assert.strictEqual(mockPublisher.queue.length, 0)
-        // and events are not kept in memory
-        assert.strictEqual(logger.metricCount, 0)
+        // only the events prior to disabling are recorded
+        assert.strictEqual(mockPublisher.flushCount, 1)
+        assert.strictEqual(mockPublisher.enqueueCount, 1)
+        assert.strictEqual(mockPublisher.queue.length, 1)
+        // and newer events are not kept in memory
+        assert.strictEqual(logger.metricCount, 1)
     })
 
     function assertMetadataContainsTestAccount(
