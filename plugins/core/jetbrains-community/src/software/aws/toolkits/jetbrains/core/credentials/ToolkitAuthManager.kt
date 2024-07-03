@@ -105,6 +105,9 @@ interface ToolkitConnectionManager : Disposable {
 
 /**
  * Individual service should subscribe [ToolkitConnectionManagerListener.TOPIC] to fire their service activation / UX update
+ *
+ * IMPORTANT: Do *not* update this method signature without consultation; an internal partner consumes this method.
+ * Inter-plugin calls require relinking on each method signature change, even if it looks safe from a Kotlin standpoint.
  */
 @Deprecated("Connections created through this function are not written to the user's ~/.aws/config file")
 fun loginSso(
