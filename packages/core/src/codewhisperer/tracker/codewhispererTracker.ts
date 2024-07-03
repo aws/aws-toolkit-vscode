@@ -14,6 +14,7 @@ import { AuthUtil } from '../util/authUtil'
 import { InsertedCode } from '../../codewhispererChat/controllers/chat/model'
 import { codeWhispererClient } from '../client/codewhisperer'
 import { logSendTelemetryEventFailure } from '../../codewhispererChat/controllers/chat/telemetryHelper'
+import { Timeout } from '../../shared/utilities/timeoutUtils'
 
 /**
  * This singleton class is mainly used for calculating the percentage of user modification.
@@ -21,7 +22,7 @@ import { logSendTelemetryEventFailure } from '../../codewhispererChat/controller
  */
 export class CodeWhispererTracker {
     private _eventQueue: (AcceptedSuggestionEntry | InsertedCode)[]
-    private _timer?: NodeJS.Timer
+    private _timer?: Timeout
     private static instance: CodeWhispererTracker
 
     /**
@@ -158,7 +159,8 @@ export class CodeWhispererTracker {
 
     public async startTimer() {
         if (!this._timer) {
-            this._timer = setTimeout(async () => {
+            this._timer = new Timeout(CodeWhispererTracker.defaultCheckPeriodMillis)
+            this._timer.onCompletion(async () => {
                 try {
                     await this.flush()
                 } finally {
@@ -166,13 +168,13 @@ export class CodeWhispererTracker {
                         this._timer!.refresh()
                     }
                 }
-            }, CodeWhispererTracker.defaultCheckPeriodMillis)
+            })
         }
     }
 
     public closeTimer() {
         if (this._timer !== undefined) {
-            clearTimeout(this._timer)
+            this._timer.cancel()
             this._timer = undefined
         }
     }
