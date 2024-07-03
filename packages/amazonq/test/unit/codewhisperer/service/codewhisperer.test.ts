@@ -36,9 +36,9 @@ describe('codewhisperer', async function () {
         telemetryEnabledDefault = globals.telemetry.telemetryEnabled
     })
 
-    afterEach(function () {
+    afterEach(async function () {
         sinon.restore()
-        globals.telemetry.telemetryEnabled = telemetryEnabledDefault
+        await globals.telemetry.setTelemetryEnabled(telemetryEnabledDefault)
     })
 
     it('sendTelemetryEvent for userTriggerDecision should respect telemetry optout status', async function () {
@@ -137,7 +137,7 @@ describe('codewhisperer', async function () {
         } as Request<SendTelemetryEventResponse, AWSError>)
 
         const authUtilStub = sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(isSso)
-        globals.telemetry.telemetryEnabled = isTelemetryEnabled
+        await globals.telemetry.setTelemetryEnabled(isTelemetryEnabled)
         await codeWhispererClient.sendTelemetryEvent({ telemetryEvent: payload })
         const expectedOptOutPreference = isTelemetryEnabled ? 'OPTIN' : 'OPTOUT'
         if (isSso || isTelemetryEnabled) {
