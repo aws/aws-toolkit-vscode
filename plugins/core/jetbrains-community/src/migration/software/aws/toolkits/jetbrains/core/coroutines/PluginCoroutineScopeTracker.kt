@@ -10,9 +10,12 @@ import com.intellij.openapi.util.Disposer
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.ThreadContextElement
 import kotlinx.coroutines.cancel
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineBgContext
+import software.aws.toolkits.jetbrains.services.telemetry.PluginResolver
 import java.util.concurrent.CancellationException
+import kotlin.coroutines.CoroutineContext
 
 class PluginCoroutineScopeTracker : Disposable {
     @PublishedApi
@@ -27,11 +30,30 @@ class PluginCoroutineScopeTracker : Disposable {
 }
 
 private class BackgroundThreadPoolScope(coroutineName: String, disposable: Disposable) : CoroutineScope {
-    override val coroutineContext = SupervisorJob() + CoroutineName(coroutineName) + getCoroutineBgContext()
+    override val coroutineContext = SupervisorJob() +
+        CoroutineName(coroutineName) +
+        getCoroutineBgContext() +
+        PluginResolverThreadContextElement(PluginResolver.fromCurrentThread())
 
     init {
         Disposer.register(disposable) {
             coroutineContext.cancel(CancellationException("Parent disposable was disposed"))
         }
+    }
+}
+
+private class PluginResolverThreadContextElement(val pluginResolver: PluginResolver) : ThreadContextElement<PluginResolver> {
+    companion object Key : CoroutineContext.Key<PluginResolverThreadContextElement>
+
+    override val key = Key
+
+    override fun updateThreadContext(context: CoroutineContext): PluginResolver {
+        val oldPluginResolver = PluginResolver.fromCurrentThread()
+        PluginResolver.setThreadLocal(pluginResolver)
+        return oldPluginResolver
+    }
+
+    override fun restoreThreadContext(context: CoroutineContext, oldState: PluginResolver) {
+        PluginResolver.setThreadLocal(oldState)
     }
 }
