@@ -13,7 +13,7 @@
  * TODO: IDE-12831 tracks work to eliminate this script.
  *
  * Args:
- *   --restore: (XXX: this mode was inlined into the package.ts script.)
+ *   --restore: reverts the package json changes to the original state
  *   --development: performs actions that should only be done during development and not production
  */
 
@@ -21,8 +21,7 @@ import * as fs from 'fs-extra'
 
 function main() {
     const args = process.argv.slice(2)
-    // XXX: --restore mode was inlined into the package.ts script.
-    const restoreMode = false
+    const restoreMode = args.includes('--restore')
 
     if (args.includes('--development')) {
         /** When we actually package the extension the null extension does not occur, so we will skip this hack */
@@ -34,14 +33,13 @@ function main() {
     const coreLibPackageJsonFile = '../core/package.json'
 
     if (restoreMode) {
-        // XXX: --restore mode was inlined into the package.ts script.
         // TODO: IDE-12831 will eliminate this entire script.
-        // try {
-        //     fs.copyFileSync(backupJsonFile, packageJsonFile)
-        //     fs.unlinkSync(backupJsonFile)
-        // } catch (err) {
-        //     console.log(`Could not restore package.json. Error: ${err}`)
-        // }
+        try {
+            fs.copyFileSync(backupJsonFile, packageJsonFile)
+            fs.unlinkSync(backupJsonFile)
+        } catch (err) {
+            console.log(`Could not restore package.json. Error: ${err}`)
+        }
     } else {
         fs.copyFileSync(packageJsonFile, backupJsonFile)
         const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))

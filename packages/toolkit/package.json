@@ -71,7 +71,8 @@
         "createRelease": "ts-node ../../scripts/createRelease.ts",
         "newChange": "ts-node ../../scripts/newChange.ts",
         "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
-        "copyPackageJson": "ts-node ./scripts/build/handlePackageJson"
+        "copyPackageJson": "ts-node ./scripts/build/handlePackageJson",
+        "restorePackageJson": "ts-node ./scripts/build/handlePackageJson --restore"
     },
     "devDependencies": {},
     "dependencies": {
