@@ -25,7 +25,7 @@ describe('createClusterCommand', function () {
         sandbox = sinon.createSandbox()
         spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
-        docdb = { regionCode: 'us-east-1' } as any as DocumentDBClient
+        docdb = { regionCode: 'us-east-1' } as DocumentDBClient
         docdb.listEngineVersions = sinon.stub().resolves([{ EngineVersion: 'test-version' }])
         node = new DocumentDBNode(docdb)
     })
