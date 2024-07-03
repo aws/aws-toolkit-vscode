@@ -8,14 +8,14 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { CdkAppLocation, getApp } from '../../cdk/explorer/cdkProject'
-import { ConstructNode, isStateMachine } from '../../cdk/explorer/nodes/constructNode'
-import { detectCdkProjects } from '../../cdk/explorer/detectCdkProjects'
+import { CdkAppLocation, getApp } from '../../awsService/cdk/explorer/cdkProject'
+import { ConstructNode, isStateMachine } from '../../awsService/cdk/explorer/nodes/constructNode'
+import { detectCdkProjects } from '../../awsService/cdk/explorer/detectCdkProjects'
 import { Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
 import { createQuickPick } from '../../shared/ui/pickerPrompter'
 import { createCommonButtons } from '../../shared/ui/buttons'
-import { ConstructTreeEntity } from '../../cdk/explorer/tree/types'
-import { getDisplayLabel } from '../../cdk/explorer/tree/treeInspector'
+import { ConstructTreeEntity } from '../../awsService/cdk/explorer/tree/types'
+import { getDisplayLabel } from '../../awsService/cdk/explorer/tree/treeInspector'
 
 function createLocationPrompter() {
     const items = detectCdkProjects(vscode.workspace.workspaceFolders).then(locations => {
