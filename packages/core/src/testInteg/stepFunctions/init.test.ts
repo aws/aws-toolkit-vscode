@@ -7,6 +7,7 @@ import assert from 'assert'
 import { createTestWorkspaceFolder, openATextEditorWithText } from '../../test/testUtil'
 import vscode from 'vscode'
 import { ASLLanguageClient } from '../../stepFunctions/asl/client'
+import { waitUntil } from '../../shared'
 
 describe('stepFunctions ASL LSP', async function () {
     let tempFolder: string
@@ -23,10 +24,9 @@ describe('stepFunctions ASL LSP', async function () {
 }`
         const fileName = 'stepfunction.asl'
         const editor = await openATextEditorWithText(stateMachineFileText, fileName, tempFolder)
-        await new Promise(resolve => {
-            ASLLanguageClient.onASLInit(() => {
-                resolve(undefined)
-            })
+        await waitUntil(async () => ASLLanguageClient.isReady, {
+            timeout: 30000,
+            interval: 500,
         })
         const result = (await vscode.commands.executeCommand(
             'vscode.executeCompletionItemProvider',
