@@ -17,6 +17,7 @@ import { sanitizeFilename } from './textUtilities'
 import { GitIgnoreAcceptor } from '@gerhobbelt/gitignore-parser'
 import * as parser from '@gerhobbelt/gitignore-parser'
 import { fsCommon } from '../../srcShared/fs'
+import { maxRepoSizeBytes } from '../../amazonqFeatureDev/constants'
 
 type GitIgnoreRelativeAcceptor = {
     folderPath: string
@@ -295,6 +296,35 @@ async function filterOutGitignoredFiles(rootPath: string, files: vscode.Uri[]): 
 }
 
 /**
+ * Get the size of the currently sleected workspace and return it in bytes
+ * @param sourcePaths the paths where collection starts
+ * @param workspaceFolders the current workspace folders opened
+ * @param respectGitIgnore whether to respect gitignore file
+ * @returns the size of the workspace in bytes
+ *
+ */
+export async function getWorkspaceSize(
+    sourcePaths: string[],
+    workspaceFolders: CurrentWsFolders,
+    respectGitIgnore: boolean = true
+): Promise<number> {
+    let totalSizeBytes = 0
+    for (const rootPath of sourcePaths) {
+        const allFiles = await vscode.workspace.findFiles(
+            new vscode.RelativePattern(rootPath, '**'),
+            getExcludePattern()
+        )
+        const files = respectGitIgnore ? await filterOutGitignoredFiles(rootPath, allFiles) : allFiles
+
+        for (const file of files) {
+            const fileStat = await fsCommon.stat(file)
+            totalSizeBytes += fileStat.size
+        }
+    }
+    return totalSizeBytes
+}
+
+/**
  * collects all files that are marked as source
  * @param sourcePaths the paths where collection starts
  * @param workspaceFolders the current workspace folders opened
@@ -305,7 +335,7 @@ export async function collectFiles(
     sourcePaths: string[],
     workspaceFolders: CurrentWsFolders,
     respectGitIgnore: boolean = true,
-    maxSize = 200 * 1024 * 1024 // 200 MB
+    maxSize = maxRepoSizeBytes
 ): Promise<
     {
         workspaceFolder: vscode.WorkspaceFolder
@@ -315,6 +345,14 @@ export async function collectFiles(
         zipFilePath: string
     }[]
 > {
+    const workspaceSize = await getWorkspaceSize(sourcePaths, workspaceFolders, respectGitIgnore)
+    if (workspaceSize > maxSize) {
+        throw new ToolkitError(
+            'The project you have selected for source code is too large to use as context. Please select a different folder to use',
+            { code: 'ContentLengthError' }
+        )
+    }
+
     const storage: Awaited<ReturnType<typeof collectFiles>> = []
 
     const workspaceFoldersMapping = getWorkspaceFoldersByPrefixes(workspaceFolders)
