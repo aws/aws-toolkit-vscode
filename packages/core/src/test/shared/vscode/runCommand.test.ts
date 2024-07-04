@@ -6,20 +6,19 @@
 import globals from '../../../shared/extensionGlobals'
 
 import os from 'os'
-import vscode from 'vscode'
 import { promises as fsPromises } from 'fs'
 import * as sinon from 'sinon'
 import assert from 'assert'
-import { ToolkitError, UnknownError } from '../../../shared/errors'
+import { ToolkitError } from '../../../shared/errors'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { Commands, defaultTelemetryThrottleMs } from '../../../shared/vscode/commands2'
-import { assertTelemetry, installFakeClock } from '../../testUtil'
+import { assertTelemetry, getMetrics, installFakeClock } from '../../testUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import { makeTemporaryToolkitFolder } from '../../../shared'
 import path from 'path'
-import { SamCliError } from '../../../shared/sam/cli/samCliInvokerUtils'
 import * as env from '../../../shared/vscode/env'
+import { fakeErrorChain, getAwsServiceError } from '../errors.test'
 
 async function throwMe(errorOrFn?: Error | (() => Promise<never>)): Promise<void | never> {
     if (errorOrFn && !(errorOrFn instanceof Error)) {
@@ -28,40 +27,6 @@ async function throwMe(errorOrFn?: Error | (() => Promise<never>)): Promise<void
 
     if (errorOrFn) {
         throw errorOrFn
-    }
-}
-
-/** Creates a deep "cause chain", to test that error handler correctly gets the most relevant error. */
-export function fakeErrorChain(rootCause?: Error, toolkitErrors: boolean = true) {
-    try {
-        if (rootCause) {
-            throw rootCause
-        } else {
-            throw new Error('generic error 1')
-        }
-    } catch (e1) {
-        try {
-            const e = new UnknownError(e1)
-            throw e
-        } catch (e2) {
-            try {
-                const e = toolkitErrors ? new SamCliError('sam error', { cause: e2 as Error }) : new Error('error 3')
-                if (!toolkitErrors) {
-                    ;(e as any).cause = e2
-                }
-                throw e
-            } catch (e3) {
-                const e = toolkitErrors
-                    ? ToolkitError.chain(e3, 'ToolkitError message', {
-                          documentationUri: vscode.Uri.parse('https://docs.aws.amazon.com/toolkit-for-vscode/'),
-                      })
-                    : new Error('last error')
-                if (!toolkitErrors) {
-                    ;(e as any).cause = e3
-                }
-                throw e
-            }
-        }
     }
 }
 
@@ -191,7 +156,7 @@ describe('runCommand', function () {
                 viewLogsDialog.then(dialog => dialog.close()),
                 testCommand.execute(async () => {
                     const err = await SystemUtilities.writeFile(unwritableFile, 'bar').catch(e => e)
-                    throw fakeErrorChain(err, false)
+                    throw fakeErrorChain(err, new Error('error 3'))
                 }),
             ])
 
@@ -209,13 +174,33 @@ describe('runCommand', function () {
                 viewLogsDialog.then(dialog => dialog.close()),
                 testCommand.execute(async () => {
                     const err = await fsPromises.writeFile(unwritableFile, 'bar').catch(e => e)
-                    throw fakeErrorChain(err, false)
+                    throw fakeErrorChain(err, new Error('error 3'))
                 }),
             ])
 
             // TODO: commands.run() should use getBestError (if the top error is not ToolkitError)?
             // assertTelem('EACCES')
             assertTelem('Error')
+        })
+
+        it('AWS service error', async function () {
+            const expectedMsg = /Invalid client ID provided/
+            const viewLogsDialog = getTestWindow().waitForMessage(expectedMsg)
+            await Promise.all([
+                viewLogsDialog.then(dialog => dialog.close()),
+                testCommand.execute(async () => {
+                    const err = await getAwsServiceError()
+
+                    throw err
+                }),
+            ])
+
+            assertTelem('InvalidRequestException')
+            const metric = getMetrics('vscode_executeCommand')[0]
+            assert.match(metric.awsAccount ?? '', /not-set|n\/a|\d+/)
+            assert.match(metric.awsRegion ?? '', /not-set|\w+-\w+-\d+/)
+            assert.match(String(metric.duration) ?? '', /\d+/)
+            assert.match(metric.requestId ?? '', /[a-z0-9-]+/)
         })
     })
 

@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
+import { ConstructTreeEntity } from '../../../awsService/cdk/explorer/tree/types'
 import {
     getStateMachines,
     PreviewStateMachineCDKWizard,

@@ -106,6 +106,7 @@ const mockCodeScanFindings = JSON.stringify([
             },
             suggestedFixes: [],
         },
+        codeSnippet: [],
     } satisfies model.RawCodeScanIssue,
 ])
 
