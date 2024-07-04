@@ -17,6 +17,7 @@ import { ToolkitError } from '../../shared/errors'
 import { AmazonqCreateUpload, Metric } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from './telemetryHelper'
 import { maxRepoSizeBytes } from '../constants'
+import { isCodeRelatedFile } from './fileExtension'
 
 const getSha256 = (file: Buffer) => createHash('sha256').update(file).digest('base64')
 
@@ -36,8 +37,10 @@ export async function prepareRepoData(
         let totalBytes = 0
         for (const file of files) {
             const fileSize = (await vscode.workspace.fs.stat(file.fileUri)).size
+            const isCodeFile = isCodeRelatedFile(file.relativeFilePath)
 
-            if (fileSize >= maxFileSizeBytes) {
+            // TODO: Follow up with telemetry events to record excluded files extensions
+            if (fileSize >= maxFileSizeBytes || !isCodeFile) {
                 continue
             }
             totalBytes += fileSize
