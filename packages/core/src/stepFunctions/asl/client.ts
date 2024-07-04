@@ -26,7 +26,6 @@ import {
     TextEdit,
     window,
     workspace,
-    EventEmitter,
 } from 'vscode'
 
 import {
@@ -53,8 +52,7 @@ interface Settings {
 }
 
 export class ASLLanguageClient {
-    private static ASLInit = new EventEmitter<void>()
-    static onASLInit = this.ASLInit.event
+    static isReady = false
 
     /**
      * Starts the ASL LSP client/server and creates related resources (vscode `OutputChannel`,
@@ -173,7 +171,7 @@ export class ASLLanguageClient {
                     `${message}\nUse setting 'aws.stepfunctions.asl.maxItemsComputed' to configure the limit.`
                 )
             })
-            this.ASLInit.fire()
+            this.isReady = true
         })
     }
 }
