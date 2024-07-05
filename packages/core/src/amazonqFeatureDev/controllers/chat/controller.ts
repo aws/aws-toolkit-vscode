@@ -22,6 +22,7 @@ import {
     UploadCodeError,
     UserMessageNotFoundError,
     WorkspaceFolderNotFoundError,
+    ZipFileError,
     createUserFacingErrorMessage,
     denyListedErrors,
 } from '../../errors'
@@ -273,6 +274,9 @@ export class FeatureDevController {
                     this.retriesRemaining(session),
                     session?.conversationIdUnsafe
                 )
+                break
+            case ZipFileError.name:
+                this.messenger.sendErrorMessage(errorMessage, message.tabID, 0, session?.conversationIdUnsafe, true)
                 break
             case CodeIterationLimitError.name:
                 this.messenger.sendAnswer({

@@ -86,6 +86,12 @@ export class ContentLengthError extends ToolkitError {
     }
 }
 
+export class ZipFileError extends ToolkitError {
+    constructor() {
+        super('The zip file is corrupted', { code: 'ZipFileError' })
+    }
+}
+
 export class PlanIterationLimitError extends ToolkitError {
     constructor() {
         super(
