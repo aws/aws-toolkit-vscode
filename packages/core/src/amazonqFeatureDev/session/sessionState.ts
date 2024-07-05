@@ -15,6 +15,7 @@ import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { featureDevScheme } from '../constants'
 import { IllegalStateTransition, UserMessageNotFoundError } from '../errors'
 import {
+    CodeGenerationStatus,
     CurrentWsFolders,
     DeletedFileInfo,
     DevPhase,
@@ -41,10 +42,7 @@ export class ConversationNotStartedState implements Omit<SessionState, 'uploadId
     public tokenSource: vscode.CancellationTokenSource
     public readonly phase = DevPhase.INIT
 
-    constructor(
-        public approach: string,
-        public tabID: string
-    ) {
+    constructor(public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.approach = ''
     }
@@ -57,11 +55,7 @@ export class ConversationNotStartedState implements Omit<SessionState, 'uploadId
 export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
     public readonly phase = DevPhase.APPROACH
-    constructor(
-        private config: Omit<SessionStateConfig, 'uploadId'>,
-        public approach: string,
-        public tabID: string
-    ) {
+    constructor(private config: Omit<SessionStateConfig, 'uploadId'>, public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
 
@@ -231,10 +225,7 @@ abstract class CodeGenBase {
     public readonly conversationId: string
     public readonly uploadId: string
 
-    constructor(
-        protected config: SessionStateConfig,
-        public tabID: string
-    ) {
+    constructor(protected config: SessionStateConfig, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.conversationId = config.conversationId
         this.uploadId = config.uploadId
@@ -263,8 +254,8 @@ abstract class CodeGenBase {
             const codegenResult = await this.config.proxyClient.getCodeGeneration(this.conversationId, codeGenerationId)
             getLogger().debug(`Codegen response: %O`, codegenResult)
             telemetry.setCodeGenerationResult(codegenResult.codeGenerationStatus.status)
-            switch (codegenResult.codeGenerationStatus.status) {
-                case 'Complete': {
+            switch (codegenResult.codeGenerationStatus.status as CodeGenerationStatus) {
+                case CodeGenerationStatus.COMPLETE: {
                     const { newFileContents, deletedFiles, references } =
                         await this.config.proxyClient.exportResultArchive(this.conversationId)
                     const newFileInfo = registerNewFiles(fs, newFileContents, this.uploadId, workspaceFolders)
@@ -275,14 +266,14 @@ abstract class CodeGenBase {
                         references,
                     }
                 }
-                case 'predict-ready':
-                case 'InProgress': {
+                case CodeGenerationStatus.PREDICT_READY:
+                case CodeGenerationStatus.IN_PROGRESS: {
                     await new Promise(f => globals.clock.setTimeout(f, this.requestDelay))
                     break
                 }
-                case 'predict-failed':
-                case 'debate-failed':
-                case 'Failed': {
+                case CodeGenerationStatus.PREDICT_FAILED:
+                case CodeGenerationStatus.DEBATE_FAILED:
+                case CodeGenerationStatus.FAILED: {
                     /** 
                      * 
                      * TODO: Here we need to implement the granular error handling for 
@@ -389,11 +380,7 @@ export class MockCodeGenState implements SessionState {
     public readonly conversationId: string
     public readonly uploadId: string
 
-    constructor(
-        private config: SessionStateConfig,
-        public approach: string,
-        public tabID: string
-    ) {
+    constructor(private config: SessionStateConfig, public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.filePaths = []
         this.deletedFiles = []
