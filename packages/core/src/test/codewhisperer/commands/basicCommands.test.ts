@@ -459,11 +459,11 @@ describe('CodeWhisperer-basicCommands', function () {
             getTestWindow().onDidShowQuickPick(async e => {
                 e.assertContainsItems(
                     createAutoSuggestions(false),
-                    createSelectCustomization(),
                     createOpenReferenceLog(),
                     createGettingStarted(),
                     createAutoScans(false),
                     createSecurityScan(),
+                    createSelectCustomization(),
                     switchToAmazonQNode(),
                     ...genericItems(),
                     createSettingsNode(),
