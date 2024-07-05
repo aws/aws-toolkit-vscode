@@ -45,6 +45,7 @@ import { triggerPayloadToChatRequest } from './chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { randomUUID } from '../../../common/crypto'
+import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
 import { getHttpStatusCode } from '../../../shared/errors'
 
 export interface ChatControllerMessagePublishers {
@@ -388,6 +389,7 @@ export class ChatController {
                         matchPolicy: context?.activeFileContext?.matchPolicy,
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getFromContextMenuCommand(command),
+                        customization: getSelectedCustomization(),
                     },
                     triggerID
                 )
@@ -465,6 +467,7 @@ export class ChatController {
                     matchPolicy: lastTriggerEvent.context?.activeFileContext?.matchPolicy,
                     codeQuery: lastTriggerEvent.context?.focusAreaContext?.names,
                     userIntent: message.userIntent,
+                    customization: getSelectedCustomization(),
                 },
                 triggerID
             )
@@ -497,6 +500,7 @@ export class ChatController {
                         matchPolicy: context?.activeFileContext?.matchPolicy,
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getFromPromptChatMessage(message),
+                        customization: getSelectedCustomization(),
                     },
                     triggerID
                 )

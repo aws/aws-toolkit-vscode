@@ -11,6 +11,7 @@ import {
     TextDocument,
 } from '@amzn/codewhisperer-streaming'
 import { TriggerPayload } from '../model'
+import { undefinedIfEmpty } from '../../../../shared'
 
 const fqnNameSizeDownLimit = 1
 const fqnNameSizeUpLimit = 256
@@ -90,6 +91,9 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): Gen
         }
     }
 
+    // service will throw validation exception if string is empty
+    const customizationArn: string | undefined = undefinedIfEmpty(triggerPayload.customization.arn)
+
     return {
         conversationState: {
             currentMessage: {
@@ -107,6 +111,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): Gen
                 },
             },
             chatTriggerType: 'MANUAL',
+            customizationArn: customizationArn,
         },
     }
 }
