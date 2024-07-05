@@ -387,3 +387,11 @@ export function getRandomString(length = 32) {
 export function toBase64URL(base64: string) {
     return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
+
+export function undefinedIfEmpty(str: string | undefined): string | undefined {
+    if (str && str.trim().length > 0) {
+        return str
+    }
+
+    return undefined
+}
