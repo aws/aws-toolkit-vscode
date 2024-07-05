@@ -2012,6 +2012,9 @@
                     "command": "aws.docdb.stopCluster",
                     "when": "viewItem =~ /^awsDocDB.cluster.running/"
                 },
+                {
+                    "command": "aws.docdb.createInstance",
+                    "when": "viewItem == awsDocDB.cluster.running"
                 }
             ],
             "aws.toolkit.auth": [
@@ -3559,6 +3562,18 @@
             {
                 "command": "aws.docdb.createCluster",
                 "title": "%AWS.command.docdb.createCluster%",
+                "icon": "$(add)",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.createInstance",
+                "title": "%AWS.command.docdb.createInstance%",
                 "icon": "$(add)",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",

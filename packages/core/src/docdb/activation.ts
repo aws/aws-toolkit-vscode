@@ -6,7 +6,9 @@
 import { Commands } from '../shared'
 import { ExtContext } from '../shared/extensions'
 import { DBNode, DocumentDBNode } from './explorer/docdbNode'
+import { DBClusterNode } from './explorer/dbClusterNode'
 import { createCluster } from './commands/createCluster'
+import { createInstance } from './commands/createInstance'
 import { startCluster, stopCluster } from './commands/commands'
 
 /**
@@ -25,6 +27,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
         Commands.register('aws.docdb.stopCluster', async (node?: DBNode) => {
             await stopCluster(node)
+        }),
+
+        Commands.register('aws.docdb.createInstance', async (node: DBClusterNode) => {
+            await createInstance(node)
         })
     )
 }

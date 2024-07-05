@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import { inspect } from 'util'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { DBCluster } from '@aws-sdk/client-docdb'
+import { CreateDBInstanceMessage, DBCluster } from '@aws-sdk/client-docdb'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { DBInstanceNode } from './dbInstanceNode'
@@ -72,6 +72,10 @@ export class DBClusterNode extends AWSTreeNodeBase implements AWSResourceNode {
             return this.status!
         }
         return false
+    }
+
+    public async createInstance(request: CreateDBInstanceMessage): Promise<DBInstance | undefined> {
+        return await this.client.createInstance(request)
     }
 
     public get status(): string | undefined {

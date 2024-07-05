@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { validateClusterName, validatePassword, validateUsername } from '../../docdb/utils'
+import { validateClusterName, validateInstanceName, validatePassword, validateUsername } from '../../docdb/utils'
 
 describe('validateClusterName', function () {
     it('Validates cluster name is not blank', function () {
@@ -96,6 +96,43 @@ describe('validatePassword', function () {
 
     it('Allows passwords with printable ASCII characters', function () {
         const message = validatePassword('passw0rd |~')
+        assert.strictEqual(message, undefined)
+    })
+})
+
+describe('validateInstanceName', function () {
+    it('Validates instance name is not blank', function () {
+        const message = validateInstanceName('')
+        assert.strictEqual(message, 'Instance name must be between 1 and 63 characters long')
+    })
+
+    it('Validates instance name is not too long', function () {
+        const message = validateInstanceName('c'.repeat(64))
+        assert.strictEqual(message, 'Instance name must be between 1 and 63 characters long')
+    })
+
+    it('Validates instance name starts with a lowercase letter', function () {
+        const message = validateInstanceName('404')
+        assert.strictEqual(message, 'Instance name must start with a lowercase letter')
+    })
+
+    it('Validates instance name does not contain uppercase characters', function () {
+        const message = validateInstanceName('abcDEF')
+        assert.strictEqual(message, 'Instance name must only contain lowercase letters, numbers, and hyphens')
+    })
+
+    it('Validates instance name does not end with a dash', function () {
+        const message = validateInstanceName('abc-')
+        assert.strictEqual(message, 'Instance name cannot end with a hyphen or contain 2 consecutive hyphens')
+    })
+
+    it("Validates instance name does not contain '--'", function () {
+        const message = validateInstanceName('a--b')
+        assert.strictEqual(message, 'Instance name cannot end with a hyphen or contain 2 consecutive hyphens')
+    })
+
+    it('Allows lowercase names with numbers and dashes', function () {
+        const message = validateInstanceName('a-2')
         assert.strictEqual(message, undefined)
     })
 })

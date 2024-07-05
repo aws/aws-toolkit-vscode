@@ -91,3 +91,40 @@ export function validatePassword(password: string): string | undefined {
 
     return undefined
 }
+
+/**
+ * Validates an instance name for the CreateInstance API.
+ * @see https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/docdb/command/CreateDBInstanceCommand/
+ * @returns undefined if the name passes validation. Otherwise, an error message is returned.
+ */
+export function validateInstanceName(name: string): string | undefined {
+    if (name.length < 1 || name.length > 63) {
+        return localize(
+            'AWS.docdb.validateInstanceName.error.invalidLength',
+            'Instance name must be between 1 and 63 characters long'
+        )
+    }
+
+    if (!/^[a-z]/.test(name)) {
+        return localize(
+            'AWS.docdb.validateInstanceName.error.invalidStart',
+            'Instance name must start with a lowercase letter'
+        )
+    }
+
+    if (/-$/.test(name) || /--/.test(name)) {
+        return localize(
+            'AWS.docdb.validateInstanceName.error.invalidEnd',
+            'Instance name cannot end with a hyphen or contain 2 consecutive hyphens'
+        )
+    }
+
+    if (!/^[a-z0-9\-]+$/.test(name)) {
+        return localize(
+            'AWS.docdb.validateInstanceName.error.invalidCharacters',
+            'Instance name must only contain lowercase letters, numbers, and hyphens'
+        )
+    }
+
+    return undefined
+}

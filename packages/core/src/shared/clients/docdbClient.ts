@@ -10,11 +10,15 @@ import { ToolkitError } from '../errors'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
 import * as DocDB from '@aws-sdk/client-docdb'
 import * as DocDBElastic from '@aws-sdk/client-docdb-elastic'
-import { CreateDBClusterMessage } from '@aws-sdk/client-docdb'
+import { OrderableDBInstanceOption } from '@aws-sdk/client-docdb'
+
+const DocDBEngine = 'docdb'
 
 function isElasticCluster(clusterId: string): boolean {
     return clusterId?.includes(':docdb-elastic:')
 }
+
+export const DBStorageType = { Standard: 'standard', IOpt1: 'iopt1' } as const
 
 /**
  * <p>A list of Amazon DocumentDB clusters.</p>
@@ -55,11 +59,36 @@ export class DefaultDocumentDBClient {
         const client = await this.getClient()
 
         try {
-            const command = new DocDB.DescribeDBEngineVersionsCommand({ Engine: 'docdb' })
+            const command = new DocDB.DescribeDBEngineVersionsCommand({ Engine: DocDBEngine })
             const response = await client.send(command)
             return response.DBEngineVersions ?? []
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to get DocumentDB engine versions')
+        }
+    }
+
+    // Ideally, we would return AsyncCollection or iterator
+    public async listInstanceClassOptions(
+        engineVersion: string | undefined,
+        storageType: string | undefined
+    ): Promise<DocDB.OrderableDBInstanceOption[]> {
+        getLogger().debug('ListInstanceClassOptions called')
+        const client = await this.getClient()
+
+        try {
+            const instanceClasses: OrderableDBInstanceOption[] = []
+            const input = {
+                Engine: DocDBEngine,
+                EngineVersion: engineVersion,
+            }
+            const paginator = DocDB.paginateDescribeOrderableDBInstanceOptions({ client }, input)
+            for await (const page of paginator) {
+                instanceClasses.push(...(page.OrderableDBInstanceOptions ?? []))
+            }
+
+            return instanceClasses.filter(ic => storageType === ic.StorageType || storageType === undefined)
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to get instance classes')
         }
     }
 
@@ -69,7 +98,7 @@ export class DefaultDocumentDBClient {
 
         try {
             const input = {
-                Filters: [{ Name: 'engine', Values: ['docdb'] }],
+                Filters: [{ Name: 'engine', Values: [DocDBEngine] }],
             }
             const command = new DocDB.DescribeDBClustersCommand(input)
             const response = await client.send(command)
@@ -109,7 +138,7 @@ export class DefaultDocumentDBClient {
         }
     }
 
-    public async createCluster(input: CreateDBClusterMessage): Promise<DocDB.DBCluster | undefined> {
+    public async createCluster(input: DocDB.CreateDBClusterMessage): Promise<DocDB.DBCluster | undefined> {
         getLogger().debug('CreateCluster called')
         const client = await this.getClient()
 
@@ -153,6 +182,19 @@ export class DefaultDocumentDBClient {
             }
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to stop DocumentDB cluster')
+        }
+    }
+
+    public async createInstance(input: DocDB.CreateDBInstanceMessage): Promise<DocDB.DBInstance | undefined> {
+        getLogger().debug('CreateInstance called')
+        const client = await this.getClient()
+
+        try {
+            const command = new DocDB.CreateDBInstanceCommand(input)
+            const response = await client.send(command)
+            return response.DBInstance
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to create DocumentDB instance')
         }
     }
 }
