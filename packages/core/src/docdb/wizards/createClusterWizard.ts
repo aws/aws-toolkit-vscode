@@ -15,7 +15,7 @@ import { createCommonButtons } from '../../shared/ui/buttons'
 
 const DocDBHelpUrl = 'https://docs.aws.amazon.com/documentdb/latest/developerguide/db-cluster-parameters.html'
 
-export interface CreateWizardState extends CreateDBClusterMessage {
+export interface CreateClusterState extends CreateDBClusterMessage {
     // Required fields
     readonly DBClusterIdentifier: string
     readonly Engine: 'docdb'
@@ -32,11 +32,11 @@ export interface CreateWizardState extends CreateDBClusterMessage {
 /**
  * A wizard to prompt configuration of a new cluster
  */
-export class CreateClusterWizard extends Wizard<CreateWizardState> {
+export class CreateClusterWizard extends Wizard<CreateClusterState> {
     title: string
     constructor(
         region: string,
-        options: WizardOptions<CreateWizardState> = {},
+        options: WizardOptions<CreateClusterState> = {},
         readonly client: DocumentDBClient = new DefaultDocumentDBClient(region)
     ) {
         super({

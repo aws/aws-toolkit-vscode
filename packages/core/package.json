@@ -2006,11 +2006,12 @@
                 },
                 {
                     "command": "aws.docdb.startCluster",
-                    "when": "viewItem == DBClusterStoppedNode"
+                    "when": "viewItem =~ /^awsDocDB.cluster.stopped/"
                 },
                 {
                     "command": "aws.docdb.stopCluster",
-                    "when": "viewItem == DBClusterRunningNode"
+                    "when": "viewItem =~ /^awsDocDB.cluster.running/"
+                },
                 }
             ],
             "aws.toolkit.auth": [
@@ -3572,14 +3573,14 @@
                 "title": "%AWS.command.docdb.startCluster%",
                 "icon": "$(debug-start)",
                 "category": "%AWS.title%",
-                "enablement": "!aws.isWebExtHost && viewItem == DBClusterStoppedNode"
+                "enablement": "!aws.isWebExtHost && viewItem == awsDocDB.cluster.stopped"
             },
             {
                 "command": "aws.docdb.stopCluster",
                 "title": "%AWS.command.docdb.stopCluster%",
                 "icon": "$(debug-stop)",
                 "category": "%AWS.title%",
-                "enablement": "!aws.isWebExtHost && viewItem == DBClusterRunningNode"
+                "enablement": "!aws.isWebExtHost && viewItem =~ /^awsDocDB.cluster.running/"
             }
         ],
         "jsonValidation": [

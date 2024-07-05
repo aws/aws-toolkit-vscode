@@ -8,13 +8,7 @@ import { inspect } from 'util'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { DBElasticCluster, DocumentDBClient } from '../../shared/clients/docdbClient'
-import {
-    DBClusterNodeContext,
-    DBClusterPendingContext,
-    DBClusterRunningContext,
-    DBClusterStoppedContext,
-} from './dbClusterNode'
-import { DocumentDBNode } from './docdbNode'
+import { DocDBContext, DocDBNodeContext, DocumentDBNode } from './docdbNode'
 
 /**
  * An AWS Explorer node representing DocumentDB elastic clusters.
@@ -38,17 +32,17 @@ export class DBElasticClusterNode extends AWSTreeNodeBase implements AWSResource
         this.tooltip = `${this.name}\nStatus: ${this.status}`
     }
 
-    private getContext(): DBClusterNodeContext {
+    private getContext(): DocDBNodeContext {
         if (this.status === 'active') {
-            return DBClusterRunningContext
+            return DocDBContext.ClusterRunning
         } else if (this.status === 'stopped') {
-            return DBClusterStoppedContext
+            return DocDBContext.ClusterStopped
         }
-        return DBClusterPendingContext
+        return DocDBContext.Cluster
     }
 
     public getDescription(): string | boolean {
-        if (this.contextValue !== (DBClusterRunningContext as string)) {
+        if (this.contextValue !== (DocDBContext.ClusterRunning as string)) {
             return this.status!
         }
         return false

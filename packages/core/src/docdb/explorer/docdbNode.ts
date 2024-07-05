@@ -17,6 +17,15 @@ import { CreateDBClusterMessage, DBCluster } from '@aws-sdk/client-docdb'
 
 export type DBNode = DBClusterNode | DBElasticClusterNode | DBInstanceNode
 
+export const DocDBContext = {
+    Cluster: 'awsDocDB.cluster',
+    ClusterRunning: 'awsDocDB.cluster.running',
+    ClusterStopped: 'awsDocDB.cluster.stopped',
+    Instance: 'awsDocDB.instance',
+} as const
+
+export type DocDBNodeContext = (typeof DocDBContext)[keyof typeof DocDBContext]
+
 /**
  * An AWS Explorer node representing DocumentDB.
  *
