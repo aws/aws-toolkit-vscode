@@ -214,7 +214,8 @@
                 "conversationId":{"shape":"ConversationId"},
                 "history":{"shape":"ChatHistory"},
                 "currentMessage":{"shape":"ChatMessage"},
-                "chatTriggerType":{"shape":"ChatTriggerType"}
+                "chatTriggerType":{"shape":"ChatTriggerType"},
+                "customizationArn":{"shape": "ResourceArn"}
             }
         },
         "CursorState":{
@@ -478,6 +479,12 @@
             "member":{"shape":"Reference"},
             "max":10,
             "min":0
+        },
+        "ResourceArn":{
+            "type":"string",
+            "max":1224,
+            "min":0,
+            "pattern":"arn:([-.a-z0-9]{1,63}:){2}([-.a-z0-9]{0,63}:){2}([a-zA-Z0-9-_:/]){1,1023}"
         },
         "ResourceNotFoundException":{
             "type":"structure",

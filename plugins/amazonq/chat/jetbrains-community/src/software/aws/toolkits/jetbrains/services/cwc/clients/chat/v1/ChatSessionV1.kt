@@ -211,6 +211,7 @@ class ChatSessionV1(
             .conversationId(conversationId)
             .currentMessage(ChatMessage.fromUserInputMessage(userInput))
             .chatTriggerType(ChatTriggerType.MANUAL)
+            .customizationArn(customization?.arn)
             .build()
         return GenerateAssistantResponseRequest.builder()
             .conversationState(conversationState)

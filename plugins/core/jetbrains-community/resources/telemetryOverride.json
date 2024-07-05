@@ -461,6 +461,10 @@
                 {
                     "type": "credentialStartUrl",
                     "required": false
+                },
+                {
+                    "type": "codewhispererCustomizationArn",
+                    "required": false
                 }
             ]
         },

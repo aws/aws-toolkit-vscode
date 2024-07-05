@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.cwc.clients.chat.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import software.amazon.awssdk.services.codewhispererstreaming.model.UserIntent
+import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererCustomization
 import software.aws.toolkits.jetbrains.services.cwc.editor.context.ActiveFileContext
 
 enum class TriggerType {
@@ -19,7 +20,8 @@ data class ChatRequestData(
     val message: String,
     val activeFileContext: ActiveFileContext,
     val userIntent: UserIntent?,
-    val triggerType: TriggerType
+    val triggerType: TriggerType,
+    val customization: CodeWhispererCustomization?
 )
 
 interface CodeNames {

@@ -59,7 +59,7 @@ class QStatusBarLoggedInActionGroup : DefaultActionGroup() {
 
             add(Separator.create())
             add(Separator.create(message("codewhisperer.statusbar.sub_menu.other_features.title")))
-            addAll(buildActionListForOtherFeatures(actionProvider))
+            addAll(buildActionListForOtherFeatures(it, actionProvider))
 
             add(Separator.create())
             add(Separator.create(message("codewhisperer.statusbar.sub_menu.connect_help.title")))
