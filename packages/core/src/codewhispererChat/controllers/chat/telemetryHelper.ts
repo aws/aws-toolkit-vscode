@@ -338,6 +338,7 @@ export class CWCTelemetryHelper {
             cwsprChatResponseLength: message.messageLength,
             cwsprChatConversationType: 'Chat',
             credentialStartUrl: AuthUtil.instance.startUrl,
+            codewhispererCustomizationArn: triggerPayload.customization.arn,
         }
 
         telemetry.amazonq_addMessage.emit(event)
