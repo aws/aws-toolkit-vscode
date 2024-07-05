@@ -4,8 +4,10 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions
 
 import com.intellij.openapi.project.Project
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
+import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager
-import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isUserBuilderId
@@ -27,9 +29,9 @@ interface ActionProvider<T> {
     val documentation: T
 }
 
-fun<T> buildActionListForInlineSuggestions(project: Project, actionProvider: ActionProvider<T>): List<T> {
+@SuppressWarnings("UnusedParameter")
+fun <T> buildActionListForInlineSuggestions(project: Project, actionProvider: ActionProvider<T>): List<T> {
     val manager = CodeWhispererExplorerActionManager.getInstance()
-    val activeConnectionType = manager.checkActiveCodeWhispererConnectionType(project)
 
     return buildList {
         if (manager.isAutoEnabled()) {
@@ -40,18 +42,11 @@ fun<T> buildActionListForInlineSuggestions(project: Project, actionProvider: Act
 
         add(actionProvider.openCodeReference)
 
-        // We only show this customization node to SSO users who are in CodeWhisperer Gated Preview list
-        if (activeConnectionType == CodeWhispererLoginType.SSO &&
-            CodeWhispererModelConfigurator.getInstance().shouldDisplayCustomNode(project)
-        ) {
-            add(actionProvider.customize)
-        }
-
         add(actionProvider.learn)
     }
 }
 
-fun<T> buildActionListForCodeScan(project: Project, actionProvider: ActionProvider<T>): List<T> =
+fun <T> buildActionListForCodeScan(project: Project, actionProvider: ActionProvider<T>): List<T> =
     buildList {
         val codeScanManager = CodeWhispererCodeScanManager.getInstance(project)
         val manager = CodeWhispererExplorerActionManager.getInstance()
@@ -69,14 +64,21 @@ fun<T> buildActionListForCodeScan(project: Project, actionProvider: ActionProvid
         }
     }
 
-fun<T> buildActionListForOtherFeatures(actionProvider: ActionProvider<T>): List<T> =
+fun <T> buildActionListForOtherFeatures(project: Project, actionProvider: ActionProvider<T>): List<T> =
     buildList {
         if (!isRunningOnRemoteBackend()) {
             add(actionProvider.openChatPanel)
         }
+
+        val isIdC = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(QConnection.getInstance()).let { conn ->
+            conn != null && !conn.isSono()
+        }
+        if (isIdC && CodeWhispererModelConfigurator.getInstance().shouldDisplayCustomNode(project)) {
+            add(actionProvider.customize)
+        }
     }
 
-fun<T> buildActionListForConnectHelp(actionProvider: ActionProvider<T>): List<T> =
+fun <T> buildActionListForConnectHelp(actionProvider: ActionProvider<T>): List<T> =
     buildList {
         add(actionProvider.sendFeedback)
         add(actionProvider.connectOnGithub)

@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.job
 import kotlinx.coroutines.withContext
+import migration.software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
 import software.amazon.awssdk.services.codewhispererstreaming.model.UserIntent
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
@@ -356,6 +357,7 @@ class ChatController private constructor(
             activeFileContext = activeFileContext,
             userIntent = userIntent,
             triggerType = triggerType,
+            customization = CodeWhispererModelConfigurator.getInstance().activeCustomization(context.project)
         )
 
         val sessionInfo = getSessionInfo(tabId)

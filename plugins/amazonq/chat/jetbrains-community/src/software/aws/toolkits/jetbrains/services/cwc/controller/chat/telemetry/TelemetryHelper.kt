@@ -104,7 +104,8 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
             cwsprChatRequestLength = data.message.length,
             cwsprChatResponseLength = responseLength,
             cwsprChatConversationType = CwsprChatConversationType.Chat,
-            credentialStartUrl = getStartUrl(context.project)
+            credentialStartUrl = getStartUrl(context.project),
+            codewhispererCustomizationArn = data.customization?.arn
         )
 
         val programmingLanguage = data.activeFileContext.fileContext?.fileLanguage
