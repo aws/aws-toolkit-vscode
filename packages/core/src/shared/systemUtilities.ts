@@ -15,7 +15,7 @@ import { getLogger } from './logger/logger'
 import { GitExtension } from './extensions/git'
 import { isCloud9 } from './extensionUtilities'
 import { Settings } from './settings'
-import { PermissionsError, PermissionsTriplet, isFileNotFoundError } from './errors'
+import { PermissionsError, PermissionsTriplet } from './errors'
 import globals, { isWeb } from './extensionGlobals'
 
 export class SystemUtilities {
@@ -83,33 +83,11 @@ export class SystemUtilities {
     }
 
     public static async fileExists(file: string | vscode.Uri): Promise<boolean> {
-        const uri = this.toUri(file)
-
-        if (isCloud9()) {
-            return fsPromises.access(uri.fsPath, fs.constants.F_OK).then(
-                () => true,
-                () => false
-            )
-        }
-
-        return vscode.workspace.fs.stat(uri).then(
-            () => true,
-            err => !isFileNotFoundError(err)
-        )
+        return fs2.exists(file)
     }
 
     public static async createDirectory(file: string | vscode.Uri): Promise<void> {
-        const uri = this.toUri(file)
-        const errorHandler = createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx')
-
-        if (isCloud9()) {
-            return fsPromises
-                .mkdir(uri.fsPath, { recursive: true })
-                .then(() => {})
-                .catch(errorHandler)
-        }
-
-        return vscode.workspace.fs.createDirectory(uri).then(undefined, errorHandler)
+        return fs2.mkdir(file)
     }
 
     /** Converts the given path to a URI if necessary */

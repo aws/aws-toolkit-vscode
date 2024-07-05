@@ -80,21 +80,6 @@ describe('SystemUtilities', function () {
         })
     })
 
-    describe('fileExists', function () {
-        it('returns true if file exists', async function () {
-            const filename: string = path.join(tempFolder, 'existing-file.txt')
-
-            fs.writeFileSync(filename, 'hello world', 'utf8')
-
-            assert.strictEqual(await SystemUtilities.fileExists(filename), true)
-        })
-
-        it('returns false if file does not exist', async function () {
-            const filename: string = path.join(tempFolder, 'non-existing-file.txt')
-            assert.strictEqual(await SystemUtilities.fileExists(filename), false)
-        })
-    })
-
     it('findTypescriptCompiler()', async function () {
         const iswin = process.platform === 'win32'
         const workspace = vscode.workspace.workspaceFolders![0]
@@ -126,6 +111,7 @@ describe('SystemUtilities', function () {
     })
 
     if (process.platform !== 'win32') {
+        // TODO: move these tests to fs.test.ts
         describe('permissions', function () {
             let runCounter = 0
 

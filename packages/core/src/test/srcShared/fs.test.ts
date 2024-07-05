@@ -125,34 +125,45 @@ describe('FileSystem', function () {
     })
 
     describe('existsFile()', function () {
-        it('returns true for an existing file', async function () {
-            const filePath = await makeFile('test.txt')
-            const existantFile = await fsCommon.existsFile(filePath)
-            assert.strictEqual(existantFile, true)
+        it('true for existing file', async function () {
+            const file = await makeFile('test.txt')
+            assert.strictEqual(await fsCommon.existsFile(file), true)
         })
 
-        it('returns false for a non-existant file', async function () {
-            const nonExistantFile = await fsCommon.existsFile(createTestPath('thisDoesNotExist.txt'))
-            assert.strictEqual(nonExistantFile, false)
+        it('false for non-existent file', async function () {
+            const nonExistantFile = createTestPath('thisDoesNotExist.txt')
+            assert.strictEqual(await fsCommon.existsFile(nonExistantFile), false)
         })
 
-        it('returns false when directory with same name exists', async function () {
-            const directoryPath = mkTestDir('thisIsDirectory')
-            const existantFile = await fsCommon.existsFile(directoryPath)
-            assert.strictEqual(existantFile, false)
+        it('false for existing directory', async function () {
+            const dir = mkTestDir('thisIsDirectory')
+            assert.strictEqual(await fsCommon.existsFile(dir), false)
         })
     })
 
     describe('existsDir()', function () {
-        it('returns true for an existing directory', async function () {
-            const dirPath = mkTestDir('myDir')
-            const existantDirectory = await fsCommon.existsDir(dirPath)
-            assert.strictEqual(existantDirectory, true)
+        it('true for existing directory', async function () {
+            const dir = mkTestDir('myDir')
+            assert.strictEqual(await fsCommon.existsDir(dir), true)
         })
 
-        it('returns false for a non-existant directory', async function () {
-            const nonExistantDirectory = await fsCommon.existsDir(createTestPath('thisDirDoesNotExist'))
-            assert.strictEqual(nonExistantDirectory, false)
+        it('false for non-existent directory', async function () {
+            const noFile = createTestPath('non-existent')
+            assert.strictEqual(await fsCommon.existsDir(noFile), false)
+        })
+    })
+
+    describe('exists()', function () {
+        it('true for existing file/directory', async function () {
+            const dir = mkTestDir('myDir')
+            const file = await makeFile('test.txt')
+            assert.strictEqual(await fsCommon.exists(dir), true)
+            assert.strictEqual(await fsCommon.exists(file), true)
+        })
+
+        it('false for non-existent file/directory', async function () {
+            const noFile = createTestPath('non-existent')
+            assert.strictEqual(await fsCommon.exists(noFile), false)
         })
     })
 

@@ -69,16 +69,19 @@ export class FileSystemCommon {
 
     /** Creates the directory as well as missing parent directories. */
     async mkdir(path: Uri | string): Promise<void> {
-        const uriPath = FileSystemCommon.getUri(path)
+        const uri = FileSystemCommon.getUri(path)
+        const errorHandler = createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx')
 
         // Certain URIs are not supported with vscode.workspace.fs in C9
         // so revert to using `fs` which works.
         if (isCloud9()) {
-            await nodefs.mkdir(uriPath.fsPath, { recursive: true })
-            return
+            return nodefs
+                .mkdir(uri.fsPath, { recursive: true })
+                .then(() => {})
+                .catch(errorHandler)
         }
 
-        return vfs.createDirectory(uriPath)
+        return vfs.createDirectory(uri).then(undefined, errorHandler)
     }
 
     async readFile(path: Uri | string): Promise<Uint8Array> {
@@ -112,12 +115,12 @@ export class FileSystemCommon {
     }
 
     async exists(path: Uri | string, fileType?: vscode.FileType): Promise<boolean> {
-        path = FileSystemCommon.getUri(path)
+        const uri = FileSystemCommon.getUri(path)
 
         if (isCloud9()) {
             // vscode.workspace.fs.stat() is SLOW. Avoid it on Cloud9.
             try {
-                const stat = await nodefs.stat(path.fsPath)
+                const stat = await nodefs.stat(uri.fsPath)
                 // Note: comparison is bitwise (&) because `FileType` enum is bitwise.
                 // See vscode.FileType docstring.
                 if (fileType === undefined || fileType & vscode.FileType.Unknown) {
@@ -132,13 +135,14 @@ export class FileSystemCommon {
             }
         }
 
-        try {
-            const stat = await this.stat(path)
-            // check filetype if it was given
-            return fileType === undefined ? true : stat.type === fileType
-        } catch (e) {
-            return false
+        const r = await this.stat(uri).then(
+            r => r,
+            err => !isFileNotFoundError(err)
+        )
+        if (typeof r === 'boolean') {
+            return r
         }
+        return fileType === undefined ? true : r.type === fileType
     }
 
     async existsFile(path: Uri | string): Promise<boolean> {
