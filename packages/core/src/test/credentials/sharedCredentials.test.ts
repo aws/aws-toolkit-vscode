@@ -6,8 +6,6 @@
 import assert from 'assert'
 import * as path from 'path'
 import * as fs from 'fs-extra'
-import * as sinon from 'sinon'
-import * as pathUtils from '../../shared/utilities/pathUtils'
 import { EnvironmentVariables } from '../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { getCredentialsFilename, getConfigFilename } from '../../auth/credentials/sharedCredentialsFile'
@@ -19,7 +17,6 @@ describe('sharedCredentials', function () {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
         tempFolder = await makeTemporaryToolkitFolder()
-        sinon.stub(pathUtils, 'isValidPath').returns(true)
     })
 
     afterEach(async function () {
@@ -30,7 +27,6 @@ describe('sharedCredentials', function () {
 
     after(async function () {
         await fs.remove(tempFolder)
-        sinon.restore()
     })
 
     describe('getCredentialsFilename', function () {

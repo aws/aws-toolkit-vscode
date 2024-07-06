@@ -3,17 +3,26 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
+import os from 'os'
 import { promises as nodefs, constants as nodeConstants, WriteFileOptions } from 'fs'
 import { isCloud9 } from '../shared/extensionUtilities'
 import _path from 'path'
-import { PermissionsError, PermissionsTriplet, isFileNotFoundError, isPermissionsError } from '../shared/errors'
-import { isWeb } from '../shared/extensionGlobals'
+import {
+    PermissionsError,
+    PermissionsTriplet,
+    ToolkitError,
+    isFileNotFoundError,
+    isPermissionsError,
+} from '../shared/errors'
+import globals from '../shared/extensionGlobals'
 import { getUserInfo, isWin } from '../shared/vscode/env'
+import { resolvePath } from '../shared/utilities/pathUtils'
 
 const vfs = vscode.workspace.fs
 type Uri = vscode.Uri
 
-export function createPermissionsErrorHandler(
+function createPermissionsErrorHandler(
+    isWeb: boolean,
     uri: vscode.Uri,
     perms: PermissionsTriplet
 ): (err: unknown, depth?: number) => Promise<never> {
@@ -27,7 +36,7 @@ export function createPermissionsErrorHandler(
 
         const userInfo = getUserInfo()
 
-        if (isWeb()) {
+        if (isWeb) {
             const stats = await fsCommon.stat(uri)
             throw new PermissionsError(uri, stats, userInfo, perms, err)
         }
@@ -37,7 +46,7 @@ export function createPermissionsErrorHandler(
                 throw err
             }
 
-            throw await createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx')(err2, depth + 1)
+            throw await createPermissionsErrorHandler(isWeb, vscode.Uri.joinPath(uri, '..'), '*wx')(err2, depth + 1)
         })
 
         throw new PermissionsError(uri, stats, userInfo, perms, err)
@@ -70,7 +79,7 @@ export class FileSystemCommon {
     /** Creates the directory as well as missing parent directories. */
     async mkdir(path: Uri | string): Promise<void> {
         const uri = this.#toUri(path)
-        const errHandler = createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx')
+        const errHandler = createPermissionsErrorHandler(this.isWeb, vscode.Uri.joinPath(uri, '..'), '*wx')
 
         // Certain URIs are not supported with vscode.workspace.fs in Cloud9
         // so revert to using `fs` which works.
@@ -87,7 +96,7 @@ export class FileSystemCommon {
     // TODO: rename to readFileBytes()?
     async readFile(path: Uri | string): Promise<Uint8Array> {
         const uri = this.#toUri(path)
-        const errHandler = createPermissionsErrorHandler(uri, 'r**')
+        const errHandler = createPermissionsErrorHandler(this.isWeb, uri, 'r**')
 
         if (isCloud9()) {
             return await nodefs.readFile(uri.fsPath).catch(errHandler)
@@ -124,15 +133,21 @@ export class FileSystemCommon {
     }
 
     async exists(path: Uri | string, fileType?: vscode.FileType): Promise<boolean> {
+        if (path === undefined || path === '') {
+            return false
+        }
         const uri = this.#toUri(path)
+        if (uri.fsPath === undefined || uri.fsPath === '') {
+            return false
+        }
+        // Note: comparison is bitwise (&) because `FileType` enum is bitwise.
+        const anyKind = fileType === undefined || fileType & vscode.FileType.Unknown
 
         if (isCloud9()) {
             // vscode.workspace.fs.stat() is SLOW. Avoid it on Cloud9.
             try {
                 const stat = await nodefs.stat(uri.fsPath)
-                // Note: comparison is bitwise (&) because `FileType` enum is bitwise.
-                // See vscode.FileType docstring.
-                if (fileType === undefined || fileType & vscode.FileType.Unknown) {
+                if (anyKind) {
                     return true
                 } else if (fileType & vscode.FileType.Directory) {
                     return stat.isDirectory()
@@ -151,7 +166,7 @@ export class FileSystemCommon {
         if (typeof r === 'boolean') {
             return r
         }
-        return fileType === undefined ? true : r.type === fileType
+        return anyKind ? true : !!(r.type & fileType)
     }
 
     async existsFile(path: Uri | string): Promise<boolean> {
@@ -174,13 +189,13 @@ export class FileSystemCommon {
      */
     async writeFile(path: Uri | string, data: string | Uint8Array, opt?: WriteFileOptions): Promise<void> {
         const uri = this.#toUri(path)
-        const errHandler = createPermissionsErrorHandler(uri, '*w*')
+        const errHandler = createPermissionsErrorHandler(this.isWeb, uri, '*w*')
         const content = this.#toBytes(data)
         // - Special case: if `opt` is given, use nodejs directly. This isn't ideal, but is the only
         //   way (unless you know better) we can let callers specify permissions.
         // - Cloud9 vscode.workspace.writeFile has limited functionality, e.g. cannot write outside
         //   of open workspace.
-        const useNodejs = (opt && !isWeb()) || isCloud9()
+        const useNodejs = (opt && !this.isWeb) || isCloud9()
 
         if (useNodejs) {
             return nodefs.writeFile(uri.fsPath, content, opt).catch(errHandler)
@@ -213,7 +228,7 @@ export class FileSystemCommon {
         opt.force = opt.force === false ? opt.force : !!(opt.force || opt.recursive)
         const uri = this.#toUri(fileOrDir)
         const parent = vscode.Uri.joinPath(uri, '..')
-        const errHandler = createPermissionsErrorHandler(parent, '*wx')
+        const errHandler = createPermissionsErrorHandler(this.isWeb, parent, '*wx')
 
         if (isCloud9()) {
             // Cloud9 does not support vscode.workspace.fs.delete.
@@ -237,7 +252,7 @@ export class FileSystemCommon {
 
             if (notFound && opt.force) {
                 return // Ignore "not found" error.
-            } else if (isWeb() || isPermissionsError(err)) {
+            } else if (this.isWeb || isPermissionsError(err)) {
                 throw await errHandler(err)
             } else if (uri.scheme !== 'file' || (!isWin() && !notFound)) {
                 throw err
@@ -294,11 +309,101 @@ export class FileSystemCommon {
      */
     async checkPerms(file: string | vscode.Uri, perms: PermissionsTriplet): Promise<void> {
         const uri = this.#toUri(file)
-        const errHandler = createPermissionsErrorHandler(uri, perms)
+        const errHandler = createPermissionsErrorHandler(this.isWeb, uri, perms)
         const flags = Array.from(perms) as (keyof typeof this.modeMap)[]
         const mode = flags.reduce((m, f) => m | this.modeMap[f], nodeConstants.F_OK)
 
         return nodefs.access(uri.fsPath, mode).catch(errHandler)
+    }
+
+    /**
+     * Returns the file or directory location given by `envVar` if it is non-empty and the location is valid (exists) on the filesystem.
+     *
+     * Special case: if 'HOMEPATH' is given then $HOMEDRIVE is prepended to it.
+     *
+     * Throws an exception if the env var path is non-empty but invalid.
+     *
+     * @param envVar Environment variable name
+     * @param kind Expect a valid file, directory, or either.
+     */
+    async tryGetFilepathEnvVar(envVar: string, kind: vscode.FileType | undefined): Promise<string | undefined> {
+        let envVal = process.env[envVar]
+
+        if (envVal) {
+            // Special case: Windows $HOMEPATH depends on $HOMEDRIVE.
+            if (envVar === 'HOMEPATH') {
+                const homeDrive = process.env.HOMEDRIVE || 'C:'
+                envVal = _path.join(homeDrive, envVal)
+            }
+
+            // Expand "~/" to home dir.
+            const f = resolvePath(envVal, this.homeDir ?? 'UNKNOWN-HOME')
+            if (await fs.exists(f, kind)) {
+                return f
+            }
+
+            throw new ToolkitError(`\$${envVar} filepath is invalid: "${f}"`)
+        }
+    }
+
+    private homeDir: string | undefined
+
+    /**
+     * Resolves the user's home directory and validates related environment variables. Should be called:
+     *  1. at startup after all env vars are set
+     *  2. whenver env vars change
+     *
+     * @param onFail Invoked if a valid home directory could not be resolved
+     * @returns List of error messages if any invalid env vars were found.
+     */
+    async initUserHomeDir(extContext: vscode.ExtensionContext, onFail: (homeDir: string) => void): Promise<string[]> {
+        if (this.isWeb) {
+            // When in browser we cannot access the users desktop file system.
+            // Instead, VS Code provided uris will use the browsers storage.
+            // IMPORTANT: we must preserve the scheme of this URI or else VS Code
+            // will incorrectly interpret the path.
+            this.homeDir = extContext.globalStorageUri.toString()
+            return []
+        }
+
+        /** Logger may not be available during startup, so messages are stored here. */
+        const logMsgs: string[] = []
+        function logErr(e: unknown): undefined {
+            logMsgs.push((e as Error).message)
+            return undefined
+        }
+        const tryGet = (envName: string) => {
+            return this.tryGetFilepathEnvVar(envName, vscode.FileType.Directory).catch(logErr)
+        }
+        let p: string | undefined
+        if ((p = await tryGet('HOME'))) {
+            this.homeDir = p
+        } else if ((p = await tryGet('USERPROFILE'))) {
+            this.homeDir = p
+        } else if ((p = await tryGet('HOMEPATH'))) {
+            this.homeDir = p
+        } else {
+            this.homeDir = os.homedir()
+        }
+
+        // If $HOME is bogus, os.homedir() will still return it! All we can do is show an error.
+        if (!(await fs.exists(this.homeDir, vscode.FileType.Directory))) {
+            onFail(this.homeDir)
+        }
+
+        return logMsgs
+    }
+
+    /**
+     * Gets the (cached) user home directory path.
+     *
+     * To update the cached value (e.g. after environment variables changed), call {@link initUserHomeDir()}.
+     */
+    getUserHomeDir(): string {
+        if (!this.homeDir) {
+            throw new Error('using getHomeDirectory() before initUserHomeDir()')
+        }
+        return this.homeDir
     }
 
     // TODO: implement this by checking the file mode
@@ -339,6 +444,10 @@ export class FileSystemCommon {
             w: nodeConstants.W_OK,
             x: nodeConstants.X_OK,
         } as const
+    }
+
+    private get isWeb(): boolean {
+        return globals.isWeb
     }
 }
 

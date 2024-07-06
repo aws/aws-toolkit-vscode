@@ -19,19 +19,19 @@ import {
 import { UserCredentialsUtils } from '../../../shared/credentials/userCredentialsUtils'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import * as pathUtils from '../../../shared/utilities/pathUtils'
 import { getConfigFilename, getCredentialsFilename } from '../../../auth/credentials/sharedCredentialsFile'
 
 describe('UserCredentialsUtils', function () {
     let tempFolder: string
-    const defaultConfigFileName = getConfigFilename()
-    const defaultCredentialsFilename = getCredentialsFilename()
+    let defaultConfigFileName: string
+    let defaultCredentialsFilename: string
 
     before(async function () {
+        defaultConfigFileName = getConfigFilename()
+        defaultCredentialsFilename = getCredentialsFilename()
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
         tempFolder = await makeTemporaryToolkitFolder()
-        sinon.stub(pathUtils, 'isValidPath').returns(true)
     })
 
     afterEach(async function () {
