@@ -16,7 +16,6 @@ import { once } from './utilities/functionUtils'
 import { Any, ArrayConstructor } from './utilities/typeConstructors'
 import { AWS_SCHEME } from './constants'
 import { fsCommon } from '../srcShared/fs'
-import { SystemUtilities } from './systemUtilities'
 import { normalizeVSCodeUri } from './utilities/vsCodeUtils'
 import { telemetry } from './telemetry/telemetry'
 
@@ -328,7 +327,7 @@ async function doCacheContent(
 ): Promise<void> {
     const parsedFile = { ...JSON.parse(content), title: params.title }
     const dir = vscode.Uri.joinPath(params.destination, '..')
-    await SystemUtilities.createDirectory(dir)
+    await fsCommon.mkdir(dir)
     await fsCommon.writeFile(params.destination.fsPath, JSON.stringify(parsedFile))
     await params.extensionContext.globalState.update(params.cacheKey, params.version).then(undefined, err => {
         getLogger().warn(`schemas: failed to update cache key for "${params.title}": ${err?.message}`)
