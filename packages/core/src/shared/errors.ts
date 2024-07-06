@@ -483,7 +483,7 @@ export function findBestErrorInChain(error: Error, preferredErrors = _preferredE
             (errCode !== '' && preferredErrors.some(re => re.test(errCode))) ||
             // In priority order:
             isFilesystemError(err) ||
-            isNoPermissionsError(err)
+            isPermissionsError(err)
 
         if (isAwsError(err) || (prefer && !isAwsError(bestErr))) {
             if (isAwsError(err) && !isAwsError(bestErr)) {
@@ -623,13 +623,13 @@ export function isFileNotFoundError(err: unknown): boolean {
     if (err instanceof vscode.FileSystemError) {
         return err.code === vscode.FileSystemError.FileNotFound().code
     } else if (hasCode(err)) {
-        return err.code === 'ENOENT'
+        return err.code === 'ENOENT' || err.code === 'FileNotFound'
     }
 
     return false
 }
 
-export function isNoPermissionsError(err: unknown): boolean {
+export function isPermissionsError(err: unknown): boolean {
     if (err instanceof vscode.FileSystemError) {
         return (
             err.code === vscode.FileSystemError.NoPermissions().code ||
@@ -696,7 +696,7 @@ export type PermissionsTriplet = `${'r' | '-' | '*'}${'w' | '-' | '*'}${'x' | '-
 export class PermissionsError extends ToolkitError {
     public readonly actual: string // This is a resolved triplet, _not_ the full bits
 
-    static fromNodeFileStats(stats: fs.Stats, userInfo: os.UserInfo<string>, expected: string, source: unknown) {
+    static fromNodeFileStats(stats: fs.Stats, userInfo: os.UserInfo<string>) {
         const mode = `${stats.isDirectory() ? 'd' : '-'}${modeToString(stats.mode)}`
         const owner = stats.uid === userInfo.uid ? (stats.uid === -1 ? '' : userInfo.username) : String(stats.uid)
         const group = String(stats.gid)
@@ -707,12 +707,7 @@ export class PermissionsError extends ToolkitError {
         return { mode, owner, group, actual, isAmbiguous, isOwner }
     }
 
-    static fromVscodeFileStats(
-        stats: vscode.FileStat,
-        userInfo: os.UserInfo<string>,
-        expected: string,
-        source: unknown
-    ) {
+    static fromVscodeFileStats(stats: vscode.FileStat, userInfo: os.UserInfo<string>) {
         const isDir = !!(stats.type & vscode.FileType.Directory)
         const mode = `${isDir ? 'd' : '-'}${vscodeModeToString(stats.permissions)}`
         const owner = '' // vscode.FileStat does not currently provide file owner.
@@ -737,8 +732,8 @@ export class PermissionsError extends ToolkitError {
         source?: unknown
     ) {
         const o = (stats as any).type
-            ? PermissionsError.fromVscodeFileStats(stats as vscode.FileStat, userInfo, expected, source)
-            : PermissionsError.fromNodeFileStats(stats as fs.Stats, userInfo, expected, source)
+            ? PermissionsError.fromVscodeFileStats(stats as vscode.FileStat, userInfo)
+            : PermissionsError.fromNodeFileStats(stats as fs.Stats, userInfo)
 
         const resolvedExpected = Array.from(expected)
             .map((c, i) => (c === '*' ? o.actual[i] : c))
