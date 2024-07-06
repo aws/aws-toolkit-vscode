@@ -94,7 +94,7 @@ export async function tryRemoveFolder(folder?: string): Promise<boolean> {
             getLogger().warn('tryRemoveFolder: no folder given')
             return false
         }
-        await fsCommon.delete(folder)
+        await fsCommon.delete(folder, { recursive: true, force: true })
     } catch (err) {
         getLogger().warn('tryRemoveFolder: failed to delete directory "%s": %O', folder, err as Error)
         return false
