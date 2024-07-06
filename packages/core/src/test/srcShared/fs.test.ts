@@ -103,8 +103,8 @@ describe('FileSystem', function () {
             const filePath = await makeFile(fileName, 'hello world', { mode: 0o000 })
 
             await assert.rejects(fsCommon.writeFile(filePath, 'MyContent'), err => {
-                assert(err instanceof vscode.FileSystemError)
-                assert.strictEqual(err.name, 'EntryWriteLocked (FileSystemError) (FileSystemError)')
+                assert(err instanceof PermissionsError)
+                assert.strictEqual(err.code, 'InvalidPermissions')
                 assert(err.message.includes(fileName))
                 return true
             })

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { promises as nodefs, constants as nodeConstants } from 'fs'
+import { promises as nodefs, constants as nodeConstants, WriteFileOptions } from 'fs'
 import { isCloud9 } from '../shared/extensionUtilities'
 import _path from 'path'
 import { PermissionsError, PermissionsTriplet, isFileNotFoundError, isPermissionsError } from '../shared/errors'
@@ -163,19 +163,30 @@ export class FileSystemCommon {
     }
 
     /**
-     * - Writes a file with `utf-8` encoding and `644` (rw-r--r--) permissions.
-     * - Creates missing directories in the given path.
+     * Writes `data` to file `path` (creating missing intermediate directories if needed). If `opt`
+     * is not given (or in web-mode), defaults with `utf-8` encoding and `644` (rw-r--r--)
+     * permissions.
+     *
+     * @param path File location
+     * @param data File content
+     * @param opt File permissions/flags. Only works in a non-web (nodejs) context. If provided,
+     * nodejs filesystem interface is used instead of routing through vscode VFS.
      */
-    async writeFile(path: Uri | string, data: string | Uint8Array): Promise<void> {
-        path = FileSystemCommon.toUri(path)
+    async writeFile(path: Uri | string, data: string | Uint8Array, opt?: WriteFileOptions): Promise<void> {
+        const uri = FileSystemCommon.toUri(path)
+        const errHandler = createPermissionsErrorHandler(uri, '*w*')
+        const content = FileSystemCommon.toBytes(data)
+        // - Special case: if `opt` is given, use nodejs directly. This isn't ideal, but is the only
+        //   way (unless you know better) we can let callers specify permissions.
+        // - Cloud9 vscode.workspace.writeFile has limited functionality, e.g. cannot write outside
+        //   of open workspace.
+        const useNodejs = (opt && !isWeb()) || isCloud9()
 
-        // vscode.workspace.writeFile is stubbed in Cloud9 has limited functionality,
-        // e.g. cannot write outside of open workspace
-        if (isCloud9()) {
-            await nodefs.writeFile(path.fsPath, FileSystemCommon.toBytes(data))
-            return
+        if (useNodejs) {
+            return nodefs.writeFile(uri.fsPath, content, opt).catch(errHandler)
         }
-        return vfs.writeFile(path, FileSystemCommon.toBytes(data))
+
+        return vfs.writeFile(uri, content).then(undefined, errHandler)
     }
 
     /**
@@ -283,11 +294,12 @@ export class FileSystemCommon {
         return FileSystemCommon.#encoder.encode(string)
     }
 
-    private static toBytes(array: Uint8Array | string): Uint8Array {
-        if (typeof array === 'string') {
-            return FileSystemCommon.stringToArray(array)
+    /** Encodes UTF-8 string data as bytes. */
+    private static toBytes(data: Uint8Array | string): Uint8Array {
+        if (typeof data === 'string') {
+            return FileSystemCommon.stringToArray(data)
         }
-        return array
+        return data
     }
 
     /**

@@ -65,15 +65,7 @@ export class SystemUtilities {
         data: string | Buffer,
         opt?: fs.WriteFileOptions
     ): Promise<void> {
-        const uri = this.toUri(file)
-        const errorHandler = createPermissionsErrorHandler(uri, '*w*')
-        const content = typeof data === 'string' ? new TextEncoder().encode(data) : data
-
-        if (isCloud9()) {
-            return fsPromises.writeFile(uri.fsPath, content, opt).catch(errorHandler)
-        }
-
-        return vscode.workspace.fs.writeFile(uri, content).then(undefined, errorHandler)
+        return fs2.writeFile(file, data, opt)
     }
 
     public static async delete(fileOrDir: string | vscode.Uri, opt?: { recursive: boolean }): Promise<void> {
