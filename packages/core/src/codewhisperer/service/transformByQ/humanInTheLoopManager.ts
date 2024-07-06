@@ -77,23 +77,23 @@ export class HumanInTheLoopManager {
 
     public cleanUpArtifacts = async () => {
         try {
-            await fsCommon.delete(this.userDependencyUpdateDir)
+            await fsCommon.delete(this.userDependencyUpdateDir, { recursive: true })
         } catch (e: any) {
             this.logArtifactError(e)
         }
         try {
-            await fsCommon.delete(this.tmpDependencyListDir)
+            await fsCommon.delete(this.tmpDependencyListDir, { recursive: true })
         } catch (e: any) {
             this.logArtifactError(e)
         }
         try {
-            await fsCommon.delete(this.tmpDownloadsDir)
+            await fsCommon.delete(this.tmpDownloadsDir, { recursive: true })
         } catch (e: any) {
             this.logArtifactError(e)
         }
         for (let i = 0; i < this.tmpSessionFiles.length; i++) {
             try {
-                await fsCommon.delete(this.tmpSessionFiles[i])
+                await fsCommon.delete(this.tmpSessionFiles[i], { recursive: true })
             } catch (e: any) {
                 this.logArtifactError(e)
             }

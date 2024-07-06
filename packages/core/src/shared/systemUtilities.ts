@@ -8,39 +8,15 @@ import fs from 'fs'
 import * as vscode from 'vscode'
 import * as os from 'os'
 import * as path from 'path'
+import fs2, { createPermissionsErrorHandler } from '../srcShared/fs'
 import { EnvironmentVariables } from './environmentVariables'
 import { ChildProcess } from './utilities/childProcess'
 import { getLogger } from './logger/logger'
 import { GitExtension } from './extensions/git'
 import { isCloud9 } from './extensionUtilities'
 import { Settings } from './settings'
-import { PermissionsError, PermissionsTriplet, isFileNotFoundError, isNoPermissionsError } from './errors'
+import { PermissionsError, PermissionsTriplet } from './errors'
 import globals, { isWeb } from './extensionGlobals'
-
-export function createPermissionsErrorHandler(
-    uri: vscode.Uri,
-    perms: PermissionsTriplet
-): (err: unknown, depth?: number) => Promise<never> {
-    return async function (err: unknown, depth = 0) {
-        if (uri.scheme !== 'file' || process.platform === 'win32') {
-            throw err
-        }
-        if (!isNoPermissionsError(err) && !(isFileNotFoundError(err) && depth > 0)) {
-            throw err
-        }
-
-        const userInfo = os.userInfo({ encoding: 'utf-8' })
-        const stats = await fsPromises.stat(uri.fsPath).catch(async err2 => {
-            if (!isNoPermissionsError(err2) && !(isFileNotFoundError(err2) && perms[1] === 'w')) {
-                throw err
-            }
-
-            throw await createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx')(err2, depth + 1)
-        })
-
-        throw new PermissionsError(uri, stats, userInfo, perms, err)
-    }
-}
 
 export class SystemUtilities {
     /** Full path to VSCode CLI. */
@@ -103,75 +79,15 @@ export class SystemUtilities {
     }
 
     public static async delete(fileOrDir: string | vscode.Uri, opt?: { recursive: boolean }): Promise<void> {
-        const uri = this.toUri(fileOrDir)
-        const dirUri = vscode.Uri.joinPath(uri, '..')
-        const errorHandler = createPermissionsErrorHandler(dirUri, '*wx')
-
-        if (isCloud9()) {
-            const stat = await fsPromises.stat(uri.fsPath)
-            if (stat.isDirectory()) {
-                return fsPromises.rmdir(uri.fsPath).catch(errorHandler)
-            } else {
-                return fsPromises.unlink(uri.fsPath).catch(errorHandler)
-            }
-        }
-
-        if (opt?.recursive) {
-            // We shouldn't catch any errors if using the `recursive` option, otherwise the
-            // error messages may be misleading. Need to implement our own recursive delete
-            // if we want detailed info.
-            return vscode.workspace.fs.delete(uri, opt)
-        } else {
-            // Attempting to delete a file in a directory without `x` results in ENOENT.
-            // But this might not be true. The file could exist, we just don't know about it.
-            return vscode.workspace.fs.delete(uri, opt).then(undefined, async err => {
-                if (isNoPermissionsError(err)) {
-                    throw await errorHandler(err)
-                } else if (uri.scheme !== 'file' || !isFileNotFoundError(err) || process.platform === 'win32') {
-                    throw err
-                } else {
-                    const stats = await fsPromises.stat(dirUri.fsPath).catch(() => {
-                        throw err
-                    })
-                    if ((stats.mode & fs.constants.S_IXUSR) === 0) {
-                        const userInfo = os.userInfo({ encoding: 'utf-8' })
-                        throw new PermissionsError(dirUri, stats, userInfo, '*wx', err)
-                    }
-                }
-
-                throw err
-            })
-        }
+        await fs2.delete(fileOrDir, opt)
     }
 
     public static async fileExists(file: string | vscode.Uri): Promise<boolean> {
-        const uri = this.toUri(file)
-
-        if (isCloud9()) {
-            return fsPromises.access(uri.fsPath, fs.constants.F_OK).then(
-                () => true,
-                () => false
-            )
-        }
-
-        return vscode.workspace.fs.stat(uri).then(
-            () => true,
-            err => !isFileNotFoundError(err)
-        )
+        return fs2.exists(file)
     }
 
     public static async createDirectory(file: string | vscode.Uri): Promise<void> {
-        const uri = this.toUri(file)
-        const errorHandler = createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx')
-
-        if (isCloud9()) {
-            return fsPromises
-                .mkdir(uri.fsPath, { recursive: true })
-                .then(() => {})
-                .catch(errorHandler)
-        }
-
-        return vscode.workspace.fs.createDirectory(uri).then(undefined, errorHandler)
+        return fs2.mkdir(file)
     }
 
     /** Converts the given path to a URI if necessary */
