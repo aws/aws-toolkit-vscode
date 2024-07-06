@@ -738,6 +738,7 @@ data class CodeWhispererCodeScanIssue(
     val severity: String,
     val recommendation: Recommendation,
     var suggestedFixes: List<SuggestedFix>,
+    val codeSnippet: List<CodeLine>,
     val issueSeverity: HighlightDisplayLevel = HighlightDisplayLevel.WARNING,
     val isInvalid: Boolean = false,
     var rangeHighlighter: RangeHighlighterEx? = null

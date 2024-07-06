@@ -54,7 +54,7 @@ class CodeWhispererProjectCodeScanTest : CodeWhispererCodeScanTestBase(PythonCod
             onGeneric { createUploadUrl(any()) }.thenReturn(fakeCreateUploadUrlResponse)
             onGeneric { createCodeScan(any(), any()) }.thenReturn(fakeCreateCodeScanResponse)
             onGeneric { getCodeScan(any(), any()) }.thenReturn(fakeGetCodeScanResponse)
-            onGeneric { listCodeScanFindings(any(), any()) }.thenReturn(fakeListCodeScanFindingsResponse)
+            onGeneric { listCodeScanFindings(any(), any()) }.thenReturn(fakeListCodeScanFindingsResponseE2E)
         }
     }
 
@@ -104,7 +104,7 @@ class CodeWhispererProjectCodeScanTest : CodeWhispererCodeScanTestBase(PythonCod
 
     @Test
     fun `e2e happy path integration test`() {
-        assertE2ERunsSuccessfully(sessionConfigSpy, project, totalLines, 10, totalSize, 2)
+        assertE2ERunsSuccessfully(sessionConfigSpy, project, totalLines, 10, totalSize, 1)
     }
 
     private fun setupCsharpProject() {

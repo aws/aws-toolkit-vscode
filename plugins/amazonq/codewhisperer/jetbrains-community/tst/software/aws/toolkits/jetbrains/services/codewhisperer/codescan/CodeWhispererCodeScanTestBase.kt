@@ -77,6 +77,7 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
     internal lateinit var fakeCreateCodeScanResponseFailed: CreateCodeScanResponse
     internal lateinit var fakeCreateCodeScanResponsePending: CreateCodeScanResponse
     internal lateinit var fakeListCodeScanFindingsResponse: ListCodeScanFindingsResponse
+    internal lateinit var fakeListCodeScanFindingsResponseE2E: ListCodeScanFindingsResponse
     internal lateinit var fakeListCodeScanFindingsOutOfBoundsIndexResponse: ListCodeScanFindingsResponse
     internal lateinit var fakeGetCodeScanResponse: GetCodeScanResponse
     internal lateinit var fakeGetCodeScanResponsePending: GetCodeScanResponse
@@ -110,7 +111,22 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
         )
     }
 
-    private fun setupCodeScanFinding(filePath: Path, startLine: Int, endLine: Int) = """
+    private fun setupCodeScanFinding(
+        filePath: Path,
+        startLine: Int,
+        endLine: Int,
+        codeSnippets: List<Pair<Int, String>>
+    ): String {
+        val codeSnippetJson = codeSnippets.joinToString(",\n") { (number, content) ->
+            """
+        {
+            "number": $number,
+            "content": "$content"
+        }
+            """.trimIndent()
+        }
+
+        return """
         {
             "filePath": "${filePath.systemIndependentPath}",
             "startLine": $startLine,
@@ -124,6 +140,9 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
             "detectorName": "detectorName",
             "findingId": "findingId",
             "relatedVulnerabilities": [],
+            "codeSnippet": [
+                $codeSnippetJson
+            ],
             "severity": "severity",
             "remediation": {
                 "recommendation": {
@@ -133,19 +152,58 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
                 "suggestedFixes": []
             }
         }
-    """.trimIndent()
+        """.trimIndent()
+    }
 
     private fun setupCodeScanFindings(filePath: Path) = """
-        [
-            ${setupCodeScanFinding(filePath, 1, 2)},
-            ${setupCodeScanFinding(filePath, 1, 2)}
-        ]
+    [
+        ${setupCodeScanFinding(
+        filePath,
+        1,
+        2,
+        listOf(
+            1 to "import numpy as np",
+            2 to "               import from module1 import helper"
+        )
+    )},
+        ${setupCodeScanFinding(
+        filePath,
+        1,
+        2,
+        listOf(
+            1 to "import numpy as np",
+            2 to "               import from module1 import helper"
+        )
+    )}
+    ]
+    """
+
+    private fun setupCodeScanFindingsE2E(filePath: Path) = """
+    [
+        ${setupCodeScanFinding(
+        filePath,
+        1,
+        2,
+        listOf(
+            1 to "using Utils;",
+            2 to "using Helpers.Helper;"
+        )
+    )}
+    ]
     """
 
     private fun setupCodeScanFindingsOutOfBounds(filePath: Path) = """
-        [
-            ${setupCodeScanFinding(filePath, 99999, 99999)}
-        ]
+    [
+        ${setupCodeScanFinding(
+        filePath,
+        99999,
+        99999,
+        kotlin.collections.listOf(
+            1 to "import numpy as np",
+            2 to "               import from module1 import helper"
+        )
+    )}
+    ]
     """
 
     protected fun setupResponse(filePath: Path) {
@@ -175,6 +233,11 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
 
         fakeListCodeScanFindingsResponse = ListCodeScanFindingsResponse.builder()
             .codeScanFindings(setupCodeScanFindings(filePath))
+            .responseMetadata(metadata)
+            .build() as ListCodeScanFindingsResponse
+
+        fakeListCodeScanFindingsResponseE2E = ListCodeScanFindingsResponse.builder()
+            .codeScanFindings(setupCodeScanFindingsE2E(filePath))
             .responseMetadata(metadata)
             .build() as ListCodeScanFindingsResponse
 
@@ -214,6 +277,16 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
                 "detectorName": "detectorName",
                 "findingId": "findingId",
                 "relatedVulnerabilities": [],
+                "codeSnippet": [
+                    {
+                        "number": 1,
+                        "content": "codeBlock1"
+                    },
+                    {
+                        "number": 2,
+                        "content": "codeBlock2"
+                    }
+                ],
                 "severity": "severity",
                 "remediation": {
                     "recommendation": {
