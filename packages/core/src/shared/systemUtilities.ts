@@ -18,6 +18,11 @@ import { Settings } from './settings'
 import { PermissionsError, PermissionsTriplet } from './errors'
 import globals, { isWeb } from './extensionGlobals'
 
+/**
+ * Deprecated interface for filesystem operations.
+ *
+ * @deprecated Use `core/src/shared/fs.ts` instead
+ */
 export class SystemUtilities {
     /** Full path to VSCode CLI. */
     private static vscPath: string
@@ -52,14 +57,7 @@ export class SystemUtilities {
     }
 
     public static async readFile(file: string | vscode.Uri, decoder: TextDecoder = new TextDecoder()): Promise<string> {
-        const uri = this.toUri(file)
-        const errorHandler = createPermissionsErrorHandler(uri, 'r**')
-
-        if (isCloud9()) {
-            return decoder.decode(await fsPromises.readFile(uri.fsPath).catch(errorHandler))
-        }
-
-        return decoder.decode(await vscode.workspace.fs.readFile(uri).then(undefined, errorHandler))
+        return fs2.readFileAsString(file, decoder)
     }
 
     public static async writeFile(

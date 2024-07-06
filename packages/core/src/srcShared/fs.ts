@@ -69,29 +69,38 @@ export class FileSystemCommon {
 
     /** Creates the directory as well as missing parent directories. */
     async mkdir(path: Uri | string): Promise<void> {
-        const uri = FileSystemCommon.getUri(path)
-        const errorHandler = createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx')
+        const uri = FileSystemCommon.toUri(path)
+        const errHandler = createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx')
 
-        // Certain URIs are not supported with vscode.workspace.fs in C9
+        // Certain URIs are not supported with vscode.workspace.fs in Cloud9
         // so revert to using `fs` which works.
         if (isCloud9()) {
             return nodefs
                 .mkdir(uri.fsPath, { recursive: true })
                 .then(() => {})
-                .catch(errorHandler)
+                .catch(errHandler)
         }
 
-        return vfs.createDirectory(uri).then(undefined, errorHandler)
+        return vfs.createDirectory(uri).then(undefined, errHandler)
     }
 
+    // TODO: rename to readFileBytes()?
     async readFile(path: Uri | string): Promise<Uint8Array> {
-        path = FileSystemCommon.getUri(path)
-        return vfs.readFile(path)
+        const uri = FileSystemCommon.toUri(path)
+        const errHandler = createPermissionsErrorHandler(uri, 'r**')
+
+        if (isCloud9()) {
+            return await nodefs.readFile(uri.fsPath).catch(errHandler)
+        }
+
+        return vfs.readFile(uri).then(undefined, errHandler)
     }
 
-    async readFileAsString(path: Uri | string): Promise<string> {
-        path = FileSystemCommon.getUri(path)
-        return FileSystemCommon.arrayToString(await this.readFile(path))
+    // TODO: rename to readFile()?
+    async readFileAsString(path: Uri | string, decoder: TextDecoder = FileSystemCommon.#decoder): Promise<string> {
+        const uri = FileSystemCommon.toUri(path)
+        const bytes = await this.readFile(uri)
+        return decoder.decode(bytes)
     }
 
     /**
@@ -99,12 +108,12 @@ export class FileSystemCommon {
      * so we must do it ourselves (this implementation is inefficient).
      */
     async appendFile(path: Uri | string, content: Uint8Array | string): Promise<void> {
-        path = FileSystemCommon.getUri(path)
+        path = FileSystemCommon.toUri(path)
 
         const currentContent: Uint8Array = (await this.existsFile(path)) ? await this.readFile(path) : new Uint8Array(0)
         const currentLength = currentContent.length
 
-        const newContent = FileSystemCommon.asArray(content)
+        const newContent = FileSystemCommon.toBytes(content)
         const newLength = newContent.length
 
         const finalContent = new Uint8Array(currentLength + newLength)
@@ -115,7 +124,7 @@ export class FileSystemCommon {
     }
 
     async exists(path: Uri | string, fileType?: vscode.FileType): Promise<boolean> {
-        const uri = FileSystemCommon.getUri(path)
+        const uri = FileSystemCommon.toUri(path)
 
         if (isCloud9()) {
             // vscode.workspace.fs.stat() is SLOW. Avoid it on Cloud9.
@@ -158,22 +167,22 @@ export class FileSystemCommon {
      * - Creates missing directories in the given path.
      */
     async writeFile(path: Uri | string, data: string | Uint8Array): Promise<void> {
-        path = FileSystemCommon.getUri(path)
+        path = FileSystemCommon.toUri(path)
 
-        // vscode.workspace.writeFile is stubbed in C9 has limited functionality,
+        // vscode.workspace.writeFile is stubbed in Cloud9 has limited functionality,
         // e.g. cannot write outside of open workspace
         if (isCloud9()) {
-            await nodefs.writeFile(path.fsPath, FileSystemCommon.asArray(data))
+            await nodefs.writeFile(path.fsPath, FileSystemCommon.toBytes(data))
             return
         }
-        return vfs.writeFile(path, FileSystemCommon.asArray(data))
+        return vfs.writeFile(path, FileSystemCommon.toBytes(data))
     }
 
     /**
      * The stat of the file,  throws if the file does not exist or on any other error.
      */
     async stat(uri: vscode.Uri | string): Promise<vscode.FileStat> {
-        const path = FileSystemCommon.getUri(uri)
+        const path = FileSystemCommon.toUri(uri)
         return await vfs.stat(path)
     }
 
@@ -191,14 +200,14 @@ export class FileSystemCommon {
     async delete(fileOrDir: string | vscode.Uri, opt_?: { recursive?: boolean; force?: boolean }): Promise<void> {
         const opt = { ...opt_, recursive: !!opt_?.recursive }
         opt.force = opt.force === false ? opt.force : !!(opt.force || opt.recursive)
-        const uri = FileSystemCommon.getUri(fileOrDir)
+        const uri = FileSystemCommon.toUri(fileOrDir)
         const parent = vscode.Uri.joinPath(uri, '..')
-        const errorHandler = createPermissionsErrorHandler(parent, '*wx')
+        const errHandler = createPermissionsErrorHandler(parent, '*wx')
 
         if (isCloud9()) {
             // Cloud9 does not support vscode.workspace.fs.delete.
             opt.force = !!opt.recursive
-            return nodefs.rm(uri.fsPath, opt).catch(errorHandler)
+            return nodefs.rm(uri.fsPath, opt).catch(errHandler)
         }
 
         if (opt.recursive) {
@@ -218,7 +227,7 @@ export class FileSystemCommon {
             if (notFound && opt.force) {
                 return // Ignore "not found" error.
             } else if (isWeb() || isPermissionsError(err)) {
-                throw await errorHandler(err)
+                throw await errHandler(err)
             } else if (uri.scheme !== 'file' || (!isWin() && !notFound)) {
                 throw err
             } else {
@@ -248,7 +257,7 @@ export class FileSystemCommon {
     }
 
     async readdir(uri: vscode.Uri | string): Promise<[string, vscode.FileType][]> {
-        const path = FileSystemCommon.getUri(uri)
+        const path = FileSystemCommon.toUri(uri)
 
         // readdir is not a supported vscode API in Cloud9
         if (isCloud9()) {
@@ -262,24 +271,19 @@ export class FileSystemCommon {
     }
 
     async copy(source: vscode.Uri | string, target: vscode.Uri | string): Promise<void> {
-        const sourcePath = FileSystemCommon.getUri(source)
-        const targetPath = FileSystemCommon.getUri(target)
+        const sourcePath = FileSystemCommon.toUri(source)
+        const targetPath = FileSystemCommon.toUri(target)
         return await vfs.copy(sourcePath, targetPath, { overwrite: true })
     }
 
-    // -------- private methods --------
     static readonly #decoder = new TextDecoder()
     static readonly #encoder = new TextEncoder()
-
-    private static arrayToString(array: Uint8Array) {
-        return FileSystemCommon.#decoder.decode(array)
-    }
 
     private static stringToArray(string: string): Uint8Array {
         return FileSystemCommon.#encoder.encode(string)
     }
 
-    private static asArray(array: Uint8Array | string): Uint8Array {
+    private static toBytes(array: Uint8Array | string): Uint8Array {
         if (typeof array === 'string') {
             return FileSystemCommon.stringToArray(array)
         }
@@ -292,7 +296,7 @@ export class FileSystemCommon {
      * @param path The file path for which to retrieve metadata.
      * @return The Uri about the file.
      */
-    private static getUri(path: string | vscode.Uri): vscode.Uri {
+    private static toUri(path: string | vscode.Uri): vscode.Uri {
         if (path instanceof vscode.Uri) {
             return path
         }
