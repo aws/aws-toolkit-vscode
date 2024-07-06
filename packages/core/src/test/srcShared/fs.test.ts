@@ -6,7 +6,7 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { existsSync, mkdirSync, promises as fsPromises, readFileSync, rmSync } from 'fs'
+import { existsSync, mkdirSync, promises as nodefs, readFileSync, rmSync } from 'fs'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { fsCommon } from '../../srcShared/fs'
 import * as os from 'os'
@@ -30,7 +30,7 @@ describe('FileSystem', function () {
     })
 
     beforeEach(async function () {
-        await makeTestRoot()
+        await mkTestRoot()
     })
 
     afterEach(async function () {
@@ -125,34 +125,45 @@ describe('FileSystem', function () {
     })
 
     describe('existsFile()', function () {
-        it('returns true for an existing file', async function () {
-            const filePath = await makeFile('test.txt')
-            const existantFile = await fsCommon.existsFile(filePath)
-            assert.strictEqual(existantFile, true)
+        it('true for existing file', async function () {
+            const file = await makeFile('test.txt')
+            assert.strictEqual(await fsCommon.existsFile(file), true)
         })
 
-        it('returns false for a non-existant file', async function () {
-            const nonExistantFile = await fsCommon.existsFile(createTestPath('thisDoesNotExist.txt'))
-            assert.strictEqual(nonExistantFile, false)
+        it('false for non-existent file', async function () {
+            const nonExistantFile = createTestPath('thisDoesNotExist.txt')
+            assert.strictEqual(await fsCommon.existsFile(nonExistantFile), false)
         })
 
-        it('returns false when directory with same name exists', async function () {
-            const directoryPath = await makeFolder('thisIsDirectory')
-            const existantFile = await fsCommon.existsFile(directoryPath)
-            assert.strictEqual(existantFile, false)
+        it('false for existing directory', async function () {
+            const dir = mkTestDir('thisIsDirectory')
+            assert.strictEqual(await fsCommon.existsFile(dir), false)
         })
     })
 
     describe('existsDir()', function () {
-        it('returns true for an existing directory', async function () {
-            const dirPath = await makeFolder('myDir')
-            const existantDirectory = await fsCommon.existsDir(dirPath)
-            assert.strictEqual(existantDirectory, true)
+        it('true for existing directory', async function () {
+            const dir = mkTestDir('myDir')
+            assert.strictEqual(await fsCommon.existsDir(dir), true)
         })
 
-        it('returns false for a non-existant directory', async function () {
-            const nonExistantDirectory = await fsCommon.existsDir(createTestPath('thisDirDoesNotExist'))
-            assert.strictEqual(nonExistantDirectory, false)
+        it('false for non-existent directory', async function () {
+            const noFile = createTestPath('non-existent')
+            assert.strictEqual(await fsCommon.existsDir(noFile), false)
+        })
+    })
+
+    describe('exists()', function () {
+        it('true for existing file/directory', async function () {
+            const dir = mkTestDir('myDir')
+            const file = await makeFile('test.txt')
+            assert.strictEqual(await fsCommon.exists(dir), true)
+            assert.strictEqual(await fsCommon.exists(file), true)
+        })
+
+        it('false for non-existent file/directory', async function () {
+            const noFile = createTestPath('non-existent')
+            assert.strictEqual(await fsCommon.exists(noFile), false)
         })
     })
 
@@ -168,10 +179,10 @@ describe('FileSystem', function () {
         })
 
         paths.forEach(async function (p) {
-            it(`creates folder but uses the "fs" module if in C9: '${p}'`, async function () {
+            it(`creates folder but uses the "fs" module if in Cloud9: '${p}'`, async function () {
                 sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
                 const dirPath = createTestPath(p)
-                const mkdirSpy = sandbox.spy(fsPromises, 'mkdir')
+                const mkdirSpy = sandbox.spy(nodefs, 'mkdir')
 
                 await fsCommon.mkdir(dirPath)
 
@@ -213,9 +224,9 @@ describe('FileSystem', function () {
             return i.sort((a, b) => a[0].localeCompare(b[0]))
         }
 
-        it('uses the "fs" readdir implementation if in C9', async function () {
+        it('uses the "fs" readdir implementation if in Cloud9', async function () {
             sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
-            const readdirSpy = sandbox.spy(fsPromises, 'readdir')
+            const readdirSpy = sandbox.spy(nodefs, 'readdir')
 
             await makeFile('a.txt')
             await makeFile('b.txt')
@@ -236,13 +247,13 @@ describe('FileSystem', function () {
                     ['dirC', vscode.FileType.Directory],
                 ])
             )
-            assert.ok(readdirSpy.calledOnce)
+            assert(readdirSpy.calledOnce)
         })
     })
 
     describe('copy()', function () {
         it('copies files and folders from one dir to another', async function () {
-            const targetDir = await makeFolder('targetDir')
+            const targetDir = mkTestDir('targetDir')
             await makeFile('targetDir/a.txt', 'I am A')
             await makeFile('targetDir/dirB/b.txt', 'I am B')
 
@@ -255,39 +266,53 @@ describe('FileSystem', function () {
     })
 
     describe('delete()', function () {
-        it('deletes a file', async function () {
-            const filePath = await makeFile('test.txt', 'hello world')
-            await fsCommon.delete(filePath)
-            assert.ok(!existsSync(filePath))
+        it('deletes file', async function () {
+            const f = await makeFile('test.txt', 'hello world')
+            assert(existsSync(f))
+            await fsCommon.delete(f)
+            assert(!existsSync(f))
         })
 
-        it('deletes a directory', async function () {
-            const dirPath = createTestPath('dirToDelete')
-            mkdirSync(dirPath)
-
-            await fsCommon.delete(dirPath)
-
-            assert.ok(!existsSync(dirPath))
+        it('fails to delete non-empty directory with recursive:false (the default)', async function () {
+            const dir = mkTestDir()
+            const f = path.join(dir, 'testfile.txt')
+            await toFile('some content', f)
+            assert(existsSync(dir))
+            await assert.rejects(() => fsCommon.delete(dir), /not empty|non-empty/)
+            assert(existsSync(dir))
         })
 
-        it('does not error if the file to delete does not exist', async function () {
-            const nonExistantFilePath = 'does/not/exist'
-            await fsCommon.delete(nonExistantFilePath)
-            assert.ok(!existsSync(nonExistantFilePath))
+        it('deletes directory with recursive:true', async function () {
+            const dir = mkTestDir()
+            await fsCommon.delete(dir, { recursive: true })
+            assert(!existsSync(dir))
         })
 
-        it('uses the "fs" rm method if in C9', async function () {
+        it('no error if file not found (but parent exists)', async function () {
+            const dir = mkTestDir()
+            const f = path.join(dir, 'missingfile.txt')
+            assert(!existsSync(f))
+            await fsCommon.delete(f)
+        })
+
+        it('error if file *and* its parent dir not found', async function () {
+            const dir = mkTestDir()
+            const f = path.join(dir, 'missingdir/missingfile.txt')
+            assert(!existsSync(f))
+            await assert.rejects(() => fsCommon.delete(f))
+        })
+
+        it('uses "node:fs" rm() if in Cloud9', async function () {
             sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
-            const rmdirSpy = sandbox.spy(fsPromises, 'rm')
+            const rmdirSpy = sandbox.spy(nodefs, 'rm')
             // Folder with subfolders
-            const dirPath = await makeFolder('a/b/deleteMe')
-
+            const dirPath = mkTestDir('a/b/deleteMe')
             mkdirSync(dirPath, { recursive: true })
 
-            await fsCommon.delete(dirPath)
+            await fsCommon.delete(dirPath, { recursive: true })
 
-            assert.ok(!existsSync(dirPath))
-            assert.ok(rmdirSpy.calledOnce)
+            assert(rmdirSpy.calledOnce)
+            assert(!existsSync(dirPath))
         })
     })
 
@@ -295,7 +320,7 @@ describe('FileSystem', function () {
         it('gets stat of a file', async function () {
             const filePath = await makeFile('test.txt', 'hello world')
             const stat = await fsCommon.stat(filePath)
-            assert.ok(stat)
+            assert(stat)
             assert.strictEqual(stat.type, vscode.FileType.File)
         })
 
@@ -311,16 +336,17 @@ describe('FileSystem', function () {
         await toFile(content ?? '', filePath)
 
         if (options?.mode !== undefined) {
-            await fsPromises.chmod(filePath, options.mode)
+            await nodefs.chmod(filePath, options.mode)
         }
 
         return filePath
     }
 
-    async function makeFolder(relativeFolderPath: string) {
-        const folderPath = path.join(testRootPath(), relativeFolderPath)
-        mkdirSync(folderPath, { recursive: true })
-        return folderPath
+    function mkTestDir(relativeDirPath?: string) {
+        const dir = createTestPath(relativeDirPath ?? 'testDir')
+        mkdirSync(dir, { recursive: true })
+        assert(existsSync(dir))
+        return dir
     }
 
     function createTestPath(relativePath: string): string {
@@ -331,7 +357,7 @@ describe('FileSystem', function () {
         return path.join(fakeContext.globalStorageUri.fsPath, 'fsTestDir')
     }
 
-    async function makeTestRoot() {
+    async function mkTestRoot() {
         return mkdirSync(testRootPath())
     }
 
