@@ -14,6 +14,7 @@ import { isMinVscode } from '../../shared/vscode/env'
 import Sinon from 'sinon'
 import * as extensionUtilities from '../../shared/extensionUtilities'
 import { toFile } from '../testUtil'
+import { PermissionsError } from '../../shared/errors'
 
 function isWin() {
     return os.platform() === 'win32'
@@ -57,8 +58,8 @@ describe('FileSystem', function () {
             const path = await makeFile(fileName, 'hello world', { mode: 0o000 })
 
             await assert.rejects(fsCommon.readFileAsString(path), err => {
-                assert(err instanceof vscode.FileSystemError)
-                assert.strictEqual(err.code, 'NoPermissions')
+                assert(err instanceof PermissionsError)
+                assert.strictEqual(err.code, 'InvalidPermissions')
                 assert(err.message.includes(fileName))
                 return true
             })
@@ -102,8 +103,8 @@ describe('FileSystem', function () {
             const filePath = await makeFile(fileName, 'hello world', { mode: 0o000 })
 
             await assert.rejects(fsCommon.writeFile(filePath, 'MyContent'), err => {
-                assert(err instanceof vscode.FileSystemError)
-                assert.strictEqual(err.name, 'EntryWriteLocked (FileSystemError) (FileSystemError)')
+                assert(err instanceof PermissionsError)
+                assert.strictEqual(err.code, 'InvalidPermissions')
                 assert(err.message.includes(fileName))
                 return true
             })

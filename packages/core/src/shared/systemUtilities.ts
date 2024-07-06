@@ -3,21 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { promises as fsPromises } from 'fs'
 import fs from 'fs'
 import * as vscode from 'vscode'
 import * as os from 'os'
 import * as path from 'path'
-import fs2, { createPermissionsErrorHandler } from '../srcShared/fs'
+import fs2 from '../srcShared/fs'
 import { EnvironmentVariables } from './environmentVariables'
 import { ChildProcess } from './utilities/childProcess'
 import { getLogger } from './logger/logger'
 import { GitExtension } from './extensions/git'
-import { isCloud9 } from './extensionUtilities'
 import { Settings } from './settings'
-import { PermissionsError, PermissionsTriplet } from './errors'
 import globals, { isWeb } from './extensionGlobals'
 
+/**
+ * Deprecated interface for filesystem operations.
+ *
+ * @deprecated Use `core/src/shared/fs.ts` instead
+ */
 export class SystemUtilities {
     /** Full path to VSCode CLI. */
     private static vscPath: string
@@ -52,14 +54,7 @@ export class SystemUtilities {
     }
 
     public static async readFile(file: string | vscode.Uri, decoder: TextDecoder = new TextDecoder()): Promise<string> {
-        const uri = this.toUri(file)
-        const errorHandler = createPermissionsErrorHandler(uri, 'r**')
-
-        if (isCloud9()) {
-            return decoder.decode(await fsPromises.readFile(uri.fsPath).catch(errorHandler))
-        }
-
-        return decoder.decode(await vscode.workspace.fs.readFile(uri).then(undefined, errorHandler))
+        return fs2.readFileAsString(file, decoder)
     }
 
     public static async writeFile(
@@ -67,15 +62,7 @@ export class SystemUtilities {
         data: string | Buffer,
         opt?: fs.WriteFileOptions
     ): Promise<void> {
-        const uri = this.toUri(file)
-        const errorHandler = createPermissionsErrorHandler(uri, '*w*')
-        const content = typeof data === 'string' ? new TextEncoder().encode(data) : data
-
-        if (isCloud9()) {
-            return fsPromises.writeFile(uri.fsPath, content, opt).catch(errorHandler)
-        }
-
-        return vscode.workspace.fs.writeFile(uri, content).then(undefined, errorHandler)
+        return fs2.writeFile(file, data, opt)
     }
 
     public static async delete(fileOrDir: string | vscode.Uri, opt?: { recursive: boolean }): Promise<void> {
@@ -85,51 +72,6 @@ export class SystemUtilities {
     public static async fileExists(file: string | vscode.Uri): Promise<boolean> {
         return fs2.exists(file)
     }
-
-    public static async createDirectory(file: string | vscode.Uri): Promise<void> {
-        return fs2.mkdir(file)
-    }
-
-    /** Converts the given path to a URI if necessary */
-    public static toUri(path: string | vscode.Uri): vscode.Uri {
-        if (typeof path === 'string') {
-            const parsed = vscode.Uri.parse(path)
-            // If string path already has a scheme we want to preserve it,
-            // but if on windows the drive looks like a scheme and this causes issues
-            if (parsed.scheme && os.platform() !== 'win32') {
-                return parsed
-            }
-            // path has no scheme to it will be indicated as a file
-            return vscode.Uri.file(path)
-        }
-        return path
-    }
-
-    private static get modeMap() {
-        return {
-            '*': 0,
-            r: fs.constants.R_OK,
-            w: fs.constants.W_OK,
-            x: fs.constants.X_OK,
-        } as const
-    }
-
-    /**
-     * Checks if the current user has _at least_ the specified permissions.
-     *
-     * This throws {@link PermissionsError} when permissions are insufficient.
-     */
-    public static async checkPerms(file: string | vscode.Uri, perms: PermissionsTriplet): Promise<void> {
-        const uri = this.toUri(file)
-        const errorHandler = createPermissionsErrorHandler(uri, perms)
-        const flags = Array.from(perms) as (keyof typeof this.modeMap)[]
-        const mode = flags.reduce((m, f) => m | this.modeMap[f], fs.constants.F_OK)
-
-        return fsPromises.access(uri.fsPath, mode).catch(errorHandler)
-    }
-
-    // TODO: implement this by checking the file mode
-    // public static async checkExactPerms(file: string | vscode.Uri, perms: `${PermissionsTriplet}${PermissionsTriplet}${PermissionsTriplet}`)
 
     /**
      * Tries to execute a program at path `p` with the given args and

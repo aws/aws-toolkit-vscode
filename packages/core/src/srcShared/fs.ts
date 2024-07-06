@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { promises as nodefs, constants as nodeConstants } from 'fs'
+import { promises as nodefs, constants as nodeConstants, WriteFileOptions } from 'fs'
 import { isCloud9 } from '../shared/extensionUtilities'
 import _path from 'path'
 import { PermissionsError, PermissionsTriplet, isFileNotFoundError, isPermissionsError } from '../shared/errors'
@@ -69,29 +69,38 @@ export class FileSystemCommon {
 
     /** Creates the directory as well as missing parent directories. */
     async mkdir(path: Uri | string): Promise<void> {
-        const uri = FileSystemCommon.getUri(path)
-        const errorHandler = createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx')
+        const uri = this.#toUri(path)
+        const errHandler = createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx')
 
-        // Certain URIs are not supported with vscode.workspace.fs in C9
+        // Certain URIs are not supported with vscode.workspace.fs in Cloud9
         // so revert to using `fs` which works.
         if (isCloud9()) {
             return nodefs
                 .mkdir(uri.fsPath, { recursive: true })
                 .then(() => {})
-                .catch(errorHandler)
+                .catch(errHandler)
         }
 
-        return vfs.createDirectory(uri).then(undefined, errorHandler)
+        return vfs.createDirectory(uri).then(undefined, errHandler)
     }
 
+    // TODO: rename to readFileBytes()?
     async readFile(path: Uri | string): Promise<Uint8Array> {
-        path = FileSystemCommon.getUri(path)
-        return vfs.readFile(path)
+        const uri = this.#toUri(path)
+        const errHandler = createPermissionsErrorHandler(uri, 'r**')
+
+        if (isCloud9()) {
+            return await nodefs.readFile(uri.fsPath).catch(errHandler)
+        }
+
+        return vfs.readFile(uri).then(undefined, errHandler)
     }
 
-    async readFileAsString(path: Uri | string): Promise<string> {
-        path = FileSystemCommon.getUri(path)
-        return FileSystemCommon.arrayToString(await this.readFile(path))
+    // TODO: rename to readFile()?
+    async readFileAsString(path: Uri | string, decoder: TextDecoder = FileSystemCommon.#decoder): Promise<string> {
+        const uri = this.#toUri(path)
+        const bytes = await this.readFile(uri)
+        return decoder.decode(bytes)
     }
 
     /**
@@ -99,12 +108,12 @@ export class FileSystemCommon {
      * so we must do it ourselves (this implementation is inefficient).
      */
     async appendFile(path: Uri | string, content: Uint8Array | string): Promise<void> {
-        path = FileSystemCommon.getUri(path)
+        path = this.#toUri(path)
 
         const currentContent: Uint8Array = (await this.existsFile(path)) ? await this.readFile(path) : new Uint8Array(0)
         const currentLength = currentContent.length
 
-        const newContent = FileSystemCommon.asArray(content)
+        const newContent = this.#toBytes(content)
         const newLength = newContent.length
 
         const finalContent = new Uint8Array(currentLength + newLength)
@@ -115,7 +124,7 @@ export class FileSystemCommon {
     }
 
     async exists(path: Uri | string, fileType?: vscode.FileType): Promise<boolean> {
-        const uri = FileSystemCommon.getUri(path)
+        const uri = this.#toUri(path)
 
         if (isCloud9()) {
             // vscode.workspace.fs.stat() is SLOW. Avoid it on Cloud9.
@@ -154,26 +163,37 @@ export class FileSystemCommon {
     }
 
     /**
-     * - Writes a file with `utf-8` encoding and `644` (rw-r--r--) permissions.
-     * - Creates missing directories in the given path.
+     * Writes `data` to file `path` (creating missing intermediate directories if needed). If `opt`
+     * is not given (or in web-mode), defaults with `utf-8` encoding and `644` (rw-r--r--)
+     * permissions.
+     *
+     * @param path File location
+     * @param data File content
+     * @param opt File permissions/flags. Only works in a non-web (nodejs) context. If provided,
+     * nodejs filesystem interface is used instead of routing through vscode VFS.
      */
-    async writeFile(path: Uri | string, data: string | Uint8Array): Promise<void> {
-        path = FileSystemCommon.getUri(path)
+    async writeFile(path: Uri | string, data: string | Uint8Array, opt?: WriteFileOptions): Promise<void> {
+        const uri = this.#toUri(path)
+        const errHandler = createPermissionsErrorHandler(uri, '*w*')
+        const content = this.#toBytes(data)
+        // - Special case: if `opt` is given, use nodejs directly. This isn't ideal, but is the only
+        //   way (unless you know better) we can let callers specify permissions.
+        // - Cloud9 vscode.workspace.writeFile has limited functionality, e.g. cannot write outside
+        //   of open workspace.
+        const useNodejs = (opt && !isWeb()) || isCloud9()
 
-        // vscode.workspace.writeFile is stubbed in C9 has limited functionality,
-        // e.g. cannot write outside of open workspace
-        if (isCloud9()) {
-            await nodefs.writeFile(path.fsPath, FileSystemCommon.asArray(data))
-            return
+        if (useNodejs) {
+            return nodefs.writeFile(uri.fsPath, content, opt).catch(errHandler)
         }
-        return vfs.writeFile(path, FileSystemCommon.asArray(data))
+
+        return vfs.writeFile(uri, content).then(undefined, errHandler)
     }
 
     /**
      * The stat of the file,  throws if the file does not exist or on any other error.
      */
     async stat(uri: vscode.Uri | string): Promise<vscode.FileStat> {
-        const path = FileSystemCommon.getUri(uri)
+        const path = this.#toUri(uri)
         return await vfs.stat(path)
     }
 
@@ -191,14 +211,14 @@ export class FileSystemCommon {
     async delete(fileOrDir: string | vscode.Uri, opt_?: { recursive?: boolean; force?: boolean }): Promise<void> {
         const opt = { ...opt_, recursive: !!opt_?.recursive }
         opt.force = opt.force === false ? opt.force : !!(opt.force || opt.recursive)
-        const uri = FileSystemCommon.getUri(fileOrDir)
+        const uri = this.#toUri(fileOrDir)
         const parent = vscode.Uri.joinPath(uri, '..')
-        const errorHandler = createPermissionsErrorHandler(parent, '*wx')
+        const errHandler = createPermissionsErrorHandler(parent, '*wx')
 
         if (isCloud9()) {
             // Cloud9 does not support vscode.workspace.fs.delete.
             opt.force = !!opt.recursive
-            return nodefs.rm(uri.fsPath, opt).catch(errorHandler)
+            return nodefs.rm(uri.fsPath, opt).catch(errHandler)
         }
 
         if (opt.recursive) {
@@ -218,7 +238,7 @@ export class FileSystemCommon {
             if (notFound && opt.force) {
                 return // Ignore "not found" error.
             } else if (isWeb() || isPermissionsError(err)) {
-                throw await errorHandler(err)
+                throw await errHandler(err)
             } else if (uri.scheme !== 'file' || (!isWin() && !notFound)) {
                 throw err
             } else {
@@ -248,7 +268,7 @@ export class FileSystemCommon {
     }
 
     async readdir(uri: vscode.Uri | string): Promise<[string, vscode.FileType][]> {
-        const path = FileSystemCommon.getUri(uri)
+        const path = this.#toUri(uri)
 
         // readdir is not a supported vscode API in Cloud9
         if (isCloud9()) {
@@ -262,28 +282,41 @@ export class FileSystemCommon {
     }
 
     async copy(source: vscode.Uri | string, target: vscode.Uri | string): Promise<void> {
-        const sourcePath = FileSystemCommon.getUri(source)
-        const targetPath = FileSystemCommon.getUri(target)
+        const sourcePath = this.#toUri(source)
+        const targetPath = this.#toUri(target)
         return await vfs.copy(sourcePath, targetPath, { overwrite: true })
     }
 
-    // -------- private methods --------
+    /**
+     * Checks if the current user has _at least_ the specified permissions.
+     *
+     * This throws {@link PermissionsError} when permissions are insufficient.
+     */
+    async checkPerms(file: string | vscode.Uri, perms: PermissionsTriplet): Promise<void> {
+        const uri = this.#toUri(file)
+        const errHandler = createPermissionsErrorHandler(uri, perms)
+        const flags = Array.from(perms) as (keyof typeof this.modeMap)[]
+        const mode = flags.reduce((m, f) => m | this.modeMap[f], nodeConstants.F_OK)
+
+        return nodefs.access(uri.fsPath, mode).catch(errHandler)
+    }
+
+    // TODO: implement this by checking the file mode
+    // public static async checkExactPerms(file: string | vscode.Uri, perms: `${PermissionsTriplet}${PermissionsTriplet}${PermissionsTriplet}`)
+
     static readonly #decoder = new TextDecoder()
     static readonly #encoder = new TextEncoder()
-
-    private static arrayToString(array: Uint8Array) {
-        return FileSystemCommon.#decoder.decode(array)
-    }
 
     private static stringToArray(string: string): Uint8Array {
         return FileSystemCommon.#encoder.encode(string)
     }
 
-    private static asArray(array: Uint8Array | string): Uint8Array {
-        if (typeof array === 'string') {
-            return FileSystemCommon.stringToArray(array)
+    /** Encodes UTF-8 string data as bytes. */
+    #toBytes(data: Uint8Array | string): Uint8Array {
+        if (typeof data === 'string') {
+            return FileSystemCommon.stringToArray(data)
         }
-        return array
+        return data
     }
 
     /**
@@ -292,11 +325,20 @@ export class FileSystemCommon {
      * @param path The file path for which to retrieve metadata.
      * @return The Uri about the file.
      */
-    private static getUri(path: string | vscode.Uri): vscode.Uri {
+    #toUri(path: string | vscode.Uri): vscode.Uri {
         if (path instanceof vscode.Uri) {
             return path
         }
         return vscode.Uri.file(path)
+    }
+
+    private get modeMap() {
+        return {
+            '*': 0,
+            r: nodeConstants.R_OK,
+            w: nodeConstants.W_OK,
+            x: nodeConstants.X_OK,
+        } as const
     }
 }
 
