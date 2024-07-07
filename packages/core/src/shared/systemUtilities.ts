@@ -5,15 +5,12 @@
 
 import fs from 'fs'
 import * as vscode from 'vscode'
-import * as os from 'os'
 import * as path from 'path'
 import fs2 from '../srcShared/fs'
-import { EnvironmentVariables } from './environmentVariables'
 import { ChildProcess } from './utilities/childProcess'
 import { getLogger } from './logger/logger'
 import { GitExtension } from './extensions/git'
 import { Settings } from './settings'
-import globals, { isWeb } from './extensionGlobals'
 
 /**
  * Deprecated interface for filesystem operations.
@@ -28,29 +25,7 @@ export class SystemUtilities {
     private static bashPath: string
 
     public static getHomeDirectory(): string {
-        if (isWeb()) {
-            // When in browser we cannot access the users desktop file system.
-            // Instead, VS Code provided uris will use the browsers storage.
-            // IMPORTANT: we must preserve the scheme of this URI or else VS Code
-            // will incorrectly interpret the path.
-            return globals.context.globalStorageUri.toString()
-        }
-
-        const env = process.env as EnvironmentVariables
-
-        if (env.HOME !== undefined) {
-            return env.HOME
-        }
-        if (env.USERPROFILE !== undefined) {
-            return env.USERPROFILE
-        }
-        if (env.HOMEPATH !== undefined) {
-            const homeDrive: string = env.HOMEDRIVE || 'C:'
-
-            return path.join(homeDrive, env.HOMEPATH)
-        }
-
-        return os.homedir()
+        return fs2.getUserHomeDir()
     }
 
     public static async readFile(file: string | vscode.Uri, decoder: TextDecoder = new TextDecoder()): Promise<string> {

@@ -6,78 +6,25 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
+import { fsCommon as fs2 } from '../../srcShared/fs'
 import * as os from 'os'
 import * as path from 'path'
 import * as utils from 'util'
 
-import { EnvironmentVariables } from '../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import * as testutil from '../testUtil'
 import { PermissionsError, formatError, isFileNotFoundError } from '../../shared/errors'
 
 describe('SystemUtilities', function () {
-    let tempFolder: string
+    let testDir: string
 
     before(async function () {
-        // Make a temp folder for all these tests
-        // Stick some temp credentials files in there to load from
-        tempFolder = await makeTemporaryToolkitFolder()
+        testDir = await makeTemporaryToolkitFolder()
     })
 
     after(async function () {
-        await fs.remove(tempFolder)
-    })
-
-    describe('getHomeDirectory', function () {
-        it('gets HOME if set', async function () {
-            const env = process.env as EnvironmentVariables
-
-            env.HOME = 'c:\\qwerty'
-            assert.strictEqual(SystemUtilities.getHomeDirectory(), 'c:\\qwerty')
-        })
-
-        it('gets USERPROFILE if set and HOME is not set', async function () {
-            const env = process.env as EnvironmentVariables
-
-            delete env.HOME
-            env.USERPROFILE = 'c:\\profiles\\qwerty'
-            assert.strictEqual(SystemUtilities.getHomeDirectory(), 'c:\\profiles\\qwerty')
-        })
-
-        it('gets HOMEPATH if set and HOME and USERPROFILE are not set', async function () {
-            const env = process.env as EnvironmentVariables
-
-            delete env.HOME
-            delete env.USERPROFILE
-            delete env.HOMEDRIVE
-            env.HOMEPATH = `${path.sep}users${path.sep}homepath`
-            assert.strictEqual(
-                SystemUtilities.getHomeDirectory().toLowerCase(),
-                `c:${path.sep}users${path.sep}homepath`
-            )
-        })
-
-        it('prefixes result with HOMEDRIVE if set', async function () {
-            const env = process.env as EnvironmentVariables
-
-            delete env.HOME
-            delete env.USERPROFILE
-            env.HOMEPATH = `${path.sep}users${path.sep}homepath`
-            env.HOMEDRIVE = 'x:'
-            assert.strictEqual(SystemUtilities.getHomeDirectory(), `x:${path.sep}users${path.sep}homepath`)
-        })
-
-        it('falls back on os.homedir if no environment variables are set', async function () {
-            const env = process.env as EnvironmentVariables
-
-            delete env.HOME
-            delete env.USERPROFILE
-            delete env.HOMEPATH
-            delete env.HOMEDRIVE
-
-            assert.strictEqual(SystemUtilities.getHomeDirectory(), os.homedir())
-        })
+        await fs2.delete(testDir, { recursive: true, force: true })
     })
 
     it('findTypescriptCompiler()', async function () {
@@ -129,7 +76,7 @@ describe('SystemUtilities', function () {
 
             describe('unrelated exceptions', function () {
                 it('bubbles up ENOENT', async function () {
-                    const dirPath = path.join(tempFolder, `dir${runCounter}`)
+                    const dirPath = path.join(testDir, `dir${runCounter}`)
                     await fs.mkdir(dirPath)
                     const err = await SystemUtilities.readFile(path.join(dirPath, 'foo')).catch(e => e)
                     assertError(err, Error)
@@ -139,7 +86,7 @@ describe('SystemUtilities', function () {
 
             describe('owned by user', function () {
                 it('fails writing a new file to a directory without `u+x`', async function () {
-                    const dirPath = path.join(tempFolder, `dir${runCounter}`)
+                    const dirPath = path.join(testDir, `dir${runCounter}`)
                     await fs.mkdir(dirPath, { mode: 0o677 })
                     const err = await SystemUtilities.writeFile(path.join(dirPath, 'foo'), 'foo').catch(e => e)
                     assert.match(
@@ -152,7 +99,7 @@ describe('SystemUtilities', function () {
                 })
 
                 it('fails writing a new file to a directory without `u+w`', async function () {
-                    const dirPath = path.join(tempFolder, `dir${runCounter}`)
+                    const dirPath = path.join(testDir, `dir${runCounter}`)
                     await fs.mkdir(dirPath, { mode: 0o577 })
                     const err = await SystemUtilities.writeFile(path.join(dirPath, 'foo'), 'foo').catch(e => e)
                     assert.match(
@@ -166,7 +113,7 @@ describe('SystemUtilities', function () {
                 })
 
                 it('fails writing an existing file without `u+w`', async function () {
-                    const filePath = path.join(tempFolder, `file${runCounter}`)
+                    const filePath = path.join(testDir, `file${runCounter}`)
                     await fs.writeFile(filePath, 'foo', { mode: 0o400 })
                     const err = await SystemUtilities.writeFile(filePath, 'foo2').catch(e => e)
                     assert.match(
@@ -180,7 +127,7 @@ describe('SystemUtilities', function () {
                 })
 
                 it('fails reading an existing file without `u+r`', async function () {
-                    const filePath = path.join(tempFolder, `file${runCounter}`)
+                    const filePath = path.join(testDir, `file${runCounter}`)
                     await fs.writeFile(filePath, 'foo', { mode: 0o200 })
                     const err = await SystemUtilities.readFile(filePath).catch(e => e)
                     assert.match(
@@ -198,7 +145,7 @@ describe('SystemUtilities', function () {
                     let filePath: string
 
                     beforeEach(async function () {
-                        dirPath = path.join(tempFolder, `dir${runCounter}`)
+                        dirPath = path.join(testDir, `dir${runCounter}`)
                         await fs.mkdir(dirPath)
                         filePath = path.join(dirPath, 'file')
                         await fs.writeFile(filePath, 'foo')
