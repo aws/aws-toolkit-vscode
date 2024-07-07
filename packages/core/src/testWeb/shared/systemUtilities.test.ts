@@ -6,9 +6,12 @@
 import assert from 'assert'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import globals from '../../shared/extensionGlobals'
+import fs from '../../srcShared/fs'
 
 describe('SystemUtilities', function () {
-    it('getHomeDirectory() when in Browser', function () {
+    it('getHomeDirectory() when in Browser', async () => {
+        // TODO: testWeb needs a `globalSetup.test.ts` ...
+        await fs.initUserHomeDir(globals.context, () => undefined)
         assert.strictEqual(SystemUtilities.getHomeDirectory(), globals.context.globalStorageUri.toString())
     })
 })
