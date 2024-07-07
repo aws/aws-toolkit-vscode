@@ -3,4 +3,4 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export { FileSystemCommon, fsCommon } from './fs'
+export { FileSystemCommon, fsCommon, fsCommon as fs } from './fs'
