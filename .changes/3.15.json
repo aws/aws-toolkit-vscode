@@ -1,0 +1,35 @@
+{
+  "date" : "2024-07-08",
+  "version" : "3.15",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Amazon Q Chat: Fixed button texts are cropped too short"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Chat: Fixed button font sizes are too big"
+  }, {
+    "type" : "bugfix",
+    "description" : "Expose Amazon Q backend validation error message"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Security Scans: Fixed unnecessary yellow lines appearing in both auto scans and project scans."
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q: Fix an issue where inline suggestion will not properly show in JetBrains remote env 2024.1+"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Chat: Fixed prompt input becomes invisible when multine text inserted with paste"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix Q Chat not respecting system trust store unless a proxy is configured"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Chat: Fixed prompt input and selected command horizontal alignment"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Chat: Fixed prompt input becomes invisible if an html special character is inserted"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Chat: Fixed buttons don't show borders inside a message"
+  } ]
+}

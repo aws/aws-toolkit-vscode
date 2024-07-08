@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix Q Chat not respecting system trust store unless a proxy is configured"
-}

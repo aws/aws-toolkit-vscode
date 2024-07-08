@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Amazon Q Security Scans: Fixed unnecessary yellow lines appearing in both auto scans and project scans."
-}
