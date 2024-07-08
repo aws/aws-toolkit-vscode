@@ -515,7 +515,14 @@ export function getWorkspaceFoldersByPrefixes(
 }
 
 /**
- * collects all files that are marked as source
+ * Collects all files that are suitable for local indexing.
+ * 1. Must be a supported programming language
+ * 2. Must not be auto generated code
+ * 3. Must not be within gitignore
+ * 4. Ranked by priority.
+ * 5. Select files within maxSize limit.
+ * This function do not read the actual file content or compress them into a zip.
+ * TODO: Move this to LSP
  * @param sourcePaths the paths where collection starts
  * @param workspaceFolders the current workspace folders opened
  * @param respectGitIgnore whether to respect gitignore file

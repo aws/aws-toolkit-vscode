@@ -163,7 +163,7 @@ export class CWCTelemetryHelper {
                     cwsprChatHasReference: message.codeReference && message.codeReference.length > 0,
                     cwsprChatCodeBlockIndex: message.codeBlockIndex,
                     cwsprChatTotalCodeBlocks: message.totalCodeBlocks,
-                    cwsprChatHasProjectLevelContext: this.responseWithProjectContext.get(message.messageId),
+                    cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
                 }
                 break
             case 'code_was_copied_to_clipboard':
@@ -179,7 +179,7 @@ export class CWCTelemetryHelper {
                     cwsprChatHasReference: message.codeReference && message.codeReference.length > 0,
                     cwsprChatCodeBlockIndex: message.codeBlockIndex,
                     cwsprChatTotalCodeBlocks: message.totalCodeBlocks,
-                    cwsprChatHasProjectLevelContext: this.responseWithProjectContext.get(message.messageId),
+                    cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
                 }
                 break
             case 'follow-up-was-clicked':
@@ -190,7 +190,7 @@ export class CWCTelemetryHelper {
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'clickFollowUp',
-                    cwsprChatHasProjectLevelContext: this.responseWithProjectContext.get(message.messageId),
+                    cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
                 }
                 break
             case 'chat-item-voted':
@@ -201,7 +201,7 @@ export class CWCTelemetryHelper {
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatInteractionType: message.vote,
-                    cwsprChatHasProjectLevelContext: this.responseWithProjectContext.get(message.messageId),
+                    cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
                 }
                 break
             case 'source-link-click':
@@ -213,7 +213,7 @@ export class CWCTelemetryHelper {
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatInteractionType: 'clickLink',
                     cwsprChatInteractionTarget: message.link,
-                    cwsprChatHasProjectLevelContext: this.responseWithProjectContext.get(message.messageId),
+                    cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
                 }
                 break
             case 'response-body-link-click':
@@ -225,7 +225,7 @@ export class CWCTelemetryHelper {
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatInteractionType: 'clickBodyLink',
                     cwsprChatInteractionTarget: message.link,
-                    cwsprChatHasProjectLevelContext: this.responseWithProjectContext.get(message.messageId),
+                    cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
                 }
                 break
             case 'footer-info-link-click':
@@ -320,10 +320,10 @@ export class CWCTelemetryHelper {
             cwsprChatHasCodeSnippet: triggerPayload.codeSelection && !triggerPayload.codeSelection.isEmpty,
             cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
             credentialStartUrl: AuthUtil.instance.startUrl,
-            cwsprChatHasProjectLevelContext: triggerPayload.relevantTextDocuments
+            cwsprChatHasProjectContext: triggerPayload.relevantTextDocuments
                 ? triggerPayload.relevantTextDocuments.length > 0
                 : false,
-            cwsprChatProjectLevelContextQueryLatencyInMs: triggerPayload.projectContextQueryLatencyMs,
+            cwsprChatProjectContextQueryMs: triggerPayload.projectContextQueryLatencyMs,
         })
     }
 
@@ -353,7 +353,7 @@ export class CWCTelemetryHelper {
             cwsprChatConversationType: 'Chat',
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererCustomizationArn: triggerPayload.customization.arn,
-            cwsprChatHasProjectLevelContext: triggerPayload.relevantTextDocuments
+            cwsprChatHasProjectContext: triggerPayload.relevantTextDocuments
                 ? triggerPayload.relevantTextDocuments.length > 0
                 : false,
         }

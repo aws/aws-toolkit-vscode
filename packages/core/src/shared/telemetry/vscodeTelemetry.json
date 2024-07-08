@@ -155,24 +155,24 @@
             "description": "true if user has selected code snippet, false otherwise."
         },
         {
-            "name": "cwsprChatHasProjectLevelContext",
+            "name": "cwsprChatHasProjectContext",
             "type": "boolean",
-            "description": "true if query has project level context."
+            "description": "true if query has project level context, false otherwise."
         },
         {
-            "name": "cwsprChatProjectLevelContextQueryLatencyInMs",
+            "name": "cwsprChatProjectContextQueryMs",
             "type": "int",
-            "description": "query latency in ms for local project context"
+            "description": "Query latency in ms for local project context"
         },
         {
             "name": "amazonqIndexFileSizeInMB",
             "type": "int",
-            "description": "Index size in MB"
+            "description": "The sum of file sizes that were indexed in MB"
         },
         {
             "name": "amazonqIndexFileCount",
             "type": "int",
-            "description": "Files indexed"
+            "description": "Number of files indexed"
         },
         {
             "name": "amazonqIndexMemoryUsageInMB",
@@ -182,7 +182,7 @@
         {
             "name": "amazonqIndexCpuUsagePercentage",
             "type": "int",
-            "description": "Cpu usage of LSP server"
+            "description": "CPU used by LSP server as a percentage of all available CPUs on the system"
         },
         {
             "name": "cwsprChatProgrammingLanguage",
@@ -749,11 +749,11 @@
                     "type": "cwsprChatConversationType"
                 },
                 {
-                    "type": "cwsprChatHasProjectLevelContext",
+                    "type": "cwsprChatHasProjectContext",
                     "required": false
                 },
                 {
-                    "type": "cwsprChatProjectLevelContextQueryLatencyInMs",
+                    "type": "cwsprChatProjectContextQueryMs",
                     "required": false
                 }
             ]
@@ -864,7 +864,7 @@
                     "type": "cwsprChatConversationType"
                 },
                 {
-                    "type": "cwsprChatHasProjectLevelContext",
+                    "type": "cwsprChatHasProjectContext",
                     "required": false
                 },
                 {
@@ -965,7 +965,7 @@
                     "required": false
                 },
                 {
-                    "type": "cwsprChatHasProjectLevelContext",
+                    "type": "cwsprChatHasProjectContext",
                     "required": false
                 }
             ]
