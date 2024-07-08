@@ -34,6 +34,7 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.InboundAppMess
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.ModifySourceFolderErrorReason
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.MonthlyConversationLimitError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.PlanIterationLimitError
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.ZipFileError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.createUserFacingErrorMessage
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FeatureDevMessageType
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.FollowUp
@@ -282,14 +283,42 @@ class FeatureDevController(
             session.initCodegen(messenger)
             onCodeGeneration(session, "", tabId)
         } catch (err: Exception) {
-            val message = createUserFacingErrorMessage(err.message)
-            messenger.sendError(
-                tabId = tabId,
-                errMessage = message ?: message("amazonqFeatureDev.exception.request_failed"),
-                retries = retriesRemaining(session),
-                phase = session.sessionState.phase,
-                conversationId = session.conversationIdUnsafe
-            )
+            logger.warn(err) { "Encountered ${err.message} for tabId: $tabId" }
+            if (err is RepoSizeError) {
+                messenger.sendError(
+                    tabId = tabId,
+                    errMessage = err.message,
+                    retries = retriesRemaining(session),
+                    conversationId = session.conversationIdUnsafe
+                )
+                messenger.sendSystemPrompt(
+                    tabId = tabId,
+                    followUp = listOf(
+                        FollowUp(
+                            pillText = message("amazonqFeatureDev.follow_up.modify_source_folder"),
+                            type = FollowUpTypes.MODIFY_DEFAULT_SOURCE_FOLDER,
+                            status = FollowUpStatusType.Info,
+                        )
+                    ),
+                )
+            } else if (err is ZipFileError) {
+                messenger.sendError(
+                    tabId = tabId,
+                    errMessage = err.message,
+                    retries = 0,
+                    phase = session.sessionState.phase,
+                    conversationId = session.conversationIdUnsafe
+                )
+            } else {
+                val message = createUserFacingErrorMessage(err.message)
+                messenger.sendError(
+                    tabId = tabId,
+                    errMessage = message ?: message("amazonqFeatureDev.exception.request_failed"),
+                    retries = retriesRemaining(session),
+                    phase = session.sessionState.phase,
+                    conversationId = session.conversationIdUnsafe
+                )
+            }
         }
     }
 
@@ -495,6 +524,14 @@ class FeatureDevController(
                             status = FollowUpStatusType.Success,
                         )
                     ),
+                )
+            } else if (err is ZipFileError) {
+                messenger.sendError(
+                    tabId = tabId,
+                    errMessage = err.message,
+                    retries = 0,
+                    phase = session?.sessionState?.phase,
+                    conversationId = session?.conversationIdUnsafe
                 )
             } else {
                 val msg = createUserFacingErrorMessage("$FEATURE_NAME request failed: ${err.message ?: err.cause?.message}")

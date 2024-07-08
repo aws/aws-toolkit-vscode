@@ -10,6 +10,8 @@ open class FeatureDevException(override val message: String?, override val cause
 
 class ContentLengthError(override val message: String, override val cause: Throwable?) : RepoSizeError, RuntimeException()
 
+class ZipFileError(override val message: String, override val cause: Throwable?) : RuntimeException()
+
 class PlanIterationLimitError(override val message: String, override val cause: Throwable?) : RuntimeException()
 
 class CodeIterationLimitError(override val message: String, override val cause: Throwable?) : RuntimeException()
