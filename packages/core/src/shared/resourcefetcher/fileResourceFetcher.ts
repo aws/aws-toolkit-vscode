@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { fsCommon } from '../../srcShared/fs'
+import { fsCommon } from '../fs/fs'
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
 

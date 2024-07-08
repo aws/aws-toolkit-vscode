@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { dirname } from 'path'
 import { ToolkitError, isFileNotFoundError } from '../errors'
-import fs from '../../srcShared/fs'
+import fs from '../../shared/fs/fs'
 import { promises as fsPromises } from 'fs'
 import crypto from 'crypto'
 import { isWeb } from '../extensionGlobals'

@@ -5,7 +5,7 @@
 
 import { Command, FileChangedMessage, MessageType, WebviewContext } from '../types'
 import vscode from 'vscode'
-import { fsCommon } from '../../srcShared/fs'
+import { fsCommon } from '../../shared/fs/fs'
 
 /**
  * Function to call when the text document has been modified

@@ -8,7 +8,7 @@ import { ZipStream } from '../../../shared/utilities/zipStream'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import path from 'path'
-import { fsCommon } from '../../../srcShared/fs'
+import { fsCommon } from '../../../shared/fs/fs'
 import crypto from 'crypto'
 
 describe('zipStream', function () {

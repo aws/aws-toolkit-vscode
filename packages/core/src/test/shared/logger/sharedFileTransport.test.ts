@@ -6,7 +6,7 @@
 import vscode from 'vscode'
 import assert from 'assert'
 import { SharedFileTransport, flushIntervalMillis } from '../../../shared/logger/sharedFileTransport'
-import { fsCommon } from '../../../srcShared/fs'
+import { fsCommon } from '../../../shared/fs/fs'
 import { stub, SinonStub } from 'sinon'
 import { MESSAGE } from '../../../shared/logger/consoleLogTransport'
 import { createTestFile } from '../../testUtil'

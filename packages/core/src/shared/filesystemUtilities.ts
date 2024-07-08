@@ -11,7 +11,7 @@ import { getLogger } from './logger'
 import * as pathutils from './utilities/pathUtils'
 import globals from '../shared/extensionGlobals'
 import { GlobalState } from './globalState'
-import { fsCommon } from '../srcShared/fs'
+import { fsCommon } from '../shared/fs/fs'
 
 export const tempDirPath = path.join(
     // https://github.com/aws/aws-toolkit-vscode/issues/240

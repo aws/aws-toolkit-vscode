@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { fsCommon } from '../srcShared/fs'
+import { fsCommon } from '../shared/fs/fs'
 import request from '../common/request'
 import { getLogger } from '../shared/logger'
 import { ThreatComposerEditor } from './threatComposerEditor'

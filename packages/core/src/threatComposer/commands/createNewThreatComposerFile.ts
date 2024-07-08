@@ -7,7 +7,7 @@ import path from 'path'
 import { Commands } from '../../shared/vscode/commands2'
 import vscode from 'vscode'
 import { ThreatComposerEditorProvider } from '../threatComposerEditorProvider'
-import { fsCommon } from '../../srcShared/fs'
+import { fsCommon } from '../../shared/fs/fs'
 
 /**
  * This is a helper function to create a new Threat Composer file.

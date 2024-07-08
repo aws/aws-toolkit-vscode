@@ -4,7 +4,7 @@
  */
 
 import TransportStream from 'winston-transport'
-import { fsCommon } from '../../srcShared/fs'
+import { fsCommon } from '../fs/fs'
 import * as vscode from 'vscode'
 import globals from '../extensionGlobals'
 import { MESSAGE } from './consoleLogTransport'

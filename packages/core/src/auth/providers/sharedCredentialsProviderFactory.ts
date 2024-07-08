@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { fsCommon } from '../../srcShared/fs'
+import { fsCommon } from '../../shared'
 import { getLogger, Logger } from '../../shared/logger'
 import { loadSharedCredentialsSections, updateAwsSdkLoadConfigEnvVar } from '../credentials/sharedCredentials'
 import { CredentialsProviderType } from './credentials'

@@ -25,7 +25,7 @@ import { FakeChildProcessResult, TestSamCliProcessInvoker } from './shared/sam/c
 import { createTestWorkspaceFolder } from './testUtil'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
 import { createTestRegionProvider } from './shared/regions/testUtil'
-import { fsCommon } from '../srcShared/fs'
+import { fsCommon } from '../shared/fs/fs'
 
 export interface FakeMementoStorage {
     [key: string]: any

@@ -20,7 +20,7 @@ import {
     listScanResults,
 } from '../../codewhisperer/service/securityScanHandler'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { fsCommon } from '../../srcShared/fs'
+import { fsCommon } from '../../shared/fs/fs'
 import { ZipUtil } from '../../codewhisperer/util/zipUtil'
 import { randomUUID } from '../../common/crypto'
 

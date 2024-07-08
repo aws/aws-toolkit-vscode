@@ -7,7 +7,7 @@ import assert from 'assert'
 import path from 'path'
 import { HumanInTheLoopManager } from 'aws-core-vscode/codewhisperer'
 import { getTestResourceFilePath, stripStringWhitespace } from './amazonQGumbyUtil'
-import { fsCommon } from 'aws-core-vscode/srcShared'
+import { fsCommon } from 'aws-core-vscode/shared'
 import { assertEqualPaths } from 'aws-core-vscode/test'
 
 describe('HumanInTheLoopManager', async function () {

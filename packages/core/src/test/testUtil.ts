@@ -14,7 +14,7 @@ import globals from '../shared/extensionGlobals'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
 import { keys, selectFrom } from '../shared/utilities/tsUtils'
-import { fsCommon } from '../srcShared/fs'
+import { fsCommon } from '../shared/fs/fs'
 import { DeclaredCommand } from '../shared/vscode/commands2'
 
 const testTempDirs: string[] = []

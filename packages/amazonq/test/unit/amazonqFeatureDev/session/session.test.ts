@@ -20,7 +20,7 @@ import {
 } from 'aws-core-vscode/test'
 import { CurrentWsFolders, CodeGenState, FeatureDevClient, Messenger } from 'aws-core-vscode/amazonqFeatureDev'
 import path from 'path'
-import { FileSystemCommon } from 'aws-core-vscode/srcShared'
+import { FileSystemCommon } from 'aws-core-vscode/shared'
 
 describe('session', () => {
     const conversationID = '12345'

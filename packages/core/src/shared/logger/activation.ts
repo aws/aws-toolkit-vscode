@@ -10,7 +10,7 @@ import { WinstonToolkitLogger } from './winstonToolkitLogger'
 import { Settings } from '../settings'
 import { Logging } from './commands'
 import { resolvePath } from '../utilities/pathUtils'
-import { fsCommon } from '../../srcShared/fs'
+import { fsCommon } from '../../shared/fs/fs'
 import { isWeb } from '../extensionGlobals'
 import { getUserAgent } from '../telemetry/util'
 

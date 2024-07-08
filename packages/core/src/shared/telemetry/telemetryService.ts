@@ -19,7 +19,7 @@ import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { getClientId, validateMetricEvent } from './util'
 import { telemetry } from './telemetry'
-import { fsCommon } from '../../srcShared/fs'
+import { fsCommon } from '../fs/fs'
 
 export type TelemetryService = ClassToInterfaceType<DefaultTelemetryService>
 

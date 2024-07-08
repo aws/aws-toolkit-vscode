@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
 import { BaseTemplates } from './templates/baseTemplates'
-import { fsCommon } from '../srcShared/fs'
+import { fsCommon } from '../shared/fs/fs'
 import { getIdeProperties, isCloud9, isCn } from './extensionUtilities'
 
 const localize = nls.loadMessageBundle()

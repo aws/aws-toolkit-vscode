@@ -9,7 +9,7 @@ import { Uri, Range } from 'vscode'
 import { isEqual } from '../../../auth/providers/credentials'
 import { SharedCredentialsProviderFactory } from '../../../auth/providers/sharedCredentialsProviderFactory'
 import * as sharedCredentials from '../../../auth/credentials/sharedCredentials'
-import { fsCommon } from '../../../srcShared/fs'
+import { fsCommon } from '../../../shared/fs/fs'
 import vscode from 'vscode'
 
 describe('SharedCredentialsProviderFactory', async function () {

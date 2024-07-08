@@ -9,7 +9,7 @@ import { fileExists } from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 import { isNonNullable } from '../utilities/tsUtils'
 import { getConfigFilename, getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
-import { fsCommon } from '../../srcShared/fs'
+import { fsCommon } from '../../shared/fs/fs'
 
 const header = `
 # AWS credentials file used by AWS CLI, SDKs, and tools.

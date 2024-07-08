@@ -10,7 +10,7 @@ import { ToolkitError } from '../../shared/errors'
 import { Socket } from 'net'
 import globals from '../../shared/extensionGlobals'
 import { Result } from '../../shared/utilities/result'
-import { FileSystemCommon } from '../../srcShared/fs'
+import { FileSystemCommon } from '../../shared/fs/fs'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 
 export class MissingPortError extends ToolkitError {

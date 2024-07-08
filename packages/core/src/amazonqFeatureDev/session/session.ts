@@ -16,7 +16,7 @@ import {
 } from '../types'
 import { ConversationIdNotFoundError } from '../errors'
 import { referenceLogText } from '../constants'
-import { FileSystemCommon } from '../../srcShared/fs'
+import { FileSystemCommon } from '../../shared/fs/fs'
 import { Messenger } from '../controllers/chat/messenger/messenger'
 import { FeatureDevClient } from '../client/featureDev'
 import { approachRetryLimit, codeGenRetryLimit } from '../limits'

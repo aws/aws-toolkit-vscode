@@ -15,7 +15,7 @@ import { GlobalStorage } from './globalStorage'
 import { once } from './utilities/functionUtils'
 import { Any, ArrayConstructor } from './utilities/typeConstructors'
 import { AWS_SCHEME } from './constants'
-import { fsCommon } from '../srcShared/fs'
+import { fsCommon } from '../shared/fs/fs'
 import { normalizeVSCodeUri } from './utilities/vsCodeUtils'
 import { telemetry } from './telemetry/telemetry'
 

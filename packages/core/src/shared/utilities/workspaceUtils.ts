@@ -16,7 +16,7 @@ import { getGlobDirExcludedPatterns } from '../fs/watchedFiles'
 import { sanitizeFilename } from './textUtilities'
 import { GitIgnoreAcceptor } from '@gerhobbelt/gitignore-parser'
 import * as parser from '@gerhobbelt/gitignore-parser'
-import { fsCommon } from '../../srcShared/fs'
+import { fsCommon } from '../fs/fs'
 
 type GitIgnoreRelativeAcceptor = {
     folderPath: string

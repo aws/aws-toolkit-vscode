@@ -10,7 +10,7 @@ const localize = nls.loadMessageBundle()
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import { isLogStreamUri, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 import { telemetry, CloudWatchResourceType, Result } from '../../../shared/telemetry/telemetry'
-import { fsCommon } from '../../../srcShared/fs'
+import { fsCommon } from '../../../shared'
 
 /** Prompts the user to select a file location to save the currently visible "aws-cwl:" document to. */
 export async function saveCurrentLogDataContent(): Promise<void> {

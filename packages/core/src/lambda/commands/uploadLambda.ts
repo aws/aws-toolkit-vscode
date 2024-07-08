@@ -10,7 +10,7 @@ const localize = nls.loadMessageBundle()
 
 import AdmZip from 'adm-zip'
 import * as path from 'path'
-import { fsCommon } from '../../srcShared/fs'
+import { fsCommon } from '../../shared'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { cloud9Findfile, makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'

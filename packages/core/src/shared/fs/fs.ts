@@ -5,18 +5,12 @@
 import * as vscode from 'vscode'
 import os from 'os'
 import { promises as nodefs, constants as nodeConstants, WriteFileOptions } from 'fs'
-import { isCloud9 } from '../shared/extensionUtilities'
+import { isCloud9 } from '../extensionUtilities'
 import _path from 'path'
-import {
-    PermissionsError,
-    PermissionsTriplet,
-    ToolkitError,
-    isFileNotFoundError,
-    isPermissionsError,
-} from '../shared/errors'
-import globals from '../shared/extensionGlobals'
-import { getUserInfo, isWin } from '../shared/vscode/env'
-import { resolvePath } from '../shared/utilities/pathUtils'
+import { PermissionsError, PermissionsTriplet, ToolkitError, isFileNotFoundError, isPermissionsError } from '../errors'
+import globals from '../extensionGlobals'
+import { getUserInfo, isWin } from '../vscode/env'
+import { resolvePath } from '../utilities/pathUtils'
 
 const vfs = vscode.workspace.fs
 type Uri = vscode.Uri

@@ -5,7 +5,7 @@
 
 import fs from 'fs'
 import * as vscode from 'vscode'
-import fs2 from '../srcShared/fs'
+import fs2 from '../shared/fs/fs'
 
 /**
  * Deprecated interface for filesystem operations.

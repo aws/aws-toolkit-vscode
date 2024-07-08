@@ -6,7 +6,7 @@
 import assert from 'assert'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import globals from '../../shared/extensionGlobals'
-import fs from '../../srcShared/fs'
+import fs from '../../shared/fs/fs'
 
 describe('SystemUtilities', function () {
     it('getHomeDirectory() when in Browser', async () => {

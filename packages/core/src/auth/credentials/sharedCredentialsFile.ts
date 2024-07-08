@@ -6,7 +6,7 @@
  */
 
 import { join, resolve } from 'path'
-import fs from '../../srcShared/fs'
+import fs from '../../shared/fs/fs'
 import { getLogger } from '../../shared/logger'
 
 /**

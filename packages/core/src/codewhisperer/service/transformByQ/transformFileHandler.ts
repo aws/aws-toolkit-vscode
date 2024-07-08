@@ -11,7 +11,7 @@ import * as CodeWhispererConstants from '../../models/constants'
 import { existsSync, writeFileSync } from 'fs'
 import { BuildSystem, FolderInfo, transformByQState } from '../../models/model'
 import { IManifestFile } from '../../../amazonqFeatureDev/models'
-import { fsCommon } from '../../../srcShared/fs'
+import { fsCommon } from '../../../shared'
 
 export function getDependenciesFolderInfo(): FolderInfo {
     const dependencyFolderName = `${CodeWhispererConstants.dependencyFolderName}${Date.now()}`

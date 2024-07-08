@@ -11,9 +11,8 @@ import {
     maxRepoSizeBytes,
 } from 'aws-core-vscode/amazonqFeatureDev'
 import { createTestWorkspace } from 'aws-core-vscode/test'
-import { AmazonqCreateUpload, Metric } from 'aws-core-vscode/shared'
+import { fsCommon, AmazonqCreateUpload, Metric } from 'aws-core-vscode/shared'
 import sinon from 'sinon'
-import { fsCommon } from 'aws-core-vscode/srcShared'
 
 describe('file utils', () => {
     describe('prepareRepoData', function () {

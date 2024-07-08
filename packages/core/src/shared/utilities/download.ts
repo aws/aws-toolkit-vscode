@@ -10,7 +10,7 @@ import { CodeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTr
 import { transformByQState } from '../../codewhisperer/models/model'
 import { calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { telemetry } from '../telemetry/telemetry'
-import { fsCommon } from '../../srcShared/fs'
+import { fsCommon } from '../fs/fs'
 
 /**
  * This class represents the structure of the archive returned by the ExportResultArchive endpoint

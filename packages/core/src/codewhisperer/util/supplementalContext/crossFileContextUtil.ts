@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { fsCommon } from '../../../srcShared/fs'
+import { fsCommon } from '../../../shared'
 import path = require('path')
 import { BM25Document, BM25Okapi } from './rankBm25'
 import { ToolkitError } from '../../../shared/errors'
