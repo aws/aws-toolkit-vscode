@@ -32,13 +32,9 @@ import { userGuideURL } from '../../../../amazonq/webview/ui/texts/constants'
 import { CodeScanIssue } from '../../../../codewhisperer/models/model'
 import { marked } from 'marked'
 import { JSDOM } from 'jsdom'
+import { LspController } from '../../../../amazonq/lsp/lspController'
 
-export type StaticTextResponseType =
-    | 'quick-action-help'
-    | 'onboarding-help'
-    | 'transform'
-    | 'help'
-    | 'indexing-in-progress'
+export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
 export class Messenger {
     public constructor(
@@ -243,6 +239,29 @@ export class Messenger {
                 this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, statusCode ?? 0)
             })
             .finally(async () => {
+                if (
+                    triggerPayload.relevantTextDocuments &&
+                    triggerPayload.relevantTextDocuments.length > 0 &&
+                    LspController.instance.isIndexingInProgress()
+                ) {
+                    this.dispatcher.sendChatMessage(
+                        new ChatMessage(
+                            {
+                                message:
+                                    message +
+                                    ` \nBy the way, I'm still indexing this project for full context from your workspace. I may have a better response in a few minutes when it's complete if you'd like to try again then.`,
+                                messageType: 'answer-part',
+                                followUps: undefined,
+                                followUpsHeader: undefined,
+                                relatedSuggestions: undefined,
+                                triggerID,
+                                messageID,
+                            },
+                            tabID
+                        )
+                    )
+                }
+
                 if (relatedSuggestions.length !== 0) {
                     this.dispatcher.sendChatMessage(
                         new ChatMessage(
@@ -379,9 +398,6 @@ export class Messenger {
                     },
                 ]
                 followUpsHeader = 'Try Examples:'
-                break
-            case 'indexing-in-progress':
-                message = `By the way, I'm still indexing this project for full context from your workspace. I may have a better response in a few minutes when it's complete if you'd like to try again then.`
                 break
         }
 

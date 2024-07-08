@@ -574,15 +574,11 @@ export class ChatController {
             await this.messenger.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
             return
         }
-        // Loop while we waiting for tabID to be set
         if (triggerPayload.message) {
             const userIntentEnableProjectContext = triggerPayload.message.includes(`@workspace`)
             if (userIntentEnableProjectContext) {
-                triggerPayload.message.replace(/@workspace/g, '')
+                triggerPayload.message = triggerPayload.message.replace(/@workspace/g, '')
                 if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
-                    if (LspController.instance.isIndexingInProgress()) {
-                        this.messenger.sendStaticTextResponse('indexing-in-progress', randomUUID(), tabID)
-                    }
                     const start = performance.now()
                     triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
                     triggerPayload.relevantTextDocuments.forEach(doc => {
