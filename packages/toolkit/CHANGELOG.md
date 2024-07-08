@@ -1,3 +1,8 @@
+## 3.13.0 2024-07-08
+
+- **Bug Fix** Add warning message for drag and drop bug on VS Code 1.91.0
+- **Feature** CodeCatalyst: always show Dev Environment timeout warning as modal prompt
+
 ## 3.12.0 2024-06-27
 
 - **Bug Fix** Step functions language server activates when editing ASL documents from previous session
