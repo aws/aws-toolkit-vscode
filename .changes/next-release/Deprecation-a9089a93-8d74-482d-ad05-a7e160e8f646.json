@@ -1,0 +1,4 @@
+{
+	"type": "Deprecation",
+	"description": "Minimum required VS Code version is now 1.83"
+}
