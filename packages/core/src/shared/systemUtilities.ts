@@ -3,45 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { promises as fsPromises } from 'fs'
 import fs from 'fs'
 import * as vscode from 'vscode'
-import * as os from 'os'
 import * as path from 'path'
-import { EnvironmentVariables } from './environmentVariables'
+import fs2 from '../srcShared/fs'
 import { ChildProcess } from './utilities/childProcess'
 import { getLogger } from './logger/logger'
 import { GitExtension } from './extensions/git'
-import { isCloud9 } from './extensionUtilities'
 import { Settings } from './settings'
-import { PermissionsError, PermissionsTriplet, isFileNotFoundError, isNoPermissionsError } from './errors'
-import globals, { isWeb } from './extensionGlobals'
 
-export function createPermissionsErrorHandler(
-    uri: vscode.Uri,
-    perms: PermissionsTriplet
-): (err: unknown, depth?: number) => Promise<never> {
-    return async function (err: unknown, depth = 0) {
-        if (uri.scheme !== 'file' || process.platform === 'win32') {
-            throw err
-        }
-        if (!isNoPermissionsError(err) && !(isFileNotFoundError(err) && depth > 0)) {
-            throw err
-        }
-
-        const userInfo = os.userInfo({ encoding: 'utf-8' })
-        const stats = await fsPromises.stat(uri.fsPath).catch(async err2 => {
-            if (!isNoPermissionsError(err2) && !(isFileNotFoundError(err2) && perms[1] === 'w')) {
-                throw err
-            }
-
-            throw await createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx')(err2, depth + 1)
-        })
-
-        throw new PermissionsError(uri, stats, userInfo, perms, err)
-    }
-}
-
+/**
+ * Deprecated interface for filesystem operations.
+ *
+ * @deprecated Use `core/src/shared/fs.ts` instead
+ */
 export class SystemUtilities {
     /** Full path to VSCode CLI. */
     private static vscPath: string
@@ -50,40 +25,11 @@ export class SystemUtilities {
     private static bashPath: string
 
     public static getHomeDirectory(): string {
-        if (isWeb()) {
-            // When in browser we cannot access the users desktop file system.
-            // Instead, VS Code provided uris will use the browsers storage.
-            // IMPORTANT: we must preserve the scheme of this URI or else VS Code
-            // will incorrectly interpret the path.
-            return globals.context.globalStorageUri.toString()
-        }
-
-        const env = process.env as EnvironmentVariables
-
-        if (env.HOME !== undefined) {
-            return env.HOME
-        }
-        if (env.USERPROFILE !== undefined) {
-            return env.USERPROFILE
-        }
-        if (env.HOMEPATH !== undefined) {
-            const homeDrive: string = env.HOMEDRIVE || 'C:'
-
-            return path.join(homeDrive, env.HOMEPATH)
-        }
-
-        return os.homedir()
+        return fs2.getUserHomeDir()
     }
 
     public static async readFile(file: string | vscode.Uri, decoder: TextDecoder = new TextDecoder()): Promise<string> {
-        const uri = this.toUri(file)
-        const errorHandler = createPermissionsErrorHandler(uri, 'r**')
-
-        if (isCloud9()) {
-            return decoder.decode(await fsPromises.readFile(uri.fsPath).catch(errorHandler))
-        }
-
-        return decoder.decode(await vscode.workspace.fs.readFile(uri).then(undefined, errorHandler))
+        return fs2.readFileAsString(file, decoder)
     }
 
     public static async writeFile(
@@ -91,129 +37,16 @@ export class SystemUtilities {
         data: string | Buffer,
         opt?: fs.WriteFileOptions
     ): Promise<void> {
-        const uri = this.toUri(file)
-        const errorHandler = createPermissionsErrorHandler(uri, '*w*')
-        const content = typeof data === 'string' ? new TextEncoder().encode(data) : data
-
-        if (isCloud9()) {
-            return fsPromises.writeFile(uri.fsPath, content, opt).catch(errorHandler)
-        }
-
-        return vscode.workspace.fs.writeFile(uri, content).then(undefined, errorHandler)
+        return fs2.writeFile(file, data, opt)
     }
 
     public static async delete(fileOrDir: string | vscode.Uri, opt?: { recursive: boolean }): Promise<void> {
-        const uri = this.toUri(fileOrDir)
-        const dirUri = vscode.Uri.joinPath(uri, '..')
-        const errorHandler = createPermissionsErrorHandler(dirUri, '*wx')
-
-        if (isCloud9()) {
-            const stat = await fsPromises.stat(uri.fsPath)
-            if (stat.isDirectory()) {
-                return fsPromises.rmdir(uri.fsPath).catch(errorHandler)
-            } else {
-                return fsPromises.unlink(uri.fsPath).catch(errorHandler)
-            }
-        }
-
-        if (opt?.recursive) {
-            // We shouldn't catch any errors if using the `recursive` option, otherwise the
-            // error messages may be misleading. Need to implement our own recursive delete
-            // if we want detailed info.
-            return vscode.workspace.fs.delete(uri, opt)
-        } else {
-            // Attempting to delete a file in a directory without `x` results in ENOENT.
-            // But this might not be true. The file could exist, we just don't know about it.
-            return vscode.workspace.fs.delete(uri, opt).then(undefined, async err => {
-                if (isNoPermissionsError(err)) {
-                    throw await errorHandler(err)
-                } else if (uri.scheme !== 'file' || !isFileNotFoundError(err) || process.platform === 'win32') {
-                    throw err
-                } else {
-                    const stats = await fsPromises.stat(dirUri.fsPath).catch(() => {
-                        throw err
-                    })
-                    if ((stats.mode & fs.constants.S_IXUSR) === 0) {
-                        const userInfo = os.userInfo({ encoding: 'utf-8' })
-                        throw new PermissionsError(dirUri, stats, userInfo, '*wx', err)
-                    }
-                }
-
-                throw err
-            })
-        }
+        await fs2.delete(fileOrDir, opt)
     }
 
     public static async fileExists(file: string | vscode.Uri): Promise<boolean> {
-        const uri = this.toUri(file)
-
-        if (isCloud9()) {
-            return fsPromises.access(uri.fsPath, fs.constants.F_OK).then(
-                () => true,
-                () => false
-            )
-        }
-
-        return vscode.workspace.fs.stat(uri).then(
-            () => true,
-            err => !isFileNotFoundError(err)
-        )
+        return fs2.exists(file)
     }
-
-    public static async createDirectory(file: string | vscode.Uri): Promise<void> {
-        const uri = this.toUri(file)
-        const errorHandler = createPermissionsErrorHandler(vscode.Uri.joinPath(uri, '..'), '*wx')
-
-        if (isCloud9()) {
-            return fsPromises
-                .mkdir(uri.fsPath, { recursive: true })
-                .then(() => {})
-                .catch(errorHandler)
-        }
-
-        return vscode.workspace.fs.createDirectory(uri).then(undefined, errorHandler)
-    }
-
-    /** Converts the given path to a URI if necessary */
-    public static toUri(path: string | vscode.Uri): vscode.Uri {
-        if (typeof path === 'string') {
-            const parsed = vscode.Uri.parse(path)
-            // If string path already has a scheme we want to preserve it,
-            // but if on windows the drive looks like a scheme and this causes issues
-            if (parsed.scheme && os.platform() !== 'win32') {
-                return parsed
-            }
-            // path has no scheme to it will be indicated as a file
-            return vscode.Uri.file(path)
-        }
-        return path
-    }
-
-    private static get modeMap() {
-        return {
-            '*': 0,
-            r: fs.constants.R_OK,
-            w: fs.constants.W_OK,
-            x: fs.constants.X_OK,
-        } as const
-    }
-
-    /**
-     * Checks if the current user has _at least_ the specified permissions.
-     *
-     * This throws {@link PermissionsError} when permissions are insufficient.
-     */
-    public static async checkPerms(file: string | vscode.Uri, perms: PermissionsTriplet): Promise<void> {
-        const uri = this.toUri(file)
-        const errorHandler = createPermissionsErrorHandler(uri, perms)
-        const flags = Array.from(perms) as (keyof typeof this.modeMap)[]
-        const mode = flags.reduce((m, f) => m | this.modeMap[f], fs.constants.F_OK)
-
-        return fsPromises.access(uri.fsPath, mode).catch(errorHandler)
-    }
-
-    // TODO: implement this by checking the file mode
-    // public static async checkExactPerms(file: string | vscode.Uri, perms: `${PermissionsTriplet}${PermissionsTriplet}${PermissionsTriplet}`)
 
     /**
      * Tries to execute a program at path `p` with the given args and

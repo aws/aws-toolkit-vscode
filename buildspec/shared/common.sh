@@ -14,6 +14,10 @@ if [ "$VSCODE_TEST_VERSION" = 'minimum' ]; then
     _ignore_pat="$_ignore_pat"'\|Webview is disposed'
 fi
 
+# Do not print (noisy) lines matching these patterns.
+#   - "ERROR:bus… Failed to connect to the bus": noise related to "xvfb". https://github.com/cypress-io/cypress/issues/19299
+_discard_pat='ERROR:bus.cc\|ERROR:viz_main_impl.cc\|ERROR:command_buffer_proxy_impl.cc'
+
 # Expects stdin + two args:
 #   1: error code to return on failure
 #   2: grep pattern
@@ -27,7 +31,7 @@ run_and_report() {
     local msg="${3}"
     local r=0
     mkfifo testout
-    (cat testout &)
+    (grep -v "$_discard_pat" testout &)
     # Capture messages that we may want to fail (or report) later.
     tee testout \
         | { grep > testout-err --line-buffered -E "$pat" || true; }

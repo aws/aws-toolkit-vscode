@@ -112,16 +112,16 @@ export class DefaultTelemetryService {
     public get telemetryEnabled(): boolean {
         return this._telemetryEnabled
     }
-    public set telemetryEnabled(value: boolean) {
+    public async setTelemetryEnabled(value: boolean) {
         if (this._telemetryEnabled !== value) {
-            getLogger().verbose(`Telemetry is now ${value ? 'enabled' : 'disabled'}`)
-        }
+            this._telemetryEnabled = value
 
-        // clear the queue on explicit disable
-        if (!value) {
-            this.clearRecords()
+            // send all the gathered data that the user was opted-in for, prior to disabling
+            if (!value) {
+                await this._flushRecords()
+            }
         }
-        this._telemetryEnabled = value
+        getLogger().verbose(`Telemetry is ${value ? 'enabled' : 'disabled'}`)
     }
 
     public get timer(): NodeJS.Timer | undefined {
@@ -172,16 +172,26 @@ export class DefaultTelemetryService {
         }
     }
 
+    /**
+     * Publish metrics to the Telemetry Service.
+     */
     private async flushRecords(): Promise<void> {
         if (this.telemetryEnabled) {
-            if (this.publisher === undefined) {
-                await this.createDefaultPublisherAndClient()
-            }
-            if (this.publisher !== undefined) {
-                this.publisher.enqueue(...this._eventQueue)
-                await this.publisher.flush()
-                this.clearRecords()
-            }
+            await this._flushRecords()
+        }
+    }
+
+    /**
+     * @warning DO NOT USE DIRECTLY, use `flushRecords()` instead.
+     */
+    private async _flushRecords(): Promise<void> {
+        if (this.publisher === undefined) {
+            await this.createDefaultPublisherAndClient()
+        }
+        if (this.publisher !== undefined) {
+            this.publisher.enqueue(...this._eventQueue)
+            await this.publisher.flush()
+            this.clearRecords()
         }
     }
 

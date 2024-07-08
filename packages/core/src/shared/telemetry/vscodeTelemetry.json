@@ -866,6 +866,10 @@
                 {
                     "type": "cwsprChatHasProjectLevelContext",
                     "required": false
+                },
+                {
+                    "type": "codewhispererCustomizationArn",
+                    "required": false
                 }
             ]
         },

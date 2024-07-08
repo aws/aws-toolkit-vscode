@@ -246,8 +246,8 @@ export class ZipUtil {
     public async removeTmpFiles(zipMetadata: ZipMetadata, scope: CodeWhispererConstants.CodeAnalysisScope) {
         const logger = getLoggerForScope(scope)
         logger.verbose(`Cleaning up temporary files...`)
-        await fsCommon.delete(zipMetadata.zipFilePath)
-        await fsCommon.delete(zipMetadata.rootDir)
+        await fsCommon.delete(zipMetadata.zipFilePath, { force: true })
+        await fsCommon.delete(zipMetadata.rootDir, { recursive: true, force: true })
         logger.verbose(`Complete cleaning up temporary files.`)
     }
 }

@@ -6,14 +6,19 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { existsSync, mkdirSync, promises as fsPromises, readFileSync, rmSync } from 'fs'
+import { existsSync, mkdirSync, promises as nodefs, readFileSync, rmSync } from 'fs'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-import { fsCommon } from '../../srcShared/fs'
+import fs from '../../srcShared/fs'
 import * as os from 'os'
 import { isMinVscode } from '../../shared/vscode/env'
 import Sinon from 'sinon'
 import * as extensionUtilities from '../../shared/extensionUtilities'
-import { toFile } from '../testUtil'
+import { PermissionsError } from '../../shared/errors'
+import { EnvironmentVariables } from '../../shared/environmentVariables'
+import * as testutil from '../testUtil'
+import globals from '../../shared/extensionGlobals'
+import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { driveLetterRegex } from '../../shared/utilities/pathUtils'
 
 function isWin() {
     return os.platform() === 'win32'
@@ -30,7 +35,7 @@ describe('FileSystem', function () {
     })
 
     beforeEach(async function () {
-        await makeTestRoot()
+        await mkTestRoot()
     })
 
     afterEach(async function () {
@@ -43,8 +48,8 @@ describe('FileSystem', function () {
             const path = await makeFile('test.txt', 'hello world')
             const pathAsUri = vscode.Uri.file(path)
 
-            assert.strictEqual(await fsCommon.readFileAsString(path), 'hello world')
-            assert.strictEqual(await fsCommon.readFileAsString(pathAsUri), 'hello world')
+            assert.strictEqual(await fs.readFileAsString(path), 'hello world')
+            assert.strictEqual(await fs.readFileAsString(pathAsUri), 'hello world')
         })
 
         it('throws when no permissions', async function () {
@@ -56,9 +61,9 @@ describe('FileSystem', function () {
             const fileName = 'test.txt'
             const path = await makeFile(fileName, 'hello world', { mode: 0o000 })
 
-            await assert.rejects(fsCommon.readFileAsString(path), err => {
-                assert(err instanceof vscode.FileSystemError)
-                assert.strictEqual(err.code, 'NoPermissions')
+            await assert.rejects(fs.readFileAsString(path), err => {
+                assert(err instanceof PermissionsError)
+                assert.strictEqual(err.code, 'InvalidPermissions')
                 assert(err.message.includes(fileName))
                 return true
             })
@@ -68,7 +73,7 @@ describe('FileSystem', function () {
     describe('writeFile()', function () {
         it('writes a file', async function () {
             const filePath = createTestPath('myFileName')
-            await fsCommon.writeFile(filePath, 'MyContent')
+            await fs.writeFile(filePath, 'MyContent')
             assert.strictEqual(readFileSync(filePath, 'utf-8'), 'MyContent')
         })
 
@@ -77,14 +82,14 @@ describe('FileSystem', function () {
             const text = 'hello'
             const content = new TextEncoder().encode(text)
 
-            await fsCommon.writeFile(filePath, content)
+            await fs.writeFile(filePath, content)
 
             assert.strictEqual(readFileSync(filePath, 'utf-8'), text)
         })
 
         it('makes dirs if missing', async function () {
             const filePath = createTestPath('dirA/dirB/myFileName.txt')
-            await fsCommon.writeFile(filePath, 'MyContent')
+            await fs.writeFile(filePath, 'MyContent')
             assert.strictEqual(readFileSync(filePath, 'utf-8'), 'MyContent')
         })
 
@@ -101,9 +106,9 @@ describe('FileSystem', function () {
             const fileName = 'test.txt'
             const filePath = await makeFile(fileName, 'hello world', { mode: 0o000 })
 
-            await assert.rejects(fsCommon.writeFile(filePath, 'MyContent'), err => {
-                assert(err instanceof vscode.FileSystemError)
-                assert.strictEqual(err.name, 'EntryWriteLocked (FileSystemError) (FileSystemError)')
+            await assert.rejects(fs.writeFile(filePath, 'MyContent'), err => {
+                assert(err instanceof PermissionsError)
+                assert.strictEqual(err.code, 'InvalidPermissions')
                 assert(err.message.includes(fileName))
                 return true
             })
@@ -113,46 +118,57 @@ describe('FileSystem', function () {
     describe('appendFile()', function () {
         it('appends to a file', async function () {
             const filePath = await makeFile('test.txt', 'LINE-1-TEXT')
-            await fsCommon.appendFile(filePath, '\nLINE-2-TEXT')
+            await fs.appendFile(filePath, '\nLINE-2-TEXT')
             assert.strictEqual(readFileSync(filePath, 'utf-8'), 'LINE-1-TEXT\nLINE-2-TEXT')
         })
 
         it('creates new file if it does not exist', async function () {
             const filePath = createTestPath('thisDoesNotExist.txt')
-            await fsCommon.appendFile(filePath, 'i am nikolas')
+            await fs.appendFile(filePath, 'i am nikolas')
             assert.strictEqual(readFileSync(filePath, 'utf-8'), 'i am nikolas')
         })
     })
 
     describe('existsFile()', function () {
-        it('returns true for an existing file', async function () {
-            const filePath = await makeFile('test.txt')
-            const existantFile = await fsCommon.existsFile(filePath)
-            assert.strictEqual(existantFile, true)
+        it('true for existing file', async function () {
+            const file = await makeFile('test.txt')
+            assert.strictEqual(await fs.existsFile(file), true)
         })
 
-        it('returns false for a non-existant file', async function () {
-            const nonExistantFile = await fsCommon.existsFile(createTestPath('thisDoesNotExist.txt'))
-            assert.strictEqual(nonExistantFile, false)
+        it('false for non-existent file', async function () {
+            const nonExistantFile = createTestPath('thisDoesNotExist.txt')
+            assert.strictEqual(await fs.existsFile(nonExistantFile), false)
         })
 
-        it('returns false when directory with same name exists', async function () {
-            const directoryPath = await makeFolder('thisIsDirectory')
-            const existantFile = await fsCommon.existsFile(directoryPath)
-            assert.strictEqual(existantFile, false)
+        it('false for existing directory', async function () {
+            const dir = mkTestDir('thisIsDirectory')
+            assert.strictEqual(await fs.existsFile(dir), false)
         })
     })
 
     describe('existsDir()', function () {
-        it('returns true for an existing directory', async function () {
-            const dirPath = await makeFolder('myDir')
-            const existantDirectory = await fsCommon.existsDir(dirPath)
-            assert.strictEqual(existantDirectory, true)
+        it('true for existing directory', async function () {
+            const dir = mkTestDir('myDir')
+            assert.strictEqual(await fs.existsDir(dir), true)
         })
 
-        it('returns false for a non-existant directory', async function () {
-            const nonExistantDirectory = await fsCommon.existsDir(createTestPath('thisDirDoesNotExist'))
-            assert.strictEqual(nonExistantDirectory, false)
+        it('false for non-existent directory', async function () {
+            const noFile = createTestPath('non-existent')
+            assert.strictEqual(await fs.existsDir(noFile), false)
+        })
+    })
+
+    describe('exists()', function () {
+        it('true for existing file/directory', async function () {
+            const dir = mkTestDir('myDir')
+            const file = await makeFile('test.txt')
+            assert.strictEqual(await fs.exists(dir), true)
+            assert.strictEqual(await fs.exists(file), true)
+        })
+
+        it('false for non-existent file/directory', async function () {
+            const noFile = createTestPath('non-existent')
+            assert.strictEqual(await fs.exists(noFile), false)
         })
     })
 
@@ -162,18 +178,18 @@ describe('FileSystem', function () {
         paths.forEach(async function (p) {
             it(`creates folder: '${p}'`, async function () {
                 const dirPath = createTestPath(p)
-                await fsCommon.mkdir(dirPath)
+                await fs.mkdir(dirPath)
                 assert(existsSync(dirPath))
             })
         })
 
         paths.forEach(async function (p) {
-            it(`creates folder but uses the "fs" module if in C9: '${p}'`, async function () {
+            it(`creates folder but uses the "fs" module if in Cloud9: '${p}'`, async function () {
                 sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
                 const dirPath = createTestPath(p)
-                const mkdirSpy = sandbox.spy(fsPromises, 'mkdir')
+                const mkdirSpy = sandbox.spy(nodefs, 'mkdir')
 
-                await fsCommon.mkdir(dirPath)
+                await fs.mkdir(dirPath)
 
                 assert(existsSync(dirPath))
                 assert.deepStrictEqual(mkdirSpy.args[0], [dirPath, { recursive: true }])
@@ -190,7 +206,7 @@ describe('FileSystem', function () {
             mkdirSync(createTestPath('dirB'))
             mkdirSync(createTestPath('dirC'))
 
-            const files = await fsCommon.readdir(testRootPath())
+            const files = await fs.readdir(testRootPath())
             assert.deepStrictEqual(
                 sorted(files),
                 sorted([
@@ -205,7 +221,7 @@ describe('FileSystem', function () {
         })
 
         it('empty list if no files in directory', async function () {
-            const files = await fsCommon.readdir(testRootPath())
+            const files = await fs.readdir(testRootPath())
             assert.deepStrictEqual(files, [])
         })
 
@@ -213,9 +229,9 @@ describe('FileSystem', function () {
             return i.sort((a, b) => a[0].localeCompare(b[0]))
         }
 
-        it('uses the "fs" readdir implementation if in C9', async function () {
+        it('uses the "fs" readdir implementation if in Cloud9', async function () {
             sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
-            const readdirSpy = sandbox.spy(fsPromises, 'readdir')
+            const readdirSpy = sandbox.spy(nodefs, 'readdir')
 
             await makeFile('a.txt')
             await makeFile('b.txt')
@@ -224,7 +240,7 @@ describe('FileSystem', function () {
             mkdirSync(createTestPath('dirB'))
             mkdirSync(createTestPath('dirC'))
 
-            const files = await fsCommon.readdir(testRootPath())
+            const files = await fs.readdir(testRootPath())
             assert.deepStrictEqual(
                 sorted(files),
                 sorted([
@@ -236,91 +252,207 @@ describe('FileSystem', function () {
                     ['dirC', vscode.FileType.Directory],
                 ])
             )
-            assert.ok(readdirSpy.calledOnce)
+            assert(readdirSpy.calledOnce)
         })
     })
 
     describe('copy()', function () {
         it('copies files and folders from one dir to another', async function () {
-            const targetDir = await makeFolder('targetDir')
+            const targetDir = mkTestDir('targetDir')
             await makeFile('targetDir/a.txt', 'I am A')
             await makeFile('targetDir/dirB/b.txt', 'I am B')
 
             const destDir = path.join(testRootPath(), 'destDir')
-            await fsCommon.copy(targetDir, destDir)
+            await fs.copy(targetDir, destDir)
 
-            assert.strictEqual(await fsCommon.readFileAsString(path.join(destDir, 'a.txt')), 'I am A')
-            assert.strictEqual(await fsCommon.readFileAsString(path.join(destDir, 'dirB/b.txt')), 'I am B')
+            assert.strictEqual(await fs.readFileAsString(path.join(destDir, 'a.txt')), 'I am A')
+            assert.strictEqual(await fs.readFileAsString(path.join(destDir, 'dirB/b.txt')), 'I am B')
         })
     })
 
     describe('delete()', function () {
-        it('deletes a file', async function () {
-            const filePath = await makeFile('test.txt', 'hello world')
-            await fsCommon.delete(filePath)
-            assert.ok(!existsSync(filePath))
+        it('deletes file', async function () {
+            const f = await makeFile('test.txt', 'hello world')
+            assert(existsSync(f))
+            await fs.delete(f)
+            assert(!existsSync(f))
         })
 
-        it('deletes a directory', async function () {
-            const dirPath = createTestPath('dirToDelete')
-            mkdirSync(dirPath)
-
-            await fsCommon.delete(dirPath)
-
-            assert.ok(!existsSync(dirPath))
+        it('fails to delete non-empty directory with recursive:false (the default)', async function () {
+            const dir = mkTestDir()
+            const f = path.join(dir, 'testfile.txt')
+            await testutil.toFile('some content', f)
+            assert(existsSync(dir))
+            await assert.rejects(() => fs.delete(dir), /not empty|non-empty/)
+            assert(existsSync(dir))
         })
 
-        it('does not error if the file to delete does not exist', async function () {
-            const nonExistantFilePath = 'does/not/exist'
-            await fsCommon.delete(nonExistantFilePath)
-            assert.ok(!existsSync(nonExistantFilePath))
+        it('deletes directory with recursive:true', async function () {
+            const dir = mkTestDir()
+            await fs.delete(dir, { recursive: true })
+            assert(!existsSync(dir))
         })
 
-        it('uses the "fs" rm method if in C9', async function () {
+        it('no error if file not found (but parent exists)', async function () {
+            const dir = mkTestDir()
+            const f = path.join(dir, 'missingfile.txt')
+            assert(!existsSync(f))
+            await fs.delete(f)
+        })
+
+        it('error if file *and* its parent dir not found', async function () {
+            const dir = mkTestDir()
+            const f = path.join(dir, 'missingdir/missingfile.txt')
+            assert(!existsSync(f))
+            await assert.rejects(() => fs.delete(f))
+        })
+
+        it('uses "node:fs" rm() if in Cloud9', async function () {
             sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
-            const rmdirSpy = sandbox.spy(fsPromises, 'rm')
+            const rmdirSpy = sandbox.spy(nodefs, 'rm')
             // Folder with subfolders
-            const dirPath = await makeFolder('a/b/deleteMe')
-
+            const dirPath = mkTestDir('a/b/deleteMe')
             mkdirSync(dirPath, { recursive: true })
 
-            await fsCommon.delete(dirPath)
+            await fs.delete(dirPath, { recursive: true })
 
-            assert.ok(!existsSync(dirPath))
-            assert.ok(rmdirSpy.calledOnce)
+            assert(rmdirSpy.calledOnce)
+            assert(!existsSync(dirPath))
         })
     })
 
     describe('stat()', function () {
         it('gets stat of a file', async function () {
             const filePath = await makeFile('test.txt', 'hello world')
-            const stat = await fsCommon.stat(filePath)
-            assert.ok(stat)
+            const stat = await fs.stat(filePath)
+            assert(stat)
             assert.strictEqual(stat.type, vscode.FileType.File)
         })
 
         it('throws if no file exists', async function () {
             const filePath = createTestPath('thisDoesNotExist.txt')
-            await assert.rejects(() => fsCommon.stat(filePath))
+            await assert.rejects(() => fs.stat(filePath))
+        })
+    })
+
+    describe('getUserHomeDir()', function () {
+        let fakeHome: string
+        let saveEnv: EnvironmentVariables = {}
+
+        function restoreEnv() {
+            for (const name of ['HOME', 'HOMEDRIVE', 'HOMEPATH', 'USERPROFILE']) {
+                if (saveEnv[name] === undefined) {
+                    delete process.env[name]
+                } else {
+                    const v = saveEnv[name]
+                    assert(typeof v === 'string')
+                    process.env[name] = v
+                }
+            }
+        }
+
+        before(async function () {
+            fakeHome = await makeTemporaryToolkitFolder()
+            saveEnv = { ...process.env } as EnvironmentVariables
+        })
+
+        after(async function () {
+            await fs.delete(fakeHome, { recursive: true, force: true })
+            restoreEnv()
+            await fs.initUserHomeDir(globals.context, () => undefined)
+        })
+
+        beforeEach(async function () {
+            restoreEnv()
+            await fs.initUserHomeDir(globals.context, () => undefined)
+        })
+
+        it('gets $HOME', async function () {
+            const env = process.env as EnvironmentVariables
+            env.HOME = fakeHome
+            const homeDirLogs = await fs.initUserHomeDir(globals.context, () => undefined)
+            assert.strictEqual(fs.getUserHomeDir(), fakeHome)
+            assert.deepStrictEqual(homeDirLogs, [])
+        })
+
+        it('gets $USERPROFILE if $HOME is not defined', async function () {
+            const env = process.env as EnvironmentVariables
+            delete env.HOME
+            env.HOMEDRIVE = 'bogus1-nonexistent-HOMEDRIVE'
+            env.HOMEPATH = 'bogus1-nonexistent-HOMEPATH'
+            env.USERPROFILE = fakeHome
+            const homeDirLogs = await fs.initUserHomeDir(globals.context, () => undefined)
+            testutil.assertEqualPaths(fs.getUserHomeDir(), fakeHome)
+            assert.deepStrictEqual(homeDirLogs, [])
+        })
+
+        it('gets $HOMEDRIVE/$HOMEPATH if $HOME and $USERPROFILE are not valid', async function () {
+            const env = process.env as EnvironmentVariables
+            env.HOME = 'bogus2-nonexistent-HOME'
+            env.USERPROFILE = 'bogus2-nonexistent-USERPROFILE'
+            env.HOMEDRIVE = env.HOMEDRIVE?.trim() ? env.HOMEDRIVE : '/'
+            env.HOMEPATH = fakeHome.replace(driveLetterRegex, '')
+
+            assert(env.HOMEDRIVE)
+            const homeDirLogs = await fs.initUserHomeDir(globals.context, () => undefined)
+            testutil.assertEqualPaths(fs.getUserHomeDir(), path.join(env.HOMEDRIVE, env.HOMEPATH))
+            assert.deepStrictEqual(homeDirLogs, [
+                '$HOME filepath is invalid: "bogus2-nonexistent-HOME"',
+                '$USERPROFILE filepath is invalid: "bogus2-nonexistent-USERPROFILE"',
+            ])
+        })
+
+        it('gets os.homedir() if no environment variables are valid', async function () {
+            const env = process.env as EnvironmentVariables
+
+            delete env.HOME
+            delete env.USERPROFILE
+            delete env.HOMEPATH
+            delete env.HOMEDRIVE
+
+            const homeDirLogs = await fs.initUserHomeDir(globals.context, () => undefined)
+            testutil.assertEqualPaths(fs.getUserHomeDir(), os.homedir())
+            assert.deepStrictEqual(homeDirLogs, [])
+
+            env.HOME = 'bogus3-nonexistent-HOME'
+            env.HOMEDRIVE = 'bogus3-nonexistent-HOMEDRIVE'
+            env.HOMEPATH = 'bogus3-nonexistent-HOMEPATH'
+            env.USERPROFILE = 'bogus3-nonexistent-USERPROFILE'
+
+            let isHomeDirValid: boolean | undefined
+            const homeDirLogs2 = await fs.initUserHomeDir(globals.context, () => {
+                isHomeDirValid = false
+            })
+            testutil.assertEqualPaths(fs.getUserHomeDir(), os.homedir())
+            assert.strictEqual(isHomeDirValid, false)
+            assert.deepStrictEqual(homeDirLogs2, [
+                '$HOME filepath is invalid: "bogus3-nonexistent-HOME"',
+                '$USERPROFILE filepath is invalid: "bogus3-nonexistent-USERPROFILE"',
+                '$HOMEPATH filepath is invalid: "bogus3-nonexistent-HOMEDRIVE/bogus3-nonexistent-HOMEPATH"'.replace(
+                    /\//g,
+                    path.sep
+                ),
+            ])
         })
     })
 
     async function makeFile(relativePath: string, content?: string, options?: { mode?: number }): Promise<string> {
         const filePath = path.join(testRootPath(), relativePath)
 
-        await toFile(content ?? '', filePath)
+        await testutil.toFile(content ?? '', filePath)
 
         if (options?.mode !== undefined) {
-            await fsPromises.chmod(filePath, options.mode)
+            await nodefs.chmod(filePath, options.mode)
         }
 
         return filePath
     }
 
-    async function makeFolder(relativeFolderPath: string) {
-        const folderPath = path.join(testRootPath(), relativeFolderPath)
-        mkdirSync(folderPath, { recursive: true })
-        return folderPath
+    function mkTestDir(relativeDirPath?: string) {
+        const dir = createTestPath(relativeDirPath ?? 'testDir')
+        mkdirSync(dir, { recursive: true })
+        assert(existsSync(dir))
+        return dir
     }
 
     function createTestPath(relativePath: string): string {
@@ -331,7 +463,7 @@ describe('FileSystem', function () {
         return path.join(fakeContext.globalStorageUri.fsPath, 'fsTestDir')
     }
 
-    async function makeTestRoot() {
+    async function mkTestRoot() {
         return mkdirSync(testRootPath())
     }
 

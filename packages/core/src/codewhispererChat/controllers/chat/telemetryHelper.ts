@@ -354,6 +354,7 @@ export class CWCTelemetryHelper {
             cwsprChatResponseLength: message.messageLength,
             cwsprChatConversationType: 'Chat',
             credentialStartUrl: AuthUtil.instance.startUrl,
+            codewhispererCustomizationArn: triggerPayload.customization.arn,
             cwsprChatHasProjectLevelContext: triggerPayload.relevantTextDocuments
                 ? triggerPayload.relevantTextDocuments.length > 0
                 : false,
