@@ -26,6 +26,10 @@ const localize = nls.loadMessageBundle()
 
 const key = crypto.randomBytes(32)
 
+/**
+ * Sends a json payload to the language server, who is waiting to know what the encryption key is.
+ * Code reference: https://github.com/aws/language-servers/blob/7da212185a5da75a72ce49a1a7982983f438651a/client/vscode/src/credentialsActivation.ts#L77
+ */
 export function writeEncryptionInit(stream: Writable): void {
     const request = {
         version: '1.0',
@@ -35,7 +39,10 @@ export function writeEncryptionInit(stream: Writable): void {
     stream.write(JSON.stringify(request))
     stream.write('\n')
 }
-
+/**
+ * LspClient manages the API call between VS Code extension and LSP server
+ * It encryptes the payload of API call.
+ */
 export class LspClient {
     static #instance: LspClient
     client: LanguageClient | undefined
@@ -107,7 +114,11 @@ export class LspClient {
         }
     }
 }
-
+/**
+ * Activates the language server, this will start LSP server running over IPC protocol.
+ * It will create a output channel named Amazon Q Language Server.
+ * This function assumes the LSP server has already been downloaded.
+ */
 export async function activate(extensionContext: ExtensionContext) {
     LspClient.instance
     const toDispose = extensionContext.subscriptions

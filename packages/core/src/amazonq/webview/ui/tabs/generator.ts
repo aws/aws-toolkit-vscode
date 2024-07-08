@@ -35,7 +35,7 @@ export class TabDataGenerator {
             promptInputPlaceholder: TabTypeDataMap[tabType].placeholder,
             contextCommands: [
                 {
-                    groupName: 'Metion code',
+                    groupName: 'Mention code',
                     commands: [
                         {
                             command: '@workspace',

@@ -2,13 +2,13 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as vscode from 'vscode'
 import { MessageListener } from '../../../amazonq/messages/messageListener'
 import { ExtensionMessage } from '../../../amazonq/webview/ui/commands'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { ChatControllerMessagePublishers } from '../../controllers/chat/controller'
 import { ReferenceLogController } from './referenceLogController'
 import { getLogger } from '../../../shared/logger'
+import { openSettingsId } from '../../../shared/settings'
 
 export interface UIMessageListenerProps {
     readonly chatControllerMessagePublishers: ChatControllerMessagePublishers
@@ -101,7 +101,7 @@ export class UIMessageListener {
     }
 
     private processOpenSettings(msg: any) {
-        void vscode.commands.executeCommand('workbench.action.openSettings', `@id:amazonQ.localWorkspaceIndex`)
+        void openSettingsId(`amazonQ.localWorkspaceIndex`)
     }
 
     private processAuthFollowUpWasClicked(msg: any) {

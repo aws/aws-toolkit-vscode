@@ -61,7 +61,7 @@ export class CWCTelemetryHelper {
     private responseStreamStartTime: Map<string, number> = new Map()
     private responseStreamTotalTime: Map<string, number> = new Map()
     private responseStreamTimeForChunks: Map<string, number[]> = new Map()
-    private responseFromRequestWithProjectContext: Map<string, boolean> = new Map()
+    private responseWithProjectContext: Map<string, boolean> = new Map()
 
     constructor(sessionStorage: ChatSessionStorage, triggerEventsStorage: TriggerEventsStorage) {
         this.sessionStorage = sessionStorage
@@ -163,7 +163,7 @@ export class CWCTelemetryHelper {
                     cwsprChatHasReference: message.codeReference && message.codeReference.length > 0,
                     cwsprChatCodeBlockIndex: message.codeBlockIndex,
                     cwsprChatTotalCodeBlocks: message.totalCodeBlocks,
-                    cwsprChatHasProjectLevelContext: this.responseFromRequestWithProjectContext.get(message.messageId),
+                    cwsprChatHasProjectLevelContext: this.responseWithProjectContext.get(message.messageId),
                 }
                 break
             case 'code_was_copied_to_clipboard':
@@ -179,7 +179,7 @@ export class CWCTelemetryHelper {
                     cwsprChatHasReference: message.codeReference && message.codeReference.length > 0,
                     cwsprChatCodeBlockIndex: message.codeBlockIndex,
                     cwsprChatTotalCodeBlocks: message.totalCodeBlocks,
-                    cwsprChatHasProjectLevelContext: this.responseFromRequestWithProjectContext.get(message.messageId),
+                    cwsprChatHasProjectLevelContext: this.responseWithProjectContext.get(message.messageId),
                 }
                 break
             case 'follow-up-was-clicked':
@@ -190,7 +190,7 @@ export class CWCTelemetryHelper {
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'clickFollowUp',
-                    cwsprChatHasProjectLevelContext: this.responseFromRequestWithProjectContext.get(message.messageId),
+                    cwsprChatHasProjectLevelContext: this.responseWithProjectContext.get(message.messageId),
                 }
                 break
             case 'chat-item-voted':
@@ -201,7 +201,7 @@ export class CWCTelemetryHelper {
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatInteractionType: message.vote,
-                    cwsprChatHasProjectLevelContext: this.responseFromRequestWithProjectContext.get(message.messageId),
+                    cwsprChatHasProjectLevelContext: this.responseWithProjectContext.get(message.messageId),
                 }
                 break
             case 'source-link-click':
@@ -213,7 +213,7 @@ export class CWCTelemetryHelper {
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatInteractionType: 'clickLink',
                     cwsprChatInteractionTarget: message.link,
-                    cwsprChatHasProjectLevelContext: this.responseFromRequestWithProjectContext.get(message.messageId),
+                    cwsprChatHasProjectLevelContext: this.responseWithProjectContext.get(message.messageId),
                 }
                 break
             case 'response-body-link-click':
@@ -225,7 +225,7 @@ export class CWCTelemetryHelper {
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatInteractionType: 'clickBodyLink',
                     cwsprChatInteractionTarget: message.link,
-                    cwsprChatHasProjectLevelContext: this.responseFromRequestWithProjectContext.get(message.messageId),
+                    cwsprChatHasProjectLevelContext: this.responseWithProjectContext.get(message.messageId),
                 }
                 break
             case 'footer-info-link-click':
@@ -257,9 +257,7 @@ export class CWCTelemetryHelper {
                         acceptedCharacterCount: event.cwsprChatAcceptedCharactersLength,
                         acceptedLineCount: event.cwsprChatAcceptedNumberOfLines,
                         acceptedSnippetHasReference: false,
-                        hasProjectLevelContext: this.responseFromRequestWithProjectContext.get(
-                            event.cwsprChatMessageId
-                        ),
+                        hasProjectLevelContext: this.responseWithProjectContext.get(event.cwsprChatMessageId),
                     },
                 },
             })
@@ -438,8 +436,8 @@ export class CWCTelemetryHelper {
         this.responseStreamTimeForChunks.set(tabID, [...chunkTimes, performance.now()])
     }
 
-    public setResponseFromRequestWithProjectContext(messageId: string) {
-        this.responseFromRequestWithProjectContext.set(messageId, true)
+    public setResponseFromProjectContext(messageId: string) {
+        this.responseWithProjectContext.set(messageId, true)
     }
 
     private getResponseStreamTimeToFirstChunk(tabID: string): number {

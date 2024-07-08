@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Add LSP for Amazon Q Chat Local Indexing"
+	"description": "Add LSP for Amazon Q Chat Local Indexing. Customers can use @workspace to ask questions regarding local workspace."
 }

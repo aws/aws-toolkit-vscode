@@ -21,7 +21,6 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { globals } from '../../shared'
 import { AuthUtil } from '../../codewhisperer'
 import { isWeb } from '../../shared/extensionGlobals'
-
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
     if (!workspaceFolders || workspaceFolders.length === 0) {

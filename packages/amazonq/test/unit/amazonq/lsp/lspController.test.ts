@@ -9,7 +9,7 @@ import { createTestFile } from 'aws-core-vscode/test'
 import { fsCommon } from 'aws-core-vscode/srcShared'
 
 describe('Test LSP controller', function () {
-    it('Verify downloaded mechanism checks against hash, when hash matches', async function () {
+    it('Downloaded mechanism checks against hash, when hash matches', async function () {
         const content = {
             filename: 'qserver-linux-x64.zip',
             url: 'https://x/0.0.6/qserver-linux-x64.zip',

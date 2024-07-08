@@ -42,6 +42,10 @@ export async function activate(context: ExtensionContext) {
 
     await TryChatCodeLensProvider.register(appInitContext.onDidChangeAmazonQVisibility.event)
 
+    const setupLsp = debounce(async () => {
+        void LspController.instance.trySetupLsp(context)
+    }, 5000)
+
     context.subscriptions.push(
         window.registerWebviewViewProvider(AmazonQChatViewProvider.viewType, provider, {
             webviewOptions: {
@@ -59,9 +63,6 @@ export async function activate(context: ExtensionContext) {
         vscode.workspace.onDidChangeConfiguration(async configurationChangeEvent => {
             if (configurationChangeEvent.affectsConfiguration('amazonQ.localWorkspaceIndex')) {
                 if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
-                    const setupLsp = debounce(async () => {
-                        void LspController.instance.trySetupLsp(context)
-                    }, 5000)
                     void setupLsp()
                 }
             }
@@ -73,7 +74,7 @@ export async function activate(context: ExtensionContext) {
     })
 
     await activateBadge()
-    void LspController.instance.trySetupLsp(context)
+    void setupLsp()
     void setupAuthNotification()
 }
 

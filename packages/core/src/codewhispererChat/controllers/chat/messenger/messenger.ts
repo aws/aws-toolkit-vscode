@@ -133,7 +133,7 @@ export class Messenger {
         }
         this.telemetryHelper.setResponseStreamStartTime(tabID)
         if (triggerPayload.relevantTextDocuments && triggerPayload.relevantTextDocuments.length > 0) {
-            this.telemetryHelper.setResponseFromRequestWithProjectContext(messageID)
+            this.telemetryHelper.setResponseFromProjectContext(messageID)
         }
 
         const eventCounts = new Map<string, number>()
