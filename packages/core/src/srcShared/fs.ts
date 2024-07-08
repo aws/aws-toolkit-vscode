@@ -308,6 +308,8 @@ export class FileSystemCommon {
      * This throws {@link PermissionsError} when permissions are insufficient.
      */
     async checkPerms(file: string | vscode.Uri, perms: PermissionsTriplet): Promise<void> {
+        // TODO: implement checkExactPerms() by checking the file mode.
+        // public static async checkExactPerms(file: string | vscode.Uri, perms: `${PermissionsTriplet}${PermissionsTriplet}${PermissionsTriplet}`)
         const uri = this.#toUri(file)
         const errHandler = createPermissionsErrorHandler(this.isWeb, uri, perms)
         const flags = Array.from(perms) as (keyof typeof this.modeMap)[]

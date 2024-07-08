@@ -15,10 +15,10 @@ import { VSCODE_EXTENSION_ID, vscodeExtensionMinVersion } from './extensions'
 import { Err, Result } from '../shared/utilities/result'
 import { ToolkitError, UnknownError } from './errors'
 import { getLogger } from './logger/logger'
-import { SystemUtilities } from './systemUtilities'
 import { getOrInstallCli } from './utilities/cliUtils'
 import { pushIf } from './utilities/collectionUtils'
 import { ChildProcess } from './utilities/childProcess'
+import { findSshPath, getVscodeCliPath } from './utilities/pathFind'
 
 export interface MissingTool {
     readonly name: 'code' | 'ssm' | 'ssh'
@@ -124,11 +124,7 @@ async function ensureSsmCli() {
 }
 
 export async function ensureTools() {
-    const [vsc, ssh, ssm] = await Promise.all([
-        SystemUtilities.getVscodeCliPath(),
-        SystemUtilities.findSshPath(),
-        ensureSsmCli(),
-    ])
+    const [vsc, ssh, ssm] = await Promise.all([getVscodeCliPath(), findSshPath(), ensureSsmCli()])
 
     const missing: MissingTool[] = []
     pushIf(missing, vsc === undefined, { name: 'code' })
