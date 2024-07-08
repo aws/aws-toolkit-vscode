@@ -102,6 +102,15 @@ export function isRemoteWorkspace(): boolean {
     return vscode.env.remoteName === 'ssh-remote'
 }
 
+/** Returns true if OS is Windows. */
+export function isWin(): boolean {
+    if (isWeb()) {
+        return false
+    }
+
+    return process.platform === 'win32'
+}
+
 export function isWebWorkspace(): boolean {
     return vscode.env.uiKind === vscode.UIKind.Web
 }
@@ -197,8 +206,23 @@ export function getUsername(): string | undefined {
         return username
     }
 
-    const userInfo = os.userInfo({ encoding: 'utf-8' })
+    const userInfo = getUserInfo()
     username = userInfo.username
 
     return userInfo.username
+}
+
+/** Gets platform-dependent user info, or (currently) a dummy object in web-mode. */
+export function getUserInfo(): os.UserInfo<string> {
+    if (isWeb()) {
+        return {
+            gid: 0,
+            uid: 0,
+            homedir: '',
+            shell: '',
+            username: 'webuser',
+        }
+    }
+
+    return os.userInfo({ encoding: 'utf-8' })
 }
