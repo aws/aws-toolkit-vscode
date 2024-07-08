@@ -79,6 +79,15 @@ export class ApplicationComposerManager {
             const newVisualization = new ApplicationComposer(document, this.extensionContext, this.getWebviewContent)
             this.handleNewVisualization(document.uri.fsPath, newVisualization)
 
+            if (vscode.version === '1.91.0') {
+                void vscode.window.showWarningMessage(
+                    localize(
+                        'AWS.applicationComposer.visualisation.warnings.draganddrop',
+                        'This version of Visual Studio Code has a bug preventing normal drag and drop. ' +
+                            'As a temporary workaround, you must hold "Shift" before releasing the mouse button.'
+                    )
+                )
+            }
             return newVisualization.getPanel()
         } catch (err) {
             this.handleErr(err as Error)
