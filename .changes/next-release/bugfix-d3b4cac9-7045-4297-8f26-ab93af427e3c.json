@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Amazon Q Chat: Fixed prompt input becomes invisible if an html special character is inserted"
-}

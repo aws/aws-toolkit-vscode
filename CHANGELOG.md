@@ -1,3 +1,15 @@
+# _3.15_ (2024-07-08)
+- **(Bug Fix)** Amazon Q Chat: Fixed button texts are cropped too short
+- **(Bug Fix)** Amazon Q Chat: Fixed button font sizes are too big
+- **(Bug Fix)** Expose Amazon Q backend validation error message
+- **(Bug Fix)** Amazon Q Security Scans: Fixed unnecessary yellow lines appearing in both auto scans and project scans.
+- **(Bug Fix)** Amazon Q: Fix an issue where inline suggestion will not properly show in JetBrains remote env 2024.1+
+- **(Bug Fix)** Amazon Q Chat: Fixed prompt input becomes invisible when multine text inserted with paste
+- **(Bug Fix)** Fix Q Chat not respecting system trust store unless a proxy is configured
+- **(Bug Fix)** Amazon Q Chat: Fixed prompt input and selected command horizontal alignment
+- **(Bug Fix)** Amazon Q Chat: Fixed prompt input becomes invisible if an html special character is inserted
+- **(Bug Fix)** Amazon Q Chat: Fixed buttons don't show borders inside a message
+
 # _3.14_ (2024-06-27)
 - **(Bug Fix)** Q Code Transform - Add troubleshooting document links to UI messages
 - **(Bug Fix)** Security Scan: Improved telemetry error messages
