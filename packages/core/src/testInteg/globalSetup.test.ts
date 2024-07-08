@@ -30,17 +30,24 @@ export async function mochaGlobalSetup(extensionId: string) {
         this.on('hook', hook => setRunnableTimeout(hook, maxTestDuration))
         this.on('test', test => setRunnableTimeout(test, maxTestDuration))
 
+        console.log('Mapping test errors')
         // Shows the full error chain when tests fail
         mapTestErrors(this, normalizeError)
 
+        console.log('Patching window')
         // Set up a listener for proxying login requests
         patchWindow()
 
+        console.log('Patching auth')
         // always use device code authorization
         patchAuth()
 
+        console.log('Activating extension')
+
         // Needed for getLogger().
         await vscode.extensions.getExtension(extensionId)?.activate()
+
+        console.log('Extension activated')
 
         // Log as much as possible, useful for debugging integration tests.
         getLogger().setLogLevel('debug')
