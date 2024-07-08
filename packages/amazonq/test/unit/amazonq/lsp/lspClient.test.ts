@@ -17,7 +17,9 @@ describe('Amazon Q LSP client', function () {
         await lspClient.query('mock_input')
         assert.ok(encryptFunc.calledOnce)
         assert.ok(encryptFunc.calledWith(JSON.stringify({ query: 'mock_input' })))
-        assert.strictEqual(encryptFunc.returnValues[0], '')
+        const value = await encryptFunc.returnValues[0]
+        // verifies JWT encryption header
+        assert.ok(value.startsWith(`eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0`))
     })
 
     it('encrypts payload of index files ', async () => {
@@ -32,7 +34,15 @@ describe('Amazon Q LSP client', function () {
                 })
             )
         )
-        assert.strictEqual(encryptFunc.returnValues[0], '')
+        const value = await encryptFunc.returnValues[0]
+        // verifies JWT encryption header
+        assert.ok(value.startsWith(`eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0`))
+    })
+
+    it('encrypt removes readable information', async () => {
+        const sample = 'hello'
+        const encryptedSample = await lspClient.encrypt(sample)
+        assert.ok(!encryptedSample.includes('hello'))
     })
 
     afterEach(() => {
