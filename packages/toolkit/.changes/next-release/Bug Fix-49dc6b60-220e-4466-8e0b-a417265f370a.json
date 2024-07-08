@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Add warning message for drag and drop bug on VS Code 1.91.0"
+}
