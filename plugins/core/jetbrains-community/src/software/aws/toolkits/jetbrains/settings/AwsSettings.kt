@@ -47,11 +47,11 @@ class DefaultAwsSettings : PersistentStateComponent<AwsConfiguration>, AwsSettin
     override var isTelemetryEnabled: Boolean
         get() = state.isTelemetryEnabled ?: true
         set(value) {
-            state.isTelemetryEnabled = value
             val enablementElement = if (value) "aws_enabledTelemetry" else "aws_disabledTelemetry"
             TelemetryService.getInstance().setTelemetryEnabled(value) {
                 UiTelemetry.click(null as Project?, enablementElement)
             }
+            state.isTelemetryEnabled = value
         }
 
     override var promptedForTelemetry: Boolean
