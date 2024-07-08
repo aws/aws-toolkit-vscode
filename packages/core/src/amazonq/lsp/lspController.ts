@@ -67,7 +67,17 @@ const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/temp/man
 const supportedLspServerVersions = ['0.1.0']
 
 const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
-
+/*
+ * LSP Controller manages the status of Amazon Q LSP:
+ * 1. Downloading, verifying and installing LSP using DEXP LSP manifest and CDN.
+ * 2. Managing the LSP states. There are a couple of possible LSP states:
+ *    Not installed. Installed. Running. Indexing. Indexing Done.
+ * LSP Controller converts the input and output of LSP APIs.
+ * The IDE extension code should invoke LSP API via this controller.
+ * 3. It perform pre-process and post process of LSP APIs
+ *    Pre-process the input to Index Files API
+ *    Post-process the output from Query API
+ */
 export class LspController {
     static #instance: LspController
     private _isIndexingInProgress = false
