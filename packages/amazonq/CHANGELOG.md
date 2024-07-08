@@ -1,3 +1,16 @@
+## 1.12.0 2024-07-08
+
+- **Bug Fix** Amazon Q Security Scans: Fixed unnecessary yellow lines appearing in both auto scans and project scans.
+- **Bug Fix** Amazon Q Chat: Fixed prompt input becomes invisible if an html special character is inserted
+- **Bug Fix** Amazon Q Chat: Fixed button font sizes are too big
+- **Bug Fix** Amazon Q Chat: Fixed buttons don't show borders inside a message
+- **Bug Fix** Amazon Q Code Transform: Link UI messages to troubleshooting docs
+- **Bug Fix** Amazon Q /dev command: improve user error messages
+- **Bug Fix** Amazon Q Chat: Fixed button texts are cropped too short
+- **Bug Fix** Amazon Q Chat: Fixed prompt input and selected command horizontal alignment
+- **Bug Fix** Amazon Q Chat: Fixed prompt input becomes invisible when multine text inserted with paste
+- **Feature** Q feature dev: Only use relevant code and related files
+
 ## 1.11.0 2024-06-27
 
 - **Bug Fix** Amazon Q Chat: Fix for inline buttons don't have borders
