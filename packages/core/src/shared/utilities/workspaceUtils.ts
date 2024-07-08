@@ -591,7 +591,7 @@ export async function collectFilesForIndex(
     // prioritize upper level files
     storage.sort((a, b) => a.fileUri.fsPath.length - b.fileUri.fsPath.length)
 
-    let maxSizeBytes = Math.min(maxSize, os.freemem() / 2)
+    const maxSizeBytes = Math.min(maxSize, os.freemem() / 2)
 
     let i = 0
     for (i = 0; i < storage.length; i += 1) {

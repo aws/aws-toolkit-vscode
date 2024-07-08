@@ -345,7 +345,7 @@ export class LspController {
             try {
                 await activateLsp(context)
                 getLogger().info('LspController: LSP activated')
-                LspController.instance.buildIndex()
+                void LspController.instance.buildIndex()
 
                 globals.clock.setInterval(
                     async () => {

@@ -125,7 +125,7 @@ export async function activate(extensionContext: ExtensionContext) {
 
     let rangeFormatting: Disposable | undefined
     // The server is implemented in node
-    let serverModule = path.join(extensionContext.extensionPath, 'resources/qserver/lspServer.js')
+    const serverModule = path.join(extensionContext.extensionPath, 'resources/qserver/lspServer.js')
     // The debug options for the server
     // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
     const debugOptions = { execArgv: ['--nolazy', '--preserve-symlinks', '--stdio'] }
@@ -161,7 +161,7 @@ export async function activate(extensionContext: ExtensionContext) {
         debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions },
     }
 
-    serverOptions = () => Promise.resolve(child!!)
+    serverOptions = () => Promise.resolve(child!)
 
     const documentSelector = [{ scheme: 'file', language: '*' }]
 
@@ -201,7 +201,7 @@ export async function activate(extensionContext: ExtensionContext) {
     toDispose.push(
         vscode.window.onDidChangeActiveTextEditor(editor => {
             if (savedDocument && editor && editor.document.uri.fsPath !== savedDocument.fsPath) {
-                LspClient.instance.updateIndex(savedDocument.fsPath)
+                void LspClient.instance.updateIndex(savedDocument.fsPath)
             }
         })
     )

@@ -576,7 +576,7 @@ export class ChatController {
         }
         // Loop while we waiting for tabID to be set
         if (triggerPayload.message) {
-            let userIntentEnableProjectContext = triggerPayload.message.includes(`@workspace`)
+            const userIntentEnableProjectContext = triggerPayload.message.includes(`@workspace`)
             if (userIntentEnableProjectContext) {
                 triggerPayload.message.replace(/@workspace/g, '')
                 if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
