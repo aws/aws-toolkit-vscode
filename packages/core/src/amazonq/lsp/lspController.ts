@@ -9,7 +9,6 @@ import * as fs from 'fs-extra'
 import * as crypto from 'crypto'
 import { getLogger } from '../../shared/logger/logger'
 import { CurrentWsFolders, collectFilesForIndex } from '../../shared/utilities/workspaceUtils'
-import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import fetch from 'node-fetch'
 import { LspClient } from './lspClient'
 import AdmZip from 'adm-zip'
@@ -276,7 +275,7 @@ export class LspController {
                 projPaths,
                 vscode.workspace.workspaceFolders as CurrentWsFolders,
                 true,
-                CodeWhispererConstants.projectIndexSizeLimitBytes
+                CodeWhispererSettings.instance.getMaxIndexSize()
             )
             let totalSizeBytes = 0
             for (let i = 0; i < files.length; i += 1) {

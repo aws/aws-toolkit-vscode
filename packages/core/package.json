@@ -303,6 +303,12 @@
                     "markdownDescription": "%AWS.configuration.description.amazonq.localWorkspaceIndexUseGPU%",
                     "default": false,
                     "scope": "application"
+                },
+                "amazonQ.localWorkspaceIndexMaxSize": {
+                    "type": "number",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.localWorkspaceIndexMaxSize%",
+                    "default": 250,
+                    "scope": "application"
                 }
             }
         },
