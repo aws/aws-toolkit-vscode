@@ -3,14 +3,15 @@
 
 package software.aws.toolkits.jetbrains.settings
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.testFramework.DisposableRule
-import com.intellij.testFramework.ProjectRule
+import com.intellij.testFramework.ApplicationExtension
+import com.intellij.testFramework.junit5.TestDisposable
 import com.intellij.testFramework.replaceService
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Rule
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
@@ -20,19 +21,12 @@ import software.aws.toolkits.core.telemetry.TelemetryPublisher
 import software.aws.toolkits.jetbrains.services.telemetry.NoOpPublisher
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 
+@ExtendWith(ApplicationExtension::class)
 class AwsSettingsTest {
     private class TestTelemetryService(
         publisher: TelemetryPublisher = NoOpPublisher(),
         batcher: TelemetryBatcher
     ) : TelemetryService(publisher, batcher)
-
-    @Rule
-    @JvmField
-    val projectRule = ProjectRule()
-
-    @Rule
-    @JvmField
-    val disposableRule = DisposableRule()
 
     private lateinit var telemetryService: TelemetryService
     private lateinit var batcher: TelemetryBatcher
@@ -40,14 +34,14 @@ class AwsSettingsTest {
     private lateinit var awsConfiguration: AwsConfiguration
 
     @BeforeEach
-    fun setup() {
+    fun setup(@TestDisposable disposable: Disposable) {
         batcher = mock()
         telemetryService = spy(TestTelemetryService(batcher = batcher))
         awsSettings = spy(DefaultAwsSettings())
         awsConfiguration = spy(AwsConfiguration())
         awsSettings.loadState(awsConfiguration)
-        ApplicationManager.getApplication().replaceService(TelemetryService::class.java, telemetryService, disposableRule.disposable)
-        ApplicationManager.getApplication().replaceService(AwsSettings::class.java, awsSettings, disposableRule.disposable)
+        ApplicationManager.getApplication().replaceService(TelemetryService::class.java, telemetryService, disposable)
+        ApplicationManager.getApplication().replaceService(AwsSettings::class.java, awsSettings, disposable)
     }
 
     @Test
