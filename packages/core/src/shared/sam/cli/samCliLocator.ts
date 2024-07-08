@@ -9,8 +9,8 @@ import * as filesystemUtilities from '../../filesystemUtilities'
 import { getLogger, Logger } from '../../logger'
 import { SamCliInfoInvocation } from './samCliInfo'
 import { DefaultSamCliValidator, SamCliValidatorContext, SamCliVersionValidation } from './samCliValidator'
-import { SystemUtilities } from '../../systemUtilities'
 import { PerfLog } from '../../logger/logger'
+import { tryRun } from '../../utilities/pathFind'
 
 export class SamCliLocationProvider {
     private static samCliLocator: BaseSamCliLocator | undefined
@@ -18,7 +18,7 @@ export class SamCliLocationProvider {
 
     /** Checks that the given `sam` actually works by invoking `sam --version`. */
     private static async isValidSamLocation(samPath: string) {
-        return await SystemUtilities.tryRun(samPath, ['--version'], 'no', 'SAM CLI')
+        return await tryRun(samPath, ['--version'], 'no', 'SAM CLI')
     }
 
     /**
