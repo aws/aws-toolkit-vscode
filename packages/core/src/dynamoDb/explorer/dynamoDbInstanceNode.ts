@@ -17,6 +17,7 @@ export class DynamoDbInstanceNode extends AWSTreeNodeBase {
     public constructor(public override readonly regionCode: string, protected readonly dynamoDbClient: DynamoDbClient) {
         super('DynamoDB', vscode.TreeItemCollapsibleState.Collapsed)
         this.dynamoDbTableNodes = new Map<string, DynamoDbTableNode>()
+        this.contextValue = 'awsDynamoDbRootNode'
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
@@ -31,9 +32,11 @@ export class DynamoDbInstanceNode extends AWSTreeNodeBase {
 
     public async updateChildren(): Promise<void> {
         const tables = toMap(await toArrayAsync(this.dynamoDbClient.getTables()), configuration => configuration)
+        const sortedTablesByName = new Map([...tables.entries()].sort((a, b) => a[0].localeCompare(b[0])))
+
         updateInPlace(
             this.dynamoDbTableNodes,
-            tables.keys(),
+            sortedTablesByName.keys(),
             key => this.dynamoDbTableNodes.get(key)!,
             key => new DynamoDbTableNode(this.regionCode, key)
         )

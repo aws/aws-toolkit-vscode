@@ -8,6 +8,7 @@ import { Wizard } from '../../shared/wizards/wizard'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
+import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 
@@ -55,7 +56,10 @@ async function getTablesFromRegion(regionCode: string): Promise<DataQuickPickIte
 
 async function dynamoDbTablesToArray(dynamoDbTables: AsyncIterableIterator<string>): Promise<string[]> {
     const tablesArray = []
-    for await (const tableObject of dynamoDbTables) {
+    const tables = await toArrayAsync(dynamoDbTables)
+    tables.sort((a, b) => a.localeCompare(b))
+
+    for await (const tableObject of tables) {
         tableObject && tablesArray.push(tableObject)
     }
     return tablesArray
