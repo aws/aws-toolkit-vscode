@@ -1979,6 +1979,16 @@
                     "command": "aws.codecatalyst.signout",
                     "when": "viewItem =~ /^awsCodeCatalystNode/&& !isCloud9 && aws.codecatalyst.connected",
                     "group": "0@2"
+                },
+                {
+                    "command": "aws.dynamoDb.sortByName",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem == awsDynamoDbRootNode"
+                },
+                {
+                    "command": "aws.dynamoDb.searchDynamoDbTables",
+                    "group": "inline@1",
+                    "when": "view == aws.explorer && viewItem =~ /^awsDynamoDbRootNode$/"
                 }
             ],
             "aws.toolkit.auth": [
@@ -3534,6 +3544,17 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.dynamoDb.sortByName",
+                "title": "%AWS.command.dynamoDb.sortByName%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             }
         ],
         "jsonValidation": [
@@ -3976,6 +3997,13 @@
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1da"
+                }
+            },
+            "aws-dynamoDb-table": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\eb17"
                 }
             }
         },

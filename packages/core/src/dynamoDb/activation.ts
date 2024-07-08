@@ -5,8 +5,9 @@
 
 import * as vscode from 'vscode'
 import { Commands } from '../shared/vscode/commands2'
-import { searchDynamoDbTables } from './commands/searchDynamoDbTables'
+import { sortTablesByName } from './commands/sortDynamoDbTables'
 import { DynamoDbTableNode } from './explorer/dynamoDbTableNode'
+import { searchDynamoDbTables } from './commands/searchDynamoDbTables'
 import { DynamoDbInstanceNode } from './explorer/dynamoDbInstanceNode'
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -25,6 +26,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                     : 'Command'
                 await searchDynamoDbTables(source, dynamoDbtableInfo)
             }
-        )
+        ),
+
+        Commands.register('aws.dynamoDb.sortByName', async (node: DynamoDbInstanceNode) => await sortTablesByName(node))
     )
 }
