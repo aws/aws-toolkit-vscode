@@ -303,27 +303,32 @@ async function filterOutGitignoredFiles(rootPath: string, files: vscode.Uri[]): 
  * @returns the size of the workspace in bytes
  *
  */
-export async function getWorkspaceSize(
-    sourcePaths: string[],
-    workspaceFolders: CurrentWsFolders,
-    respectGitIgnore: boolean = true
-): Promise<number> {
+export async function getWorkspaceSize(sourcePaths: string[], respectGitIgnore: boolean = true): Promise<vscode.Uri[]> {
     let totalSizeBytes = 0
+    let collection: vscode.Uri[] = []
+
     for (const rootPath of sourcePaths) {
         const allFiles = await vscode.workspace.findFiles(
             new vscode.RelativePattern(rootPath, '**'),
             getExcludePattern()
         )
+
         const files = respectGitIgnore ? await filterOutGitignoredFiles(rootPath, allFiles) : allFiles
+        const fileStats = await Promise.all(files.map(file => fsCommon.stat(file)))
 
-        for (const file of files) {
-            const fileStat = await fsCommon.stat(file)
-            totalSizeBytes += fileStat.size
-        }
+        totalSizeBytes += fileStats.reduce((acc, fileStat) => acc + fileStat.size, 0)
+        collection = collection.concat(files)
     }
-    return totalSizeBytes
-}
 
+    if (totalSizeBytes > maxRepoSizeBytes) {
+        throw new ToolkitError(
+            'The project you have selected for source code is too large to use as context. Please select a different folder to use',
+            { code: 'ContentLengthError' }
+        )
+    }
+
+    return collection
+}
 /**
  * collects all files that are marked as source
  * @param sourcePaths the paths where collection starts
@@ -345,14 +350,6 @@ export async function collectFiles(
         zipFilePath: string
     }[]
 > {
-    const workspaceSize = await getWorkspaceSize(sourcePaths, workspaceFolders, respectGitIgnore)
-    if (workspaceSize > maxSize) {
-        throw new ToolkitError(
-            'The project you have selected for source code is too large to use as context. Please select a different folder to use',
-            { code: 'ContentLengthError' }
-        )
-    }
-
     const storage: Awaited<ReturnType<typeof collectFiles>> = []
 
     const workspaceFoldersMapping = getWorkspaceFoldersByPrefixes(workspaceFolders)
@@ -376,44 +373,27 @@ export async function collectFiles(
         return prefix === '' ? path : `${prefix}/${path}`
     }
 
-    let totalSizeBytes = 0
-    for (const rootPath of sourcePaths) {
-        const allFiles = await vscode.workspace.findFiles(
-            new vscode.RelativePattern(rootPath, '**'),
-            getExcludePattern()
-        )
-        const files = respectGitIgnore ? await filterOutGitignoredFiles(rootPath, allFiles) : allFiles
-
-        for (const file of files) {
-            const relativePath = getWorkspaceRelativePath(file.fsPath, { workspaceFolders })
-            if (!relativePath) {
-                continue
-            }
-
-            const fileStat = await fsCommon.stat(file)
-            if (totalSizeBytes + fileStat.size > maxSize) {
-                throw new ToolkitError(
-                    'The project you have selected for source code is too large to use as context. Please select a different folder to use',
-                    { code: 'ContentLengthError' }
-                )
-            }
-
-            const fileContent = await readFile(file)
-            if (fileContent === undefined) {
-                continue
-            }
-
-            // Now that we've read the file, increase our usage
-            totalSizeBytes += fileStat.size
-            storage.push({
-                workspaceFolder: relativePath.workspaceFolder,
-                relativeFilePath: relativePath.relativePath,
-                fileUri: file,
-                fileContent: fileContent,
-                zipFilePath: prefixWithFolderPrefix(relativePath.workspaceFolder, relativePath.relativePath),
-            })
+    const collection = await getWorkspaceSize(sourcePaths, respectGitIgnore)
+    for (const file of collection) {
+        const relativePath = getWorkspaceRelativePath(file.fsPath, { workspaceFolders })
+        if (!relativePath) {
+            continue
         }
+
+        const fileContent = await readFile(file)
+        if (fileContent === undefined) {
+            continue
+        }
+
+        storage.push({
+            workspaceFolder: relativePath.workspaceFolder,
+            relativeFilePath: relativePath.relativePath,
+            fileUri: file,
+            fileContent: fileContent,
+            zipFilePath: prefixWithFolderPrefix(relativePath.workspaceFolder, relativePath.relativePath),
+        })
     }
+
     return storage
 }
 
