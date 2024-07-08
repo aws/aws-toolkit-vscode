@@ -11,7 +11,7 @@ const description = {
     localWorkspaceIndex: Boolean,
     localWorkspaceIndexWorkerThreads: Number,
     localWorkspaceIndexUseGPU: Boolean,
-    localWorkspaceMaxSize: Number,
+    localWorkspaceIndexMaxSize: Number,
 }
 
 export class CodeWhispererSettings extends fromExtensionManifest('amazonQ', description) {
@@ -51,11 +51,13 @@ export class CodeWhispererSettings extends fromExtensionManifest('amazonQ', desc
     }
 
     public getIndexWorkerThreads(): number {
-        return this.get('localWorkspaceIndexWorkerThreads', 0)
+        // minimal 0 threads
+        return Math.max(this.get('localWorkspaceIndexWorkerThreads', 0), 0)
     }
 
     public getMaxIndexSize(): number {
-        return this.get('localWorkspaceMaxSize', 250)
+        // minimal 1MB
+        return Math.max(this.get('localWorkspaceIndexMaxSize', 250), 1)
     }
 
     static #instance: CodeWhispererSettings

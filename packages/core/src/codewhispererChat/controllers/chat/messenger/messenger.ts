@@ -33,7 +33,12 @@ import { CodeScanIssue } from '../../../../codewhisperer/models/model'
 import { marked } from 'marked'
 import { JSDOM } from 'jsdom'
 
-export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
+export type StaticTextResponseType =
+    | 'quick-action-help'
+    | 'onboarding-help'
+    | 'transform'
+    | 'help'
+    | 'indexing-in-progress'
 
 export class Messenger {
     public constructor(
@@ -374,6 +379,9 @@ export class Messenger {
                     },
                 ]
                 followUpsHeader = 'Try Examples:'
+                break
+            case 'indexing-in-progress':
+                message = `By the way, I'm still indexing this project for full context from your workspace. I may have a better response in a few minutes when it's complete if you'd like to try again then.`
                 break
         }
 

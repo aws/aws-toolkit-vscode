@@ -71,11 +71,16 @@ const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
 
 export class LspController {
     static #instance: LspController
+    private _isIndexingInProgress = false
 
     public static get instance() {
         return (this.#instance ??= new this())
     }
     constructor() {}
+
+    isIndexingInProgress() {
+        return this._isIndexingInProgress
+    }
 
     async _download(localFile: string, remoteUrl: string) {
         const res = await fetch(remoteUrl, {
@@ -270,12 +275,13 @@ export class LspController {
             if (projPaths.length === 0) {
                 throw Error('No project')
             }
+            this._isIndexingInProgress = true
             const projRoot = projPaths[0]
             const files = await collectFilesForIndex(
                 projPaths,
                 vscode.workspace.workspaceFolders as CurrentWsFolders,
                 true,
-                CodeWhispererSettings.instance.getMaxIndexSize()
+                CodeWhispererSettings.instance.getMaxIndexSize() * 1024 * 1024
             )
             let totalSizeBytes = 0
             for (let i = 0; i < files.length; i += 1) {
@@ -316,6 +322,8 @@ export class LspController {
                 amazonqIndexFileCount: 0,
                 amazonqIndexFileSizeInMB: 0,
             })
+        } finally {
+            this._isIndexingInProgress = false
         }
     }
 

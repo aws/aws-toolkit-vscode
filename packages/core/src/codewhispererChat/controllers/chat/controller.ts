@@ -580,11 +580,16 @@ export class ChatController {
             if (userIntentEnableProjectContext) {
                 triggerPayload.message.replace(/@workspace/g, '')
                 if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
+                    if (LspController.instance.isIndexingInProgress()) {
+                        this.messenger.sendStaticTextResponse('indexing-in-progress', randomUUID(), tabID)
+                    }
                     const start = performance.now()
                     triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
-                    getLogger().info(
-                        `amazonq: Using workspace files ${triggerPayload.relevantTextDocuments.map(x => x.relativeFilePath).join(', ')}`
-                    )
+                    triggerPayload.relevantTextDocuments.forEach(doc => {
+                        getLogger().info(
+                            `amazonq: Using workspace files ${doc.relativeFilePath}, content(partial): ${doc.text?.substring(0, 200)}`
+                        )
+                    })
                     triggerPayload.projectContextQueryLatencyMs = performance.now() - start
                 } else {
                     this.messenger.sendOpenSettingsMessage(triggerID, tabID)
