@@ -64,10 +64,9 @@ export interface Manifest {
         targets: Target[]
     }[]
 }
-const manifestUrl = 'https://ducvaeoffl85c.cloudfront.net/manifest9.json'
-//const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/temp/manifest.json'
+const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/temp/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = ['0.0.9']
+const supportedLspServerVersions = ['0.1.0']
 
 const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
 
