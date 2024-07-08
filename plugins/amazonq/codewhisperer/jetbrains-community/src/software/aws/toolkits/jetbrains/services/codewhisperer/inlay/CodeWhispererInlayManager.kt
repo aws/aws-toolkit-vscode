@@ -3,8 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.inlay
 
-import com.intellij.codeInsight.inline.completion.render.InlineBlockElementRenderer
-import com.intellij.codeInsight.inline.completion.render.InlineSuffixRenderer
 import com.intellij.idea.AppMode
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
@@ -46,7 +44,7 @@ class CodeWhispererInlayManager {
                 if (!AppMode.isRemoteDevHost()) {
                     CodeWhispererInlayInlineRenderer(firstLine)
                 } else {
-                    InlineSuffixRenderer(editor, firstLine)
+                    InlineCompletionRemoteRendererFactory.createLineInlay(editor, firstLine)
                 }
             val inlineInlay = editor.inlayModel.addInlineElement(startOffset, true, firstLineRenderer)
             inlineInlay?.let {
@@ -58,22 +56,25 @@ class CodeWhispererInlayManager {
         if (otherLines.isEmpty()) {
             return
         }
-        val otherLinesRenderer =
+        val otherLinesRenderers =
             if (!AppMode.isRemoteDevHost()) {
-                CodeWhispererInlayBlockRenderer(otherLines)
+                listOf(CodeWhispererInlayBlockRenderer(otherLines))
             } else {
-                InlineBlockElementRenderer(editor, otherLines.split("\n"))
+                InlineCompletionRemoteRendererFactory.createBlockInlays(editor, otherLines.split("\n"))
             }
-        val blockInlay = editor.inlayModel.addBlockElement(
-            startOffset,
-            true,
-            false,
-            0,
-            otherLinesRenderer
-        )
-        blockInlay?.let {
-            existingInlays.add(it)
-            Disposer.register(popup, it)
+
+        otherLinesRenderers.forEach { otherLinesRenderer ->
+            val blockInlay = editor.inlayModel.addBlockElement(
+                startOffset,
+                true,
+                false,
+                0,
+                otherLinesRenderer
+            )
+            blockInlay?.let {
+                existingInlays.add(it)
+                Disposer.register(popup, it)
+            }
         }
     }
 

@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Amazon Q: Fix an issue where inline suggestion will not properly show in JetBrains remote env 2024.1+"
+}
