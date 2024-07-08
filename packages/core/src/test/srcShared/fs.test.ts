@@ -6,23 +6,20 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import * as path from 'path'
+import * as utils from 'util'
 import { existsSync, mkdirSync, promises as nodefs, readFileSync, rmSync } from 'fs'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import fs from '../../srcShared/fs'
 import * as os from 'os'
-import { isMinVscode } from '../../shared/vscode/env'
+import { isMinVscode, isWin } from '../../shared/vscode/env'
 import Sinon from 'sinon'
 import * as extensionUtilities from '../../shared/extensionUtilities'
-import { PermissionsError } from '../../shared/errors'
+import { PermissionsError, formatError, isFileNotFoundError } from '../../shared/errors'
 import { EnvironmentVariables } from '../../shared/environmentVariables'
 import * as testutil from '../testUtil'
 import globals from '../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { driveLetterRegex } from '../../shared/utilities/pathUtils'
-
-function isWin() {
-    return os.platform() === 'win32'
-}
 
 describe('FileSystem', function () {
     let fakeContext: vscode.ExtensionContext
@@ -435,6 +432,144 @@ describe('FileSystem', function () {
             ])
         })
     })
+
+    if (!isWin()) {
+        // TODO: need to use sticky bit to easily write tests for group-owned directories
+        // Or potentially spawn new process with different uid...?
+        describe('permissions', function () {
+            let runCounter = 0
+            let testDir: string
+
+            before(async function () {
+                testDir = await makeTemporaryToolkitFolder()
+            })
+
+            after(async function () {
+                await fs.delete(testDir, { recursive: true, force: true })
+            })
+
+            beforeEach(function () {
+                runCounter++
+            })
+
+            function assertError<T>(err: unknown, ctor: new (...args: any[]) => T): asserts err is T {
+                if (!(err instanceof ctor)) {
+                    throw new assert.AssertionError({
+                        message: `Error was not an instance of ${ctor.name}: ${utils.inspect(err)}`,
+                    })
+                }
+            }
+
+            describe('unrelated exceptions', function () {
+                it('bubbles up ENOENT', async function () {
+                    const dirPath = path.join(testDir, `dir${runCounter}`)
+                    await fs.mkdir(dirPath)
+                    const err = await fs.readFileAsString(path.join(dirPath, 'foo')).catch(e => e)
+                    assertError(err, Error)
+                    assert.ok(isFileNotFoundError(err))
+                })
+            })
+
+            describe('owned by user', function () {
+                it('fails writing a new file to a directory without `u+x`', async function () {
+                    const dirPath = path.join(testDir, `dir${runCounter}`)
+                    await nodefs.mkdir(dirPath, { mode: 0o677 })
+                    const err = await fs.writeFile(path.join(dirPath, 'foo'), 'foo').catch(e => e)
+                    assert.match(
+                        formatError(err),
+                        /incorrect permissions. Expected rwx, found rw-. \[InvalidPermissions\] \(isOwner: true; mode: drw-r.xr-x [^ ]* \d+\)/
+                    )
+                    assert.strictEqual(err.uri.fsPath, vscode.Uri.file(dirPath).fsPath)
+                    assert.strictEqual(err.expected, '*wx')
+                    assert.strictEqual(err.actual, 'rw-')
+                })
+
+                it('fails writing a new file to a directory without `u+w`', async function () {
+                    const dirPath = path.join(testDir, `dir${runCounter}`)
+                    await nodefs.mkdir(dirPath, { mode: 0o577 })
+                    const err = await fs.writeFile(path.join(dirPath, 'foo'), 'foo').catch(e => e)
+                    assert.match(
+                        formatError(err),
+                        /incorrect permissions. Expected rwx, found r-x. \[InvalidPermissions\] \(isOwner: true; mode: dr-xr.xr-x [^ ]* \d+\)/
+                    )
+                    assertError(err, PermissionsError)
+                    assert.strictEqual(err.uri.fsPath, vscode.Uri.file(dirPath).fsPath)
+                    assert.strictEqual(err.expected, '*wx')
+                    assert.strictEqual(err.actual, 'r-x')
+                })
+
+                it('fails writing an existing file without `u+w`', async function () {
+                    const filePath = path.join(testDir, `file${runCounter}`)
+                    await nodefs.writeFile(filePath, 'foo', { mode: 0o400 })
+                    const err = await fs.writeFile(filePath, 'foo2').catch(e => e)
+                    assert.match(
+                        formatError(err),
+                        /incorrect permissions. Expected rw-, found r--. \[InvalidPermissions\] \(isOwner: true; mode: -r-------- [^ ]* \d+\)/
+                    )
+                    assertError(err, PermissionsError)
+                    assert.strictEqual(err.uri.fsPath, vscode.Uri.file(filePath).fsPath)
+                    assert.strictEqual(err.expected, '*w*')
+                    assert.strictEqual(err.actual, 'r--')
+                })
+
+                it('fails reading an existing file without `u+r`', async function () {
+                    const filePath = path.join(testDir, `file${runCounter}`)
+                    await fs.writeFile(filePath, 'foo', { mode: 0o200 })
+                    const err = await fs.readFile(filePath).catch(e => e)
+                    assert.match(
+                        formatError(err),
+                        /incorrect permissions. Expected rw-, found -w-. \[InvalidPermissions\] \(isOwner: true; mode: --w------- [^ ]* \d+\)/
+                    )
+                    assertError(err, PermissionsError)
+                    assert.strictEqual(err.uri.fsPath, vscode.Uri.file(filePath).fsPath)
+                    assert.strictEqual(err.expected, 'r**')
+                    assert.strictEqual(err.actual, '-w-')
+                })
+
+                describe('existing files in a directory', function () {
+                    let dirPath: string
+                    let filePath: string
+
+                    beforeEach(async function () {
+                        dirPath = path.join(testDir, `dir${runCounter}`)
+                        await fs.mkdir(dirPath)
+                        filePath = path.join(dirPath, 'file')
+                        await fs.writeFile(filePath, 'foo')
+                    })
+
+                    afterEach(async function () {
+                        await nodefs.chmod(dirPath, 0o777)
+                    })
+
+                    it('fails to delete without `u+w` on the parent', async function () {
+                        await nodefs.chmod(dirPath, 0o577)
+                        const err = await fs.delete(filePath).catch(e => e)
+                        assert.match(
+                            formatError(err),
+                            /incorrect permissions. Expected rwx, found r-x. \[InvalidPermissions\] \(isOwner: true; mode: dr-xrwxrwx [^ ]* \d+\)/
+                        )
+                        assertError(err, PermissionsError)
+                        assert.strictEqual(err.uri.fsPath, vscode.Uri.file(dirPath).fsPath)
+                        assert.strictEqual(err.expected, '*wx')
+                        assert.strictEqual(err.actual, 'r-x')
+                    })
+
+                    it('fails to delete without `u+x` on the parent', async function () {
+                        await nodefs.chmod(dirPath, 0o677)
+                        const err = await fs.delete(filePath).catch(e => e)
+                        assert.match(
+                            formatError(err),
+                            /incorrect permissions. Expected rwx, found rw-. \[InvalidPermissions\] \(isOwner: true; mode: drw-rwxrwx [^ ]* \d+\)/
+                        )
+                        assertError(err, PermissionsError)
+                        assert.strictEqual(err.uri.fsPath, vscode.Uri.file(dirPath).fsPath)
+                        assert.strictEqual(err.expected, '*wx')
+                        assert.strictEqual(err.actual, 'rw-')
+                    })
+                })
+            })
+        })
+    }
 
     async function makeFile(relativePath: string, content?: string, options?: { mode?: number }): Promise<string> {
         const filePath = path.join(testRootPath(), relativePath)

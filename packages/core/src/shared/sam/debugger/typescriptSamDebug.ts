@@ -9,7 +9,6 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { isImageLambdaConfig, NodejsDebugConfiguration } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
-import * as systemutil from '../../../shared/systemUtilities'
 import { ChildProcess } from '../../../shared/utilities/childProcess'
 import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
@@ -18,6 +17,7 @@ import { findParentProjectFile } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, waitForDebuggerMessages } from '../cli/samCliLocalInvoke'
 import { runLambdaFunction, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
+import { findTypescriptCompiler } from '../../utilities/pathFind'
 
 const tsConfigFile = 'aws-toolkit-tsconfig.json'
 
@@ -209,7 +209,7 @@ async function compileTypeScript(config: SamLaunchRequestArgs): Promise<void> {
     config.invokeTarget.lambdaHandler = pathutil.normalizeSeparator(tsLambdaHandler)
     getLogger('channel').info(`Resolved compiled lambda handler to ${tsLambdaHandler}`)
 
-    const tsc = await systemutil.SystemUtilities.findTypescriptCompiler()
+    const tsc = await findTypescriptCompiler()
     if (!tsc) {
         throw new Error('TypeScript compiler "tsc" not found in node_modules/ or the system.')
     }
