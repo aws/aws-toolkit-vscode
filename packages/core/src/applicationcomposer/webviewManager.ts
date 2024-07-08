@@ -83,8 +83,8 @@ export class ApplicationComposerManager {
                 void vscode.window.showWarningMessage(
                     localize(
                         'AWS.applicationComposer.visualisation.warnings.draganddrop',
-                        'This version of Visual Studio Code has a bug preventing normal drag and drop. ' +
-                            'As a temporary workaround, hold "Shift" before releasing the mouse button when adding a resource.'
+                        'This version of Visual Studio Code has a bug preventing normal drag and drop functionality. ' +
+                            'As a temporary workaround, hold the Shift key before releasing a resource onto the visual canvas.'
                     )
                 )
             }
