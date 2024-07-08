@@ -579,7 +579,6 @@ export async function collectFilesForIndex(
                 fileUri: file,
                 fileSizeBytes: fileStat.size,
             })
-            console.log(file.fsPath)
         }
     }
     // prioritize upper level files
