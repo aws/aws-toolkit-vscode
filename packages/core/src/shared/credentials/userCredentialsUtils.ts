@@ -6,7 +6,6 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { fileExists } from '../filesystemUtilities'
-import { SystemUtilities } from '../systemUtilities'
 import { isNonNullable } from '../utilities/tsUtils'
 import { getConfigFilename, getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
 import { fsCommon } from '../../shared/fs/fs'
@@ -63,7 +62,7 @@ export class UserCredentialsUtils {
 
         const filenames = await Promise.all(
             files.map(async uri => {
-                if (await SystemUtilities.fileExists(uri)) {
+                if (await fsCommon.exists(uri)) {
                     return uri.fsPath
                 }
             })
@@ -92,8 +91,8 @@ export class UserCredentialsUtils {
         const dest = getCredentialsFilename()
         const contents = credentialsContext ? ['', createNewCredentialsFile(credentialsContext)] : []
 
-        if (await SystemUtilities.fileExists(dest)) {
-            contents.unshift(await SystemUtilities.readFile(dest))
+        if (await fsCommon.exists(dest)) {
+            contents.unshift(await fsCommon.readFileAsString(dest))
         } else {
             contents.unshift(header)
         }

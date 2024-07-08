@@ -6,9 +6,9 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as nls from 'vscode-nls'
+import fs from '../fs/fs'
 import { getLogger } from '../logger'
 import { ChildProcess } from '../utilities/childProcess'
-import { SystemUtilities } from '../systemUtilities'
 import { ArrayConstructor, NonNullObject } from '../utilities/typeConstructors'
 import { Settings } from '../settings'
 import { VSCODE_EXTENSION_ID } from '../extensions'
@@ -18,7 +18,7 @@ const localize = nls.loadMessageBundle()
 export const sshAgentSocketVariable = 'SSH_AUTH_SOCK'
 
 export function getSshConfigPath(): string {
-    const sshConfigDir = path.join(SystemUtilities.getHomeDirectory(), '.ssh')
+    const sshConfigDir = path.join(fs.getUserHomeDir(), '.ssh')
     return path.join(sshConfigDir, 'config')
 }
 

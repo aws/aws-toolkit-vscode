@@ -11,12 +11,11 @@ import { isInDirectory } from '../filesystemUtilities'
 import { normalizedDirnameWithTrailingSlash, normalize } from './pathUtils'
 import globals from '../extensionGlobals'
 import { ToolkitError } from '../errors'
-import { SystemUtilities } from '../systemUtilities'
 import { getGlobDirExcludedPatterns } from '../fs/watchedFiles'
 import { sanitizeFilename } from './textUtilities'
 import { GitIgnoreAcceptor } from '@gerhobbelt/gitignore-parser'
 import * as parser from '@gerhobbelt/gitignore-parser'
-import { fsCommon } from '../fs/fs'
+import fs from '../fs/fs'
 
 type GitIgnoreRelativeAcceptor = {
     folderPath: string
@@ -33,7 +32,7 @@ export class GitIgnoreFilter {
     public static async build(gitIgnoreFiles: vscode.Uri[]): Promise<GitIgnoreFilter> {
         const acceptors: GitIgnoreRelativeAcceptor[] = []
         for (const file of gitIgnoreFiles) {
-            const fileContent = await SystemUtilities.readFile(file)
+            const fileContent = await fs.readFileAsString(file)
 
             const folderPath = getWorkspaceParentDirectory(file.fsPath)
             if (folderPath === undefined) {
@@ -352,7 +351,7 @@ export async function collectFiles(
                 continue
             }
 
-            const fileStat = await fsCommon.stat(file)
+            const fileStat = await fs.stat(file)
             if (totalSizeBytes + fileStat.size > maxSize) {
                 throw new ToolkitError(
                     'The project you have selected for source code is too large to use as context. Please select a different folder to use',
@@ -381,7 +380,7 @@ export async function collectFiles(
 
 const readFile = async (file: vscode.Uri) => {
     try {
-        const fileContent = await SystemUtilities.readFile(file, new TextDecoder('utf8', { fatal: false }))
+        const fileContent = await fs.readFileAsString(file, new TextDecoder('utf8', { fatal: false }))
         return fileContent
     } catch (error) {
         getLogger().debug(
