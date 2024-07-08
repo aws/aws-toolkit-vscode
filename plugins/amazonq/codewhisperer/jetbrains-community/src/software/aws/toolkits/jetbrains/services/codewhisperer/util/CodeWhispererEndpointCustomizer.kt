@@ -95,10 +95,12 @@ class CodeWhispererEndpointCustomizer : ToolkitClientCustomizer {
                         .useSystemPropertyValues(false)
 
                     clientBuilder.proxyConfiguration(proxyConfiguration.build())
-                        .tlsTrustManagersProvider { arrayOf<TrustManager>(CertificateManager.getInstance().trustManager) }
                 }
 
-                builder.httpClientBuilder(clientBuilder)
+                builder.httpClientBuilder(
+                    clientBuilder
+                        .tlsTrustManagersProvider { arrayOf<TrustManager>(CertificateManager.getInstance().trustManager) }
+                )
             }
         } else if (builder is CodeWhispererClientBuilder) {
             clientOverrideConfiguration.addExecutionInterceptor(
