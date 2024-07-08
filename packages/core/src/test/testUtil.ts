@@ -109,6 +109,10 @@ export async function createTestWorkspace(
          * the subDir where the workspace folder will point to within the temp folder
          */
         subDir?: string
+        /**
+         * optional file name suffix
+         */
+        fileNameSuffix?: string
     }
 ): Promise<vscode.WorkspaceFolder> {
     const workspace = await createTestWorkspaceFolder(opts.workspaceName, opts.subDir)
@@ -118,10 +122,11 @@ export async function createTestWorkspace(
     }
 
     const fileNamePrefix = opts?.fileNamePrefix ?? 'test-file-'
+    const fileNameSuffix = opts?.fileNameSuffix ?? ''
     const fileContent = opts?.fileContent ?? ''
 
     do {
-        const tempFilePath = path.join(workspace.uri.fsPath, `${fileNamePrefix}${n}`)
+        const tempFilePath = path.join(workspace.uri.fsPath, `${fileNamePrefix}${n}${fileNameSuffix}`)
         await fsCommon.writeFile(tempFilePath, fileContent)
     } while (--n > 0)
 
