@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Expose Amazon Q backend validation error message"
+}

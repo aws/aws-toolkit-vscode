@@ -24,6 +24,7 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.ContentLengthE
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FEATURE_NAME
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.MonthlyConversationLimitError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.PlanIterationLimitError
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.ZipFileError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.apiError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.GenerateTaskAssistPlanResult
@@ -34,6 +35,7 @@ import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.ge
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AmazonqTelemetry
 import software.aws.toolkits.telemetry.Result
+import software.amazon.awssdk.services.codewhispererstreaming.model.ValidationException as StreamingValidationException
 
 private val logger = getLogger<FeatureDevClient>()
 
@@ -138,6 +140,10 @@ class FeatureDevService(val proxyClient: FeatureDevClient, val project: Project)
                     (e is ThrottlingException && e.message?.contains("limit for number of iterations on an implementation plan") == true)
                 ) {
                     throw PlanIterationLimitError(message("amazonqFeatureDev.approach_gen.iteration_limit.error_text"), e.cause)
+                } else if (e is StreamingValidationException && e.message?.contains("repo size is exceeding the limits") == true) {
+                    throw ContentLengthError(message("amazonqFeatureDev.content_length.error_text"), e.cause)
+                } else if (e is StreamingValidationException && e.message?.contains("zipped file is corrupted") == true) {
+                    throw ZipFileError("The zip file is corrupted", e.cause)
                 }
             }
             apiError(errMssg, e.cause)
@@ -181,6 +187,10 @@ class FeatureDevService(val proxyClient: FeatureDevClient, val project: Project)
                         )
                 ) {
                     throw CodeIterationLimitError(message("amazonqFeatureDev.code_generation.iteration_limit.error_text"), e.cause)
+                } else if (e is ValidationException && e.message?.contains("repo size is exceeding the limits") == true) {
+                    throw ContentLengthError(message("amazonqFeatureDev.content_length.error_text"), e.cause)
+                } else if (e is ValidationException && e.message?.contains("zipped file is corrupted") == true) {
+                    throw ZipFileError("The zip file is corrupted", e.cause)
                 }
             }
             apiError(errMssg, e.cause)
