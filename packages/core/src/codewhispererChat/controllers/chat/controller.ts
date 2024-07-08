@@ -582,7 +582,7 @@ export class ChatController {
                 if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                     const start = performance.now()
                     triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
-                    getLogger().debug(
+                    getLogger().info(
                         `amazonq: Using workspace files ${triggerPayload.relevantTextDocuments.map(x => x.relativeFilePath).join(', ')}`
                     )
                     triggerPayload.projectContextQueryLatencyMs = performance.now() - start

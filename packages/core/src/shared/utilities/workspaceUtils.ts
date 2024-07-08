@@ -594,6 +594,6 @@ export async function collectFilesForIndex(
             break
         }
     }
-    // pick top 10k files below size limit
-    return storage.slice(0, Math.min(10000, i))
+    // pick top 100k files below size limit
+    return storage.slice(0, Math.min(100000, i))
 }
