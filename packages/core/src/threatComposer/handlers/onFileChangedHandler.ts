@@ -5,7 +5,7 @@
 
 import { Command, FileChangedMessage, MessageType, WebviewContext } from '../types'
 import vscode from 'vscode'
-import { fsCommon } from '../../shared/fs/fs'
+import fs from '../../shared/fs/fs'
 
 /**
  * Function to call when the text document has been modified
@@ -23,7 +23,7 @@ export async function onFileChanged(context: WebviewContext) {
     const filePath = context.defaultTemplatePath
     const fileName = context.defaultTemplateName
 
-    const fileContents = await fsCommon.readFileAsString(filePath)
+    const fileContents = await fs.readFileAsString(filePath)
 
     // If the change event is due to a save action by the user, this trigger can be ignored.
     if (fileContents !== context.fileStates[filePath].fileContents) {

@@ -10,7 +10,7 @@ import { ToolkitError } from '../../shared/errors'
 import { Socket } from 'net'
 import globals from '../../shared/extensionGlobals'
 import { Result } from '../../shared/utilities/result'
-import { FileSystemCommon } from '../../shared/fs/fs'
+import fs from '../../shared/fs/fs'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 
 export class MissingPortError extends ToolkitError {
@@ -218,7 +218,7 @@ export class AuthSSOServer {
 
     private async loadResource(res: http.ServerResponse, resourcePath: string) {
         try {
-            const file = await FileSystemCommon.instance.readFile(resourcePath)
+            const file = await fs.readFile(resourcePath)
             res.writeHead(200)
             res.end(file)
         } catch (e) {

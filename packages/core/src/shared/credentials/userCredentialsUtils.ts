@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import { fileExists } from '../filesystemUtilities'
 import { isNonNullable } from '../utilities/tsUtils'
 import { getConfigFilename, getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
-import { fsCommon } from '../../shared/fs/fs'
+import { fs } from '../../shared/fs/fs'
 
 const header = `
 # AWS credentials file used by AWS CLI, SDKs, and tools.
@@ -62,7 +62,7 @@ export class UserCredentialsUtils {
 
         const filenames = await Promise.all(
             files.map(async uri => {
-                if (await fsCommon.exists(uri)) {
+                if (await fs.exists(uri)) {
                     return uri.fsPath
                 }
             })
@@ -79,7 +79,7 @@ export class UserCredentialsUtils {
     public static async generateCredentialDirectoryIfNonexistent(): Promise<void> {
         const filepath = path.dirname(getCredentialsFilename())
         if (!(await fileExists(filepath))) {
-            await fsCommon.mkdir(filepath)
+            await fs.mkdir(filepath)
         }
     }
 
@@ -91,12 +91,12 @@ export class UserCredentialsUtils {
         const dest = getCredentialsFilename()
         const contents = credentialsContext ? ['', createNewCredentialsFile(credentialsContext)] : []
 
-        if (await fsCommon.exists(dest)) {
-            contents.unshift(await fsCommon.readFileAsString(dest))
+        if (await fs.exists(dest)) {
+            contents.unshift(await fs.readFileAsString(dest))
         } else {
             contents.unshift(header)
         }
 
-        await fsCommon.writeFile(dest, contents.join('\n'))
+        await fs.writeFile(dest, contents.join('\n'))
     }
 }

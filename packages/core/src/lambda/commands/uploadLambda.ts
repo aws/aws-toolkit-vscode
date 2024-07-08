@@ -10,7 +10,7 @@ const localize = nls.loadMessageBundle()
 
 import AdmZip from 'adm-zip'
 import * as path from 'path'
-import { fsCommon } from '../../shared'
+import { fs } from '../../shared'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { cloud9Findfile, makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
@@ -209,7 +209,7 @@ export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
 
         if (this.invokePath) {
             this.form.uploadType.setDefault('directory')
-            if (await fsCommon.existsFile(this.invokePath.fsPath)) {
+            if (await fs.existsFile(this.invokePath.fsPath)) {
                 this.form.targetUri.setDefault(vscode.Uri.file(path.dirname(this.invokePath.fsPath)))
             } else {
                 this.form.targetUri.setDefault(this.invokePath)
@@ -307,7 +307,7 @@ async function runUploadLambdaWithSamBuild(lambda: Required<LambdaFunction>, par
     // Detect if handler is present and provide strong guidance against proceeding if not.
     try {
         const handlerFile = path.join(parentDir.fsPath, getLambdaDetails(lambda.configuration).fileName)
-        if (!(await fsCommon.exists(handlerFile))) {
+        if (!(await fs.exists(handlerFile))) {
             const isConfirmed = await showConfirmationMessage({
                 prompt: localize(
                     'AWS.lambda.upload.handlerNotFound',
@@ -419,7 +419,7 @@ async function runUploadLambdaZipFile(lambda: LambdaFunction, zipFileUri: vscode
             cancellable: false,
         },
         async progress => {
-            const zipFile = await fsCommon.readFile(zipFileUri.fsPath).catch(err => {
+            const zipFile = await fs.readFile(zipFileUri.fsPath).catch(err => {
                 throw new ToolkitError('Failed to read zip', { cause: err })
             })
             return await uploadZipBuffer(lambda, zipFile, progress)
@@ -485,14 +485,14 @@ export async function findApplicationJsonFile(
     startPath: vscode.Uri,
     cloud9 = isCloud9()
 ): Promise<vscode.Uri | undefined> {
-    if (!(await fsCommon.exists(startPath.fsPath))) {
+    if (!(await fs.exists(startPath.fsPath))) {
         getLogger().error(
             'findApplicationJsonFile() invalid path (not accessible or does not exist): "%s"',
             startPath.fsPath
         )
         return undefined
     }
-    const isdir = await fsCommon.existsDir(startPath.fsPath)
+    const isdir = await fs.existsDir(startPath.fsPath)
     const parentDir = isdir ? startPath.fsPath : path.dirname(startPath.fsPath)
     const found = cloud9
         ? await cloud9Findfile(parentDir, '.application.json')
@@ -514,7 +514,7 @@ export async function findApplicationJsonFile(
 export async function getFunctionNames(file: vscode.Uri, region: string): Promise<string[] | undefined> {
     try {
         const names: string[] = []
-        const appData = JSON.parse(await fsCommon.readFileAsString(file.fsPath))
+        const appData = JSON.parse(await fs.readFileAsString(file.fsPath))
         if (appData['Functions']) {
             const functions = Object.keys(appData['Functions'])
             if (functions) {

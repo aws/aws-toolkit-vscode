@@ -31,7 +31,7 @@ function createPermissionsErrorHandler(
         const userInfo = getUserInfo()
 
         if (isWeb) {
-            const stats = await fsCommon.stat(uri)
+            const stats = await fs.stat(uri)
             throw new PermissionsError(uri, stats, userInfo, perms, err)
         }
 
@@ -48,7 +48,7 @@ function createPermissionsErrorHandler(
 }
 
 /**
- * @warning Do not import this class directly, instead import the {@link fsCommon} instance.
+ * @warning Do not import this class directly, instead import the {@link fs} instance.
  *
  * Filesystem functions compatible with both browser and desktop (node.js).
  *
@@ -63,11 +63,11 @@ function createPermissionsErrorHandler(
  * - All methods must work for both browser and desktop
  * - Do not use 'fs' or 'fs-extra' since they are not browser compatible.
  */
-export class FileSystemCommon {
+export class FileSystem {
     private constructor() {}
-    static #instance: FileSystemCommon
-    static get instance(): FileSystemCommon {
-        return (this.#instance ??= new FileSystemCommon())
+    static #instance: FileSystem
+    static get instance(): FileSystem {
+        return (this.#instance ??= new FileSystem())
     }
 
     /** Creates the directory as well as missing parent directories. */
@@ -100,7 +100,7 @@ export class FileSystemCommon {
     }
 
     // TODO: rename to readFile()?
-    async readFileAsString(path: Uri | string, decoder: TextDecoder = FileSystemCommon.#decoder): Promise<string> {
+    async readFileAsString(path: Uri | string, decoder: TextDecoder = FileSystem.#decoder): Promise<string> {
         const uri = this.#toUri(path)
         const bytes = await this.readFile(uri)
         return decoder.decode(bytes)
@@ -409,13 +409,13 @@ export class FileSystemCommon {
     static readonly #encoder = new TextEncoder()
 
     private static stringToArray(string: string): Uint8Array {
-        return FileSystemCommon.#encoder.encode(string)
+        return FileSystem.#encoder.encode(string)
     }
 
     /** Encodes UTF-8 string data as bytes. */
     #toBytes(data: Uint8Array | string): Uint8Array {
         if (typeof data === 'string') {
-            return FileSystemCommon.stringToArray(data)
+            return FileSystem.stringToArray(data)
         }
         return data
     }
@@ -447,6 +447,5 @@ export class FileSystemCommon {
     }
 }
 
-export const fsCommon = FileSystemCommon.instance
-const fs = fsCommon
+export const fs = FileSystem.instance
 export default fs

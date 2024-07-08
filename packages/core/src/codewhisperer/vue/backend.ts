@@ -11,7 +11,7 @@ import { VueWebview } from '../../webviews/main'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import globals from '../../shared/extensionGlobals'
 import { telemetry, CodewhispererLanguage, CodewhispererGettingStartedTask } from '../../shared/telemetry/telemetry'
-import { fsCommon } from '../../shared'
+import { fs } from '../../shared'
 import { getLogger } from '../../shared/logger'
 import { AmazonQPromptSettings } from '../../shared/settings'
 import { CodeWhispererSource } from '../commands/types'
@@ -39,7 +39,7 @@ export class CodeWhispererWebview extends VueWebview {
         const fileContent = name[1]
 
         const localFilePath = this.getLocalFilePath(fileName)
-        if ((await fsCommon.existsFile(localFilePath)) && this.isFileSaved) {
+        if ((await fs.existsFile(localFilePath)) && this.isFileSaved) {
             const fileUri = vscode.Uri.file(localFilePath)
             await vscode.workspace.openTextDocument(fileUri).then(async doc => {
                 await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active).then(editor => {
@@ -58,7 +58,7 @@ export class CodeWhispererWebview extends VueWebview {
     // This function saves and open the file in the editor.
     private async saveFileLocally(localFilePath: string, fileContent: string): Promise<void> {
         try {
-            await fsCommon.writeFile(localFilePath, fileContent)
+            await fs.writeFile(localFilePath, fileContent)
             this.isFileSaved = true
             // Opening the text document
             await vscode.workspace.openTextDocument(localFilePath).then(async doc => {

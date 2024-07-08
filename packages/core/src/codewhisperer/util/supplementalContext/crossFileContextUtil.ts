@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { fsCommon } from '../../../shared'
+import { fs } from '../../../shared'
 import path = require('path')
 import { BM25Document, BM25Okapi } from './rankBm25'
 import { ToolkitError } from '../../../shared/errors'
@@ -199,7 +199,7 @@ function linkChunks(chunks: Chunk[]) {
 export async function splitFileToChunks(filePath: string, chunkSize: number): Promise<Chunk[]> {
     const chunks: Chunk[] = []
 
-    const fileContent = (await fsCommon.readFileAsString(filePath)).trimEnd()
+    const fileContent = (await fs.readFileAsString(filePath)).trimEnd()
     const lines = fileContent.split('\n')
 
     for (let i = 0; i < lines.length; i += chunkSize) {

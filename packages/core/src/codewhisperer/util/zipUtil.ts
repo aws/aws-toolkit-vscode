@@ -9,7 +9,7 @@ import { tempDirPath } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
 import { ToolkitError } from '../../shared/errors'
-import { fsCommon } from '../../shared'
+import { fs } from '../../shared'
 import { getLoggerForScope } from '../service/securityScanHandler'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
@@ -96,7 +96,7 @@ export class ZipUtil {
         }
 
         this._pickedSourceFiles.add(uri.fsPath)
-        this._totalSize += (await fsCommon.stat(uri.fsPath)).size
+        this._totalSize += (await fs.stat(uri.fsPath)).size
         this._totalLines += content.split(ZipConstants.newlineRegex).length
 
         if (this.reachSizeLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.FILE)) {
@@ -226,7 +226,7 @@ export class ZipUtil {
             }
 
             getLoggerForScope(scope).debug(`Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
-            const zipFileSize = (await fsCommon.stat(zipFilePath)).size
+            const zipFileSize = (await fs.stat(zipFilePath)).size
             return {
                 rootDir: zipDirPath,
                 zipFilePath: zipFilePath,
@@ -246,8 +246,8 @@ export class ZipUtil {
     public async removeTmpFiles(zipMetadata: ZipMetadata, scope: CodeWhispererConstants.CodeAnalysisScope) {
         const logger = getLoggerForScope(scope)
         logger.verbose(`Cleaning up temporary files...`)
-        await fsCommon.delete(zipMetadata.zipFilePath, { force: true })
-        await fsCommon.delete(zipMetadata.rootDir, { recursive: true, force: true })
+        await fs.delete(zipMetadata.zipFilePath, { force: true })
+        await fs.delete(zipMetadata.rootDir, { recursive: true, force: true })
         logger.verbose(`Complete cleaning up temporary files.`)
     }
 }

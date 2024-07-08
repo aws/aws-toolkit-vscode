@@ -20,7 +20,7 @@ import {
     listScanResults,
 } from '../../codewhisperer/service/securityScanHandler'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { fsCommon } from '../../shared/fs/fs'
+import fs from '../../shared/fs/fs'
 import { ZipUtil } from '../../codewhisperer/util/zipUtil'
 import { randomUUID } from '../../common/crypto'
 
@@ -64,7 +64,7 @@ describe('CodeWhisperer security scan', async function () {
 
     afterEach(async function () {
         if (tempFolder !== undefined) {
-            await fsCommon.delete(tempFolder)
+            await fs.delete(tempFolder)
         }
     })
 

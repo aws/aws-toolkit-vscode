@@ -7,7 +7,7 @@ import path from 'path'
 import { Commands } from '../../shared/vscode/commands2'
 import vscode from 'vscode'
 import { ThreatComposerEditorProvider } from '../threatComposerEditorProvider'
-import { fsCommon } from '../../shared/fs/fs'
+import fs from '../../shared/fs/fs'
 
 /**
  * This is a helper function to create a new Threat Composer file.
@@ -22,7 +22,7 @@ const createNewThreatComposerFile = async () => {
         const title = await vscode.window.showInputBox({
             prompt: 'Enter name for file',
             validateInput: async text => {
-                if (text && (await fsCommon.existsFile(path.join(rootFolder, `${text}.tc.json`)))) {
+                if (text && (await fs.existsFile(path.join(rootFolder, `${text}.tc.json`)))) {
                     return 'The specified file already exists'
                 }
             },
@@ -34,7 +34,7 @@ const createNewThreatComposerFile = async () => {
 
         const fileContent = '' //Empty content would be accepted by TC which will save default structure automatically
         const filePath = path.join(rootFolder, `${title}.tc.json`)
-        await fsCommon.writeFile(filePath, fileContent)
+        await fs.writeFile(filePath, fileContent)
 
         await vscode.commands.executeCommand(
             'vscode.openWith',

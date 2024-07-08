@@ -16,7 +16,7 @@ import {
 } from '../types'
 import { ConversationIdNotFoundError } from '../errors'
 import { referenceLogText } from '../constants'
-import { FileSystemCommon } from '../../shared/fs/fs'
+import fs from '../../shared/fs/fs'
 import { Messenger } from '../controllers/chat/messenger/messenger'
 import { FeatureDevClient } from '../client/featureDev'
 import { approachRetryLimit, codeGenRetryLimit } from '../limits'
@@ -25,8 +25,6 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceLogViewProvider'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
-
-const fs = FileSystemCommon.instance
 
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>

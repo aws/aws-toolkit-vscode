@@ -9,7 +9,7 @@ import { Uri, Range } from 'vscode'
 import { isEqual } from '../../../auth/providers/credentials'
 import { SharedCredentialsProviderFactory } from '../../../auth/providers/sharedCredentialsProviderFactory'
 import * as sharedCredentials from '../../../auth/credentials/sharedCredentials'
-import { fsCommon } from '../../../shared/fs/fs'
+import fs from '../../../shared/fs/fs'
 import vscode from 'vscode'
 
 describe('SharedCredentialsProviderFactory', async function () {
@@ -40,7 +40,7 @@ describe('SharedCredentialsProviderFactory', async function () {
         sandbox = sinon.createSandbox()
 
         sharedCredentialsLastModifiedMillis = 1
-        sandbox.stub(fsCommon, 'stat').callsFake(async () => {
+        sandbox.stub(fs, 'stat').callsFake(async () => {
             return {
                 mtime: sharedCredentialsLastModifiedMillis,
             } as any as vscode.FileStat

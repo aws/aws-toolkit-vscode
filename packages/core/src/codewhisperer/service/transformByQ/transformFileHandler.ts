@@ -11,7 +11,7 @@ import * as CodeWhispererConstants from '../../models/constants'
 import { existsSync, writeFileSync } from 'fs'
 import { BuildSystem, FolderInfo, transformByQState } from '../../models/model'
 import { IManifestFile } from '../../../amazonqFeatureDev/models'
-import { fsCommon } from '../../../shared'
+import fs from '../../../shared/fs/fs'
 
 export function getDependenciesFolderInfo(): FolderInfo {
     const dependencyFolderName = `${CodeWhispererConstants.dependencyFolderName}${Date.now()}`
@@ -42,17 +42,17 @@ export async function createPomCopy(
     fileName: string
 ): Promise<vscode.Uri> {
     const newFilePath = path.join(dirname, fileName)
-    const pomFileContents = await fsCommon.readFileAsString(pomFileVirtualFileReference.fsPath)
-    const directoryExits = await fsCommon.exists(dirname)
+    const pomFileContents = await fs.readFileAsString(pomFileVirtualFileReference.fsPath)
+    const directoryExits = await fs.exists(dirname)
     if (!directoryExits) {
-        await fsCommon.mkdir(dirname)
+        await fs.mkdir(dirname)
     }
-    await fsCommon.writeFile(newFilePath, pomFileContents)
+    await fs.writeFile(newFilePath, pomFileContents)
     return vscode.Uri.file(newFilePath)
 }
 
 export async function replacePomVersion(pomFileVirtualFileReference: vscode.Uri, version: string, delimiter: string) {
-    const pomFileText = await fsCommon.readFileAsString(pomFileVirtualFileReference.fsPath)
+    const pomFileText = await fs.readFileAsString(pomFileVirtualFileReference.fsPath)
     const pomFileTextWithNewVersion = pomFileText.replace(delimiter, version)
     writeFileSync(pomFileVirtualFileReference.fsPath, pomFileTextWithNewVersion)
 }
@@ -60,7 +60,7 @@ export async function replacePomVersion(pomFileVirtualFileReference: vscode.Uri,
 export async function getJsonValuesFromManifestFile(
     manifestFileVirtualFileReference: vscode.Uri
 ): Promise<IManifestFile> {
-    const manifestFileContents = await fsCommon.readFileAsString(manifestFileVirtualFileReference.fsPath)
+    const manifestFileContents = await fs.readFileAsString(manifestFileVirtualFileReference.fsPath)
     const jsonValues = JSON.parse(manifestFileContents.toString())
     return {
         hilCapability: jsonValues?.hilType,
@@ -135,7 +135,7 @@ async function addDiagnosticOverview(
 
 export async function getCodeIssueSnippetFromPom(pomFileVirtualFileReference: vscode.Uri) {
     // TODO[gumby]: not great that we read this file multiple times
-    const pomFileContents = await fsCommon.readFileAsString(pomFileVirtualFileReference.fsPath)
+    const pomFileContents = await fs.readFileAsString(pomFileVirtualFileReference.fsPath)
 
     const dependencyRegEx = /<dependencies\b[^>]*>(.*?)<\/dependencies>/ms
     const match = dependencyRegEx.exec(pomFileContents)

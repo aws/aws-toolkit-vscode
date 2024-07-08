@@ -25,7 +25,7 @@ import { FakeChildProcessResult, TestSamCliProcessInvoker } from './shared/sam/c
 import { createTestWorkspaceFolder } from './testUtil'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
 import { createTestRegionProvider } from './shared/regions/testUtil'
-import { fsCommon } from '../shared/fs/fs'
+import fs from '../shared/fs/fs'
 
 export interface FakeMementoStorage {
     [key: string]: any
@@ -107,8 +107,8 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
         const folder = await createTestWorkspaceFolder('test')
         ctx.globalStorageUri = vscode.Uri.joinPath(folder.uri, 'globalStorage')
         ctx.logUri = vscode.Uri.joinPath(folder.uri, 'logs')
-        await fsCommon.mkdir(ctx.globalStorageUri.fsPath)
-        await fsCommon.mkdir(ctx.logUri.fsPath)
+        await fs.mkdir(ctx.globalStorageUri.fsPath)
+        await fs.mkdir(ctx.logUri.fsPath)
         return ctx
     }
 
