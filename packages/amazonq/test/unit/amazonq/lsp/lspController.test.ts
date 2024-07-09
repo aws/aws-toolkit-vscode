@@ -8,8 +8,8 @@ import { Content, LspController } from 'aws-core-vscode/amazonq'
 import { createTestFile } from 'aws-core-vscode/test'
 import { fs } from 'aws-core-vscode/shared'
 
-describe('Test LSP controller', function () {
-    it('Downloaded mechanism checks against hash, when hash matches', async function () {
+describe('Amazon Q LSP controller', function () {
+    it('Download mechanism checks against hash, when hash matches', async function () {
         const content = {
             filename: 'qserver-linux-x64.zip',
             url: 'https://x/0.0.6/qserver-linux-x64.zip',
@@ -27,7 +27,7 @@ describe('Test LSP controller', function () {
         assert.strictEqual(result, true)
     })
 
-    it('Verify downloaded mechanism checks against hash, when hash does not match', async function () {
+    it('Download mechanism checks against hash, when hash does not match', async function () {
         const content = {
             filename: 'qserver-linux-x64.zip',
             url: 'https://x/0.0.6/qserver-linux-x64.zip',

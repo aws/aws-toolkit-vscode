@@ -13,7 +13,7 @@ import fetch from 'node-fetch'
 import { LspClient } from './lspClient'
 import AdmZip from 'adm-zip'
 import { RelevantTextDocument } from '@amzn/codewhisperer-streaming'
-import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
 import { activate as activateLsp } from './lspClient'
 import { telemetry } from '../../shared/telemetry'
@@ -21,6 +21,7 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { globals } from '../../shared'
 import { AuthUtil } from '../../codewhisperer'
 import { isWeb } from '../../shared/extensionGlobals'
+import { getUserAgent } from '../../shared/telemetry/util'
 
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -95,7 +96,7 @@ export class LspController {
     async _download(localFile: string, remoteUrl: string) {
         const res = await fetch(remoteUrl, {
             headers: {
-                'User-Agent': 'curl/7.68.0',
+                'User-Agent': getUserAgent({ includePlatform: true, includeClientId: true }),
             },
         })
         if (!res.ok) {
@@ -116,7 +117,7 @@ export class LspController {
     async downloadManifest() {
         const res = await fetch(manifestUrl, {
             headers: {
-                'User-Agent': 'curl/7.68.0',
+                'User-Agent': getUserAgent({ includePlatform: true, includeClientId: true }),
             },
         })
         if (!res.ok) {
@@ -216,6 +217,7 @@ export class LspController {
     }
 
     async tryInstallLsp(context: vscode.ExtensionContext): Promise<boolean> {
+        let tempFolder = undefined
         try {
             if (this.isLspInstalled(context)) {
                 getLogger().info(`LspController: LSP already installed`)
@@ -229,9 +231,9 @@ export class LspController {
                 return false
             }
 
-            const tempFolder = await makeTemporaryToolkitFolder()
+            tempFolder = await makeTemporaryToolkitFolder()
             const zipFilePath = path.join(tempFolder, 'qserver.zip')
-            let downloadOk = await this.downloadAndCheckHash(zipFilePath, qserver)
+            const downloadOk = await this.downloadAndCheckHash(zipFilePath, qserver)
             if (!downloadOk) {
                 return false
             }
@@ -240,8 +242,8 @@ export class LspController {
             fs.removeSync(zipFilePath)
 
             const noderuntimeFilePath = path.join(tempFolder, nodeBinName)
-            downloadOk = await this.downloadAndCheckHash(noderuntimeFilePath, noderuntime)
-            if (!downloadOk) {
+            const downloadNodeOk = await this.downloadAndCheckHash(noderuntimeFilePath, noderuntime)
+            if (!downloadNodeOk) {
                 return false
             }
             fs.chmodSync(noderuntimeFilePath, 0o755)
@@ -250,6 +252,10 @@ export class LspController {
         } catch (e) {
             getLogger().error(`LspController: Failed to setup LSP server ${e}`)
             return false
+        } finally {
+            if (tempFolder) {
+                await tryRemoveFolder(tempFolder)
+            }
         }
     }
 
@@ -357,7 +363,7 @@ export class LspController {
                 await activateLsp(context)
                 getLogger().info('LspController: LSP activated')
                 void LspController.instance.buildIndex()
-
+                // log the LSP server CPU and Memory usage per 30 minutes.
                 globals.clock.setInterval(
                     async () => {
                         const usage = await LspClient.instance.getLspServerUsage()
@@ -369,7 +375,7 @@ export class LspController {
                             )
                         }
                     },
-                    20 * 60 * 1000
+                    30 * 60 * 1000
                 )
             } catch (e) {
                 getLogger().error(`LspController: LSP failed to activate ${e}`)
