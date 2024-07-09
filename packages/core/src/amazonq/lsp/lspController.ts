@@ -18,7 +18,7 @@ import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSet
 import { activate as activateLsp } from './lspClient'
 import { telemetry } from '../../shared/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { globals } from '../../shared'
+import { globals, ToolkitError } from '../../shared'
 import { AuthUtil } from '../../codewhisperer'
 import { isWeb } from '../../shared/extensionGlobals'
 import { getUserAgent } from '../../shared/telemetry/util'
@@ -26,7 +26,7 @@ import { getUserAgent } from '../../shared/telemetry/util'
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
     if (!workspaceFolders || workspaceFolders.length === 0) {
-        throw Error('No workspace folders found')
+        throw new ToolkitError('No workspace folders found')
     }
     return workspaceFolders.map(folder => folder.uri.fsPath)
 }
@@ -100,7 +100,7 @@ export class LspController {
             },
         })
         if (!res.ok) {
-            throw new Error(`Failed to download. Error: ${JSON.stringify(res)}`)
+            throw new ToolkitError(`Failed to download. Error: ${JSON.stringify(res)}`)
         }
         return new Promise((resolve, reject) => {
             const file = fs.createWriteStream(localFile)
@@ -121,7 +121,7 @@ export class LspController {
             },
         })
         if (!res.ok) {
-            throw new Error(`Failed to download. Error: ${JSON.stringify(res)}`)
+            throw new ToolkitError(`Failed to fetch manifest. Error: ${JSON.stringify(res)}`)
         }
         return res.json()
     }

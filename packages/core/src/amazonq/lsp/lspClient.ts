@@ -178,8 +178,8 @@ export async function activate(extensionContext: ExtensionContext) {
 
     // Create the language client and start the client.
     LspClient.instance.client = new LanguageClient(
-        'codewhisperer',
-        localize('codewhisperer.server.name', 'Amazon Q Language Server'),
+        'amazonq',
+        localize('amazonq.server.name', 'Amazon Q Language Server'),
         serverOptions,
         clientOptions
     )
