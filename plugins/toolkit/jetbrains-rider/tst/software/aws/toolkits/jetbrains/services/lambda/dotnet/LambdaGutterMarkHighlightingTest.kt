@@ -7,8 +7,6 @@ import base.backendStartTimeout
 import com.jetbrains.rdclient.testFramework.waitForDaemon
 import com.jetbrains.rider.projectView.solution
 import com.jetbrains.rider.test.base.BaseTestWithMarkup
-import org.testng.SkipException
-import org.testng.annotations.BeforeMethod
 import org.testng.annotations.DataProvider
 import org.testng.annotations.Test
 import software.aws.toolkits.jetbrains.protocol.awsSettingModel
@@ -18,14 +16,6 @@ class LambdaGutterMarkHighlightingTest : BaseTestWithMarkup() {
 
     companion object {
         private const val LAMBDA_RUN_MARKER_ATTRIBUTE_ID = "AWS Lambda Run Method Gutter Mark"
-    }
-
-    @BeforeMethod
-    fun skipTestsOnWindows() {
-        val ideVersion = System.getProperty("org.gradle.project.ideProfileName")
-        if (System.getProperty("os.name").contains("Windows") && ideVersion == "2023.2") {
-            throw SkipException("Test skipped because it flakes on Windows 2023.2")
-        }
     }
 
     override val backendLoadedTimeout: Duration = backendStartTimeout
