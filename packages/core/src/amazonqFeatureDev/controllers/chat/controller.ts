@@ -267,8 +267,11 @@ export class FeatureDevController {
                     ],
                 })
                 break
-            case GuardrailsException.name:
             case PromptRefusalException.name:
+                this.messenger.sendErrorMessage(errorMessage, message.tabID, 0, session?.conversationIdUnsafe, true)
+                break
+
+            case GuardrailsException.name:
             case EmptyPatchException.name:
             case ThrottlingException.name:
             case UploadCodeError.name:
