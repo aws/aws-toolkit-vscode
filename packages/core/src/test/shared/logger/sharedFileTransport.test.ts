@@ -6,7 +6,7 @@
 import vscode from 'vscode'
 import assert from 'assert'
 import { SharedFileTransport, flushIntervalMillis } from '../../../shared/logger/sharedFileTransport'
-import { fsCommon } from '../../../srcShared/fs'
+import fs from '../../../shared/fs/fs'
 import { stub, SinonStub } from 'sinon'
 import { MESSAGE } from '../../../shared/logger/consoleLogTransport'
 import { createTestFile } from '../../testUtil'
@@ -25,7 +25,7 @@ describe('SharedFileTransport', function () {
     })
 
     afterEach(async function () {
-        await fsCommon.delete(logFile)
+        await fs.delete(logFile)
     })
 
     it('logs are written to file', async function () {

@@ -27,7 +27,7 @@ import {
     getMachineId,
     messages,
 } from 'aws-core-vscode/shared'
-import { fs } from 'aws-core-vscode/srcShared'
+import { fs } from 'aws-core-vscode/shared'
 import { initializeAuth, CredentialsStore, LoginManager, AuthUtils, SsoConnection } from 'aws-core-vscode/auth'
 import { CommonAuthWebview } from 'aws-core-vscode/login'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'

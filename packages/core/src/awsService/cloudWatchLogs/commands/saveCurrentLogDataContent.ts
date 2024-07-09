@@ -7,10 +7,9 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { SystemUtilities } from '../../../shared/systemUtilities'
 import { isLogStreamUri, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 import { telemetry, CloudWatchResourceType, Result } from '../../../shared/telemetry/telemetry'
-import { fsCommon } from '../../../srcShared/fs'
+import fs from '../../../shared/fs/fs'
 
 /** Prompts the user to select a file location to save the currently visible "aws-cwl:" document to. */
 export async function saveCurrentLogDataContent(): Promise<void> {
@@ -28,7 +27,7 @@ export async function saveCurrentLogDataContent(): Promise<void> {
         const content = vscode.window.activeTextEditor?.document.getText()
         const workspaceDir = vscode.workspace.workspaceFolders
             ? vscode.workspace.workspaceFolders[0].uri
-            : vscode.Uri.file(SystemUtilities.getHomeDirectory())
+            : vscode.Uri.file(fs.getUserHomeDir())
         const uriComponents = parseCloudWatchLogsUri(uri)
         const logGroupInfo = uriComponents.logGroupInfo
 
@@ -45,7 +44,7 @@ export async function saveCurrentLogDataContent(): Promise<void> {
 
         if (selectedUri && content) {
             try {
-                await fsCommon.writeFile(selectedUri, content)
+                await fs.writeFile(selectedUri, content)
             } catch (e) {
                 result = 'Failed'
                 const err = e as Error
