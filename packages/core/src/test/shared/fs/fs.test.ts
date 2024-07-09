@@ -18,7 +18,6 @@ import { PermissionsError, formatError, isFileNotFoundError } from '../../../sha
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import * as testutil from '../../testUtil'
 import globals from '../../../shared/extensionGlobals'
-import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { driveLetterRegex } from '../../../shared/utilities/pathUtils'
 
 describe('FileSystem', function () {
@@ -349,25 +348,59 @@ describe('FileSystem', function () {
         }
 
         before(async function () {
-            fakeHome = await makeTemporaryToolkitFolder()
+            const ws = await testutil.createTestWorkspaceFolder(undefined, 'test-home-dir')
+            fakeHome = ws.uri.fsPath
             saveEnv = { ...process.env } as EnvironmentVariables
         })
 
         after(async function () {
             await fs.delete(fakeHome, { recursive: true, force: true })
             restoreEnv()
-            await fs.initUserHomeDir(globals.context, () => undefined)
+            await fs.init(globals.context, () => undefined)
         })
 
         beforeEach(async function () {
             restoreEnv()
-            await fs.initUserHomeDir(globals.context, () => undefined)
+            await fs.init(globals.context, () => undefined)
+        })
+
+        it('getUsername() never fails', async function () {
+            const env = process.env as EnvironmentVariables
+            env.HOME = fakeHome
+            let homeDirLogs = await fs.init(globals.context, () => undefined)
+            assert.deepStrictEqual(homeDirLogs, [])
+
+            assert(fs.getUsername().length > 0)
+
+            // getUsername() falls back to $USER.
+            homeDirLogs = await fs.init(
+                globals.context,
+                () => undefined,
+                () => {
+                    throw new Error()
+                }
+            )
+            assert.deepStrictEqual(homeDirLogs, [])
+            env.USER = 'test-user-env-var'
+            assert.deepStrictEqual(fs.getUsername(), 'test-user-env-var')
+
+            // getUsername() falls back to home dir name.
+            delete env.USER
+            homeDirLogs = await fs.init(
+                globals.context,
+                () => undefined,
+                () => {
+                    throw new Error()
+                }
+            )
+            assert.deepStrictEqual(homeDirLogs, [])
+            assert.deepStrictEqual(fs.getUsername(), 'test-home-dir')
         })
 
         it('gets $HOME', async function () {
             const env = process.env as EnvironmentVariables
             env.HOME = fakeHome
-            const homeDirLogs = await fs.initUserHomeDir(globals.context, () => undefined)
+            const homeDirLogs = await fs.init(globals.context, () => undefined)
             assert.strictEqual(fs.getUserHomeDir(), fakeHome)
             assert.deepStrictEqual(homeDirLogs, [])
         })
@@ -378,7 +411,7 @@ describe('FileSystem', function () {
             env.HOMEDRIVE = 'bogus1-nonexistent-HOMEDRIVE'
             env.HOMEPATH = 'bogus1-nonexistent-HOMEPATH'
             env.USERPROFILE = fakeHome
-            const homeDirLogs = await fs.initUserHomeDir(globals.context, () => undefined)
+            const homeDirLogs = await fs.init(globals.context, () => undefined)
             testutil.assertEqualPaths(fs.getUserHomeDir(), fakeHome)
             assert.deepStrictEqual(homeDirLogs, [])
         })
@@ -391,7 +424,7 @@ describe('FileSystem', function () {
             env.HOMEPATH = fakeHome.replace(driveLetterRegex, '')
 
             assert(env.HOMEDRIVE)
-            const homeDirLogs = await fs.initUserHomeDir(globals.context, () => undefined)
+            const homeDirLogs = await fs.init(globals.context, () => undefined)
             testutil.assertEqualPaths(fs.getUserHomeDir(), path.join(env.HOMEDRIVE, env.HOMEPATH))
             assert.deepStrictEqual(homeDirLogs, [
                 '$HOME filepath is invalid: "bogus2-nonexistent-HOME"',
@@ -407,7 +440,7 @@ describe('FileSystem', function () {
             delete env.HOMEPATH
             delete env.HOMEDRIVE
 
-            const homeDirLogs = await fs.initUserHomeDir(globals.context, () => undefined)
+            const homeDirLogs = await fs.init(globals.context, () => undefined)
             testutil.assertEqualPaths(fs.getUserHomeDir(), os.homedir())
             assert.deepStrictEqual(homeDirLogs, [])
 
@@ -417,7 +450,7 @@ describe('FileSystem', function () {
             env.USERPROFILE = 'bogus3-nonexistent-USERPROFILE'
 
             let isHomeDirValid: boolean | undefined
-            const homeDirLogs2 = await fs.initUserHomeDir(globals.context, () => {
+            const homeDirLogs2 = await fs.init(globals.context, () => {
                 isHomeDirValid = false
             })
             testutil.assertEqualPaths(fs.getUserHomeDir(), os.homedir())
@@ -441,7 +474,8 @@ describe('FileSystem', function () {
             let testDir: string
 
             before(async function () {
-                testDir = await makeTemporaryToolkitFolder()
+                const ws = await testutil.createTestWorkspaceFolder()
+                testDir = ws.uri.fsPath
             })
 
             after(async function () {

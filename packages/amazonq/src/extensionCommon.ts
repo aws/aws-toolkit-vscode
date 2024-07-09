@@ -27,7 +27,7 @@ import {
     getMachineId,
     messages,
 } from 'aws-core-vscode/shared'
-import { fs } from 'aws-core-vscode/shared'
+import { fs, errors } from 'aws-core-vscode/shared'
 import { initializeAuth, CredentialsStore, LoginManager, AuthUtils, SsoConnection } from 'aws-core-vscode/auth'
 import { CommonAuthWebview } from 'aws-core-vscode/login'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
@@ -42,9 +42,10 @@ export const amazonQContextPrefix = 'amazonq'
  */
 export async function activateAmazonQCommon(context: vscode.ExtensionContext, isWeb: boolean) {
     initialize(context, isWeb)
-    const homeDirLogs = await fs.initUserHomeDir(context, homeDir => {
+    const homeDirLogs = await fs.init(context, homeDir => {
         void messages.showViewLogsMessage(`Invalid home directory (check $HOME): "${homeDir}"`)
     })
+    errors.init(fs.getUsername())
     await initializeComputeRegion()
 
     globals.contextPrefix = 'amazonq.' //todo: disconnect from above line
@@ -97,7 +98,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
 
     if (homeDirLogs.length > 0) {
-        getLogger().error('initUserHomeDir: invalid env vars found: %O', homeDirLogs)
+        getLogger().error('fs.init: invalid env vars found: %O', homeDirLogs)
     }
 
     await activateTelemetry(context, globals.awsContext, Settings.instance, 'Amazon Q For VS Code')

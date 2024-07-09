@@ -5,7 +5,7 @@
  * This class is responsible for responding to UI events by calling
  * the Gumby extension.
  */
-import fs from 'fs'
+import nodefs from 'fs'
 import path from 'path'
 import * as vscode from 'vscode'
 import { GumbyNamedMessages, Messenger } from './messenger/messenger'
@@ -506,5 +506,5 @@ export class GumbyController {
  */
 function extractPath(text: string): string | undefined {
     const resolvedPath = path.resolve(text.trim())
-    return fs.existsSync(resolvedPath) && fs.lstatSync(resolvedPath).isDirectory() ? resolvedPath : undefined
+    return nodefs.existsSync(resolvedPath) && nodefs.lstatSync(resolvedPath).isDirectory() ? resolvedPath : undefined
 }
