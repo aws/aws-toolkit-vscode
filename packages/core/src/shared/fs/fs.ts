@@ -9,7 +9,7 @@ import { isCloud9 } from '../extensionUtilities'
 import _path from 'path'
 import { PermissionsError, PermissionsTriplet, ToolkitError, isFileNotFoundError, isPermissionsError } from '../errors'
 import globals from '../extensionGlobals'
-import { getUserInfo, isWin } from '../vscode/env'
+import { isWin } from '../vscode/env'
 import { resolvePath } from '../utilities/pathUtils'
 
 const vfs = vscode.workspace.fs
@@ -28,7 +28,7 @@ function createPermissionsErrorHandler(
             throw err
         }
 
-        const userInfo = getUserInfo()
+        const userInfo = fs.getUserInfo()
 
         if (isWeb) {
             const stats = await fs.stat(uri)
@@ -64,6 +64,10 @@ function createPermissionsErrorHandler(
  * - Do not use 'fs' or 'fs-extra' since they are not browser compatible.
  */
 export class FileSystem {
+    #homeDir: string | undefined
+    #username: string | undefined
+    #osUserInfo = os.userInfo
+
     private constructor() {}
     static #instance: FileSystem
     static get instance(): FileSystem {
@@ -265,7 +269,7 @@ export class FileSystem {
                 })
                 const isParentExecutable = isWin() || !!(parentStat.mode & nodeConstants.S_IXUSR)
                 if (!isParentExecutable) {
-                    const userInfo = getUserInfo()
+                    const userInfo = this.getUserInfo()
                     throw new PermissionsError(parent, parentStat, userInfo, '*wx', err)
                 } else if (notFound) {
                     return
@@ -333,7 +337,7 @@ export class FileSystem {
             }
 
             // Expand "~/" to home dir.
-            const f = resolvePath(envVal, this.homeDir ?? 'UNKNOWN-HOME')
+            const f = resolvePath(envVal, this.#homeDir ?? 'UNKNOWN-HOME')
             if (await fs.exists(f, kind)) {
                 return f
             }
@@ -342,23 +346,29 @@ export class FileSystem {
         }
     }
 
-    private homeDir: string | undefined
-
     /**
-     * Resolves the user's home directory and validates related environment variables. Should be called:
+     * Initializes the FileSystem object. Resolves the user's home directory and validates related
+     * environment variables. Should be called:
      *  1. at startup after all env vars are set
      *  2. whenver env vars change
      *
      * @param onFail Invoked if a valid home directory could not be resolved
      * @returns List of error messages if any invalid env vars were found.
      */
-    async initUserHomeDir(extContext: vscode.ExtensionContext, onFail: (homeDir: string) => void): Promise<string[]> {
+    async init(
+        extContext: vscode.ExtensionContext,
+        onFail: (homeDir: string) => void,
+        osUserInfo?: typeof os.userInfo
+    ): Promise<string[]> {
+        this.#username = undefined
+        this.#osUserInfo = osUserInfo ?? os.userInfo
+
         if (this.isWeb) {
             // When in browser we cannot access the users desktop file system.
             // Instead, VS Code provided uris will use the browsers storage.
             // IMPORTANT: we must preserve the scheme of this URI or else VS Code
             // will incorrectly interpret the path.
-            this.homeDir = extContext.globalStorageUri.toString()
+            this.#homeDir = extContext.globalStorageUri.toString()
             return []
         }
 
@@ -373,18 +383,18 @@ export class FileSystem {
         }
         let p: string | undefined
         if ((p = await tryGet('HOME'))) {
-            this.homeDir = p
+            this.#homeDir = p
         } else if ((p = await tryGet('USERPROFILE'))) {
-            this.homeDir = p
+            this.#homeDir = p
         } else if ((p = await tryGet('HOMEPATH'))) {
-            this.homeDir = p
+            this.#homeDir = p
         } else {
-            this.homeDir = os.homedir()
+            this.#homeDir = os.homedir()
         }
 
         // If $HOME is bogus, os.homedir() will still return it! All we can do is show an error.
-        if (!(await fs.exists(this.homeDir, vscode.FileType.Directory))) {
-            onFail(this.homeDir)
+        if (!(await fs.exists(this.#homeDir, vscode.FileType.Directory))) {
+            onFail(this.#homeDir)
         }
 
         return logMsgs
@@ -393,17 +403,75 @@ export class FileSystem {
     /**
      * Gets the (cached) user home directory path.
      *
-     * To update the cached value (e.g. after environment variables changed), call {@link initUserHomeDir()}.
+     * To update the cached value (e.g. after environment variables changed), call {@link init()}.
      */
     getUserHomeDir(): string {
-        if (!this.homeDir) {
-            throw new Error('using getHomeDirectory() before initUserHomeDir()')
+        if (!this.#homeDir) {
+            throw new Error('call fs.init() before using fs.getHomeDirectory()')
         }
-        return this.homeDir
+        return this.#homeDir
     }
 
-    // TODO: implement this by checking the file mode
-    // public static async checkExactPerms(file: string | vscode.Uri, perms: `${PermissionsTriplet}${PermissionsTriplet}${PermissionsTriplet}`)
+    /**
+     * Gets the (cached) username for this session, or "webuser" in web-mode, or "unknown-user" if
+     * a username could not be resolved.
+     *
+     * If `os.userInfo` fails, tries these fallbacks:
+     * - `process.env.USER`
+     * - getUserHomeDir() directory name
+     */
+    getUsername(): string {
+        if (!this.#homeDir) {
+            throw new Error('call fs.init() before using fs.getUsername()')
+        }
+
+        if (this.#username !== undefined) {
+            return this.#username
+        }
+
+        const userInfo = this.getUserInfo()
+        this.#username = userInfo.username
+
+        return userInfo.username
+    }
+
+    /**
+     * Gets platform-dependent user info, or a dummy object on failure or for web-mode.
+     *
+     * See {@link getUsername} for username resolution.
+     */
+    getUserInfo(): os.UserInfo<string> {
+        if (!this.#homeDir) {
+            throw new Error('call fs.init() before using fs.getUserInfo()')
+        }
+
+        const fallback = {
+            gid: 0,
+            uid: 0,
+            homedir: this.getUserHomeDir(),
+            shell: '',
+            username: 'unknown-user',
+        }
+
+        if (this.isWeb) {
+            return {
+                ...fallback,
+                username: 'webuser',
+            }
+        }
+
+        try {
+            return this.#osUserInfo({ encoding: 'utf-8' })
+        } catch {
+            const envUser = process.env.USER ?? ''
+            if (envUser.trim() !== '') {
+                fallback.username = envUser
+            } else if (fallback.homedir.trim() !== '') {
+                fallback.username = _path.basename(fallback.homedir.replace(/[\/\\]$/g, ''))
+            }
+            return fallback
+        }
+    }
 
     static readonly #decoder = new TextDecoder()
     static readonly #encoder = new TextEncoder()
