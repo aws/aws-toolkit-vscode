@@ -10,11 +10,18 @@ import { isThrottlingError, isTransientError } from '@smithy/service-error-class
 import { Result } from './telemetry/telemetry'
 import { CancellationError } from './utilities/timeoutUtils'
 import { isNonNullable } from './utilities/tsUtils'
-import type * as fs from 'fs'
+import type * as nodefs from 'fs'
 import type * as os from 'os'
 import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
-import { getUsername, isAutomation } from './vscode/env'
+import { isAutomation } from './vscode/env'
 import { driveLetterRegex } from './utilities/pathUtils'
+
+let _username = 'unknown-user'
+
+/** One-time initialization for this module. */
+export function init(username: string) {
+    _username = username
+}
 
 export const errorCode = {
     invalidConnection: 'InvalidConnection',
@@ -396,7 +403,7 @@ export function scrubNames(s: string, username?: string) {
  */
 export function getTelemetryReasonDesc(err: unknown | undefined): string | undefined {
     const m = typeof err === 'string' ? err : getErrorMsg(err as Error) ?? ''
-    const msg = scrubNames(m, getUsername())
+    const msg = scrubNames(m, _username)
 
     // Truncate to 200 chars.
     return msg && msg.length > 0 ? msg.substring(0, 200) : undefined
@@ -665,7 +672,7 @@ function vscodeModeToString(mode: vscode.FileStat['permissions']) {
     }
 }
 
-function getEffectivePerms(uid: number, gid: number, stats: fs.Stats) {
+function getEffectivePerms(uid: number, gid: number, stats: nodefs.Stats) {
     const mode = stats.mode
     const isOwner = uid === stats.uid
     const isGroup = gid === stats.gid && !isOwner
@@ -696,7 +703,7 @@ export type PermissionsTriplet = `${'r' | '-' | '*'}${'w' | '-' | '*'}${'x' | '-
 export class PermissionsError extends ToolkitError {
     public readonly actual: string // This is a resolved triplet, _not_ the full bits
 
-    static fromNodeFileStats(stats: fs.Stats, userInfo: os.UserInfo<string>) {
+    static fromNodeFileStats(stats: nodefs.Stats, userInfo: os.UserInfo<string>) {
         const mode = `${stats.isDirectory() ? 'd' : '-'}${modeToString(stats.mode)}`
         const owner = stats.uid === userInfo.uid ? (stats.uid === -1 ? '' : userInfo.username) : String(stats.uid)
         const group = String(stats.gid)
@@ -722,18 +729,18 @@ export class PermissionsError extends ToolkitError {
     /**
      * Creates a PermissionsError from a file stat() result.
      *
-     * Note: pass `fs.Stats` when possible (in a nodejs context), because it gives much better info.
+     * Note: pass `nodefs.Stats` when possible (in a nodejs context), because it gives much better info.
      */
     public constructor(
         public readonly uri: vscode.Uri,
-        public readonly stats: fs.Stats | vscode.FileStat,
+        public readonly stats: nodefs.Stats | vscode.FileStat,
         public readonly userInfo: os.UserInfo<string>,
         public readonly expected: PermissionsTriplet,
         source?: unknown
     ) {
         const o = (stats as any).type
             ? PermissionsError.fromVscodeFileStats(stats as vscode.FileStat, userInfo)
-            : PermissionsError.fromNodeFileStats(stats as fs.Stats, userInfo)
+            : PermissionsError.fromNodeFileStats(stats as nodefs.Stats, userInfo)
 
         const resolvedExpected = Array.from(expected)
             .map((c, i) => (c === '*' ? o.actual[i] : c))

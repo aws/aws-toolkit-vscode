@@ -8,9 +8,15 @@ import globals from '../../shared/extensionGlobals'
 import fs from '../../shared/fs/fs'
 
 describe('FileSystem', function () {
-    it('getHomeDirectory() when in Browser', async () => {
+    it('getUserHomeDir()', async () => {
         // TODO: testWeb needs a `globalSetup.test.ts` ...
-        await fs.initUserHomeDir(globals.context, () => undefined)
+        await fs.init(globals.context, () => undefined)
         assert.strictEqual(fs.getUserHomeDir(), globals.context.globalStorageUri.toString())
+    })
+
+    it('getUsername()', async () => {
+        // TODO: testWeb needs a `globalSetup.test.ts` ...
+        await fs.init(globals.context, () => undefined)
+        assert.strictEqual(fs.getUsername(), 'webuser')
     })
 })
