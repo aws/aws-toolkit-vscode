@@ -16,9 +16,9 @@ import { runLambdaFunction } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
 import * as fs from 'fs-extra'
+import fs2 from '../../fs/fs'
 import { ChildProcess } from '../../utilities/childProcess'
 import { Timeout } from '../../utilities/timeoutUtils'
-import { SystemUtilities } from '../../../shared/systemUtilities'
 import { execFileSync, SpawnOptions } from 'child_process'
 import * as nls from 'vscode-nls'
 import { sleep } from '../../utilities/timeoutUtils'
@@ -212,7 +212,7 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
 
     delveVersion = delveVersion.replace('v', '-')
     const installScriptPath: string = path.join(debuggerPath, `install${delveVersion}.${scriptExt}`)
-    const alreadyInstalled = await SystemUtilities.fileExists(installScriptPath)
+    const alreadyInstalled = await fs2.exists(installScriptPath)
 
     if (alreadyInstalled && delveVersion !== '') {
         return undefined
@@ -262,7 +262,7 @@ async function installDebugger(debuggerPath: string): Promise<boolean> {
             getLogger().info(`Installed Delve debugger in ${debuggerPath}`)
         }
     } catch (e) {
-        if (installScript && (await SystemUtilities.fileExists(installScript.path))) {
+        if (installScript && (await fs2.exists(installScript.path))) {
             fs.unlinkSync(installScript.path) // Removes the install script since it failed
         }
         getLogger().error('Failed to cross-compile Delve debugger: %O', e as Error)

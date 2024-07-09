@@ -6,9 +6,8 @@
 import assert from 'assert'
 import { ZipStream } from '../../../shared/utilities/zipStream'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { SystemUtilities } from '../../../shared/systemUtilities'
 import path from 'path'
-import { fsCommon } from '../../../srcShared/fs'
+import fs from '../../../shared/fs/fs'
 import crypto from 'crypto'
 
 describe('zipStream', function () {
@@ -19,7 +18,7 @@ describe('zipStream', function () {
     })
 
     afterEach(async function () {
-        await SystemUtilities.delete(tmpDir, { recursive: true })
+        await fs.delete(tmpDir, { recursive: true })
     })
 
     it('Should create a zip stream from text content', async function () {
@@ -31,18 +30,18 @@ describe('zipStream', function () {
         assert.ok(zipBuffer)
 
         const zipPath = path.join(tmpDir, 'test.zip')
-        await fsCommon.writeFile(zipPath, zipBuffer)
+        await fs.writeFile(zipPath, zipBuffer)
         const expectedMd5 = crypto
             .createHash('md5')
-            .update(await fsCommon.readFile(zipPath))
+            .update(await fs.readFile(zipPath))
             .digest('base64')
         assert.strictEqual(result.md5, expectedMd5)
-        assert.strictEqual(result.sizeInBytes, (await fsCommon.stat(zipPath)).size)
+        assert.strictEqual(result.sizeInBytes, (await fs.stat(zipPath)).size)
     })
 
     it('Should create a zip stream from file', async function () {
         const testFilePath = path.join(tmpDir, 'test.txt')
-        await fsCommon.writeFile(testFilePath, 'foo bar')
+        await fs.writeFile(testFilePath, 'foo bar')
 
         const zipStream = new ZipStream()
         zipStream.writeFile(testFilePath, 'file.txt')
@@ -53,12 +52,12 @@ describe('zipStream', function () {
         const zipBuffer = result.streamBuffer.getContents()
         assert.ok(zipBuffer)
 
-        await fsCommon.writeFile(zipPath, zipBuffer)
+        await fs.writeFile(zipPath, zipBuffer)
         const expectedMd5 = crypto
             .createHash('md5')
-            .update(await fsCommon.readFile(zipPath))
+            .update(await fs.readFile(zipPath))
             .digest('base64')
         assert.strictEqual(result.md5, expectedMd5)
-        assert.strictEqual(result.sizeInBytes, (await fsCommon.stat(zipPath)).size)
+        assert.strictEqual(result.sizeInBytes, (await fs.stat(zipPath)).size)
     })
 })
