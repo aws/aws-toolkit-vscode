@@ -197,4 +197,17 @@ export class DefaultDocumentDBClient {
             throw ToolkitError.chain(e, 'Failed to create DocumentDB instance')
         }
     }
+
+    public async deleteInstance(input: DocDB.DeleteDBInstanceMessage): Promise<DocDB.DBInstance | undefined> {
+        getLogger().debug('DeleteInstance called')
+        const client = await this.getClient()
+
+        try {
+            const command = new DocDB.DeleteDBInstanceCommand(input)
+            const response = await client.send(command)
+            return response.DBInstance
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to delete DocumentDB instance')
+        }
+    }
 }

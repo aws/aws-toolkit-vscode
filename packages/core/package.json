@@ -2015,6 +2015,10 @@
                 {
                     "command": "aws.docdb.createInstance",
                     "when": "viewItem == awsDocDB.cluster.running"
+                },
+                {
+                    "command": "aws.docdb.deleteInstance",
+                    "when": "viewItem =~ /^awsDocDB.instance/"
                 }
             ],
             "aws.toolkit.auth": [
@@ -3575,6 +3579,17 @@
                 "command": "aws.docdb.createInstance",
                 "title": "%AWS.command.docdb.createInstance%",
                 "icon": "$(add)",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.deleteInstance",
+                "title": "%AWS.command.docdb.deleteInstance%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
