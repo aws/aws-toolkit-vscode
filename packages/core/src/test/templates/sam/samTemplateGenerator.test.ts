@@ -4,12 +4,11 @@
  */
 
 import assert from 'assert'
-import * as fs from 'fs-extra'
 import * as path from 'path'
+import fs from '../../../shared/fs/fs'
 import { Architecture } from '../../../lambda/models/samLambdaRuntime'
 import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { SystemUtilities } from '../../../shared/systemUtilities'
 import { SamTemplateGenerator } from '../../../shared/templates/sam/samTemplateGenerator'
 
 describe('SamTemplateGenerator', function () {
@@ -30,7 +29,7 @@ describe('SamTemplateGenerator', function () {
     })
 
     afterEach(async function () {
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     function makeMinimalTemplate(): SamTemplateGenerator {
@@ -44,7 +43,7 @@ describe('SamTemplateGenerator', function () {
     it('Produces a minimal template', async function () {
         await makeMinimalTemplate().generate(templateFilename)
 
-        assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
+        assert.strictEqual(await fs.exists(templateFilename), true)
 
         const template: CloudFormation.Template = await CloudFormation.load(templateFilename)
         assert.ok(template.Resources)
@@ -61,7 +60,7 @@ describe('SamTemplateGenerator', function () {
     it('Produces a template containing MemorySize', async function () {
         await makeMinimalTemplate().withMemorySize(sampleMemorySize).generate(templateFilename)
 
-        assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
+        assert.strictEqual(await fs.exists(templateFilename), true)
 
         const template: CloudFormation.Template = await CloudFormation.load(templateFilename)
         assert.ok(template.Resources)
@@ -75,7 +74,7 @@ describe('SamTemplateGenerator', function () {
     it('Produces a template containing Timeout', async function () {
         await makeMinimalTemplate().withTimeout(sampleTimeout).generate(templateFilename)
 
-        assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
+        assert.strictEqual(await fs.exists(templateFilename), true)
 
         const template: CloudFormation.Template = await CloudFormation.load(templateFilename)
         assert.ok(template.Resources)
@@ -89,7 +88,7 @@ describe('SamTemplateGenerator', function () {
     it('Produces a template containing Environment', async function () {
         await makeMinimalTemplate().withEnvironment(sampleEnvironment).generate(templateFilename)
 
-        assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
+        assert.strictEqual(await fs.exists(templateFilename), true)
 
         const template: CloudFormation.Template = await CloudFormation.load(templateFilename)
         assert.ok(template.Resources)
@@ -103,7 +102,7 @@ describe('SamTemplateGenerator', function () {
     it('Produces a template containing Architectures', async function () {
         await makeMinimalTemplate().withArchitectures([sampleArchitecture]).generate(templateFilename)
 
-        assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
+        assert.strictEqual(await fs.exists(templateFilename), true)
 
         const template: CloudFormation.Template = await CloudFormation.load(templateFilename)
         assert.ok(template.Resources)
@@ -123,7 +122,7 @@ describe('SamTemplateGenerator', function () {
             })
             .generate(templateFilename)
 
-        assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
+        assert.strictEqual(await fs.exists(templateFilename), true)
 
         const template: CloudFormation.Template = await CloudFormation.load(templateFilename)
         assert.ok(template.Globals, 'Expected loaded template to have a Globals section')
@@ -147,7 +146,7 @@ describe('SamTemplateGenerator', function () {
             new Error('Missing value: at least one of ResourceName or TemplateResources')
         )
 
-        assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
+        assert.strictEqual(await fs.exists(templateFilename), false)
     })
 
     it('errs if function handler is missing', async function () {
@@ -160,7 +159,7 @@ describe('SamTemplateGenerator', function () {
             new Error('Missing value: Handler')
         )
 
-        assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
+        assert.strictEqual(await fs.exists(templateFilename), false)
     })
 
     it('errs if code uri is missing', async function () {
@@ -173,7 +172,7 @@ describe('SamTemplateGenerator', function () {
             new Error('Missing value: CodeUri')
         )
 
-        assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
+        assert.strictEqual(await fs.exists(templateFilename), false)
     })
 
     it('errs if runtime is missing', async function () {
@@ -186,6 +185,6 @@ describe('SamTemplateGenerator', function () {
             new Error('Missing value: Runtime')
         )
 
-        assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
+        assert.strictEqual(await fs.exists(templateFilename), false)
     })
 })

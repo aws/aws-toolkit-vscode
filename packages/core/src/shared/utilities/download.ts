@@ -10,7 +10,7 @@ import { CodeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTr
 import { transformByQState } from '../../codewhisperer/models/model'
 import { calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { telemetry } from '../telemetry/telemetry'
-import { fsCommon } from '../../srcShared/fs'
+import fs from '../fs/fs'
 
 /**
  * This class represents the structure of the archive returned by the ExportResultArchive endpoint
@@ -46,7 +46,7 @@ export async function downloadExportResultArchive(
         }
     }
 
-    await fsCommon.writeFile(toPath, Buffer.concat(buffer))
+    await fs.writeFile(toPath, Buffer.concat(buffer))
     telemetry.codeTransform_logApiLatency.emit({
         codeTransformApiNames: 'ExportResultArchive',
         codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),

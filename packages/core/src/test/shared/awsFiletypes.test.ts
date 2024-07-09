@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import assert from 'assert'
 import * as path from 'path'
 import globals from '../../shared/extensionGlobals'
-import * as sysutil from '../../shared/systemUtilities'
+import fs from '../../shared/fs/fs'
 import * as testUtil from '../testUtil'
 import * as workspaceUtils from '../../shared/utilities/workspaceUtils'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
@@ -23,7 +23,7 @@ describe('awsFiletypes', function () {
         // Create a dummy file in ~/.aws on the system.
         // Note: We consider _any_ file in ~/.aws to be an "AWS config" file,
         // so this will trigger "file_editAwsFile" telemetry.
-        const awsConfigFile = path.join(sysutil.SystemUtilities.getHomeDirectory(), '.aws/test_awstoolkit')
+        const awsConfigFile = path.join(fs.getUserHomeDir(), '.aws/test_awstoolkit')
         awsConfigUri = vscode.Uri.file(awsConfigFile)
         await testUtil.toFile('Test file from the aws-toolkit-vscode test suite.', awsConfigFile)
 

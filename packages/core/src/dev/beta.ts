@@ -10,11 +10,11 @@ import AdmZip from 'adm-zip'
 import got from 'got'
 import globals from '../shared/extensionGlobals'
 import { getLogger } from '../shared/logger'
+import fs from '../shared/fs/fs'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { makeTemporaryToolkitFolder } from '../shared/filesystemUtilities'
 import { reloadWindowPrompt } from '../shared/utilities/vsCodeUtils'
 import { isUserCancelledError, ToolkitError } from '../shared/errors'
-import { SystemUtilities } from '../shared/systemUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { cast } from '../shared/utilities/typeConstructors'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
@@ -84,12 +84,12 @@ async function checkBetaUrl(vsixUrl: string): Promise<void> {
     if (latestBetaInfo.version !== currentVersion) {
         const tmpFolder = await makeTemporaryToolkitFolder()
         const betaPath = vscode.Uri.joinPath(vscode.Uri.file(tmpFolder), path.basename(vsixUrl))
-        await SystemUtilities.writeFile(betaPath, resp)
+        await fs.writeFile(betaPath, resp)
 
         try {
             await promptInstallToolkit(betaPath, latestBetaInfo.version, vsixUrl)
         } finally {
-            await SystemUtilities.delete(tmpFolder, { recursive: true })
+            await fs.delete(tmpFolder, { recursive: true })
         }
     } else {
         await updateBetaToolkitData(vsixUrl, {

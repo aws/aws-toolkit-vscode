@@ -108,7 +108,7 @@ to help us visualize the imports and determine which module is importing a certa
     - IMPORTANT: You will want to revert this install when done
     - `npm i dependency-cruiser`
 3. Run `npx depcruise {RELATIVE_PATH_TO_FILE}  --reaches "{YOUR_MODULE}" --output-type dot | dot -T svg > dependency-graph.svg`
-    - For example `npx depcruise src/srcShared/fs.ts --reaches "fs-extra" --output-type dot | dot -T svg > dependency-graph.svg`, generates the following which shows that `fs-extra` is imported by `fileSystemUtilities.ts`:
+    - For example `npx depcruise src/shared/fs/fs.ts --reaches "fs-extra" --output-type dot | dot -T svg > dependency-graph.svg`, generates the following which shows that `fs-extra` is imported by `fileSystemUtilities.ts`:
       ![Dependency Graph](./images/dependency-graph-small.svg)
 
 ## Behavior of module exports in tests
