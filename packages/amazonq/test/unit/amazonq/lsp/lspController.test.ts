@@ -6,7 +6,7 @@ import assert from 'assert'
 import sinon from 'sinon'
 import { Content, LspController } from 'aws-core-vscode/amazonq'
 import { createTestFile } from 'aws-core-vscode/test'
-import { fsCommon } from 'aws-core-vscode/srcShared'
+import { fs } from 'aws-core-vscode/shared'
 
 describe('Test LSP controller', function () {
     it('Downloaded mechanism checks against hash, when hash matches', async function () {
@@ -22,7 +22,7 @@ describe('Test LSP controller', function () {
         sinon.stub(lspController, '_download')
         const mockFileName = 'test_case_1.zip'
         const mockDownloadFile = await createTestFile(mockFileName)
-        await fsCommon.writeFile(mockDownloadFile.fsPath, 'test')
+        await fs.writeFile(mockDownloadFile.fsPath, 'test')
         const result = await lspController.downloadAndCheckHash(mockDownloadFile.fsPath, content)
         assert.strictEqual(result, true)
     })
@@ -40,7 +40,7 @@ describe('Test LSP controller', function () {
         sinon.stub(lspController, '_download')
         const mockFileName = 'test_case_2.zip'
         const mockDownloadFile = await createTestFile(mockFileName)
-        await fsCommon.writeFile(mockDownloadFile.fsPath, 'file_content')
+        await fs.writeFile(mockDownloadFile.fsPath, 'file_content')
         const result = await lspController.downloadAndCheckHash(mockDownloadFile.fsPath, content)
         assert.strictEqual(result, false)
     })
