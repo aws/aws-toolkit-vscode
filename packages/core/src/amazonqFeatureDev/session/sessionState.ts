@@ -254,6 +254,8 @@ abstract class CodeGenBase {
         newFiles: NewFileInfo[]
         deletedFiles: DeletedFileInfo[]
         references: CodeReference[]
+        codeGenerationRemainingIterationCount?: number
+        codeGenerationTotalIterationCount?: number
     }> {
         for (
             let pollingIteration = 0;
@@ -261,6 +263,9 @@ abstract class CodeGenBase {
             ++pollingIteration
         ) {
             const codegenResult = await this.config.proxyClient.getCodeGeneration(this.conversationId, codeGenerationId)
+            const codeGenerationRemainingIterationCount = codegenResult.codeGenerationRemainingIterationCount
+            const codeGenerationTotalIterationCount = codegenResult.codeGenerationTotalIterationCount
+
             getLogger().debug(`Codegen response: %O`, codegenResult)
             telemetry.setCodeGenerationResult(codegenResult.codeGenerationStatus.status)
             switch (codegenResult.codeGenerationStatus.status) {
@@ -273,6 +278,8 @@ abstract class CodeGenBase {
                         newFiles: newFileInfo,
                         deletedFiles: getDeletedFileInfos(deletedFiles, workspaceFolders),
                         references,
+                        codeGenerationRemainingIterationCount: codeGenerationRemainingIterationCount,
+                        codeGenerationTotalIterationCount: codeGenerationTotalIterationCount,
                     }
                 }
                 case 'predict-ready':
@@ -321,7 +328,9 @@ export class CodeGenState extends CodeGenBase implements SessionState {
         public deletedFiles: DeletedFileInfo[],
         public references: CodeReference[],
         tabID: string,
-        private currentIteration: number
+        private currentIteration: number,
+        public codeGenerationRemainingIterationCount?: number,
+        public codeGenerationTotalIterationCount?: number
     ) {
         super(config, tabID)
     }
@@ -358,6 +367,9 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                 this.filePaths = codeGeneration.newFiles
                 this.deletedFiles = codeGeneration.deletedFiles
                 this.references = codeGeneration.references
+                this.codeGenerationRemainingIterationCount = codeGeneration.codeGenerationRemainingIterationCount
+                this.codeGenerationTotalIterationCount = codeGeneration.codeGenerationTotalIterationCount
+
                 action.telemetry.setAmazonqNumberOfReferences(this.references.length)
                 action.telemetry.recordUserCodeGenerationTelemetry(span, this.conversationId)
                 const nextState = new PrepareCodeGenState(
@@ -367,7 +379,9 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     this.deletedFiles,
                     this.references,
                     this.tabID,
-                    this.currentIteration + 1
+                    this.currentIteration + 1,
+                    this.codeGenerationRemainingIterationCount,
+                    this.codeGenerationTotalIterationCount
                 )
                 return {
                     nextState,
@@ -480,7 +494,9 @@ export class PrepareCodeGenState implements SessionState {
         public deletedFiles: DeletedFileInfo[],
         public references: CodeReference[],
         public tabID: string,
-        private currentIteration: number
+        private currentIteration: number,
+        public codeGenerationRemainingIterationCount?: number,
+        public codeGenerationTotalIterationCount?: number
     ) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.uploadId = config.uploadId
