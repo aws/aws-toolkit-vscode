@@ -21,6 +21,7 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { globals } from '../../shared'
 import { AuthUtil } from '../../codewhisperer'
 import { isWeb } from '../../shared/extensionGlobals'
+
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
     if (!workspaceFolders || workspaceFolders.length === 0) {
@@ -292,10 +293,10 @@ export class LspController {
                 true,
                 CodeWhispererSettings.instance.getMaxIndexSize() * 1024 * 1024
             )
-            let totalSizeBytes = 0
-            for (let i = 0; i < files.length; i += 1) {
-                totalSizeBytes += files[i].fileSizeBytes
-            }
+            const totalSizeBytes = files.reduce(
+                (accumulator, currentFile) => accumulator + currentFile.fileSizeBytes,
+                0
+            )
             getLogger().info(`LspController: Found ${files.length} files in current project ${getProjectPaths()}`)
             const resp = await LspClient.instance.indexFiles(
                 files.map(f => f.fileUri.fsPath),

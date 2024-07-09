@@ -249,7 +249,7 @@ export class Messenger {
                             {
                                 message:
                                     message +
-                                    ` \nBy the way, I'm still indexing this project for full context from your workspace. I may have a better response in a few minutes when it's complete if you'd like to try again then.`,
+                                    ` \n\nBy the way, I'm still indexing this project for full context from your workspace. I may have a better response in a few minutes when it's complete if you'd like to try again then.`,
                                 messageType: 'answer-part',
                                 followUps: undefined,
                                 followUpsHeader: undefined,
