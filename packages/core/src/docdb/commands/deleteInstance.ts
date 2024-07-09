@@ -61,7 +61,6 @@ export async function deleteInstance(node: DBInstanceNode) {
     try {
         getLogger().info(`Deleting instance: ${instanceName}`)
 
-        //const instance = node.instance
         const instance = await client.deleteInstance({
             DBInstanceIdentifier: instanceName,
         })
