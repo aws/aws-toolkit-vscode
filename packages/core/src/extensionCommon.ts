@@ -23,6 +23,7 @@ import { AuthStatus, telemetry } from './shared/telemetry/telemetry'
 import { openUrl } from './shared/utilities/vsCodeUtils'
 import { activateViewsShared } from './awsexplorer/activationShared'
 import fs from './shared/fs/fs'
+import * as errors from './shared/errors'
 import { activate as activateLogger } from './shared/logger/activation'
 import { initializeComputeRegion } from './shared/extensionUtilities'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
@@ -73,9 +74,10 @@ export async function activateCommon(
     localize = nls.loadMessageBundle()
 
     initialize(context, isWeb)
-    const homeDirLogs = await fs.initUserHomeDir(context, homeDir => {
+    const homeDirLogs = await fs.init(context, homeDir => {
         void showViewLogsMessage(`Invalid home directory (check $HOME): "${homeDir}"`)
     })
+    errors.init(fs.getUsername())
     await initializeComputeRegion()
 
     globals.contextPrefix = '' //todo: disconnect supplied argument
@@ -97,7 +99,7 @@ export async function activateCommon(
     globals.logOutputChannel = toolkitLogChannel
 
     if (homeDirLogs.length > 0) {
-        getLogger().error('initUserHomeDir: invalid home directory given by env vars: %O', homeDirLogs)
+        getLogger().error('fs.init: invalid home directory given by env vars: %O', homeDirLogs)
     }
 
     if (isCloud9()) {
