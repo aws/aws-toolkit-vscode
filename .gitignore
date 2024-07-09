@@ -1,4 +1,5 @@
 .gradle
+.intellijPlatform
 out/
 target/
 .idea

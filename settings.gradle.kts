@@ -49,12 +49,15 @@ if (regionEnv.isPresent && bucketEnv.isPresent && prefixEnv.isPresent) {
 }
 
 plugins {
-    id("com.gradle.enterprise").version("3.15.1")
+    id("com.gradle.enterprise").version("3.17.5")
     id("com.github.burrunan.s3-build-cache").version("1.5")
 }
 
 gradleEnterprise {
     buildScan {
+        termsOfServiceUrl = "https://gradle.com/help/legal-terms-of-use"
+        termsOfServiceAgree = "yes"
+
         obfuscation {
             username { "<username>" }
             hostname { "<hostname>" }

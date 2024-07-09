@@ -7,8 +7,8 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
+import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.application.runReadAction
-import com.intellij.openapi.application.runWriteActionAndWait
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
@@ -51,7 +51,7 @@ class UpdateDevfileAction : AnAction() {
                             getFilePathForDevfile()
                         }
 
-                        runWriteActionAndWait {
+                        WriteAction.runAndWait<Exception> {
                             FileDocumentManager.getInstance().saveAllDocuments()
                         }
 

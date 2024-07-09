@@ -22,6 +22,7 @@ dependencies {
     implementation(libs.bundles.jackson)
     implementation(libs.commonmark)
     implementation(libs.gradlePlugin.detekt)
+    implementation(libs.gradlePlugin.ideaExt)
     implementation(libs.gradlePlugin.intellij)
     implementation(libs.gradlePlugin.kotlin)
     implementation(libs.gradlePlugin.testLogger)

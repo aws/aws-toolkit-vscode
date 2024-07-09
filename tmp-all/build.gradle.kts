@@ -1,26 +1,34 @@
 // Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import software.aws.toolkits.gradle.intellij.IdeVersions
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import software.aws.toolkits.gradle.intellij.IdeFlavor
+import software.aws.toolkits.gradle.intellij.toolkitIntelliJ
 
 plugins {
-    id("org.jetbrains.intellij")
+    id("toolkit-intellij-plugin")
     id("toolkit-kotlin-conventions")
     id("toolkit-testing")
 }
 
-intellij {
-    val ideProfile = IdeVersions.ideProfile(project)
-    version.set(ideProfile.community.version())
-    localPath.set(ideProfile.community.localPath())
-    plugins.set(
-        listOf(
-            project(":plugin-core"),
-            project(":plugin-amazonq"),
-            "aws.toolkit:2.19-${ideProfile.shortName}"
-        )
-    )
+intellijToolkit {
+    ideFlavor.set(IdeFlavor.IC)
+}
 
-    updateSinceUntilBuild.set(false)
-    instrumentCode.set(false)
+dependencies {
+    intellijPlatform {
+        val type = toolkitIntelliJ.ideFlavor.map { IntelliJPlatformType.fromCode(it.toString()) }
+        val version = toolkitIntelliJ.version()
+
+        create(type, version)
+        jetbrainsRuntime()
+
+        localPlugin(project(":plugin-core", "pluginZip"))
+        localPlugin(project(":plugin-amazonq", "pluginZip"))
+        plugin(toolkitIntelliJ.ideProfile().map { "aws.toolkit:2.19-${it.shortName}" })
+
+        testFramework(TestFrameworkType.Bundled)
+        testFramework(TestFrameworkType.JUnit5)
+    }
 }

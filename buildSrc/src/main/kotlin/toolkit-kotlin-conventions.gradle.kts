@@ -21,7 +21,10 @@ dependencies {
     implementation(versionCatalog.findLibrary("kotlin-coroutines").get())
 
     testFixturesApi(versionCatalog.findLibrary("kotlin-test").get())
-    testFixturesApi(versionCatalog.findLibrary("kotlin-coroutinesDebug").get())
+    testFixturesApi(versionCatalog.findLibrary("kotlin-coroutinesDebug").get()) {
+        // IDE provides JNA and results in conflicts
+        exclude(group = "net.java.dev.jna", module = "jna")
+    }
     testFixturesApi(versionCatalog.findLibrary("kotlin-coroutinesTest").get())
     testFixturesApi(versionCatalog.findLibrary("mockk").get())
 }

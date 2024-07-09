@@ -8,6 +8,9 @@ import com.github.tomakehurst.wiremock.client.WireMock.any
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import com.github.tomakehurst.wiremock.junit.WireMockClassRule
+import com.intellij.execution.process.ProcessEvent
+import com.intellij.execution.process.ProcessListener
+import com.intellij.openapi.util.Key
 import com.intellij.testFramework.ApplicationRule
 import com.intellij.util.io.HttpRequests
 import com.intellij.util.net.NetUtils
@@ -63,7 +66,29 @@ class SshCommandLineTest {
         SshCommandLine("localhost", port = sshServer.server.port)
             .knownHostsLocation(tempFolder.newFile().toPath())
             .localPortForward(localPort, wireMockPort)
-            .executeInBackground()
+            .executeInBackground(
+                object : ProcessListener {
+                    override fun startNotified(event: ProcessEvent) {
+                        println("ssh client: startNotified")
+                    }
+
+                    override fun processTerminated(event: ProcessEvent) {
+                        println("ssh client: processTerminated, exit: ${event.exitCode}")
+                    }
+
+                    override fun processWillTerminate(event: ProcessEvent, willBeDestroyed: Boolean) {
+                        println("ssh client: processWillTerminate, willBeDestroyed: $willBeDestroyed")
+                    }
+
+                    override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
+                        println("ssh client: onTextAvailable: ${event.text}")
+                    }
+
+                    override fun processNotStarted() {
+                        println("ssh client: processNotStarted")
+                    }
+                }
+            )
 
         // race between ssh background process and client
         spinUntil(5_000) { sshServer.clientIsConnected() }
