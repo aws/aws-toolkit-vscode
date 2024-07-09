@@ -11,19 +11,19 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.verify
-import org.junit.After
-import org.junit.Assert.assertEquals
-import org.junit.Before
-import org.junit.Test
+import junit.framework.TestCase.assertEquals
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.toolkittelemetry.model.AWSProduct
 
 class PluginResolverTest {
-    @Before
+    @BeforeEach
     fun setup() {
         mockkStatic(PluginManagerCore::class)
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         clearAllMocks()
     }
