@@ -3,66 +3,83 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.testFramework.ApplicationRule
-import com.intellij.testFramework.DisposableRule
+import com.intellij.testFramework.ProjectExtension
 import com.intellij.testFramework.ProjectRule
+import com.intellij.testFramework.junit5.TestDisposable
 import com.intellij.testFramework.replaceService
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.mockito.Mockito.mockConstruction
+import org.mockito.internal.verification.Times
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.spy
 import org.mockito.kotlin.timeout
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
+import software.aws.toolkits.core.telemetry.MetricEvent
+import software.aws.toolkits.core.telemetry.TelemetryBatcher
+import software.aws.toolkits.core.telemetry.TelemetryPublisher
 import software.aws.toolkits.core.utils.test.aString
-import software.aws.toolkits.jetbrains.core.MockClientManagerRule
+import software.aws.toolkits.jetbrains.core.MockClientManagerExtension
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileSsoSessionIdentifier
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBearerTokenProvider
+import software.aws.toolkits.jetbrains.core.region.MockRegionProviderExtension
 import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
+import software.aws.toolkits.jetbrains.services.telemetry.NoOpPublisher
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
+import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.utils.isInstanceOf
 import software.aws.toolkits.jetbrains.utils.isInstanceOfSatisfying
 import software.aws.toolkits.jetbrains.utils.satisfiesKt
 
 class DefaultToolkitAuthManagerTest {
-    @JvmField
-    @Rule
-    val applicationRule = ApplicationRule()
+    private class TestTelemetryService(
+        publisher: TelemetryPublisher = NoOpPublisher(),
+        batcher: TelemetryBatcher
+    ) : TelemetryService(publisher, batcher)
 
-    @JvmField
-    @Rule
-    val projectRule = ProjectRule()
-
-    @JvmField
-    @Rule
+    @ExtendWith(MockRegionProviderExtension::class)
     val regionProvider = MockRegionProviderRule()
 
     @JvmField
-    @Rule
-    val disposableRule = DisposableRule()
-
-    @JvmField
-    @Rule
-    val mockClientManager = MockClientManagerRule()
+    @RegisterExtension
+    val mockClientManager = MockClientManagerExtension()
 
     private lateinit var sut: DefaultToolkitAuthManager
-
     private lateinit var connectionManager: ToolkitConnectionManager
+    private lateinit var batcher: TelemetryBatcher
+    private lateinit var telemetryService: TelemetryService
+    private var isTelemetryEnabledDefault: Boolean = false
 
-    @Before
-    fun setUp() {
+    @BeforeEach
+    fun setUp(@TestDisposable disposable: Disposable) {
         mockClientManager.create<SsoOidcClient>()
         sut = DefaultToolkitAuthManager()
         connectionManager = DefaultToolkitConnectionManager()
+        batcher = mock()
+        telemetryService = spy(TestTelemetryService(batcher = batcher))
+        ApplicationManager.getApplication().replaceService(TelemetryService::class.java, telemetryService, disposable)
+        isTelemetryEnabledDefault = AwsSettings.getInstance().isTelemetryEnabled
+    }
+
+    @AfterEach
+    fun tearDown() {
+        telemetryService.dispose()
+        AwsSettings.getInstance().isTelemetryEnabled = isTelemetryEnabledDefault
     }
 
     @Test
@@ -205,11 +222,11 @@ class DefaultToolkitAuthManagerTest {
     }
 
     @Test
-    fun `loginSso with an working existing connection`() {
+    fun `loginSso with an working existing connection`(@TestDisposable disposable: Disposable) {
         val connectionManager: ToolkitConnectionManager = mock()
         regionProvider.addRegion(Region.US_EAST_1)
-        projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposableRule.disposable)
-        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, sut, disposableRule.disposable)
+        projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposable)
+        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, sut, disposable)
 
         mockConstruction(InteractiveBearerTokenProvider::class.java) { context, _ ->
             whenever(context.state()).thenReturn(BearerTokenAuthState.AUTHORIZED)
@@ -231,11 +248,11 @@ class DefaultToolkitAuthManagerTest {
     }
 
     @Test
-    fun `loginSso with an existing connection but expired and refresh token is valid, should refreshToken`() {
+    fun `loginSso with an existing connection but expired and refresh token is valid, should refreshToken`(@TestDisposable disposable: Disposable) {
         val connectionManager = ToolkitConnectionManager.getInstance(projectRule.project)
         regionProvider.addRegion(Region.US_EAST_1)
-        projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposableRule.disposable)
-        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, sut, disposableRule.disposable)
+        projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposable)
+        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, sut, disposable)
 
         mockConstruction(InteractiveBearerTokenProvider::class.java) { context, _ ->
             whenever(context.id).thenReturn("id")
@@ -259,10 +276,12 @@ class DefaultToolkitAuthManagerTest {
     }
 
     @Test
-    fun `loginSso with an existing connection that token is invalid and there's no refresh token, should re-authenticate`() {
+    fun `loginSso with an existing connection that token is invalid and there's no refresh token, should re-authenticate`(
+        @TestDisposable disposable: Disposable
+    ) {
         val connectionManager = ToolkitConnectionManager.getInstance(projectRule.project)
         regionProvider.addRegion(Region.US_EAST_1)
-        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, sut, disposableRule.disposable)
+        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, sut, disposable)
 
         mockConstruction(InteractiveBearerTokenProvider::class.java) { context, _ ->
             whenever(context.state()).thenReturn(BearerTokenAuthState.NOT_AUTHENTICATED)
@@ -285,10 +304,10 @@ class DefaultToolkitAuthManagerTest {
     }
 
     @Test
-    fun `loginSso reuses connection if requested scopes are subset of existing`() {
+    fun `loginSso reuses connection if requested scopes are subset of existing`(@TestDisposable disposable: Disposable) {
         val connectionManager = ToolkitConnectionManager.getInstance(projectRule.project)
         regionProvider.addRegion(Region.US_EAST_1)
-        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, sut, disposableRule.disposable)
+        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, sut, disposable)
 
         mockConstruction(InteractiveBearerTokenProvider::class.java) { context, _ ->
             whenever(context.state()).thenReturn(BearerTokenAuthState.AUTHORIZED)
@@ -313,11 +332,11 @@ class DefaultToolkitAuthManagerTest {
     }
 
     @Test
-    fun `loginSso forces reauth if requested scopes are not complete subset`() {
+    fun `loginSso forces reauth if requested scopes are not complete subset`(@TestDisposable disposable: Disposable) {
         regionProvider.addRegion(Region.US_EAST_1)
 
-        projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposableRule.disposable)
-        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, sut, disposableRule.disposable)
+        projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposable)
+        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, sut, disposable)
 
         mockConstruction(InteractiveBearerTokenProvider::class.java) { context, _ ->
             whenever(context.state()).thenReturn(BearerTokenAuthState.AUTHORIZED)
@@ -344,10 +363,10 @@ class DefaultToolkitAuthManagerTest {
     }
 
     @Test
-    fun `loginSso with a new connection`() {
+    fun `loginSso with a new connection`(@TestDisposable disposable: Disposable) {
         val connectionManager: ToolkitConnectionManager = mock()
-        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, sut, disposableRule.disposable)
-        projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposableRule.disposable)
+        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, sut, disposable)
+        projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposable)
 
         mockConstruction(InteractiveBearerTokenProvider::class.java) { context, _ ->
             doNothing().whenever(context).reauthenticate()
@@ -379,9 +398,9 @@ class DefaultToolkitAuthManagerTest {
     }
 
     @Test
-    fun `logoutFromConnection should invalidate the token provider and the connection and invoke callback`() {
+    fun `logoutFromConnection should invalidate the token provider and the connection and invoke callback`(@TestDisposable disposable: Disposable) {
         regionProvider.addRegion(Region.US_EAST_1)
-        projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposableRule.disposable)
+        projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposable)
 
         val profile = ManagedSsoProfile("us-east-1", "startUrl000", listOf("scopes"))
         val connection = ToolkitAuthManager.getInstance().createConnection(profile) as ManagedBearerSsoConnection
@@ -413,5 +432,45 @@ class DefaultToolkitAuthManagerTest {
         assertThat(providerInvalidatedMessageReceived).isEqualTo(1)
         assertThat(connectionSwitchedMessageReceived).isEqualTo(1)
         assertThat(callbackInvoked).isEqualTo(1)
+    }
+
+    @Test
+    fun `loginSso telemetry contains default source ID`() {
+        AwsSettings.getInstance().isTelemetryEnabled = true
+        loginSso(
+            project = projectRule.project,
+            startUrl = "foo",
+            region = "us-east-1",
+            requestedScopes = listOf("scopes")
+        )
+        val metricCaptor = argumentCaptor<MetricEvent>()
+        verify(batcher, Times(2)).enqueue(metricCaptor.capture())
+        assertMetricEventsContains(metricCaptor.allValues, "awsId")
+    }
+
+    @Test
+    fun `loginSso telemetry contains provided source ID`() {
+        AwsSettings.getInstance().isTelemetryEnabled = true
+        loginSso(
+            project = projectRule.project,
+            startUrl = "foo",
+            region = "us-east-1",
+            requestedScopes = listOf("scopes"),
+            metadata = ConnectionMetadata("fooSourceId")
+        )
+        val metricCaptor = argumentCaptor<MetricEvent>()
+        verify(batcher, Times(2)).enqueue(metricCaptor.capture())
+        assertMetricEventsContains(metricCaptor.allValues, "fooSourceId")
+    }
+
+    private fun assertMetricEventsContains(events: Collection<MetricEvent>, credentialSourceId: String) {
+        assertThat(events).allSatisfy { event ->
+            assertThat(event.data.all { it.metadata["credentialSourceId"] == credentialSourceId }).isTrue()
+        }
+    }
+
+    private companion object {
+        @ExtendWith(ProjectExtension::class)
+        val projectRule = ProjectRule()
     }
 }

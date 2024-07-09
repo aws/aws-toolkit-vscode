@@ -9,6 +9,7 @@ import com.intellij.testFramework.ApplicationExtension
 import com.intellij.testFramework.junit5.TestDisposable
 import com.intellij.testFramework.replaceService
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -41,7 +42,11 @@ class AwsSettingsTest {
         awsConfiguration = spy(AwsConfiguration())
         awsSettings.loadState(awsConfiguration)
         ApplicationManager.getApplication().replaceService(TelemetryService::class.java, telemetryService, disposable)
-        ApplicationManager.getApplication().replaceService(AwsSettings::class.java, awsSettings, disposable)
+    }
+
+    @AfterEach
+    fun tearDown() {
+        telemetryService.dispose()
     }
 
     @Test
@@ -59,7 +64,7 @@ class AwsSettingsTest {
         val changeCaptor = argumentCaptor<Boolean>()
         val onChangeEventCaptor = argumentCaptor<(Boolean) -> Unit>()
 
-        AwsSettings.getInstance().isTelemetryEnabled = value
+        awsSettings.isTelemetryEnabled = value
 
         inOrder.verify(telemetryService).setTelemetryEnabled(changeCaptor.capture(), onChangeEventCaptor.capture())
         assertThat(changeCaptor.firstValue).isEqualTo(value)
