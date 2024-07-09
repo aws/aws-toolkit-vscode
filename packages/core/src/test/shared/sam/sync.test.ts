@@ -14,9 +14,9 @@ import {
 import { createWizardTester } from '../wizards/wizardTestUtils'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { SystemUtilities } from '../../../shared/systemUtilities'
 import { ToolkitError } from '../../../shared/errors'
 import globals from '../../../shared/extensionGlobals'
+import fs from '../../../shared/fs/fs'
 
 describe('SyncWizard', async function () {
     const createTester = async (params?: Partial<SyncParams>) =>
@@ -61,7 +61,7 @@ describe('prepareSyncParams', function () {
     })
 
     afterEach(async function () {
-        await SystemUtilities.delete(tempDir, { recursive: true })
+        await fs.delete(tempDir, { recursive: true })
     })
 
     it('uses region if given a tree node', async function () {
@@ -77,7 +77,7 @@ describe('prepareSyncParams', function () {
     async function makeTemplateItem(dir: vscode.Uri) {
         const uri = vscode.Uri.joinPath(dir, 'template.yaml')
         const data = makeSampleSamTemplateYaml(true)
-        await SystemUtilities.writeFile(uri, JSON.stringify(data))
+        await fs.writeFile(uri, JSON.stringify(data))
 
         return { uri, data }
     }
@@ -104,7 +104,7 @@ describe('prepareSyncParams', function () {
             [default.sync.parameters]
             ${body}
 `
-            await SystemUtilities.writeFile(uri, data)
+            await fs.writeFile(uri, data)
 
             return uri
         }

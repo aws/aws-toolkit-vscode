@@ -174,7 +174,7 @@ module.exports = {
             // {
             //     name: 'fs-extra',
             //     message:
-            //         'Avoid fs-extra, use FileSystemCommon. Notify the Toolkit team if your required functionality is not available.',
+            //         'Avoid fs-extra, use shared/fs/fs.ts. Notify the Toolkit team if your required functionality is not available.',
             // },
         ],
     },

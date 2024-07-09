@@ -11,9 +11,8 @@ import {
     maxRepoSizeBytes,
 } from 'aws-core-vscode/amazonqFeatureDev'
 import { createTestWorkspace } from 'aws-core-vscode/test'
-import { AmazonqCreateUpload, Metric } from 'aws-core-vscode/shared'
+import { fs, AmazonqCreateUpload, Metric } from 'aws-core-vscode/shared'
 import sinon from 'sinon'
-import { fsCommon } from 'aws-core-vscode/srcShared'
 
 describe('file utils', () => {
     describe('prepareRepoData', function () {
@@ -60,7 +59,7 @@ describe('file utils', () => {
             const workspace = await createTestWorkspace(1, {})
             const telemetry = new TelemetryHelper()
 
-            sinon.stub(fsCommon, 'stat').resolves({ size: 2 * maxRepoSizeBytes } as vscode.FileStat)
+            sinon.stub(fs, 'stat').resolves({ size: 2 * maxRepoSizeBytes } as vscode.FileStat)
             await assert.rejects(
                 () =>
                     prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {

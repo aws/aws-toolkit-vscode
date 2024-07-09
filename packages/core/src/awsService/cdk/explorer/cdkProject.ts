@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { SystemUtilities } from '../../../shared/systemUtilities'
+import fs from '../../../shared/fs/fs'
 import { ConstructTree } from './tree/types'
 
 export interface CdkApp {
@@ -18,7 +18,7 @@ export interface CdkAppLocation {
 }
 
 export async function getApp(location: CdkAppLocation): Promise<CdkApp> {
-    const constructTree = JSON.parse(await SystemUtilities.readFile(location.treeUri)) as ConstructTree
+    const constructTree = JSON.parse(await fs.readFileAsString(location.treeUri)) as ConstructTree
 
     return { location, constructTree }
 }

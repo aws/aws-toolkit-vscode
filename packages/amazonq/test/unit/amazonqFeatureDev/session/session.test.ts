@@ -20,7 +20,7 @@ import {
 } from 'aws-core-vscode/test'
 import { CurrentWsFolders, CodeGenState, FeatureDevClient, Messenger } from 'aws-core-vscode/amazonqFeatureDev'
 import path from 'path'
-import { FileSystemCommon } from 'aws-core-vscode/srcShared'
+import { fs } from 'aws-core-vscode/shared'
 
 describe('session', () => {
     const conversationID = '12345'
@@ -106,7 +106,7 @@ describe('session', () => {
             return session
         }
         it('only insert non rejected files', async () => {
-            const fsSpyWriteFile = sinon.spy(FileSystemCommon.instance, 'writeFile')
+            const fsSpyWriteFile = sinon.spy(fs, 'writeFile')
             const session = await createCodeGenState()
             await sessionWriteFile(session, uri, encodedContent)
             await session.insertChanges()

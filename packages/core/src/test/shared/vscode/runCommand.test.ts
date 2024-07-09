@@ -7,6 +7,7 @@ import globals from '../../../shared/extensionGlobals'
 
 import os from 'os'
 import { promises as fsPromises } from 'fs'
+import fs from '../../../shared/fs/fs'
 import * as sinon from 'sinon'
 import assert from 'assert'
 import { ToolkitError } from '../../../shared/errors'
@@ -14,7 +15,6 @@ import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { Commands, defaultTelemetryThrottleMs } from '../../../shared/vscode/commands2'
 import { assertTelemetry, getMetrics, installFakeClock } from '../../testUtil'
 import { getTestWindow } from '../../shared/vscode/window'
-import { SystemUtilities } from '../../../shared/systemUtilities'
 import { makeTemporaryToolkitFolder } from '../../../shared'
 import path from 'path'
 import * as env from '../../../shared/vscode/env'
@@ -85,7 +85,7 @@ describe('runCommand', function () {
         })
 
         after(async function () {
-            await SystemUtilities.delete(tempFolder, { recursive: true })
+            await fs.delete(tempFolder, { recursive: true })
         })
 
         async function runAndWaitForMessage(expectedMsg: string | RegExp, willThrow: () => Promise<never>) {
@@ -121,7 +121,7 @@ describe('runCommand', function () {
             })()
             await runAndWaitForMessage(pat, async () => {
                 // Try to write to the current directory. 💩
-                const err = await SystemUtilities.writeFile('.', 'foo').catch(e => e)
+                const err = await fs.writeFile('.', 'foo').catch(e => e)
                 const err2 = new Error('generic error')
                 ;(err2 as any).cause = err
                 throw err2
@@ -155,7 +155,7 @@ describe('runCommand', function () {
             await Promise.all([
                 viewLogsDialog.then(dialog => dialog.close()),
                 testCommand.execute(async () => {
-                    const err = await SystemUtilities.writeFile(unwritableFile, 'bar').catch(e => e)
+                    const err = await fs.writeFile(unwritableFile, 'bar').catch(e => e)
                     throw fakeErrorChain(err, new Error('error 3'))
                 }),
             ])

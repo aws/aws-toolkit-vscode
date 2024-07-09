@@ -22,7 +22,7 @@ import { logAndShowError, logAndShowWebviewError } from './shared/utilities/logA
 import { AuthStatus, telemetry } from './shared/telemetry/telemetry'
 import { openUrl } from './shared/utilities/vsCodeUtils'
 import { activateViewsShared } from './awsexplorer/activationShared'
-import { fs } from './srcShared'
+import fs from './shared/fs/fs'
 import { activate as activateLogger } from './shared/logger/activation'
 import { initializeComputeRegion } from './shared/extensionUtilities'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
