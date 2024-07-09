@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { fsCommon } from '../srcShared/fs'
+import fs from '../shared/fs/fs'
 import request from '../common/request'
 import { getLogger } from '../shared/logger'
 import { ThreatComposerEditor } from './threatComposerEditor'
@@ -105,7 +105,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         html = `${htmlFileSplit[0]} script-src 'self' 'nonce-${nonce}' ${localDevURL} ${htmlFileSplit[1]}`
 
         htmlFileSplit = html.split('<body>')
-        const script = await fsCommon.readFileAsString(
+        const script = await fs.readFileAsString(
             vscode.Uri.joinPath(this.extensionContext.extensionUri, 'resources', 'js', 'vsCodeExtensionInterface.js')
         )
 

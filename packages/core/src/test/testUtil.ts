@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import * as fs from 'fs'
+import * as nodefs from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as FakeTimers from '@sinonjs/fake-timers'
@@ -14,7 +14,7 @@ import globals from '../shared/extensionGlobals'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
 import { keys, selectFrom } from '../shared/utilities/tsUtils'
-import { fsCommon } from '../srcShared/fs'
+import fs2 from '../shared/fs/fs'
 import { DeclaredCommand } from '../shared/vscode/commands2'
 
 const testTempDirs: string[] = []
@@ -28,15 +28,15 @@ export async function toFile(o: any, ...filePathParts: string[]) {
     const text = o ? o.toString() : ''
     const filePath = path.join(...filePathParts)
     const dir = path.dirname(filePath)
-    await fsCommon.mkdir(dir)
-    await fsCommon.writeFile(filePath, text)
+    await fs2.mkdir(dir)
+    await fs2.writeFile(filePath, text)
 }
 
 /**
  * Gets the contents of `filepath` as UTF-8 encoded string.
  */
 export async function fromFile(filepath: string): Promise<string> {
-    return fsCommon.readFileAsString(filepath)
+    return fs2.readFileAsString(filepath)
 }
 
 /** Gets the full path to the Toolkit source root on this machine. */
@@ -66,7 +66,7 @@ export async function createTestWorkspaceFolder(name?: string, subDir?: string):
     testTempDirs.push(tempFolder)
     const finalWsFolder = subDir === undefined ? tempFolder : path.join(tempFolder, subDir)
     if (subDir !== undefined && subDir.length > 0) {
-        await fs.promises.mkdir(finalWsFolder, { recursive: true })
+        await nodefs.promises.mkdir(finalWsFolder, { recursive: true })
     }
     return {
         uri: vscode.Uri.file(finalWsFolder),
@@ -79,7 +79,7 @@ export async function createTestFile(fileName: string): Promise<vscode.Uri> {
     const tempFolder = await makeTemporaryToolkitFolder()
     testTempDirs.push(tempFolder) // ensures this is deleted at the end
     const tempFilePath = path.join(tempFolder, fileName)
-    await fsCommon.writeFile(tempFilePath, '')
+    await fs2.writeFile(tempFilePath, '')
     return vscode.Uri.file(tempFilePath)
 }
 
@@ -127,7 +127,7 @@ export async function createTestWorkspace(
 
     do {
         const tempFilePath = path.join(workspace.uri.fsPath, `${fileNamePrefix}${n}${fileNameSuffix}`)
-        await fsCommon.writeFile(tempFilePath, fileContent)
+        await fs2.writeFile(tempFilePath, fileContent)
     } while (--n > 0)
 
     return workspace
@@ -158,7 +158,7 @@ export function assertEqualPaths(actual: string, expected: string, message?: str
  * Asserts that UTF-8 contents of `file` are equal to `expected`.
  */
 export async function assertFileText(file: string, expected: string, message?: string | Error) {
-    const actualContents = await fsCommon.readFileAsString(file)
+    const actualContents = await fs2.readFileAsString(file)
     assert.strictEqual(actualContents, expected, message)
 }
 
@@ -172,12 +172,12 @@ export async function tickPromise<T>(promise: Promise<T>, clock: FakeTimers.Inst
  * Creates an executable file (including any parent directories) with the given contents.
  */
 export async function createExecutableFile(filepath: string, contents: string): Promise<void> {
-    await fsCommon.mkdir(path.dirname(filepath))
+    await fs2.mkdir(path.dirname(filepath))
     if (process.platform === 'win32') {
-        await fsCommon.writeFile(filepath, `@echo OFF$\r\n${contents}\r\n`)
+        await fs2.writeFile(filepath, `@echo OFF$\r\n${contents}\r\n`)
     } else {
-        await fsCommon.writeFile(filepath, `#!/bin/sh\n${contents}`)
-        fs.chmodSync(filepath, 0o744)
+        await fs2.writeFile(filepath, `#!/bin/sh\n${contents}`)
+        nodefs.chmodSync(filepath, 0o744)
     }
 }
 
