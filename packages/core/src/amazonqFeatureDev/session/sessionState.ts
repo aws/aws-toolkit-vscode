@@ -49,7 +49,10 @@ export class ConversationNotStartedState implements Omit<SessionState, 'uploadId
     public tokenSource: vscode.CancellationTokenSource
     public readonly phase = DevPhase.INIT
 
-    constructor(public approach: string, public tabID: string) {
+    constructor(
+        public approach: string,
+        public tabID: string
+    ) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.approach = ''
     }
@@ -62,7 +65,11 @@ export class ConversationNotStartedState implements Omit<SessionState, 'uploadId
 export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
     public readonly phase = DevPhase.APPROACH
-    constructor(private config: Omit<SessionStateConfig, 'uploadId'>, public approach: string, public tabID: string) {
+    constructor(
+        private config: Omit<SessionStateConfig, 'uploadId'>,
+        public approach: string,
+        public tabID: string
+    ) {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
 
@@ -232,7 +239,10 @@ abstract class CodeGenBase {
     public readonly conversationId: string
     public readonly uploadId: string
 
-    constructor(protected config: SessionStateConfig, public tabID: string) {
+    constructor(
+        protected config: SessionStateConfig,
+        public tabID: string
+    ) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.conversationId = config.conversationId
         this.uploadId = config.uploadId
@@ -394,7 +404,11 @@ export class MockCodeGenState implements SessionState {
     public readonly conversationId: string
     public readonly uploadId: string
 
-    constructor(private config: SessionStateConfig, public approach: string, public tabID: string) {
+    constructor(
+        private config: SessionStateConfig,
+        public approach: string,
+        public tabID: string
+    ) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.filePaths = []
         this.deletedFiles = []
