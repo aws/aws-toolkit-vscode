@@ -13,7 +13,14 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { featureDevScheme } from '../constants'
-import { IllegalStateTransition, UserMessageNotFoundError } from '../errors'
+import {
+    EmptyPatchException,
+    GuardrailsException,
+    IllegalStateTransition,
+    PromptRefusalException,
+    ThrottlingException,
+    UserMessageNotFoundError,
+} from '../errors'
 import {
     CodeGenerationStatus,
     CurrentWsFolders,
@@ -274,16 +281,23 @@ abstract class CodeGenBase {
                 case CodeGenerationStatus.PREDICT_FAILED:
                 case CodeGenerationStatus.DEBATE_FAILED:
                 case CodeGenerationStatus.FAILED: {
-                    /** 
-                     * 
-                     * TODO: Here we need to implement the granular error handling for 
-                     *  Code generation GuardrailsException
-                        Code generation PromptRefusalException
-                        Code generation EmptyPatchException
-                        Code generation ThrottlingException
-                     * 
-                     * */
-                    throw new ToolkitError('Code generation failed', { code: 'CodeGenFailed' })
+                    switch (true) {
+                        case codegenResult.codeGenerationStatusDetail?.includes('Guardrails'): {
+                            throw new GuardrailsException()
+                        }
+                        case codegenResult.codeGenerationStatusDetail?.includes('PromptRefusal'): {
+                            throw new PromptRefusalException()
+                        }
+                        case codegenResult.codeGenerationStatusDetail?.includes('EmptyPatch'): {
+                            throw new EmptyPatchException()
+                        }
+                        case codegenResult.codeGenerationStatusDetail?.includes('Throttling'): {
+                            throw new ThrottlingException()
+                        }
+                        default: {
+                            throw new ToolkitError('Code generation failed', { code: 'CodeGenFailed' })
+                        }
+                    }
                 }
                 default: {
                     const errorMessage = `Unknown status: ${codegenResult.codeGenerationStatus.status}\n`

@@ -57,6 +57,44 @@ export class SelectedFolderNotInWorkspaceFolderError extends ToolkitError {
     }
 }
 
+export class GuardrailsException extends ToolkitError {
+    constructor() {
+        super("I'm sorry, I'm having trouble generating your code. Please try again. ", {
+            code: 'GuardrailsException',
+        })
+    }
+}
+
+export class PromptRefusalException extends ToolkitError {
+    constructor() {
+        super(
+            'I\'m sorry, I can\'t generate code for your request. Please make sure your message and code files comply with the <a href="https://aws.amazon.com/machine-learning/responsible-ai/policy/">AWS Responsible AI Policy.</a>',
+            {
+                code: 'PromptRefusalException',
+            }
+        )
+    }
+}
+
+export class EmptyPatchException extends ToolkitError {
+    constructor() {
+        super("I'm sorry, I'm having trouble generating your code. Please try again.", {
+            code: 'EmptyPatchException',
+        })
+    }
+}
+
+export class ThrottlingException extends ToolkitError {
+    constructor() {
+        super(
+            "I'm sorry, I'm experiencing high demand at the moment and can't generate your code. This attempt won't count toward usage limits. Please try again.",
+            {
+                code: 'ThrottlingException',
+            }
+        )
+    }
+}
+
 export class PrepareRepoFailedError extends ToolkitError {
     constructor() {
         super('Sorry, I ran into an issue while trying to upload your code. Please try again.', {
