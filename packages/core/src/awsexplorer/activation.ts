@@ -31,8 +31,8 @@ import { AmazonQNode, refreshAmazonQ, refreshAmazonQRootNode } from '../amazonq/
 import { GlobalState } from '../shared/globalState'
 import { activateViewsShared, registerToolView } from './activationShared'
 import { isExtensionInstalled } from '../shared/utilities'
-import { amazonQDismissedKey } from '../codewhisperer/models/constants'
 import { CommonAuthViewProvider } from '../login/webview'
+import { setContext } from '../shared'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -110,9 +110,9 @@ export async function activate(args: {
     if (!isCloud9()) {
         if (
             isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) ||
-            globals.context.globalState.get<boolean>(amazonQDismissedKey)
+            globals.globalState.get<boolean>('aws.toolkit.amazonq.dismissed')
         ) {
-            await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)
+            await setContext('aws.toolkit.amazonq.dismissed', true)
         }
 
         // We should create the tree even if it's dismissed, in case the user installs Amazon Q later.

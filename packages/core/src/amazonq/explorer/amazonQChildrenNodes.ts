@@ -11,8 +11,7 @@ import { installAmazonQExtension } from '../../codewhisperer/commands/basicComma
 import { amazonQHelpUrl } from '../../shared/constants'
 import { cwTreeNodeSource } from '../../codewhisperer/commands/types'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
-import { globals } from '../../shared'
-import { amazonQDismissedKey } from '../../codewhisperer/models/constants'
+import { globals, setContext } from '../../shared'
 import { ExtStartUpSources, telemetry } from '../../shared/telemetry'
 import { ExtensionUse } from '../../auth/utils'
 
@@ -34,8 +33,8 @@ export const dismissQTree = Commands.declare(
                 source: ExtensionUse.instance.isFirstUse() ? ExtStartUpSources.firstStartUp : ExtStartUpSources.none,
             })
 
-            await globals.context.globalState.update(amazonQDismissedKey, true)
-            await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)
+            await globals.globalState.update('aws.toolkit.amazonq.dismissed', true)
+            await setContext('aws.toolkit.amazonq.dismissed', true)
 
             telemetry.record({ action: 'dismissQExplorerTree' })
         })

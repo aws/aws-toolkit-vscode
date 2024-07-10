@@ -7,6 +7,17 @@ import * as vscode from 'vscode'
 import globals from './extensionGlobals'
 import { getLogger } from './logger/logger'
 
+type globalKey =
+    | 'gumby.wasQCodeTransformationUsed'
+    | 'aws.toolkit.amazonq.dismissed'
+    | 'aws.toolkit.amazonqInstall.dismissed'
+    | 'hasAlreadyOpenedAmazonQ'
+    | 'aws.lastTouchedS3Folder'
+    | 'aws.lastUploadedToS3Folder'
+    | 'aws.downloadPath'
+    | 'CODECATALYST_RECONNECT'
+    | 'CODEWHISPERER_USER_GROUP'
+
 export class GlobalState implements vscode.Memento {
     static #instance: GlobalState
     static get instance(): GlobalState {
@@ -17,12 +28,12 @@ export class GlobalState implements vscode.Memento {
         return globals.context.globalState.keys()
     }
 
-    public get<T>(key: string, defaultValue?: T): T | undefined {
+    public get<T>(key: globalKey, defaultValue?: T): T | undefined {
         return globals.context.globalState.get(key) ?? defaultValue
     }
 
     /** Asynchronously updates globalState, or logs an error on failure. */
-    public tryUpdate(key: string, value: any): void {
+    public tryUpdate(key: globalKey, value: any): void {
         globals.context.globalState.update(key, value).then(
             undefined, // TODO: log.debug() ?
             e => {
@@ -31,7 +42,7 @@ export class GlobalState implements vscode.Memento {
         )
     }
 
-    public update(key: string, value: any): Thenable<void> {
+    public update(key: globalKey, value: any): Thenable<void> {
         return globals.context.globalState.update(key, value)
     }
 
@@ -39,3 +50,6 @@ export class GlobalState implements vscode.Memento {
         return vscode.Uri.joinPath(globals.context.globalStorageUri, 'sam.schema.json')
     }
 }
+
+export const globalState = GlobalState.instance
+export default globalState

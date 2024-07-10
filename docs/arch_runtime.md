@@ -10,7 +10,8 @@ TODO: move from CONTRIBUTING.md
 ## VSCode context keys
 
 VScode extensions can use vscode 'setContext' command to set special context keys which are
-available in `package.json`.
+available in `package.json`. Use this only if there is no other alternative (it's shared, global,
+mutable state).
 
 ### Defining a new setContext key
 

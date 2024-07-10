@@ -16,7 +16,8 @@ import { SchemaService } from './schemas'
 import { TelemetryLogger } from './telemetry/telemetryLogger'
 import { TelemetryService } from './telemetry/telemetryService'
 import { UriHandler } from './vscode/uriHandler'
-import vscode from 'vscode'
+import { GlobalState } from './globalState'
+import { setContext } from './vscode/setContext'
 
 type Clock = Pick<
     typeof globalThis,
@@ -145,11 +146,12 @@ export function initialize(context: ExtensionContext, isWeb: boolean = false): T
         context,
         clock: copyClock(),
         didReload: checkDidReload(context),
+        globalState: GlobalState.instance,
         manifestPaths: {} as ToolkitGlobals['manifestPaths'],
         visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],
         isWeb,
     })
-    void vscode.commands.executeCommand('setContext', 'aws.isWebExtHost', isWeb)
+    void setContext('aws.isWebExtHost', isWeb)
 
     initialized = true
 
@@ -168,6 +170,7 @@ export { globals as default }
  */
 interface ToolkitGlobals {
     readonly context: ExtensionContext
+    readonly globalState: GlobalState
     /** Decides the prefix for package.json extension parameters, e.g. commands, 'setContext' values, etc. */
     contextPrefix: string
     // TODO: make the rest of these readonly (or delete them)

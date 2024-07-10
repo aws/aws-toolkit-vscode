@@ -10,7 +10,6 @@ import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { GlobalState } from '../../shared/globalState'
 
 let badgeHelperView: TreeView<void> | undefined
-const mementoKey = 'hasAlreadyOpenedAmazonQ'
 
 /**
  * invisible view meant exclusively to handle the view badge, note declaration has `"when": false`.
@@ -44,7 +43,7 @@ export function changeViewBadge(badge?: ViewBadge) {
  * Removes the view badge from the badge helper view and prevents it from showing up ever again
  */
 export function deactivateInitialViewBadge() {
-    GlobalState.instance.tryUpdate(mementoKey, true)
+    GlobalState.instance.tryUpdate('hasAlreadyOpenedAmazonQ', true)
     changeViewBadge()
 }
 
@@ -74,7 +73,7 @@ async function showInitialViewBadge() {
  */
 export async function shouldShowBadge(): Promise<boolean> {
     const memento = globals.context.globalState
-    const hasAlreadyShown = memento.get(mementoKey)
+    const hasAlreadyShown = memento.get('hasAlreadyOpenedAmazonQ')
     if (!hasAlreadyShown) {
         const state = await AuthUtil.instance.getChatAuthState()
         if (state.codewhispererCore === 'connected' && state.codewhispererChat !== 'connected') {
