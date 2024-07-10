@@ -44,21 +44,57 @@ class CodeWhispererSettings : PersistentStateComponent<CodeWhispererConfiguratio
         true
     )
 
+    fun toggleProjectContextEnabled(value: Boolean) {
+        state.value[CodeWhispererConfigurationType.IsProjectContextEnabled] = value
+    }
+
+    fun isProjectContextEnabled() = state.value.getOrDefault(CodeWhispererConfigurationType.IsProjectContextEnabled, false)
+
+    fun isProjectContextGpu() = state.value.getOrDefault(CodeWhispererConfigurationType.IsProjectContextGpu, false)
+
+    fun toggleProjectContextGpu(value: Boolean) {
+        state.value[CodeWhispererConfigurationType.IsProjectContextGpu] = value
+    }
+
+    fun getProjectContextIndexThreadCount(): Int = state.intValue.getOrDefault(
+        CodeWhispererIntConfigurationType.ProjectContextIndexThreadCount,
+        0
+    )
+
+    fun setProjectContextIndexThreadCount(value: Int) {
+        state.intValue[CodeWhispererIntConfigurationType.ProjectContextIndexThreadCount] = value
+    }
+
+    fun getProjectContextIndexMaxSize(): Int = state.intValue.getOrDefault(
+        CodeWhispererIntConfigurationType.ProjectContextIndexMaxSize,
+        200
+    )
+
+    fun setProjectContextIndexMaxSize(value: Int) {
+        state.intValue[CodeWhispererIntConfigurationType.ProjectContextIndexMaxSize] = value
+    }
+
     companion object {
         fun getInstance(): CodeWhispererSettings = service()
     }
 
-    override fun getState(): CodeWhispererConfiguration = CodeWhispererConfiguration().apply { value.putAll(state.value) }
+    override fun getState(): CodeWhispererConfiguration = CodeWhispererConfiguration().apply {
+        value.putAll(state.value)
+        intValue.putAll(state.intValue)
+    }
 
     override fun loadState(state: CodeWhispererConfiguration) {
         this.state.value.clear()
+        this.state.intValue.clear()
         this.state.value.putAll(state.value)
+        this.state.intValue.putAll(state.intValue)
     }
 }
 
 class CodeWhispererConfiguration : BaseState() {
     @get:Property
     val value by map<CodeWhispererConfigurationType, Boolean>()
+    val intValue by map<CodeWhispererIntConfigurationType, Int>()
 }
 
 enum class CodeWhispererConfigurationType {
@@ -67,5 +103,12 @@ enum class CodeWhispererConfigurationType {
     IsImportAdderEnabled,
     IsAutoUpdateEnabled,
     IsAutoUpdateNotificationEnabled,
-    IsAutoUpdateFeatureNotificationShownOnce
+    IsAutoUpdateFeatureNotificationShownOnce,
+    IsProjectContextEnabled,
+    IsProjectContextGpu,
+}
+
+enum class CodeWhispererIntConfigurationType {
+    ProjectContextIndexThreadCount,
+    ProjectContextIndexMaxSize,
 }

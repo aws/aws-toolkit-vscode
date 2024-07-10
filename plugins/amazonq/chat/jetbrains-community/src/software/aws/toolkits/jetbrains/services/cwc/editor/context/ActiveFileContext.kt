@@ -8,5 +8,5 @@ import software.aws.toolkits.jetbrains.services.cwc.editor.context.focusArea.Foc
 
 data class ActiveFileContext(
     val fileContext: FileContext?,
-    val focusAreaContext: FocusAreaContext?,
+    val focusAreaContext: FocusAreaContext?
 )

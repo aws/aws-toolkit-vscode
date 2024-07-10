@@ -41,6 +41,7 @@ class App : AmazonQApp {
             "chat-item-voted" to IncomingCwcMessage.ChatItemVoted::class,
             "chat-item-feedback" to IncomingCwcMessage.ChatItemFeedback::class,
             "ui-focus" to IncomingCwcMessage.UIFocus::class,
+            "open-settings" to IncomingCwcMessage.OpenSettings::class,
             "auth-follow-up-was-clicked" to IncomingCwcMessage.AuthFollowUpWasClicked::class,
 
             // JB specific (not in vscode)
@@ -72,6 +73,7 @@ class App : AmazonQApp {
             is IncomingCwcMessage.ChatItemFeedback -> inboundAppMessagesHandler.processChatItemFeedback(message)
             is IncomingCwcMessage.UIFocus -> inboundAppMessagesHandler.processUIFocus(message)
             is IncomingCwcMessage.AuthFollowUpWasClicked -> inboundAppMessagesHandler.processAuthFollowUpClick(message)
+            is IncomingCwcMessage.OpenSettings -> inboundAppMessagesHandler.processOpenSettings(message)
             is OnboardingPageInteraction -> inboundAppMessagesHandler.processOnboardingPageInteraction(message)
 
             // JB specific (not in vscode)

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { Connector } from './connector'
-import { ChatItem, ChatItemType, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui-chat'
+import { ChatItem, ChatItemType, MynahIcons, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui-chat'
 import './styles/dark.scss'
 import { TabsStorage, TabType } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
@@ -14,9 +14,9 @@ import { FollowUpInteractionHandler } from './followUps/handler'
 import { QuickActionHandler } from './quickActions/handler'
 import { TextMessageHandler } from './messages/handler'
 import { MessageController } from './messages/controller'
-import {getActions, getDetails} from "./diffTree/actions";
-import {DiffTreeFileInfo} from "./diffTree/types";
-import './styles.css';
+import { getActions, getDetails } from './diffTree/actions'
+import { DiffTreeFileInfo } from './diffTree/types'
+import './styles.css'
 
 export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeTransformInitEnabled: boolean) => {
     // eslint-disable-next-line prefer-const
@@ -65,7 +65,11 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeT
     // eslint-disable-next-line prefer-const
     connector = new Connector({
         tabsStorage,
-        onUpdateAuthentication: (featureDevEnabled: boolean, codeTransformEnabled: boolean, authenticatingTabIDs: string[]): void => {
+        onUpdateAuthentication: (
+            featureDevEnabled: boolean,
+            codeTransformEnabled: boolean,
+            authenticatingTabIDs: string[]
+        ): void => {
             isFeatureDevEnabled = featureDevEnabled
             isCodeTransformEnabled = codeTransformEnabled
 
@@ -150,7 +154,12 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeT
                 chatItems: [],
             })
         },
-        onCodeTransformMessageReceived: (tabID: string, chatItem: ChatItem, isLoading: boolean, clearPreviousItemButtons?: boolean) => {
+        onCodeTransformMessageReceived: (
+            tabID: string,
+            chatItem: ChatItem,
+            isLoading: boolean,
+            clearPreviousItemButtons?: boolean
+        ) => {
             if (chatItem.type === ChatItemType.ANSWER_PART) {
                 mynahUI.updateLastChatAnswer(tabID, {
                     ...(chatItem.messageId !== undefined ? { messageId: chatItem.messageId } : {}),
@@ -158,10 +167,10 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeT
                     ...(chatItem.codeReference !== undefined ? { codeReference: chatItem.codeReference } : {}),
                     ...(chatItem.body !== undefined ? { body: chatItem.body } : {}),
                     ...(chatItem.relatedContent !== undefined ? { relatedContent: chatItem.relatedContent } : {}),
-                    ...(chatItem.formItems !== undefined ? { formItems: chatItem.formItems} : {}),
-                    ...(chatItem.buttons !== undefined ? { buttons: chatItem.buttons} : {buttons: []}),
+                    ...(chatItem.formItems !== undefined ? { formItems: chatItem.formItems } : {}),
+                    ...(chatItem.buttons !== undefined ? { buttons: chatItem.buttons } : { buttons: [] }),
                     // For loading animation to work, do not update the chat item type
-                    ...(chatItem.followUp !== undefined ? { followUp: chatItem.followUp} : {}),
+                    ...(chatItem.followUp !== undefined ? { followUp: chatItem.followUp } : {}),
                 })
 
                 if (!isLoading) {
@@ -173,7 +182,11 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeT
                 return
             }
 
-            if (chatItem.type === ChatItemType.PROMPT || chatItem.type === ChatItemType.ANSWER_STREAM || chatItem.type === ChatItemType.ANSWER) {
+            if (
+                chatItem.type === ChatItemType.PROMPT ||
+                chatItem.type === ChatItemType.ANSWER_STREAM ||
+                chatItem.type === ChatItemType.ANSWER
+            ) {
                 if (chatItem.followUp === undefined && clearPreviousItemButtons === true) {
                     mynahUI.updateLastChatAnswer(tabID, {
                         buttons: [],
@@ -196,16 +209,12 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeT
         onCodeTransformMessageUpdate: (tabID: string, messageId: string, chatItem: Partial<ChatItem>) => {
             mynahUI.updateChatAnswerWithMessageId(tabID, messageId, chatItem)
         },
-        onNotification: (notification: {
-            content: string;
-            title?: string;
-            type: NotificationType;
-        }) => {
+        onNotification: (notification: { content: string; title?: string; type: NotificationType }) => {
             mynahUI.notify(notification)
         },
         onCodeTransformCommandMessageReceived: (_message: ChatItem, command?: string) => {
             if (command === 'stop') {
-                const codeTransformTab = tabsStorage.getTabs().find((tab) => tab.type === 'codetransform')
+                const codeTransformTab = tabsStorage.getTabs().find(tab => tab.type === 'codetransform')
                 if (codeTransformTab !== undefined && codeTransformTab.isSelected) {
                     return
                 }
@@ -215,7 +224,7 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeT
                     title: 'Q - Transform',
                     content: `Amazon Q is stopping your transformation. To view progress in the Q - Transform tab, click anywhere on this notification.`,
                     duration: 10000,
-                    onNotificationClick: (eventId) => {
+                    onNotificationClick: eventId => {
                         if (codeTransformTab !== undefined) {
                             // Click to switch to the opened code transform tab
                             mynahUI.selectTab(codeTransformTab.id, eventId)
@@ -223,7 +232,7 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeT
                             // Click to open a new code transform tab
                             quickActionHandler.handle({ command: '/transform' }, '', eventId)
                         }
-                    }
+                    },
                 })
             }
         },
@@ -274,7 +283,12 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeT
         onMessageReceived: (tabID: string, messageData: MynahUIDataModel) => {
             mynahUI.updateStore(tabID, messageData)
         },
-        onFileComponentUpdate: (tabID: string, filePaths: DiffTreeFileInfo[], deletedFiles: DiffTreeFileInfo[], messageId: string) => {
+        onFileComponentUpdate: (
+            tabID: string,
+            filePaths: DiffTreeFileInfo[],
+            deletedFiles: DiffTreeFileInfo[],
+            messageId: string
+        ) => {
             const updateWith: Partial<ChatItem> = {
                 type: ChatItemType.ANSWER,
                 fileList: {
@@ -359,7 +373,28 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, codeT
         },
         onStartNewTransform(tabID: string) {
             mynahUI.updateStore(tabID, { chatItems: [] })
-            mynahUI.updateStore(tabID, tabDataGenerator.getTabData("codetransform", true))
+            mynahUI.updateStore(tabID, tabDataGenerator.getTabData('codetransform', true))
+        },
+        onOpenSettingsMessage(tabId: string) {
+            mynahUI.addChatItem(tabId, {
+                type: ChatItemType.ANSWER,
+                body: `You need to enable local workspace index in Amazon Q settings.`,
+                buttons: [
+                    {
+                        id: 'open-settings',
+                        text: 'Open settings',
+                        icon: MynahIcons.EXTERNAL,
+                        keepCardAfterClick: false,
+                        status: 'info',
+                    },
+                ],
+            })
+            tabsStorage.updateTabStatus(tabId, 'free')
+            mynahUI.updateStore(tabId, {
+                loadingChat: false,
+                promptInputDisabledState: tabsStorage.isTabDead(tabId),
+            })
+            return
         },
     })
 

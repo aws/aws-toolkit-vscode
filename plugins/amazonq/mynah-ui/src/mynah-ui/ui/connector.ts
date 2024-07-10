@@ -11,9 +11,9 @@ import { ExtensionMessage } from './commands'
 import { TabType, TabsStorage } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
 import { AuthFollowUpType } from './followUps/generator'
-import { CodeTransformChatConnector } from "./apps/codeTransformChatConnector";
+import { CodeTransformChatConnector } from './apps/codeTransformChatConnector'
 import { isFormButtonCodeTransform } from './forms/constants'
-import {DiffTreeFileInfo} from "./diffTree/types";
+import { DiffTreeFileInfo } from './diffTree/types'
 
 export interface CodeReference {
     licenseName?: string
@@ -35,22 +35,37 @@ export interface ConnectorProps {
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
     onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
     onCodeTransformChatDisabled: (tabID: string) => void
-    onCodeTransformMessageReceived: (tabID: string, message: ChatItem, isLoading: boolean, clearPreviousItemButtons?: boolean) => void
+    onCodeTransformMessageReceived: (
+        tabID: string,
+        message: ChatItem,
+        isLoading: boolean,
+        clearPreviousItemButtons?: boolean
+    ) => void
     onCodeTransformMessageUpdate: (tabID: string, messageId: string, chatItem: Partial<ChatItem>) => void
     onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => void
     onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string | undefined) => void
     onCWCContextCommandMessage: (message: ChatItem, command?: string) => string | undefined
     onCWCOnboardingPageInteractionMessage: (message: ChatItem) => string | undefined
+    onOpenSettingsMessage: (tabID: string) => void
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
-    onFileComponentUpdate: (tabID: string, filePaths: DiffTreeFileInfo[], deletedFiles: DiffTreeFileInfo[], messageId: string) => void
+    onFileComponentUpdate: (
+        tabID: string,
+        filePaths: DiffTreeFileInfo[],
+        deletedFiles: DiffTreeFileInfo[],
+        messageId: string
+    ) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
-    onUpdateAuthentication: (featureDevEnabled: boolean, codeTransformEnabled: boolean, authenticatingTabIDs: string[]) => void
+    onUpdateAuthentication: (
+        featureDevEnabled: boolean,
+        codeTransformEnabled: boolean,
+        authenticatingTabIDs: string[]
+    ) => void
     onNewTab: (tabType: TabType) => void
     onStartNewTransform: (tabID: string) => void
     onCodeTransformCommandMessageReceived: (message: ChatItem, command?: string) => void
-    onNotification: (props: {content: string; title?: string; type: NotificationType}) => void
+    onNotification: (props: { content: string; title?: string; type: NotificationType }) => void
     onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string) => void
     tabsStorage: TabsStorage
 }
@@ -153,7 +168,6 @@ export class Connector {
     }
 
     handleMessageReceive = async (message: MessageEvent): Promise<void> => {
-
         if (message.data === undefined) {
             return
         }
@@ -220,7 +234,16 @@ export class Connector {
     ): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
-                this.cwChatConnector.onCodeInsertToCursorPosition(tabID, messageId, code, type, codeReference, eventId, codeBlockIndex, totalCodeBlocks)
+                this.cwChatConnector.onCodeInsertToCursorPosition(
+                    tabID,
+                    messageId,
+                    code,
+                    type,
+                    codeReference,
+                    eventId,
+                    codeBlockIndex,
+                    totalCodeBlocks
+                )
                 break
             case 'featuredev':
                 this.featureDevChatConnector.onCodeInsertToCursorPosition(tabID, code, type, codeReference)
@@ -240,7 +263,16 @@ export class Connector {
     ): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
-                this.cwChatConnector.onCopyCodeToClipboard(tabID, messageId, code, type, codeReference, eventId, codeBlockIndex, totalCodeBlocks)
+                this.cwChatConnector.onCopyCodeToClipboard(
+                    tabID,
+                    messageId,
+                    code,
+                    type,
+                    codeReference,
+                    eventId,
+                    codeBlockIndex,
+                    totalCodeBlocks
+                )
                 break
             case 'featuredev':
                 this.featureDevChatConnector.onCopyCodeToClipboard(tabID, code, type, codeReference)
@@ -396,6 +428,16 @@ export class Connector {
         if (isFormButtonCodeTransform(action.id)) {
             this.codeTransformChatConnector.onFormButtonClick(tabId, action)
         }
+        switch (this.tabsStorage.getTab(tabId)?.type) {
+            case 'cwc':
+                if (action.id === `open-settings`) {
+                    this.sendMessageToExtension({
+                        command: 'open-settings',
+                        type: '',
+                        tabType: 'cwc',
+                    })
+                }
+                break
+        }
     }
-
 }

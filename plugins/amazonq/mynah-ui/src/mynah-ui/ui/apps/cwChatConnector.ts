@@ -21,6 +21,7 @@ export interface ConnectorProps {
     onCWCContextCommandMessage: (message: ChatItem, command?: string) => string | undefined
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
+    onOpenSettingsMessage: (tabID: string) => void
     tabsStorage: TabsStorage
 }
 
@@ -30,6 +31,7 @@ export class Connector {
     private readonly onWarning
     private readonly onChatAnswerReceived
     private readonly onCWCContextCommandMessage
+    private readonly onOpenSettingsMessage
     private readonly followUpGenerator: FollowUpGenerator
 
     constructor(props: ConnectorProps) {
@@ -38,6 +40,7 @@ export class Connector {
         this.onWarning = props.onWarning
         this.onError = props.onError
         this.onCWCContextCommandMessage = props.onCWCContextCommandMessage
+        this.onOpenSettingsMessage = props.onOpenSettingsMessage
         this.followUpGenerator = new FollowUpGenerator()
     }
 
@@ -324,6 +327,10 @@ export class Connector {
         return
     }
 
+    private processOpenSettingsMessage = async (messageData: any): Promise<void> => {
+        this.onOpenSettingsMessage(messageData.tabID)
+    }
+
     handleMessageReceive = async (messageData: any): Promise<void> => {
         if (messageData.type === 'errorMessage') {
             this.onError(messageData.tabID, messageData.message, messageData.title)
@@ -346,6 +353,11 @@ export class Connector {
 
         if (messageData.type === 'authNeededException') {
             await this.processAuthNeededException(messageData)
+            return
+        }
+
+        if (messageData.type === 'openSettingsMessage') {
+            await this.processOpenSettingsMessage(messageData)
             return
         }
     }

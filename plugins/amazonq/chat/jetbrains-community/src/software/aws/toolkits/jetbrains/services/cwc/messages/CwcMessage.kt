@@ -123,6 +123,10 @@ sealed interface IncomingCwcMessage : CwcMessage {
         @JsonProperty("tabID") val tabId: String,
         val authType: AuthFollowUpType,
     ) : IncomingCwcMessage
+
+    data class OpenSettings(
+        @JsonProperty("tabID") val tabId: String? = null,
+    ) : IncomingCwcMessage
 }
 
 enum class FocusType {
@@ -255,4 +259,11 @@ data class OnboardingPageInteractionMessage(
 ) : UiMessage(
     tabId = null,
     type = "editorContextCommandMessage",
+)
+
+data class OpenSettingsMessage(
+    @JsonProperty("tabID") override val tabId: String,
+) : UiMessage(
+    tabId = tabId,
+    type = "openSettingsMessage",
 )

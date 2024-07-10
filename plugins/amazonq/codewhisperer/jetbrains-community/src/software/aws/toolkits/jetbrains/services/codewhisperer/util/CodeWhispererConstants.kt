@@ -134,6 +134,8 @@ object CodeWhispererConstants {
     }
     object CrossFile {
         const val CHUNK_SIZE = 60
+        const val NUMBER_OF_LINE_IN_CHUNK = 10
+        const val NUMBER_OF_CHUNK_TO_FETCH = 3
     }
 
     object Utg {
