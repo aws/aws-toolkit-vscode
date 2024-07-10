@@ -265,9 +265,6 @@ export class FeatureDevController {
                     ],
                 })
                 break
-            case PromptRefusalException.name:
-                this.messenger.sendErrorMessage(errorMessage, message.tabID, 0, session?.conversationIdUnsafe, true)
-                break
 
             case FeatureDevServiceError.name:
             case UploadCodeError.name:
@@ -281,6 +278,7 @@ export class FeatureDevController {
                     session?.conversationIdUnsafe
                 )
                 break
+            case PromptRefusalException.name:
             case ZipFileError.name:
                 this.messenger.sendErrorMessage(errorMessage, message.tabID, 0, session?.conversationIdUnsafe, true)
                 break
