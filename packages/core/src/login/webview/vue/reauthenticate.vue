@@ -157,17 +157,6 @@ export default defineComponent({
     width: 100%;
 }
 
-#reauthenticate-container[data-app='AMAZONQ'] {
-    border-radius: 11px;
-    background: rgba(30, 30, 30, 0.8);
-    padding: 15px;
-    width: 70%;
-}
-
-.vscode-light .auth-container[data-app='AMAZONQ'] {
-    background: rgba(255, 255, 255, 1);
-}
-
 /* Immediate children */
 #reauthenticate-container > * {
     margin-bottom: 2rem;
