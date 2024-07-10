@@ -19,6 +19,7 @@ import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.utils.addBreakpoint
 import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
 import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWait
@@ -97,13 +98,17 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Lambda
         MockCredentialsManager.getInstance().reset()
     }
 
+    /* Building in a container ensures consistency with the AWS Lambda runtime, reducing errors
+     and providing isolated environments to avoid conflicts with local dependencies or configurations */
+
     @Test
     fun samIsExecuted() {
         val runConfiguration = createHandlerBasedRunConfiguration(
             project = projectRule.project,
             runtime = runtime.toSdkRuntime(),
             input = "\"Hello World\"",
-            credentialsProviderId = mockId
+            credentialsProviderId = mockId,
+            samOptions = SamOptions(buildInContainer = true)
         )
         assertThat(runConfiguration).isNotNull
 
@@ -120,7 +125,8 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Lambda
             runtime = runtime.toSdkRuntime(),
             input = projectRule.fixture.tempDirFixture.createFile("tmp", "\"Hello World\"").canonicalPath!!,
             inputIsFile = true,
-            credentialsProviderId = mockId
+            credentialsProviderId = mockId,
+            samOptions = SamOptions(buildInContainer = true)
         )
         assertThat(runConfiguration).isNotNull
 
@@ -152,7 +158,8 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Lambda
             templateFile = templateFile.containingFile.virtualFile.path,
             logicalId = "SomeFunction",
             input = "\"Hello World\"",
-            credentialsProviderId = mockId
+            credentialsProviderId = mockId,
+            samOptions = SamOptions(buildInContainer = true)
         )
 
         assertThat(runConfiguration).isNotNull
@@ -185,7 +192,8 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Lambda
             templateFile = templateFile.containingFile.virtualFile.path,
             logicalId = "SomeFunction",
             input = "\"Hello World\"",
-            credentialsProviderId = mockId
+            credentialsProviderId = mockId,
+            samOptions = SamOptions(buildInContainer = true)
         )
 
         assertThat(runConfiguration).isNotNull
@@ -204,7 +212,8 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Lambda
             project = projectRule.project,
             runtime = runtime.toSdkRuntime(),
             input = "\"Hello World\"",
-            credentialsProviderId = mockId
+            credentialsProviderId = mockId,
+            samOptions = SamOptions(buildInContainer = true)
         )
         assertThat(runConfiguration).isNotNull
 
