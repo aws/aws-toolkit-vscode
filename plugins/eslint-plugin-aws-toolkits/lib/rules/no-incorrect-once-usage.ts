@@ -122,7 +122,7 @@ export default ESLintUtils.RuleCreator.withoutDocs({
                         declaration.init.callee?.type === AST_NODE_TYPES.Identifier &&
                         declaration.init.callee.name === 'once'
                     ) {
-                        const scope = context.getScope()
+                        const scope = context.sourceCode.getScope(declaration) // TODO: should this be `getScope(node)`?
                         const variable = scope.variables.find(
                             v => v.name === (declaration.id as TSESTree.Identifier).name
                         ) // we already confirmed the type in the if statement... why is TS mad?
