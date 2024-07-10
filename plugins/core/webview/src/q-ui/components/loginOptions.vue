@@ -36,7 +36,7 @@ export default defineComponent({
         },
         login(type: LoginOption) {
             this.$emit('login', type)
-        },
+        }
     }
 })
 </script>

@@ -81,6 +81,7 @@ export default defineComponent({
             this.mutateStage('START')
         },
         login(type: LoginOption) {
+            window.ideApi.postMessage({command: 'sendTelemetry'})
             this.selectedLoginOption = type
             this.mutateStage('AUTHENTICATING')
             if (type instanceof IdC) {
@@ -102,7 +103,7 @@ export default defineComponent({
             } else if (type instanceof ExistConnection) {
                 window.ideApi.postMessage({ command: 'selectConnection', connectionId:  type.pluginConnectionId})
             }
-        },
+        }
     },
     mounted() {},
     beforeUpdate() {}
