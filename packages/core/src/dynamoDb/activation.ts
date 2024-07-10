@@ -32,7 +32,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         Commands.register(
             'aws.dynamoDb.sortTablesByCreatedTime',
             async (node: DynamoDbInstanceNode) => await sortTablesByCreatedTime(node)
-        )
+        ),
+
+        Commands.register('aws.dynamoDb.refreshDynamoDbExplorer', async (node: DynamoDbInstanceNode) => node.refresh())
 
         // Commands.register('aws.dynamoDb.viewDynamoDbTable', async (node: DynamoDbTableNode) => await scanTable(node))
     )

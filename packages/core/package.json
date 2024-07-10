@@ -1212,6 +1212,10 @@
                 {
                     "command": "aws.dynamoDb.sortTablesByCreatedTime",
                     "when": "false"
+                },
+                {
+                    "command": "aws.dynamoDb.refreshDynamoDbExplorer",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -2011,6 +2015,11 @@
                 {
                     "command": "aws.dynamoDb.sortTablesByCreatedTime",
                     "group": "0@1",
+                    "when": "view == aws.explorer && viewItem =~ /^awsDynamoDbRootNode$/"
+                },
+                {
+                    "command": "aws.dynamoDb.refreshDynamoDbExplorer",
+                    "group": "inline@1",
                     "when": "view == aws.explorer && viewItem =~ /^awsDynamoDbRootNode$/"
                 }
             ],
@@ -3573,6 +3582,18 @@
                 "title": "%AWS.command.dynamoDb.sortTablesByCreatedTime%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.dynamoDb.refreshDynamoDbExplorer",
+                "title": "%AWS.command.dynamoDb.refreshDynamoDbExplorer%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": "$(refresh)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
