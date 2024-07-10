@@ -155,8 +155,7 @@ data class CodeScanResponseContext(
     val codeScanJobId: String? = null,
     val codeScanTotalIssues: Int = 0,
     val codeScanIssuesWithFixes: Int = 0,
-    val reason: String? = null,
-    val reasonDesc: String? = null
+    val reason: String? = null
 )
 
 data class LatencyContext(
