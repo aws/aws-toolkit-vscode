@@ -126,27 +126,27 @@
                     "default": true,
                     "scope": "application"
                 },
-                "amazonQ.localWorkspaceIndex": {
+                "amazonQ.workspaceIndex": {
                     "type": "boolean",
-                    "markdownDescription": "%AWS.configuration.description.amazonq.localWorkspaceIndex%",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndex%",
                     "default": false,
                     "scope": "application"
                 },
-                "amazonQ.localWorkspaceIndexWorkerThreads": {
+                "amazonQ.workspaceIndexWorkerThreads": {
                     "type": "number",
-                    "markdownDescription": "%AWS.configuration.description.amazonq.localWorkspaceIndexWorkerThreads%",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexWorkerThreads%",
                     "default": 0,
                     "scope": "application"
                 },
-                "amazonQ.localWorkspaceIndexUseGPU": {
+                "amazonQ.workspaceIndexUseGPU": {
                     "type": "boolean",
-                    "markdownDescription": "%AWS.configuration.description.amazonq.localWorkspaceIndexUseGPU%",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexUseGPU%",
                     "default": false,
                     "scope": "application"
                 },
-                "amazonQ.localWorkspaceIndexMaxSize": {
+                "amazonQ.workspaceIndexMaxSize": {
                     "type": "number",
-                    "markdownDescription": "%AWS.configuration.description.amazonq.localWorkspaceIndexMaxSize%",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexMaxSize%",
                     "default": 250,
                     "scope": "application"
                 }
