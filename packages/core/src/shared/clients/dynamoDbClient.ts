@@ -13,18 +13,25 @@ export class DynamoDbClient {
         return await globals.sdkClientBuilder.createAwsService(DynamoDB, undefined, this.regionCode)
     }
 
-    public async *getTables(request: DynamoDB.Types.ListTablesInput = {}) {
+    public async getTables(request: DynamoDB.Types.ListTablesInput = {}) {
         const sdkClient = await this.createSdkClient()
-        const response = await this.invokeGetTables(sdkClient, request)
+        const response = await sdkClient.listTables(request).promise()
         if (response.TableNames) {
-            yield* response.TableNames
+            return response.TableNames
+        } else {
+            throw new Error('No tables found')
         }
     }
 
-    protected async invokeGetTables(
-        sdkClient: DynamoDB,
-        request: DynamoDB.Types.ListTablesInput
-    ): Promise<DynamoDB.Types.ListTablesOutput> {
-        return sdkClient.listTables(request).promise()
+    public async getTableInformation(
+        request: DynamoDB.Types.DescribeTableInput
+    ): Promise<DynamoDB.Types.DescribeTableOutput> {
+        const sdkClient = await this.createSdkClient()
+        return sdkClient.describeTable(request).promise()
+    }
+
+    public async scanTable(request: DynamoDB.Types.ScanInput) {
+        const sdkClient = await this.createSdkClient()
+        return sdkClient.scan(request).promise()
     }
 }

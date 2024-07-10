@@ -9,24 +9,28 @@ import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
 export class DynamoDbTableNode extends AWSTreeNodeBase implements AWSResourceNode {
-    public constructor(public override readonly regionCode: string, public dynamoDbtable: DynamoDB.Types.TableName) {
+    public constructor(
+        public override readonly regionCode: string,
+        public dynamoDbtable: DynamoDB.Types.TableDescription
+    ) {
         super('')
         this.update(dynamoDbtable)
     }
 
-    public update(dynamoDbtable: DynamoDB.Types.TableName): void {
+    public update(dynamoDbtable: DynamoDB.Types.TableDescription): void {
         this.dynamoDbtable = dynamoDbtable
-        this.tooltip = `${this.dynamoDbtable}`
+        this.tooltip = `${this.dynamoDbtable.TableName}`
         this.contextValue = 'awsDynamoDbTableNode'
         this.iconPath = getIcon('aws-dynamoDb-table')
-        this.label = this.dynamoDbtable || 'Failed to fetch table details'
+        const label = this.dynamoDbtable.TableName! + '        ' + this.dynamoDbtable.TableStatus
+        this.label = label || 'Failed to fetch table details'
     }
 
     public get name(): string {
-        return this.dynamoDbtable!
+        return this.dynamoDbtable.TableName!
     }
 
     public get arn(): string {
-        return this.dynamoDbtable!
+        return this.dynamoDbtable.TableArn!
     }
 }

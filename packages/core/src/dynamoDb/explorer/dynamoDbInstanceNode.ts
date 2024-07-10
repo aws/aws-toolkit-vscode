@@ -4,11 +4,12 @@
  */
 
 import * as vscode from 'vscode'
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { makeChildrenNodes } from '../../shared/treeview/utils'
+import { DynamoDB } from 'aws-sdk'
 import { DynamoDbTableNode } from './dynamoDbTableNode'
+import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
-import { toMap, updateInPlace, toArrayAsync } from '../../shared/utilities/collectionUtils'
+import { updateInPlace } from '../../shared/utilities/collectionUtils'
+import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
 export class DynamoDbInstanceNode extends AWSTreeNodeBase {
     protected readonly placeHolderMessage = '[No Tables Found]'
@@ -23,22 +24,34 @@ export class DynamoDbInstanceNode extends AWSTreeNodeBase {
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
-                await this.updateChildren()
+                await this.fetchTableInfo()
 
                 return [...this.dynamoDbTableNodes.values()]
             },
         })
     }
 
-    public async updateChildren(): Promise<void> {
-        const tables = toMap(await toArrayAsync(this.dynamoDbClient.getTables()), configuration => configuration)
-        const sortedTablesByName = new Map([...tables.entries()].sort((a, b) => a[0].localeCompare(b[0])))
+    public async fetchTableInfo(): Promise<void> {
+        const tableNames = await this.dynamoDbClient.getTables()
+        const tablesDescriptionMap = new Map<string, DynamoDB.Types.TableDescription>()
+
+        await Promise.all(
+            tableNames.map(async tableName => {
+                const tableDescription: DynamoDB.Types.DescribeTableOutput =
+                    await this.dynamoDbClient.getTableInformation({ TableName: tableName })
+                if (tableDescription.Table) {
+                    tablesDescriptionMap.set(tableName, tableDescription.Table)
+                }
+            })
+        )
+
+        const tablesMap = new Map([...tablesDescriptionMap.entries()].sort((a, b) => a[0].localeCompare(b[0])))
 
         updateInPlace(
             this.dynamoDbTableNodes,
-            sortedTablesByName.keys(),
+            tablesMap.keys(),
             key => this.dynamoDbTableNodes.get(key)!,
-            key => new DynamoDbTableNode(this.regionCode, key)
+            key => new DynamoDbTableNode(this.regionCode, tablesMap.get(key)!)
         )
     }
 }

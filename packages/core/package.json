@@ -1189,6 +1189,10 @@
                 {
                     "command": "aws.newThreatComposerFile",
                     "when": "false"
+                },
+                {
+                    "command": "aws.dynamoDb.sortTablesByCreatedTime",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -1981,13 +1985,13 @@
                     "group": "0@2"
                 },
                 {
-                    "command": "aws.dynamoDb.sortByName",
-                    "group": "0@1",
-                    "when": "view == aws.explorer && viewItem == awsDynamoDbRootNode"
-                },
-                {
                     "command": "aws.dynamoDb.searchDynamoDbTables",
                     "group": "inline@1",
+                    "when": "view == aws.explorer && viewItem =~ /^awsDynamoDbRootNode$/"
+                },
+                {
+                    "command": "aws.dynamoDb.sortTablesByCreatedTime",
+                    "group": "0@1",
                     "when": "view == aws.explorer && viewItem =~ /^awsDynamoDbRootNode$/"
                 }
             ],
@@ -3546,8 +3550,8 @@
                 }
             },
             {
-                "command": "aws.dynamoDb.sortByName",
-                "title": "%AWS.command.dynamoDb.sortByName%",
+                "command": "aws.dynamoDb.sortTablesByCreatedTime",
+                "title": "%AWS.command.dynamoDb.sortTablesByCreatedTime%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {

@@ -5,7 +5,8 @@
 
 import * as vscode from 'vscode'
 import { Commands } from '../shared/vscode/commands2'
-import { sortTablesByName } from './commands/sortDynamoDbTables'
+// import { scanTable } from './commands/viewDynamoDbTable'
+import { sortTablesByCreatedTime } from './commands/sortDynamoDbTables'
 import { DynamoDbTableNode } from './explorer/dynamoDbTableNode'
 import { searchDynamoDbTables } from './commands/searchDynamoDbTables'
 import { DynamoDbInstanceNode } from './explorer/dynamoDbInstanceNode'
@@ -28,6 +29,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             }
         ),
 
-        Commands.register('aws.dynamoDb.sortByName', async (node: DynamoDbInstanceNode) => await sortTablesByName(node))
+        Commands.register(
+            'aws.dynamoDb.sortTablesByCreatedTime',
+            async (node: DynamoDbInstanceNode) => await sortTablesByCreatedTime(node)
+        )
+
+        // Commands.register('aws.dynamoDb.viewDynamoDbTable', async (node: DynamoDbTableNode) => await scanTable(node))
     )
 }
