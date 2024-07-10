@@ -28,16 +28,6 @@ export async function deleteInstance(node: DBInstanceNode) {
     const client = parent.client
     const instanceName = node.instance.DBInstanceIdentifier!
 
-    if (parent?.cluster.DeletionProtection) {
-        void vscode.window.showErrorMessage(
-            localize(
-                'AWS.docdb.deleteInstance.protected',
-                'Instances cannot be deleted while deletion protection is enabled'
-            )
-        )
-        return
-    }
-
     if (node.instance.DBInstanceStatus !== 'available') {
         void vscode.window.showErrorMessage(
             localize('AWS.docdb.deleteInstance.instanceStopped', 'Instance must be running')
