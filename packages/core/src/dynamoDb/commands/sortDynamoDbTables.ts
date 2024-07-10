@@ -4,13 +4,7 @@
  */
 
 import { DynamoDbInstanceNode } from '../explorer/dynamoDbInstanceNode'
-import { compareTreeItems } from '../../shared/treeview/utils'
 
-export async function sortTablesByName(node: DynamoDbInstanceNode) {
+export async function sortTablesByCreatedTime(node: DynamoDbInstanceNode) {
     console.log('I am trying to sort the tables by name.')
-
-    const x = await node.getChildren()
-    x.sort((a, b) => compareTreeItems(a, b))
-
-    console.log(x)
 }
