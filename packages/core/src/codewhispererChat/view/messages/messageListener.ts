@@ -2,13 +2,13 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import { MessageListener } from '../../../amazonq/messages/messageListener'
 import { ExtensionMessage } from '../../../amazonq/webview/ui/commands'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { ChatControllerMessagePublishers } from '../../controllers/chat/controller'
 import { ReferenceLogController } from './referenceLogController'
 import { getLogger } from '../../../shared/logger'
+import { openSettingsId } from '../../../shared/settings'
 
 export interface UIMessageListenerProps {
     readonly chatControllerMessagePublishers: ChatControllerMessagePublishers
@@ -95,7 +95,13 @@ export class UIMessageListener {
             case 'footer-info-link-click':
                 this.processFooterInfoLinkClick(msg)
                 break
+            case 'open-settings':
+                this.processOpenSettings(msg)
         }
+    }
+
+    private processOpenSettings(msg: any) {
+        void openSettingsId(`amazonQ.workspaceIndex`)
     }
 
     private processAuthFollowUpWasClicked(msg: any) {
