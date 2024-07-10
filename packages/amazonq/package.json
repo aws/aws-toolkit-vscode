@@ -125,6 +125,30 @@
                     "markdownDescription": "%AWS.configuration.description.amazonq.shareContentWithAWS%",
                     "default": true,
                     "scope": "application"
+                },
+                "amazonQ.workspaceIndex": {
+                    "type": "boolean",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndex%",
+                    "default": false,
+                    "scope": "application"
+                },
+                "amazonQ.workspaceIndexWorkerThreads": {
+                    "type": "number",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexWorkerThreads%",
+                    "default": 0,
+                    "scope": "application"
+                },
+                "amazonQ.workspaceIndexUseGPU": {
+                    "type": "boolean",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexUseGPU%",
+                    "default": false,
+                    "scope": "application"
+                },
+                "amazonQ.workspaceIndexMaxSize": {
+                    "type": "number",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexMaxSize%",
+                    "default": 250,
+                    "scope": "application"
                 }
             }
         },
