@@ -14,11 +14,9 @@ import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { featureDevScheme } from '../constants'
 import {
-    EmptyPatchException,
-    GuardrailsException,
+    FeatureDevServiceError,
     IllegalStateTransition,
     PromptRefusalException,
-    ThrottlingException,
     UserMessageNotFoundError,
 } from '../errors'
 import {
@@ -49,10 +47,7 @@ export class ConversationNotStartedState implements Omit<SessionState, 'uploadId
     public tokenSource: vscode.CancellationTokenSource
     public readonly phase = DevPhase.INIT
 
-    constructor(
-        public approach: string,
-        public tabID: string
-    ) {
+    constructor(public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.approach = ''
     }
@@ -65,11 +60,7 @@ export class ConversationNotStartedState implements Omit<SessionState, 'uploadId
 export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
     public readonly phase = DevPhase.APPROACH
-    constructor(
-        private config: Omit<SessionStateConfig, 'uploadId'>,
-        public approach: string,
-        public tabID: string
-    ) {
+    constructor(private config: Omit<SessionStateConfig, 'uploadId'>, public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
 
@@ -239,10 +230,7 @@ abstract class CodeGenBase {
     public readonly conversationId: string
     public readonly uploadId: string
 
-    constructor(
-        protected config: SessionStateConfig,
-        public tabID: string
-    ) {
+    constructor(protected config: SessionStateConfig, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.conversationId = config.conversationId
         this.uploadId = config.uploadId
@@ -293,16 +281,25 @@ abstract class CodeGenBase {
                 case CodeGenerationStatus.FAILED: {
                     switch (true) {
                         case codegenResult.codeGenerationStatusDetail?.includes('Guardrails'): {
-                            throw new GuardrailsException()
+                            throw new FeatureDevServiceError(
+                                "I'm sorry, I'm having trouble generating your code. Please try again.",
+                                'GuardrailsException'
+                            )
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('PromptRefusal'): {
                             throw new PromptRefusalException()
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('EmptyPatch'): {
-                            throw new EmptyPatchException()
+                            throw new FeatureDevServiceError(
+                                "I'm sorry, I'm having trouble generating your code. Please try again.",
+                                'EmptyPatchException'
+                            )
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('Throttling'): {
-                            throw new ThrottlingException()
+                            throw new FeatureDevServiceError(
+                                "I'm sorry, I'm experiencing high demand at the moment and can't generate your code. This attempt won't count toward usage limits. Please try again.",
+                                'ThrottlingException'
+                            )
                         }
                         default: {
                             throw new ToolkitError('Code generation failed', { code: 'CodeGenFailed' })
@@ -404,11 +401,7 @@ export class MockCodeGenState implements SessionState {
     public readonly conversationId: string
     public readonly uploadId: string
 
-    constructor(
-        private config: SessionStateConfig,
-        public approach: string,
-        public tabID: string
-    ) {
+    constructor(private config: SessionStateConfig, public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.filePaths = []
         this.deletedFiles = []

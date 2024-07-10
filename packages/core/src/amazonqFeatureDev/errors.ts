@@ -57,14 +57,6 @@ export class SelectedFolderNotInWorkspaceFolderError extends ToolkitError {
     }
 }
 
-export class GuardrailsException extends ToolkitError {
-    constructor() {
-        super("I'm sorry, I'm having trouble generating your code. Please try again. ", {
-            code: 'GuardrailsException',
-        })
-    }
-}
-
 export class PromptRefusalException extends ToolkitError {
     constructor() {
         super(
@@ -76,22 +68,9 @@ export class PromptRefusalException extends ToolkitError {
     }
 }
 
-export class EmptyPatchException extends ToolkitError {
-    constructor() {
-        super("I'm sorry, I'm having trouble generating your code. Please try again.", {
-            code: 'EmptyPatchException',
-        })
-    }
-}
-
-export class ThrottlingException extends ToolkitError {
-    constructor() {
-        super(
-            "I'm sorry, I'm experiencing high demand at the moment and can't generate your code. This attempt won't count toward usage limits. Please try again.",
-            {
-                code: 'ThrottlingException',
-            }
-        )
+export class FeatureDevServiceError extends ToolkitError {
+    constructor(message: string, code: string) {
+        super(message, { code })
     }
 }
 

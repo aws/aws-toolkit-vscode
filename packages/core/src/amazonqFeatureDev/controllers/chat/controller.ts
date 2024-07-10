@@ -14,15 +14,13 @@ import { featureDevScheme } from '../../constants'
 import {
     CodeIterationLimitError,
     ContentLengthError,
-    EmptyPatchException,
-    GuardrailsException,
+    FeatureDevServiceError,
     MonthlyConversationLimitError,
     PlanIterationLimitError,
     PrepareRepoFailedError,
     PromptRefusalException,
     SelectedFolderNotInWorkspaceFolderError,
     TabIdNotFoundError,
-    ThrottlingException,
     UploadCodeError,
     UserMessageNotFoundError,
     WorkspaceFolderNotFoundError,
@@ -271,9 +269,7 @@ export class FeatureDevController {
                 this.messenger.sendErrorMessage(errorMessage, message.tabID, 0, session?.conversationIdUnsafe, true)
                 break
 
-            case GuardrailsException.name:
-            case EmptyPatchException.name:
-            case ThrottlingException.name:
+            case FeatureDevServiceError.name:
             case UploadCodeError.name:
             case UserMessageNotFoundError.name:
             case TabIdNotFoundError.name:
