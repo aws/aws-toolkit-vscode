@@ -768,7 +768,11 @@ export class PermissionsError extends ToolkitError {
 }
 
 export function isNetworkError(err?: unknown): err is Error & { code: string } {
-    if (isVSCodeProxyError(err)) {
+    if (!(err instanceof Error)) {
+        return false
+    }
+
+    if (isVSCodeProxyError(err) || isSocketTimeoutError(err)) {
         return true
     }
 
@@ -798,10 +802,18 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
  *
  * Setting ID: http.proxy
  */
-function isVSCodeProxyError(err?: unknown): boolean {
-    if (!(err instanceof Error)) {
-        return false
-    }
-
+function isVSCodeProxyError(err: Error): boolean {
     return err.name === 'Error' && err.message.startsWith('Failed to establish a socket connection to proxies')
+}
+
+/**
+ * When making SSO OIDC calls, we were seeing errors in telemetry and narrowing it down brings us to:
+ * https://github.com/smithy-lang/smithy-typescript/blob/6aac850af4b5b07b3941854d21e3b0158aefcacb/packages/node-http-handler/src/set-socket-timeout.ts#L7
+ * This looks to be thrown during http requests, so we'll consider it a network error.
+ *
+ * The scenario where we are actually getting the error though might actually be a bug:
+ * https://github.com/aws/aws-sdk-js-v3/issues/6271
+ */
+function isSocketTimeoutError(err: Error): boolean {
+    return err.name === 'TimeoutError' && err.message.includes('Connection timed out after')
 }
