@@ -226,6 +226,6 @@ interface ToolkitGlobals {
     }
     /** If this extension is running in Web mode (the browser), compared to running on the desktop (node) */
     isWeb: boolean
-    /** If this extensions is hosted in a parent browser context that supports postMessage between frames */
+    /** If this extension is hosted in a parent browser context that supports postMessage between frames */
     isEmbedded: boolean
 }
