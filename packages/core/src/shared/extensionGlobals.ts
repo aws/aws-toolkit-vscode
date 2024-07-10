@@ -146,7 +146,7 @@ export function initialize(context: ExtensionContext, isWeb: boolean = false): T
         context,
         clock: copyClock(),
         didReload: checkDidReload(context),
-        globalState: GlobalState.instance,
+        globalState: new GlobalState(context),
         manifestPaths: {} as ToolkitGlobals['manifestPaths'],
         visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],
         isWeb,
@@ -170,6 +170,7 @@ export { globals as default }
  */
 interface ToolkitGlobals {
     readonly context: ExtensionContext
+    /** Global, shared, mutable, persisted state (survives IDE restart), namespaced to the extension (i.e. not shared with other vscode extensions). */
     readonly globalState: GlobalState
     /** Decides the prefix for package.json extension parameters, e.g. commands, 'setContext' values, etc. */
     contextPrefix: string

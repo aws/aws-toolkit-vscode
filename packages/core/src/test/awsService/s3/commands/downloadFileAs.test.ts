@@ -52,7 +52,7 @@ describe('downloadFileAsCommand', function () {
             dialog.accept()
         })
         const outputChannel = new MockOutputChannel()
-        await globals.context.globalState.update('aws.downloadPath', temp)
+        await globals.globalState.update('aws.downloadPath', temp)
 
         s3.downloadFileStream = sinon.stub().resolves(bufferToStream(Buffer.alloc(16)))
 

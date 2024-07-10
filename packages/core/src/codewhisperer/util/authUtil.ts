@@ -33,7 +33,7 @@ import { onceChanged, once } from '../../shared/utilities/functionUtils'
 import { indent } from '../../shared/utilities/textUtilities'
 import { showReauthenticateMessage } from '../../shared/utilities/messages'
 import { showAmazonQWalkthroughOnce } from '../../amazonq/onboardingPage/walkthrough'
-import { setContext } from '../../shared'
+import { setContext } from '../../shared/vscode/setContext'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesCodeWhispererCore]

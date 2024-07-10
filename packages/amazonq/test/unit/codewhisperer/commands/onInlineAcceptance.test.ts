@@ -15,7 +15,6 @@ import {
     AuthUtil,
     session,
     CodeWhispererUserGroupSettings,
-    userGroupKey,
     UserGroup,
 } from 'aws-core-vscode/codewhisperer'
 import { globals } from 'aws-core-vscode/shared'
@@ -58,7 +57,7 @@ describe('onInlineAcceptance', function () {
         })
 
         it('Should report telemetry that records this user decision event', async function () {
-            await globals.context.globalState.update(userGroupKey, {
+            await globals.context.globalState.update('CODEWHISPERER_USER_GROUP', {
                 group: UserGroup.Classifier,
                 version: extensionVersion,
             })

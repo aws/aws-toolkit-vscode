@@ -18,7 +18,6 @@ import globals from '../shared/extensionGlobals'
 import { isDevenvVscode } from './utils'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { SsoConnection } from '../auth/connection'
-import { GlobalState } from '../shared/globalState'
 
 const localize = nls.loadMessageBundle()
 
@@ -41,8 +40,7 @@ export function watchRestartingDevEnvs(ctx: ExtContext, authProvider: CodeCataly
 
 function handleRestart(conn: SsoConnection, ctx: ExtContext, envId: string | undefined) {
     if (envId !== undefined) {
-        const pendingReconnects =
-            GlobalState.instance.get<Record<string, DevEnvMemento>>('CODECATALYST_RECONNECT') ?? {}
+        const pendingReconnects = globals.globalState.get<Record<string, DevEnvMemento>>('CODECATALYST_RECONNECT') ?? {}
         if (envId in pendingReconnects) {
             const devenv = pendingReconnects[envId]
             const devenvName = getDevEnvName(devenv.alias, envId)
@@ -51,7 +49,7 @@ function handleRestart(conn: SsoConnection, ctx: ExtContext, envId: string | und
                 localize('AWS.codecatalyst.reconnect.success', 'Reconnected to Dev Environment: {0}', devenvName)
             )
             delete pendingReconnects[envId]
-            GlobalState.instance.tryUpdate('CODECATALYST_RECONNECT', pendingReconnects)
+            globals.globalState.tryUpdate('CODECATALYST_RECONNECT', pendingReconnects)
         }
     } else {
         getLogger().info('codecatalyst: attempting to poll dev environments')

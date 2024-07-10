@@ -28,7 +28,6 @@ import { CodeCatalystRootNode } from '../codecatalyst/explorer'
 import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 import { S3FolderNode } from '../awsService/s3/explorer/s3FolderNode'
 import { AmazonQNode, refreshAmazonQ, refreshAmazonQRootNode } from '../amazonq/explorer/amazonQTreeNode'
-import { GlobalState } from '../shared/globalState'
 import { activateViewsShared, registerToolView } from './activationShared'
 import { isExtensionInstalled } from '../shared/utilities'
 import { CommonAuthViewProvider } from '../login/webview'
@@ -53,7 +52,7 @@ export async function activate(args: {
     })
     view.onDidExpandElement(element => {
         if (element.element instanceof S3FolderNode) {
-            GlobalState.instance.tryUpdate('aws.lastTouchedS3Folder', {
+            globals.globalState.tryUpdate('aws.lastTouchedS3Folder', {
                 bucket: element.element.bucket,
                 folder: element.element.folder,
             })

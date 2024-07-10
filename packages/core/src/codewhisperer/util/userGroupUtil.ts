@@ -6,7 +6,6 @@
 import { UserGroup } from '../models/constants'
 import globals from '../../shared/extensionGlobals'
 import { extensionVersion } from '../../shared/vscode/env'
-import { GlobalState } from '../../shared/globalState'
 
 export class CodeWhispererUserGroupSettings {
     private _userGroup: UserGroup | undefined
@@ -50,7 +49,7 @@ export class CodeWhispererUserGroupSettings {
         this._version = extensionVersion
         this._userGroup = this.guessUserGroup()
 
-        GlobalState.instance.tryUpdate('CODEWHISPERER_USER_GROUP', {
+        globals.globalState.tryUpdate('CODEWHISPERER_USER_GROUP', {
             group: this._userGroup,
             version: this._version,
         })
