@@ -1210,7 +1210,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.dynamoDb.sortTablesByCreatedTime",
+                    "command": "aws.dynamoDb.copyArn",
                     "when": "false"
                 },
                 {
@@ -2013,9 +2013,9 @@
                     "when": "view == aws.explorer && viewItem =~ /^awsDynamoDbRootNode$/"
                 },
                 {
-                    "command": "aws.dynamoDb.sortTablesByCreatedTime",
+                    "command": "aws.dynamoDb.copyArn",
                     "group": "0@1",
-                    "when": "view == aws.explorer && viewItem =~ /^awsDynamoDbRootNode$/"
+                    "when": "view == aws.explorer && viewItem =~ /^awsDynamoDbTableNode/"
                 },
                 {
                     "command": "aws.dynamoDb.refreshDynamoDbExplorer",
@@ -3578,8 +3578,8 @@
                 }
             },
             {
-                "command": "aws.dynamoDb.sortTablesByCreatedTime",
-                "title": "%AWS.command.dynamoDb.sortTablesByCreatedTime%",
+                "command": "aws.dynamoDb.copyArn",
+                "title": "%AWS.command.dynamoDb.copyArn",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {

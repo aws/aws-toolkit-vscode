@@ -5,11 +5,12 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+import DynamoDB from 'aws-sdk/clients/dynamodb'
 import { Wizard } from '../../shared/wizards/wizard'
-import DynamoDB, { TableNameList } from 'aws-sdk/clients/dynamodb'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
+import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 
@@ -28,8 +29,7 @@ export async function searchDynamoDbTables(source: string, dbData?: { regionName
             throw new CancellationError('user')
         }
         const tableOutput = await getItemsFromTable(response.submenuResponse.region, response.submenuResponse.data)
-        const uri = vscode.Uri.parse('us-east-1:LogGroup1')
-        await prepareDocument(uri, tableOutput)
+        console.log(tableOutput)
     })
 }
 
@@ -61,7 +61,7 @@ export function createRegionSubmenu() {
 
 async function getTablesFromRegion(regionCode: string): Promise<DataQuickPickItem<string>[]> {
     const client = new DynamoDbClient(regionCode)
-    const dynamoDbTables = await dynamoDbTablesToArray(await client.getTables())
+    const dynamoDbTables = await dynamoDbTablesToArray(client.getTables())
     const options = dynamoDbTables.map<DataQuickPickItem<string>>(tableName => ({
         label: tableName,
         data: tableName,
@@ -69,11 +69,12 @@ async function getTablesFromRegion(regionCode: string): Promise<DataQuickPickIte
     return options
 }
 
-async function dynamoDbTablesToArray(dynamoDbTables: TableNameList): Promise<string[]> {
+async function dynamoDbTablesToArray(dynamoDbTables: AsyncIterableIterator<string>): Promise<string[]> {
     const tablesArray = []
-    dynamoDbTables.sort((a, b) => a.localeCompare(b))
+    const tables = await toArrayAsync(dynamoDbTables)
+    tables.sort((a, b) => a.localeCompare(b))
 
-    for await (const tableObject of dynamoDbTables) {
+    for await (const tableObject of tables) {
         tableObject && tablesArray.push(tableObject)
     }
     return tablesArray
