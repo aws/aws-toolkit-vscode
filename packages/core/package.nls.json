@@ -263,5 +263,6 @@
     "AWS.amazonq.toggleCodeSuggestion": "Toggle Auto-Suggestions",
     "AWS.amazonq.toggleCodeScan": "Toggle Auto-Scans",
     "AWS.command.dynamoDb.searchDynamoDbTables": "Search Tables",
-    "AWS.command.dynamoDb.sortTablesByCreatedTime": "Sort tables by created time"
+    "AWS.command.dynamoDb.sortTablesByCreatedTime": "Sort tables by created time",
+    "AWS.command.dynamoDb.refreshDynamoDbExplorer": "Refresh DynamoDb Explorer"
 }
