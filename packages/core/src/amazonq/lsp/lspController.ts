@@ -10,6 +10,7 @@ import * as crypto from 'crypto'
 import { getLogger } from '../../shared/logger/logger'
 import { CurrentWsFolders, collectFilesForIndex } from '../../shared/utilities/workspaceUtils'
 import fetch from 'node-fetch'
+import request from '../../common/request'
 import { LspClient } from './lspClient'
 import AdmZip from 'adm-zip'
 import { RelevantTextDocument } from '@amzn/codewhisperer-streaming'
@@ -114,16 +115,20 @@ export class LspController {
         })
     }
 
-    async downloadManifest() {
-        const res = await fetch(manifestUrl, {
-            headers: {
-                'User-Agent': getUserAgent({ includePlatform: true, includeClientId: true }),
-            },
-        })
-        if (!res.ok) {
-            throw new ToolkitError(`Failed to fetch manifest. Error: ${JSON.stringify(res)}`)
+    async fetchManifest() {
+        try {
+            const resp = await request.fetch('GET', manifestUrl, {
+                headers: {
+                    'User-Agent': getUserAgent({ includePlatform: true, includeClientId: true }),
+                },
+            }).response
+            if (!resp.ok) {
+                throw new ToolkitError(`Failed to fetch manifest. Error: ${resp.statusText}`)
+            }
+            return resp.json()
+        } catch (e: any) {
+            throw new ToolkitError(`Failed to fetch manifest. Error: ${JSON.stringify(e)}`)
         }
-        return res.json()
     }
 
     async getFileSha384(filePath: string): Promise<string> {
@@ -223,36 +228,51 @@ export class LspController {
                 getLogger().info(`LspController: LSP already installed`)
                 return true
             }
-            const manifest: Manifest = (await this.downloadManifest()) as Manifest
-            const qserver = this.getQserverFromManifest(manifest)
-            const noderuntime = this.getNodeRuntimeFromManifest(manifest)
-            if (!qserver || !noderuntime) {
+            // clean up previous downloaded LSP
+            const qserverPath = context.asAbsolutePath(path.join('resources', 'qserver'))
+            if (fs.existsSync(qserverPath)) {
+                await tryRemoveFolder(qserverPath)
+            }
+            // clean up previous downloaded node runtime
+            const nodeRuntimePath = context.asAbsolutePath(path.join('resources', nodeBinName))
+            if (fs.existsSync(nodeRuntimePath)) {
+                fs.rmSync(nodeRuntimePath)
+            }
+            // fetch download url for qserver and node runtime
+            const manifest: Manifest = (await this.fetchManifest()) as Manifest
+            const qserverContent = this.getQserverFromManifest(manifest)
+            const nodeRuntimeContent = this.getNodeRuntimeFromManifest(manifest)
+            if (!qserverContent || !nodeRuntimeContent) {
                 getLogger().info(`LspController: Did not find LSP URL for ${process.platform} ${process.arch}`)
                 return false
             }
 
             tempFolder = await makeTemporaryToolkitFolder()
-            const zipFilePath = path.join(tempFolder, 'qserver.zip')
-            const downloadOk = await this.downloadAndCheckHash(zipFilePath, qserver)
+
+            // download lsp to temp folder
+            const qserverZipTempPath = path.join(tempFolder, 'qserver.zip')
+            const downloadOk = await this.downloadAndCheckHash(qserverZipTempPath, qserverContent)
             if (!downloadOk) {
                 return false
             }
-            const zip = new AdmZip(zipFilePath)
-            zip.extractAllTo(context.asAbsolutePath(path.join('resources')))
-            fs.removeSync(zipFilePath)
+            const zip = new AdmZip(qserverZipTempPath)
+            zip.extractAllTo(tempFolder)
+            fs.moveSync(path.join(tempFolder, 'qserver'), qserverPath)
 
-            const noderuntimeFilePath = path.join(tempFolder, nodeBinName)
-            const downloadNodeOk = await this.downloadAndCheckHash(noderuntimeFilePath, noderuntime)
+            // download node runtime to temp folder
+            const nodeRuntimeTempPath = path.join(tempFolder, nodeBinName)
+            const downloadNodeOk = await this.downloadAndCheckHash(nodeRuntimeTempPath, nodeRuntimeContent)
             if (!downloadNodeOk) {
                 return false
             }
-            fs.chmodSync(noderuntimeFilePath, 0o755)
-            fs.moveSync(noderuntimeFilePath, context.asAbsolutePath(path.join('resources', nodeBinName)))
+            fs.chmodSync(nodeRuntimeTempPath, 0o755)
+            fs.moveSync(nodeRuntimeTempPath, nodeRuntimePath)
             return true
         } catch (e) {
             getLogger().error(`LspController: Failed to setup LSP server ${e}`)
             return false
         } finally {
+            // clean up temp folder
             if (tempFolder) {
                 await tryRemoveFolder(tempFolder)
             }
