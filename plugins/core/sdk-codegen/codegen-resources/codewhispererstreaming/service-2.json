@@ -275,7 +275,8 @@
             "type":"structure",
             "members":{
                 "document":{"shape":"TextDocument"},
-                "cursorState":{"shape":"CursorState"}
+                "cursorState":{"shape":"CursorState"},
+                "relevantDocuments": {"shape": "RelevantDocumentList"}
             }
         },
         "ExportContext":{
@@ -479,6 +480,24 @@
             "member":{"shape":"Reference"},
             "max":10,
             "min":0
+        },
+        "RelevantTextDocument": {
+            "type": "structure",
+            "required": [
+                "relativeFilePath"
+            ],
+            "members": {
+                "relativeFilePath": {"shape": "SensitiveString"},
+                "programmingLanguage": {"shape": "ProgrammingLanguage"},
+                "text": {"shape": "SensitiveString"},
+                "documentSymbols": {"shape": "DocumentSymbols"}
+            }
+        },
+        "RelevantDocumentList": {
+            "type": "list",
+            "member": {"shape": "RelevantTextDocument"},
+            "max": 5,
+            "min": 0
         },
         "ResourceArn":{
             "type":"string",

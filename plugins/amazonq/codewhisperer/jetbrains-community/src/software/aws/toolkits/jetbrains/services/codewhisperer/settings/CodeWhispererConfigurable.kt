@@ -7,6 +7,8 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.options.SearchableConfigurable
 import com.intellij.openapi.project.Project
+import com.intellij.ui.dsl.builder.AlignX
+import com.intellij.ui.dsl.builder.bindIntText
 import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.panel
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
@@ -84,6 +86,72 @@ class CodeWhispererConfigurable(private val project: Project) :
                     enabled(invoke)
                     bindSelected(codeWhispererSettings::isImportAdderEnabled, codeWhispererSettings::toggleImportAdder)
                 }.comment(message("aws.settings.codewhisperer.automatic_import_adder.tooltip"))
+            }
+        }
+
+        group(message("aws.settings.codewhisperer.group.q_chat")) {
+            row {
+                checkBox(message("aws.settings.codewhisperer.project_context")).apply {
+                    connect.subscribe(
+                        ToolkitConnectionManagerListener.TOPIC,
+                        object : ToolkitConnectionManagerListener {
+                            override fun activeConnectionChanged(newConnection: ToolkitConnection?) {
+                                enabled(isCodeWhispererEnabled(project))
+                            }
+                        }
+                    )
+                    enabled(invoke)
+                    bindSelected(codeWhispererSettings::isProjectContextEnabled, codeWhispererSettings::toggleProjectContextEnabled)
+                }.comment(message("aws.settings.codewhisperer.project_context.tooltip"))
+            }
+
+            row(message("aws.settings.codewhisperer.project_context_index_thread")) {
+                intTextField(
+                    range = IntRange(0, 50)
+                ).bindIntText(codeWhispererSettings::getProjectContextIndexThreadCount, codeWhispererSettings::setProjectContextIndexThreadCount)
+                    .align(AlignX.FILL).apply {
+                        connect.subscribe(
+                            ToolkitConnectionManagerListener.TOPIC,
+                            object : ToolkitConnectionManagerListener {
+                                override fun activeConnectionChanged(newConnection: ToolkitConnection?) {
+                                    enabled(isCodeWhispererEnabled(project))
+                                }
+                            }
+                        )
+                        enabled(invoke)
+                    }.comment(message("aws.settings.codewhisperer.project_context_index_thread.tooltip"))
+            }
+
+            row(message("aws.settings.codewhisperer.project_context_index_max_size")) {
+                intTextField(
+                    range = IntRange(1, 250)
+                ).bindIntText(codeWhispererSettings::getProjectContextIndexMaxSize, codeWhispererSettings::setProjectContextIndexMaxSize)
+                    .align(AlignX.FILL).apply {
+                        connect.subscribe(
+                            ToolkitConnectionManagerListener.TOPIC,
+                            object : ToolkitConnectionManagerListener {
+                                override fun activeConnectionChanged(newConnection: ToolkitConnection?) {
+                                    enabled(isCodeWhispererEnabled(project))
+                                }
+                            }
+                        )
+                        enabled(invoke)
+                    }.comment(message("aws.settings.codewhisperer.project_context_index_max_size.tooltip"))
+            }
+
+            row {
+                checkBox(message("aws.settings.codewhisperer.project_context_gpu")).apply {
+                    connect.subscribe(
+                        ToolkitConnectionManagerListener.TOPIC,
+                        object : ToolkitConnectionManagerListener {
+                            override fun activeConnectionChanged(newConnection: ToolkitConnection?) {
+                                enabled(isCodeWhispererEnabled(project))
+                            }
+                        }
+                    )
+                    enabled(invoke)
+                    bindSelected(codeWhispererSettings::isProjectContextGpu, codeWhispererSettings::toggleProjectContextGpu)
+                }.comment(message("aws.settings.codewhisperer.project_context_gpu.tooltip"))
             }
         }
 

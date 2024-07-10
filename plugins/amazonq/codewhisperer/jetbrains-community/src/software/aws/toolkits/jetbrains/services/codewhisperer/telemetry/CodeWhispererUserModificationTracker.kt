@@ -23,6 +23,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhisp
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererUnknownLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroupSettings
+import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getConnectionStartUrl
 import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.InsertedCodeModificationEntry
 import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.getStartUrl
@@ -205,7 +206,13 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
 
         CodeWhispererClientAdaptor.getInstance(
             project
-        ).sendChatUserModificationTelemetry(insertedCode.conversationId, insertedCode.messageId, lang, percentage)
+        ).sendChatUserModificationTelemetry(
+            insertedCode.conversationId,
+            insertedCode.messageId,
+            lang,
+            percentage,
+            CodeWhispererSettings.getInstance().isProjectContextEnabled()
+        )
     }
 
 // temp disable user modfication event for further discussion on metric calculation

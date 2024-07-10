@@ -25,6 +25,7 @@ interface InboundAppMessagesHandler {
     suspend fun processUIFocus(message: IncomingCwcMessage.UIFocus)
     suspend fun processAuthFollowUpClick(message: IncomingCwcMessage.AuthFollowUpWasClicked)
     suspend fun processOnboardingPageInteraction(message: OnboardingPageInteraction)
+    suspend fun processOpenSettings(message: IncomingCwcMessage.OpenSettings)
 
     // JB specific (not in vscode)
     suspend fun processClearQuickAction(message: IncomingCwcMessage.ClearChat)

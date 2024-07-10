@@ -37,7 +37,11 @@
         {
             "name": "cwsprChatTriggerInteraction",
             "type": "string",
-            "allowedValues": ["hotkeys", "click", "contextMenu"],
+            "allowedValues": [
+                "hotkeys",
+                "click",
+                "contextMenu"
+            ],
             "description": "Identifies the specific interaction that opens the chat panel"
         },
         {
@@ -63,6 +67,36 @@
             "name": "cwsprChatHasCodeSnippet",
             "type": "boolean",
             "description": "true if user has selected code snippet, false otherwise."
+        },
+        {
+            "name": "cwsprChatHasProjectContext",
+            "type": "boolean",
+            "description": "true if query has project level context."
+        },
+        {
+            "name": "cwsprChatProjectContextQueryMs",
+            "type": "int",
+            "description": "query latency in ms for local project context"
+        },
+        {
+            "name": "amazonqIndexFileSizeInMB",
+            "type": "int",
+            "description": "Index size in MB"
+        },
+        {
+            "name": "amazonqIndexFileCount",
+            "type": "int",
+            "description": "Files indexed"
+        },
+        {
+            "name": "amazonqIndexMemoryUsageInMB",
+            "type": "int",
+            "description": "Memory usage of LSP server"
+        },
+        {
+            "name": "amazonqIndexCpuUsagePercentage",
+            "type": "int",
+            "description": "Cpu usage of LSP server"
         },
         {
             "name": "cwsprChatProgrammingLanguage",
@@ -226,7 +260,11 @@
         {
             "name": "authStatus",
             "type": "string",
-            "allowedValues": ["connected", "notConnected", "expired"],
+            "allowedValues": [
+                "connected",
+                "notConnected",
+                "expired"
+            ],
             "description": "Status of the an auth connection."
         },
         {
@@ -286,8 +324,12 @@
             "name": "codecatalyst_createDevEnvironment",
             "description": "Create an Amazon CodeCatalyst Dev Environment",
             "metadata": [
-                { "type": "userId" },
-                { "type": "result" },
+                {
+                    "type": "userId"
+                },
+                {
+                    "type": "result"
+                },
                 {
                     "type": "codecatalyst_createDevEnvironmentRepoType",
                     "required": false
@@ -298,34 +340,55 @@
             "name": "codecatalyst_updateDevEnvironmentSettings",
             "description": "Update properties of a Amazon CodeCatalyst Dev Environment",
             "metadata": [
-                { "type": "userId" },
-                { "type": "result" },
-                { "type": "codecatalyst_updateDevEnvironmentLocationType" }
+                {
+                    "type": "userId"
+                },
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "codecatalyst_updateDevEnvironmentLocationType"
+                }
             ]
         },
         {
             "name": "codecatalyst_updateDevfile",
             "description": "Trigger a devfile update on a Amazon CodeCatalyst dev environment",
             "metadata": [
-                { "type": "userId" },
-                { "type": "result" }
+                {
+                    "type": "userId"
+                },
+                {
+                    "type": "result"
+                }
             ]
         },
         {
             "name": "codecatalyst_localClone",
             "description": "Clone a Amazon CodeCatalyst code repository locally",
             "metadata": [
-                { "type": "userId" },
-                { "type": "result" }
+                {
+                    "type": "userId"
+                },
+                {
+                    "type": "result"
+                }
             ]
         },
         {
             "name": "codecatalyst_connect",
             "description": "Connect to a Amazon CodeCatalyst dev environment",
             "metadata": [
-                { "type": "userId" },
-                { "type": "result" },
-                { "type": "reason", "required": false }
+                {
+                    "type": "userId"
+                },
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "reason",
+                    "required": false
+                }
             ]
         },
         {
@@ -333,11 +396,22 @@
             "description": "Workflow statistic for connecting to a dev environment",
             "passive": true,
             "metadata": [
-                { "type": "userId" },
-                { "type": "result" },
-                { "type": "duration"},
-                { "type": "codecatalyst_devEnvironmentWorkflowStep"},
-                { "type": "codecatalyst_devEnvironmentWorkflowError", "required": false }
+                {
+                    "type": "userId"
+                },
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "duration"
+                },
+                {
+                    "type": "codecatalyst_devEnvironmentWorkflowStep"
+                },
+                {
+                    "type": "codecatalyst_devEnvironmentWorkflowError",
+                    "required": false
+                }
             ]
         },
         {
@@ -383,6 +457,14 @@
                 },
                 {
                     "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatHasProjectContext",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatProjectContextQueryMs",
                     "required": false
                 }
             ]
@@ -464,6 +546,44 @@
                 },
                 {
                     "type": "codewhispererCustomizationArn",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatHasProjectContext",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatProjectContextQueryMs",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_indexWorkspace",
+            "description": "Indexing of local workspace",
+            "metadata": [
+                {
+                    "type": "duration"
+                },
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "amazonqIndexFileSizeInMB"
+                },
+                {
+                    "type": "amazonqIndexFileCount"
+                },
+                {
+                    "type": "amazonqIndexMemoryUsageInMB",
+                    "required": false
+                },
+                {
+                    "type": "amazonqIndexCpuUsagePercentage",
+                    "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
                     "required": false
                 }
             ]
@@ -553,6 +673,10 @@
                 },
                 {
                     "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatHasProjectContext",
                     "required": false
                 }
             ]

@@ -42,5 +42,6 @@ type MessageCommand =
     | 'codetransform-reject-hil-selection'
     | 'codetransform-pom-file-open-click'
     | 'file-click'
+    | 'open-settings'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }

@@ -38,15 +38,17 @@ class CodeWhispererConfigurableTest : CodeWhispererTestBase() {
 
         val checkboxes = panel.components.filterIsInstance<JCheckBox>()
 
-        assertThat(checkboxes.size).isEqualTo(3)
+        assertThat(checkboxes.size).isEqualTo(5)
         assertThat(checkboxes.map { it.text }).containsExactlyInAnyOrder(
             message("aws.settings.codewhisperer.include_code_with_reference"),
             message("aws.settings.codewhisperer.configurable.opt_out.title"),
-            message("aws.settings.codewhisperer.automatic_import_adder")
+            message("aws.settings.codewhisperer.automatic_import_adder"),
+            message("aws.settings.codewhisperer.project_context"),
+            message("aws.settings.codewhisperer.project_context_gpu")
         )
 
         val comments = panel.components.filterIsInstance<DslLabel>()
-        assertThat(comments.size).isEqualTo(3)
+        assertThat(comments.size).isEqualTo(7)
 
         mockCodeWhispererEnabledStatus(false)
         ApplicationManager.getApplication().messageBus.syncPublisher(ToolkitConnectionManagerListener.TOPIC)
