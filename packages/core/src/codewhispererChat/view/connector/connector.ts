@@ -128,6 +128,10 @@ export class AuthNeededException extends UiMessage {
     }
 }
 
+export class OpenSettingsMessage extends UiMessage {
+    override type = 'openSettingsMessage'
+}
+
 export interface ChatMessageProps {
     readonly message: string | undefined
     readonly messageType: ChatMessageType
@@ -227,6 +231,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendAuthNeededExceptionMessage(message: AuthNeededException) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendOpenSettingsMessage(message: OpenSettingsMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

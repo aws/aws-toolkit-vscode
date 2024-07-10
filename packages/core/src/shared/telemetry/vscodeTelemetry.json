@@ -155,6 +155,36 @@
             "description": "true if user has selected code snippet, false otherwise."
         },
         {
+            "name": "cwsprChatHasProjectContext",
+            "type": "boolean",
+            "description": "true if query has project level context, false otherwise."
+        },
+        {
+            "name": "cwsprChatProjectContextQueryMs",
+            "type": "int",
+            "description": "Query latency in ms for local project context"
+        },
+        {
+            "name": "amazonqIndexFileSizeInMB",
+            "type": "int",
+            "description": "The sum of file sizes that were indexed in MB"
+        },
+        {
+            "name": "amazonqIndexFileCount",
+            "type": "int",
+            "description": "Number of files indexed"
+        },
+        {
+            "name": "amazonqIndexMemoryUsageInMB",
+            "type": "int",
+            "description": "Memory usage of LSP server"
+        },
+        {
+            "name": "amazonqIndexCpuUsagePercentage",
+            "type": "int",
+            "description": "CPU used by LSP server as a percentage of all available CPUs on the system"
+        },
+        {
             "name": "cwsprChatProgrammingLanguage",
             "type": "string",
             "description": "Programming language associated with the message"
@@ -717,6 +747,44 @@
                 },
                 {
                     "type": "cwsprChatConversationType"
+                },
+                {
+                    "type": "cwsprChatHasProjectContext",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatProjectContextQueryMs",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_indexWorkspace",
+            "description": "Indexing of local workspace",
+            "metadata": [
+                {
+                    "type": "duration"
+                },
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "amazonqIndexFileSizeInMB"
+                },
+                {
+                    "type": "amazonqIndexFileCount"
+                },
+                {
+                    "type": "amazonqIndexMemoryUsageInMB",
+                    "required": false
+                },
+                {
+                    "type": "amazonqIndexCpuUsagePercentage",
+                    "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
                 }
             ]
         },
@@ -794,6 +862,10 @@
                 },
                 {
                     "type": "cwsprChatConversationType"
+                },
+                {
+                    "type": "cwsprChatHasProjectContext",
+                    "required": false
                 },
                 {
                     "type": "codewhispererCustomizationArn",
@@ -890,6 +962,10 @@
                 },
                 {
                     "type": "cwsprChatTotalCodeBlocks",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatHasProjectContext",
                     "required": false
                 }
             ]
