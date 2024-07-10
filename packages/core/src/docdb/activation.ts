@@ -10,6 +10,7 @@ import { DBClusterNode } from './explorer/dbClusterNode'
 import { DBInstanceNode } from './explorer/dbInstanceNode'
 import { createCluster } from './commands/createCluster'
 import { createInstance } from './commands/createInstance'
+import { deleteCluster } from './commands/deleteCluster'
 import { deleteInstance } from './commands/deleteInstance'
 import { startCluster, stopCluster } from './commands/commands'
 
@@ -29,6 +30,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
         Commands.register('aws.docdb.stopCluster', async (node?: DBNode) => {
             await stopCluster(node)
+        }),
+
+        Commands.register('aws.docdb.deleteCluster', async (node: DBClusterNode) => {
+            await deleteCluster(node)
         }),
 
         Commands.register('aws.docdb.createInstance', async (node: DBClusterNode) => {

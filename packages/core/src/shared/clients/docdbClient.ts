@@ -96,13 +96,14 @@ export class DefaultDocumentDBClient {
         }
     }
 
-    public async listClusters(): Promise<DocDB.DBCluster[]> {
+    public async listClusters(clusterId: string | undefined = undefined): Promise<DocDB.DBCluster[]> {
         getLogger().debug('ListClusters called')
         const client = await this.getClient()
 
         try {
-            const input = {
+            const input: DocDB.DescribeDBClustersCommandInput = {
                 Filters: [{ Name: 'engine', Values: [DocDBEngine] }],
+                DBClusterIdentifier: clusterId,
             }
             const command = new DocDB.DescribeDBClustersCommand(input)
             const response = await client.send(command)
@@ -158,6 +159,21 @@ export class DefaultDocumentDBClient {
             return response.DBCluster
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to create DocumentDB cluster')
+        } finally {
+            client.destroy()
+        }
+    }
+
+    public async deleteCluster(input: DocDB.DeleteDBClusterMessage): Promise<DocDB.DBCluster | undefined> {
+        getLogger().debug('DeleteCluster called')
+        const client = await this.getClient()
+
+        try {
+            const command = new DocDB.DeleteDBClusterCommand(input)
+            const response = await client.send(command)
+            return response.DBCluster
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to delete DocumentDB cluster')
         } finally {
             client.destroy()
         }

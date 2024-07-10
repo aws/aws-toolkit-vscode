@@ -8,6 +8,7 @@ import * as vscode from 'vscode'
 import { inspect } from 'util'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { waitUntil } from '../../shared'
 import { CreateDBInstanceMessage, DBCluster } from '@aws-sdk/client-docdb'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
@@ -78,8 +79,38 @@ export class DBClusterNode extends AWSTreeNodeBase implements AWSResourceNode {
         return await this.client.createInstance(request)
     }
 
+    public async deleteCluster(finalSnapshotId: string | undefined): Promise<DBCluster | undefined> {
+        const instances = await this.client.listInstances([this.arn])
+
+        for (const instance of instances) {
+            await this.client.deleteInstance({
+                DBInstanceIdentifier: instance.DBInstanceIdentifier,
+            })
+        }
+
+        return await this.client.deleteCluster({
+            DBClusterIdentifier: this.cluster.DBClusterIdentifier,
+            FinalDBSnapshotIdentifier: finalSnapshotId,
+            SkipFinalSnapshot: finalSnapshotId === undefined,
+        })
+    }
+
     public get status(): string | undefined {
         return this.cluster.Status
+    }
+
+    public async waitUntilStatusChanged(): Promise<boolean> {
+        const currentStatus = this.status
+
+        await waitUntil(
+            async () => {
+                const [cluster] = await this.client.listClusters(this.id)
+                return cluster.Status !== currentStatus
+            },
+            { timeout: 30000, interval: 500, truthy: true }
+        )
+
+        return false
     }
 
     public [inspect.custom](): string {

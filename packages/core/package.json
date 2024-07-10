@@ -2013,6 +2013,10 @@
                     "when": "viewItem =~ /^awsDocDB.cluster.running/"
                 },
                 {
+                    "command": "aws.docdb.deleteCluster",
+                    "when": "viewItem =~ /^awsDocDB.cluster.running/"
+                },
+                {
                     "command": "aws.docdb.createInstance",
                     "when": "viewItem == awsDocDB.cluster.running"
                 },
@@ -3611,6 +3615,17 @@
                 "icon": "$(debug-stop)",
                 "category": "%AWS.title%",
                 "enablement": "!aws.isWebExtHost && viewItem =~ /^awsDocDB.cluster.running/"
+            },
+            {
+                "command": "aws.docdb.deleteCluster",
+                "title": "%AWS.command.docdb.deleteCluster%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB.cluster.running/",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             }
         ],
         "jsonValidation": [

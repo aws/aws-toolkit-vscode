@@ -5,6 +5,7 @@
 
 import assert from 'assert'
 import sinon from 'sinon'
+import { installFakeClock } from '../../testUtil'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { DBCluster } from '@aws-sdk/client-docdb'
 import { DBClusterNode } from '../../../docdb/explorer/dbClusterNode'
@@ -36,5 +37,18 @@ describe('DBClusterNode', function () {
         assertInstanceNode(firstInstanceNode, instanceA)
         assertInstanceNode(secondInstanceNode, instanceB)
         assert.strictEqual(otherNodes.length, 0)
+    })
+
+    it('waits for status to change', async function () {
+        const clock = installFakeClock()
+        const clusterStatus = { Status: 'testing', ...cluster }
+        const stub = sinon.stub().onFirstCall().resolves([cluster]).onSecondCall().resolves([clusterStatus])
+        mockClient.listClusters = stub
+        const node = new DBClusterNode(parentNode, cluster, mockClient)
+
+        void node.waitUntilStatusChanged()
+
+        await clock.runAllAsync()
+        assert(stub.calledTwice)
     })
 })
