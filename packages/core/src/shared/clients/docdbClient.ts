@@ -64,6 +64,8 @@ export class DefaultDocumentDBClient {
             return response.DBEngineVersions ?? []
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to get DocumentDB engine versions')
+        } finally {
+            client.destroy()
         }
     }
 
@@ -89,6 +91,8 @@ export class DefaultDocumentDBClient {
             return instanceClasses.filter(ic => storageType === ic.StorageType || storageType === undefined)
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to get instance classes')
+        } finally {
+            client.destroy()
         }
     }
 
@@ -105,6 +109,8 @@ export class DefaultDocumentDBClient {
             return response.DBClusters ?? []
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to get DocumentDB clusters')
+        } finally {
+            client.destroy()
         }
     }
 
@@ -122,6 +128,8 @@ export class DefaultDocumentDBClient {
             return response.DBInstances ?? []
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to get DocumentDB instances')
+        } finally {
+            client.destroy()
         }
     }
 
@@ -135,6 +143,8 @@ export class DefaultDocumentDBClient {
             return response.clusters ?? []
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to get DocumentDB elastic clusters')
+        } finally {
+            client.destroy()
         }
     }
 
@@ -148,6 +158,8 @@ export class DefaultDocumentDBClient {
             return response.DBCluster
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to create DocumentDB cluster')
+        } finally {
+            client.destroy()
         }
     }
 
@@ -195,6 +207,8 @@ export class DefaultDocumentDBClient {
             return response.DBInstance
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to create DocumentDB instance')
+        } finally {
+            client.destroy()
         }
     }
 
@@ -208,6 +222,8 @@ export class DefaultDocumentDBClient {
             return response.DBInstance
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to delete DocumentDB instance')
+        } finally {
+            client.destroy()
         }
     }
 }
