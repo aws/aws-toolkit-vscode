@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Add support for [Amazon Q Chat Workspace Context](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/workspace-context.html). Customers can use @workspace to ask questions regarding local workspace."
-}
