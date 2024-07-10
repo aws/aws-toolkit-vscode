@@ -78,8 +78,4 @@ body {
     /* All items are centered horizontally */
     align-items: center;
 }
-
-.body[data-app='AMAZONQ'] {
-    background: linear-gradient(11deg, #541fae 0%, #38b1ff 100.5%);
-}
 </style>

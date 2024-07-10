@@ -607,16 +607,6 @@ export default defineComponent({
     width: 260px;
 }
 
-.auth-container[data-app='AMAZONQ'] {
-    border-radius: 11px;
-    background: rgba(30, 30, 30, 0.8);
-    padding: 15px;
-}
-
-.vscode-light .auth-container[data-app='AMAZONQ'] {
-    background: rgba(255, 255, 255, 1);
-}
-
 .header {
     font-size: var(--font-size-base);
     font-weight: bold;
