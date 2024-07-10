@@ -26,6 +26,7 @@ export { extensionVersion } from './vscode/env'
 export { cast } from './utilities/typeConstructors'
 export { createInputBox } from './ui/inputPrompter'
 export { createQuickPick } from './ui/pickerPrompter'
+export { createCommonButtons } from './ui/buttons'
 export { SkipPrompter } from './ui/common/skipPrompter'
 export { Wizard, WizardState } from './wizards/wizard'
 export {

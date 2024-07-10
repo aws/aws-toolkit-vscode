@@ -8,8 +8,14 @@ import { activate as activateCore, deactivate as deactivateCore } from 'aws-core
 import { awsToolkitApi } from './api'
 import { Commands } from 'aws-core-vscode/shared'
 import { Wizard } from 'aws-core-vscode/shared'
+import { createCommonButtons } from 'aws-core-vscode/shared'
 import { createQuickPick } from 'aws-core-vscode/shared'
+import * as nls from 'vscode-nls'
 import * as vscode from 'vscode'
+
+const serverlessLandUrl = 'https://serverlessland.com/'
+
+const localize = nls.loadMessageBundle()
 
 export async function activate(context: ExtensionContext) {
     await activateCore(context)
@@ -18,32 +24,32 @@ export async function activate(context: ExtensionContext) {
     await Commands.tryExecute('aws.amazonq.refreshConnectionCallback', awsToolkitApi)
 
     // Update to global state when selecting
-    const setWalkthroughToS3 = Commands.declare('aws.toolkit.setWalkthroughToS3', () => () => {
+    Commands.register('aws.toolkit.setWalkthroughToS3', () => () => {
         vscode.commands.executeCommand('setContext', 'walkthroughSelected', 'S3')
         context.globalState.update('walkthroughSelected', 'S3')
     })
 
-    const setWalkthroughToAPI = Commands.declare('aws.toolkit.setWalkthroughToAPI', () => () => {
+    Commands.register('aws.toolkit.setWalkthroughToAPI', () => () => {
         vscode.commands.executeCommand('setContext', 'walkthroughSelected', 'API')
         context.globalState.update('walkthroughSelected', 'API')
     })
 
-    const setWalkthroughRuntimeToPython = Commands.declare('aws.toolkit.setWalkthroughRuntimeToPython', () => () => {
+    Commands.register('aws.toolkit.setWalkthroughRuntimeToPython', () => () => {
         vscode.commands.executeCommand('setContext', 'walkthroughRuntime', 'Python')
         context.globalState.update('walkthroughRuntime', 'Python')
     })
 
-    const setWalkthroughRuntimeToNode = Commands.declare('aws.toolkit.setWalkthroughRuntimeToNode', () => () => {
+    Commands.register('aws.toolkit.setWalkthroughRuntimeToNode', () => () => {
         vscode.commands.executeCommand('setContext', 'walkthroughRuntime', 'Node')
         context.globalState.update('walkthroughRuntime', 'Node')
     })
 
-    const getWalkthrough = Commands.declare('aws.toolkit.getWalkthrough', () => () => {
+    Commands.register('aws.toolkit.getWalkthrough', () => () => {
         const walkthroughSelected = context.globalState.get('walkthroughSelected')
         return walkthroughSelected
     })
 
-    const getRuntime = Commands.declare('aws.toolkit.getRuntime', () => () => {
+    Commands.register('aws.toolkit.getRuntime', () => () => {
         const walkthroughRuntime = context.globalState.get('walkthroughRuntime')
         return walkthroughRuntime
     })
@@ -65,12 +71,20 @@ export async function activate(context: ExtensionContext) {
                     { label: 'Dot Net', data: 'dotnet' },
                 ]
                 form.runtime.bindPrompter(() => {
-                    return createQuickPick(items, { title: `Select a runtime` })
+                    return createQuickPick(items, {
+                        title: localize('AWS.toolkit.walkthrough.selectruntime', 'Select a runtime'),
+                        buttons: createCommonButtons(serverlessLandUrl),
+                    })
                 })
 
                 // step2: choose location for project
                 const wsFolders = vscode.workspace.workspaceFolders
-                const items2 = [{ label: 'Open file explorer', data: 'file-selector' }]
+                const items2 = [
+                    {
+                        label: localize('AWS.toolkit.walkthrough.openexplorer', 'Open file explorer'),
+                        data: 'file-selector',
+                    },
+                ]
 
                 // if at least one open workspace, add all opened workspace as options
                 if (wsFolders) {
@@ -80,7 +94,10 @@ export async function activate(context: ExtensionContext) {
                 }
 
                 form.dir.bindPrompter(() => {
-                    return createQuickPick(items2, { title: `Select a location for project` })
+                    return createQuickPick(items2, {
+                        title: localize('AWS.toolkit.walkthrough.projectlocation', 'Select a location for project'),
+                        buttons: createCommonButtons(serverlessLandUrl),
+                    })
                 })
             }
         })()
@@ -134,8 +151,7 @@ export async function activate(context: ExtensionContext) {
         const contents2 = Buffer.from(`tester template ${walkthroughSelected}:${result.runtime}`, 'utf8')
         vscode.workspace.fs.writeFile(templateUri, contents2)
         vscode.commands.executeCommand('explorer.openToSide', lambdaUri)
-        vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')
-        vscode.commands.executeCommand('explorer.openToSide', templateUri)
+        vscode.commands.executeCommand('vscode.open', templateUri)
 
         console.log(result)
     })
@@ -147,49 +163,6 @@ export async function activate(context: ExtensionContext) {
         )
     })
 
-    const createWalkthroughProject = Commands.declare('aws.toolkit.createWalkthroughProject', () => () => {
-        const walkthroughSelected = context.globalState.get('walkthroughSelected')
-        const walkthroughRuntime = context.globalState.get('walkthroughRuntime')
-
-        console.log(walkthroughSelected, walkthroughRuntime)
-
-        let options: vscode.OpenDialogOptions = {
-            canSelectMany: false,
-            openLabel: 'Open',
-            canSelectFiles: false,
-            canSelectFolders: true,
-        }
-
-        // open file selector in current workspace
-        const wsFolders = vscode.workspace.workspaceFolders
-        if (wsFolders) {
-            options.defaultUri = wsFolders[0]?.uri
-        }
-
-        vscode.window.showOpenDialog(options).then(fileUri => {
-            if (fileUri && fileUri[0]) {
-                console.log('Selected file: ' + fileUri[0].fsPath)
-                const lambdaUri = vscode.Uri.joinPath(fileUri[0], 'src/handler.py')
-                const contents = Buffer.from('tester handler', 'utf8')
-                vscode.workspace.fs.writeFile(lambdaUri, contents)
-                const templateUri = vscode.Uri.joinPath(fileUri[0], 'template2.yaml')
-                const contents2 = Buffer.from('tester template', 'utf8')
-                vscode.workspace.fs.writeFile(templateUri, contents2)
-                vscode.commands.executeCommand('explorer.openToSide', lambdaUri)
-                vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')
-                vscode.commands.executeCommand('explorer.openToSide', templateUri)
-            }
-        })
-    })
-
-    createWalkthroughProject.register()
-    setWalkthroughToS3.register()
-    setWalkthroughToAPI.register()
-    setWalkthroughRuntimeToNode.register()
-    setWalkthroughRuntimeToPython.register()
-    getWalkthrough.register()
-    getRuntime.register()
-
     // recover context variables from global state when activate
     const walkthroughSelected = context.globalState.get('walkthroughSelected')
     if (walkthroughSelected != undefined) {
@@ -197,22 +170,6 @@ export async function activate(context: ExtensionContext) {
     } else {
         vscode.commands.executeCommand('setContext', 'walkthroughSelected', 'None')
     }
-
-    vscode.commands.executeCommand('setContext', 'aws.toolkit.availableWalkthroughs', ['S3', 'API'])
-
-    const runtimeSelected = context.globalState.get('walkthroughRuntime')
-    if (runtimeSelected != undefined) {
-        vscode.commands.executeCommand('setContext', 'walkthroughRuntime', runtimeSelected)
-    } else {
-        vscode.commands.executeCommand('aws.toolkit.setWalkthroughToAPI')
-    }
-
-    vscode.commands.executeCommand('setContext', 'aws.toolkit.availableWalkthroughRuntime', [
-        'Python',
-        'Node',
-        'Java',
-        'Dotnet',
-    ])
 
     return awsToolkitApi
 }
