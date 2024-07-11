@@ -225,6 +225,11 @@ button#cancel {
     cursor: pointer;
 }
 
+body.vscode-high-contrast:not(body.vscode-high-contrast-light) button#reauthenticate {
+    background-color: white;
+    color: black;
+}
+
 #title {
     font-weight: bold;
 }
