@@ -499,12 +499,7 @@
                 "command": "aws.amazonq.signout",
                 "title": "%AWS.command.codewhisperer.signout%",
                 "category": "%AWS.amazonq.title%",
-                "icon": "$(debug-disconnect)"
-            },
-            {
-                "command": "aws.amazonq.signout",
-                "title": "%AWS.command.codewhisperer.signout%",
-                "category": "%AWS.amazonq.title%",
+                "icon": "$(debug-disconnect)",
                 "enablement": "aws.codewhisperer.connected"
             },
             {
