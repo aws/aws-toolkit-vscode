@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { isTextEditor } from '../../shared/utilities/editorUtilities'
+import { setContext } from '../../shared'
 
 export interface LineSelection {
     anchor: number
@@ -85,7 +86,7 @@ export class LineTracker implements vscode.Disposable {
         this._selections = toLineSelections(editor?.selections)
         if (this._selections && this._selections[0]) {
             const s = this._selections.map(item => item.active + 1)
-            await vscode.commands.executeCommand('setContext', 'codewhisperer.activeLine', s)
+            await setContext('codewhisperer.activeLine', s)
         }
 
         this.notifyLinesChanged('editor')
@@ -107,7 +108,7 @@ export class LineTracker implements vscode.Disposable {
         this._selections = selections
         if (this._selections && this._selections[0]) {
             const s = this._selections.map(item => item.active + 1)
-            await vscode.commands.executeCommand('setContext', 'codewhisperer.activeLine', s)
+            await setContext('codewhisperer.activeLine', s)
         }
 
         this.notifyLinesChanged('selection')

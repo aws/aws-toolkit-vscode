@@ -28,11 +28,10 @@ import { CodeCatalystRootNode } from '../codecatalyst/explorer'
 import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 import { S3FolderNode } from '../awsService/s3/explorer/s3FolderNode'
 import { AmazonQNode, refreshAmazonQ, refreshAmazonQRootNode } from '../amazonq/explorer/amazonQTreeNode'
-import { GlobalState } from '../shared/globalState'
 import { activateViewsShared, registerToolView } from './activationShared'
 import { isExtensionInstalled } from '../shared/utilities'
-import { amazonQDismissedKey } from '../codewhisperer/models/constants'
 import { CommonAuthViewProvider } from '../login/webview'
+import { setContext } from '../shared'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -53,7 +52,7 @@ export async function activate(args: {
     })
     view.onDidExpandElement(element => {
         if (element.element instanceof S3FolderNode) {
-            GlobalState.instance.tryUpdate('aws.lastTouchedS3Folder', {
+            globals.globalState.tryUpdate('aws.lastTouchedS3Folder', {
                 bucket: element.element.bucket,
                 folder: element.element.folder,
             })
@@ -110,9 +109,9 @@ export async function activate(args: {
     if (!isCloud9()) {
         if (
             isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) ||
-            globals.context.globalState.get<boolean>(amazonQDismissedKey)
+            globals.globalState.get<boolean>('aws.toolkit.amazonq.dismissed')
         ) {
-            await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)
+            await setContext('aws.toolkit.amazonq.dismissed', true)
         }
 
         // We should create the tree even if it's dismissed, in case the user installs Amazon Q later.

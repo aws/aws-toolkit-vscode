@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import globals from '../extensionGlobals'
 
 const toolkitLoggers: {
     main: Logger | undefined
@@ -202,11 +201,11 @@ export class PerfLog {
     public constructor(public readonly topic: string) {
         const log = getLogger()
         this.log = log
-        this.start = globals.clock.Date.now()
+        this.start = performance.now()
     }
 
     public elapsed(): number {
-        return globals.clock.Date.now() - this.start
+        return performance.now() - this.start
     }
 
     public done(): void {
