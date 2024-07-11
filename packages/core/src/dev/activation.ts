@@ -22,6 +22,7 @@ import { Auth } from '../auth/auth'
 import { getLogger } from '../shared/logger'
 import { entries } from '../shared/utilities/tsUtils'
 import { getEnvironmentSpecificMemento } from '../shared/utilities/mementos'
+import { setContext } from '../shared'
 
 interface MenuOption {
     readonly label: string
@@ -431,5 +432,5 @@ async function showState(path: string) {
 export const openStorageCommand = Commands.from(ObjectEditor).declareOpenStorage('_aws.dev.openStorage')
 
 export async function updateDevMode() {
-    await vscode.commands.executeCommand('setContext', 'aws.isDevMode', DevSettings.instance.isDevMode())
+    await setContext('aws.isDevMode', DevSettings.instance.isDevMode())
 }

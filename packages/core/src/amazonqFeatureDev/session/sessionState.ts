@@ -17,6 +17,7 @@ import { IllegalStateTransition, UserMessageNotFoundError } from '../errors'
 import {
     CurrentWsFolders,
     DeletedFileInfo,
+    DevPhase,
     FollowUpTypes,
     NewFileInfo,
     NewFileZipContents,
@@ -38,7 +39,7 @@ import { collectFiles, getWorkspaceFoldersByPrefixes } from '../../shared/utilit
 
 export class ConversationNotStartedState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
-    public readonly phase = 'Init'
+    public readonly phase = DevPhase.INIT
 
     constructor(public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
@@ -52,7 +53,7 @@ export class ConversationNotStartedState implements Omit<SessionState, 'uploadId
 
 export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
-    public readonly phase = 'Approach'
+    public readonly phase = DevPhase.APPROACH
     constructor(private config: Omit<SessionStateConfig, 'uploadId'>, public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
@@ -92,7 +93,7 @@ export class RefinementState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
     public readonly conversationId: string
     public readonly uploadId: string
-    public readonly phase = 'Approach'
+    public readonly phase = DevPhase.APPROACH
 
     constructor(
         private config: SessionStateConfig,
@@ -219,7 +220,7 @@ abstract class CodeGenBase {
     private pollCount = 180
     private requestDelay = 10000
     readonly tokenSource: vscode.CancellationTokenSource
-    public phase: SessionStatePhase = 'Codegen'
+    public phase: SessionStatePhase = DevPhase.CODEGEN
     public readonly conversationId: string
     public readonly uploadId: string
 
@@ -243,6 +244,8 @@ abstract class CodeGenBase {
         newFiles: NewFileInfo[]
         deletedFiles: DeletedFileInfo[]
         references: CodeReference[]
+        codeGenerationRemainingIterationCount?: number
+        codeGenerationTotalIterationCount?: number
     }> {
         for (
             let pollingIteration = 0;
@@ -250,6 +253,9 @@ abstract class CodeGenBase {
             ++pollingIteration
         ) {
             const codegenResult = await this.config.proxyClient.getCodeGeneration(this.conversationId, codeGenerationId)
+            const codeGenerationRemainingIterationCount = codegenResult.codeGenerationRemainingIterationCount
+            const codeGenerationTotalIterationCount = codegenResult.codeGenerationTotalIterationCount
+
             getLogger().debug(`Codegen response: %O`, codegenResult)
             telemetry.setCodeGenerationResult(codegenResult.codeGenerationStatus.status)
             switch (codegenResult.codeGenerationStatus.status) {
@@ -262,6 +268,8 @@ abstract class CodeGenBase {
                         newFiles: newFileInfo,
                         deletedFiles: getDeletedFileInfos(deletedFiles, workspaceFolders),
                         references,
+                        codeGenerationRemainingIterationCount: codeGenerationRemainingIterationCount,
+                        codeGenerationTotalIterationCount: codeGenerationTotalIterationCount,
                     }
                 }
                 case 'predict-ready':
@@ -272,6 +280,15 @@ abstract class CodeGenBase {
                 case 'predict-failed':
                 case 'debate-failed':
                 case 'Failed': {
+                    /** 
+                     * 
+                     * TODO: Here we need to implement the granular error handling for 
+                     *  Code generation GuardrailsException
+                        Code generation PromptRefusalException
+                        Code generation EmptyPatchException
+                        Code generation ThrottlingException
+                     * 
+                     * */
                     throw new ToolkitError('Code generation failed', { code: 'CodeGenFailed' })
                 }
                 default: {
@@ -301,7 +318,9 @@ export class CodeGenState extends CodeGenBase implements SessionState {
         public deletedFiles: DeletedFileInfo[],
         public references: CodeReference[],
         tabID: string,
-        private currentIteration: number
+        private currentIteration: number,
+        public codeGenerationRemainingIterationCount?: number,
+        public codeGenerationTotalIterationCount?: number
     ) {
         super(config, tabID)
     }
@@ -338,6 +357,9 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                 this.filePaths = codeGeneration.newFiles
                 this.deletedFiles = codeGeneration.deletedFiles
                 this.references = codeGeneration.references
+                this.codeGenerationRemainingIterationCount = codeGeneration.codeGenerationRemainingIterationCount
+                this.codeGenerationTotalIterationCount = codeGeneration.codeGenerationTotalIterationCount
+
                 action.telemetry.setAmazonqNumberOfReferences(this.references.length)
                 action.telemetry.recordUserCodeGenerationTelemetry(span, this.conversationId)
                 const nextState = new PrepareCodeGenState(
@@ -347,7 +369,9 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     this.deletedFiles,
                     this.references,
                     this.tabID,
-                    this.currentIteration + 1
+                    this.currentIteration + 1,
+                    this.codeGenerationRemainingIterationCount,
+                    this.codeGenerationTotalIterationCount
                 )
                 return {
                     nextState,
@@ -446,7 +470,7 @@ export class MockCodeGenState implements SessionState {
 
 export class PrepareCodeGenState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
-    public readonly phase = 'Codegen'
+    public readonly phase = DevPhase.CODEGEN
     public uploadId: string
     public conversationId: string
     constructor(
@@ -456,7 +480,9 @@ export class PrepareCodeGenState implements SessionState {
         public deletedFiles: DeletedFileInfo[],
         public references: CodeReference[],
         public tabID: string,
-        private currentIteration: number
+        private currentIteration: number,
+        public codeGenerationRemainingIterationCount?: number,
+        public codeGenerationTotalIterationCount?: number
     ) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.uploadId = config.uploadId

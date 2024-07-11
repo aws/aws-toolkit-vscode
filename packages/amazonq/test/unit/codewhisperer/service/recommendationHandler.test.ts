@@ -16,7 +16,6 @@ import {
     ConfigurationEntry,
     RecommendationHandler,
     CodeWhispererCodeCoverageTracker,
-    userGroupKey,
     UserGroup,
     supplementalContextUtil,
 } from 'aws-core-vscode/codewhisperer'
@@ -115,7 +114,7 @@ describe('recommendationHandler', function () {
         })
 
         it('should call telemetry function that records a CodeWhisperer service invocation', async function () {
-            await globals.context.globalState.update(userGroupKey, {
+            await globals.context.globalState.update('CODEWHISPERER_USER_GROUP', {
                 group: UserGroup.CrossFile,
                 version: extensionVersion,
             })
@@ -167,7 +166,7 @@ describe('recommendationHandler', function () {
         })
 
         it('should call telemetry function that records a Empty userDecision event', async function () {
-            await globals.context.globalState.update(userGroupKey, {
+            await globals.context.globalState.update('CODEWHISPERER_USER_GROUP', {
                 group: UserGroup.CrossFile,
                 version: extensionVersion,
             })

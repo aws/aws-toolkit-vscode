@@ -22,7 +22,8 @@ import { logAndShowError, logAndShowWebviewError } from './shared/utilities/logA
 import { AuthStatus, telemetry } from './shared/telemetry/telemetry'
 import { openUrl } from './shared/utilities/vsCodeUtils'
 import { activateViewsShared } from './awsexplorer/activationShared'
-
+import fs from './shared/fs/fs'
+import * as errors from './shared/errors'
 import { activate as activateLogger } from './shared/logger/activation'
 import { initializeComputeRegion } from './shared/extensionUtilities'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
@@ -54,6 +55,8 @@ import { registerCommands } from './commands'
 // In web mode everything must be in a single file, so things like the endpoints file will not be available.
 // The following imports the endpoints file, which causes webpack to bundle it in the final output file
 import endpoints from '../resources/endpoints.json'
+import { getLogger } from './shared'
+import { showViewLogsMessage } from './shared/utilities/messages'
 
 disableAwsSdkWarning()
 
@@ -70,8 +73,11 @@ export async function activateCommon(
 ): Promise<ExtContext> {
     localize = nls.loadMessageBundle()
 
-    // some "initialize" functions
     initialize(context, isWeb)
+    const homeDirLogs = await fs.init(context, homeDir => {
+        void showViewLogsMessage(`Invalid home directory (check $HOME): "${homeDir}"`)
+    })
+    errors.init(fs.getUsername())
     await initializeComputeRegion()
 
     globals.contextPrefix = '' //todo: disconnect supplied argument
@@ -91,6 +97,10 @@ export async function activateCommon(
     await activateLogger(context, contextPrefix, toolkitOutputChannel, toolkitLogChannel)
     globals.outputChannel = toolkitOutputChannel
     globals.logOutputChannel = toolkitLogChannel
+
+    if (homeDirLogs.length > 0) {
+        getLogger().error('fs.init: invalid home directory given by env vars: %O', homeDirLogs)
+    }
 
     if (isCloud9()) {
         vscode.window.withProgress = wrapWithProgressForCloud9(globals.outputChannel)

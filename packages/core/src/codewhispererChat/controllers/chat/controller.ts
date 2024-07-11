@@ -2,7 +2,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import { Event as VSCodeEvent, Uri } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
@@ -45,6 +44,10 @@ import { triggerPayloadToChatRequest } from './chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { randomUUID } from '../../../common/crypto'
+import { LspController } from '../../../amazonq/lsp/lspController'
+import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
+import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
+import { getHttpStatusCode } from '../../../shared/errors'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -387,6 +390,7 @@ export class ChatController {
                         matchPolicy: context?.activeFileContext?.matchPolicy,
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getFromContextMenuCommand(command),
+                        customization: getSelectedCustomization(),
                     },
                     triggerID
                 )
@@ -401,7 +405,6 @@ export class ChatController {
             this.messenger.sendErrorMessage('chatMessage should be set', message.tabID, undefined)
             return
         }
-
         try {
             switch (message.command) {
                 case 'follow-up-was-clicked':
@@ -464,6 +467,7 @@ export class ChatController {
                     matchPolicy: lastTriggerEvent.context?.activeFileContext?.matchPolicy,
                     codeQuery: lastTriggerEvent.context?.focusAreaContext?.names,
                     userIntent: message.userIntent,
+                    customization: getSelectedCustomization(),
                 },
                 triggerID
             )
@@ -496,6 +500,7 @@ export class ChatController {
                         matchPolicy: context?.activeFileContext?.matchPolicy,
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getFromPromptChatMessage(message),
+                        customization: getSelectedCustomization(),
                     },
                     triggerID
                 )
@@ -537,8 +542,10 @@ export class ChatController {
         this.messenger.sendStaticTextResponse(responseType, triggerID, tabID)
     }
 
-    private async generateResponse(triggerPayload: TriggerPayload, triggerID: string) {
-        // Loop while we waiting for tabID to be set
+    private async generateResponse(
+        triggerPayload: TriggerPayload & { projectContextQueryLatencyMs?: number },
+        triggerID: string
+    ) {
         const triggerEvent = this.triggerEventsStorage.getTriggerEvent(triggerID)
         if (triggerEvent === undefined) {
             return
@@ -567,11 +574,34 @@ export class ChatController {
             await this.messenger.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
             return
         }
+        if (triggerPayload.message) {
+            const userIntentEnableProjectContext = triggerPayload.message.includes(`@workspace`)
+            if (userIntentEnableProjectContext) {
+                triggerPayload.message = triggerPayload.message.replace(/@workspace/g, '')
+                if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
+                    const start = performance.now()
+                    triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
+                    triggerPayload.relevantTextDocuments.forEach(doc => {
+                        getLogger().info(
+                            `amazonq: Using workspace files ${
+                                doc.relativeFilePath
+                            }, content(partial): ${doc.text?.substring(0, 200)}`
+                        )
+                    })
+                    triggerPayload.projectContextQueryLatencyMs = performance.now() - start
+                } else {
+                    this.messenger.sendOpenSettingsMessage(triggerID, tabID)
+                    return
+                }
+            }
+        }
 
         const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
         getLogger().info(
-            `request from tab: ${tabID} coversationID: ${session.sessionIdentifier} request: ${JSON.stringify(request)}`
+            `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${JSON.stringify(
+                request
+            )}`
         )
         let response: GenerateAssistantResponseCommandOutput | undefined = undefined
         session.createNewTokenSource()
@@ -582,13 +612,13 @@ export class ChatController {
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
 
             getLogger().info(
-                `response to tab: ${tabID} coversationID: ${session.sessionIdentifier} requestID: ${
+                `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${
                     response.$metadata.requestId
                 } metadata: ${JSON.stringify(response.$metadata)}`
             )
             await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
         } catch (e: any) {
-            this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, e?.$metadata?.httpStatusCode ?? 0)
+            this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, getHttpStatusCode(e) ?? 0)
             // clears session, record telemetry before this call
             this.processException(e, tabID)
         }

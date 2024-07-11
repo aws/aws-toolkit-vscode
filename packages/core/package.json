@@ -34,8 +34,8 @@
         "./common": "./dist/src/common/index.js",
         "./amazonq": "./dist/src/amazonq/index.js",
         "./codewhisperer": "./dist/src/codewhisperer/index.js",
+        "./codewhispererCommon": "./dist/src/codewhisperer/indexCommon.js",
         "./shared": "./dist/src/shared/index.js",
-        "./srcShared": "./dist/src/srcShared/index.js",
         "./auth": "./dist/src/auth/index.js",
         "./amazonqGumby": "./dist/src/amazonqGumby/index.js",
         "./amazonqFeatureDev": "./dist/src/amazonqFeatureDev/index.js",
@@ -285,10 +285,29 @@
                     "default": true,
                     "scope": "application"
                 },
-                "aws.threatComposer.defaultEditor": {
+                "amazonQ.workspaceIndex": {
                     "type": "boolean",
-                    "default": true,
-                    "description": "%AWS.configuration.description.threatComposer.defaultEditor%"
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndex%",
+                    "default": false,
+                    "scope": "application"
+                },
+                "amazonQ.workspaceIndexWorkerThreads": {
+                    "type": "number",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexWorkerThreads%",
+                    "default": 0,
+                    "scope": "application"
+                },
+                "amazonQ.workspaceIndexUseGPU": {
+                    "type": "boolean",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexUseGPU%",
+                    "default": false,
+                    "scope": "application"
+                },
+                "amazonQ.workspaceIndexMaxSize": {
+                    "type": "number",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexMaxSize%",
+                    "default": 250,
+                    "scope": "application"
                 }
             }
         },
@@ -4086,7 +4105,7 @@
     },
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",
-        "@aws-toolkits/telemetry": "^1.0.212",
+        "@aws-toolkits/telemetry": "^1.0.216",
         "@aws/fully-qualified-names": "^2.1.4",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
@@ -4117,8 +4136,6 @@
         "@types/uuid": "^9.0.1",
         "@types/whatwg-url": "^11.0.4",
         "@types/xml2js": "^0.4.11",
-        "@typescript-eslint/eslint-plugin": "^7.10.0",
-        "@typescript-eslint/parser": "^7.10.0",
         "@vue/compiler-sfc": "^3.3.2",
         "c8": "^9.0.0",
         "circular-dependency-plugin": "^5.2.2",
@@ -4128,7 +4145,7 @@
         "file-loader": "^6.2.0",
         "jsdom": "^23.0.1",
         "json-schema-to-typescript": "^13.1.1",
-        "marked": "^11.1.1",
+        "marked": "^13.0.1",
         "mocha": "^10.1.0",
         "mocha-junit-reporter": "^2.2.1",
         "mocha-multi-reporters": "^1.5.1",
@@ -4156,7 +4173,7 @@
         "@aws-sdk/property-provider": "3.46.0",
         "@aws-sdk/smithy-client": "^3.46.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
-        "@aws/mynah-ui": "^4.13.0",
+        "@aws/mynah-ui": "^4.15.1",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
         "@smithy/middleware-retry": "^2.3.1",
@@ -4183,6 +4200,7 @@
         "immutable": "^4.3.0",
         "js-yaml": "^4.1.0",
         "jsonc-parser": "^3.2.0",
+        "jose": "5.4.1",
         "lodash": "^4.17.21",
         "markdown-it": "^13.0.2",
         "mime-types": "^2.1.32",

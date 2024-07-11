@@ -18,8 +18,8 @@ describe('editorContext', function () {
         telemetryEnabledDefault = globals.telemetry.telemetryEnabled
     })
 
-    afterEach(function () {
-        globals.telemetry.telemetryEnabled = telemetryEnabledDefault
+    afterEach(async function () {
+        await globals.telemetry.setTelemetryEnabled(telemetryEnabledDefault)
     })
 
     describe('extractContextForCodeWhisperer', function () {
@@ -136,7 +136,7 @@ describe('editorContext', function () {
         it('Should return expected fields for optOut, nextToken and reference config', async function () {
             const nextToken = 'testToken'
             const optOutPreference = false
-            globals.telemetry.telemetryEnabled = false
+            await globals.telemetry.setTelemetryEnabled(false)
             const editor = createMockTextEditor('import math\ndef two_sum(nums, target):\n', 'test.py', 'python', 1, 17)
             const actual = await EditorContext.buildListRecommendationRequest(editor, nextToken, optOutPreference)
 

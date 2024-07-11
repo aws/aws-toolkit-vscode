@@ -61,7 +61,7 @@
                 "DEVELOPMENT_PATH": "${workspaceFolder}",
                 "AWS_TOOLKIT_AUTOMATION": "local"
             },
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
             "preLaunchTask": "watch"
         },
         {
@@ -80,7 +80,7 @@
                 "DEVELOPMENT_PATH": "${workspaceFolder}",
                 "AWS_TOOLKIT_AUTOMATION": "local"
             },
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
             "preLaunchTask": "watch"
         },
         {
@@ -99,7 +99,7 @@
                 "DEVELOPMENT_PATH": "${workspaceFolder}",
                 "AWS_TOOLKIT_AUTOMATION": "local"
             },
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
             "preLaunchTask": "watch"
         }
     ]

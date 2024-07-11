@@ -8,7 +8,7 @@ import * as nls from 'vscode-nls'
 
 import * as codecatalyst from './codecatalyst/activation'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
-import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
+import { activate as activateCloudWatchLogs } from './awsService/cloudWatchLogs/activation'
 import { CredentialsProviderManager } from './auth/providers/credentialsProviderManager'
 import { SharedCredentialsProviderFactory } from './auth/providers/sharedCredentialsProviderFactory'
 import { activate as activateSchemas } from './eventSchemas/activation'
@@ -23,23 +23,23 @@ import {
     showWelcomeMessage,
 } from './shared/extensionUtilities'
 import { getLogger, Logger } from './shared/logger/logger'
-import { activate as activateEcr } from './ecr/activation'
-import { activate as activateEc2 } from './ec2/activation'
 import { activate as activateDynamoDb } from './dynamoDb/activation'
+import { activate as activateEcr } from './awsService/ecr/activation'
+import { activate as activateEc2 } from './awsService/ec2/activation'
 import { activate as activateSam } from './shared/sam/activation'
-import { activate as activateS3 } from './s3/activation'
+import { activate as activateS3 } from './awsService/s3/activation'
 import * as awsFiletypes from './shared/awsFiletypes'
-import { activate as activateApiGateway } from './apigateway/activation'
+import { activate as activateApiGateway } from './awsService/apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
 import { activate as activateDynamicResources } from './dynamicResources/activation'
-import { activate as activateEcs } from './ecs/activation'
-import { activate as activateAppRunner } from './apprunner/activation'
-import { activate as activateIot } from './iot/activation'
+import { activate as activateEcs } from './awsService/ecs/activation'
+import { activate as activateAppRunner } from './awsService/apprunner/activation'
+import { activate as activateIot } from './awsService/iot/activation'
 import { activate as activateDev } from './dev/activation'
 import { activate as activateApplicationComposer } from './applicationcomposer/activation'
-import { activate as activateRedshift } from './redshift/activation'
-import { activate as activateIamPolicyChecks } from './accessanalyzer/activation'
+import { activate as activateRedshift } from './awsService/redshift/activation'
+import { activate as activateIamPolicyChecks } from './awsService/accessanalyzer/activation'
 import { Ec2CredentialsProvider } from './auth/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './auth/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './auth/providers/ecsCredentialsProvider'
@@ -56,11 +56,11 @@ import { learnMoreAmazonQCommand, qExtensionPageCommand, dismissQTree } from './
 import { AuthUtil, codeWhispererCoreScopes, isPreviousQUser } from './codewhisperer/util/authUtil'
 import { installAmazonQExtension } from './codewhisperer/commands/basicCommands'
 import { isExtensionInstalled, VSCODE_EXTENSION_ID } from './shared/utilities'
-import { amazonQInstallDismissedKey } from './codewhisperer/models/constants'
 import { ExtensionUse } from './auth/utils'
 import { ExtStartUpSources } from './shared/telemetry'
 import { activate as activateThreatComposerEditor } from './threatComposer/activation'
 import { isSsoConnection, hasScopes } from './auth/connection'
+import { setContext } from './shared'
 
 let localize: nls.LocalizeFunc
 
@@ -117,10 +117,10 @@ export async function activate(context: vscode.ExtensionContext) {
         // do not enable codecatalyst for sagemaker
         // TODO: remove setContext if SageMaker adds the context to their IDE
         if (!isSageMaker()) {
-            await vscode.commands.executeCommand('setContext', 'aws.isSageMaker', false)
+            await setContext('aws.isSageMaker', false)
             await codecatalyst.activate(extContext)
         } else {
-            await vscode.commands.executeCommand('setContext', 'aws.isSageMaker', true)
+            await setContext('aws.isSageMaker', true)
         }
 
         // Clean up remaining logins after codecatalyst activated and ran its cleanup.
@@ -253,7 +253,7 @@ export async function deactivate() {
 }
 
 async function handleAmazonQInstall() {
-    const dismissedInstall = globals.context.globalState.get<boolean>(amazonQInstallDismissedKey)
+    const dismissedInstall = globals.globalState.get<boolean>('aws.toolkit.amazonqInstall.dismissed')
     if (isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) || dismissedInstall) {
         return
     }
@@ -265,7 +265,7 @@ async function handleAmazonQInstall() {
             void vscode.window.showInformationMessage(
                 "Amazon Q is now its own extension.\n\nWe've auto-installed it for you with all the same features and settings from CodeWhisperer and Amazon Q chat."
             )
-            await globals.context.globalState.update(amazonQInstallDismissedKey, true)
+            await globals.globalState.update('aws.toolkit.amazonqInstall.dismissed', true)
         } else {
             telemetry.record({ id: 'amazonQStandaloneChange' })
             void vscode.window
@@ -296,7 +296,7 @@ async function handleAmazonQInstall() {
                         } else {
                             telemetry.record({ action: 'dismissQNotification' })
                         }
-                        await globals.context.globalState.update(amazonQInstallDismissedKey, true)
+                        await globals.globalState.update('aws.toolkit.amazonqInstall.dismissed', true)
                     })
                 })
         }

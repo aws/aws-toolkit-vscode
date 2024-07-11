@@ -10,10 +10,18 @@ import { isThrottlingError, isTransientError } from '@smithy/service-error-class
 import { Result } from './telemetry/telemetry'
 import { CancellationError } from './utilities/timeoutUtils'
 import { isNonNullable } from './utilities/tsUtils'
-import type * as fs from 'fs'
+import type * as nodefs from 'fs'
 import type * as os from 'os'
 import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
 import { isAutomation } from './vscode/env'
+import { driveLetterRegex } from './utilities/pathUtils'
+
+let _username = 'unknown-user'
+
+/** One-time initialization for this module. */
+export function init(username: string) {
+    _username = username
+}
 
 export const errorCode = {
     invalidConnection: 'InvalidConnection',
@@ -312,9 +320,87 @@ export function getTelemetryResult(error: unknown | undefined): Result {
     return 'Failed'
 }
 
-/** Gets the (partial) error message detail for the `reasonDesc` field. */
+/**
+ * Removes potential PII from a string, for logging/telemetry.
+ *
+ * Examples:
+ * - "Failed to save c:/fooß/bar/baz.txt" => "Failed to save c:/xß/x/x.txt"
+ * - "EPERM for dir c:/Users/user1/.aws/sso/cache/abc123.json" => "EPERM for dir c:/Users/x/.aws/sso/cache/x.json"
+ */
+export function scrubNames(s: string, username?: string) {
+    let r = ''
+    const fileExtRe = /\.[^.]{1,4}$/
+    const slashdot = /^[~.]*[\/\\]*/
+
+    /** Allowlisted filepath segments. */
+    const keep = new Set<string>([
+        '~',
+        '.',
+        '..',
+        '.aws',
+        'aws',
+        'sso',
+        'cache',
+        'credentials',
+        'config',
+        'Users',
+        'users',
+        'home',
+    ])
+
+    if (username && username.length > 2) {
+        s = s.replaceAll(username, 'x')
+    }
+
+    // Replace contiguous whitespace with 1 space.
+    s = s.replace(/\s+/g, ' ')
+
+    // 1. split on whitespace.
+    // 2. scrub words that match username or look like filepaths.
+    const words = s.split(/\s+/)
+    for (const word of words) {
+        const pathSegments = word.split(/[\/\\]/)
+        if (pathSegments.length < 2) {
+            // Not a filepath.
+            r += ' ' + word
+            continue
+        }
+
+        // Replace all (non-allowlisted) ASCII filepath segments with "x".
+        // "/foo/bar/aws/sso/" => "/x/x/aws/sso/"
+        let scrubbed = ''
+        // Get the frontmatter ("/", "../", "~/", or "./").
+        const start = word.trimStart().match(slashdot)?.[0] ?? ''
+        const fileExt = word.trimEnd().match(fileExtRe)?.[0] ?? ''
+        pathSegments[0] = pathSegments[0].trimStart().replace(slashdot, '')
+        for (const seg of pathSegments) {
+            if (driveLetterRegex.test(seg)) {
+                scrubbed += seg
+            } else if (keep.has(seg)) {
+                scrubbed += '/' + seg
+            } else {
+                // Save the first non-ASCII (unicode) char, if any.
+                const nonAscii = seg.match(/[^\p{ASCII}]/u)?.[0] ?? ''
+                // Replace all chars (except [^…]) with "x" .
+                const ascii = seg.replace(/[^$[\](){}:;'" ]+/g, 'x')
+                scrubbed += `/${ascii}${nonAscii}`
+            }
+        }
+
+        r += ` ${start.replace(/\\/g, '/')}${scrubbed.replace(/^[\/\\]+/, '')}${fileExt}`
+    }
+
+    return r.trim()
+}
+
+/**
+ * Gets the (partial) error message detail for the `reasonDesc` field.
+ *
+ * @param err Error object, or message text
+ */
 export function getTelemetryReasonDesc(err: unknown | undefined): string | undefined {
-    const msg = getErrorMsg(err as Error)
+    const m = typeof err === 'string' ? err : getErrorMsg(err as Error) ?? ''
+    const msg = scrubNames(m, _username)
 
     // Truncate to 200 chars.
     return msg && msg.length > 0 ? msg.substring(0, 200) : undefined
@@ -401,7 +487,7 @@ export function findBestErrorInChain(error: Error, preferredErrors = _preferredE
             (errCode !== '' && preferredErrors.some(re => re.test(errCode))) ||
             // In priority order:
             isFilesystemError(err) ||
-            isNoPermissionsError(err)
+            isPermissionsError(err)
 
         if (isAwsError(err) || (prefer && !isAwsError(bestErr))) {
             if (isAwsError(err) && !isAwsError(bestErr)) {
@@ -440,11 +526,15 @@ function hasFault<T>(error: T): error is T & { $fault: 'client' | 'server' } {
 }
 
 function hasMetadata<T>(error: T): error is T & Pick<CodeWhispererStreamingServiceException, '$metadata'> {
-    return typeof (error as { $metadata?: unknown }).$metadata === 'object'
+    return typeof (error as { $metadata?: unknown })?.$metadata === 'object'
+}
+
+function hasResponse<T>(error: T): error is T & Pick<ServiceException, '$response'> {
+    return typeof (error as { $response?: unknown })?.$response === 'object'
 }
 
 function hasName<T>(error: T): error is T & { name: string } {
-    return typeof (error as { name?: unknown }).name === 'string'
+    return typeof (error as { name?: unknown })?.name === 'string'
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -487,6 +577,17 @@ export function getRequestId(err: unknown): string | undefined {
     }
 }
 
+export function getHttpStatusCode(err: unknown): number | undefined {
+    if (hasResponse(err) && err?.$response?.statusCode !== undefined) {
+        return err?.$response?.statusCode
+    }
+    if (hasMetadata(err) && err.$metadata?.httpStatusCode !== undefined) {
+        return err.$metadata?.httpStatusCode
+    }
+
+    return undefined
+}
+
 export function isFilesystemError(err: unknown): boolean {
     if (
         err instanceof vscode.FileSystemError ||
@@ -526,13 +627,13 @@ export function isFileNotFoundError(err: unknown): boolean {
     if (err instanceof vscode.FileSystemError) {
         return err.code === vscode.FileSystemError.FileNotFound().code
     } else if (hasCode(err)) {
-        return err.code === 'ENOENT'
+        return err.code === 'ENOENT' || err.code === 'FileNotFound'
     }
 
     return false
 }
 
-export function isNoPermissionsError(err: unknown): boolean {
+export function isPermissionsError(err: unknown): boolean {
     if (err instanceof vscode.FileSystemError) {
         return (
             err.code === vscode.FileSystemError.NoPermissions().code ||
@@ -568,7 +669,7 @@ function vscodeModeToString(mode: vscode.FileStat['permissions']) {
     }
 }
 
-function getEffectivePerms(uid: number, gid: number, stats: fs.Stats) {
+function getEffectivePerms(uid: number, gid: number, stats: nodefs.Stats) {
     const mode = stats.mode
     const isOwner = uid === stats.uid
     const isGroup = gid === stats.gid && !isOwner
@@ -599,7 +700,7 @@ export type PermissionsTriplet = `${'r' | '-' | '*'}${'w' | '-' | '*'}${'x' | '-
 export class PermissionsError extends ToolkitError {
     public readonly actual: string // This is a resolved triplet, _not_ the full bits
 
-    static fromNodeFileStats(stats: fs.Stats, userInfo: os.UserInfo<string>, expected: string, source: unknown) {
+    static fromNodeFileStats(stats: nodefs.Stats, userInfo: os.UserInfo<string>) {
         const mode = `${stats.isDirectory() ? 'd' : '-'}${modeToString(stats.mode)}`
         const owner = stats.uid === userInfo.uid ? (stats.uid === -1 ? '' : userInfo.username) : String(stats.uid)
         const group = String(stats.gid)
@@ -610,12 +711,7 @@ export class PermissionsError extends ToolkitError {
         return { mode, owner, group, actual, isAmbiguous, isOwner }
     }
 
-    static fromVscodeFileStats(
-        stats: vscode.FileStat,
-        userInfo: os.UserInfo<string>,
-        expected: string,
-        source: unknown
-    ) {
+    static fromVscodeFileStats(stats: vscode.FileStat, userInfo: os.UserInfo<string>) {
         const isDir = !!(stats.type & vscode.FileType.Directory)
         const mode = `${isDir ? 'd' : '-'}${vscodeModeToString(stats.permissions)}`
         const owner = '' // vscode.FileStat does not currently provide file owner.
@@ -630,18 +726,18 @@ export class PermissionsError extends ToolkitError {
     /**
      * Creates a PermissionsError from a file stat() result.
      *
-     * Note: pass `fs.Stats` when possible (in a nodejs context), because it gives much better info.
+     * Note: pass `nodefs.Stats` when possible (in a nodejs context), because it gives much better info.
      */
     public constructor(
         public readonly uri: vscode.Uri,
-        public readonly stats: fs.Stats | vscode.FileStat,
+        public readonly stats: nodefs.Stats | vscode.FileStat,
         public readonly userInfo: os.UserInfo<string>,
         public readonly expected: PermissionsTriplet,
         source?: unknown
     ) {
         const o = (stats as any).type
-            ? PermissionsError.fromVscodeFileStats(stats as vscode.FileStat, userInfo, expected, source)
-            : PermissionsError.fromNodeFileStats(stats as fs.Stats, userInfo, expected, source)
+            ? PermissionsError.fromVscodeFileStats(stats as vscode.FileStat, userInfo)
+            : PermissionsError.fromNodeFileStats(stats as nodefs.Stats, userInfo)
 
         const resolvedExpected = Array.from(expected)
             .map((c, i) => (c === '*' ? o.actual[i] : c))

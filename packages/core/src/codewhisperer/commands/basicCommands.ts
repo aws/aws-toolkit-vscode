@@ -38,11 +38,12 @@ import { removeDiagnostic } from '../service/diagnosticsProvider'
 import { SecurityIssueHoverProvider } from '../service/securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from '../service/securityIssueCodeActionProvider'
 import { SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
-import { SystemUtilities } from '../../shared/systemUtilities'
-import { ToolkitError } from '../../shared/errors'
+import { ToolkitError, getTelemetryReason, getTelemetryReasonDesc } from '../../shared/errors'
 import { isRemoteWorkspace } from '../../shared/vscode/env'
 import { isBuilderIdConnection } from '../../auth/connection'
 import globals from '../../shared/extensionGlobals'
+import { getVscodeCliPath, tryRun } from '../../shared/utilities/pathFind'
+import { setContext } from '../../shared/vscode/setContext'
 
 const MessageTimeOut = 5_000
 
@@ -78,8 +79,8 @@ export const enableCodeSuggestions = Commands.declare(
     (context: ExtContext) =>
         async (isAuto: boolean = true) => {
             await CodeSuggestionsState.instance.setSuggestionsEnabled(isAuto)
-            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', true)
-            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connectionExpired', false)
+            await setContext('aws.codewhisperer.connected', true)
+            await setContext('aws.codewhisperer.connectionExpired', false)
             vsCodeState.isFreeTierLimitReached = false
             if (!isCloud9()) {
                 await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
@@ -322,7 +323,7 @@ export const installAmazonQExtension = Commands.declare(
              * installExtension will fail on remote environments when the amazon q extension is already installed locally.
              * Until thats fixed we need to manually install the amazon q extension using the cli
              */
-            const vscPath = await SystemUtilities.getVscodeCliPath()
+            const vscPath = await getVscodeCliPath()
             if (!vscPath) {
                 throw new ToolkitError('installAmazonQ: Unable to find VSCode CLI path', {
                     code: 'CodeCLINotFound',
@@ -335,7 +336,7 @@ export const installAmazonQExtension = Commands.declare(
                 },
                 (progress, token) => {
                     progress.report({ message: 'Installing Amazon Q' })
-                    return SystemUtilities.tryRun(vscPath, ['--install-extension', VSCODE_EXTENSION_ID.amazonq])
+                    return tryRun(vscPath, ['--install-extension', VSCODE_EXTENSION_ID.amazonq])
                 }
             )
             return
@@ -396,7 +397,8 @@ export const applySecurityFix = Commands.declare(
         } catch (err) {
             getLogger().error(`Apply fix command failed. ${err}`)
             applyFixTelemetryEntry.result = 'Failed'
-            applyFixTelemetryEntry.reason = err as string
+            applyFixTelemetryEntry.reason = getTelemetryReason(err)
+            applyFixTelemetryEntry.reasonDesc = getTelemetryReasonDesc(err)
         } finally {
             telemetry.codewhisperer_codeScanIssueApplyFix.emit(applyFixTelemetryEntry)
             TelemetryHelper.instance.sendCodeScanRemediationsEvent(
@@ -406,7 +408,7 @@ export const applySecurityFix = Commands.declare(
                 issue.findingId,
                 issue.ruleId,
                 source,
-                applyFixTelemetryEntry.reason,
+                applyFixTelemetryEntry.reasonDesc,
                 applyFixTelemetryEntry.result,
                 !!issue.suggestedFixes.length
             )

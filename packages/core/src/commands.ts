@@ -46,6 +46,7 @@ import { Commands, VsCodeCommandArg, placeholder, vscodeComponent } from './shar
 import { isValidResponse } from './shared/wizards/wizard'
 import { CancellationError } from './shared/utilities/timeoutUtils'
 import { ToolkitError } from './shared/errors'
+import { setContext } from './shared'
 
 function switchConnections(auth: Auth | TreeNode | unknown) {
     if (!(auth instanceof Auth)) {
@@ -129,7 +130,7 @@ export function registerCommands(context: vscode.ExtensionContext) {
 
             CommonAuthWebview.authSource = source
             await vscode.commands.executeCommand('aws.explorer.setLoginService', serviceToShow)
-            await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', true)
+            await setContext('aws.explorer.showAuthView', true)
             await vscode.commands.executeCommand('aws.toolkit.AmazonCommonAuth.focus')
         }
     )

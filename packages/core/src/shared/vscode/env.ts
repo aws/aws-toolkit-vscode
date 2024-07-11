@@ -101,6 +101,15 @@ export function isRemoteWorkspace(): boolean {
     return vscode.env.remoteName === 'ssh-remote'
 }
 
+/** Returns true if OS is Windows. */
+export function isWin(): boolean {
+    // if (isWeb()) {
+    //     return false
+    // }
+
+    return process.platform === 'win32'
+}
+
 export function isWebWorkspace(): boolean {
     return vscode.env.uiKind === vscode.UIKind.Web
 }
@@ -178,8 +187,10 @@ export function getServiceEnvVarConfig<T extends string[]>(service: string, conf
 
 export async function getMachineId(): Promise<string> {
     if (isWeb()) {
+        // TODO: use `vscode.env.machineId` instead?
         return 'browser'
     }
     const proc = new ChildProcess('hostname', [], { collect: true, logging: 'no' })
+    // TODO: check exit code.
     return (await proc.run()).stdout.trim() ?? 'unknown-host'
 }

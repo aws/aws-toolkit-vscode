@@ -9,9 +9,8 @@ import { join } from 'path'
 import {
     activate as activateCodeWhisperer,
     shutdown as shutdownCodeWhisperer,
-    amazonQDismissedKey,
     AuthUtil,
-} from 'aws-core-vscode/codewhisperer'
+} from 'aws-core-vscode/codewhispererCommon'
 import {
     ExtContext,
     initialize,
@@ -25,7 +24,9 @@ import {
     RegionProvider,
     getLogger,
     getMachineId,
+    messages,
 } from 'aws-core-vscode/shared'
+import { fs, errors, setContext } from 'aws-core-vscode/shared'
 import { initializeAuth, CredentialsStore, LoginManager, AuthUtils, SsoConnection } from 'aws-core-vscode/auth'
 import { CommonAuthWebview } from 'aws-core-vscode/login'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
@@ -40,6 +41,10 @@ export const amazonQContextPrefix = 'amazonq'
  */
 export async function activateAmazonQCommon(context: vscode.ExtensionContext, isWeb: boolean) {
     initialize(context, isWeb)
+    const homeDirLogs = await fs.init(context, homeDir => {
+        void messages.showViewLogsMessage(`Invalid home directory (check $HOME): "${homeDir}"`)
+    })
+    errors.init(fs.getUsername())
     await initializeComputeRegion()
 
     globals.contextPrefix = 'amazonq.' //todo: disconnect from above line
@@ -91,6 +96,10 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     globals.logOutputChannel = qLogChannel
     globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
 
+    if (homeDirLogs.length > 0) {
+        getLogger().error('fs.init: invalid env vars found: %O', homeDirLogs)
+    }
+
     await activateTelemetry(context, globals.awsContext, Settings.instance, 'Amazon Q For VS Code')
 
     await initializeAuth(globals.loginManager)
@@ -107,7 +116,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     registerCommands(context)
 
     // Hide the Amazon Q tree in toolkit explorer
-    await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)
+    await setContext('aws.toolkit.amazonq.dismissed', true)
 
     // reload webviews
     await vscode.commands.executeCommand('workbench.action.webview.reloadWebviewAction')

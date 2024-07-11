@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import globals from '../extensionGlobals'
 
 const toolkitLoggers: {
     main: Logger | undefined
@@ -23,6 +22,8 @@ export interface Logger {
     warn(error: Error, ...meta: any[]): number
     error(message: string, ...meta: any[]): number
     error(error: Error, ...meta: any[]): number
+    log(logLevel: LogLevel, message: string, ...meta: any[]): number
+    log(logLevel: LogLevel, error: Error, ...meta: any[]): number
     setLogLevel(logLevel: LogLevel): void
     /** Returns true if the given log level is being logged.  */
     logLevelEnabled(logLevel: LogLevel): boolean
@@ -102,6 +103,9 @@ export class NullLogger implements Logger {
     public logLevelEnabled(logLevel: LogLevel): boolean {
         return false
     }
+    public log(logLevel: LogLevel, message: string | Error, ...meta: any[]): number {
+        return 0
+    }
     public debug(message: string | Error, ...meta: any[]): number {
         return 0
     }
@@ -130,6 +134,26 @@ export class ConsoleLogger implements Logger {
     public setLogLevel(logLevel: LogLevel) {}
     public logLevelEnabled(logLevel: LogLevel): boolean {
         return false
+    }
+    public log(logLevel: LogLevel, message: string | Error, ...meta: any[]): number {
+        switch (logLevel) {
+            case 'error':
+                this.error(message, ...meta)
+                return 0
+            case 'warn':
+                this.warn(message, ...meta)
+                return 0
+            case 'verbose':
+                this.verbose(message, ...meta)
+                return 0
+            case 'debug':
+                this.debug(message, ...meta)
+                return 0
+            case 'info':
+            default:
+                this.info(message, ...meta)
+                return 0
+        }
     }
     public debug(message: string | Error, ...meta: any[]): number {
         console.debug(message, ...meta)
@@ -177,11 +201,11 @@ export class PerfLog {
     public constructor(public readonly topic: string) {
         const log = getLogger()
         this.log = log
-        this.start = globals.clock.Date.now()
+        this.start = performance.now()
     }
 
     public elapsed(): number {
-        return globals.clock.Date.now() - this.start
+        return performance.now() - this.start
     }
 
     public done(): void {
