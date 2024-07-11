@@ -24,3 +24,6 @@ mkdir -p ~codebuild-user
 chown -R codebuild-user:codebuild-user /tmp ~codebuild-user .
 chmod +x ~codebuild-user
 ls -ld ~codebuild-user
+
+curl -Os https://uploader.codecov.io/latest/linux/codecov 
+chmod +x codecov
