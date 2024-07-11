@@ -11,10 +11,9 @@ import {
     Command,
     MessageType,
 } from '../types'
-import { ChatSession } from '../../codewhispererChat/clients/chat/v0/chat'
-import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger/logger'
+import { AmazonqNotFoundError, getAmazonqApi } from '../../amazonq/extApi'
 
 const TIMEOUT = 30_000
 
@@ -54,7 +53,10 @@ async function generateResource(prompt: string) {
     let startTime = globals.clock.Date.now()
 
     try {
-        const chatSession = new ChatSession()
+        const amazonqApi = await getAmazonqApi()
+        if (!amazonqApi) {
+            throw new AmazonqNotFoundError()
+        }
         const request: GenerateAssistantResponseRequest = {
             conversationState: {
                 currentMessage: {
@@ -72,13 +74,11 @@ async function generateResource(prompt: string) {
         let supplementaryWebLinks: SupplementaryWebLink[] = []
         let references: Reference[] = []
 
-        if (AuthUtil.instance.isConnectionExpired()) {
-            await AuthUtil.instance.showReauthenticatePrompt()
-        }
+        await amazonqApi.authApi.reauthIfNeeded()
 
         startTime = globals.clock.Date.now()
         // TODO-STARLING - Revisit to see if timeout still needed prior to launch
-        const data = await timeout(chatSession.chat(request), TIMEOUT)
+        const data = await timeout(amazonqApi.chatApi.chat(request), TIMEOUT)
         const initialResponseTime = globals.clock.Date.now() - startTime
         getLogger().debug(`CW Chat initial response: ${JSON.stringify(data, undefined, 2)}, ${initialResponseTime} ms`)
         if (data['$metadata']) {
