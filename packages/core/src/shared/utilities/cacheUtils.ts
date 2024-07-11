@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { dirname } from 'path'
 import { ToolkitError, isFileNotFoundError } from '../errors'
-import { SystemUtilities } from '../systemUtilities'
+import fs from '../../shared/fs/fs'
 import { promises as fsPromises } from 'fs'
 import crypto from 'crypto'
 import { isWeb } from '../extensionGlobals'
@@ -107,7 +107,7 @@ export function createDiskCache<T, K>(
             const target = mapKey(key)
 
             try {
-                const result = JSON.parse(await SystemUtilities.readFile(target))
+                const result = JSON.parse(await fs.readFileAsString(target))
                 log('loaded', key)
                 return result
             } catch (error) {
@@ -126,16 +126,16 @@ export function createDiskCache<T, K>(
             const target = mapKey(key)
 
             try {
-                await SystemUtilities.createDirectory(dirname(target))
+                await fs.mkdir(dirname(target))
                 if (isWeb()) {
                     // There is no web-compatible rename() method. So do a regular write.
-                    await SystemUtilities.writeFile(target, JSON.stringify(data), { mode: 0o600 })
+                    await fs.writeFile(target, JSON.stringify(data), { mode: 0o600 })
                 } else {
                     // With SSO cache we noticed malformed JSON on read. A guess is that multiple writes
                     // are occuring at the same time. The following is a bandaid that ensures an all-or-nothing
                     // write, though there can still be race conditions with which version remains after overwrites.
                     const tempFile = `${target}.tmp-${crypto.randomBytes(4).toString('hex')}`
-                    await SystemUtilities.writeFile(tempFile, JSON.stringify(data), { mode: 0o600 })
+                    await fs.writeFile(tempFile, JSON.stringify(data), { mode: 0o600 })
                     await fsPromises.rename(tempFile, target)
                 }
             } catch (error) {
@@ -151,7 +151,7 @@ export function createDiskCache<T, K>(
             const target = mapKey(key)
 
             try {
-                await SystemUtilities.delete(target)
+                await fs.delete(target, { force: false })
             } catch (error) {
                 if (isFileNotFoundError(error)) {
                     return log('file not found', key)

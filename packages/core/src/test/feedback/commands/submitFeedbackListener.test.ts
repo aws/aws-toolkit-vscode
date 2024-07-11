@@ -8,6 +8,7 @@ import { TelemetryService } from '../../../shared/telemetry/telemetryService'
 import * as assert from 'assert'
 import { FeedbackWebview } from '../../../feedback/vue/submitFeedback'
 import sinon from 'sinon'
+import { waitUntil } from '../../../shared'
 
 const comment = 'comment'
 const sentiment = 'Positive'
@@ -25,21 +26,26 @@ describe('submitFeedbackListener', function () {
         { productName: 'AWS Toolkit', expectedError: 'Expected failure' },
     ]
     testCases.forEach(({ productName, expectedError }) => {
-        it(`submits feedback for ${productName}, disposes, and handles errors`, async function () {
+        it(`submits ${productName} feedback, disposes, and shows message on success`, async function () {
             const postStub = sinon.stub()
             mockTelemetry.postFeedback = postStub
             const webview = new FeedbackWebview(mockTelemetry, productName)
             await webview.submit(message)
-            assert.ok(postStub.calledOnceWithExactly({ comment: comment, sentiment: sentiment }))
+            const gotArgs = await waitUntil(
+                async () => {
+                    return postStub.lastCall.args?.[0]
+                },
+                { interval: 100 }
+            )
+            assert.deepStrictEqual(gotArgs, { comment: comment, sentiment: sentiment })
             assert.ok(webview.isDisposed)
         })
-        it(`submits feedback for ${productName}, disposes, and handles errors`, async function () {
-            const error = 'Expected failure'
-            const postStub = sinon.stub().rejects(new Error(error))
+        it(`submits ${productName} feedback and posts failure message on failure`, async function () {
+            const postStub = sinon.stub().rejects(new Error(expectedError))
             mockTelemetry.postFeedback = postStub
             const webview = new FeedbackWebview(mockTelemetry, productName)
             const result = await webview.submit(message)
-            assert.strictEqual(result, error)
+            assert.strictEqual(result, expectedError)
         })
     })
 })

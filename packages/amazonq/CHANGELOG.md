@@ -1,3 +1,29 @@
+## 1.13.0 2024-07-11
+
+- **Bug Fix** AD/LDAP users may see "uv_os_get_passwd ENOENT" error on startup #5277
+- **Feature** Add support for [Amazon Q Chat Workspace Context](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/workspace-context.html). Customers can use `@workspace` to ask questions regarding local workspace.
+
+## 1.12.0 2024-07-08
+
+- **Bug Fix** Amazon Q Security Scans: Fixed unnecessary yellow lines appearing in both auto scans and project scans.
+- **Bug Fix** Amazon Q Chat: Fixed prompt input becomes invisible if an html special character is inserted
+- **Bug Fix** Amazon Q Chat: Fixed button font sizes are too big
+- **Bug Fix** Amazon Q Chat: Fixed buttons don't show borders inside a message
+- **Bug Fix** Amazon Q Code Transform: Link UI messages to troubleshooting docs
+- **Bug Fix** Amazon Q /dev command: improve user error messages
+- **Bug Fix** Amazon Q Chat: Fixed button texts are cropped too short
+- **Bug Fix** Amazon Q Chat: Fixed prompt input and selected command horizontal alignment
+- **Bug Fix** Amazon Q Chat: Fixed prompt input becomes invisible when multine text inserted with paste
+- **Feature** Q feature dev: Only use relevant code and related files
+
+## 1.11.0 2024-06-27
+
+- **Bug Fix** Amazon Q Chat: Fix for inline buttons don't have borders
+- **Bug Fix** Amazon Q Chat: Fix for some edge cases when followups appear on top without styles
+- **Bug Fix** Amazon Q Chat: Fix for prompt input removes whole word if it starts with @ character but there is no context selected
+- **Bug Fix** Amazon Q Chat: Fix for prompt input doesn't show multi line content properly after it reaches 10-15 lines
+- **Bug Fix** Amazon Q /dev command: Fix in progress experience for ongoing backend calls
+
 ## 1.10.0 2024-06-21
 
 - **Bug Fix** Security Scan: Fixes an issue where project-scans time out for larger projects.

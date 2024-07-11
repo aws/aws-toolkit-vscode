@@ -459,11 +459,11 @@ describe('CodeWhisperer-basicCommands', function () {
             getTestWindow().onDidShowQuickPick(async e => {
                 e.assertContainsItems(
                     createAutoSuggestions(false),
-                    createSelectCustomization(),
                     createOpenReferenceLog(),
                     createGettingStarted(),
                     createAutoScans(false),
                     createSecurityScan(),
+                    createSelectCustomization(),
                     switchToAmazonQNode(),
                     ...genericItems(),
                     createSettingsNode(),
@@ -631,7 +631,8 @@ describe('CodeWhisperer-basicCommands', function () {
                 findingId: codeScanIssue.findingId,
                 component: 'webview',
                 result: 'Failed',
-                reason: 'Error: Failed to get updated content from applying diff patch',
+                reason: 'Error',
+                reasonDesc: 'Failed to get updated content from applying diff patch',
             })
         })
 
@@ -690,7 +691,8 @@ describe('CodeWhisperer-basicCommands', function () {
                 findingId: codeScanIssue.findingId,
                 component: 'quickfix',
                 result: 'Failed',
-                reason: 'Error: Failed to apply edit to the workspace.',
+                reason: 'Error',
+                reasonDesc: 'Failed to apply edit to the workspace.',
             })
         })
     })

@@ -22,8 +22,11 @@ import { listCodeWhispererCommandsWalkthrough } from '../codewhisperer/ui/status
 import { Commands, placeholder } from '../shared/vscode/commands2'
 import { focusAmazonQPanel, focusAmazonQPanelKeybinding } from '../codewhispererChat/commands/registerCommands'
 import { TryChatCodeLensProvider, tryChatCodeLensCommand } from '../codewhispererChat/editor/codelens'
+import { LspController } from './lsp/lspController'
 import { Auth } from '../auth'
 import { telemetry } from '../shared/telemetry'
+import { CodeWhispererSettings } from '../codewhisperer/util/codewhispererSettings'
+import { debounce } from '../shared/utilities/functionUtils'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = DefaultAmazonQAppInitContext.instance
@@ -39,6 +42,10 @@ export async function activate(context: ExtensionContext) {
 
     await TryChatCodeLensProvider.register(appInitContext.onDidChangeAmazonQVisibility.event)
 
+    const setupLsp = debounce(async () => {
+        void LspController.instance.trySetupLsp(context)
+    }, 5000)
+
     context.subscriptions.push(
         window.registerWebviewViewProvider(AmazonQChatViewProvider.viewType, provider, {
             webviewOptions: {
@@ -52,7 +59,14 @@ export async function activate(context: ExtensionContext) {
         listCodeWhispererCommandsWalkthrough.register(),
         focusAmazonQPanel.register(),
         focusAmazonQPanelKeybinding.register(),
-        tryChatCodeLensCommand.register()
+        tryChatCodeLensCommand.register(),
+        vscode.workspace.onDidChangeConfiguration(async configurationChangeEvent => {
+            if (configurationChangeEvent.affectsConfiguration('amazonQ.workspaceIndex')) {
+                if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
+                    void setupLsp()
+                }
+            }
+        })
     )
 
     Commands.register('aws.amazonq.learnMore', () => {
@@ -60,6 +74,7 @@ export async function activate(context: ExtensionContext) {
     })
 
     await activateBadge()
+    void setupLsp()
     void setupAuthNotification()
 }
 

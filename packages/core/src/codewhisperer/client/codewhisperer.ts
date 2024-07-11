@@ -26,9 +26,7 @@ import { session } from '../util/codeWhispererSession'
 import { getLogger } from '../../shared/logger'
 import { indent } from '../../shared/utilities/textUtilities'
 import { keepAliveHeader } from './agent'
-import { getOptOutPreference } from '../util/commonUtil'
-import * as os from 'os'
-import { getClientId } from '../../shared/telemetry/util'
+import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
 import { extensionVersion, getServiceEnvVarConfig } from '../../shared/vscode/env'
 import { DevSettings } from '../../shared/settings'
 
@@ -256,7 +254,7 @@ export class DefaultCodeWhispererClient {
             optOutPreference: getOptOutPreference(),
             userContext: {
                 ideCategory: 'VSCODE',
-                operatingSystem: this.getOperatingSystem(),
+                operatingSystem: getOperatingSystem(),
                 product: 'CodeWhisperer', // TODO: update this?
                 clientId: getClientId(globals.context.globalState),
                 ideVersion: extensionVersion,
@@ -273,24 +271,13 @@ export class DefaultCodeWhispererClient {
         const request: ListFeatureEvaluationsRequest = {
             userContext: {
                 ideCategory: 'VSCODE',
-                operatingSystem: this.getOperatingSystem(),
+                operatingSystem: getOperatingSystem(),
                 product: 'CodeWhisperer', // TODO: update this?
                 clientId: getClientId(globals.context.globalState),
                 ideVersion: extensionVersion,
             },
         }
         return (await this.createUserSdkClient()).listFeatureEvaluations(request).promise()
-    }
-
-    private getOperatingSystem(): string {
-        const osId = os.platform() // 'darwin', 'win32', 'linux', etc.
-        if (osId === 'darwin') {
-            return 'MAC'
-        } else if (osId === 'win32') {
-            return 'WINDOWS'
-        } else {
-            return 'LINUX'
-        }
     }
 
     /**

@@ -5,6 +5,7 @@
 
 import assert from 'assert'
 import * as sinon from 'sinon'
+import fs from '../../shared/fs/fs'
 import { ToolkitError, isUserCancelledError } from '../../shared/errors'
 import { assertTreeItem } from '../shared/treeview/testUtil'
 import { getTestWindow } from '../shared/vscode/window'
@@ -12,13 +13,13 @@ import { assertTelemetry, captureEventOnce, getMetrics } from '../testUtil'
 import { createBuilderIdProfile, createSsoProfile, createTestAuth } from './testUtil'
 import { toCollection } from '../../shared/utilities/asyncCollection'
 import globals from '../../shared/extensionGlobals'
-import { SystemUtilities } from '../../shared/systemUtilities'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { SharedCredentialsProviderFactory } from '../../auth/providers/sharedCredentialsProviderFactory'
 import { UserCredentialsUtils } from '../../shared/credentials/userCredentialsUtils'
 import { getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
 import { Connection, isIamConnection, isSsoConnection, scopesSsoAccountAccess } from '../../auth/connection'
 import { AuthNode, createDeleteConnectionButton, promptForConnection } from '../../auth/utils'
+import { isMinVscode } from '../../shared/vscode/env'
 
 const ssoProfile = createSsoProfile()
 const scopedSsoProfile = createSsoProfile({ scopes: ['foo'] })
@@ -413,14 +414,14 @@ describe('Auth', function () {
 
         beforeEach(async function () {
             tmpDir = await makeTemporaryToolkitFolder()
-            sinon.stub(SystemUtilities, 'getHomeDirectory').returns(tmpDir)
+            sinon.stub(fs, 'getUserHomeDir').returns(tmpDir)
             sinon.stub(globals.loginManager, 'validateCredentials').resolves('123')
             auth.credentialsManager.addProviderFactory(new SharedCredentialsProviderFactory())
         })
 
         afterEach(async function () {
             sinon.restore()
-            await SystemUtilities.delete(tmpDir, { recursive: true })
+            await fs.delete(tmpDir, { recursive: true })
         })
 
         it('does not cache if the credentials file changes', async function () {
@@ -440,7 +441,7 @@ describe('Auth', function () {
                 sessionToken: undefined,
             })
 
-            await SystemUtilities.delete(getCredentialsFilename())
+            await fs.delete(getCredentialsFilename())
 
             const newCreds = { ...initialCreds, accessKey: 'y', secretKey: 'y' }
             await UserCredentialsUtils.generateCredentialsFile(newCreds)
@@ -502,6 +503,10 @@ describe('Auth', function () {
         })
 
         it('reauthenticates a connection if the user selects an expired one', async function () {
+            if (isMinVscode('1.83.0')) {
+                this.skip()
+            }
+
             getTestWindow().onDidShowQuickPick(async picker => {
                 await picker.untilReady()
                 const connItem = picker.findItemOrThrow(/IAM Identity Center/)

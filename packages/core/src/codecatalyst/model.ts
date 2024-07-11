@@ -362,5 +362,3 @@ export interface DevEnvMemento {
     /** CodeCatalyst Alias */
     alias: string | undefined
 }
-
-export const codecatalystReconnectKey = 'CODECATALYST_RECONNECT'

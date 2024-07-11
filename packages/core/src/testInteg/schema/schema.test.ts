@@ -73,7 +73,7 @@ describe('getDefaultSchemas()', () => {
 
     it('uses cache after initial fetch for CFN/SAM schema', async () => {
         fs.removeSync(GlobalStorage.samAndCfnSchemaDestinationUri().fsPath)
-        globals.telemetry.telemetryEnabled = true
+        await globals.telemetry.setTelemetryEnabled(true)
         globals.telemetry.clearRecords()
         globals.telemetry.logger.clear()
         await getDefaultSchemas()

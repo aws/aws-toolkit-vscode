@@ -199,7 +199,8 @@ export async function startSecurityScan(
             scanJob.jobId,
             CodeWhispererConstants.codeScanFindingsSchema,
             projectPaths,
-            scope
+            scope,
+            editor
         )
         const { total, withFixes } = securityRecommendationCollection.reduce(
             (accumulator, current) => ({

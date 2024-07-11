@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { WatchedFiles } from './watchedFiles'
 import * as yaml from 'js-yaml'
 import * as filesystemUtilities from '../filesystemUtilities'
-import { SystemUtilities } from '../systemUtilities'
+import fs from '../fs/fs'
 import { getLogger } from '../logger/logger'
 import globals from '../extensionGlobals'
 
@@ -17,7 +17,7 @@ export class DevfileRegistry extends WatchedFiles<Devfile> {
     public name = 'DevfileRegistry'
 
     protected async process(uri: vscode.Uri, contents?: string): Promise<Devfile | undefined> {
-        if (!(await SystemUtilities.fileExists(uri))) {
+        if (!(await fs.exists(uri))) {
             throw new Error(`Devfile not found: ${uri.fsPath}`)
         }
 

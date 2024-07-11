@@ -101,6 +101,10 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         this.logger.add(consoleLogTransport)
     }
 
+    public log(logLevel: LogLevel, message: string | Error, ...meta: any[]): number {
+        return this.writeToLogs(logLevel, message, ...meta)
+    }
+
     public debug(message: string | Error, ...meta: any[]): number {
         return this.writeToLogs('debug', message, ...meta)
     }

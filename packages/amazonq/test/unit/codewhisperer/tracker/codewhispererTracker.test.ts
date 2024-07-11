@@ -9,7 +9,6 @@ import { assertTelemetryCurried } from 'aws-core-vscode/test'
 import {
     AuthUtil,
     CodeWhispererTracker,
-    userGroupKey,
     UserGroup,
     CodeWhispererUserGroupSettings,
 } from 'aws-core-vscode/codewhisperer'
@@ -34,13 +33,13 @@ describe('codewhispererTracker', function () {
             assert.ok(!pushSpy.neverCalledWith(suggestion))
         })
 
-        it('Should not enque when telemetry is disabled', function () {
-            globals.telemetry.telemetryEnabled = false
+        it('Should not enque when telemetry is disabled', async function () {
+            await globals.telemetry.setTelemetryEnabled(false)
             const suggestion = createAcceptedSuggestionEntry()
             const pushSpy = sinon.spy(Array.prototype, 'push')
             CodeWhispererTracker.getTracker().enqueue(suggestion)
             assert.ok(pushSpy.neverCalledWith(suggestion))
-            globals.telemetry.telemetryEnabled = true
+            await globals.telemetry.setTelemetryEnabled(true)
         })
     })
 
@@ -67,11 +66,11 @@ describe('codewhispererTracker', function () {
         })
 
         it('Should skip if telemetry is disabled', async function () {
-            globals.telemetry.telemetryEnabled = false
+            await globals.telemetry.setTelemetryEnabled(false)
             const getTimeSpy = sinon.spy(Date.prototype, 'getTime')
             await CodeWhispererTracker.getTracker().flush()
             assert.ok(!getTimeSpy.called)
-            globals.telemetry.telemetryEnabled = true
+            await globals.telemetry.setTelemetryEnabled(true)
         })
     })
 
@@ -96,7 +95,7 @@ describe('codewhispererTracker', function () {
         })
 
         it('Should call recordCodewhispererUserModification with suggestion event', async function () {
-            await globals.context.globalState.update(userGroupKey, {
+            await globals.context.globalState.update('CODEWHISPERER_USER_GROUP', {
                 group: UserGroup.CrossFile,
                 version: extensionVersion,
             })
