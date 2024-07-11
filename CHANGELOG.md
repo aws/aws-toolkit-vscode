@@ -1,3 +1,6 @@
+# _3.16_ (2024-07-10)
+- **(Feature)** Add support for [Amazon Q Chat Workspace Context](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/workspace-context.html). Customers can use @workspace to ask questions regarding local workspace.
+
 # _3.15_ (2024-07-08)
 - **(Bug Fix)** Amazon Q Chat: Fixed button texts are cropped too short
 - **(Bug Fix)** Amazon Q Chat: Fixed button font sizes are too big
