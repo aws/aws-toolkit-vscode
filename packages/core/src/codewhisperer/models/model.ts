@@ -15,8 +15,6 @@ import {
 } from '../../shared/telemetry/telemetry'
 import { References } from '../client/codewhisperer'
 import globals from '../../shared/extensionGlobals'
-import { autoScansEnabledKey, autoTriggerEnabledKey } from './constants'
-import { get, set } from '../util/commonUtil'
 import { ChatControllerEventEmitters } from '../../amazonqGumby/chat/controller/controller'
 import { TransformationSteps } from '../client/codewhispereruserclient'
 
@@ -76,7 +74,6 @@ export interface GetRecommendationsResponse {
 
 /** Manages the state of CodeWhisperer code suggestions */
 export class CodeSuggestionsState {
-    #context: vscode.Memento
     /** The initial state if suggestion state was not defined */
     #fallback: boolean
     #onDidChangeState = new vscode.EventEmitter<boolean>()
@@ -88,15 +85,14 @@ export class CodeSuggestionsState {
         return (this.#instance ??= new this())
     }
 
-    protected constructor(context: vscode.Memento = globals.context.globalState, fallback: boolean = true) {
-        this.#context = context
+    protected constructor(fallback: boolean = true) {
         this.#fallback = fallback
     }
 
     async toggleSuggestions() {
         const autoTriggerEnabled = this.isSuggestionsEnabled()
         const toSet: boolean = !autoTriggerEnabled
-        await set(autoTriggerEnabledKey, toSet, this.#context)
+        await globals.globalState.tryUpdate('CODEWHISPERER_AUTO_TRIGGER_ENABLED', toSet)
         this.#onDidChangeState.fire(toSet)
         return toSet
     }
@@ -108,13 +104,12 @@ export class CodeSuggestionsState {
     }
 
     isSuggestionsEnabled(): boolean {
-        const isEnabled = get(autoTriggerEnabledKey, this.#context)
+        const isEnabled = globals.globalState.tryGet('CODEWHISPERER_AUTO_TRIGGER_ENABLED', Boolean)
         return isEnabled !== undefined ? isEnabled : this.#fallback
     }
 }
 
 export class CodeScansState {
-    #context: vscode.Memento
     /** The initial state if scan state was not defined */
     #fallback: boolean
     #onDidChangeState = new vscode.EventEmitter<boolean>()
@@ -129,15 +124,14 @@ export class CodeScansState {
         return (this.#instance ??= new this())
     }
 
-    protected constructor(context: vscode.Memento = globals.context.globalState, fallback: boolean = true) {
-        this.#context = context
+    protected constructor(fallback: boolean = true) {
         this.#fallback = fallback
     }
 
     async toggleScans() {
         const autoScansEnabled = this.isScansEnabled()
         const toSet: boolean = !autoScansEnabled
-        await set(autoScansEnabledKey, toSet, this.#context)
+        await globals.globalState.tryUpdate('CODEWHISPERER_AUTO_SCANS_ENABLED', toSet)
         this.#onDidChangeState.fire(toSet)
         return toSet
     }
@@ -149,7 +143,7 @@ export class CodeScansState {
     }
 
     isScansEnabled(): boolean {
-        const isEnabled = get(autoScansEnabledKey, this.#context)
+        const isEnabled = globals.globalState.tryGet('CODEWHISPERER_AUTO_SCANS_ENABLED', Boolean)
         return isEnabled !== undefined ? isEnabled : this.#fallback
     }
 

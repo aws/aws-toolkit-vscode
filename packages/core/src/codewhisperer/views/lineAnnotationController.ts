@@ -10,8 +10,7 @@ import { isTextEditor } from '../../shared/utilities/editorUtilities'
 import { cancellableDebounce } from '../../shared/utilities/functionUtils'
 import { subscribeOnce } from '../../shared/utilities/vsCodeUtils'
 import { RecommendationService } from '../service/recommendationService'
-import { set } from '../util/commonUtil'
-import { AnnotationChangeSource, autoTriggerEnabledKey, inlinehintKey } from '../models/constants'
+import { AnnotationChangeSource, inlinehintKey } from '../models/constants'
 import globals from '../../shared/extensionGlobals'
 import { Container } from '../service/serviceContainer'
 import { telemetry } from '../../shared/telemetry/telemetry'
@@ -206,8 +205,8 @@ export class EndState implements AnnotationState {
  *   -- new users who has not seen tutorial
  *   -- new users who has seen tutorial
  *
- * "existing users" should have the context key "autoTriggerEnabledKey"
- * "new users who has seen tutorial" should have the context key "inlineKey" and "autoTriggerEnabledKey"
+ * "existing users" should have the context key "CODEWHISPERER_AUTO_TRIGGER_ENABLED"
+ * "new users who has seen tutorial" should have the context key "inlineKey" and "CODEWHISPERER_AUTO_TRIGGER_ENABLED"
  * the remaining grouop of users should belong to "new users who has not seen tutorial"
  */
 export class LineAnnotationController implements vscode.Disposable {
@@ -228,8 +227,8 @@ export class LineAnnotationController implements vscode.Disposable {
         })
 
     constructor(private readonly container: Container) {
-        const cachedState = fromId(globals.context.globalState.get<string>(inlinehintKey))
-        const cachedAutotriggerEnabled = globals.context.globalState.get<boolean>(autoTriggerEnabledKey)
+        const cachedState = fromId(globals.globalState.get<string>(inlinehintKey))
+        const cachedAutotriggerEnabled = globals.globalState.get<boolean>('CODEWHISPERER_AUTO_TRIGGER_ENABLED')
 
         // new users (has or has not seen tutorial)
         if (cachedAutotriggerEnabled === undefined || cachedState !== undefined) {
@@ -309,7 +308,7 @@ export class LineAnnotationController implements vscode.Disposable {
     async dismissTutorial() {
         this._currentState = new EndState()
         await setContext('aws.codewhisperer.tutorial.workInProgress', false)
-        await set(inlinehintKey, this._currentState.id, globals.context.globalState)
+        await globals.globalState.tryUpdate(inlinehintKey, this._currentState.id)
     }
 
     private async onActiveLinesChanged(e: LinesChangeEvent) {
@@ -423,7 +422,7 @@ export class LineAnnotationController implements vscode.Disposable {
 
         decorationOptions.range = range
 
-        await set(inlinehintKey, this._currentState.id, globals.context.globalState)
+        await globals.globalState.tryUpdate(inlinehintKey, this._currentState.id)
         await setContext('aws.codewhisperer.tutorial.workInProgress', true)
         editor.setDecorations(this.cwLineHintDecoration, [decorationOptions])
     }

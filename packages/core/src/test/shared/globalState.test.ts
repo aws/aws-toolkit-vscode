@@ -97,6 +97,19 @@ describe('GlobalState', function () {
         assert.deepStrictEqual(globalState.tryGet(testKey, Boolean, true), true)
     })
 
+    it('clear()', async () => {
+        const keys = ['CODECATALYST_RECONNECT', 'SAM_INIT_ARCH_KEY', 'aws.redshift.connections']
+        await globalState.update(keys[0] as any, 'val1')
+        await globalState.update(keys[1] as any, 'val2')
+        await globalState.update(keys[2] as any, 'val3')
+        assert.deepStrictEqual(globalState.keys(), keys)
+        assert.deepStrictEqual(globalState.values(), ['val1', 'val2', 'val3'])
+        await globalState.clear()
+        // XXX: no way to actually delete the key?
+        assert.deepStrictEqual(globalState.keys(), keys)
+        assert.deepStrictEqual(globalState.values(), [undefined, undefined, undefined])
+    })
+
     describe('redshift state', function () {
         const testArn1 = 'arn:foo/bar/baz/1'
         const testArn2 = 'arn:foo/bar/baz/2'
