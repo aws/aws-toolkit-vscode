@@ -98,6 +98,9 @@ describe('GlobalState', function () {
     })
 
     describe('redshift state', function () {
+        const testArn1 = 'arn:foo/bar/baz/1'
+        const testArn2 = 'arn:foo/bar/baz/2'
+
         const fakeCxn1: redshift.ConnectionParams = {
             connectionType: redshift.ConnectionType.SecretsManager,
             database: 'fake-db',
@@ -119,8 +122,6 @@ describe('GlobalState', function () {
         }
 
         it('get/set connection state and special DELETE_CONNECTION value', async () => {
-            const testArn1 = 'arn:foo/bar/baz/1'
-            const testArn2 = 'arn:foo/bar/baz/2'
             await globalState.saveRedshiftConnection(testArn1, 'DELETE_CONNECTION')
             await globalState.saveRedshiftConnection(testArn2, undefined)
             assert.deepStrictEqual(globalState.getRedshiftConnection(testArn1), 'DELETE_CONNECTION')
@@ -131,9 +132,7 @@ describe('GlobalState', function () {
             assert.deepStrictEqual(globalState.getRedshiftConnection(testArn2), fakeCxn2)
         })
 
-        it('validates state', async () => {
-            const testArn1 = 'arn:foo/bar/baz/1'
-            const testArn2 = 'arn:foo/bar/baz/2'
+        it('validation', async () => {
             await globalState.saveRedshiftConnection(testArn1, 'foo' as any)
             await globalState.saveRedshiftConnection(testArn2, 99 as any)
 
@@ -146,13 +145,47 @@ describe('GlobalState', function () {
             // Bad state is logged and returns undefined.
             assert.deepStrictEqual(globalState.getRedshiftConnection(testArn1), undefined)
             assert.deepStrictEqual(globalState.getRedshiftConnection(testArn2), undefined)
+
             await globalState.saveRedshiftConnection(testArn2, fakeCxn2)
             assert.deepStrictEqual(globalState.getRedshiftConnection(testArn2), fakeCxn2)
-
             // Stored state is now "partially bad".
             assert.deepStrictEqual(globalState.get('aws.redshift.connections'), {
                 [testArn1]: 'foo',
                 [testArn2]: fakeCxn2,
+            })
+        })
+    })
+
+    describe('SSO sessions', function () {
+        const session1 = 'session-1'
+        const session2 = 'session-2'
+        const time1 = new Date(Date.now() - 42 * 1000) // in the past.
+        const time2 = new Date()
+
+        it('get/set', async () => {
+            await globalState.setSsoSessionCreationDate(session1, time1)
+            await globalState.setSsoSessionCreationDate(session2, time2)
+            assert.deepStrictEqual(globalState.getSsoSessionCreationDate(session1), time1.getTime())
+            assert.deepStrictEqual(globalState.getSsoSessionCreationDate(session2), time2.getTime())
+        })
+
+        it('validation', async () => {
+            // Set bad state.
+            await globalState.update('#sessionCreationDates', {
+                [session1]: 'foo',
+                [session2]: {},
+            })
+
+            // Bad state is logged and returns undefined.
+            assert.deepStrictEqual(globalState.getSsoSessionCreationDate(session1), undefined)
+            assert.deepStrictEqual(globalState.getSsoSessionCreationDate(session2), undefined)
+
+            await globalState.setSsoSessionCreationDate(session2, time2)
+            assert.deepStrictEqual(globalState.getSsoSessionCreationDate(session2), time2.getTime())
+            // Stored state is now "partially bad".
+            assert.deepStrictEqual(globalState.get('#sessionCreationDates'), {
+                [session1]: 'foo',
+                [session2]: time2.getTime(),
             })
         })
     })

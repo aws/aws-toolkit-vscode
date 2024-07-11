@@ -20,6 +20,8 @@ type globalKey =
     | 'CODEWHISPERER_USER_GROUP'
     | 'gumby.wasQCodeTransformationUsed'
     | 'hasAlreadyOpenedAmazonQ'
+    // Legacy name from `ssoAccessTokenProvider.ts`.
+    | '#sessionCreationDates'
 
 /**
  * Extension-local (not visible to other vscode extensions) shared state which persists after IDE
@@ -136,20 +138,66 @@ export class GlobalState implements vscode.Memento {
      * explorer node is not refreshed yet.
      */
     getRedshiftConnection(warehouseArn: string): redshift.ConnectionParams | undefined | 'DELETE_CONNECTION' {
-        const allCxns = this.tryGet(
+        const all = this.tryGet<Record<string, redshift.ConnectionParams | 'DELETE_CONNECTION'>>(
             'aws.redshift.connections',
             v => {
                 if (v !== undefined && typeof v !== 'object') {
                     throw new Error()
                 }
-                const cxn = (v as any)?.[warehouseArn]
-                if (cxn !== undefined && typeof cxn !== 'object' && cxn !== 'DELETE_CONNECTION') {
+                const item = (v as any)?.[warehouseArn]
+                // Requested item must be object or 'DELETE_CONNECTION'.
+                if (item !== undefined && typeof item !== 'object' && item !== 'DELETE_CONNECTION') {
                     throw new Error()
                 }
                 return v
             },
             undefined
         )
-        return (allCxns as any)?.[warehouseArn]
+        return all?.[warehouseArn]
+    }
+
+    /**
+     * Sets SSO session creation timestamp for the given session `id`.
+     *
+     * TODO: this never garbage-collects old connections, so the state will grow forever...
+     *
+     * @param id Session id
+     * @param date Session timestamp
+     */
+    async setSsoSessionCreationDate(id: string, date: Date) {
+        try {
+            const all = this.tryGet('#sessionCreationDates', Object, {})
+            // TODO: race condition...
+            await this.update('#sessionCreationDates', {
+                ...all,
+                [id]: date.getTime(),
+            })
+        } catch (err) {
+            getLogger().error('auth: failed to set session creation date: %O', err)
+        }
+    }
+
+    /**
+     * Gets SSO session creation timestamp for the given session `id`.
+     *
+     * @param id Session id
+     */
+    getSsoSessionCreationDate(id: string): number | undefined {
+        const all = this.tryGet<Record<string, number>>(
+            '#sessionCreationDates',
+            v => {
+                if (v !== undefined && typeof v !== 'object') {
+                    throw new Error()
+                }
+                const item = (v as any)?.[id]
+                // Requested item must be a number.
+                if (item !== undefined && typeof item !== 'number') {
+                    throw new Error()
+                }
+                return v
+            },
+            undefined
+        )
+        return all?.[id]
     }
 }
