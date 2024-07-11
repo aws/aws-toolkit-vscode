@@ -9,7 +9,6 @@ import { assertTelemetryCurried } from 'aws-core-vscode/test'
 import {
     AuthUtil,
     CodeWhispererTracker,
-    userGroupKey,
     UserGroup,
     CodeWhispererUserGroupSettings,
 } from 'aws-core-vscode/codewhisperer'
@@ -96,7 +95,7 @@ describe('codewhispererTracker', function () {
         })
 
         it('Should call recordCodewhispererUserModification with suggestion event', async function () {
-            await globals.context.globalState.update(userGroupKey, {
+            await globals.context.globalState.update('CODEWHISPERER_USER_GROUP', {
                 group: UserGroup.CrossFile,
                 version: extensionVersion,
             })

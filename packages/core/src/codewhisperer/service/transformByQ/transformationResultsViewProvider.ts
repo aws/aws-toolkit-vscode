@@ -20,6 +20,7 @@ import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import * as CodeWhispererConstants from '../../models/constants'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
+import { setContext } from '../../../shared/vscode/setContext'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -267,8 +268,8 @@ export class ProposedTransformationExplorer {
         })
 
         const reset = async () => {
-            await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
-            await vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
+            await setContext('gumby.transformationProposalReviewInProgress', false)
+            await setContext('gumby.reviewState', TransformByQReviewStatus.NotStarted)
 
             // delete result archive after changes cleared; summary is under ResultArchiveFilePath
             if (fs.existsSync(transformByQState.getResultArchiveFilePath())) {
@@ -292,7 +293,7 @@ export class ProposedTransformationExplorer {
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.reset', async () => await reset())
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.reveal', async () => {
-            await vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', true)
+            await setContext('gumby.transformationProposalReviewInProgress', true)
             const root = diffModel.getRoot()
             if (root) {
                 await this.changeViewer.reveal(root, {
@@ -312,11 +313,7 @@ export class ProposedTransformationExplorer {
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.startReview', async () => {
-            await vscode.commands.executeCommand(
-                'setContext',
-                'gumby.reviewState',
-                TransformByQReviewStatus.PreparingReview
-            )
+            await setContext('gumby.reviewState', TransformByQReviewStatus.PreparingReview)
 
             const pathToArchive = path.join(
                 ProposedTransformationExplorer.TmpDir,
@@ -349,11 +346,7 @@ export class ProposedTransformationExplorer {
                     message: `${CodeWhispererConstants.errorDownloadingDiffChatMessage} The download failed due to: ${downloadErrorMessage}`,
                     tabID: ChatSessionManager.Instance.getSession().tabID,
                 })
-                await vscode.commands.executeCommand(
-                    'setContext',
-                    'gumby.reviewState',
-                    TransformByQReviewStatus.NotStarted
-                )
+                await setContext('gumby.reviewState', TransformByQReviewStatus.NotStarted)
                 getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
                 telemetry.codeTransform_logApiError.emit({
                     codeTransformApiNames: 'ExportResultArchive',
@@ -391,17 +384,13 @@ export class ProposedTransformationExplorer {
                     path.join(pathContainingArchive, ExportResultArchiveStructure.PathToDiffPatch),
                     transformByQState.getProjectPath()
                 )
-                await vscode.commands.executeCommand(
-                    'setContext',
-                    'gumby.reviewState',
-                    TransformByQReviewStatus.InReview
-                )
+                await setContext('gumby.reviewState', TransformByQReviewStatus.InReview)
                 transformDataProvider.refresh()
                 transformByQState.setSummaryFilePath(
                     path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSummary)
                 )
                 transformByQState.setResultArchiveFilePath(pathContainingArchive)
-                await vscode.commands.executeCommand('setContext', 'gumby.isSummaryAvailable', true)
+                await setContext('gumby.isSummaryAvailable', true)
 
                 // This metric is only emitted when placed before showInformationMessage
                 telemetry.codeTransform_vcsDiffViewerVisible.emit({

@@ -9,7 +9,6 @@ import { join } from 'path'
 import {
     activate as activateCodeWhisperer,
     shutdown as shutdownCodeWhisperer,
-    amazonQDismissedKey,
     AuthUtil,
 } from 'aws-core-vscode/codewhispererCommon'
 import {
@@ -27,7 +26,7 @@ import {
     getMachineId,
     messages,
 } from 'aws-core-vscode/shared'
-import { fs, errors } from 'aws-core-vscode/shared'
+import { fs, errors, setContext } from 'aws-core-vscode/shared'
 import { initializeAuth, CredentialsStore, LoginManager, AuthUtils, SsoConnection } from 'aws-core-vscode/auth'
 import { CommonAuthWebview } from 'aws-core-vscode/login'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
@@ -117,7 +116,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     registerCommands(context)
 
     // Hide the Amazon Q tree in toolkit explorer
-    await vscode.commands.executeCommand('setContext', amazonQDismissedKey, true)
+    await setContext('aws.toolkit.amazonq.dismissed', true)
 
     // reload webviews
     await vscode.commands.executeCommand('workbench.action.webview.reloadWebviewAction')
