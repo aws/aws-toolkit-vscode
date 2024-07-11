@@ -1214,7 +1214,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.dynamoDb.refreshDynamoDbExplorer",
+                    "command": "aws.dynamoDb.refreshExplorer",
                     "when": "false"
                 }
             ],
@@ -2008,7 +2008,7 @@
                     "group": "0@2"
                 },
                 {
-                    "command": "aws.dynamoDb.searchDynamoDbTables",
+                    "command": "aws.dynamoDb.searchTables",
                     "group": "inline@1",
                     "when": "view == aws.explorer && viewItem =~ /^awsDynamoDbRootNode$/"
                 },
@@ -2018,7 +2018,7 @@
                     "when": "view == aws.explorer && viewItem =~ /^awsDynamoDbTableNode/"
                 },
                 {
-                    "command": "aws.dynamoDb.refreshDynamoDbExplorer",
+                    "command": "aws.dynamoDb.refreshExplorer",
                     "group": "inline@1",
                     "when": "view == aws.explorer && viewItem =~ /^awsDynamoDbRootNode$/"
                 }
@@ -3566,8 +3566,8 @@
                 }
             },
             {
-                "command": "aws.dynamoDb.searchDynamoDbTables",
-                "title": "%AWS.command.dynamoDb.searchDynamoDbTables%",
+                "command": "aws.dynamoDb.searchTables",
+                "title": "%AWS.command.dynamoDb.searchTables%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(search-view-icon)",
@@ -3589,8 +3589,8 @@
                 }
             },
             {
-                "command": "aws.dynamoDb.refreshDynamoDbExplorer",
-                "title": "%AWS.command.dynamoDb.refreshDynamoDbExplorer%",
+                "command": "aws.dynamoDb.refreshExplorer",
+                "title": "%AWS.command.dynamoDb.refreshExplorer%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(refresh)",
