@@ -134,13 +134,15 @@ export default defineComponent({
     word-break: break-all;
 }
 
-.vscode-dark .item-container-base.focussed:before {
+.vscode-dark .item-container-base.focussed:before,
+body.vscode-high-contrast:not(body.vscode-high-contrast-light) .item-container-base.focussed:before {
     background-color: white;
     color: rgba(0, 0, 0, 0.8);
 }
-.vscode-light .item-container-base.focussed:before {
-    background-color: black;
-    color: rgba(255, 255, 255, 0.8);
+.vscode-light .item-container-base.focussed:before,
+body.vscode-high-contrast-light .item-container-base.focussed:before {
+    background-color: rgba(255, 255, 255, 0.8);
+    color: black;
 }
 
 .hovering {
@@ -178,10 +180,12 @@ export default defineComponent({
     display: flex;
     align-items: center;
 }
-.vscode-dark .icon .svg-path {
+.vscode-dark .icon .svg-path,
+body.vscode-high-contrast:not(body.vscode-high-contrast-light) .icon .svg-path {
     fill: white;
 }
-.vscode-light .icon .svg-path {
+.vscode-light .icon .svg-path,
+body.vscode-high-contrast-light .icon .svg-path {
     fill: black;
 }
 </style>
