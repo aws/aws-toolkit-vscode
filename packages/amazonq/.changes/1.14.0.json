@@ -1,0 +1,10 @@
+{
+	"date": "2024-07-11",
+	"version": "1.14.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Amazon Q/dev proactively show code generation iterations"
+		}
+	]
+}

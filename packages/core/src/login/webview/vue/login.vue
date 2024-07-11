@@ -222,13 +222,7 @@
                     Connecting to IAM...
                 </div>
                 <div v-else class="header bottomMargin">Authenticating in browser...</div>
-                <button
-                    class="continue-button"
-                    v-on:click="handleCancelButton()"
-                    style="color: #6f6f6f; background-color: var(--vscode-input-background)"
-                >
-                    Cancel
-                </button>
+                <button class="continue-button" v-on:click="handleCancelButton()">Cancel</button>
             </div>
         </template>
 
@@ -666,6 +660,26 @@ export default defineComponent({
     color: #6f6f6f;
     cursor: not-allowed;
 }
+body.vscode-high-contrast:not(body.vscode-high-contrast-light) .continue-button {
+    background-color: white;
+    color: var(--vscode-input-background);
+}
+
+body.vscode-high-contrast:not(body.vscode-high-contrast-light) .continue-button:disabled {
+    background-color: #6f6f6f;
+    color: var(--vscode-input-background);
+}
+
+body.vscode-high-contrast-light .continue-button {
+    background-color: var(--vscode-button-background);
+    color: white;
+}
+
+body.vscode-high-contrast-light .continue-button:disabled {
+    background-color: #6f6f6f;
+    color: var(--vscode-input-background);
+}
+
 .urlInput {
     background-color: var(--vscode-input-background);
     width: 244px;
@@ -679,10 +693,12 @@ export default defineComponent({
     font-size: var(--font-size-base);
     font-weight: 400;
 }
-body.vscode-light .urlInput {
+body.vscode-light .urlInput,
+body.vscode-high-contrast-light .urlInput {
     color: black;
 }
-body.vscode-dark .urlInput {
+body.vscode-dark .urlInput,
+body.vscode-high-contrast:not(body.vscode-high-contrast-light) .urlInput {
     color: #cccccc;
 }
 .iamInput {
@@ -698,10 +714,13 @@ body.vscode-dark .urlInput {
     font-size: var(--font-size-base);
     font-weight: 400;
 }
-body.vscode-light .iamInput {
+body.vscode-light .iamInput,
+body.vscode-high-contrast-light .iamInput {
     color: black;
 }
-body.vscode-dark .iamInput {
+
+body.vscode-dark .iamInput,
+body.vscode-high-contrast:not(body.vscode-high-contrast-light) .iamInput {
     color: #cccccc;
 }
 .regionSelect {
@@ -716,10 +735,13 @@ body.vscode-dark .iamInput {
     font-size: var(--font-size-base);
     font-weight: 400;
 }
-body.vscode-light .regionSelect {
+body.vscode-light .regionSelect,
+body.vscode-high-contrast-light .regionSelect {
     color: black;
 }
-body.vscode-dark .regionSelect {
+
+body.vscode-dark .regionSelect,
+body.vscode-high-contrast:not(body.vscode-high-contrast-light) .regionSelect {
     color: white;
 }
 .start-url-error {
