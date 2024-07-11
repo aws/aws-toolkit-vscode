@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import DynamoDB from 'aws-sdk/clients/dynamodb'
 import { Wizard } from '../../shared/wizards/wizard'
+import * as sysutil from '../../shared/systemUtilities'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
@@ -29,11 +30,16 @@ export async function searchDynamoDbTables(source: string, dbData?: { regionName
             throw new CancellationError('user')
         }
         const tableOutput = await getItemsFromTable(response.submenuResponse.region, response.submenuResponse.data)
-        console.log(tableOutput)
+
+        const output = `${JSON.stringify(tableOutput.Items, undefined, 4)}\n`
+        const filePath = process.env['HOME'] + '/Documents/dynamoDbItems.json'
+        await sysutil.SystemUtilities.writeFile(filePath, output)
+        const uri = sysutil.SystemUtilities.toUri(filePath)
+        await prepareDocument(uri)
     })
 }
 
-export async function prepareDocument(uri: vscode.Uri, logData: DynamoDB.ScanOutput) {
+export async function prepareDocument(uri: vscode.Uri) {
     try {
         const doc = await vscode.workspace.openTextDocument(uri)
         await vscode.window.showTextDocument(doc, { preview: false })
@@ -53,8 +59,8 @@ export interface SearchDynamoDbTablesWizardResponse {
 export function createRegionSubmenu() {
     return new RegionSubmenu(
         getTablesFromRegion,
-        { title: localize('AWS.dynamoDb.searchDynamoDbTables.TableTitle', 'Select a table') },
-        { title: localize('AWS.dynamoDb.searchDynamoDbTables.regionPromptTitle', 'Select Region for DynamoDb') },
+        { title: localize('AWS.dynamoDb.searchTables.TableTitle', 'Select a table') },
+        { title: localize('AWS.dynamoDb.searchTables.regionPromptTitle', 'Select Region for DynamoDb') },
         'DynamoDb Tables'
     )
 }

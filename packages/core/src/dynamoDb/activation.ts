@@ -13,26 +13,17 @@ import { DynamoDbInstanceNode } from './explorer/dynamoDbInstanceNode'
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     context.subscriptions.push(
-        Commands.register(
-            'aws.dynamoDb.searchDynamoDbTables',
-            async (node: DynamoDbTableNode | DynamoDbInstanceNode) => {
-                const dynamoDbtableInfo =
-                    node instanceof DynamoDbTableNode
-                        ? { regionName: node.regionCode, groupName: node.regionCode! }
-                        : undefined
-                const source = node
-                    ? dynamoDbtableInfo
-                        ? 'ExplorerDynamoDbTableNode'
-                        : 'ExplorerServiceNode'
-                    : 'Command'
-                await searchDynamoDbTables(source, dynamoDbtableInfo)
-            }
-        ),
+        Commands.register('aws.dynamoDb.searchTables', async (node: DynamoDbTableNode | DynamoDbInstanceNode) => {
+            const dynamoDbtableInfo =
+                node instanceof DynamoDbTableNode
+                    ? { regionName: node.regionCode, groupName: node.regionCode! }
+                    : undefined
+            const source = node ? (dynamoDbtableInfo ? 'ExplorerDynamoDbTableNode' : 'ExplorerServiceNode') : 'Command'
+            await searchDynamoDbTables(source, dynamoDbtableInfo)
+        }),
 
         Commands.register('aws.dynamoDb.copyArn', async (node: DynamoDbTableNode) => await copyDynamoDbArn(node)),
 
-        Commands.register('aws.dynamoDb.refreshDynamoDbExplorer', async (node: DynamoDbInstanceNode) => node.refresh())
-
-        // Commands.register('aws.dynamoDb.viewDynamoDbTable', async (node: DynamoDbTableNode) => await scanTable(node))
+        Commands.register('aws.dynamoDb.refreshExplorer', async (node: DynamoDbInstanceNode) => node.refresh())
     )
 }
