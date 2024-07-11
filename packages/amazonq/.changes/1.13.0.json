@@ -1,0 +1,14 @@
+{
+	"date": "2024-07-11",
+	"version": "1.13.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "AD/LDAP users may see \"uv_os_get_passwd ENOENT\" error on startup #5277"
+		},
+		{
+			"type": "Feature",
+			"description": "Add support for [Amazon Q Chat Workspace Context](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/workspace-context.html). Customers can use `@workspace` to ask questions regarding local workspace."
+		}
+	]
+}
