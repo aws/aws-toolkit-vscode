@@ -42,7 +42,7 @@ export interface InvokeRemoteRestApiInitialData {
 }
 
 export class RemoteRestInvokeWebview extends VueWebview {
-    public static readonly sourcePath: string = 'src/apigateway/vue/index.js'
+    public static readonly sourcePath: string = 'src/awsService/apigateway/vue/index.js'
     public readonly id = 'remoteInvoke'
 
     private readonly logger = getLogger()
