@@ -4,15 +4,15 @@
  */
 
 import * as vscode from 'vscode'
-import { SystemUtilities } from '../../shared/systemUtilities'
 import { ToolkitError } from '../../shared/errors'
+import fs from '../../shared/fs/fs'
 import { assertHasProps } from '../../shared/utilities/tsUtils'
 import { getConfigFilename, getCredentialsFilename } from './sharedCredentialsFile'
 import { SectionName, StaticProfile } from './types'
 import { UserCredentialsUtils } from '../../shared/credentials/userCredentialsUtils'
 
 export async function updateAwsSdkLoadConfigEnvVar(): Promise<void> {
-    const configFileExists = await SystemUtilities.fileExists(getConfigFilename())
+    const configFileExists = await fs.exists(getConfigFilename())
     process.env.AWS_SDK_LOAD_CONFIG = configFileExists ? 'true' : ''
 }
 
@@ -222,19 +222,19 @@ export async function loadSharedConfigFiles(init: SharedConfigPaths = {}): Promi
 }
 
 async function loadConfigFile(configUri?: vscode.Uri): Promise<ReturnType<typeof parseIni>> {
-    if (!configUri || !(await SystemUtilities.fileExists(configUri))) {
+    if (!configUri || !(await fs.exists(configUri))) {
         return []
     }
 
-    return parseIni(await SystemUtilities.readFile(configUri), configUri)
+    return parseIni(await fs.readFileAsString(configUri), configUri)
 }
 
 async function loadCredentialsFile(credentialsUri?: vscode.Uri): Promise<ReturnType<typeof parseIni>> {
-    if (!credentialsUri || !(await SystemUtilities.fileExists(credentialsUri))) {
+    if (!credentialsUri || !(await fs.exists(credentialsUri))) {
         return []
     }
 
-    return parseIni(await SystemUtilities.readFile(credentialsUri), credentialsUri)
+    return parseIni(await fs.readFileAsString(credentialsUri), credentialsUri)
 }
 
 /**

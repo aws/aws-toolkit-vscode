@@ -33,6 +33,7 @@ import { onceChanged, once } from '../../shared/utilities/functionUtils'
 import { indent } from '../../shared/utilities/textUtilities'
 import { showReauthenticateMessage } from '../../shared/utilities/messages'
 import { showAmazonQWalkthroughOnce } from '../../amazonq/onboardingPage/walkthrough'
+import { setContext } from '../../shared/vscode/setContext'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesCodeWhispererCore]
@@ -123,7 +124,7 @@ export class AuthUtil {
                 Commands.tryExecute('aws.amazonq.updateReferenceLog'),
             ])
 
-            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', this.isConnected())
+            await setContext('aws.codewhisperer.connected', this.isConnected())
 
             // To check valid connection
             if (this.isValidEnterpriseSsoInUse() || (this.isBuilderIdInUse() && !this.isConnectionExpired())) {
@@ -140,14 +141,10 @@ export class AuthUtil {
             return
         }
 
-        await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', this.isConnected())
+        await setContext('aws.codewhisperer.connected', this.isConnected())
         const doShowAmazonQLoginView = !this.isConnected() || this.isConnectionExpired()
-        await vscode.commands.executeCommand('setContext', 'aws.amazonq.showLoginView', doShowAmazonQLoginView)
-        await vscode.commands.executeCommand(
-            'setContext',
-            'aws.codewhisperer.connectionExpired',
-            this.isConnectionExpired()
-        )
+        await setContext('aws.amazonq.showLoginView', doShowAmazonQLoginView)
+        await setContext('aws.codewhisperer.connectionExpired', this.isConnectionExpired())
     }
 
     public reformatStartUrl(startUrl: string | undefined) {

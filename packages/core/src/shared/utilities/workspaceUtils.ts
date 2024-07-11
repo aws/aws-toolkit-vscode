@@ -5,18 +5,18 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
+import * as os from 'os'
 import * as pathutils from '../../shared/utilities/pathUtils'
 import { getLogger } from '../logger'
 import { isInDirectory } from '../filesystemUtilities'
 import { normalizedDirnameWithTrailingSlash, normalize } from './pathUtils'
 import globals from '../extensionGlobals'
 import { ToolkitError } from '../errors'
-import { SystemUtilities } from '../systemUtilities'
 import { getGlobDirExcludedPatterns } from '../fs/watchedFiles'
 import { sanitizeFilename } from './textUtilities'
 import { GitIgnoreAcceptor } from '@gerhobbelt/gitignore-parser'
 import * as parser from '@gerhobbelt/gitignore-parser'
-import { fsCommon } from '../../srcShared/fs'
+import fs from '../fs/fs'
 
 type GitIgnoreRelativeAcceptor = {
     folderPath: string
@@ -33,7 +33,7 @@ export class GitIgnoreFilter {
     public static async build(gitIgnoreFiles: vscode.Uri[]): Promise<GitIgnoreFilter> {
         const acceptors: GitIgnoreRelativeAcceptor[] = []
         for (const file of gitIgnoreFiles) {
-            const fileContent = await SystemUtilities.readFile(file)
+            const fileContent = await fs.readFileAsString(file)
 
             const folderPath = getWorkspaceParentDirectory(file.fsPath)
             if (folderPath === undefined) {
@@ -352,7 +352,7 @@ export async function collectFiles(
                 continue
             }
 
-            const fileStat = await fsCommon.stat(file)
+            const fileStat = await fs.stat(file)
             if (totalSizeBytes + fileStat.size > maxSize) {
                 throw new ToolkitError(
                     'The project you have selected for source code is too large to use as context. Please select a different folder to use',
@@ -361,6 +361,7 @@ export async function collectFiles(
             }
 
             const fileContent = await readFile(file)
+
             if (fileContent === undefined) {
                 continue
             }
@@ -381,7 +382,7 @@ export async function collectFiles(
 
 const readFile = async (file: vscode.Uri) => {
     try {
-        const fileContent = await SystemUtilities.readFile(file, new TextDecoder('utf8', { fatal: false }))
+        const fileContent = await fs.readFileAsString(file, new TextDecoder('utf8', { fatal: false }))
         return fileContent
     } catch (error) {
         getLogger().debug(
@@ -507,4 +508,94 @@ export function getWorkspaceFoldersByPrefixes(
     }
 
     return results
+}
+
+/**
+ * Collects all files that are suitable for local indexing.
+ * 1. Must be a supported programming language
+ * 2. Must not be auto generated code
+ * 3. Must not be within gitignore
+ * 4. Ranked by priority.
+ * 5. Select files within maxSize limit.
+ * This function do not read the actual file content or compress them into a zip.
+ * TODO: Move this to LSP
+ * @param sourcePaths the paths where collection starts
+ * @param workspaceFolders the current workspace folders opened
+ * @param respectGitIgnore whether to respect gitignore file
+ * @returns all matched files
+ */
+export async function collectFilesForIndex(
+    sourcePaths: string[],
+    workspaceFolders: CurrentWsFolders,
+    respectGitIgnore: boolean = true,
+    maxSize = 250 * 1024 * 1024 // 250 MB,
+    // make this configurable, so we can test it
+): Promise<
+    {
+        workspaceFolder: vscode.WorkspaceFolder
+        relativeFilePath: string
+        fileUri: vscode.Uri
+        fileSizeBytes: number
+    }[]
+> {
+    const storage: Awaited<ReturnType<typeof collectFilesForIndex>> = []
+
+    const isLanguageSupported = (filename: string) => {
+        const k =
+            /\.(js|ts|java|py|rb|cpp|tsx|jsx|cc|c|h|html|json|css|md|php|swift|rs|scala|yaml|tf|sql|sh|go|yml|kt|smithy|config|kts|gradle|cfg|xml|vue)$/i
+        return k.test(filename) || filename.endsWith('Config')
+    }
+
+    const isBuildOrBin = (filePath: string) => {
+        const k = /[/\\](bin|build|node_modules|env|\.idea)[/\\]/i
+        return k.test(filePath)
+    }
+
+    let totalSizeBytes = 0
+    for (const rootPath of sourcePaths) {
+        const allFiles = await vscode.workspace.findFiles(
+            new vscode.RelativePattern(rootPath, '**'),
+            getExcludePattern()
+        )
+        const files = respectGitIgnore ? await filterOutGitignoredFiles(rootPath, allFiles) : allFiles
+
+        for (const file of files) {
+            if (!isLanguageSupported(file.fsPath)) {
+                continue
+            }
+            if (isBuildOrBin(file.fsPath)) {
+                continue
+            }
+            const relativePath = getWorkspaceRelativePath(file.fsPath, { workspaceFolders })
+            if (!relativePath) {
+                continue
+            }
+
+            const fileStat = await vscode.workspace.fs.stat(file)
+            // ignore single file over 10 MB
+            if (fileStat.size > 10 * 1024 * 1024) {
+                continue
+            }
+            storage.push({
+                workspaceFolder: relativePath.workspaceFolder,
+                relativeFilePath: relativePath.relativePath,
+                fileUri: file,
+                fileSizeBytes: fileStat.size,
+            })
+        }
+    }
+    // prioritize upper level files
+    storage.sort((a, b) => a.fileUri.fsPath.length - b.fileUri.fsPath.length)
+
+    const maxSizeBytes = Math.min(maxSize, os.freemem() / 2)
+
+    let i = 0
+    for (i = 0; i < storage.length; i += 1) {
+        totalSizeBytes += storage[i].fileSizeBytes
+        if (totalSizeBytes >= maxSizeBytes) {
+            break
+        }
+    }
+    // pick top 100k files below size limit
+    return storage.slice(0, Math.min(100000, i))
 }

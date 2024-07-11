@@ -11,7 +11,7 @@ import { cancellableDebounce } from '../../shared/utilities/functionUtils'
 import { subscribeOnce } from '../../shared/utilities/vsCodeUtils'
 import { RecommendationService } from '../service/recommendationService'
 import { set } from '../util/commonUtil'
-import { AnnotationChangeSource, autoTriggerEnabledKey, inlinehintKey, inlinehintWipKey } from '../models/constants'
+import { AnnotationChangeSource, autoTriggerEnabledKey, inlinehintKey } from '../models/constants'
 import globals from '../../shared/extensionGlobals'
 import { Container } from '../service/serviceContainer'
 import { telemetry } from '../../shared/telemetry/telemetry'
@@ -20,6 +20,7 @@ import { Commands } from '../../shared/vscode/commands2'
 import { session } from '../util/codeWhispererSession'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
+import { setContext } from '../../shared'
 
 const case3TimeWindow = 30000 // 30 seconds
 
@@ -307,7 +308,7 @@ export class LineAnnotationController implements vscode.Disposable {
 
     async dismissTutorial() {
         this._currentState = new EndState()
-        await vscode.commands.executeCommand('setContext', inlinehintWipKey, false)
+        await setContext('aws.codewhisperer.tutorial.workInProgress', false)
         await set(inlinehintKey, this._currentState.id, globals.context.globalState)
     }
 
@@ -404,7 +405,7 @@ export class LineAnnotationController implements vscode.Disposable {
 
         if (decorationOptions === undefined) {
             this.clear()
-            await vscode.commands.executeCommand('setContext', inlinehintWipKey, false)
+            await setContext('aws.codewhisperer.tutorial.workInProgress', false)
             return
         } else if (this.isTutorialDone()) {
             // special case
@@ -423,7 +424,7 @@ export class LineAnnotationController implements vscode.Disposable {
         decorationOptions.range = range
 
         await set(inlinehintKey, this._currentState.id, globals.context.globalState)
-        await vscode.commands.executeCommand('setContext', inlinehintWipKey, true)
+        await setContext('aws.codewhisperer.tutorial.workInProgress', true)
         editor.setDecorations(this.cwLineHintDecoration, [decorationOptions])
     }
 

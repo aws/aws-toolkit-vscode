@@ -52,7 +52,7 @@ export function init(appContext: AmazonQAppInitContext) {
             const tabID = params.get('tabID')
             if (!tabID) {
                 getLogger().error(`Unable to find tabID from ${uri.toString()}`)
-                throw new TabIdNotFoundError(uri.toString())
+                throw new TabIdNotFoundError()
             }
 
             const session = await sessionStorage.getSession(tabID)

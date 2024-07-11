@@ -70,6 +70,13 @@ import { sleep } from '../../shared/utilities/timeoutUtils'
 import DependencyVersions from '../../amazonqGumby/models/dependencies'
 import { dependencyNoAvailableVersions } from '../../amazonqGumby/models/constants'
 import { HumanInTheLoopManager } from '../service/transformByQ/humanInTheLoopManager'
+import { setContext } from '../../shared/vscode/setContext'
+
+function getFeedbackCommentData() {
+    const jobId = transformByQState.getJobId()
+    const s = `Q CodeTransform jobId: ${jobId ? jobId : 'none'}`
+    return s
+}
 
 export async function processTransformFormInput(
     pathToProject: string,
@@ -547,7 +554,7 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
         fs.writeFileSync(planFilePath, plan)
         await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(planFilePath))
         transformByQState.setPlanFilePath(planFilePath)
-        await vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', true)
+        await setContext('gumby.isPlanAvailable', true)
     }
     jobPlanProgress['generatePlan'] = StepProgress.Succeeded
     throwIfCancelled()
@@ -666,7 +673,11 @@ export async function postTransformationJob() {
             )
             .then(choice => {
                 if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                    void submitFeedback(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
+                    void submitFeedback(
+                        placeholder,
+                        CodeWhispererConstants.amazonQFeedbackKey,
+                        getFeedbackCommentData()
+                    )
                 }
             })
     }
@@ -694,7 +705,11 @@ export async function transformationJobErrorHandler(error: any) {
             .showErrorMessage(displayedErrorMessage, CodeWhispererConstants.amazonQFeedbackText)
             .then(choice => {
                 if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                    void submitFeedback(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
+                    void submitFeedback(
+                        placeholder,
+                        CodeWhispererConstants.amazonQFeedbackKey,
+                        getFeedbackCommentData()
+                    )
                 }
             })
     } else {
@@ -712,7 +727,7 @@ export async function transformationJobErrorHandler(error: any) {
 export async function cleanupTransformationJob() {
     clearInterval(transformByQState.getIntervalId())
     transformByQState.setJobDefaults()
-    await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
+    await setContext('gumby.isStopButtonAvailable', false)
     await vscode.commands.executeCommand(
         'aws.amazonq.showPlanProgressInHub',
         CodeTransformTelemetryState.instance.getStartTime()
@@ -736,7 +751,7 @@ export async function stopTransformByQ(
         getLogger().info('CodeTransformation: User requested to stop transformation. Stopping transformation.')
         transformByQState.setToCancelled()
         transformByQState.setPolledJobStatus('CANCELLED')
-        await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
+        await setContext('gumby.isStopButtonAvailable', false)
         try {
             await stopJob(jobId)
             void vscode.window
@@ -746,7 +761,11 @@ export async function stopTransformByQ(
                 )
                 .then(choice => {
                     if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                        void submitFeedback(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
+                        void submitFeedback(
+                            placeholder,
+                            CodeWhispererConstants.amazonQFeedbackKey,
+                            getFeedbackCommentData()
+                        )
                     }
                 })
         } catch (err) {
@@ -757,7 +776,11 @@ export async function stopTransformByQ(
                 )
                 .then(choice => {
                     if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                        void submitFeedback(placeholder, CodeWhispererConstants.amazonQFeedbackKey)
+                        void submitFeedback(
+                            placeholder,
+                            CodeWhispererConstants.amazonQFeedbackKey,
+                            getFeedbackCommentData()
+                        )
                     }
                 })
             getLogger().error(`CodeTransformation: Error stopping transformation ${err}`)
@@ -772,8 +795,8 @@ export async function stopTransformByQ(
 }
 
 async function setContextVariables() {
-    await vscode.commands.executeCommand('setContext', 'gumby.wasQCodeTransformationUsed', true)
-    await vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', true)
-    await vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', false)
-    await vscode.commands.executeCommand('setContext', 'gumby.isSummaryAvailable', false)
+    await setContext('gumby.wasQCodeTransformationUsed', true)
+    await setContext('gumby.isStopButtonAvailable', true)
+    await setContext('gumby.isPlanAvailable', false)
+    await setContext('gumby.isSummaryAvailable', false)
 }

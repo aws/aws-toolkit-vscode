@@ -20,7 +20,7 @@ import {
     listScanResults,
 } from '../../codewhisperer/service/securityScanHandler'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { fsCommon } from '../../srcShared/fs'
+import fs from '../../shared/fs/fs'
 import { ZipUtil } from '../../codewhisperer/util/zipUtil'
 import { randomUUID } from '../../common/crypto'
 
@@ -64,7 +64,7 @@ describe('CodeWhisperer security scan', async function () {
 
     afterEach(async function () {
         if (tempFolder !== undefined) {
-            await fsCommon.delete(tempFolder)
+            await fs.delete(tempFolder)
         }
     })
 
@@ -143,7 +143,8 @@ describe('CodeWhisperer security scan', async function () {
             scanJob.jobId,
             CodeWhispererConstants.codeScanFindingsSchema,
             projectPaths,
-            scope
+            scope,
+            editor
         )
 
         assert.deepStrictEqual(jobStatus, 'Completed')
@@ -183,7 +184,8 @@ describe('CodeWhisperer security scan', async function () {
             scanJob.jobId,
             CodeWhispererConstants.codeScanFindingsSchema,
             projectPaths,
-            scope
+            scope,
+            editor
         )
 
         assert.deepStrictEqual(jobStatus, 'Completed')

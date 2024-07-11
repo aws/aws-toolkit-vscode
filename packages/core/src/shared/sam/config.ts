@@ -4,8 +4,8 @@
  */
 
 import * as vscode from 'vscode'
+import fs from '../fs/fs'
 import { parse } from '@iarna/toml'
-import { SystemUtilities } from '../systemUtilities'
 import { cast, Optional } from '../utilities/typeConstructors'
 
 export interface Config {
@@ -71,7 +71,7 @@ export class SamConfig {
     }
 
     public static async fromUri(uri: vscode.Uri) {
-        const contents = await SystemUtilities.readFile(uri)
+        const contents = await fs.readFileAsString(uri)
         const config = await parseConfig(contents)
 
         return new this(uri, config)

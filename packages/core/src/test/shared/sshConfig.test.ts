@@ -20,8 +20,8 @@ import {
     getCodeCatalystSsmEnv,
 } from '../../codecatalyst/model'
 import { StartDevEnvironmentSessionRequest } from 'aws-sdk/clients/codecatalyst'
-import { mkdir, readFile, writeFile } from 'fs-extra'
-import { SystemUtilities } from '../../shared/systemUtilities'
+import { mkdir, readFile, writeFile } from 'fs/promises'
+import fs from '../../shared/fs/fs'
 
 class MockSshConfig extends SshConfig {
     // State variables to track logic flow.
@@ -271,12 +271,12 @@ describe('CodeCatalyst Connect Script', function () {
 
         beforeEach(async function () {
             tmpDir = await makeTemporaryToolkitFolder()
-            sinon.stub(SystemUtilities, 'getHomeDirectory').returns(tmpDir)
+            sinon.stub(fs, 'getUserHomeDir').returns(tmpDir)
         })
 
         afterEach(async function () {
             sinon.restore()
-            await SystemUtilities.delete(tmpDir, { recursive: true })
+            await fs.delete(tmpDir, { recursive: true })
         })
 
         it('works if the .ssh directory is missing', async function () {

@@ -18,6 +18,7 @@ import { TelemetryConfig, setupTelemetryId } from './util'
 import { isAutomation, isReleaseVersion } from '../vscode/env'
 import { AWSProduct } from './clienttelemetry'
 import { DefaultTelemetryClient } from './telemetryClient'
+import { telemetry } from './telemetry'
 import { Commands } from '../vscode/commands2'
 
 export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'Settings')
@@ -48,18 +49,32 @@ export async function activate(
     DefaultTelemetryClient.productName = productName
     globals.telemetry = await DefaultTelemetryService.create(extensionContext, awsContext, getComputeRegion())
 
+    const isAmazonQExt = isAmazonQ()
     try {
-        globals.telemetry.telemetryEnabled = config.isEnabled()
+        await globals.telemetry.setTelemetryEnabled(config.isEnabled())
 
         extensionContext.subscriptions.push(
-            (isAmazonQ() ? config.amazonQConfig : config.toolkitConfig).onDidChange(event => {
+            (isAmazonQExt ? config.amazonQConfig : config.toolkitConfig).onDidChange(async event => {
                 if (event.key === 'telemetry') {
-                    globals.telemetry.telemetryEnabled = config.isEnabled()
+                    const val = config.isEnabled()
+                    const settingId = isAmazonQExt ? 'amazonQ.telemetry' : 'aws.telemetry'
+
+                    // Record 'disabled' right before its turned off, so we can send this + the batch we have already.
+                    if (!val) {
+                        telemetry.aws_modifySetting.emit({ settingId, settingState: 'false', result: 'Succeeded' })
+                    }
+
+                    await globals.telemetry.setTelemetryEnabled(val)
+
+                    // Record 'enabled' after its turned on, otherwise this is ignored.
+                    if (val) {
+                        telemetry.aws_modifySetting.emit({ settingId, settingState: 'true', result: 'Succeeded' })
+                    }
                 }
             })
         )
 
-        if (isAmazonQ()) {
+        if (isAmazonQExt) {
             extensionContext.subscriptions.push(
                 Commands.register('aws.amazonq.setupTelemetryId', async () => {
                     await setupTelemetryId(extensionContext)

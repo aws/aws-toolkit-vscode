@@ -101,12 +101,14 @@ export class Timeout {
             globals.clock.clearTimeout(this._timerTimeout)
             this._timerTimeout = this.createTimeout()
         } else {
-            // These will not align, but we don't have visibility into a NodeJS.Timeout
-            // so remainingtime will be approximate. Timers are approximate anyway and are
-            // not highly accurate in when they fire.
-            this._endTime = globals.clock.Date.now() + this._timeoutLength
+            // This is a node timeout instance, which has refresh built in
             this._timerTimeout = this._timerTimeout.refresh()
         }
+
+        // These will not align, but we don't have visibility into a NodeJS.Timeout
+        // so remainingtime will be approximate. Timers are approximate anyway and are
+        // not highly accurate in when they fire.
+        this._endTime = globals.clock.Date.now() + this._timeoutLength
     }
 
     /**

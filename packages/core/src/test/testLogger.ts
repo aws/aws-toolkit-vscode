@@ -20,6 +20,10 @@ export class TestLogger implements Logger {
 
     public enableDebugConsole(): void {}
 
+    public log(logLevel: LogLevel, ...message: Loggable[]): number {
+        return this.addLoggedEntries(logLevel, message)
+    }
+
     public debug(...message: Loggable[]): number {
         return this.addLoggedEntries('debug', message)
     }

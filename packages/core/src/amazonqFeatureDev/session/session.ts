@@ -6,10 +6,17 @@
 import * as path from 'path'
 
 import { ConversationNotStartedState, PrepareCodeGenState, PrepareRefinementState } from './sessionState'
-import type { DeletedFileInfo, Interaction, NewFileInfo, SessionState, SessionStateConfig } from '../types'
+import {
+    DevPhase,
+    type DeletedFileInfo,
+    type Interaction,
+    type NewFileInfo,
+    type SessionState,
+    type SessionStateConfig,
+} from '../types'
 import { ConversationIdNotFoundError } from '../errors'
 import { referenceLogText } from '../constants'
-import { FileSystemCommon } from '../../srcShared/fs'
+import fs from '../../shared/fs/fs'
 import { Messenger } from '../controllers/chat/messenger/messenger'
 import { FeatureDevClient } from '../client/featureDev'
 import { approachRetryLimit, codeGenRetryLimit } from '../limits'
@@ -18,8 +25,6 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceLogViewProvider'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
-
-const fs = FileSystemCommon.instance
 
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
@@ -215,9 +220,9 @@ export class Session {
 
     get retries() {
         switch (this.state.phase) {
-            case 'Approach':
+            case DevPhase.APPROACH:
                 return this.approachRetries
-            case 'Codegen':
+            case DevPhase.CODEGEN:
                 return this.codeGenRetries
             default:
                 return this.approachRetries
@@ -226,10 +231,10 @@ export class Session {
 
     decreaseRetries() {
         switch (this.state.phase) {
-            case 'Approach':
+            case DevPhase.APPROACH:
                 this.approachRetries -= 1
                 break
-            case 'Codegen':
+            case DevPhase.CODEGEN:
                 this.codeGenRetries -= 1
                 break
         }

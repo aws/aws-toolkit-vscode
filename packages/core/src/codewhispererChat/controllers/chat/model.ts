@@ -4,11 +4,12 @@
  */
 
 import * as vscode from 'vscode'
-import { UserIntent } from '@amzn/codewhisperer-streaming'
+import { RelevantTextDocument, UserIntent } from '@amzn/codewhisperer-streaming'
 import { MatchPolicy, CodeQuery } from '../../clients/chat/v0/model'
 import { Selection } from 'vscode'
 import { TabOpenType } from '../../../amazonq/webview/ui/storages/tabsStorage'
 import { CodeReference } from '../../view/connector/connector'
+import { Customization } from '../../../codewhisperer/client/codewhispereruserclient'
 
 export interface TriggerTabIDReceived {
     tabID: string
@@ -135,10 +136,12 @@ export interface TriggerPayload {
     readonly fileText: string | undefined
     readonly fileLanguage: string | undefined
     readonly filePath: string | undefined
-    readonly message: string | undefined
+    message: string | undefined
     readonly matchPolicy: MatchPolicy | undefined
     readonly codeQuery: CodeQuery | undefined
     readonly userIntent: UserIntent | undefined
+    readonly customization: Customization
+    relevantTextDocuments?: RelevantTextDocument[]
 }
 
 export interface InsertedCode {
