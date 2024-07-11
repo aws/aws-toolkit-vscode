@@ -84,8 +84,9 @@ export const mochaHooks = {
         globals.telemetry.clearRecords()
         globals.telemetry.logger.clear()
         TelemetryDebounceInfo.instance.clear()
-        ;(globals.context as FakeExtensionContext).globalState = new FakeMemento()
-        ;(globals as any).globalState = new GlobalState(globals.context)
+        const fakeGlobalState = new FakeMemento()
+        ;(globals.context as FakeExtensionContext).globalState = fakeGlobalState
+        ;(globals as any).globalState = new GlobalState(fakeGlobalState)
 
         await testUtil.closeAllEditors()
     },

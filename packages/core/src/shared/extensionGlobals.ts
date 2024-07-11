@@ -146,7 +146,7 @@ export function initialize(context: ExtensionContext, isWeb: boolean = false): T
         context,
         clock: copyClock(),
         didReload: checkDidReload(context),
-        globalState: new GlobalState(context),
+        globalState: new GlobalState(context.globalState),
         manifestPaths: {} as ToolkitGlobals['manifestPaths'],
         visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],
         isWeb,
