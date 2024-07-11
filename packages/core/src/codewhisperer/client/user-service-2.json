@@ -1084,7 +1084,9 @@
             "members": {
                 "conversationId": { "shape": "ConversationId" },
                 "codeGenerationStatus": { "shape": "CodeGenerationStatus" },
-                "codeGenerationStatusDetail": { "shape": "CodeGenerationStatusDetail" }
+                "codeGenerationStatusDetail": { "shape": "CodeGenerationStatusDetail" },
+                "codeGenerationRemainingIterationCount": { "shape": "Integer" },
+                "codeGenerationTotalIterationCount": { "shape": "Integer" }
             },
             "documentation": "<p>Response for getting task assist code generation status.</p>"
         },
