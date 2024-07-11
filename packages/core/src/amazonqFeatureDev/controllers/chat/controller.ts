@@ -484,6 +484,18 @@ export class FeatureDevController {
                 tabID,
                 session.uploadId
             )
+
+            const remainingIterations = session.state.codeGenerationRemainingIterationCount
+            const totalIterations = session.state.codeGenerationTotalIterationCount
+
+            if (remainingIterations !== undefined && totalIterations !== undefined) {
+                this.messenger.sendAnswer({
+                    type: 'answer',
+                    tabID: tabID,
+                    message: `You have ${remainingIterations} out of ${totalIterations} code iterations remaining.`,
+                })
+            }
+
             this.messenger.sendAnswer({
                 message: undefined,
                 type: 'system-prompt',

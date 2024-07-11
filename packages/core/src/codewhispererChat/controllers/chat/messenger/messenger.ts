@@ -9,6 +9,7 @@ import {
     AuthNeededException,
     CodeReference,
     EditorContextCommandMessage,
+    OpenSettingsMessage,
     QuickActionMessage,
 } from '../../../view/connector/connector'
 import { EditorContextCommandType } from '../../../commands/registerCommands'
@@ -31,6 +32,7 @@ import { userGuideURL } from '../../../../amazonq/webview/ui/texts/constants'
 import { CodeScanIssue } from '../../../../codewhisperer/models/model'
 import { marked } from 'marked'
 import { JSDOM } from 'jsdom'
+import { LspController } from '../../../../amazonq/lsp/lspController'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -126,6 +128,9 @@ export class Messenger {
             )
         }
         this.telemetryHelper.setResponseStreamStartTime(tabID)
+        if (triggerPayload.relevantTextDocuments && triggerPayload.relevantTextDocuments.length > 0) {
+            this.telemetryHelper.setResponseFromProjectContext(messageID)
+        }
 
         const eventCounts = new Map<string, number>()
         waitUntil(
@@ -234,6 +239,29 @@ export class Messenger {
                 this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, statusCode ?? 0)
             })
             .finally(async () => {
+                if (
+                    triggerPayload.relevantTextDocuments &&
+                    triggerPayload.relevantTextDocuments.length > 0 &&
+                    LspController.instance.isIndexingInProgress()
+                ) {
+                    this.dispatcher.sendChatMessage(
+                        new ChatMessage(
+                            {
+                                message:
+                                    message +
+                                    ` \n\nBy the way, I'm still indexing this project for full context from your workspace. I may have a better response in a few minutes when it's complete if you'd like to try again then.`,
+                                messageType: 'answer-part',
+                                followUps: undefined,
+                                followUpsHeader: undefined,
+                                relatedSuggestions: undefined,
+                                triggerID,
+                                messageID,
+                            },
+                            tabID
+                        )
+                    )
+                }
+
                 if (relatedSuggestions.length !== 0) {
                     this.dispatcher.sendChatMessage(
                         new ChatMessage(
@@ -459,5 +487,9 @@ export class Messenger {
         this.dispatcher.sendErrorMessage(
             new ErrorMessage('An error occurred while processing your request.', message.trimEnd().trimStart(), tabID)
         )
+    }
+
+    public sendOpenSettingsMessage(triggerId: string, tabID: string) {
+        this.dispatcher.sendOpenSettingsMessage(new OpenSettingsMessage(tabID))
     }
 }

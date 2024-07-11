@@ -53,7 +53,7 @@ type PolicyCommandOpts = {
 }
 
 export class IamPolicyChecksWebview extends VueWebview {
-    public static readonly sourcePath: string = 'src/accessanalyzer/vue/index.js'
+    public static readonly sourcePath: string = 'src/awsService/accessanalyzer/vue/index.js'
     public readonly id = 'iamPolicyChecks'
     private static editedDocumentUri: vscode.Uri
     private static editedDocumentFileName: string

@@ -66,6 +66,8 @@ export interface SessionState {
     readonly tabID: string
     interact(action: SessionStateAction): Promise<SessionStateInteraction>
     updateWorkspaceRoot?: (workspaceRoot: string) => void
+    codeGenerationRemainingIterationCount?: number
+    codeGenerationTotalIterationCount?: number
 }
 
 export interface SessionStateConfig {

@@ -146,8 +146,6 @@ export const selectedCustomizationKey = 'CODEWHISPERER_SELECTED_CUSTOMIZATION'
 
 export const inlinehintKey = 'CODEWHISPERER_HINT_DISPLAYED'
 
-export const inlinehintWipKey = 'aws.codewhisperer.tutorial.workInProgress'
-
 export type AnnotationChangeSource = 'codewhisperer' | 'selection' | 'editor' | 'content'
 
 export const learnMoreUriGeneral = 'https://aws.amazon.com/q/developer/'
@@ -327,8 +325,6 @@ export const stopScanMessage =
 
 export const showScannedFilesMessage = 'Show Scanned Files'
 
-export const userGroupKey = 'CODEWHISPERER_USER_GROUP'
-
 export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
 
 export const newCustomizationMessage = 'You have access to new Amazon Q customizations.'
@@ -385,9 +381,6 @@ export const validStatesForCheckingDownloadUrl = [
     'STOPPED',
     'REJECTED',
 ]
-
-export const amazonQDismissedKey = 'aws.toolkit.amazonq.dismissed'
-export const amazonQInstallDismissedKey = 'aws.toolkit.amazonqInstall.dismissed'
 
 export const amazonQFeedbackKey = 'Amazon Q'
 

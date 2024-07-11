@@ -284,6 +284,30 @@
                     "markdownDescription": "%AWS.configuration.description.amazonq.shareContentWithAWS%",
                     "default": true,
                     "scope": "application"
+                },
+                "amazonQ.workspaceIndex": {
+                    "type": "boolean",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndex%",
+                    "default": false,
+                    "scope": "application"
+                },
+                "amazonQ.workspaceIndexWorkerThreads": {
+                    "type": "number",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexWorkerThreads%",
+                    "default": 0,
+                    "scope": "application"
+                },
+                "amazonQ.workspaceIndexUseGPU": {
+                    "type": "boolean",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexUseGPU%",
+                    "default": false,
+                    "scope": "application"
+                },
+                "amazonQ.workspaceIndexMaxSize": {
+                    "type": "number",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexMaxSize%",
+                    "default": 250,
+                    "scope": "application"
                 }
             }
         },
@@ -4118,6 +4142,7 @@
         "immutable": "^4.3.0",
         "js-yaml": "^4.1.0",
         "jsonc-parser": "^3.2.0",
+        "jose": "5.4.1",
         "lodash": "^4.17.21",
         "markdown-it": "^13.0.2",
         "mime-types": "^2.1.32",

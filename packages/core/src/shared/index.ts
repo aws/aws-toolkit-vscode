@@ -24,6 +24,7 @@ export { VirtualMemoryFile } from './virtualMemoryFile'
 export { AmazonqCreateUpload, Metric } from './telemetry/telemetry'
 export { getClientId, getOperatingSystem } from './telemetry/util'
 export { extensionVersion } from './vscode/env'
+export * from './vscode/setContext'
 export { cast } from './utilities/typeConstructors'
 export {
     CodewhispererUserTriggerDecision,

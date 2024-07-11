@@ -5,7 +5,6 @@
 
 import * as semver from 'semver'
 import * as vscode from 'vscode'
-import * as os from 'os'
 import * as packageJson from '../../../package.json'
 import { getLogger } from '../logger'
 import { onceChanged } from '../utilities/functionUtils'
@@ -104,9 +103,9 @@ export function isRemoteWorkspace(): boolean {
 
 /** Returns true if OS is Windows. */
 export function isWin(): boolean {
-    if (isWeb()) {
-        return false
-    }
+    // if (isWeb()) {
+    //     return false
+    // }
 
     return process.platform === 'win32'
 }
@@ -188,41 +187,10 @@ export function getServiceEnvVarConfig<T extends string[]>(service: string, conf
 
 export async function getMachineId(): Promise<string> {
     if (isWeb()) {
+        // TODO: use `vscode.env.machineId` instead?
         return 'browser'
     }
     const proc = new ChildProcess('hostname', [], { collect: true, logging: 'no' })
+    // TODO: check exit code.
     return (await proc.run()).stdout.trim() ?? 'unknown-host'
-}
-
-let username: string | undefined
-
-/** Gets the current system username, or undefined in web-mode. */
-export function getUsername(): string | undefined {
-    if (isWeb()) {
-        return undefined
-    }
-
-    if (username !== undefined) {
-        return username
-    }
-
-    const userInfo = getUserInfo()
-    username = userInfo.username
-
-    return userInfo.username
-}
-
-/** Gets platform-dependent user info, or (currently) a dummy object in web-mode. */
-export function getUserInfo(): os.UserInfo<string> {
-    if (isWeb()) {
-        return {
-            gid: 0,
-            uid: 0,
-            homedir: '',
-            shell: '',
-            username: 'webuser',
-        }
-    }
-
-    return os.userInfo({ encoding: 'utf-8' })
 }

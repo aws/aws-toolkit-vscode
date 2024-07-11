@@ -55,11 +55,11 @@ import { learnMoreAmazonQCommand, qExtensionPageCommand, dismissQTree } from './
 import { AuthUtil, codeWhispererCoreScopes, isPreviousQUser } from './codewhisperer/util/authUtil'
 import { installAmazonQExtension } from './codewhisperer/commands/basicCommands'
 import { isExtensionInstalled, VSCODE_EXTENSION_ID } from './shared/utilities'
-import { amazonQInstallDismissedKey } from './codewhisperer/models/constants'
 import { ExtensionUse } from './auth/utils'
 import { ExtStartUpSources } from './shared/telemetry'
 import { activate as activateThreatComposerEditor } from './threatComposer/activation'
 import { isSsoConnection, hasScopes } from './auth/connection'
+import { setContext } from './shared'
 
 let localize: nls.LocalizeFunc
 
@@ -116,10 +116,10 @@ export async function activate(context: vscode.ExtensionContext) {
         // do not enable codecatalyst for sagemaker
         // TODO: remove setContext if SageMaker adds the context to their IDE
         if (!isSageMaker()) {
-            await vscode.commands.executeCommand('setContext', 'aws.isSageMaker', false)
+            await setContext('aws.isSageMaker', false)
             await codecatalyst.activate(extContext)
         } else {
-            await vscode.commands.executeCommand('setContext', 'aws.isSageMaker', true)
+            await setContext('aws.isSageMaker', true)
         }
 
         // Clean up remaining logins after codecatalyst activated and ran its cleanup.
@@ -250,7 +250,7 @@ export async function deactivate() {
 }
 
 async function handleAmazonQInstall() {
-    const dismissedInstall = globals.context.globalState.get<boolean>(amazonQInstallDismissedKey)
+    const dismissedInstall = globals.globalState.get<boolean>('aws.toolkit.amazonqInstall.dismissed')
     if (isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) || dismissedInstall) {
         return
     }
@@ -262,7 +262,7 @@ async function handleAmazonQInstall() {
             void vscode.window.showInformationMessage(
                 "Amazon Q is now its own extension.\n\nWe've auto-installed it for you with all the same features and settings from CodeWhisperer and Amazon Q chat."
             )
-            await globals.context.globalState.update(amazonQInstallDismissedKey, true)
+            await globals.globalState.update('aws.toolkit.amazonqInstall.dismissed', true)
         } else {
             telemetry.record({ id: 'amazonQStandaloneChange' })
             void vscode.window
@@ -293,7 +293,7 @@ async function handleAmazonQInstall() {
                         } else {
                             telemetry.record({ action: 'dismissQNotification' })
                         }
-                        await globals.context.globalState.update(amazonQInstallDismissedKey, true)
+                        await globals.globalState.update('aws.toolkit.amazonqInstall.dismissed', true)
                     })
                 })
         }

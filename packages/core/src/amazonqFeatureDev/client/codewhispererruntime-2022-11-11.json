@@ -1017,12 +1017,20 @@
             "type": "structure",
             "required": ["conversationId", "codeGenerationStatus"],
             "members": {
-                "conversationId": { "shape": "ConversationId" },
-                "codeGenerationStatus": { "shape": "CodeGenerationStatus" },
-                "codeGenerationStatusDetail": { "shape": "CodeGenerationStatusDetail" },
-                "codeGenerationRemainingIterationCount": { "shape": "Integer" },
-                "codeGenerationTotalIterationCount": { "shape": "Integer" }
-            }
+                "conversationId": {
+                    "shape": "ConversationId"
+                },
+                "codeGenerationStatus": {
+                    "shape": "CodeGenerationStatus"
+                },
+                "codeGenerationRemainingIterationCount": {
+                    "shape": "Integer"
+                },
+                "codeGenerationTotalIterationCount": {
+                    "shape": "Integer"
+                }
+            },
+            "documentation": "<p>Response for getting task assist code generation status.</p>"
         },
         "GetTransformationPlanRequest": {
             "type": "structure",

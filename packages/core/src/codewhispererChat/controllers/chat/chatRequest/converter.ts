@@ -7,6 +7,7 @@ import {
     CursorState,
     DocumentSymbol,
     GenerateAssistantResponseRequest,
+    RelevantTextDocument,
     SymbolType,
     TextDocument,
 } from '@amzn/codewhisperer-streaming'
@@ -91,6 +92,9 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): Gen
         }
     }
 
+    const relevantDocuments: RelevantTextDocument[] = triggerPayload.relevantTextDocuments
+        ? triggerPayload.relevantTextDocuments
+        : []
     // service will throw validation exception if string is empty
     const customizationArn: string | undefined = undefinedIfEmpty(triggerPayload.customization.arn)
 
@@ -105,6 +109,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): Gen
                         editorState: {
                             document,
                             cursorState,
+                            relevantDocuments,
                         },
                     },
                     userIntent: triggerPayload.userIntent,
