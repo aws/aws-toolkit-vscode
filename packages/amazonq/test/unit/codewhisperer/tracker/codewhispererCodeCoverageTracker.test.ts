@@ -11,7 +11,6 @@ import {
     vsCodeState,
     TelemetryHelper,
     AuthUtil,
-    userGroupKey,
     UserGroup,
     CodeWhispererUserGroupSettings,
 } from 'aws-core-vscode/codewhisperer'
@@ -524,7 +523,7 @@ describe('codewhispererCodecoverageTracker', function () {
         })
 
         it('should emit correct code coverage telemetry in python file', async function () {
-            await globals.context.globalState.update(userGroupKey, {
+            await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
                 group: UserGroup.Control,
                 version: extensionVersion,
             })
@@ -547,7 +546,7 @@ describe('codewhispererCodecoverageTracker', function () {
         })
 
         it('should emit correct code coverage telemetry when success count = 0', async function () {
-            await globals.context.globalState.update(userGroupKey, {
+            await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
                 group: UserGroup.Control,
                 version: extensionVersion,
             })

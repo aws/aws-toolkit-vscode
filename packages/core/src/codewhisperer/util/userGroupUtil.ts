@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { UserGroup, userGroupKey } from '../models/constants'
+import { UserGroup } from '../models/constants'
 import globals from '../../shared/extensionGlobals'
 import { extensionVersion } from '../../shared/vscode/env'
-import { GlobalState } from '../../shared/globalState'
 
 export class CodeWhispererUserGroupSettings {
     private _userGroup: UserGroup | undefined
@@ -36,7 +35,9 @@ export class CodeWhispererUserGroupSettings {
     }
 
     private determineUserGroupIfNeeded(): UserGroup {
-        const userGroupMetadata = globals.context.globalState.get<{ group: UserGroup; version: string }>(userGroupKey)
+        const userGroupMetadata = globals.globalState.get<{ group: UserGroup; version: string }>(
+            'CODEWHISPERER_USER_GROUP'
+        )
         // use the same userGroup setting if and only if they are the same version of plugin
         if (userGroupMetadata && userGroupMetadata.version && userGroupMetadata.version === extensionVersion) {
             this._userGroup = userGroupMetadata.group
@@ -48,7 +49,7 @@ export class CodeWhispererUserGroupSettings {
         this._version = extensionVersion
         this._userGroup = this.guessUserGroup()
 
-        GlobalState.instance.tryUpdate(userGroupKey, {
+        globals.globalState.tryUpdate('CODEWHISPERER_USER_GROUP', {
             group: this._userGroup,
             version: this._version,
         })

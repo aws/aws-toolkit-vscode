@@ -10,7 +10,6 @@ import * as vscode from 'vscode'
 import { getLogger } from './logger'
 import * as pathutils from './utilities/pathUtils'
 import globals from '../shared/extensionGlobals'
-import { GlobalState } from './globalState'
 import fs from '../shared/fs/fs'
 
 export const tempDirPath = path.join(
@@ -260,7 +259,7 @@ export async function cloud9Findfile(dir: string, fileName: string): Promise<vsc
  * @returns  A string path to the last locally stored download location. If none, returns the users 'Downloads' directory path.
  */
 export async function getDefaultDownloadPath(): Promise<string> {
-    const lastUsedPath = globals.context.globalState.get('aws.downloadPath')
+    const lastUsedPath = globals.globalState.get('aws.downloadPath')
     if (lastUsedPath) {
         if (typeof lastUsedPath === 'string') {
             return lastUsedPath
@@ -273,9 +272,9 @@ export async function getDefaultDownloadPath(): Promise<string> {
 export async function setDefaultDownloadPath(downloadPath: string) {
     try {
         if (await fs.existsDir(downloadPath)) {
-            GlobalState.instance.tryUpdate('aws.downloadPath', downloadPath)
+            globals.globalState.tryUpdate('aws.downloadPath', downloadPath)
         } else {
-            GlobalState.instance.tryUpdate('aws.downloadPath', path.dirname(downloadPath))
+            globals.globalState.tryUpdate('aws.downloadPath', path.dirname(downloadPath))
         }
     } catch (err) {
         getLogger().error('Error while setting "aws.downloadPath"', err as Error)

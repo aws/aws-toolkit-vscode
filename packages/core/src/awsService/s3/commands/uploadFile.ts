@@ -24,7 +24,6 @@ import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { progressReporter } from '../progressReporter'
 import globals from '../../../shared/extensionGlobals'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import { GlobalState } from '../../../shared/globalState'
 
 export interface FileSizeBytes {
     /**
@@ -102,7 +101,7 @@ export async function uploadFileCommand(
             })
         )
         if (node instanceof S3FolderNode) {
-            GlobalState.instance.tryUpdate('aws.lastUploadedToS3Folder', {
+            globals.globalState.tryUpdate('aws.lastUploadedToS3Folder', {
                 bucket: node.bucket,
                 folder: node.folder,
             })
@@ -166,7 +165,7 @@ export async function uploadFileCommand(
             )
 
             if (bucketResponse.folder) {
-                GlobalState.instance.tryUpdate('aws.lastUploadedToS3Folder', {
+                globals.globalState.tryUpdate('aws.lastUploadedToS3Folder', {
                     bucket: bucketResponse.bucket,
                     folder: bucketResponse.folder,
                 })

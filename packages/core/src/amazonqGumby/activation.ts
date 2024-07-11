@@ -13,9 +13,10 @@ import { ProposedTransformationExplorer } from '../codewhisperer/service/transfo
 import { CodeTransformTelemetryState } from './telemetry/codeTransformTelemetryState'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { CancelActionPositions } from './telemetry/codeTransformTelemetry'
+import { setContext } from '../shared'
 
 export async function activate(context: ExtContext) {
-    void vscode.commands.executeCommand('setContext', 'gumby.wasQCodeTransformationUsed', false)
+    void setContext('gumby.wasQCodeTransformationUsed', false)
 
     const transformationHubViewProvider = new TransformationHubViewProvider()
     new ProposedTransformationExplorer(context.extensionContext)
