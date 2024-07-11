@@ -1,3 +1,8 @@
+## 3.14.0 2024-07-11
+
+- **Bug Fix** App composer generate suggestion unclickable when logged in
+- **Bug Fix** AD/LDAP users may see "uv_os_get_passwd ENOENT" error on startup #5277
+
 ## 3.13.0 2024-07-08
 
 - **Bug Fix** Add warning message for drag and drop bug on VS Code 1.91.0
