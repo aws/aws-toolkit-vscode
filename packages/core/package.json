@@ -4042,13 +4042,6 @@
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1da"
                 }
-            },
-            "aws-dynamoDb-table": {
-                "description": "AWS Contributed Icon",
-                "default": {
-                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\eb17"
-                }
             }
         },
         "notebooks": [
