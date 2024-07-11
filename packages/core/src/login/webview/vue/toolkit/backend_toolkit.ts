@@ -12,6 +12,7 @@ import { Auth } from '../../../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
 import { AuthError, AuthFlowState, TelemetryMetadata } from '../types'
 import { builderIdStartUrl } from '../../../../auth/sso/model'
+import { setContext } from '../../../../shared'
 
 export class ToolkitLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.toolkit.AmazonCommonAuth'
@@ -45,7 +46,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
 
                 this.storeMetricMetadata({ authEnabledFeatures: this.getAuthEnabledFeatures(conn) })
 
-                await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
+                await setContext('aws.explorer.showAuthView', false)
                 await this.showResourceExplorer()
             })
         }
@@ -59,7 +60,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
 
             this.storeMetricMetadata({ authEnabledFeatures: this.getAuthEnabledFeatures(conn) })
 
-            await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
+            await setContext('aws.explorer.showAuthView', false)
             void vscode.window.showInformationMessage('Toolkit: Successfully connected to AWS IAM Identity Center')
             void this.showResourceExplorer()
         })
@@ -80,7 +81,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
             }
             try {
                 await tryAddCredentials(profileName, data, true)
-                await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
+                await setContext('aws.explorer.showAuthView', false)
                 await this.showResourceExplorer()
             } catch (e) {
                 getLogger().error('Failed submitting credentials', e)
@@ -109,7 +110,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
             })
 
             await this.codeCatalystAuth.connectToAwsBuilderId()
-            await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
+            await setContext('aws.explorer.showAuthView', false)
             await this.showResourceExplorer()
         })
     }
@@ -154,7 +155,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
     }
 
     async quitLoginScreen() {
-        await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
+        await setContext('aws.explorer.showAuthView', false)
         await this.showResourceExplorer()
     }
 }

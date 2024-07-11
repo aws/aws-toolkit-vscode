@@ -28,6 +28,7 @@ import { createBuilderIdConnection } from '../auth/utils'
 import { builderIdStartUrl } from '../auth/sso/model'
 import { showReauthenticateMessage } from '../shared/utilities/messages'
 import { ToolkitPromptSettings } from '../shared/settings'
+import { setContext } from '../shared/vscode/setContext'
 
 // Secrets stored on the macOS keychain appear as individual entries for each key
 // This is fine so long as the user has only a few accounts. Otherwise this should
@@ -55,7 +56,7 @@ export const isUpgradeableConnection = (conn: Connection): conn is SsoConnection
     isSsoConnection(conn) && !isValidCodeCatalystConnection(conn)
 
 export function setCodeCatalystConnectedContext(isConnected: boolean) {
-    return vscode.commands.executeCommand('setContext', 'aws.codecatalyst.connected', isConnected)
+    return setContext('aws.codecatalyst.connected', isConnected)
 }
 
 type ConnectionState = {

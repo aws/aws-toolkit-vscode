@@ -51,6 +51,7 @@ import { extensionVersion } from '../shared/vscode/env'
 import { ExtStartUpSources } from '../shared/telemetry'
 import { CommonAuthWebview } from '../login/webview/vue/backend'
 import { AuthSource } from '../login/webview/util'
+import { setContext } from '../shared/vscode/setContext'
 
 // iam-only excludes Builder ID and IAM Identity Center from the list of valid connections
 // TODO: Understand if "iam" should include these from the list at all
@@ -480,11 +481,7 @@ export class AuthNode implements TreeNode<Auth> {
                 CommonAuthWebview.authSource = ExtensionUse.instance.isFirstUse()
                     ? ExtStartUpSources.firstStartUp
                     : ExtStartUpSources.reload
-                void vscode.commands.executeCommand(
-                    'setContext',
-                    'aws.explorer.showAuthView',
-                    !this.resource.hasConnections
-                )
+                void setContext('aws.explorer.showAuthView', !this.resource.hasConnections)
             })
             .catch(e => {
                 getLogger().error('tryAutoConnect failed: %s', (e as Error).message)

@@ -15,9 +15,9 @@ describe('getCodeWhispererUserGroup', function () {
     })
 
     it('getUserGroup should set the group and version if there is none', async function () {
-        await globals.context.globalState.update(CodeWhispererConstants.userGroupKey, undefined)
+        await globals.globalState.update('CODEWHISPERER_USER_GROUP', undefined)
 
-        assert.ok(!globals.context.globalState.get(CodeWhispererConstants.userGroupKey))
+        assert.ok(!globals.globalState.get('CODEWHISPERER_USER_GROUP'))
 
         assert.ok(CodeWhispererUserGroupSettings.getUserGroup())
         assert.ok(CodeWhispererUserGroupSettings.instance.version)
@@ -30,7 +30,7 @@ describe('getCodeWhispererUserGroup', function () {
     })
 
     it('should return the same result', async function () {
-        await globals.context.globalState.update(CodeWhispererConstants.userGroupKey, undefined)
+        await globals.globalState.update('CODEWHISPERER_USER_GROUP', undefined)
 
         const group0 = CodeWhispererUserGroupSettings.getUserGroup()
         const group1 = CodeWhispererUserGroupSettings.getUserGroup()
@@ -44,7 +44,7 @@ describe('getCodeWhispererUserGroup', function () {
     })
 
     it('should return result stored in the extension context if the plugin version remains the same', async function () {
-        await globals.context.globalState.update(CodeWhispererConstants.userGroupKey, {
+        await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
             group: CodeWhispererConstants.UserGroup.Control,
             version: extensionVersion,
         })
@@ -56,7 +56,7 @@ describe('getCodeWhispererUserGroup', function () {
     })
 
     it('should return different result if the plugin version is not the same', async function () {
-        await globals.context.globalState.update(CodeWhispererConstants.userGroupKey, {
+        await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
             group: CodeWhispererConstants.UserGroup.Control,
             version: 'fake-extension-version',
         })

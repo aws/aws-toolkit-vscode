@@ -8,7 +8,6 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import {
     onAcceptance,
-    userGroupKey,
     UserGroup,
     AcceptedSuggestionEntry,
     session,
@@ -80,7 +79,7 @@ describe('onAcceptance', function () {
         })
 
         it('Should report telemetry that records this user decision event', async function () {
-            await globals.context.globalState.update(userGroupKey, {
+            await globals.context.globalState.update('CODEWHISPERER_USER_GROUP', {
                 group: UserGroup.Control,
                 version: extensionVersion,
             })

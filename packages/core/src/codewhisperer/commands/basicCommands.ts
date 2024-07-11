@@ -43,6 +43,7 @@ import { isRemoteWorkspace } from '../../shared/vscode/env'
 import { isBuilderIdConnection } from '../../auth/connection'
 import globals from '../../shared/extensionGlobals'
 import { getVscodeCliPath, tryRun } from '../../shared/utilities/pathFind'
+import { setContext } from '../../shared/vscode/setContext'
 
 const MessageTimeOut = 5_000
 
@@ -78,8 +79,8 @@ export const enableCodeSuggestions = Commands.declare(
     (context: ExtContext) =>
         async (isAuto: boolean = true) => {
             await CodeSuggestionsState.instance.setSuggestionsEnabled(isAuto)
-            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', true)
-            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connectionExpired', false)
+            await setContext('aws.codewhisperer.connected', true)
+            await setContext('aws.codewhisperer.connectionExpired', false)
             vsCodeState.isFreeTierLimitReached = false
             if (!isCloud9()) {
                 await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
