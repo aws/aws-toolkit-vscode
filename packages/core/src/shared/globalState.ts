@@ -8,7 +8,15 @@ import { getLogger } from './logger/logger'
 import * as redshift from '../awsService/redshift/models/models'
 import { TypeConstructor, cast } from './utilities/typeConstructors'
 
+type samInitStateKey =
+    | 'ACTIVATION_TEMPLATE_PATH_KEY'
+    | 'ACTIVATION_LAUNCH_PATH_KEY'
+    | 'SAM_INIT_RUNTIME_KEY'
+    | 'SAM_INIT_IMAGE_BOOLEAN_KEY'
+    | 'SAM_INIT_ARCH_KEY'
+
 type globalKey =
+    | samInitStateKey
     | 'aws.downloadPath'
     | 'aws.lastTouchedS3Folder'
     | 'aws.lastUploadedToS3Folder'
@@ -87,6 +95,8 @@ export class GlobalState implements vscode.Memento {
      * {@link String}, {@link Boolean}, etc.
      * @param defaultVal Value returned if `key` has no value.
      */
+    tryGet<T>(key: globalKey, type: TypeConstructor<T>): T | undefined
+    tryGet<T>(key: globalKey, type: TypeConstructor<T>, defaulVal: T): T
     tryGet<T>(key: globalKey, type: TypeConstructor<T>, defaulVal?: T): T | undefined {
         try {
             return this.getStrict(key, type, defaulVal)
@@ -150,8 +160,7 @@ export class GlobalState implements vscode.Memento {
                     throw new Error()
                 }
                 return v
-            },
-            undefined
+            }
         )
         return all?.[warehouseArn]
     }
@@ -183,21 +192,17 @@ export class GlobalState implements vscode.Memento {
      * @param id Session id
      */
     getSsoSessionCreationDate(id: string): number | undefined {
-        const all = this.tryGet<Record<string, number>>(
-            '#sessionCreationDates',
-            (v) => {
-                if (v !== undefined && typeof v !== 'object') {
-                    throw new Error()
-                }
-                const item = (v as any)?.[id]
-                // Requested item must be a number.
-                if (item !== undefined && typeof item !== 'number') {
-                    throw new Error()
-                }
-                return v
-            },
-            undefined
-        )
+        const all = this.tryGet<Record<string, number>>('#sessionCreationDates', v => {
+            if (v !== undefined && typeof v !== 'object') {
+                throw new Error()
+            }
+            const item = (v as any)?.[id]
+            // Requested item must be a number.
+            if (item !== undefined && typeof item !== 'number') {
+                throw new Error()
+            }
+            return v
+        })
         return all?.[id]
     }
 }

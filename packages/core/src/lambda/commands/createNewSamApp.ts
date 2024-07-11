@@ -63,6 +63,7 @@ export async function resumeCreateNewSamApp(
     let samVersion: string | undefined
     const samInitState: SamInitState | undefined = activationReloadState.getSamInitState()
     try {
+        getLogger().debug('SAM: resumeCreateNewSamApp')
         const templateUri = vscode.Uri.file(samInitState!.template!)
         const readmeUri = vscode.Uri.file(samInitState!.readme!)
         const folder = vscode.workspace.getWorkspaceFolder(templateUri)

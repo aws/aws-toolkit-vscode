@@ -71,12 +71,7 @@ export async function fileExists(p: string): Promise<boolean> {
 }
 
 /**
- * @description Wraps readFileAsync and resolves the Buffer to a string for convenience
- *
- * @param filePath filename to read
- * @param encoding Optional - file encoding
- *
- * @returns the contents of the file as a string
+ * @deprecated use {@link fs} exist methods instead.
  */
 export async function readFileAsString(pathLike: string): Promise<string> {
     return fs.readFileAsString(pathLike)
