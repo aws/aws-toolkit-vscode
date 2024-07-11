@@ -1,3 +1,7 @@
+## 1.14.0 2024-07-11
+
+- **Feature** Amazon Q/dev proactively show code generation iterations
+
 ## 1.13.0 2024-07-11
 
 - **Bug Fix** AD/LDAP users may see "uv_os_get_passwd ENOENT" error on startup #5277
