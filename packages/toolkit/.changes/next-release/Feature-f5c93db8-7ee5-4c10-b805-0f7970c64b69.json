@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "The `aws.injectCredentials` setting (enabled by default) automatically injects the current AWS connection into all [terminals](https://code.visualstudio.com/docs/terminal/basics) as AWS [environment variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)."
+}

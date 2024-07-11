@@ -6,6 +6,7 @@
     "AWS.amazonq.productName": "Amazon Q",
     "AWS.codecatalyst.submenu.title": "Manage CodeCatalyst",
     "AWS.configuration.profileDescription": "The name of the credential profile to obtain credentials from.",
+    "AWS.configuration.injectCredentialsDescription": "Automatically set AWS credentials [environment variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html) in terminals.",
     "AWS.configuration.description.lambda.recentlyUploaded": "Recently selected Lambda upload targets.",
     "AWS.configuration.description.ecs.openTerminalCommand": "The command to run when starting a new interactive terminal session.",
     "AWS.configuration.description.iot.maxItemsPerPage": "Controls how many IoT Things, Certificates, or Policies are listed before showing a node to `Load More...`.",
