@@ -5,9 +5,9 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+import fs from '../../shared/fs/fs'
 import DynamoDB from 'aws-sdk/clients/dynamodb'
 import { Wizard } from '../../shared/wizards/wizard'
-import * as sysutil from '../../shared/systemUtilities'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
@@ -33,8 +33,8 @@ export async function searchDynamoDbTables(source: string, dbData?: { regionName
 
         const output = `${JSON.stringify(tableOutput.Items, undefined, 4)}\n`
         const filePath = process.env['HOME'] + '/Documents/dynamoDbItems.json'
-        await sysutil.SystemUtilities.writeFile(filePath, output)
-        const uri = sysutil.SystemUtilities.toUri(filePath)
+        await fs.writeFile(filePath, output)
+        const uri = vscode.Uri.parse(filePath)
         await prepareDocument(uri)
     })
 }
