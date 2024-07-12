@@ -56,6 +56,10 @@
     <depends optional="true" config-file="ext-rust.xml">com.jetbrains.rust</depends>
     <depends optional="true" config-file="ext-rust-deprecated.xml">org.rust.lang</depends>
 
+    <incompatible-with>com.intellij.cwm.guest</incompatible-with>
+    <incompatible-with>com.intellij.jetbrains.client</incompatible-with>
+    <incompatible-with>com.intellij.gateway</incompatible-with>
+
     <xi:include href="/META-INF/module-amazonq.xml" />
 
     <xi:include href="/META-INF/change-notes.xml" xpointer="xpointer(/idea-plugin/*)">
