@@ -29,7 +29,7 @@ function getProjectPaths() {
     if (!workspaceFolders || workspaceFolders.length === 0) {
         throw new ToolkitError('No workspace folders found')
     }
-    return workspaceFolders.map(folder => folder.uri.fsPath)
+    return workspaceFolders.map((folder) => folder.uri.fsPath)
 }
 
 export interface Chunk {
@@ -106,7 +106,7 @@ export class LspController {
         return new Promise((resolve, reject) => {
             const file = fs.createWriteStream(localFile)
             res.body.pipe(file)
-            res.body.on('error', err => {
+            res.body.on('error', (err) => {
                 reject(err)
             })
             file.on('finish', () => {
@@ -282,7 +282,7 @@ export class LspController {
     async query(s: string): Promise<RelevantTextDocument[]> {
         const chunks: Chunk[] | undefined = await LspClient.instance.query(s)
         const resp: RelevantTextDocument[] = []
-        chunks?.forEach(chunk => {
+        chunks?.forEach((chunk) => {
             const text = chunk.context ? chunk.context : chunk.content
             if (chunk.programmingLanguage) {
                 resp.push({
@@ -325,7 +325,7 @@ export class LspController {
             )
             getLogger().info(`LspController: Found ${files.length} files in current project ${getProjectPaths()}`)
             const resp = await LspClient.instance.indexFiles(
-                files.map(f => f.fileUri.fsPath),
+                files.map((f) => f.fileUri.fsPath),
                 projRoot,
                 false
             )

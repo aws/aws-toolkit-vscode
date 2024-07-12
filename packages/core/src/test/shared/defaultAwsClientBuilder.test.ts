@@ -90,7 +90,7 @@ describe('DefaultAwsClientBuilder', function () {
                 const service = await builder.createAwsService(Service, {
                     apiConfig: { operations: { FakeOperation: {} } },
                     onRequestSetup: [
-                        request => {
+                        (request) => {
                             assert.ok(request.service instanceof Service)
                             assert.strictEqual(request.operation, 'FakeOperation')
                             assert.deepStrictEqual(request.params, { foo: 'bar' })

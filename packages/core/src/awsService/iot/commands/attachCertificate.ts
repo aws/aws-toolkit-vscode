@@ -81,13 +81,13 @@ async function* getCertList(iot: IotClient) {
              * but we filter here anyway for when we use ! later. */
             filteredCerts =
                 certResponse.certificates?.filter(
-                    cert => cert.certificateArn && cert.certificateId && cert.status && cert.creationDate
+                    (cert) => cert.certificateArn && cert.certificateId && cert.status && cert.creationDate
                 ) ?? []
         } catch (e) {
             getLogger().error(`Failed to retrieve certificates: %s`, e)
             void showViewLogsMessage(localize('AWS.iot.attachCert.error', 'Failed to retrieve certificates'))
             return
         }
-        yield filteredCerts.map(cert => ({ label: cert.certificateId!, data: cert }))
+        yield filteredCerts.map((cert) => ({ label: cert.certificateId!, data: cert }))
     } while (marker !== undefined)
 }

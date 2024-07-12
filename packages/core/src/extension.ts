@@ -85,7 +85,7 @@ export async function activate(context: vscode.ExtensionContext) {
         toolkitEnvDetails
             .split(/\r?\n/)
             .filter(Boolean)
-            .forEach(line => getLogger().info(line))
+            .forEach((line) => getLogger().info(line))
 
         globals.awsContextCommands = new AwsContextCommands(globals.regionProvider, Auth.instance)
         globals.schemaService = new SchemaService()
@@ -95,7 +95,7 @@ export async function activate(context: vscode.ExtensionContext) {
         const experiments = Experiments.instance
 
         experiments.onDidChange(({ key }) => {
-            telemetry.aws_experimentActivation.run(span => {
+            telemetry.aws_experimentActivation.run((span) => {
                 // Record the key prior to reading the setting as `get` may throw
                 span.record({ experimentId: key })
                 span.record({ experimentState: experiments.get(key) ? 'activated' : 'deactivated' })
@@ -203,7 +203,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         context.subscriptions.push(
             vscode.window.registerUriHandler({
-                handleUri: uri =>
+                handleUri: (uri) =>
                     telemetry.runRoot(() => {
                         telemetry.record({ source: 'UriHandler' })
 
@@ -272,7 +272,7 @@ async function handleAmazonQInstall() {
                     'Install',
                     'Learn More'
                 )
-                .then(async resp => {
+                .then(async (resp) => {
                     await telemetry.toolkit_invokeAction.run(async () => {
                         telemetry.record({
                             source: ExtensionUse.instance.isFirstUse()

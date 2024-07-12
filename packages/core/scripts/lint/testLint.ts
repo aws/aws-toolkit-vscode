@@ -12,11 +12,11 @@ void (async () => {
         const mocha = new Mocha()
 
         const testFiles = await glob('dist/src/testLint/**/*.test.js')
-        testFiles.forEach(file => {
+        testFiles.forEach((file) => {
             mocha.addFile(file)
         })
 
-        mocha.run(failures => {
+        mocha.run((failures) => {
             const exitCode = failures ? 1 : 0
             console.log(`Finished running Main test suite with result code: ${exitCode}`)
             process.exit(exitCode)

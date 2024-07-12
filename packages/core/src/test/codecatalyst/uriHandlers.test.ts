@@ -128,7 +128,7 @@ describe('CodeCatalyst handlers', function () {
             client.getDevEnvironment = getDevEnvStub
             const errorMessage = getTestWindow()
                 .waitForMessage(/Failed to handle/)
-                .then(message => {
+                .then((message) => {
                     message.assertSeverity(SeverityLevel.Error)
                 })
 

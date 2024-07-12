@@ -100,7 +100,7 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
                     // Always try to fetch the latest creds first, attempting a refresh if needed
                     // A 'passive' refresh is attempted first, before trying an 'active' one if certain criteria are met
                     shim.get()
-                        .then(creds => {
+                        .then((creds) => {
                             this.loadCreds(creds)
                             this.needsRefresh() ? this.refresh(callback) : callback()
                         })
@@ -109,7 +109,7 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
 
                 public override refresh(callback: (err?: AWSError) => void): void {
                     shim.refresh()
-                        .then(creds => {
+                        .then((creds) => {
                             this.loadCreds(creds)
                             // The SDK V2 sets `expired` on certain errors so we should only
                             // unset the flag after acquiring new credentials via `refresh`
@@ -151,8 +151,8 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
         // Record request IDs to the current context, potentially overriding the field if
         // multiple API calls are made in the same context. We only do failures as successes
         // are generally uninteresting and noisy.
-        listeners.push(request => {
-            request.on('error', err => {
+        listeners.push((request) => {
+            request.on('error', (err) => {
                 if (!err.retryable) {
                     // TODO: update codegen so `record` enumerates all fields as a flat object instead of
                     // intersecting all of the definitions
@@ -171,7 +171,7 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
 
         service.setupRequestListeners = (request: Request<any, AWSError>) => {
             originalSetup(request)
-            listeners.forEach(l => l(request as AWS.Request<any, AWSError> & RequestExtras))
+            listeners.forEach((l) => l(request as AWS.Request<any, AWSError> & RequestExtras))
         }
 
         return service

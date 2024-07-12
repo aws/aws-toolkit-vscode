@@ -47,7 +47,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
 
     private async getServiceSummaries(request: AppRunner.ListServicesRequest = {}): Promise<AppRunner.Service[]> {
         const iterator = getPaginatedAwsCallIter({
-            awsCall: async request => await this.client.listServices(request),
+            awsCall: async (request) => await this.client.listServices(request),
             nextTokenNames: {
                 request: 'NextToken',
                 response: 'NextToken',
@@ -75,7 +75,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
         const deletedNodeArns = new Set(this.serviceNodes.keys())
 
         await Promise.all(
-            serviceSummaries.map(async summary => {
+            serviceSummaries.map(async (summary) => {
                 if (this.serviceNodes.has(summary.ServiceArn)) {
                     this.serviceNodes.get(summary.ServiceArn)!.update(summary)
                     if (summary.Status !== 'OPERATION_IN_PROGRESS') {

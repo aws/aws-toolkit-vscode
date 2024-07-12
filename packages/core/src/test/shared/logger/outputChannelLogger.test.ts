@@ -55,7 +55,7 @@ describe('OutputChannelTransport', async function () {
         const targetLog: string = outputText.join(raw ? '' : '\n')
 
         // OutputChannel is logged to in async manner
-        outputChannel.onDidAppendText(loggedText => {
+        outputChannel.onDidAppendText((loggedText) => {
             const res = targetMessages.get(loggedText)
             if (res) {
                 targetMessages.delete(loggedText)
@@ -69,7 +69,7 @@ describe('OutputChannelTransport', async function () {
 
         for (const text of outputText) {
             promises.push(
-                new Promise<void>(resolve => {
+                new Promise<void>((resolve) => {
                     targetMessages.set(raw ? text : `${text}\n`, resolve)
                 })
             )

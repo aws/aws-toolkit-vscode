@@ -61,7 +61,7 @@ export class UserCredentialsUtils {
         const files = [vscode.Uri.file(getConfigFilename()), vscode.Uri.file(getCredentialsFilename())]
 
         const filenames = await Promise.all(
-            files.map(async uri => {
+            files.map(async (uri) => {
                 if (await fs.exists(uri)) {
                     return uri.fsPath
                 }

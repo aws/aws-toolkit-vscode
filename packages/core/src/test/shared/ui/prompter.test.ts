@@ -29,7 +29,7 @@ describe('Prompter', function () {
     })
 
     it('can map one type to another', async function () {
-        const prompter = new SimplePrompter(1).transform(resp => resp.toString())
+        const prompter = new SimplePrompter(1).transform((resp) => resp.toString())
         assert.strictEqual(await prompter.prompt(), '1')
     })
 
@@ -42,12 +42,12 @@ describe('Prompter', function () {
     it('can attach multiple transformations', async function () {
         const prompter = new SimplePrompter(1)
         prompter
-            .transform(resp => resp * 2)
-            .transform(resp => resp + 2)
-            .transform(resp => resp * 2)
-            .transform(resp => resp - 2)
-            .transform(resp => resp.toString())
-            .transform(resp => `result: ${resp}`)
+            .transform((resp) => resp * 2)
+            .transform((resp) => resp + 2)
+            .transform((resp) => resp * 2)
+            .transform((resp) => resp - 2)
+            .transform((resp) => resp.toString())
+            .transform((resp) => `result: ${resp}`)
         assert.strictEqual(await prompter.prompt(), 'result: 6')
     })
 })

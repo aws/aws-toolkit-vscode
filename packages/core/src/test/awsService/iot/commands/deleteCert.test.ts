@@ -48,7 +48,7 @@ describe('deleteCertCommand', function () {
         const deleteStub = sinon.stub()
         iot.deleteCertificate = deleteStub
 
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Delete')?.select())
         await deleteCertCommand(node)
 
         getTestWindow().getFirstMessage().assertWarn('Are you sure you want to delete Certificate test-cert?')
@@ -64,7 +64,7 @@ describe('deleteCertCommand', function () {
         const thingsStub = sinon.stub().resolves(['iot-thing'])
         iot.listThingsForCert = thingsStub
 
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Delete')?.select())
         await deleteCertCommand(node)
 
         getTestWindow()
@@ -80,7 +80,7 @@ describe('deleteCertCommand', function () {
         iot.listThingsForCert = thingsStub
         const deleteStub = sinon.stub()
         iot.deleteCertificate = deleteStub
-        getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
+        getTestWindow().onDidShowMessage((m) => m.selectItem('Cancel'))
         await deleteCertCommand(node)
 
         assert(thingsStub.calledOnceWithExactly({ principal: 'arn' }))
@@ -97,7 +97,7 @@ describe('deleteCertCommand', function () {
             parentNode,
             iot
         )
-        getTestWindow().onDidShowMessage(m => m.selectItem('Delete'))
+        getTestWindow().onDidShowMessage((m) => m.selectItem('Delete'))
         await deleteCertCommand(node)
 
         assert(deleteStub.notCalled)
@@ -111,7 +111,7 @@ describe('deleteCertCommand', function () {
         const deleteStub = sinon.stub().rejects()
         iot.deleteCertificate = deleteStub
 
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Delete')?.select())
         await deleteCertCommand(node)
 
         getTestWindow()
@@ -146,7 +146,7 @@ describe('deleteCertCommand', function () {
         const deleteStub = sinon.stub()
         iot.deleteCertificate = deleteStub
 
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Delete')?.select())
         await deleteCertCommand(node)
 
         getTestWindow().getSecondMessage().assertWarn('Certificate has attached policies. Delete anyway?')
@@ -164,7 +164,7 @@ describe('deleteCertCommand', function () {
         const deleteStub = sinon.stub()
         iot.deleteCertificate = deleteStub
 
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Delete')?.select())
         await deleteCertCommand(node)
 
         getTestWindow().getSecondMessage().assertError('Failed to retrieve policies attached to certificate')

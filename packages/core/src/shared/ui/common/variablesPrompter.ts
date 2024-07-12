@@ -36,9 +36,9 @@ function unquote(str: string): string {
 function parseEnvFile(contents: string): { [key: string]: string } {
     return contents
         .split(/\r?\n/)
-        .map(line => line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/))
+        .map((line) => line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/))
         .filter(isMatchArray)
-        .map(match => ({ [match[1]]: unquote(match[2] ?? '').trim() }))
+        .map((match) => ({ [match[1]]: unquote(match[2] ?? '').trim() }))
         .reduce((a, b) => Object.assign(a, b))
 }
 

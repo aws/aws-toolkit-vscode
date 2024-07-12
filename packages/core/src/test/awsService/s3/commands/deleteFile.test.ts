@@ -39,7 +39,7 @@ describe('deleteFileCommand', function () {
     })
 
     it('confirms deletion, deletes file, shows status bar confirmation, and refreshes parent node', async function () {
-        getTestWindow().onDidShowMessage(m => m.selectItem('Delete'))
+        getTestWindow().onDidShowMessage((m) => m.selectItem('Delete'))
         const stub = sinon.stub()
         s3.deleteObject = stub
         await deleteFileCommand(node)
@@ -54,7 +54,7 @@ describe('deleteFileCommand', function () {
     })
 
     it('does nothing when deletion is cancelled', async function () {
-        getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
+        getTestWindow().onDidShowMessage((m) => m.selectItem('Cancel'))
         const stub = sinon.stub()
         s3.deleteObject = stub
         await assert.rejects(() => deleteFileCommand(node), /cancelled/i)
@@ -69,7 +69,7 @@ describe('deleteFileCommand', function () {
         const stub = sinon.stub().rejects(new Error('Expected failure'))
         s3.deleteObject = stub
 
-        getTestWindow().onDidShowMessage(m => m.selectItem('Delete'))
+        getTestWindow().onDidShowMessage((m) => m.selectItem('Delete'))
         await assert.rejects(() => deleteFileCommand(node), /failed to delete file bar.jpg/i)
 
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)

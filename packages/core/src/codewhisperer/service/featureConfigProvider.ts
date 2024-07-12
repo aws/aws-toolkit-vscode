@@ -36,7 +36,7 @@ export class FeatureConfigProvider {
     static #instance: FeatureConfigProvider
 
     constructor() {
-        this.fetchFeatureConfigs().catch(e => {
+        this.fetchFeatureConfigs().catch((e) => {
             getLogger().error('fetchFeatureConfigs failed: %s', (e as Error).message)
         })
 
@@ -57,7 +57,7 @@ export class FeatureConfigProvider {
             const response = await client.listFeatureEvaluations()
 
             // Overwrite feature configs from server response
-            response.featureEvaluations.forEach(evaluation => {
+            response.featureEvaluations.forEach((evaluation) => {
                 this.featureConfigs.set(
                     evaluation.feature,
                     new FeatureContext(evaluation.feature, evaluation.variation, evaluation.value)
@@ -76,13 +76,13 @@ export class FeatureConfigProvider {
                         const response = await client.listAvailableCustomizations()
                         response
                             .map(
-                                listAvailableCustomizationsResponse =>
+                                (listAvailableCustomizationsResponse) =>
                                     listAvailableCustomizationsResponse.customizations
                             )
-                            .forEach(customizations => {
+                            .forEach((customizations) => {
                                 items.push(...customizations)
                             })
-                        availableCustomizations = items.map(c => c.arn)
+                        availableCustomizations = items.map((c) => c.arn)
                     } catch (e) {
                         getLogger().debug('amazonq: Failed to list available customizations')
                     }

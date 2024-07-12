@@ -35,7 +35,7 @@ export function uriToKey(uri: vscode.Uri): string {
             const { filterPattern, startTime, endTime, limit, streamNameOptions } =
                 parseCloudWatchLogsUri(uri).parameters
             const parts = [uri.path, filterPattern, startTime, endTime, limit, streamNameOptions]
-            return parts.map(p => p ?? '').join(':')
+            return parts.map((p) => p ?? '').join(':')
         } catch {
             throw new Error(
                 `Unable to parse ${uri.query} into JSON and therefore cannot key uri with path: ${uri.path}`

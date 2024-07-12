@@ -227,10 +227,10 @@ describe('transformByQ', function () {
             'resolver-status.properties',
         ]
 
-        m2Folders.forEach(folder => {
+        m2Folders.forEach((folder) => {
             const folderPath = path.join(tempDir, folder)
             fs.mkdirSync(folderPath, { recursive: true })
-            filesToAdd.forEach(file => {
+            filesToAdd.forEach((file) => {
                 fs.writeFileSync(path.join(folderPath, file), 'sample content for the test file')
             })
         })
@@ -245,13 +245,13 @@ describe('transformByQ', function () {
             humanInTheLoopFlag: false,
             modulePath: tempDir,
             zipManifest: new ZipManifest(),
-        }).then(zipFile => {
+        }).then((zipFile) => {
             const zip = new AdmZip(zipFile)
-            const dependenciesToUpload = zip.getEntries().filter(entry => entry.entryName.startsWith('dependencies'))
+            const dependenciesToUpload = zip.getEntries().filter((entry) => entry.entryName.startsWith('dependencies'))
             // Each dependency version folder contains each expected file, thus we multiply
             const expectedNumberOfDependencyFiles = m2Folders.length * expectedFilesAfterClean.length
             assert.strictEqual(expectedNumberOfDependencyFiles, dependenciesToUpload.length)
-            dependenciesToUpload.forEach(dependency => {
+            dependenciesToUpload.forEach((dependency) => {
                 assert(expectedFilesAfterClean.includes(dependency.name))
             })
         })

@@ -100,7 +100,7 @@ export const getClientId = memoize(
             let clientId = globalState.get<string>(telemetryClientIdGlobalStatekey)
             if (!clientId) {
                 clientId = randomUUID()
-                globalState.update(telemetryClientIdGlobalStatekey, clientId).then(undefined, e => {
+                globalState.update(telemetryClientIdGlobalStatekey, clientId).then(undefined, (e) => {
                     getLogger().error('getClientId: globalState.update failed: %O', e)
                 })
             }

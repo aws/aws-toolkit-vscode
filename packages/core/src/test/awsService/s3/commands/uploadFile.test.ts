@@ -25,14 +25,14 @@ describe('uploadFileCommand', function () {
     const key = 'file.jpg'
     const sizeBytes = 16
     const fileLocation = vscode.Uri.file('/file.jpg')
-    const statFile: FileSizeBytes = _file => sizeBytes
+    const statFile: FileSizeBytes = (_file) => sizeBytes
     const bucketResponse = { label: 'label', bucket: { Name: bucketName } }
     const folderResponse = {
         label: 'label',
         bucket: { Name: bucketName },
         folder: { name: 'folderA', path: 'folderA/', arn: 'arn' },
     }
-    const getFolder: (s3client: S3Client) => Promise<BucketQuickPickItem | 'cancel' | 'back'> = s3Client => {
+    const getFolder: (s3client: S3Client) => Promise<BucketQuickPickItem | 'cancel' | 'back'> = (s3Client) => {
         return new Promise((resolve, reject) => {
             resolve(folderResponse)
         })
@@ -64,7 +64,7 @@ describe('uploadFileCommand', function () {
             const promiseStub = sinon.stub().resolves()
             mockedUpload.promise = promiseStub
 
-            getFile = document => {
+            getFile = (document) => {
                 return new Promise((resolve, reject) => {
                     resolve([fileLocation])
                 })
@@ -85,7 +85,7 @@ describe('uploadFileCommand', function () {
         })
 
         it('cancels and displays a message if a user does not select a file', async function () {
-            getFile = document => {
+            getFile = (document) => {
                 return new Promise((resolve, reject) => {
                     resolve(undefined)
                 })
@@ -100,13 +100,13 @@ describe('uploadFileCommand', function () {
         this.beforeEach(function () {
             s3 = {} as any as S3Client
             outputChannel = new MockOutputChannel()
-            getFile = document => {
+            getFile = (document) => {
                 return new Promise((resolve, reject) => {
                     resolve([fileLocation])
                 })
             }
 
-            getBucket = s3Client => {
+            getBucket = (s3Client) => {
                 return new Promise((resolve, reject) => {
                     resolve(bucketResponse)
                 })
@@ -128,7 +128,7 @@ describe('uploadFileCommand', function () {
         })
 
         it('cancels if user does not provide bucket', async function () {
-            getBucket = s3Client => {
+            getBucket = (s3Client) => {
                 return new Promise((resolve, reject) => {
                     resolve('cancel')
                 })
@@ -139,7 +139,7 @@ describe('uploadFileCommand', function () {
         })
 
         it('cancels if user does not select file', async function () {
-            getFile = document => {
+            getFile = (document) => {
                 return new Promise((resolve, reject) => {
                     resolve(undefined)
                 })
@@ -150,13 +150,13 @@ describe('uploadFileCommand', function () {
         })
     })
 
-    getFile = document => {
+    getFile = (document) => {
         return new Promise((resolve, reject) => {
             resolve([fileLocation])
         })
     }
 
-    getBucket = s3Client => {
+    getBucket = (s3Client) => {
         return new Promise((resolve, reject) => {
             resolve(bucketResponse)
         })
@@ -167,7 +167,7 @@ describe('uploadFileCommand', function () {
         s3.uploadFile = uploadStub
         const promiseStub = sinon.stub().resolves()
         mockedUpload.promise = promiseStub
-        getTestWindow().onDidShowDialog(d => d.selectItem(fileLocation))
+        getTestWindow().onDidShowDialog((d) => d.selectItem(fileLocation))
 
         // Upload to bucket.
         await uploadFileCommand(s3, fileLocation, statFile, getBucket, getFile, outputChannel)
@@ -185,8 +185,8 @@ describe('uploadFileCommand', function () {
     it('errors when s3 call fails', async function () {
         const uploadStub = sinon.stub().rejects(new Error('Expected failure'))
         s3.uploadFile = uploadStub
-        getTestWindow().onDidShowDialog(d => d.selectItem(fileLocation))
-        getTestWindow().onDidShowMessage(m => m.close())
+        getTestWindow().onDidShowDialog((d) => d.selectItem(fileLocation))
+        getTestWindow().onDidShowMessage((m) => m.close())
 
         outputChannel = new MockOutputChannel()
         await uploadFileCommand(s3, fileLocation, statFile, getBucket, getFile, outputChannel)
@@ -219,13 +219,13 @@ describe('getFileToUpload', function () {
     }
 
     it('directly asks user for file if no active editor', async function () {
-        getTestWindow().onDidShowDialog(d => d.selectItem(fileLocation))
+        getTestWindow().onDidShowDialog((d) => d.selectItem(fileLocation))
         const response = await getFilesToUpload(undefined, prompt)
         assert.deepStrictEqual(response, [fileLocation])
     })
 
     it('Returns undefined if no file is selected on first prompt', async function () {
-        getTestWindow().onDidShowDialog(d => d.close())
+        getTestWindow().onDidShowDialog((d) => d.close())
         const response = await getFilesToUpload(undefined, prompt)
         assert.strictEqual(response, undefined)
     })
@@ -240,7 +240,7 @@ describe('getFileToUpload', function () {
 
     it('opens the file prompt if a user selects to browse for more files', async function () {
         selection.label = 'Browse for more files...'
-        getTestWindow().onDidShowDialog(d => d.selectItem(fileLocation))
+        getTestWindow().onDidShowDialog((d) => d.selectItem(fileLocation))
 
         const response = await getFilesToUpload(fileLocation, prompt)
         assert.deepStrictEqual(response, [fileLocation])
@@ -248,7 +248,7 @@ describe('getFileToUpload', function () {
 
     it('returns undefined if the user does not select a file through the file browser', async function () {
         selection.label = 'Browse for more files...'
-        getTestWindow().onDidShowDialog(d => d.close())
+        getTestWindow().onDidShowDialog((d) => d.close())
 
         const response = await getFilesToUpload(fileLocation, prompt)
 
@@ -294,7 +294,7 @@ describe('promptUserForBucket', async function () {
     beforeEach(function () {
         s3 = {} as any as S3Client
         buckets = [{ Name: 'bucket 1' }, { Name: 'bucket 2' }, { Name: 'bucket 3' }]
-        getTestWindow().onDidShowDialog(d => d.selectItem(fileLocation))
+        getTestWindow().onDidShowDialog((d) => d.selectItem(fileLocation))
     })
 
     it('Returns selected bucket', async function () {

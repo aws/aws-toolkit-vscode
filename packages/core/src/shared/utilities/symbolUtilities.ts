@@ -47,7 +47,7 @@ export async function getChildrenRange(symbol: vscode.DocumentSymbol): Promise<v
     let start: vscode.Position | undefined
     let end: vscode.Position | undefined
 
-    for (const range of symbol.children.map(c => c.range)) {
+    for (const range of symbol.children.map((c) => c.range)) {
         if (!start || range.start.isBefore(start)) {
             start = range.start
         }

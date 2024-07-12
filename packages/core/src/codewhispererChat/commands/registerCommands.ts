@@ -45,7 +45,7 @@ const getCommandTriggerType = (data: any): EditorContextCommandTriggerType => {
 }
 
 export function registerCommands(controllerPublishers: ChatControllerMessagePublishers) {
-    Commands.register('aws.amazonq.explainCode', async data => {
+    Commands.register('aws.amazonq.explainCode', async (data) => {
         return focusAmazonQPanel.execute(placeholder, 'amazonq.explainCode').then(() => {
             controllerPublishers.processContextMenuCommand.publish({
                 type: 'aws.amazonq.explainCode',
@@ -53,7 +53,7 @@ export function registerCommands(controllerPublishers: ChatControllerMessagePubl
             })
         })
     })
-    Commands.register('aws.amazonq.refactorCode', async data => {
+    Commands.register('aws.amazonq.refactorCode', async (data) => {
         return focusAmazonQPanel.execute(placeholder, 'amazonq.refactorCode').then(() => {
             controllerPublishers.processContextMenuCommand.publish({
                 type: 'aws.amazonq.refactorCode',
@@ -61,7 +61,7 @@ export function registerCommands(controllerPublishers: ChatControllerMessagePubl
             })
         })
     })
-    Commands.register('aws.amazonq.fixCode', async data => {
+    Commands.register('aws.amazonq.fixCode', async (data) => {
         return focusAmazonQPanel.execute(placeholder, 'amazonq.fixCode').then(() => {
             controllerPublishers.processContextMenuCommand.publish({
                 type: 'aws.amazonq.fixCode',
@@ -69,7 +69,7 @@ export function registerCommands(controllerPublishers: ChatControllerMessagePubl
             })
         })
     })
-    Commands.register('aws.amazonq.optimizeCode', async data => {
+    Commands.register('aws.amazonq.optimizeCode', async (data) => {
         return focusAmazonQPanel.execute(placeholder, 'amazonq.optimizeCode').then(() => {
             controllerPublishers.processContextMenuCommand.publish({
                 type: 'aws.amazonq.optimizeCode',
@@ -77,7 +77,7 @@ export function registerCommands(controllerPublishers: ChatControllerMessagePubl
             })
         })
     })
-    Commands.register('aws.amazonq.sendToPrompt', async data => {
+    Commands.register('aws.amazonq.sendToPrompt', async (data) => {
         return focusAmazonQPanel.execute(placeholder, 'amazonq.sendToPrompt').then(() => {
             controllerPublishers.processContextMenuCommand.publish({
                 type: 'aws.amazonq.sendToPrompt',
@@ -85,7 +85,7 @@ export function registerCommands(controllerPublishers: ChatControllerMessagePubl
             })
         })
     })
-    Commands.register('aws.amazonq.explainIssue', async issue => {
+    Commands.register('aws.amazonq.explainIssue', async (issue) => {
         return focusAmazonQPanel.execute(placeholder, 'amazonq.explainIssue').then(() => {
             controllerPublishers.processContextMenuCommand.publish({
                 type: 'aws.amazonq.explainIssue',

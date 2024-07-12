@@ -45,7 +45,7 @@ describe('createFolderCommand', function () {
         })
         s3.createFolder = stub
 
-        getTestWindow().onDidShowInputBox(input => {
+        getTestWindow().onDidShowInputBox((input) => {
             assert.strictEqual(input.prompt, 'Enter a folder to create in s3://bucket-name')
             assert.strictEqual(input.placeholder, 'Folder Name')
             input.acceptValue(folderName)
@@ -61,7 +61,7 @@ describe('createFolderCommand', function () {
     })
 
     it('does nothing when prompt is cancelled', async function () {
-        getTestWindow().onDidShowInputBox(input => input.hide())
+        getTestWindow().onDidShowInputBox((input) => input.hide())
         await assert.rejects(() => createFolderCommand(node), /cancelled/i)
     })
 
@@ -69,15 +69,15 @@ describe('createFolderCommand', function () {
         const stub = sinon.stub().rejects(new Error('Expected failure'))
         s3.createFolder = stub
 
-        getTestWindow().onDidShowInputBox(input => input.acceptValue(folderName))
+        getTestWindow().onDidShowInputBox((input) => input.acceptValue(folderName))
         await assert.rejects(() => createFolderCommand(node), /failed to create folder/i)
 
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
     })
 
-    invalidFolderNames.forEach(invalid => {
+    invalidFolderNames.forEach((invalid) => {
         it(`warns '${invalid.error}' when folder name is '${invalid.folderName}'`, async () => {
-            getTestWindow().onDidShowInputBox(input => {
+            getTestWindow().onDidShowInputBox((input) => {
                 input.acceptValue(invalid.folderName)
                 assert.strictEqual(input.validationMessage, invalid.error)
                 input.hide()

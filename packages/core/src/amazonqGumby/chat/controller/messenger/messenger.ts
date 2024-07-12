@@ -115,7 +115,7 @@ export class Messenger {
         const projectFormOptions: { value: any; label: string }[] = []
         const detectedJavaVersions = new Array<JDKVersion | undefined>()
 
-        projects.forEach(candidateProject => {
+        projects.forEach((candidateProject) => {
             projectFormOptions.push({
                 value: candidateProject.path,
                 label: candidateProject.name,
@@ -493,7 +493,7 @@ ${codeSnippet}
 
         const valueFormOptions: { value: any; label: string }[] = []
 
-        versions.allVersions.forEach(version => {
+        versions.allVersions.forEach((version) => {
             valueFormOptions.push({
                 value: version,
                 label: version,

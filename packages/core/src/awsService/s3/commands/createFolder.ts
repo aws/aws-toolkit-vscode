@@ -44,7 +44,7 @@ export async function createFolderCommand(node: S3BucketNode | S3FolderNode): Pr
 
         const { folder } = await node
             .createFolder({ path, bucketName: node.bucket.name })
-            .catch(e => {
+            .catch((e) => {
                 const message = localize(
                     'AWS.s3.createFolder.error.general',
                     'Failed to create folder: {0}',

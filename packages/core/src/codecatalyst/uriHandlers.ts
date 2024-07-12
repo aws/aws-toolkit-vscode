@@ -54,7 +54,7 @@ export function register(
 }
 
 function parseCloneParams(query: SearchParams) {
-    return { url: query.getAsOrThrow('url', 'A URL must be provided', v => vscode.Uri.parse(v, true)) }
+    return { url: query.getAsOrThrow('url', 'A URL must be provided', (v) => vscode.Uri.parse(v, true)) }
 }
 
 export function parseConnectParams(query: SearchParams): ConnectParams {

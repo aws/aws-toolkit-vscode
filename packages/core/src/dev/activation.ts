@@ -157,8 +157,8 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
             targetAuth = opts.auth
             void openMenu(
                 entries(menuOptions)
-                    .filter(e => (opts.menuOptions ?? Object.keys(menuOptions)).includes(e[0]))
-                    .map(e => e[1])
+                    .filter((e) => (opts.menuOptions ?? Object.keys(menuOptions)).includes(e[0]))
+                    .map((e) => e[1])
             )
         }),
         // "AWS (Developer): Watch Logs"
@@ -188,7 +188,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
 }
 
 async function openMenu(options: MenuOption[]): Promise<void> {
-    const items = options.map(v => ({
+    const items = options.map((v) => ({
         label: v.label,
         detail: v.detail,
         description: v.description,
@@ -284,7 +284,7 @@ class ObjectEditor {
     private readonly tabs: Map<string, Tab> = new Map()
 
     public constructor() {
-        vscode.workspace.onDidCloseTextDocument(doc => {
+        vscode.workspace.onDidCloseTextDocument((doc) => {
             const key = this.fs.uriToKey(doc.uri)
             this.tabs.get(key)?.dispose()
             this.tabs.delete(key)
@@ -383,7 +383,7 @@ async function openStorageFromInput() {
                     // List all globalState keys in the quickpick menu.
                     const items = targetContext.globalState
                         .keys()
-                        .map(key => {
+                        .map((key) => {
                             return {
                                 label: key,
                                 data: key,
@@ -415,15 +415,15 @@ async function editSsoConnections() {
 async function deleteSsoConnections() {
     const conns = targetAuth.listConnections()
     const ssoConns = (await conns).filter(isAnySsoConnection)
-    await Promise.all(ssoConns.map(conn => targetAuth.deleteConnection(conn)))
-    void vscode.window.showInformationMessage(`Deleted: ${ssoConns.map(c => c.startUrl).join(', ')}`)
+    await Promise.all(ssoConns.map((conn) => targetAuth.deleteConnection(conn)))
+    void vscode.window.showInformationMessage(`Deleted: ${ssoConns.map((c) => c.startUrl).join(', ')}`)
 }
 
 async function expireSsoConnections() {
     const conns = targetAuth.listConnections()
     const ssoConns = (await conns).filter(isAnySsoConnection)
-    await Promise.all(ssoConns.map(conn => targetAuth.expireConnection(conn)))
-    void vscode.window.showInformationMessage(`Expired: ${ssoConns.map(c => c.startUrl).join(', ')}`)
+    await Promise.all(ssoConns.map((conn) => targetAuth.expireConnection(conn)))
+    void vscode.window.showInformationMessage(`Expired: ${ssoConns.map((c) => c.startUrl).join(', ')}`)
 }
 
 async function showState(path: string) {

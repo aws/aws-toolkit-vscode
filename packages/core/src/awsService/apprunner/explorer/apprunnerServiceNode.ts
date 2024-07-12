@@ -70,7 +70,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
                     logGroupNamePrefix: `/aws/apprunner/${this._info.ServiceName}/${this._info.ServiceId}`,
                 })
             ),
-            configuration => configuration.logGroupName
+            (configuration) => configuration.logGroupName
         )
     }
 
@@ -85,13 +85,13 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         // update can be called multiple times during an event loop
         // this would rarely cause the node's status to appear as 'Operation in progress'
         this.lock
-            .acquire(this._info.ServiceId, done => {
+            .acquire(this._info.ServiceId, (done) => {
                 const lastLabel = this.label
                 this.updateInfo(info)
                 this.updateStatus(typeof lastLabel === 'string' ? lastLabel : lastLabel?.label)
                 done()
             })
-            .catch(e => {
+            .catch((e) => {
                 getLogger().error('AsyncLock.acquire failed: %s', e.message)
             })
     }
@@ -119,14 +119,14 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
     private async updateOperation(): Promise<void> {
         return this.client
             .listOperations({ MaxResults: 1, ServiceArn: this._info.ServiceArn })
-            .then(resp => {
+            .then((resp) => {
                 const operations = resp.OperationSummaryList
                 const operation = operations && operations[0]?.EndedAt === undefined ? operations[0] : undefined
                 if (operation !== undefined) {
                     this.setOperation(this._info, operation.Id!, operation.Type as any)
                 }
             })
-            .catch(err => {
+            .catch((err) => {
                 // Apparently App Runner can rarely list deleted services with the wrong status
                 getLogger().warn(
                     `Failed to list operations for service "${this._info.ServiceName}", service may be in an unstable state.`

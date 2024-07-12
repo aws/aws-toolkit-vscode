@@ -50,5 +50,5 @@ export function createMultiFileDialog(options?: DialogOptions): Prompter<vscode.
 
 export function createSingleFileDialog(options?: DialogOptions): Prompter<vscode.Uri> {
     const defaultUri = vscode.workspace.workspaceFolders?.[0]?.uri
-    return new OpenDialogPrompter({ defaultUri, ...options, canSelectMany: false }).transform(r => r[0])
+    return new OpenDialogPrompter({ defaultUri, ...options, canSelectMany: false }).transform((r) => r[0])
 }

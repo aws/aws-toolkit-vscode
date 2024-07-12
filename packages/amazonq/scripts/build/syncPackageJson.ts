@@ -25,7 +25,7 @@ function main() {
     const coreLibPackageJson = JSON.parse(fs.readFileSync(coreLibPackageJsonFile, { encoding: 'utf-8' }))
 
     const coreSettings = coreLibPackageJson.contributes.configuration.properties
-    Object.keys(coreSettings).forEach(key => {
+    Object.keys(coreSettings).forEach((key) => {
         if (key.startsWith('amazonQ')) {
             packageJson.contributes.configuration.properties[key] = coreSettings[key]
         }

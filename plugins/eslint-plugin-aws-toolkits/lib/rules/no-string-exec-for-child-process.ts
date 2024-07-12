@@ -45,7 +45,7 @@ export default ESLintUtils.RuleCreator.withoutDocs({
             ImportDeclaration(node: TSESTree.ImportDeclaration) {
                 // Detect imports for child_process
                 if (node.source.value === 'child_process') {
-                    node.specifiers.forEach(specifier => {
+                    node.specifiers.forEach((specifier) => {
                         if (specifier.type === AST_NODE_TYPES.ImportNamespaceSpecifier) {
                             // Detect the name of the import, e.g. "proc" from "import * as proc from child_process"
                             libImportName = specifier.local.name

@@ -40,7 +40,7 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
     const symbols: vscode.DocumentSymbol[] =
         (await vscode.commands.executeCommand('vscode.executeDocumentSymbolProvider', document.uri)) || []
 
-    return getLambdaHandlerComponents(document, symbols).map<LambdaHandlerCandidate>(lambdaHandlerComponents => {
+    return getLambdaHandlerComponents(document, symbols).map<LambdaHandlerCandidate>((lambdaHandlerComponents) => {
         const handlerName = generateJavaLambdaHandler(lambdaHandlerComponents)
 
         return {
@@ -56,7 +56,7 @@ export function getLambdaHandlerComponents(
     document: vscode.TextDocument,
     symbols: vscode.DocumentSymbol[]
 ): JavaLambdaHandlerComponents[] {
-    const packageSymbols = symbols.filter(symbol => symbol.kind === vscode.SymbolKind.Package)
+    const packageSymbols = symbols.filter((symbol) => symbol.kind === vscode.SymbolKind.Package)
     if (packageSymbols.length !== 1) {
         return []
     }
@@ -64,15 +64,15 @@ export function getLambdaHandlerComponents(
 
     return (
         symbols
-            .filter(symbol => symbol.kind === vscode.SymbolKind.Class)
-            .filter(classSymbol => isValidClassSymbol(document, classSymbol))
+            .filter((symbol) => symbol.kind === vscode.SymbolKind.Class)
+            .filter((classSymbol) => isValidClassSymbol(document, classSymbol))
             // Find relevant methods within each class
             .reduce<JavaLambdaHandlerComponents[]>((accumulator, lambdaHandlerComponent) => {
                 accumulator.push(
                     ...lambdaHandlerComponent.children
-                        .filter(classChildSymbol => classChildSymbol.kind === vscode.SymbolKind.Method)
-                        .filter(methodSymbol => isValidLambdaHandler(document, methodSymbol))
-                        .map(methodSymbol => {
+                        .filter((classChildSymbol) => classChildSymbol.kind === vscode.SymbolKind.Method)
+                        .filter((methodSymbol) => isValidLambdaHandler(document, methodSymbol))
+                        .map((methodSymbol) => {
                             return {
                                 package: packageName,
                                 class: document.getText(lambdaHandlerComponent.selectionRange),

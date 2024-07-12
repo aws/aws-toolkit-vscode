@@ -21,7 +21,7 @@ export interface CommandWizardState {
 function createTaskPrompter(node: Container) {
     const taskItems = (async () => {
         // Filter for only 'Running' tasks
-        return (await node.listTasks()).map(task => {
+        return (await node.listTasks()).map((task) => {
             // TODO: get task definition name and include it in the item detail
             // The last 32 digits of the task arn is the task identifier
             const taskId = task.taskArn.substring(task.taskArn.length - 32)
@@ -100,7 +100,7 @@ export class CommandWizard extends Wizard<CommandWizardState> {
         this.form.task.bindPrompter(() => createTaskPrompter(container))
         this.form.command.bindPrompter(() => createCommandPrompter(container))
         if (shouldShowConfirmation) {
-            this.form.confirmation.bindPrompter(state =>
+            this.form.confirmation.bindPrompter((state) =>
                 createConfirmationPrompter(container, state.task!, state.command!)
             )
         }

@@ -54,7 +54,7 @@ export async function activate(
         await globals.telemetry.setTelemetryEnabled(config.isEnabled())
 
         extensionContext.subscriptions.push(
-            (isAmazonQExt ? config.amazonQConfig : config.toolkitConfig).onDidChange(async event => {
+            (isAmazonQExt ? config.amazonQConfig : config.toolkitConfig).onDidChange(async (event) => {
                 if (event.key === 'telemetry') {
                     const val = config.isEnabled()
                     const settingId = isAmazonQExt ? 'amazonQ.telemetry' : 'aws.telemetry'
@@ -128,7 +128,7 @@ function showTelemetryNotice(extensionContext: vscode.ExtensionContext) {
     // Don't wait for a response
     void vscode.window
         .showInformationMessage(telemetryNoticeText, noticeResponseViewSettings, noticeResponseOk)
-        .then(async response => handleTelemetryNoticeResponse(response, extensionContext))
+        .then(async (response) => handleTelemetryNoticeResponse(response, extensionContext))
 }
 
 export async function handleTelemetryNoticeResponse(

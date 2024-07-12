@@ -24,9 +24,9 @@ class MockLoadTemplatesConfigContext {
     public readonly saveDocumentIfDirty: (editorPath: string) => Thenable<void>
 
     public constructor({
-        fileExists = async _path => true,
-        readFile = async _path => '',
-        saveDocumentIfDirty = async _path => {},
+        fileExists = async (_path) => true,
+        readFile = async (_path) => '',
+        saveDocumentIfDirty = async (_path) => {},
     }: Partial<LoadTemplatesConfigContext>) {
         this.fileExists = fileExists
         this.readFile = readFile
@@ -45,7 +45,7 @@ describe('templates', async function () {
             }`
 
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => rawJson,
+                readFile: async (pathLike) => rawJson,
             })
 
             const config = await load('', context)
@@ -72,7 +72,7 @@ describe('templates', async function () {
             }`
 
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => rawJson,
+                readFile: async (pathLike) => rawJson,
             })
 
             const config = await load('', context)
@@ -99,7 +99,7 @@ describe('templates', async function () {
 
         it('returns minimal config on missing file', async function () {
             const context = new MockLoadTemplatesConfigContext({
-                fileExists: async pathLike => false,
+                fileExists: async (pathLike) => false,
             })
 
             const config = await load('', context)
@@ -111,7 +111,7 @@ describe('templates', async function () {
 
         it('throws on error loading file', async function () {
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => {
+                readFile: async (pathLike) => {
                     throw new Error('oh no')
                 },
             })
@@ -130,7 +130,7 @@ describe('templates', async function () {
 
         it('gracefully handles invalid JSON', async function () {
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => '{',
+                readFile: async (pathLike) => '{',
             })
 
             try {
@@ -161,7 +161,7 @@ describe('templates', async function () {
             }`
 
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => rawJson,
+                readFile: async (pathLike) => rawJson,
             })
 
             const config = await load('', context)
@@ -178,7 +178,7 @@ describe('templates', async function () {
         it('reads the correct path', async function () {
             const readArgs: string[] = []
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => {
+                readFile: async (pathLike) => {
                     readArgs.push(pathLike)
 
                     return '{}'
@@ -196,12 +196,12 @@ describe('templates', async function () {
             let read: boolean = false
             let readBeforeSave: boolean = false
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => {
+                readFile: async (pathLike) => {
                     read = true
 
                     return '{}'
                 },
-                saveDocumentIfDirty: async pathLike => {
+                saveDocumentIfDirty: async (pathLike) => {
                     saveArgs.push(pathLike)
 
                     if (read) {

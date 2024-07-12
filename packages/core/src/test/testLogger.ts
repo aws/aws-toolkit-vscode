@@ -46,12 +46,12 @@ export class TestLogger implements Logger {
 
     public getLoggedEntries(...logLevels: LogLevel[]): Loggable[] {
         return this.loggedEntries
-            .filter(loggedEntry => logLevels.length === 0 || logLevels.includes(loggedEntry.logLevel))
-            .map(loggedEntry => loggedEntry.entry)
+            .filter((loggedEntry) => logLevels.length === 0 || logLevels.includes(loggedEntry.logLevel))
+            .map((loggedEntry) => loggedEntry.entry)
     }
 
     private addLoggedEntries(logLevel: LogLevel, entries: Loggable[]): number {
-        entries.forEach(entry => {
+        entries.forEach((entry) => {
             this.loggedEntries.push({
                 logLevel,
                 entry,

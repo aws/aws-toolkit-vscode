@@ -57,7 +57,7 @@ export default ESLintUtils.RuleCreator.withoutDocs({
                     return context.report({
                         node: node.callee,
                         messageId: `${object.name}OnlyErrMsg`,
-                        fix: fixer => {
+                        fix: (fixer) => {
                             // Range - 1 removes the period in `it.only()`
                             return fixer.removeRange([property.range[0] - 1, property.range[1]])
                         },

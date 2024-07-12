@@ -158,7 +158,7 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
         const wrappedElement: FormDataElement<TState, any> = {}
 
         if (element.provider !== undefined) {
-            wrappedElement.provider = state => {
+            wrappedElement.provider = (state) => {
                 const stateWithCache = Object.assign(_.get(state, prop, {}), {
                     stepCache: state.stepCache,
                     estimator: state.estimator,
@@ -169,7 +169,7 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
         }
 
         if (element.showWhen !== undefined || options?.showWhen !== undefined || options?.requireParent === true) {
-            wrappedElement.showWhen = state =>
+            wrappedElement.showWhen = (state) =>
                 (options?.requireParent !== true || _.get(state, prop) !== undefined) &&
                 (element.showWhen !== undefined ? element.showWhen!(_.get(state, prop, {})) : true) &&
                 (options?.showWhen !== undefined ? options.showWhen!(state) : true)
@@ -177,7 +177,7 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
 
         wrappedElement.setDefault =
             element.setDefault !== undefined
-                ? state =>
+                ? (state) =>
                       options?.requireParent !== true || _.get(state, prop) !== undefined
                           ? options?.showWhen === undefined || options.showWhen(state)
                               ? element.setDefault!(_.get(state, prop, {}))

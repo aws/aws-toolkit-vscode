@@ -67,7 +67,7 @@ export function createMockTextEditor(
             resolve: (editBuilder: vscode.TextEditorEdit) => void,
             options?: { undoStopBefore: boolean; undoStopAfter: boolean } | undefined
         ) {
-            return new Promise(r => {
+            return new Promise((r) => {
                 const editor: vscode.TextEditorEdit = {
                     replace: sinon.spy(),
                     insert: sinon.spy(),

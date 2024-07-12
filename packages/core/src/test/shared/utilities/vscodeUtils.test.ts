@@ -56,7 +56,7 @@ describe('isExtensionInstalled()', function () {
                 version: extVersion,
             },
         } as vscode.Extension<any>
-        getExtension = _ => ext
+        getExtension = (_) => ext
     })
 
     it('fails if extension could not be found', function () {

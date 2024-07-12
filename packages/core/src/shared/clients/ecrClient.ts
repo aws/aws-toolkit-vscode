@@ -40,7 +40,7 @@ export class DefaultEcrClient {
             const response = await sdkClient.describeRepositories(request).promise()
             if (response.repositories) {
                 yield* response.repositories
-                    .map(repo => {
+                    .map((repo) => {
                         // If any of these are not present, the repo returned is not valid. repositoryUri/Arn
                         // are both based on name, and it's not possible to not have a name
                         if (!repo.repositoryArn || !repo.repositoryName || !repo.repositoryUri) {
@@ -53,7 +53,7 @@ export class DefaultEcrClient {
                             }
                         }
                     })
-                    .filter(item => item !== undefined) as EcrRepository[]
+                    .filter((item) => item !== undefined) as EcrRepository[]
             }
             request.nextToken = response.nextToken
         } while (request.nextToken)
@@ -64,7 +64,7 @@ export class DefaultEcrClient {
             (await this.createSdkClient()).describeRepositories(req).promise()
         const collection = pageableToCollection(requester, {}, 'nextToken', 'repositories')
 
-        return collection.filter(isNonNullable).map(list => list.map(repo => (assertHasProps(repo), repo)))
+        return collection.filter(isNonNullable).map((list) => list.map((repo) => (assertHasProps(repo), repo)))
     }
 
     public async createRepository(repositoryName: string) {

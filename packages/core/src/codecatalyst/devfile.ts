@@ -47,7 +47,7 @@ export const updateDevfileCommand = Commands.declare(
         id: 'aws.codecatalyst.updateDevfile',
         telemetryName: 'codecatalyst_updateDevfile',
     },
-    () => uri => updateDevfile(uri)
+    () => (uri) => updateDevfile(uri)
 )
 
 type Workspace = Pick<typeof vscode.workspace, 'onDidSaveTextDocument'>
@@ -65,12 +65,12 @@ export class DevfileCodeLensProvider implements vscode.CodeLensProvider {
     ) {
         this.disposables.push(this._onDidChangeCodeLenses)
         this.disposables.push(
-            workspace.onDidSaveTextDocument(async document => {
+            workspace.onDidSaveTextDocument(async (document) => {
                 if (!registry.getItem(document.fileName)) {
                     return
                 }
 
-                await this.handleUpdate(document).catch(err => {
+                await this.handleUpdate(document).catch((err) => {
                     getLogger().debug(`codecatalyst: devfile codelens failure: ${err?.message}`)
                 })
             })
@@ -111,7 +111,7 @@ export function registerDevfileWatcher(devenvClient: DevEnvClient): vscode.Dispo
     const registry = new DevfileRegistry()
     const codelensProvider = new DevfileCodeLensProvider(registry, devenvClient)
     registry.addWatchPatterns([devfileGlobPattern])
-    registry.rebuild().catch(e => {
+    registry.rebuild().catch((e) => {
         getLogger().error('WatchedFiles.rebuild failed: %s', (e as Error).message)
     })
 

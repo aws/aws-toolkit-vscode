@@ -49,7 +49,7 @@ export function watchBetaVSIX(vsixUrl: string): vscode.Disposable {
 
     const toolkit = getBetaToolkitData(vsixUrl)
     if (!toolkit || toolkit.needUpdate || Date.now() - toolkit.lastCheck > downloadIntervalMs) {
-        runAutoUpdate(vsixUrl).catch(e => {
+        runAutoUpdate(vsixUrl).catch((e) => {
             getLogger().error('runAutoUpdate failed: %s', (e as Error).message)
         })
     }

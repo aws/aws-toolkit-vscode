@@ -173,7 +173,7 @@ async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string[]): Pr
     // Workaround: set --user-data-dir to avoid this error in CI:
     // "You are trying to start Visual Studio Code as a super user …"
     if (process.env.AWS_TOOLKIT_TEST_USER_DIR) {
-        cmdArgs = cmdArgs.filter(a => !a.startsWith('--user-data-dir='))
+        cmdArgs = cmdArgs.filter((a) => !a.startsWith('--user-data-dir='))
         cmdArgs.push(`--user-data-dir=${process.env.AWS_TOOLKIT_TEST_USER_DIR}`)
     }
 

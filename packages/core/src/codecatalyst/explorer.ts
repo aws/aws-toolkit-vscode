@@ -141,7 +141,7 @@ export class CodeCatalystRootNode implements TreeNode {
         this.addRefreshEmitter(() => this.onDidChangeEmitter.fire())
 
         this.authProvider.onDidChange(() => {
-            this.refreshEmitters.forEach(fire => fire())
+            this.refreshEmitters.forEach((fire) => fire())
         })
     }
 
@@ -220,12 +220,12 @@ export class CodeCatalystRootNode implements TreeNode {
         }
         let resolve: ((val: boolean) => void) | undefined
         if (this.resolveDevEnv === undefined) {
-            this.resolveDevEnv = new Promise<boolean>(res => {
+            this.resolveDevEnv = new Promise<boolean>((res) => {
                 resolve = res
             })
         }
 
-        this.devenv = (await getThisDevEnv(this.authProvider))?.unwrapOrElse(e => {
+        this.devenv = (await getThisDevEnv(this.authProvider))?.unwrapOrElse((e) => {
             const err = e as Error
             getLogger().warn('codecatalyst: failed to get current Dev Enviroment: %s', err.message)
             return undefined

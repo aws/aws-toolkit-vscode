@@ -23,7 +23,7 @@ export class ReferenceInlineProvider implements vscode.CodeLensProvider {
     public readonly onDidChangeCodeLenses: vscode.Event<void> = this._onDidChangeCodeLenses.event
 
     constructor() {
-        application().clearCodeWhispererUIListener(_ => {
+        application().clearCodeWhispererUIListener((_) => {
             this.removeInlineReference()
         })
     }

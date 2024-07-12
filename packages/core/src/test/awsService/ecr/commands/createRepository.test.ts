@@ -30,12 +30,12 @@ describe('createRepositoryCommand', function () {
     it('prompts for repo name, creates repo, shows success, and refreshes node', async function () {
         const repoName = 'amazingecrrepo'
 
-        const stub = sandbox.stub(ecr, 'createRepository').callsFake(async name => {
+        const stub = sandbox.stub(ecr, 'createRepository').callsFake(async (name) => {
             assert.strictEqual(name, repoName)
             return {} as any
         })
 
-        getTestWindow().onDidShowInputBox(input => {
+        getTestWindow().onDidShowInputBox((input) => {
             assert.strictEqual(input.prompt, 'Enter a new repository name')
             assert.strictEqual(input.placeholder, 'Repository Name')
             input.acceptValue(repoName)
@@ -48,7 +48,7 @@ describe('createRepositoryCommand', function () {
     })
 
     it('does nothing when prompt is cancelled', async function () {
-        getTestWindow().onDidShowInputBox(input => input.hide())
+        getTestWindow().onDidShowInputBox((input) => input.hide())
         const spy = sandbox.spy(ecr, 'createRepository')
 
         await createRepository(node)
@@ -61,7 +61,7 @@ describe('createRepositoryCommand', function () {
             throw Error('Network busted')
         })
 
-        getTestWindow().onDidShowInputBox(input => input.acceptValue('input'))
+        getTestWindow().onDidShowInputBox((input) => input.acceptValue('input'))
         await createRepository(node)
 
         getTestWindow()
@@ -72,7 +72,7 @@ describe('createRepositoryCommand', function () {
     })
 
     it('Warns when repository name is invalid', async function () {
-        getTestWindow().onDidShowInputBox(input => {
+        getTestWindow().onDidShowInputBox((input) => {
             input.acceptValue('404')
             assert.strictEqual(input.validationMessage, 'Repository name must start with a lowercase letter')
             input.hide()

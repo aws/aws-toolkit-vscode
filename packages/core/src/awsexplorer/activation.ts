@@ -50,7 +50,7 @@ export async function activate(args: {
         treeDataProvider: awsExplorer,
         showCollapseAll: true,
     })
-    view.onDidExpandElement(element => {
+    view.onDidExpandElement((element) => {
         if (element.element instanceof S3FolderNode) {
             globals.globalState.tryUpdate('aws.lastTouchedS3Folder', {
                 bucket: element.element.bucket,
@@ -68,7 +68,7 @@ export async function activate(args: {
     telemetry.vscode_activeRegions.emit({ value: args.regionProvider.getExplorerRegions().length })
 
     args.context.extensionContext.subscriptions.push(
-        args.context.awsContext.onDidChangeContext(async credentialsChangedEvent => {
+        args.context.awsContext.onDidChangeContext(async (credentialsChangedEvent) => {
             getLogger().verbose(`Credentials changed (${credentialsChangedEvent.profileName}), updating AWS Explorer`)
             awsExplorer.refresh()
 
@@ -89,7 +89,7 @@ export async function activate(args: {
             nodes: [codecatalystNode],
             view: 'aws.codecatalyst',
             refreshCommands: [
-                provider => {
+                (provider) => {
                     codecatalystNode!.addRefreshEmitter(() => provider.refresh())
                 },
             ],

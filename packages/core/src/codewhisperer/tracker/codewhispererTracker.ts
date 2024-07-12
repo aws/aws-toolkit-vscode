@@ -49,7 +49,7 @@ export class CodeWhispererTracker {
         }
 
         if (this._eventQueue.length >= 0) {
-            this.startTimer().catch(e => {
+            this.startTimer().catch((e) => {
                 getLogger().error('startTimer failed: %s', (e as Error).message)
             })
         }

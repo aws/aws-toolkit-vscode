@@ -79,7 +79,7 @@ export class Session {
         // Store the initial message when setting up the conversation so that if it fails we can retry with this message
         this._latestMessage = msg
 
-        await telemetry.amazonq_startConversationInvoke.run(async span => {
+        await telemetry.amazonq_startConversationInvoke.run(async (span) => {
             this._conversationId = await this.proxyClient.createConversation()
             span.record({ amazonqConversationId: this._conversationId, credentialStartUrl: AuthUtil.instance.startUrl })
         })
@@ -183,7 +183,7 @@ export class Session {
     }
 
     public async insertChanges() {
-        for (const filePath of this.state.filePaths?.filter(i => !i.rejected) ?? []) {
+        for (const filePath of this.state.filePaths?.filter((i) => !i.rejected) ?? []) {
             const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
 
             const uri = filePath.virtualMemoryUri
@@ -194,7 +194,7 @@ export class Session {
             await fs.writeFile(absolutePath, decodedContent)
         }
 
-        for (const filePath of this.state.deletedFiles?.filter(i => !i.rejected) ?? []) {
+        for (const filePath of this.state.deletedFiles?.filter((i) => !i.rejected) ?? []) {
             const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
             await fs.delete(absolutePath)
         }

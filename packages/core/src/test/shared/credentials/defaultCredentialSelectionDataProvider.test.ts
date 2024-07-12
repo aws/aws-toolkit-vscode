@@ -25,7 +25,7 @@ describe('defaultCredentialSelectionDataProvider', function () {
                     actions: QuickPickItem[],
                     partialState: Partial<CredentialSelectionState>
                 ): Promise<QuickPickItem> {
-                    return new Promise<QuickPickItem>(resolve => {
+                    return new Promise<QuickPickItem>((resolve) => {
                         resolve({ label: this.existingProfileNames[1] })
                     })
                 }

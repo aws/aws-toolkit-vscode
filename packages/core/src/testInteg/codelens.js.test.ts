@@ -74,7 +74,7 @@ describe('SAM Local CodeLenses (JS)', async function () {
     ) {
         assert.ok(codeLenses !== undefined, 'Did not expect undefined when requesting CodeLenses')
 
-        const debugCodeLenses = getLocalInvokeCodeLenses(codeLenses).filter(codeLens =>
+        const debugCodeLenses = getLocalInvokeCodeLenses(codeLenses).filter((codeLens) =>
             hasLocalInvokeArguments(codeLens, expectedHandlerName, manifestPath)
         )
 
@@ -83,7 +83,7 @@ describe('SAM Local CodeLenses (JS)', async function () {
 
     function getLocalInvokeCodeLenses(codeLenses: vscode.CodeLens[]): vscode.CodeLens[] {
         return codeLenses.filter(
-            codeLens =>
+            (codeLens) =>
                 codeLens.command &&
                 codeLens.command.command === 'aws.pickAddSamDebugConfiguration' &&
                 codeLens.command.arguments &&

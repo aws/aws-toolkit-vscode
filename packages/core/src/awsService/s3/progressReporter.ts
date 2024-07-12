@@ -38,7 +38,7 @@ export function progressReporter(
         { leading: true, trailing: false }
     )
 
-    return newBytes => {
+    return (newBytes) => {
         reporter.update(newBytes)
 
         if (reporter.done) {
