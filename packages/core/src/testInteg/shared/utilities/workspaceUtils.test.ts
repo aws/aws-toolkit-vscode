@@ -13,6 +13,7 @@ import {
     findParentProjectFile,
     getWorkspaceFoldersByPrefixes,
     getWorkspaceRelativePath,
+    indexFileQualifier,
 } from '../../../shared/utilities/workspaceUtils'
 import { getTestWorkspaceFolder } from '../../integrationTestsUtilities'
 import globals from '../../../shared/extensionGlobals'
@@ -257,41 +258,49 @@ describe('collectFiles', function () {
                     workspaceFolder,
                     relativeFilePath: '.gitignore',
                     fileContent: gitignoreContent,
+                    fileSizeBytes: 162,
                 },
                 {
                     workspaceFolder,
                     relativeFilePath: 'file1',
                     fileContent: 'test content',
+                    fileSizeBytes: 12,
                 },
                 {
                     workspaceFolder,
                     relativeFilePath: 'file3',
                     fileContent: 'test content',
+                    fileSizeBytes: 12,
                 },
                 {
                     workspaceFolder,
                     relativeFilePath: 'range_file9',
                     fileContent: 'test content',
+                    fileSizeBytes: 12,
                 },
                 {
                     workspaceFolder,
                     relativeFilePath: path.join('src', '.gitignore'),
                     fileContent: gitignore2,
+                    fileSizeBytes: 8,
                 },
                 {
                     workspaceFolder,
                     relativeFilePath: path.join('src', 'folder2', 'a.js'),
                     fileContent: fileContent,
+                    fileSizeBytes: 12,
                 },
                 {
                     workspaceFolder,
                     relativeFilePath: path.join('src', 'folder3', '.gitignore'),
                     fileContent: gitignore3,
+                    fileSizeBytes: 42,
                 },
                 {
                     workspaceFolder,
                     relativeFilePath: path.join('src', 'folder3', 'negate_test1'),
                     fileContent: fileContent,
+                    fileSizeBytes: 12,
                 },
             ] satisfies typeof result,
             result
@@ -424,5 +433,26 @@ describe('getWorkspaceFoldersByPrefixes', function () {
             '_2',
             `Incorrect prefix for second workspace [${orderedKeys[1]}]`
         )
+    })
+})
+describe('indexFileQualifier', function () {
+    it('should return false', async function () {
+        assert.ok(!indexFileQualifier('test/.env.brazil', 20))
+        assert.ok(!indexFileQualifier('src/test.java', 11 * 1024 * 1024))
+        assert.ok(!indexFileQualifier('file.exe', 1024))
+        assert.ok(!indexFileQualifier('file.dll', 1024))
+        assert.ok(!indexFileQualifier('file.zip', 1024))
+        assert.ok(!indexFileQualifier('./venv/a.py', 1024))
+        assert.ok(!indexFileQualifier('./env/a.py', 1024))
+        assert.ok(!indexFileQualifier('/path/to/bin/file.js', 1024))
+        assert.ok(!indexFileQualifier('/path/to/build/file.ts', 1024))
+        assert.ok(!indexFileQualifier('/path/to/node_modules/file.java', 1024))
+    })
+    it('should return true', async function () {
+        assert.ok(indexFileQualifier('src/test.java', 9 * 1024 * 1024))
+        assert.ok(indexFileQualifier('src/test.java', 10 * 1024 * 1024))
+        assert.ok(indexFileQualifier('file.js', 1024))
+        assert.ok(indexFileQualifier('file.ts', 1024))
+        assert.ok(indexFileQualifier('file.java', 1024))
     })
 })
