@@ -37,7 +37,7 @@ export {
 export * from './utilities/textUtilities'
 export * from './filesystemUtilities'
 export * from './localizedText'
-export { getMinVscodeVersion } from './vscode/env'
+export * as env from './vscode/env'
 export * from './vscode/commands2'
 export * from './utilities/pathUtils'
 export * from './errors'
