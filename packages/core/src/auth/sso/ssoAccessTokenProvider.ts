@@ -103,8 +103,8 @@ export abstract class SsoAccessTokenProvider {
         }
     }
 
-    public async createToken(): Promise<SsoToken> {
-        const access = await this.runFlow()
+    public async createToken(args?: CreateTokenArgs): Promise<SsoToken> {
+        const access = await this.runFlow(args)
         const identity = this.tokenCacheKey
         await this.cache.token.save(identity, access)
         await globals.globalState.setSsoSessionCreationDate(this.tokenCacheKey, new globals.clock.Date())
@@ -112,10 +112,10 @@ export abstract class SsoAccessTokenProvider {
         return { ...access.token, identity }
     }
 
-    private async runFlow() {
+    private async runFlow(args?: CreateTokenArgs) {
         const registration = await this.getValidatedClientRegistration()
         try {
-            return await this.authorize(registration)
+            return await this.authorize(registration, args)
         } catch (err) {
             if (err instanceof SSOOIDCServiceException && isClientFault(err)) {
                 await this.cache.registration.clear(
@@ -185,11 +185,15 @@ export abstract class SsoAccessTokenProvider {
     /**
      * Wraps the given function with telemetry related to the browser login.
      */
-    protected withBrowserLoginTelemetry<T extends (...args: any[]) => any>(func: T): ReturnType<T> {
+    protected withBrowserLoginTelemetry<T extends (...args: any[]) => any>(
+        func: T,
+        args?: CreateTokenArgs
+    ): ReturnType<T> {
         const run = (span: Metric<AwsLoginWithBrowser>) => {
             span.record({
                 credentialStartUrl: this.profile.startUrl,
                 source: SsoAccessTokenProvider._authSource,
+                isReAuth: args?.isReAuth,
             })
 
             // Reset source in case there is a case where browser login was called but we forgot to set the source.
@@ -211,7 +215,10 @@ export abstract class SsoAccessTokenProvider {
         })
     }
 
-    protected abstract authorize(registration: ClientRegistration): Promise<{
+    protected abstract authorize(
+        registration: ClientRegistration,
+        args?: CreateTokenArgs
+    ): Promise<{
         token: SsoToken
         registration: ClientRegistration
         region: string
@@ -249,6 +256,15 @@ export abstract class SsoAccessTokenProvider {
         }
         return new AuthFlowAuthorization(profile, cache, oidc)
     }
+}
+
+/**
+ * Supplementary arguments for the create token flow. This data can be used
+ * for things like telemetry.
+ */
+type CreateTokenArgs = {
+    /** true if the create token flow is for reauthentication */
+    isReAuth?: boolean
 }
 
 const backoffDelayMs = 5000
@@ -377,7 +393,8 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
     }
 
     override async authorize(
-        registration: ClientRegistration
+        registration: ClientRegistration,
+        args?: CreateTokenArgs
     ): Promise<{ token: SsoToken; registration: ClientRegistration; region: string; startUrl: string }> {
         // This will NOT throw on expired clientId/Secret, but WILL throw on invalid clientId/Secret
         const authorization = await this.oidc.startDeviceAuthorization({
@@ -403,7 +420,7 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
             )
         }
 
-        const token = this.withBrowserLoginTelemetry(() => openBrowserAndWaitUntilComplete())
+        const token = this.withBrowserLoginTelemetry(() => openBrowserAndWaitUntilComplete(), args)
 
         return this.formatToken(await token, registration)
     }
@@ -489,7 +506,8 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
     }
 
     override async authorize(
-        registration: ClientRegistration
+        registration: ClientRegistration,
+        args?: CreateTokenArgs
     ): Promise<{ token: SsoToken; registration: ClientRegistration; region: string; startUrl: string }> {
         const state = randomUUID()
         const authServer = AuthSSOServer.init(state)
@@ -531,7 +549,7 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
                 telemetry.record({ requestId: res.requestId })
 
                 return res
-            })
+            }, args)
 
             return this.formatToken(token, registration)
         } finally {
@@ -601,7 +619,8 @@ class WebAuthorization extends SsoAccessTokenProvider {
     }
 
     override async authorize(
-        registration: ClientRegistration
+        registration: ClientRegistration,
+        args?: CreateTokenArgs
     ): Promise<{ token: SsoToken; registration: ClientRegistration; region: string; startUrl: string }> {
         const state = randomUUID()
 
@@ -641,7 +660,7 @@ class WebAuthorization extends SsoAccessTokenProvider {
                 codeVerifier,
                 code: inputBox,
             })
-        })
+        }, args)
 
         return this.formatToken(token, registration)
     }
