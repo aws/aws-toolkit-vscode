@@ -13,14 +13,15 @@ import { isNonNullable } from './utilities/tsUtils'
 import type * as nodefs from 'fs'
 import type * as os from 'os'
 import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
-import { isAutomation } from './vscode/env'
 import { driveLetterRegex } from './utilities/pathUtils'
 
 let _username = 'unknown-user'
+let _isAutomation = false
 
-/** One-time initialization for this module. */
-export function init(username: string) {
+/** Performs one-time initialization, to avoid circular dependencies. */
+export function init(username: string, isAutomation: boolean) {
     _username = username
+    _isAutomation = isAutomation
 }
 
 export const errorCode = {
@@ -667,7 +668,7 @@ function vscodeModeToString(mode: vscode.FileStat['permissions']) {
     }
 
     // XXX: future-proof in case vscode.FileStat.permissions gains more granularity.
-    if (isAutomation()) {
+    if (_isAutomation) {
         throw new Error('vscode.FileStat.permissions gained new fields, update this logic')
     }
 }

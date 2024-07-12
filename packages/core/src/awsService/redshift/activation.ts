@@ -10,14 +10,14 @@ import { RedshiftNotebookController } from './notebook/redshiftNotebookControlle
 import { CellStatusBarItemProvider } from './notebook/cellStatusBarItemProvider'
 import { Commands } from '../../shared/vscode/commands2'
 import { NotebookConnectionWizard, RedshiftNodeConnectionWizard } from './wizards/connectionWizard'
-import { ConnectionParams, ConnectionType } from './models/models'
+import { deleteConnection, ConnectionParams, ConnectionType } from './models/models'
 import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { RedshiftWarehouseNode } from './explorer/redshiftWarehouseNode'
 import { ToolkitError } from '../../shared/errors'
-import { deleteConnection, updateConnectionParamsState } from './explorer/redshiftState'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { showConnectionMessage } from './messageUtils'
+import globals from '../../shared/extensionGlobals'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     if ('NotebookEdit' in vscode) {
@@ -123,7 +123,10 @@ function getEditConnectionHandler() {
                     connectionParams.secret = secretArnFetched
                 }
                 redshiftWarehouseNode.setConnectionParams(connectionParams)
-                await updateConnectionParamsState(redshiftWarehouseNode.arn, redshiftWarehouseNode.connectionParams)
+                await globals.globalState.saveRedshiftConnection(
+                    redshiftWarehouseNode.arn,
+                    redshiftWarehouseNode.connectionParams
+                )
                 await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', redshiftWarehouseNode)
             }
         } catch (error) {
@@ -135,7 +138,7 @@ function getEditConnectionHandler() {
 function getDeleteConnectionHandler() {
     return async (redshiftWarehouseNode: RedshiftWarehouseNode) => {
         redshiftWarehouseNode.connectionParams = undefined
-        await updateConnectionParamsState(redshiftWarehouseNode.arn, deleteConnection)
+        await globals.globalState.saveRedshiftConnection(redshiftWarehouseNode.arn, deleteConnection)
         await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', redshiftWarehouseNode)
     }
 }
