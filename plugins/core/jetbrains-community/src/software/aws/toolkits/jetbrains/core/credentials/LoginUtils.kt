@@ -27,9 +27,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBearerTokenProvider
 import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
 import software.aws.toolkits.resources.message
-import software.aws.toolkits.telemetry.AuthTelemetry
 import software.aws.toolkits.telemetry.CredentialSourceId
-import software.aws.toolkits.telemetry.Result
 import java.io.IOException
 
 private val LOG = LoggerFactory.getLogger("LoginUtils")
@@ -56,6 +54,7 @@ sealed interface Login {
         val region: AwsRegion,
         val scopes: List<String>,
         val onPendingToken: (InteractiveBearerTokenProvider) -> Unit,
+        val onSuccess: () -> Unit,
         val onError: (Exception, AuthProfile) -> Unit
     ) : Login {
         override val id: CredentialSourceId = CredentialSourceId.IamIdentityCenter
@@ -74,7 +73,7 @@ sealed interface Login {
                 scopes = scopes
             )
 
-            val conn = authAndUpdateConfig(project, profile, configFilesFacade, onPendingToken, onError) ?: return null
+            val conn = authAndUpdateConfig(project, profile, configFilesFacade, onPendingToken, onSuccess, onError) ?: return null
 
             // TODO: delta, make sure we are good to switch immediately
 //            if (!promptForIdcPermissionSet) {
@@ -156,6 +155,7 @@ fun authAndUpdateConfig(
     profile: UserConfigSsoSessionProfile,
     configFilesFacade: ConfigFilesFacade,
     onPendingToken: (InteractiveBearerTokenProvider) -> Unit,
+    onSuccess: () -> Unit,
     onError: (Exception, AuthProfile) -> Unit
 ): AwsBearerTokenConnection? {
     val requestedScopes = profile.scopes
@@ -181,24 +181,9 @@ fun authAndUpdateConfig(
             reauthConnectionIfNeeded(project, connection, onPendingToken)
         }
     } catch (e: Exception) {
-        val message = ssoErrorMessageFromException(e)
-
         onError(e, profile)
-        AuthTelemetry.addConnection(
-            project,
-            credentialSourceId = CredentialSourceId.SharedCredentials,
-            credentialStartUrl = updatedProfile.startUrl,
-            reason = message,
-            result = Result.Failed
-        )
         return null
     }
-    AuthTelemetry.addConnection(
-        project,
-        credentialSourceId = CredentialSourceId.SharedCredentials,
-        credentialStartUrl = updatedProfile.startUrl,
-        result = Result.Succeeded
-    )
 
     configFilesFacade.updateSectionInConfig(
         SsoSessionConstants.SSO_SESSION_SECTION_NAME,
@@ -212,6 +197,7 @@ fun authAndUpdateConfig(
                 )
             ).build()
     )
+    onSuccess()
 
     return connection
 }

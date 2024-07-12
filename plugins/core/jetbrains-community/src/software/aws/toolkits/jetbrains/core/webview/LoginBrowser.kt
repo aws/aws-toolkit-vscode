@@ -27,7 +27,12 @@ import software.aws.toolkits.jetbrains.core.credentials.AuthProfile
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.Login
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeCatalystConnection
+import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.core.credentials.reauthConnectionIfNeeded
+import software.aws.toolkits.jetbrains.core.credentials.sono.CODECATALYST_SCOPES
+import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.credentials.sso.PendingAuthorization
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBearerTokenProvider
@@ -110,6 +115,20 @@ abstract class LoginBrowser(
         else -> ""
     }
 
+    private fun isReAuth(scopes: List<String>): Boolean = ToolkitConnectionManager.getInstance(project)
+        .let {
+            if (scopes.toSet().intersect(Q_SCOPES.toSet()).isNotEmpty()) {
+                it.activeConnectionForFeature(QConnection.getInstance()) != null
+            } else if (scopes.toSet().intersect(CODECATALYST_SCOPES.toSet()).isNotEmpty()) {
+                it.activeConnectionForFeature(CodeCatalystConnection.getInstance()) != null
+            } else {
+                val activeCon = it.activeConnection()
+                val ccCon = it.activeConnectionForFeature(CodeCatalystConnection.getInstance())
+                val qCon = it.activeConnectionForFeature(QConnection.getInstance())
+                activeCon != null && activeCon != ccCon && activeCon != qCon
+            }
+        }
+
     open fun loginBuilderId(scopes: List<String>) {
         val onError: (Exception) -> Unit = { e ->
             tryHandleUserCanceledLogin(e)
@@ -145,6 +164,9 @@ abstract class LoginBrowser(
     }
 
     open fun loginIdC(url: String, region: AwsRegion, scopes: List<String>) {
+        // assumes scopes contains either Q or non-Q permissions but not both
+        val isReAuth = isReAuth(scopes)
+
         val onError: (Exception, AuthProfile) -> Unit = { e, profile ->
             val message = ssoErrorMessageFromException(e)
             if (!tryHandleUserCanceledLogin(e)) {
@@ -153,19 +175,36 @@ abstract class LoginBrowser(
             AwsTelemetry.loginWithBrowser(
                 project = null,
                 credentialStartUrl = url,
+                isReAuth = isReAuth,
                 result = Result.Failed,
                 reason = message,
                 credentialSourceId = CredentialSourceId.IamIdentityCenter
             )
+            AuthTelemetry.addConnection(
+                result = Result.Failed,
+                credentialSourceId = CredentialSourceId.IamIdentityCenter,
+                reason = message,
+                isReAuth = isReAuth,
+            )
         }
-        loginWithBackgroundContext {
-            Login.IdC(url, region, scopes, onPendingToken, onError).loginIdc(project)
+        val onSuccess: () -> Unit = {
             AwsTelemetry.loginWithBrowser(
                 project = null,
-                credentialStartUrl = url,
                 result = Result.Succeeded,
+                isReAuth = isReAuth,
+                credentialType = CredentialType.BearerToken,
+                credentialStartUrl = url,
                 credentialSourceId = CredentialSourceId.IamIdentityCenter
             )
+            AuthTelemetry.addConnection(
+                project = null,
+                result = Result.Succeeded,
+                isReAuth = isReAuth,
+                credentialSourceId = CredentialSourceId.IamIdentityCenter
+            )
+        }
+        loginWithBackgroundContext {
+            Login.IdC(url, region, scopes, onPendingToken, onSuccess, onError).loginIdc(project)
         }
     }
 
