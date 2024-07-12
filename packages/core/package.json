@@ -4031,7 +4031,6 @@
         "testWeb": "npm run compileDev && c8 ts-node ./scripts/test/testWeb.ts",
         "testE2E": "npm run testCompile && c8 ts-node ./scripts/test/testE2E.ts dist/src/testE2E/index.js",
         "testInteg": "npm run testCompile && c8 ts-node ./scripts/test/testInteg.ts",
-        "formatfix": "prettier --ignore-path ../../.prettierignore --write src scripts",
         "lint": "ts-node ./scripts/lint/testLint.ts",
         "generateClients": "ts-node ./scripts/build/generateServiceClient.ts ",
         "generatePackage": "ts-node ./scripts/build/generateIcons.ts",
