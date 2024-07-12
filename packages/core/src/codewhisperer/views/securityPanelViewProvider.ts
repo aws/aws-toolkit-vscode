@@ -13,7 +13,7 @@ function makeUri(...args: Parameters<typeof openEditorAtRange>): vscode.Uri {
 
 export async function openEditorAtRange(path: string, startLine: number, endLine: number) {
     const uri = vscode.Uri.parse(path)
-    await vscode.window.showTextDocument(uri, { preview: false, preserveFocus: true }).then(e => {
+    await vscode.window.showTextDocument(uri, { preview: false, preserveFocus: true }).then((e) => {
         e.selection = new vscode.Selection(startLine, 0, endLine, 0)
         e.revealRange(new vscode.Range(startLine, 0, endLine, 0), vscode.TextEditorRevealType.InCenterIfOutsideViewport)
     })
@@ -111,7 +111,7 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
         this.dynamicLog.push(
             `<section class="accordion"><input type="checkbox" name="collapse" id="${handleId}" checked="checked"><div class="handle" ><label for="${handleId}">${fileName}</label></div>`
         )
-        panelSet.items.forEach(item => {
+        panelSet.items.forEach((item) => {
             if (item.severity === vscode.DiagnosticSeverity.Warning) {
                 this.dynamicLog.push(`${this.addClickableWarningItem(item)}`)
             } else {
@@ -134,7 +134,7 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
         this.persistLog.push(
             `<section class="accordion"><input type="checkbox" name="collapse" id="${handleId}" checked="checked"><div class="handle" ><label for="${handleId}">${fileName}</label></div>`
         )
-        panelSet.items.forEach(item => {
+        panelSet.items.forEach((item) => {
             if (item.severity === vscode.DiagnosticSeverity.Warning) {
                 this.persistLog.push(`${this.addUnclickableWarningItem(item)}`)
             } else {
@@ -171,13 +171,13 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
     }
 
     private createPanelSets(securityRecommendationCollection: AggregatedCodeScanIssue[]) {
-        securityRecommendationCollection.forEach(securityRecommendation => {
+        securityRecommendationCollection.forEach((securityRecommendation) => {
             const panelSet: SecurityPanelSet = {
                 path: securityRecommendation.filePath,
                 uri: vscode.Uri.parse(securityRecommendation.filePath),
                 items: [],
             }
-            securityRecommendation.issues.forEach(issue => {
+            securityRecommendation.issues.forEach((issue) => {
                 panelSet.items.push({
                     path: securityRecommendation.filePath,
                     range: new vscode.Range(issue.startLine, 0, issue.endLine, 0),
@@ -232,9 +232,9 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
     public setDecoration(editor: vscode.TextEditor, uri: vscode.Uri) {
         editor.setDecorations(this.getDecorator(), [])
         const rangesToRend: vscode.DecorationOptions[] = []
-        this.panelSets.forEach(panelSet => {
+        this.panelSets.forEach((panelSet) => {
             if (panelSet.uri.fsPath === uri.fsPath) {
-                panelSet.items.forEach(item => {
+                panelSet.items.forEach((item) => {
                     if (item.severity === vscode.DiagnosticSeverity.Warning) {
                         rangesToRend.push(item.decoration)
                     }
@@ -251,7 +251,7 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
         if (this.panelSets.length === 0) {
             return
         }
-        const index = this.panelSets.findIndex(panelSet => panelSet.uri.fsPath === uri.fsPath)
+        const index = this.panelSets.findIndex((panelSet) => panelSet.uri.fsPath === uri.fsPath)
         if (index === -1) {
             return
         }

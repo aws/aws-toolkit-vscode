@@ -26,7 +26,7 @@ interface CopyTask {
 }
 
 const tasks: CopyTask[] = [
-    ...['LICENSE', 'NOTICE'].map(f => {
+    ...['LICENSE', 'NOTICE'].map((f) => {
         return { target: path.join('../../', f), destination: path.join(projectRoot, f) }
     }),
 

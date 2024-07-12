@@ -123,7 +123,7 @@ export class LogDataRegistry {
             msgKey(logData.logGroupInfo),
             `Loading from: '${logData.logGroupInfo.groupName}'`
         )
-        const responseData = await firstOrLast(stream, resp => resp.events.length > 0).finally(() => {
+        const responseData = await firstOrLast(stream, (resp) => resp.events.length > 0).finally(() => {
             msgTimeout.dispose()
         })
 

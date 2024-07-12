@@ -106,7 +106,7 @@ export async function promptUser({
 
             if (onValidateInput) {
                 inputBox.onDidChangeValue(
-                    value => {
+                    (value) => {
                         inputBox.validationMessage = onValidateInput(value)
                     },
                     inputBox,
@@ -127,7 +127,7 @@ export async function promptUser({
 
         return response
     } finally {
-        disposables.forEach(d => d.dispose() as void)
+        disposables.forEach((d) => d.dispose() as void)
         inputBox.hide()
     }
 }

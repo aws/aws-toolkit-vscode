@@ -20,7 +20,7 @@ describe('DiffModel', function () {
 
         const workspacePath = 'workspace'
 
-        sinon.replace(fs, 'existsSync', path => {
+        sinon.replace(fs, 'existsSync', (path) => {
             const pathStr = path.toString()
             if (pathStr.includes(workspacePath)) {
                 return false
@@ -42,7 +42,7 @@ describe('DiffModel', function () {
 
         const workspacePath = os.tmpdir()
 
-        sinon.replace(fs, 'existsSync', path => true)
+        sinon.replace(fs, 'existsSync', (path) => true)
 
         fs.writeFileSync(
             path.join(workspacePath, 'README.md'),

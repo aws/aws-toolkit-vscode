@@ -77,7 +77,7 @@ export class DefaultAwsContext implements AwsContext {
      */
     public async getCredentials(): Promise<AWS.Credentials | undefined> {
         return (
-            this.shim?.get().catch(error => {
+            this.shim?.get().catch((error) => {
                 getLogger().warn(`credentials: failed to retrieve latest credentials: ${error.message}`)
                 return undefined
             }) ?? this.currentCredentials?.credentials

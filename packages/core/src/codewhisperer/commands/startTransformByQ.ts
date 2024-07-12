@@ -671,7 +671,7 @@ export async function postTransformationJob() {
                 CodeWhispererConstants.jobPartiallyCompletedNotification,
                 CodeWhispererConstants.amazonQFeedbackText
             )
-            .then(choice => {
+            .then((choice) => {
                 if (choice === CodeWhispererConstants.amazonQFeedbackText) {
                     void submitFeedback(
                         placeholder,
@@ -703,7 +703,7 @@ export async function transformationJobErrorHandler(error: any) {
         }
         void vscode.window
             .showErrorMessage(displayedErrorMessage, CodeWhispererConstants.amazonQFeedbackText)
-            .then(choice => {
+            .then((choice) => {
                 if (choice === CodeWhispererConstants.amazonQFeedbackText) {
                     void submitFeedback(
                         placeholder,
@@ -759,7 +759,7 @@ export async function stopTransformByQ(
                     CodeWhispererConstants.jobCancelledNotification,
                     CodeWhispererConstants.amazonQFeedbackText
                 )
-                .then(choice => {
+                .then((choice) => {
                     if (choice === CodeWhispererConstants.amazonQFeedbackText) {
                         void submitFeedback(
                             placeholder,
@@ -774,7 +774,7 @@ export async function stopTransformByQ(
                     CodeWhispererConstants.errorStoppingJobNotification,
                     CodeWhispererConstants.amazonQFeedbackText
                 )
-                .then(choice => {
+                .then((choice) => {
                     if (choice === CodeWhispererConstants.amazonQFeedbackText) {
                         void submitFeedback(
                             placeholder,

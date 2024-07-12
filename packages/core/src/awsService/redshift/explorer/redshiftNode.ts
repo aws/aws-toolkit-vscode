@@ -23,7 +23,7 @@ import { ChildNodeLoader, ChildNodePage } from '../../../awsexplorer/childNodeLo
  * Contains clusters for a specific region as child nodes.
  */
 export class RedshiftNode extends AWSTreeNodeBase implements LoadMoreNode {
-    private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
+    private readonly childLoader = new ChildNodeLoader(this, (token) => this.loadPage(token))
 
     // the constructor below single parameter : 'redshiftClient' which is an instance of the DefaultRedshiftClient used for interacting with Redshift services.
     public constructor(public readonly redshiftClient: DefaultRedshiftClient) {
@@ -94,7 +94,7 @@ export class RedshiftNode extends AWSTreeNodeBase implements LoadMoreNode {
                 compositeContinuationToken?.provisionedToken
             )
             if (response.Clusters) {
-                const provisionedNodes = response.Clusters?.map(cluster => {
+                const provisionedNodes = response.Clusters?.map((cluster) => {
                     return new RedshiftWarehouseNode(
                         this,
                         {
@@ -114,7 +114,7 @@ export class RedshiftNode extends AWSTreeNodeBase implements LoadMoreNode {
                 compositeContinuationToken?.serverlessToken
             )
             if (response.workgroups) {
-                const serverlessNodes: RedshiftWarehouseNode[] = response.workgroups?.map(workgroup => {
+                const serverlessNodes: RedshiftWarehouseNode[] = response.workgroups?.map((workgroup) => {
                     return new RedshiftWarehouseNode(
                         this,
                         { arn: workgroup.workgroupArn, name: workgroup.workgroupName } as AWSResourceNode,

@@ -52,8 +52,8 @@ export class CodeResultMessage extends UiMessage {
     ) {
         super(tabID)
         this.references = references
-            .filter(ref => ref.licenseName && ref.repository && ref.url)
-            .map(ref => {
+            .filter((ref) => ref.licenseName && ref.repository && ref.url)
+            .map((ref) => {
                 return {
                     information: licenseText(ref),
 

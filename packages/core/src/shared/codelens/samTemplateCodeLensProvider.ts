@@ -40,20 +40,20 @@ export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
         const mappedFunConfigs = Array.from(await getConfigsMappedToTemplates(launchConfig, 'template'))
 
         const unmappedApis = apiResources.filter(
-            r =>
+            (r) =>
                 undefined ===
                 mappedApiConfigs.find(
-                    o => r.name === (o.invokeTarget as any).logicalId && o.invokeTarget.target === 'api'
+                    (o) => r.name === (o.invokeTarget as any).logicalId && o.invokeTarget.target === 'api'
                 )
         )
         const unmappedFuns = funResources.filter(
-            r =>
+            (r) =>
                 undefined ===
                 mappedFunConfigs.find(
-                    o => r.name === (o.invokeTarget as any).logicalId && o.invokeTarget.target === 'template'
+                    (o) => r.name === (o.invokeTarget as any).logicalId && o.invokeTarget.target === 'template'
                 )
         )
-        const codelensInfo = [...unmappedApis, ...unmappedFuns].map(r => this.createCodeLens(r, document.uri))
+        const codelensInfo = [...unmappedApis, ...unmappedFuns].map((r) => this.createCodeLens(r, document.uri))
         return codelensInfo
     }
 

@@ -22,7 +22,7 @@ export function verifyTextOrder(chatItems: ChatItem[], expectedText: RegExp[]) {
     }
 
     if (currInd !== expectedText.length) {
-        const chatItemBodies = chatItems.filter(item => item !== undefined).map(item => item.body)
+        const chatItemBodies = chatItems.filter((item) => item !== undefined).map((item) => item.body)
         const expected = expectedText.join(', ')
         assert.fail(`Items did not appear in expected order. Found ${chatItemBodies} but expected ${expected}`)
     }

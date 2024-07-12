@@ -61,13 +61,13 @@ class DefaultSamCliValidationNotification implements SamCliValidationNotificatio
     public async show(): Promise<void> {
         const userResponse: string | undefined = await vscode.window.showErrorMessage(
             this.message,
-            ...this.actions.map(action => action.label())
+            ...this.actions.map((action) => action.label())
         )
 
         if (userResponse) {
             const responseActions: Promise<void>[] = this.actions
-                .filter(action => action.label() === userResponse)
-                .map(async action => action.invoke())
+                .filter((action) => action.label() === userResponse)
+                .map(async (action) => action.invoke())
 
             await Promise.all(responseActions)
         }

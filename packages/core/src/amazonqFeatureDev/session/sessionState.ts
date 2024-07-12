@@ -76,7 +76,7 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        const uploadId = await telemetry.amazonq_createUpload.run(async span => {
+        const uploadId = await telemetry.amazonq_createUpload.run(async (span) => {
             span.record({
                 amazonqConversationId: this.config.conversationId,
                 credentialStartUrl: AuthUtil.instance.startUrl,
@@ -120,7 +120,7 @@ export class RefinementState implements SessionState {
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        return telemetry.amazonq_approachInvoke.run(async span => {
+        return telemetry.amazonq_approachInvoke.run(async (span) => {
             if (action.msg && action.msg.includes('MOCK CODE')) {
                 return new MockCodeGenState(this.config, this.approach, this.tabID).interact(action)
             }
@@ -208,7 +208,7 @@ function registerNewFiles(
 function getDeletedFileInfos(deletedFiles: string[], workspaceFolders: CurrentWsFolders): DeletedFileInfo[] {
     const workspaceFolderPrefixes = getWorkspaceFoldersByPrefixes(workspaceFolders)
     return deletedFiles
-        .map(deletedFilePath => {
+        .map((deletedFilePath) => {
             const prefix =
                 workspaceFolderPrefixes === undefined
                     ? ''
@@ -358,7 +358,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        return telemetry.amazonq_codeGenerationInvoke.run(async span => {
+        return telemetry.amazonq_codeGenerationInvoke.run(async (span) => {
             try {
                 span.record({
                     amazonqConversationId: this.config.conversationId,
@@ -442,11 +442,11 @@ export class MockCodeGenState implements SessionState {
         // every file retrieved in the same shape the LLM would
         try {
             const files = await collectFiles(
-                this.config.workspaceFolders.map(f => path.join(f.uri.fsPath, './mock-data')),
+                this.config.workspaceFolders.map((f) => path.join(f.uri.fsPath, './mock-data')),
                 this.config.workspaceFolders,
                 false
             )
-            const newFileContents = files.map(f => ({
+            const newFileContents = files.map((f) => ({
                 zipFilePath: f.zipFilePath,
                 fileContent: f.fileContent,
             }))
@@ -536,7 +536,7 @@ export class PrepareCodeGenState implements SessionState {
             tabID: this.tabID,
         })
 
-        const uploadId = await telemetry.amazonq_createUpload.run(async span => {
+        const uploadId = await telemetry.amazonq_createUpload.run(async (span) => {
             span.record({
                 amazonqConversationId: this.config.conversationId,
                 credentialStartUrl: AuthUtil.instance.startUrl,

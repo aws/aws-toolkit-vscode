@@ -161,7 +161,7 @@ export async function makePythonDebugConfig(
     if (config.lambda?.pathMappings !== undefined) {
         pathMappings = config.lambda.pathMappings
     } else {
-        pathMappings = getLocalRootVariants(config.codeRoot).map<PythonPathMapping>(variant => {
+        pathMappings = getLocalRootVariants(config.codeRoot).map<PythonPathMapping>((variant) => {
             return {
                 localRoot: variant,
                 remoteRoot: '/var/task',

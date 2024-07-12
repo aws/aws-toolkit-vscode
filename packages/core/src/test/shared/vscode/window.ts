@@ -196,12 +196,12 @@ export function createTestWindow(workspace = vscode.workspace): Window & TestWin
         const picker = createQuickPick()
         const onDidSelectItem = options?.onDidSelectItem?.bind(options)
         if (onDidSelectItem) {
-            picker.onDidChangeSelection(items => items.forEach(onDidSelectItem))
+            picker.onDidChangeSelection((items) => items.forEach(onDidSelectItem))
         }
 
         const stringItem = Symbol()
         const setItems = (arg: string[] | vscode.QuickPickItem[]) => {
-            picker.items = arg.map(v =>
+            picker.items = arg.map((v) =>
                 typeof v !== 'string'
                     ? v
                     : {
@@ -229,13 +229,13 @@ export function createTestWindow(workspace = vscode.workspace): Window & TestWin
         picker.matchOnDescription = options?.matchOnDescription ?? false
         token?.onCancellationRequested(() => picker.dispose())
 
-        return itemsPromise.then(items => {
+        return itemsPromise.then((items) => {
             setItems(items)
 
             return new Promise((resolve, reject) => {
                 picker.onDidHide(() => resolve(undefined))
                 picker.onDidAccept(() => {
-                    const selected = picker.selectedItems.map(i =>
+                    const selected = picker.selectedItems.map((i) =>
                         isKeyOf(stringItem, i) ? (i[stringItem] as string) : i
                     )
                     resolve(picker.canSelectMany ? (selected as any) : (selected[0] as any))
@@ -258,7 +258,7 @@ export function createTestWindow(workspace = vscode.workspace): Window & TestWin
         const inputBox = createInputBox()
         const validateInput = options?.validateInput?.bind(options)
         if (validateInput) {
-            inputBox.onDidChangeValue(v => {
+            inputBox.onDidChangeValue((v) => {
                 const validationMessage = validateInput(v)
                 if (
                     !isThenable(validationMessage) ||
@@ -268,8 +268,8 @@ export function createTestWindow(workspace = vscode.workspace): Window & TestWin
                     inputBox.validationMessage = isNonNullable(validationMessage) ? validationMessage : undefined
                 } else {
                     validationMessage?.then(
-                        val => (val || val === undefined ? (inputBox.validationMessage = val) : void 0),
-                        e => {
+                        (val) => (val || val === undefined ? (inputBox.validationMessage = val) : void 0),
+                        (e) => {
                             console.error('showInputBox.validationMessage: %s', (e as Error).message)
                         }
                     )
@@ -308,12 +308,12 @@ export function createTestWindow(workspace = vscode.workspace): Window & TestWin
             }
             const cancelItem: vscode.MessageItem = { title: 'Cancel' }
             const items = options.cancellable ? [cancelItem] : []
-            const showMessage = TestMessage.createShowMessageFn(SeverityLevel.Progress, message => {
+            const showMessage = TestMessage.createShowMessageFn(SeverityLevel.Progress, (message) => {
                 progress.notification = message
                 fireOnDidShowMessage(message)
             })
 
-            void showMessage(options.title ?? '', ...items).then(resp => {
+            void showMessage(options.title ?? '', ...items).then((resp) => {
                 if (resp === cancelItem) {
                     tokenSource.cancel()
                 }
@@ -344,12 +344,12 @@ export function createTestWindow(workspace = vscode.workspace): Window & TestWin
 
     function waitForMessage(expected: string | RegExp, timeout: number = 5000) {
         return new Promise<ShownMessage>((resolve, reject) => {
-            const found = state.shownMessages.find(m => m.visible && m.message.match(expected))
+            const found = state.shownMessages.find((m) => m.visible && m.message.match(expected))
             if (found) {
                 return resolve(found)
             }
 
-            const sub = emitters.onDidShowMessage.event(shownMessage => {
+            const sub = emitters.onDidShowMessage.event((shownMessage) => {
                 if (shownMessage.message.match(expected)) {
                     sub.dispose()
                     resolve(shownMessage)
@@ -357,7 +357,7 @@ export function createTestWindow(workspace = vscode.workspace): Window & TestWin
             })
             setTimeout(() => {
                 sub.dispose()
-                const gotMsgs = state.shownMessages.map(v => v.message)
+                const gotMsgs = state.shownMessages.map((v) => v.message)
                 const got =
                     gotMsgs.length > 0
                         ? `, displayed:\n${JSON.stringify(gotMsgs, undefined, 4)}`
@@ -374,7 +374,7 @@ export function createTestWindow(workspace = vscode.workspace): Window & TestWin
 
         const message = state.shownMessages[index]
         if (message === undefined) {
-            const messages = state.shownMessages.map(m => m.printDebug()).join('\n')
+            const messages = state.shownMessages.map((m) => m.printDebug()).join('\n')
             throw new Error(`No message found at index ${index}. Current state:\n${messages}`)
         }
 
@@ -448,23 +448,23 @@ export function resetTestWindow(): void {
  * Throws if there any error messages were shown during the test run
  */
 export function assertNoErrorMessages() {
-    const errors = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Error)
+    const errors = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Error)
     if (errors.length > 0) {
-        const messages = errors.map(m => m.message).join('\n')
+        const messages = errors.map((m) => m.message).join('\n')
         throw new Error(`The following error messages were shown: ${messages}`)
     }
 }
 
 export function printPendingUiElements(window = getTestWindow()) {
     const parts: string[] = []
-    const messages = window.shownMessages.filter(m => m.visible)
-    const dialogs = window.shownDialogs.filter(d => d.visible)
+    const messages = window.shownMessages.filter((m) => m.visible)
+    const dialogs = window.shownDialogs.filter((d) => d.visible)
 
     if (messages.length > 0) {
-        parts.push('Messages:', ...messages.map(m => `  ${m.printDebug()}`))
+        parts.push('Messages:', ...messages.map((m) => `  ${m.printDebug()}`))
     }
     if (dialogs.length > 0) {
-        parts.push('File System Dialogs:', ...dialogs.map(d => `  ${d.printDebug()}`))
+        parts.push('File System Dialogs:', ...dialogs.map((d) => `  ${d.printDebug()}`))
     }
     if (window.activeQuickInput?.visible) {
         parts.push('Quick Inputs: ', `  ${window.activeQuickInput.title}`)
@@ -496,7 +496,7 @@ export function createTestEventEmitter<T>(): TestEventEmitter<T> {
             }
             if (prop === 'event') {
                 return function (cb: (event: any) => unknown) {
-                    return emitter.event(async event => {
+                    return emitter.event(async (event) => {
                         try {
                             await cb(event)
                         } catch (error) {

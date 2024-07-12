@@ -3,8 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { isNameMangled } from '../vscode/env'
 import { isNonNullable } from './tsUtils'
+
+export function isNameMangled(): boolean {
+    return isNameMangled.name !== 'isNameMangled'
+}
 
 /**
  * A 'type constructor' is any function that resolves to the given type.
@@ -53,7 +56,7 @@ export type FromDescriptor<T extends TypeDescriptor> = {
 const primitives = [Number, String, Boolean, Object, Symbol, BigInt]
 function isPrimitiveConstructor(type: unknown): type is (typeof primitives)[number] {
     // eslint-disable-next-line unicorn/prefer-includes
-    return !!primitives.some(p => p === type)
+    return !!primitives.some((p) => p === type)
 }
 
 function isNamedTypeConstructor(obj: unknown): obj is NamedTypeConstructor {
@@ -73,7 +76,7 @@ export function addTypeName<F extends (input: unknown) => unknown>(name: string,
 }
 
 /**
- * A utility function to validate or transform an unknown input into a known shape.
+ * Validates or transforms an unknown input into a known shape.
  *
  * This **will throw** in the following scenarios:
  *   - `type` is a {@link primitives "primitive" constructor} and `input` is a different primitive type
@@ -102,12 +105,12 @@ export function cast<T>(input: any, type: TypeConstructor<T>): T {
 // Don't really want to overload the standard `Array` constructor here even though every other
 // type function exported from this module omits the "Constructor" suffix
 export function ArrayConstructor<T>(type: TypeConstructor<T>): TypeConstructor<Array<T>> {
-    return addTypeName(`Array<${getTypeName(type)}>`, value => {
+    return addTypeName(`Array<${getTypeName(type)}>`, (value) => {
         if (!Array.isArray(value)) {
             throw new TypeError('Value is not an array')
         }
 
-        return value.map(element => cast(element, type))
+        return value.map((element) => cast(element, type))
     })
 }
 
@@ -115,7 +118,7 @@ export function RecordConstructor<K extends string, U>(
     keyType: TypeConstructor<K>,
     valueType: TypeConstructor<U>
 ): TypeConstructor<Record<K, U>> {
-    return addTypeName(`Record<${(getTypeName(keyType), getTypeName(valueType))}>`, value => {
+    return addTypeName(`Record<${(getTypeName(keyType), getTypeName(valueType))}>`, (value) => {
         if (typeof value !== 'object' || !isNonNullable(value)) {
             throw new TypeError('Value is not a non-null object')
         }
@@ -142,13 +145,13 @@ function checkForObject(value: unknown): NonNullObject {
 }
 
 function OptionalConstructor<T>(type: TypeConstructor<T>): TypeConstructor<T | undefined> {
-    return addTypeName(`Optional<${getTypeName(type)}>`, value =>
+    return addTypeName(`Optional<${getTypeName(type)}>`, (value) =>
         isNonNullable(value) ? cast(value, type) : undefined
     )
 }
 
 function InstanceConstructor<T>(type: abstract new (...args: any[]) => T): TypeConstructor<T> {
-    return value => {
+    return (value) => {
         if (!(value instanceof type)) {
             throw new TypeError('Value is not an instance of the expected type')
         }
@@ -161,7 +164,7 @@ export function Record<T extends PropertyKey, U>(
     key: TypeConstructor<T>,
     value: TypeConstructor<U>
 ): TypeConstructor<Record<T, U>> {
-    return input => {
+    return (input) => {
         if (!(typeof input === 'object') || !input) {
             throw new TypeError('Value is not a non-nullable object')
         }
@@ -180,10 +183,10 @@ export const Optional = OptionalConstructor
 
 // Aliasing to distinguish from the concrete implementation the "primitive" object
 export type Any = any
-export const Any: TypeConstructor<any> = addTypeName('Any', value => value)
+export const Any: TypeConstructor<any> = addTypeName('Any', (value) => value)
 
 export type Unknown = unknown
-export const Unknown: TypeConstructor<unknown> = addTypeName('Unknown', value => value)
+export const Unknown: TypeConstructor<unknown> = addTypeName('Unknown', (value) => value)
 
 export type Instance<T extends abstract new (...args: any[]) => unknown> = InstanceType<T>
 export const Instance = InstanceConstructor
@@ -193,7 +196,7 @@ export const NonNullObject = addTypeName('Object', checkForObject)
 
 export type Union<T, U> = TypeConstructor<T | U>
 export function Union<T, U>(left: TypeConstructor<T>, right: TypeConstructor<U>): Union<T, U> {
-    return input => {
+    return (input) => {
         try {
             return cast(input, left)
         } catch {

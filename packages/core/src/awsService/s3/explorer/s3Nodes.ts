@@ -28,7 +28,7 @@ export class S3Node extends AWSTreeNodeBase {
             getChildNodes: async () => {
                 const response = await this.s3.listBuckets()
 
-                return response.buckets.map(bucket => new S3BucketNode(bucket, this, this.s3))
+                return response.buckets.map((bucket) => new S3BucketNode(bucket, this, this.s3))
             },
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.s3.noBuckets', '[No Buckets found]')),

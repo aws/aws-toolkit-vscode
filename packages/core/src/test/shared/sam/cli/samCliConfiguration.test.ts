@@ -30,7 +30,7 @@ describe('samCliConfiguration', function () {
         const config = new SamCliSettings({} as any, settingsConfiguration)
         await config.update('location', fakeCliLocation)
 
-        assert.strictEqual(await config.getOrDetectSamCli().then(r => r.path), fakeCliLocation)
+        assert.strictEqual(await config.getOrDetectSamCli().then((r) => r.path), fakeCliLocation)
     })
 
     it('calls location provider when config not set', async function () {
@@ -63,7 +63,7 @@ describe('samCliConfiguration', function () {
         )
 
         assert.strictEqual(config.get('location', ''), '')
-        assert.strictEqual(await config.getOrDetectSamCli().then(r => r.path), fakeCliLocation)
+        assert.strictEqual(await config.getOrDetectSamCli().then((r) => r.path), fakeCliLocation)
     })
 
     it('location provider does not detect a file', async function () {
@@ -74,7 +74,7 @@ describe('samCliConfiguration', function () {
             settingsConfiguration
         )
 
-        assert.strictEqual(await config.getOrDetectSamCli().then(r => r.path), undefined)
+        assert.strictEqual(await config.getOrDetectSamCli().then((r) => r.path), undefined)
     })
 
     function createSampleFile(filename: string): void {

@@ -50,14 +50,14 @@ export class ApiGatewayNode extends AWSTreeNodeBase {
     public async updateChildren(): Promise<void> {
         const apis: Map<string, RestApi> = toMap(
             await toArrayAsync(this.client.listApis()),
-            configuration => `${configuration.name} (${configuration.id})`
+            (configuration) => `${configuration.name} (${configuration.id})`
         )
 
         updateInPlace(
             this.apiNodes,
             apis.keys(),
-            key => this.apiNodes.get(key)!.update(apis.get(key)!),
-            key => new RestApiNode(this, this.partitionId, this.regionCode, apis.get(key)!)
+            (key) => this.apiNodes.get(key)!.update(apis.get(key)!),
+            (key) => new RestApiNode(this, this.partitionId, this.regionCode, apis.get(key)!)
         )
     }
 }

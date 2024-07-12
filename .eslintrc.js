@@ -18,7 +18,9 @@ module.exports = {
         'plugin:@typescript-eslint/eslint-recommended',
         'plugin:@typescript-eslint/recommended-requiring-type-checking',
         'plugin:@typescript-eslint/recommended',
-        'prettier',
+        // "Add this as the _last_ item in the extends array, so that eslint-config-prettier has the
+        // opportunity to override other configs." https://github.com/prettier/eslint-plugin-prettier
+        'plugin:prettier/recommended',
     ],
     rules: {
         curly: 2, // Enforce braces on "if"/"for"/etc.
@@ -159,6 +161,7 @@ module.exports = {
         'aws-toolkits/no-banned-usages': 'error',
         'aws-toolkits/no-incorrect-once-usage': 'error',
         'aws-toolkits/no-string-exec-for-child-process': 'error',
+        'aws-toolkits/no-console-log': 'error',
 
         'no-restricted-imports': [
             'error',

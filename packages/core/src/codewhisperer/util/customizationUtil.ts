@@ -34,7 +34,7 @@ import { FeatureConfigProvider } from '../service/featureConfigProvider'
  */
 export const getNewCustomizations = (availableCustomizations: Customization[]) => {
     const persistedCustomizations = getPersistedCustomizations()
-    return availableCustomizations.filter(c => !persistedCustomizations.map(p => p.arn).includes(c.arn))
+    return availableCustomizations.filter((c) => !persistedCustomizations.map((p) => p.arn).includes(c.arn))
 }
 
 export async function notifyNewCustomizations() {
@@ -72,9 +72,9 @@ export async function notifyNewCustomizations() {
         'AWS.codewhisperer.customization.notification.new_customizations.learn_more',
         'Learn More'
     )
-    void vscode.window.showInformationMessage(newCustomizationMessage, select, learnMore).then(async resp => {
+    void vscode.window.showInformationMessage(newCustomizationMessage, select, learnMore).then(async (resp) => {
         if (resp === select) {
-            showCustomizationPrompt().catch(e => {
+            showCustomizationPrompt().catch((e) => {
                 getLogger().error('showCustomizationPrompt failed: %s', (e as Error).message)
             })
         } else if (resp === learnMore) {
@@ -86,7 +86,7 @@ export async function notifyNewCustomizations() {
 
 // Return true when either it's the default option or the selected one is in the ones we fetched from upstream.
 export const isSelectedCustomizationAvailable = (available: Customization[], selected: Customization) => {
-    return selected.arn === '' || available.map(c => c.arn).includes(selected.arn)
+    return selected.arn === '' || available.map((c) => c.arn).includes(selected.arn)
 }
 
 export const baseCustomization = {
@@ -222,7 +222,7 @@ const createCustomizationItems = async () => {
         return items
     }
 
-    const persistedArns = persistedCustomizations.map(c => c.arn)
+    const persistedArns = persistedCustomizations.map((c) => c.arn)
     const customizationNameToCount = availableCustomizations.reduce((map, customization) => {
         if (customization.name) {
             map.set(customization.name, (map.get(customization.name) || 0) + 1)
@@ -233,7 +233,7 @@ const createCustomizationItems = async () => {
 
     items.push(createBaseCustomizationItem())
     items.push(
-        ...availableCustomizations.map(c => {
+        ...availableCustomizations.map((c) => {
             let shouldPrefixAccountId = false
             if (c.name) {
                 const cnt = customizationNameToCount.get(c.name) || 0
@@ -322,8 +322,8 @@ export const getAvailableCustomizationsList = async () => {
     const items: Customization[] = []
     const response = await codeWhispererClient.listAvailableCustomizations()
     response
-        .map(listAvailableCustomizationsResponse => listAvailableCustomizationsResponse.customizations)
-        .forEach(customizations => {
+        .map((listAvailableCustomizationsResponse) => listAvailableCustomizationsResponse.customizations)
+        .forEach((customizations) => {
             items.push(...customizations)
         })
 

@@ -87,7 +87,7 @@ export async function toggleExecuteCommandFlag(
 }
 
 export const runCommandInContainer = Commands.declare('aws.ecs.runCommandInContainer', () => (obj?: unknown) => {
-    return telemetry.ecs_runExecuteCommand.run(async span => {
+    return telemetry.ecs_runExecuteCommand.run(async (span) => {
         span.record({ ecsExecuteCommandType: 'command' })
 
         const { container, task, command } = await runCommandWizard(obj)
@@ -110,10 +110,10 @@ export const runCommandInContainer = Commands.declare('aws.ecs.runCommandInConta
                     rejectOnError: true,
                     rejectOnErrorCode: true,
                     // TODO: `showOutputMessage` should not be writing to the logs...
-                    onStdout: text => {
+                    onStdout: (text) => {
                         showOutputMessage(removeAnsi(text), globals.outputChannel)
                     },
-                    onStderr: text => {
+                    onStderr: (text) => {
                         showOutputMessage(removeAnsi(text), globals.outputChannel)
                     },
                 })
@@ -135,7 +135,7 @@ export const runCommandInContainer = Commands.declare('aws.ecs.runCommandInConta
 })
 
 export const openTaskInTerminal = Commands.declare('aws.ecs.openTaskInTerminal', () => (obj?: unknown) => {
-    return telemetry.ecs_runExecuteCommand.run(async span => {
+    return telemetry.ecs_runExecuteCommand.run(async (span) => {
         span.record({ ecsExecuteCommandType: 'shell' })
 
         const startCommand = new EcsSettings().get('openTerminalCommand')
@@ -148,7 +148,7 @@ export const openTaskInTerminal = Commands.declare('aws.ecs.openTaskInTerminal',
             shellArgs: session.args,
         }
 
-        await openRemoteTerminal(terminalOptions, session.dispose).catch(err => {
+        await openRemoteTerminal(terminalOptions, session.dispose).catch((err) => {
             throw ToolkitError.chain(err, localize('AWS.ecs.openTaskInTerminal.error', 'Failed to open terminal.'))
         })
     })

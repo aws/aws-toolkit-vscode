@@ -210,7 +210,7 @@ describe('javaCodeLensProvider', () => {
             },
         ]
 
-        validPublicMethodTests.forEach(test => {
+        validPublicMethodTests.forEach((test) => {
             const sampleMethodSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
                 'FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)',
                 '',
@@ -446,7 +446,7 @@ describe('javaCodeLensProvider', () => {
         beforeArgument: boolean = false
     ): string {
         const beforeArgumentText = beforeArgument ? os.EOL : ''
-        const paramsString = params.map(curr => `${beforeArgumentText}${curr.type} ${curr.name}`).join(', ')
+        const paramsString = params.map((curr) => `${beforeArgumentText}${curr.type} ${curr.name}`).join(', ')
 
         return `${functionName}(${paramsString})`
     }

@@ -65,7 +65,7 @@ describe('ApiGatewayNode', function () {
 
         assert.strictEqual(childNodes.length, apiNames.length, 'Unexpected child count')
 
-        childNodes.forEach(node => assert.ok(node instanceof RestApiNode, 'Expected child node to be RestApiNode'))
+        childNodes.forEach((node) => assert.ok(node instanceof RestApiNode, 'Expected child node to be RestApiNode'))
     })
 
     it('sorts child nodes', async function () {
@@ -73,7 +73,7 @@ describe('ApiGatewayNode', function () {
 
         const childNodes = await testNode.getChildren()
 
-        const actualChildOrder = childNodes.map(node => node.label)
+        const actualChildOrder = childNodes.map((node) => node.label)
         assert.deepStrictEqual(actualChildOrder, sortedText, 'Unexpected child sort order')
     })
 

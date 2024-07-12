@@ -73,7 +73,7 @@ export function skipTest(testOrCtx: Mocha.Context | Mocha.Test | undefined, reas
 }
 
 export function skipSuite(suite: Mocha.Suite, reason?: string) {
-    suite.eachTest(test => skipTest(test, reason))
+    suite.eachTest((test) => skipTest(test, reason))
 }
 
 export function mapTestErrors(runner: Mocha.Runner, fn: (err: unknown, test: Mocha.Test) => any) {
@@ -156,7 +156,7 @@ export async function invokeLambda(id: string, request: unknown): Promise<unknow
             Payload: JSON.stringify(request),
         })
         .promise()
-        .catch(err => {
+        .catch((err) => {
             if (err instanceof Error) {
                 err.message = maskArns(err.message)
             }
@@ -209,7 +209,7 @@ function maskArns(text: string) {
  * * `verificationUri` - the url to login with. This is returned by the device authorization flow.
  */
 export function registerAuthHook(secret: string, lambdaId = process.env['AUTH_UTIL_LAMBDA_ARN']) {
-    return getTestWindow().onDidShowMessage(message => {
+    return getTestWindow().onDidShowMessage((message) => {
         if (message.items[0].title.match(new RegExp(proceedToBrowser))) {
             if (!lambdaId) {
                 const baseMessage = 'Browser login flow was shown during testing without an authorizer function'
@@ -220,7 +220,7 @@ export function registerAuthHook(secret: string, lambdaId = process.env['AUTH_UT
                 }
             }
 
-            const openStub = patchObject(vscode.env, 'openExternal', async target => {
+            const openStub = patchObject(vscode.env, 'openExternal', async (target) => {
                 try {
                     const url = new URL(target.toString(true))
                     const userCode = url.searchParams.get('user_code')

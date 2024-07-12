@@ -83,7 +83,7 @@ export class QuickActionGenerator {
             },
         }
 
-        return quickActionCommands.map(commandGroup => {
+        return quickActionCommands.map((commandGroup) => {
             return {
                 commands: commandGroup.commands.map((commandItem: QuickActionCommand) => {
                     const commandNotAvailable = commandUnavailability[tabType].unavailableItems.includes(

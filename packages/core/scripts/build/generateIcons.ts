@@ -90,7 +90,7 @@ async function generateCloud9Icons(targets: { name: string; path: string }[], de
     for (const [theme, color] of Object.entries(themes)) {
         const themeDest = path.join(destination, theme)
         await fs.mkdirp(themeDest)
-        await Promise.all(targets.map(t => replaceColor(t.path, color, path.join(themeDest, `${t.name}.svg`))))
+        await Promise.all(targets.map((t) => replaceColor(t.path, color, path.join(themeDest, `${t.name}.svg`))))
     }
 }
 
@@ -113,7 +113,7 @@ async function generate(mappings: Record<string, number | undefined> = {}) {
         templateClassName: 'icon',
         descent: 200, // Icons were negatively offset on the y-axes, this fixes it
         templateFontPath: path.relative(stylesheetsDir, fontsDir).replace(/\\/g, '/'),
-        glyphTransformFn: obj => {
+        glyphTransformFn: (obj) => {
             const filePath = (obj as { path?: string }).path
 
             if (!filePath) {
@@ -174,7 +174,7 @@ ${result.template}
     await fs.writeFile(stylesheetPath, template)
     await updatePackage(
         `./${relativeDest}`,
-        icons.filter(isValidIcon).map(i => [i.name, i.data])
+        icons.filter(isValidIcon).map((i) => [i.name, i.data])
     )
     await generateCloud9Icons(icons, cloud9Dest)
 

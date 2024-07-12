@@ -203,7 +203,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
      * @returns Item, or undefined if (1) processing fails or (2) the name matches an "exclude" rule.
      */
     public async addItem(uri: vscode.Uri, quiet?: boolean, contents?: string): Promise<WatchedItem<T> | undefined> {
-        const excluded = this.excludedFilePatterns.find(pattern => uri.fsPath.match(pattern))
+        const excluded = this.excludedFilePatterns.find((pattern) => uri.fsPath.match(pattern))
         if (excluded) {
             getLogger().verbose(`${this.name}: excluded (matches "${excluded}"): ${uri.fsPath}`)
             return undefined
@@ -358,15 +358,15 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     private addWatcher(watcher: vscode.FileSystemWatcher): void {
         this.disposables.push(
             watcher,
-            watcher.onDidChange(async uri => {
+            watcher.onDidChange(async (uri) => {
                 getLogger().verbose(`${this.name}: detected change: ${uri.fsPath}`)
                 await this.addItem(uri)
             }),
-            watcher.onDidCreate(async uri => {
+            watcher.onDidCreate(async (uri) => {
                 getLogger().verbose(`${this.name}: detected new file: ${uri.fsPath}`)
                 await this.addItem(uri)
             }),
-            watcher.onDidDelete(async uri => {
+            watcher.onDidDelete(async (uri) => {
                 getLogger().verbose(`${this.name}: detected delete: ${uri.fsPath}`)
                 await this.remove(uri)
             })
@@ -389,11 +389,11 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     }
 
     private outputPatterns(): string {
-        const watch = this.globs.map(cur => (typeof cur === 'string' ? cur.toString() : cur.pattern))
+        const watch = this.globs.map((cur) => (typeof cur === 'string' ? cur.toString() : cur.pattern))
         if (this.watchingUntitledFiles) {
             watch.push('Untitled Files')
         }
-        const exclude = this.excludedFilePatterns.map(cur => cur.toString())
+        const exclude = this.excludedFilePatterns.map((cur) => cur.toString())
 
         return `${watch.length > 0 ? `Watching ${watch.join(', ')}` : ''}${
             exclude.length > 0 ? `, Excluding ${exclude.join(', ')}` : ''

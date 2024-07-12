@@ -9,7 +9,7 @@ import * as filesystemUtilities from '../../filesystemUtilities'
 import { getLogger, Logger } from '../../logger'
 import { SamCliInfoInvocation } from './samCliInfo'
 import { DefaultSamCliValidator, SamCliValidatorContext, SamCliVersionValidation } from './samCliValidator'
-import { PerfLog } from '../../logger/logger'
+import { PerfLog } from '../../logger/perfLogger'
 import { tryRun } from '../../utilities/pathFind'
 
 export class SamCliLocationProvider {
@@ -87,7 +87,7 @@ abstract class BaseSamCliLocator {
         let brokenSam: string | undefined
 
         const fullPaths: string[] = files
-            .map(file => folders.filter(folder => !!folder).map(folder => path.join(folder, file)))
+            .map((file) => folders.filter((folder) => !!folder).map((folder) => path.join(folder, file)))
             .reduce((accumulator, paths) => {
                 accumulator.push(...paths)
 
@@ -133,7 +133,7 @@ abstract class BaseSamCliLocator {
         const envVars = process.env as EnvironmentVariables
 
         if (envVars.PATH) {
-            const systemPaths: string[] = envVars.PATH.split(path.delimiter).filter(folder => !!folder)
+            const systemPaths: string[] = envVars.PATH.split(path.delimiter).filter((folder) => !!folder)
 
             return await this.findFileInFolders(this.getExecutableFilenames(), systemPaths)
         }

@@ -105,7 +105,7 @@ function convertJsonMap<TIn, TOut>(
         return []
     }
 
-    return Object.keys(jsonMap).map(id => convertObject(id, jsonMap[id]))
+    return Object.keys(jsonMap).map((id) => convertObject(id, jsonMap[id]))
 }
 
 function convertToRegion(id: string, region: ManifestRegion): Region {

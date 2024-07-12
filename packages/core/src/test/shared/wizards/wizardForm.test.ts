@@ -46,7 +46,7 @@ describe('WizardForm', function () {
     })
 
     it('shows prompter based on context', function () {
-        testForm.prop1.bindPrompter(() => new SimplePrompter(0), { showWhen: state => state.prop2 === 'hello' })
+        testForm.prop1.bindPrompter(() => new SimplePrompter(0), { showWhen: (state) => state.prop2 === 'hello' })
         tester.prop1.assertDoesNotShow()
         tester.prop2.applyInput('hello')
         tester.prop1.assertShow()
@@ -69,7 +69,7 @@ describe('WizardForm', function () {
     // but allowing this behavior means loops are possible, so cycle detection would be needed
     it('default values do not depend on other default values', function () {
         testForm.prop1.setDefault(() => 100)
-        testForm.prop2.setDefault(state => `default: ${state.prop1}`)
+        testForm.prop2.setDefault((state) => `default: ${state.prop1}`)
         tester.prop1.assertValue(100)
         tester.prop2.assertValue('default: undefined')
         tester.prop1.applyInput(50)
@@ -90,7 +90,7 @@ describe('WizardForm', function () {
         it('works with "showWhen"', function () {
             testForm.nestedProp.prop1.bindPrompter(() => new SimplePrompter(''), {
                 requireParent: true,
-                showWhen: state => state.prop1 === 99,
+                showWhen: (state) => state.prop1 === 99,
             })
             tester.nestedProp.prop1.assertDoesNotShow()
             tester.prop1.applyInput(99)
@@ -134,7 +134,7 @@ describe('WizardForm', function () {
 
         it('propagates state to local forms', function () {
             nestedTestForm.body.prop1.bindPrompter(() => new SimplePrompter(''), {
-                showWhen: state => state.prop2 === 'hello',
+                showWhen: (state) => state.prop2 === 'hello',
             })
             testForm.nestedProp.applyBoundForm(nestedTestForm)
             tester.nestedProp.prop1.assertDoesNotShow()
@@ -144,7 +144,7 @@ describe('WizardForm', function () {
 
         it('can apply form with "requireParent"', function () {
             nestedTestForm.body.prop1.bindPrompter(() => new SimplePrompter(''), {
-                showWhen: state => state.prop2 === 'hello',
+                showWhen: (state) => state.prop2 === 'hello',
             })
             nestedTestForm.body.prop2.setDefault(() => 'hello')
             testForm.nestedProp.applyBoundForm(nestedTestForm, { requireParent: true })
@@ -156,13 +156,13 @@ describe('WizardForm', function () {
 
         it('can apply form with "showWhen"', function () {
             nestedTestForm.body.prop1.bindPrompter(() => new SimplePrompter(''), {
-                showWhen: state => state.prop2 === 'hello',
+                showWhen: (state) => state.prop2 === 'hello',
             })
             nestedTestForm.body.prop2.bindPrompter(() => new SimplePrompter(''), {
-                showWhen: state => state.prop1 === 'goodbye',
+                showWhen: (state) => state.prop1 === 'goodbye',
             })
 
-            testForm.nestedProp.applyBoundForm(nestedTestForm, { showWhen: state => state.prop2 === 'start' })
+            testForm.nestedProp.applyBoundForm(nestedTestForm, { showWhen: (state) => state.prop2 === 'start' })
             tester.nestedProp.assertDoesNotShowAny()
             tester.nestedProp.applyInput({})
             tester.nestedProp.assertDoesNotShowAny()

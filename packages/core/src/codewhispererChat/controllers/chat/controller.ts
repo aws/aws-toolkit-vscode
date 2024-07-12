@@ -112,7 +112,7 @@ export class ChatController {
         this.promptGenerator = new PromptsGenerator()
         this.userIntentRecognizer = new UserIntentRecognizer()
 
-        onDidChangeAmazonQVisibility(visible => {
+        onDidChangeAmazonQVisibility((visible) => {
             if (visible) {
                 this.telemetryHelper.recordOpenChat()
             } else {
@@ -120,61 +120,61 @@ export class ChatController {
             }
         })
 
-        this.chatControllerMessageListeners.processPromptChatMessage.onMessage(data => {
+        this.chatControllerMessageListeners.processPromptChatMessage.onMessage((data) => {
             return this.processPromptChatMessage(data)
         })
 
-        this.chatControllerMessageListeners.processTabCreatedMessage.onMessage(data => {
+        this.chatControllerMessageListeners.processTabCreatedMessage.onMessage((data) => {
             return this.processTabCreateMessage(data)
         })
 
-        this.chatControllerMessageListeners.processTabClosedMessage.onMessage(data => {
+        this.chatControllerMessageListeners.processTabClosedMessage.onMessage((data) => {
             return this.processTabCloseMessage(data)
         })
 
-        this.chatControllerMessageListeners.processTabChangedMessage.onMessage(data => {
+        this.chatControllerMessageListeners.processTabChangedMessage.onMessage((data) => {
             return this.processTabChangedMessage(data)
         })
 
-        this.chatControllerMessageListeners.processInsertCodeAtCursorPosition.onMessage(data => {
+        this.chatControllerMessageListeners.processInsertCodeAtCursorPosition.onMessage((data) => {
             return this.processInsertCodeAtCursorPosition(data)
         })
 
-        this.chatControllerMessageListeners.processCopyCodeToClipboard.onMessage(data => {
+        this.chatControllerMessageListeners.processCopyCodeToClipboard.onMessage((data) => {
             return this.processCopyCodeToClipboard(data)
         })
 
-        this.chatControllerMessageListeners.processContextMenuCommand.onMessage(data => {
+        this.chatControllerMessageListeners.processContextMenuCommand.onMessage((data) => {
             return this.processContextMenuCommand(data)
         })
 
-        this.chatControllerMessageListeners.processTriggerTabIDReceived.onMessage(data => {
+        this.chatControllerMessageListeners.processTriggerTabIDReceived.onMessage((data) => {
             return this.processTriggerTabIDReceived(data)
         })
 
-        this.chatControllerMessageListeners.processStopResponseMessage.onMessage(data => {
+        this.chatControllerMessageListeners.processStopResponseMessage.onMessage((data) => {
             return this.processStopResponseMessage(data)
         })
 
-        this.chatControllerMessageListeners.processChatItemVotedMessage.onMessage(data => {
+        this.chatControllerMessageListeners.processChatItemVotedMessage.onMessage((data) => {
             return this.processChatItemVotedMessage(data)
         })
 
-        this.chatControllerMessageListeners.processChatItemFeedbackMessage.onMessage(data => {
+        this.chatControllerMessageListeners.processChatItemFeedbackMessage.onMessage((data) => {
             return this.processChatItemFeedbackMessage(data)
         })
 
-        this.chatControllerMessageListeners.processUIFocusMessage.onMessage(data => {
+        this.chatControllerMessageListeners.processUIFocusMessage.onMessage((data) => {
             return this.processUIFocusMessage(data)
         })
 
-        this.chatControllerMessageListeners.processSourceLinkClick.onMessage(data => {
+        this.chatControllerMessageListeners.processSourceLinkClick.onMessage((data) => {
             return this.processSourceLinkClick(data)
         })
-        this.chatControllerMessageListeners.processResponseBodyLinkClick.onMessage(data => {
+        this.chatControllerMessageListeners.processResponseBodyLinkClick.onMessage((data) => {
             return this.processResponseBodyLinkClick(data)
         })
-        this.chatControllerMessageListeners.processFooterInfoLinkClick.onMessage(data => {
+        this.chatControllerMessageListeners.processFooterInfoLinkClick.onMessage((data) => {
             return this.processFooterInfoLinkClick(data)
         })
     }
@@ -201,7 +201,7 @@ export class ChatController {
     private processQuickActionCommand(quickActionCommand: ChatPromptCommandType) {
         this.editorContextExtractor
             .extractContextForTrigger('QuickAction')
-            .then(context => {
+            .then((context) => {
                 const triggerID = randomUUID()
 
                 this.messenger.sendQuickActionMessage(quickActionCommand, triggerID)
@@ -221,7 +221,7 @@ export class ChatController {
                     return
                 }
             })
-            .catch(e => {
+            .catch((e) => {
                 this.processException(e, '')
             })
     }
@@ -337,7 +337,7 @@ export class ChatController {
 
         this.editorContextExtractor
             .extractContextForTrigger('ContextMenu')
-            .then(context => {
+            .then((context) => {
                 const triggerID = randomUUID()
 
                 if (context?.focusAreaContext?.codeBlock === undefined) {
@@ -395,7 +395,7 @@ export class ChatController {
                     triggerID
                 )
             })
-            .catch(e => {
+            .catch((e) => {
                 this.processException(e, '')
             })
     }
@@ -479,7 +479,7 @@ export class ChatController {
     private async processPromptMessageAsNewThread(message: PromptMessage) {
         this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
-            .then(context => {
+            .then((context) => {
                 const triggerID = randomUUID()
                 this.triggerEventsStorage.addTriggerEvent({
                     id: triggerID,
@@ -505,7 +505,7 @@ export class ChatController {
                     triggerID
                 )
             })
-            .catch(e => {
+            .catch((e) => {
                 this.processException(e, message.tabID)
             })
     }
@@ -523,7 +523,7 @@ export class ChatController {
 
         if (triggerEvent.tabID === undefined) {
             setTimeout(() => {
-                this.generateStaticTextResponse(responseType, triggerID).catch(e => {
+                this.generateStaticTextResponse(responseType, triggerID).catch((e) => {
                     getLogger().error('generateStaticTextResponse failed: %s', (e as Error).message)
                 })
             }, 20)
@@ -557,7 +557,7 @@ export class ChatController {
 
         if (triggerEvent.tabID === undefined) {
             setTimeout(() => {
-                this.generateResponse(triggerPayload, triggerID).catch(e => {
+                this.generateResponse(triggerPayload, triggerID).catch((e) => {
                     getLogger().error('generateResponse failed: %s', (e as Error).message)
                 })
             }, 20)
@@ -581,7 +581,7 @@ export class ChatController {
                 if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                     const start = performance.now()
                     triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
-                    triggerPayload.relevantTextDocuments.forEach(doc => {
+                    triggerPayload.relevantTextDocuments.forEach((doc) => {
                         getLogger().info(
                             `amazonq: Using workspace files ${doc.relativeFilePath}, content(partial): ${doc.text?.substring(0, 200)}`
                         )

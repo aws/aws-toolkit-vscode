@@ -64,7 +64,7 @@ fake_users = [
         const document = await vscode.workspace.openTextDocument(uri)
         const editor = await vscode.window.showTextDocument(document)
 
-        await editor.edit(editBuilder => {
+        await editor.edit((editBuilder) => {
             editBuilder.insert(new vscode.Position(0, 0), fileContents)
         })
     }

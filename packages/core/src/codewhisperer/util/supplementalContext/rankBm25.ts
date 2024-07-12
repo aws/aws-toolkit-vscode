@@ -32,15 +32,15 @@ export abstract class BM25 {
 
         let numDoc = 0
         corpus
-            .map(document => {
+            .map((document) => {
                 return tokenizer(document)
             })
-            .forEach(document => {
+            .forEach((document) => {
                 this.docLen.push(document.length)
                 numDoc += document.length
 
                 const frequencies = new Map<string, number>()
-                document.forEach(word => {
+                document.forEach((word) => {
                     frequencies.set(word, (frequencies.get(word) || 0) + 1)
                 })
                 this.docFreqs.push(frequencies)

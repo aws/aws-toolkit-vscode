@@ -38,7 +38,7 @@ describe('deleteBucketCommand', function () {
         const stub = sinon.stub()
         s3.deleteBucket = stub
 
-        getTestWindow().onDidShowInputBox(input => {
+        getTestWindow().onDidShowInputBox((input) => {
             assert.strictEqual(input.prompt, 'Enter bucket-name to confirm deletion')
             assert.strictEqual(input.placeholder, bucketName)
             input.acceptValue(bucketName)
@@ -56,7 +56,7 @@ describe('deleteBucketCommand', function () {
         const stub = sinon.stub()
         s3.deleteBucket = stub
 
-        getTestWindow().onDidShowInputBox(input => input.hide())
+        getTestWindow().onDidShowInputBox((input) => input.hide())
         await assert.rejects(() => deleteBucketCommand(node), /cancelled/i)
 
         assert(stub.notCalled)
@@ -69,14 +69,14 @@ describe('deleteBucketCommand', function () {
         const stub = sinon.stub().rejects(new Error('Expected failure'))
         s3.deleteBucket = stub
 
-        getTestWindow().onDidShowInputBox(input => input.acceptValue(bucketName))
+        getTestWindow().onDidShowInputBox((input) => input.acceptValue(bucketName))
         await assert.rejects(() => deleteBucketCommand(node), /failed to delete bucket bucket-name/i)
 
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('warns when confirmation is invalid', async function () {
-        getTestWindow().onDidShowInputBox(input => {
+        getTestWindow().onDidShowInputBox((input) => {
             input.acceptValue('something other than the bucket name')
             assert.strictEqual(input.validationMessage, 'Enter bucket-name to confirm deletion')
             input.hide()

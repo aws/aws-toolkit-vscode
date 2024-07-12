@@ -20,7 +20,7 @@ export async function getAppNodes(): Promise<TreeNode[]> {
         return [createPlaceholderItem(localize('AWS.cdk.explorerNode.noApps', '[No CDK Apps found in Workspaces]'))]
     }
 
-    return appsFound.map(appLocation => new AppNode(appLocation)).sort((a, b) => a.label.localeCompare(b.label) ?? 0)
+    return appsFound.map((appLocation) => new AppNode(appLocation)).sort((a, b) => a.label.localeCompare(b.label) ?? 0)
 }
 
 export class CdkRootNode implements TreeNode {

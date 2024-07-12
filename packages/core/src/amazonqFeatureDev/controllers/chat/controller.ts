@@ -106,21 +106,21 @@ export class FeatureDevController {
          */
         this.isAmazonQVisible = true
 
-        onDidChangeAmazonQVisibility(visible => {
+        onDidChangeAmazonQVisibility((visible) => {
             this.isAmazonQVisible = visible
         })
 
-        this.chatControllerMessageListeners.processHumanChatMessage.event(data => {
-            this.processUserChatMessage(data).catch(e => {
+        this.chatControllerMessageListeners.processHumanChatMessage.event((data) => {
+            this.processUserChatMessage(data).catch((e) => {
                 getLogger().error('processUserChatMessage failed: %s', (e as Error).message)
             })
         })
-        this.chatControllerMessageListeners.processChatItemVotedMessage.event(data => {
-            this.processChatItemVotedMessage(data.tabID, data.messageId, data.vote).catch(e => {
+        this.chatControllerMessageListeners.processChatItemVotedMessage.event((data) => {
+            this.processChatItemVotedMessage(data.tabID, data.messageId, data.vote).catch((e) => {
                 getLogger().error('processChatItemVotedMessage failed: %s', (e as Error).message)
             })
         })
-        this.chatControllerMessageListeners.followUpClicked.event(data => {
+        this.chatControllerMessageListeners.followUpClicked.event((data) => {
             switch (data.followUp.type) {
                 case FollowUpTypes.GenerateCode:
                     return this.generateCodeClicked(data)
@@ -144,28 +144,28 @@ export class FeatureDevController {
                     break
             }
         })
-        this.chatControllerMessageListeners.openDiff.event(data => {
+        this.chatControllerMessageListeners.openDiff.event((data) => {
             return this.openDiff(data)
         })
-        this.chatControllerMessageListeners.stopResponse.event(data => {
+        this.chatControllerMessageListeners.stopResponse.event((data) => {
             return this.stopResponse(data)
         })
-        this.chatControllerMessageListeners.tabOpened.event(data => {
+        this.chatControllerMessageListeners.tabOpened.event((data) => {
             return this.tabOpened(data)
         })
-        this.chatControllerMessageListeners.tabClosed.event(data => {
+        this.chatControllerMessageListeners.tabClosed.event((data) => {
             this.tabClosed(data)
         })
-        this.chatControllerMessageListeners.authClicked.event(data => {
+        this.chatControllerMessageListeners.authClicked.event((data) => {
             this.authClicked(data)
         })
-        this.chatControllerMessageListeners.processResponseBodyLinkClick.event(data => {
+        this.chatControllerMessageListeners.processResponseBodyLinkClick.event((data) => {
             this.processLink(data)
         })
-        this.chatControllerMessageListeners.insertCodeAtPositionClicked.event(data => {
+        this.chatControllerMessageListeners.insertCodeAtPositionClicked.event((data) => {
             this.insertCodeAtPosition(data)
         })
-        this.chatControllerMessageListeners.fileClicked.event(async data => {
+        this.chatControllerMessageListeners.fileClicked.event(async (data) => {
             return await this.fileClicked(data)
         })
     }
@@ -217,7 +217,7 @@ export class FeatureDevController {
         )
 
         let defaultMessage
-        const isDenyListedError = denyListedErrors.some(err => errorMessage.includes(err))
+        const isDenyListedError = denyListedErrors.some((err) => errorMessage.includes(err))
 
         switch (err.code) {
             case ContentLengthError.name:
@@ -550,7 +550,7 @@ export class FeatureDevController {
         try {
             session = await this.sessionStorage.getSession(message.tabID)
 
-            const acceptedFiles = (paths?: { rejected: boolean }[]) => (paths || []).filter(i => !i.rejected).length
+            const acceptedFiles = (paths?: { rejected: boolean }[]) => (paths || []).filter((i) => !i.rejected).length
 
             const amazonqNumberOfFilesAccepted =
                 acceptedFiles(session.state.filePaths) + acceptedFiles(session.state.deletedFiles)
@@ -769,12 +769,12 @@ export class FeatureDevController {
         const filePathToUpdate: string = message.filePath
 
         const session = await this.sessionStorage.getSession(tabId)
-        const filePathIndex = (session.state.filePaths ?? []).findIndex(obj => obj.relativePath === filePathToUpdate)
+        const filePathIndex = (session.state.filePaths ?? []).findIndex((obj) => obj.relativePath === filePathToUpdate)
         if (filePathIndex !== -1 && session.state.filePaths) {
             session.state.filePaths[filePathIndex].rejected = !session.state.filePaths[filePathIndex].rejected
         }
         const deletedFilePathIndex = (session.state.deletedFiles ?? []).findIndex(
-            obj => obj.relativePath === filePathToUpdate
+            (obj) => obj.relativePath === filePathToUpdate
         )
         if (deletedFilePathIndex !== -1 && session.state.deletedFiles) {
             session.state.deletedFiles[deletedFilePathIndex].rejected =

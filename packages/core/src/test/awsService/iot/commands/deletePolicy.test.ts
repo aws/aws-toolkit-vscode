@@ -43,7 +43,7 @@ describe('deletePolicyCommand', function () {
         const policyVersions = ['1']
         const listPolicyVersionsStub = sinon.stub().returns(
             asyncGenerator<Iot.PolicyVersion>(
-                policyVersions.map<Iot.PolicyVersion>(versionId => {
+                policyVersions.map<Iot.PolicyVersion>((versionId) => {
                     return {
                         versionId: versionId,
                     }
@@ -54,7 +54,7 @@ describe('deletePolicyCommand', function () {
         const deleteStub = sinon.stub()
         iot.deletePolicy = deleteStub
 
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Delete')?.select())
         await deletePolicyCommand(node)
 
         getTestWindow().getFirstMessage().assertWarn('Are you sure you want to delete Policy test-policy?')
@@ -70,7 +70,7 @@ describe('deletePolicyCommand', function () {
         iot.listPolicyTargets = listPolicyStub
         const deleteStub = sinon.stub()
         iot.deletePolicy = deleteStub
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Delete')?.select())
         await deletePolicyCommand(node)
 
         getTestWindow()
@@ -87,7 +87,7 @@ describe('deletePolicyCommand', function () {
         const policyVersions = ['1', '2']
         const listPolicyVersionsStub = sinon.stub().returns(
             asyncGenerator<Iot.PolicyVersion>(
-                policyVersions.map<Iot.PolicyVersion>(versionId => {
+                policyVersions.map<Iot.PolicyVersion>((versionId) => {
                     return {
                         versionId: versionId,
                     }
@@ -97,7 +97,7 @@ describe('deletePolicyCommand', function () {
         const deleteStub = sinon.stub()
         iot.deletePolicy = deleteStub
         iot.listPolicyVersions = listPolicyVersionsStub
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Delete')?.select())
         await deletePolicyCommand(node)
 
         assert(listPolicyStub.calledOnceWithExactly({ policyName }))
@@ -107,7 +107,7 @@ describe('deletePolicyCommand', function () {
     it('does nothing when deletion is cancelled', async function () {
         const deleteStub = sinon.stub()
         iot.deletePolicy = deleteStub
-        getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
+        getTestWindow().onDidShowMessage((m) => m.selectItem('Cancel'))
         await deletePolicyCommand(node)
 
         assert(deleteStub.notCalled)
@@ -117,7 +117,7 @@ describe('deletePolicyCommand', function () {
         const deleteStub = sinon.stub().rejects()
         iot.deletePolicy = deleteStub
 
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Delete')?.select())
         await deletePolicyCommand(node)
 
         getTestWindow()

@@ -67,7 +67,7 @@ export class AuthSSOServer {
     private _closed: boolean = false
 
     private constructor(private readonly state: string) {
-        this.authenticationPromise = new Promise<Result<string>>(resolve => {
+        this.authenticationPromise = new Promise<Result<string>>((resolve) => {
             this.deferred = { resolve }
         })
 
@@ -103,7 +103,7 @@ export class AuthSSOServer {
             }
         })
 
-        this.server.on('connection', connection => {
+        this.server.on('connection', (connection) => {
             this.connections.push(connection)
         })
     }
@@ -113,7 +113,7 @@ export class AuthSSOServer {
         if (lastInstance !== undefined && !lastInstance.closed) {
             lastInstance
                 .close()!
-                .catch(err =>
+                .catch((err) =>
                     getLogger().error('Failed to close already existing auth sever in AuthSSOServer.init(): %s', err)
                 )
         }
@@ -134,7 +134,7 @@ export class AuthSSOServer {
                 reject(new ToolkitError('AuthSSOServer: Server has closed'))
             })
 
-            this.server.on('error', error => {
+            this.server.on('error', (error) => {
                 reject(new ToolkitError(`AuthSSOServer: Server failed: ${error}`))
             })
 
@@ -163,11 +163,11 @@ export class AuthSSOServer {
 
             getLogger().debug('AuthSSOServer: Attempting to close server.')
 
-            this.connections.forEach(connection => {
+            this.connections.forEach((connection) => {
                 connection.destroy()
             })
 
-            this.server.close(err => {
+            this.server.close((err) => {
                 if (err) {
                     reject(err)
                 }

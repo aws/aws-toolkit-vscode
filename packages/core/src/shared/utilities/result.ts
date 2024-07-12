@@ -44,7 +44,7 @@ abstract class Base<T, E> {
     }
 
     public expect(message: string): T {
-        return this.mapErr(err => new ResultError(message, err)).unwrap()
+        return this.mapErr((err) => new ResultError(message, err)).unwrap()
     }
 
     public maybeOk(): T | undefined {

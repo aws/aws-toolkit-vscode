@@ -179,7 +179,7 @@ describe('LaunchConfiguration', function () {
     it('gets aws-sam debug configurations', async function () {
         const launchConfig = new LaunchConfiguration(templateUriJsPlainApp)
         const expected = (testLaunchJsonData['configurations'] as any[]).filter(
-            o => o.type === 'aws-sam' && o.request === 'direct-invoke'
+            (o) => o.type === 'aws-sam' && o.request === 'direct-invoke'
         )
         const actual = await launchConfig.getSamDebugConfigurations()
         assertEqualLaunchJsons(actual, expected, workspace.uri, true)

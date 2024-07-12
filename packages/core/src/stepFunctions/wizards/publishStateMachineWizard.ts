@@ -156,24 +156,24 @@ export class PublishStateMachineWizard extends Wizard<PublishStateMachineWizardS
             createRegionPrompter(undefined, {
                 serviceFilter: 'states',
                 helpUrl: sfnSupportedRegionsUrl,
-            }).transform(r => r.id)
+            }).transform((r) => r.id)
         )
 
         form.publishAction.bindPrompter(({ region }) => createPublishActionPrompter(region!))
 
         form.createResponse.roleArn.bindPrompter(
-            ({ region }) => createStepFunctionsRolePrompter(region!).transform(r => r.Arn),
+            ({ region }) => createStepFunctionsRolePrompter(region!).transform((r) => r.Arn),
             {
-                showWhen: form => form.publishAction === PublishStateMachineAction.QuickCreate,
+                showWhen: (form) => form.publishAction === PublishStateMachineAction.QuickCreate,
             }
         )
 
         form.createResponse.name.bindPrompter(() => createNamePrompter(), {
-            showWhen: form => form.publishAction === PublishStateMachineAction.QuickCreate,
+            showWhen: (form) => form.publishAction === PublishStateMachineAction.QuickCreate,
         })
 
         form.updateResponse.stateMachineArn.bindPrompter(({ region }) => createUpdateStateMachinePrompter(region!), {
-            showWhen: form => form.publishAction === PublishStateMachineAction.QuickUpdate,
+            showWhen: (form) => form.publishAction === PublishStateMachineAction.QuickUpdate,
         })
     }
 }

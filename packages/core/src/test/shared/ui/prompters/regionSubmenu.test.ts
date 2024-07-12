@@ -27,7 +27,7 @@ describe('regionSubmenu', function () {
                 default:
                     data = []
             }
-            return data.map<DataQuickPickItem<string>>(data => ({
+            return data.map<DataQuickPickItem<string>>((data) => ({
                 label: data,
                 data: data,
             }))

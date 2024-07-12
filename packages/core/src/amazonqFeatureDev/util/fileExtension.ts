@@ -205,4 +205,4 @@ export const fileExtensionAllowList = [
  * @returns flag if the file is relevant to code context
  */
 export const isCodeRelatedFile = (filePath: string): boolean =>
-    fileExtensionAllowList.some(extension => filePath.endsWith(extension))
+    fileExtensionAllowList.some((extension) => filePath.endsWith(extension))

@@ -20,7 +20,7 @@ describe('SSH Agent', function () {
         }
 
         const getStatus = () => {
-            return runCommand('echo (Get-Service ssh-agent).Status').then(o => o.stdout)
+            return runCommand('echo (Get-Service ssh-agent).Status').then((o) => o.stdout)
         }
 
         await runCommand('Stop-Service ssh-agent')

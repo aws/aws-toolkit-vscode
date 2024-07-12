@@ -82,7 +82,7 @@ describe('publishDocument', async function () {
             client.createDocument.rejects(new Error('Create Error'))
 
             await publish.createDocument(wizardResponse, textDocument, client)
-            const errorMessage = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Error)[0]
+            const errorMessage = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Error)[0]
             assert.ok(errorMessage)
             errorMessage.assertMessage("Failed to create Systems Manager Document 'test'. \nCreate Error")
         })
@@ -106,7 +106,7 @@ describe('publishDocument', async function () {
 
             sinon.stub(ssmUtils, 'showConfirmationMessage').resolves(false)
             await publish.updateDocument(wizardResponse, textDocument, client)
-            const errorMessage = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Error)[0]
+            const errorMessage = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Error)[0]
             assert.ok(errorMessage)
             errorMessage.assertMessage("Failed to update Systems Manager Document 'test'. \nUpdate Error")
         })

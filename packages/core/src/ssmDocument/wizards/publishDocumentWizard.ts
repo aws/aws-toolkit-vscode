@@ -124,12 +124,12 @@ export class PublishSSMDocumentWizard extends Wizard<PublishSSMDocumentWizardRes
                     'Which AWS Region would you like to publish to?'
                 ),
                 serviceFilter: 'ssm',
-            }).transform(r => r.id)
+            }).transform((r) => r.id)
         )
 
-        form.action.bindPrompter(state => createPublishPrompter(state.region!))
+        form.action.bindPrompter((state) => createPublishPrompter(state.region!))
 
-        form.name.bindPrompter(state => {
+        form.name.bindPrompter((state) => {
             switch (state.action!) {
                 case PublishSSMDocumentAction.QuickCreate:
                     return createNamePrompter()

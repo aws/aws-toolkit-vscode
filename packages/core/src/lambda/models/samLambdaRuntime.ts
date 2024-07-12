@@ -172,7 +172,7 @@ function handleDeprecatedRuntime(runtime: Runtime) {
             ),
             moreInfo
         )
-        .then(button => {
+        .then((button) => {
             if (button === moreInfo) {
                 void openUrl(vscode.Uri.parse(supportedLambdaRuntimesUrl))
             }
@@ -263,9 +263,9 @@ export function createRuntimeQuickPick(params: {
 
     const zipRuntimeItems = zipRuntimes
         // remove uncreatable runtimes
-        .filter(value => samLambdaCreatableRuntimes().has(value))
+        .filter((value) => samLambdaCreatableRuntimes().has(value))
         .toArray()
-        .map(runtime => ({
+        .map((runtime) => ({
             data: { runtime, packageType: 'Zip' } as RuntimeAndPackage,
             label: runtime,
         }))
@@ -275,7 +275,7 @@ export function createRuntimeQuickPick(params: {
     let imageRuntimeItems: DataQuickPickItem<RuntimeAndPackage>[] = []
     if (params.showImageRuntimes) {
         imageRuntimeItems = samImageLambdaRuntimes()
-            .map(runtime => ({
+            .map((runtime) => ({
                 data: { runtime, packageType: 'Image' } as RuntimeAndPackage,
                 label: `${runtime} (Image)`,
             }))

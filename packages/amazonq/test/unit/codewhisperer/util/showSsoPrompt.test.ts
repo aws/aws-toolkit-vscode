@@ -22,7 +22,7 @@ describe('showConnectionPrompt', function () {
     it('can select connect to AwsBuilderId', async function () {
         const authUtilSpy = sinon.stub(AuthUtil.instance, 'connectToAwsBuilderId')
 
-        getTestWindow().onDidShowQuickPick(async picker => {
+        getTestWindow().onDidShowQuickPick(async (picker) => {
             await picker.untilReady()
             picker.acceptItem(picker.items[0])
         })
@@ -41,6 +41,6 @@ describe('showConnectionPrompt', function () {
         await awsIdSignIn()
 
         const loggedEntries = getTestLogger().getLoggedEntries()
-        assert.ok(loggedEntries.find(entry => entry === 'selected AWS ID sign in'))
+        assert.ok(loggedEntries.find((entry) => entry === 'selected AWS ID sign in'))
     })
 })

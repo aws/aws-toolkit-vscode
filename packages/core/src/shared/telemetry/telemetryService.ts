@@ -245,7 +245,7 @@ export class DefaultTelemetryService {
                 return DefaultTelemetryPublisher.fromIdentityId(clientId, identity)
             }
         } catch (err) {
-            console.error(`Got ${err} while initializing telemetry publisher`)
+            getLogger().error(`Got ${err} while initializing telemetry publisher`)
         }
     }
 

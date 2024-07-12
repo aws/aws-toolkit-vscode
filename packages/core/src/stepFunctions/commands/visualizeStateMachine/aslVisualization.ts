@@ -119,7 +119,7 @@ export class AslVisualization {
 
         // Add listener function to update the graph on document save
         this.disposables.push(
-            vscode.workspace.onDidSaveTextDocument(async savedTextDocument => {
+            vscode.workspace.onDidSaveTextDocument(async (savedTextDocument) => {
                 if (savedTextDocument && savedTextDocument.uri.path === documentUri.path) {
                     await this.sendUpdateMessage(savedTextDocument)
                 }
@@ -128,7 +128,7 @@ export class AslVisualization {
 
         // If documentUri being tracked is no longer found (due to file closure or rename), close the panel.
         this.disposables.push(
-            vscode.workspace.onDidCloseTextDocument(documentWillSaveEvent => {
+            vscode.workspace.onDidCloseTextDocument((documentWillSaveEvent) => {
                 if (!this.trackedDocumentDoesExist(documentUri) && !this.isPanelDisposed) {
                     panel.dispose()
                     void vscode.window.showInformationMessage(
@@ -144,7 +144,7 @@ export class AslVisualization {
         const debouncedUpdate = debounce(this.sendUpdateMessage.bind(this), 500)
 
         this.disposables.push(
-            vscode.workspace.onDidChangeTextDocument(async textDocumentEvent => {
+            vscode.workspace.onDidChangeTextDocument(async (textDocumentEvent) => {
                 if (textDocumentEvent.document.uri.path === documentUri.path) {
                     await debouncedUpdate(textDocumentEvent.document)
                 }
@@ -188,7 +188,7 @@ export class AslVisualization {
             this.isPanelDisposed = true
             debouncedUpdate.cancel()
             this.onVisualizationDisposeEmitter.fire()
-            this.disposables.forEach(disposable => {
+            this.disposables.forEach((disposable) => {
                 disposable.dispose()
             })
             this.onVisualizationDisposeEmitter.dispose()
@@ -291,7 +291,7 @@ export class AslVisualization {
     }
 
     private trackedDocumentDoesExist(trackedDocumentURI: vscode.Uri): boolean {
-        const document = vscode.workspace.textDocuments.find(doc => doc.fileName === trackedDocumentURI.fsPath)
+        const document = vscode.workspace.textDocuments.find((doc) => doc.fileName === trackedDocumentURI.fsPath)
 
         return document !== undefined
     }

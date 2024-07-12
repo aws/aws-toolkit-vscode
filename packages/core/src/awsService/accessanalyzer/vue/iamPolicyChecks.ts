@@ -170,7 +170,7 @@ export class IamPolicyChecksWebview extends VueWebview {
         switch (documentType) {
             case 'JSON Policy Language': {
                 if (isJsonPolicyLanguage(document)) {
-                    telemetry.accessanalyzer_iamPolicyChecksValidatePolicy.run(span => {
+                    telemetry.accessanalyzer_iamPolicyChecksValidatePolicy.run((span) => {
                         span.record({
                             documentType,
                             inputPolicyType: policyType ? policyType : 'None',
@@ -570,7 +570,7 @@ export class IamPolicyChecksWebview extends VueWebview {
     }
 
     public executeValidatePolicyCommand(opts: PolicyCommandOpts & { policyType?: PolicyChecksPolicyType }) {
-        telemetry.accessanalyzer_iamPolicyChecksValidatePolicy.run(span => {
+        telemetry.accessanalyzer_iamPolicyChecksValidatePolicy.run((span) => {
             try {
                 span.record({
                     cfnParameterFileUsed: opts.cfnParameterPathExists,
@@ -632,7 +632,7 @@ export class IamPolicyChecksWebview extends VueWebview {
     public executeCustomPolicyChecksCommand(
         opts: PolicyCommandOpts & { checkType: PolicyChecksCheckType; referencePolicyType?: PolicyChecksPolicyType }
     ) {
-        telemetry.accessanalyzer_iamPolicyChecksCustomChecks.run(span => {
+        telemetry.accessanalyzer_iamPolicyChecksCustomChecks.run((span) => {
             try {
                 span.record({
                     cfnParameterFileUsed: opts.cfnParameterPathExists,
@@ -901,17 +901,17 @@ function getResultCssColor(resultType: PolicyChecksResult): string {
 
 function isCloudFormationTemplate(document: string): boolean {
     const cfnFileTypes = ['.yaml', '.yml', '.json']
-    return cfnFileTypes.some(t => document.endsWith(t))
+    return cfnFileTypes.some((t) => document.endsWith(t))
 }
 
 function isTerraformPlan(document: string) {
     const terraformPlanFileTypes = ['.json']
-    return terraformPlanFileTypes.some(t => document.endsWith(t))
+    return terraformPlanFileTypes.some((t) => document.endsWith(t))
 }
 
 function isJsonPolicyLanguage(document: string) {
     const policyLanguageFileTypes = ['.json']
-    return policyLanguageFileTypes.some(t => document.endsWith(t))
+    return policyLanguageFileTypes.some((t) => document.endsWith(t))
 }
 
 export class PolicyChecksError extends ToolkitError {

@@ -40,16 +40,16 @@ export class SchemasDataProvider {
 
     public async getRegistries(region: string, client: SchemaClient, credentials: AWS.Credentials) {
         const cachedRegion = this.cache.credentialsRegionDataList
-            .filter(x => x.credentials === credentials)
+            .filter((x) => x.credentials === credentials)
             .shift()
-            ?.regionDataList.filter(x => x.region === region)
+            ?.regionDataList.filter((x) => x.region === region)
             .shift()
 
         try {
             // if region is not cached, make api query and retain results
             if (!cachedRegion || cachedRegion.registryNames.length === 0) {
                 const registrySummary = await toArrayAsync(client.listRegistries())
-                const registryNames = registrySummary.map(x => x.RegistryName!)
+                const registryNames = registrySummary.map((x) => x.RegistryName!)
                 this.pushRegionDataIntoCache(region, registryNames, [], credentials)
 
                 return registryNames
@@ -66,11 +66,11 @@ export class SchemasDataProvider {
 
     public async getSchemas(region: string, registryName: string, client: SchemaClient, credentials: AWS.Credentials) {
         const registrySchemasMapList = this.cache.credentialsRegionDataList
-            .filter(x => x.credentials === credentials)
+            .filter((x) => x.credentials === credentials)
             .shift()
-            ?.regionDataList.filter(x => x.region === region)
+            ?.regionDataList.filter((x) => x.region === region)
             .shift()?.registrySchemasMapList
-        let schemas = registrySchemasMapList?.filter(x => x.registryName === registryName).shift()?.schemaList
+        let schemas = registrySchemasMapList?.filter((x) => x.registryName === registryName).shift()?.schemaList
         try {
             // if no schemas found, make api query and retain results given that registryName && region already cached
             if (!schemas || schemas.length === 0) {
@@ -107,7 +107,9 @@ export class SchemasDataProvider {
             registrySchemasMapList: registrySchemasMapList,
         }
 
-        const cachedCredential = this.cache.credentialsRegionDataList.filter(x => x.credentials === credentials).shift()
+        const cachedCredential = this.cache.credentialsRegionDataList
+            .filter((x) => x.credentials === credentials)
+            .shift()
         cachedCredential?.regionDataList.push(regionData)
 
         if (!cachedCredential) {

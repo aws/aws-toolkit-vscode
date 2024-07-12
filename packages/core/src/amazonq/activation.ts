@@ -60,7 +60,7 @@ export async function activate(context: ExtensionContext) {
         focusAmazonQPanel.register(),
         focusAmazonQPanelKeybinding.register(),
         tryChatCodeLensCommand.register(),
-        vscode.workspace.onDidChangeConfiguration(async configurationChangeEvent => {
+        vscode.workspace.onDidChangeConfiguration(async (configurationChangeEvent) => {
             if (configurationChangeEvent.affectsConfiguration('amazonQ.workspaceIndex')) {
                 if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                     void setupLsp()

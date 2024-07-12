@@ -17,7 +17,7 @@ import { telemetry } from '../../../shared/telemetry/telemetry'
 import { showViewLogsFetchMessage } from '../messageUtils'
 
 export class RedshiftDatabaseNode extends AWSTreeNodeBase implements LoadMoreNode {
-    private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
+    private readonly childLoader = new ChildNodeLoader(this, (token) => this.loadPage(token))
 
     public constructor(
         public readonly databaseName: string,
@@ -53,7 +53,7 @@ export class RedshiftDatabaseNode extends AWSTreeNodeBase implements LoadMoreNod
                 const listSchemaResponse = await this.redshiftClient.listSchemas(this.connectionParams, token)
                 if (listSchemaResponse.Schemas?.sort()) {
                     newChildren.push(
-                        ...listSchemaResponse.Schemas.map(schema => {
+                        ...listSchemaResponse.Schemas.map((schema) => {
                             return new RedshiftSchemaNode(schema, this.redshiftClient, this.connectionParams)
                         })
                     )

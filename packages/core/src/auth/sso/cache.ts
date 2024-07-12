@@ -135,7 +135,7 @@ function getRegistrationCacheFile(ssoCacheDir: string, key: RegistrationKey): st
     const hash = (startUrl: string, scopes: string[]) => {
         const shasum = crypto.createHash('sha256')
         shasum.update(startUrl)
-        scopes.forEach(s => shasum.update(s))
+        scopes.forEach((s) => shasum.update(s))
         return shasum.digest('hex')
     }
 

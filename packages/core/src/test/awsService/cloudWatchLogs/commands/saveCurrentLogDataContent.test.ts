@@ -61,7 +61,7 @@ describe('saveCurrentLogDataContent', async function () {
         await vscode.window.showTextDocument(uri)
         await assertTextEditorContains(expectedText, false) // Wait for document provider.
 
-        getTestWindow().onDidShowDialog(d => d.selectItem(vscode.Uri.file(filename)))
+        getTestWindow().onDidShowDialog((d) => d.selectItem(vscode.Uri.file(filename)))
         await saveCurrentLogDataContent()
 
         assert.ok(await fileExists(filename))
@@ -69,7 +69,7 @@ describe('saveCurrentLogDataContent', async function () {
     })
 
     it('does not do anything if the URI is invalid', async function () {
-        getTestWindow().onDidShowDialog(d => d.selectItem(vscode.Uri.file(filename)))
+        getTestWindow().onDidShowDialog((d) => d.selectItem(vscode.Uri.file(filename)))
         await assert.rejects(
             async () => await vscode.window.showTextDocument(vscode.Uri.parse(`notCloudWatch:hahahaha`))
         )

@@ -18,6 +18,7 @@ import { TelemetryService } from './telemetry/telemetryService'
 import { UriHandler } from './vscode/uriHandler'
 import { GlobalState } from './globalState'
 import { setContext } from './vscode/setContext'
+import { getLogger } from './logger/logger'
 
 type Clock = Pick<
     typeof globalThis,
@@ -47,7 +48,7 @@ function copyClock(): Clock {
 
     const browserAlternatives = getBrowserAlternatives()
     if (Object.keys(browserAlternatives).length > 0) {
-        console.log('globals: Using browser alternatives for clock functions')
+        getLogger().info('globals: Using browser alternatives for clock functions')
         Object.assign(clock, browserAlternatives)
     } else {
         // In node.js context
@@ -146,7 +147,7 @@ export function initialize(context: ExtensionContext, isWeb: boolean = false): T
         context,
         clock: copyClock(),
         didReload: checkDidReload(context),
-        globalState: new GlobalState(context),
+        globalState: new GlobalState(context.globalState),
         manifestPaths: {} as ToolkitGlobals['manifestPaths'],
         visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],
         isWeb,
@@ -170,7 +171,7 @@ export { globals as default }
  */
 interface ToolkitGlobals {
     readonly context: ExtensionContext
-    /** Global, shared, mutable, persisted state (survives IDE restart), namespaced to the extension (i.e. not shared with other vscode extensions). */
+    /** Global, shared (with all vscode instances, including remote!), mutable, persisted state (survives IDE restart), namespaced to the extension (not shared with other vscode extensions). */
     readonly globalState: GlobalState
     /** Decides the prefix for package.json extension parameters, e.g. commands, 'setContext' values, etc. */
     contextPrefix: string

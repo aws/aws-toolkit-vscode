@@ -27,8 +27,8 @@ export async function mochaGlobalSetup(extensionId: string) {
         console.log('globalSetup: before()')
 
         // Prevent CI from hanging by forcing a timeout on both hooks and tests
-        this.on('hook', hook => setRunnableTimeout(hook, maxTestDuration))
-        this.on('test', test => setRunnableTimeout(test, maxTestDuration))
+        this.on('hook', (hook) => setRunnableTimeout(hook, maxTestDuration))
+        this.on('test', (test) => setRunnableTimeout(test, maxTestDuration))
 
         // Shows the full error chain when tests fail
         mapTestErrors(this, normalizeError)

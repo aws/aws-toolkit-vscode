@@ -333,7 +333,7 @@ export class DefaultS3Client {
         const progressListener = request.progressListener
         if (progressListener) {
             let lastLoaded = 0
-            managedUploaded.on('httpUploadProgress', progress => {
+            managedUploaded.on('httpUploadProgress', (progress) => {
                 progressListener(progress.loaded - lastLoaded)
                 lastLoaded = progress.loaded
             })
@@ -361,7 +361,7 @@ export class DefaultS3Client {
             const buckets = await this.listAllBuckets()
 
             yield* toStream(
-                buckets.map(async bucket => {
+                buckets.map(async (bucket) => {
                     assertHasProps(bucket, 'Name')
                     const region = await this.lookupRegion(bucket.Name, s3)
                     if (region) {
@@ -378,7 +378,7 @@ export class DefaultS3Client {
      * Filters the results of {@link listAllBucketsIterable} to the region of the client
      */
     public listBucketsIterable(): AsyncCollection<RequiredProps<S3.Bucket, 'Name'> & { readonly region: string }> {
-        return this.listAllBucketsIterable().filter(b => b.region === this.regionCode)
+        return this.listAllBucketsIterable().filter((b) => b.region === this.regionCode)
     }
 
     /**
@@ -397,7 +397,7 @@ export class DefaultS3Client {
         const s3Buckets: S3.Bucket[] = await this.listAllBuckets()
 
         // S3#ListBuckets returns buckets across all regions
-        const allBucketPromises: Promise<Bucket | undefined>[] = s3Buckets.map(async s3Bucket => {
+        const allBucketPromises: Promise<Bucket | undefined>[] = s3Buckets.map(async (s3Bucket) => {
             const bucketName = s3Bucket.Name
             if (!bucketName) {
                 return undefined
@@ -415,10 +415,10 @@ export class DefaultS3Client {
 
         const allBuckets = await Promise.all(allBucketPromises)
         const bucketsInRegion = _(allBuckets)
-            .reject(bucket => bucket === undefined)
+            .reject((bucket) => bucket === undefined)
             // we don't have a filerNotNull so we can filter then cast
-            .map(bucket => bucket as Bucket)
-            .reject(bucket => bucket.region !== this.regionCode)
+            .map((bucket) => bucket as Bucket)
+            .reject((bucket) => bucket.region !== this.regionCode)
             .value()
 
         const response: ListBucketsResponse = { buckets: bucketsInRegion }
@@ -466,17 +466,17 @@ export class DefaultS3Client {
             .promise()
 
         const files: File[] = _(output.Contents)
-            .reject(file => file.Key === request.folderPath)
-            .map(file => {
+            .reject((file) => file.Key === request.folderPath)
+            .map((file) => {
                 assertHasProps(file, 'Key')
                 return toFile(bucket, file)
             })
             .value()
 
         const folders: Folder[] = _(output.CommonPrefixes)
-            .map(prefix => prefix.Prefix)
+            .map((prefix) => prefix.Prefix)
             .compact()
-            .map(path => new DefaultFolder({ path, partitionId: this.partitionId, bucketName: request.bucketName }))
+            .map((path) => new DefaultFolder({ path, partitionId: this.partitionId, bucketName: request.bucketName }))
             .value()
 
         const response: ListFilesResponse = {
@@ -513,7 +513,7 @@ export class DefaultS3Client {
             .promise()
 
         const response: ListObjectVersionsResponse = {
-            objects: (output.Versions ?? []).map(version => ({
+            objects: (output.Versions ?? []).map((version) => ({
                 key: version.Key!,
                 versionId: version.VersionId,
             })),

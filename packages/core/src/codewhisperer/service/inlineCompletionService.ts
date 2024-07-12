@@ -29,7 +29,7 @@ export class InlineCompletionService {
     constructor(statusBar: CodeWhispererStatusBar = CodeWhispererStatusBar.instance) {
         this.statusBar = statusBar
 
-        RecommendationHandler.instance.onDidReceiveRecommendation(e => {
+        RecommendationHandler.instance.onDidReceiveRecommendation((e) => {
             this.startShowRecommendationTimer()
         })
 
@@ -63,7 +63,7 @@ export class InlineCompletionService {
                 return
             }
             this.sharedTryShowRecommendation()
-                .catch(e => {
+                .catch((e) => {
                     getLogger().error('tryShowRecommendation failed: %s', (e as Error).message)
                 })
                 .finally(() => {

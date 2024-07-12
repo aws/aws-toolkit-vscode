@@ -21,7 +21,7 @@ describe('configureCommand', function () {
 
     it('maps selected services to configuration', async function () {
         const testItems = Array.from(memoizedGetResourceTypes().keys())
-        getTestWindow().onDidShowQuickPick(picker => picker.acceptItems(...testItems))
+        getTestWindow().onDidShowQuickPick((picker) => picker.acceptItems(...testItems))
         await configureResources(settings)
 
         assert.deepStrictEqual(settings.get('enabledResources'), testItems)

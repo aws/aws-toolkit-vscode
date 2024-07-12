@@ -5,6 +5,7 @@
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import * as vscode from 'vscode'
+import globals from '../../../shared/extensionGlobals'
 import { RedshiftNode } from './redshiftNode'
 import { makeChildrenNodes } from '../../../shared/treeview/utils'
 import { RedshiftDatabaseNode } from './redshiftDatabaseNode'
@@ -12,13 +13,12 @@ import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'
 import { ChildNodeLoader, ChildNodePage } from '../../../awsexplorer/childNodeLoader'
 import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
-import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../models/models'
+import { deleteConnection, ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../models/models'
 import { RedshiftNodeConnectionWizard } from '../wizards/connectionWizard'
 import { ListDatabasesResponse } from 'aws-sdk/clients/redshiftdata'
 import { getIcon } from '../../../shared/icons'
 import { AWSCommandTreeNode } from '../../../shared/treeview/nodes/awsCommandTreeNode'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import { deleteConnection, getConnectionParamsState, updateConnectionParamsState } from './redshiftState'
 import { createLogsConnectionMessage, showConnectionMessage } from '../messageUtils'
 
 export class CreateNotebookNode extends AWSCommandTreeNode {
@@ -33,7 +33,7 @@ export class CreateNotebookNode extends AWSCommandTreeNode {
 }
 
 export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourceNode, LoadMoreNode {
-    private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
+    private readonly childLoader = new ChildNodeLoader(this, (token) => this.loadPage(token))
     public arn: string
     public name: string
     public redshiftClient: DefaultRedshiftClient
@@ -50,7 +50,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
         this.arn = redshiftWarehouse.arn
         this.name = redshiftWarehouse.name
         this.redshiftClient = parent.redshiftClient
-        const existingConnectionParams = getConnectionParamsState(this.arn)
+        const existingConnectionParams = globals.globalState.getRedshiftConnection(this.arn)
         if (existingConnectionParams && existingConnectionParams !== deleteConnection) {
             this.connectionParams = existingConnectionParams as ConnectionParams
             this.iconPath = getIcon('aws-redshift-cluster-connected')
@@ -87,7 +87,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
 
                 if (listDatabasesResponse.Databases?.sort()) {
                     childNodes.push(
-                        ...listDatabasesResponse.Databases.map(db => {
+                        ...listDatabasesResponse.Databases.map((db) => {
                             return new RedshiftDatabaseNode(db, this.redshiftClient, this.connectionParams!)
                         })
                     )
@@ -108,14 +108,14 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 this.childLoader.clearChildren()
-                const existingConnectionParams = getConnectionParamsState(this.arn)
+                const existingConnectionParams = globals.globalState.getRedshiftConnection(this.arn)
                 if (existingConnectionParams && existingConnectionParams === deleteConnection) {
                     // connection is deleted but explorer is not refreshed: return clickToEstablishConnectionNode
-                    await updateConnectionParamsState(this.arn, undefined)
+                    await globals.globalState.saveRedshiftConnection(this.arn, undefined)
                     return this.getClickToEstablishConnectionNode()
-                } else if (existingConnectionParams && existingConnectionParams !== deleteConnection) {
+                } else if (existingConnectionParams) {
                     // valid connectionParams: update the redshiftWarehouseNode
-                    this.connectionParams = existingConnectionParams as ConnectionParams
+                    this.connectionParams = existingConnectionParams
                 } else {
                     // No connectionParams: trigger connection wizard to get user input
                     this.connectionParams = await new RedshiftNodeConnectionWizard(this).run()
@@ -137,11 +137,11 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                     const childNodes = await this.childLoader.getChildren()
                     const startButtonNode = new CreateNotebookNode(this)
                     childNodes.unshift(startButtonNode)
-                    await updateConnectionParamsState(this.arn, this.connectionParams)
+                    await globals.globalState.saveRedshiftConnection(this.arn, this.connectionParams)
                     return childNodes
                 } catch (error) {
                     showConnectionMessage(this.redshiftWarehouse.name, error as Error)
-                    await updateConnectionParamsState(this.arn, undefined)
+                    await globals.globalState.saveRedshiftConnection(this.arn, undefined)
                     return this.getRetryNode()
                 }
             },

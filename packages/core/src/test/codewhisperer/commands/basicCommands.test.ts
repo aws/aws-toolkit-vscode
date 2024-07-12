@@ -408,7 +408,7 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
             sinon.stub(AuthUtil.instance, 'isConnected').returns(false)
 
-            getTestWindow().onDidShowQuickPick(e => {
+            getTestWindow().onDidShowQuickPick((e) => {
                 e.assertContainsItems(createSignIn(), createLearnMore(), ...genericItems())
                 e.dispose() // skip needing to select an item to continue
             })
@@ -420,7 +420,7 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
 
-            getTestWindow().onDidShowQuickPick(e => {
+            getTestWindow().onDidShowQuickPick((e) => {
                 e.assertContainsItems(createReconnect(), createLearnMore(), ...genericItems(), createSignout())
                 e.dispose() // skip needing to select an item to continue
             })
@@ -432,7 +432,7 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
             sinon.stub(CodeScansState.instance, 'isScansEnabled').returns(false)
-            getTestWindow().onDidShowQuickPick(e => {
+            getTestWindow().onDidShowQuickPick((e) => {
                 e.assertContainsItems(
                     createAutoSuggestions(false),
                     createOpenReferenceLog(),
@@ -456,7 +456,7 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isCustomizationFeatureEnabled').value(true)
             sinon.stub(CodeScansState.instance, 'isScansEnabled').returns(false)
 
-            getTestWindow().onDidShowQuickPick(async e => {
+            getTestWindow().onDidShowQuickPick(async (e) => {
                 e.assertContainsItems(
                     createAutoSuggestions(false),
                     createOpenReferenceLog(),
@@ -479,7 +479,7 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
             sinon.stub(AuthUtil.instance, 'isBuilderIdInUse').returns(true)
 
-            getTestWindow().onDidShowQuickPick(async e => {
+            getTestWindow().onDidShowQuickPick(async (e) => {
                 e.assertItems([
                     createSeparator('Inline Suggestions'),
                     createAutoSuggestions(false),

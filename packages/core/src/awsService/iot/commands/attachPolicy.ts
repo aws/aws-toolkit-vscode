@@ -95,12 +95,12 @@ async function* getPolicyList(iot: IotClient) {
 
             /* The policy name and arn should always be defined when using the
              * above API, but we filter here anyway for when we use ! later. */
-            filteredPolicies = policyResponse.policies?.filter(policy => policy.policyArn && policy.policyName) ?? []
+            filteredPolicies = policyResponse.policies?.filter((policy) => policy.policyArn && policy.policyName) ?? []
         } catch (e) {
             getLogger().error(`Failed to retrieve policies: %s`, e)
             void showViewLogsMessage(localize('AWS.iot.attachPolicy.error', 'Failed to retrieve policies'))
             return
         }
-        yield filteredPolicies.map(policy => ({ label: policy.policyName!, data: policy }))
+        yield filteredPolicies.map((policy) => ({ label: policy.policyName!, data: policy }))
     } while (marker !== undefined)
 }

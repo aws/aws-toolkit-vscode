@@ -34,7 +34,7 @@ export async function saveResource(
                     resource.clearChildren()
                     await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', resource)
                     const resourceNodes = (await resource.getChildren()) as ResourceNode[]
-                    const newNode = resourceNodes.find(node => node.identifier === identifier)
+                    const newNode = resourceNodes.find((node) => node.identifier === identifier)
                     if (newNode) {
                         await resourceManager.open(newNode, true)
                     }
@@ -77,7 +77,7 @@ export async function createResource(
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
         },
-        async progress => {
+        async (progress) => {
             const startTime = new globals.clock.Date()
             let result: Result = 'Succeeded'
 
@@ -142,7 +142,7 @@ export async function updateResource(
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
         },
-        async progress => {
+        async (progress) => {
             const startTime = new globals.clock.Date()
             let result: Result = 'Succeeded'
             try {

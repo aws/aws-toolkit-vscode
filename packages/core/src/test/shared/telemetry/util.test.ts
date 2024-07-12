@@ -72,7 +72,7 @@ describe('TelemetryConfig', function () {
     ]
 
     describe('isTelemetryEnabled', function () {
-        scenarios.forEach(scenario => {
+        scenarios.forEach((scenario) => {
             it(scenario.desc, async () => {
                 await settings.update(settingKey, scenario.initialSettingValue)
 
@@ -82,7 +82,7 @@ describe('TelemetryConfig', function () {
     })
 
     describe('sanitizeTelemetrySetting', function () {
-        scenarios.forEach(scenario => {
+        scenarios.forEach((scenario) => {
             it(scenario.desc, () => {
                 const tryConvert = () => {
                     try {
@@ -181,7 +181,7 @@ describe('getUserAgent', function () {
     it('includes the platform before `ClientId` if opted in', async function () {
         const userAgent = getUserAgent({ includePlatform: true, includeClientId: true })
         const pairs = userAgent.split(' ')
-        const clientPairIndex = pairs.findIndex(pair => pair.startsWith('ClientId/'))
+        const clientPairIndex = pairs.findIndex((pair) => pair.startsWith('ClientId/'))
         const beforeClient = pairs[clientPairIndex - 1]
         assert.strictEqual(beforeClient, platformPair())
     })

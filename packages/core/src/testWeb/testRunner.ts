@@ -50,7 +50,7 @@ async function activateToolkitExtension() {
 }
 
 function runMochaTests(resolve: (value: void | PromiseLike<void>) => void, reject: (reason?: any) => void) {
-    mocha.run(failures => {
+    mocha.run((failures) => {
         if (failures > 0) {
             reject(new Error(`${failures} tests failed.`))
         } else {

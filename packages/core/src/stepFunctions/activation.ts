@@ -21,7 +21,7 @@ import { AslVisualizationCDKManager } from './commands/visualizeStateMachine/asl
 import { renderCdkStateMachineGraph } from './commands/visualizeStateMachine/renderStateMachineGraphCDK'
 import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { PerfLog } from '../shared/logger/logger'
+import { PerfLog } from '../shared/logger/perfLogger'
 import { ASLLanguageClient } from './asl/client'
 
 /**
@@ -40,7 +40,7 @@ export async function activate(
     let onDidOpenAslDoc: vscode.Disposable // eslint-disable-line prefer-const
     // PERFORMANCE: Start the LSP client/server _only_ when the first ASL document is opened.
     // eslint-disable-next-line prefer-const
-    onDidOpenAslDoc = vscode.window.onDidChangeActiveTextEditor(async e => {
+    onDidOpenAslDoc = vscode.window.onDidChangeActiveTextEditor(async (e) => {
         if (e?.document && ASL_FORMATS.includes(e.document.languageId)) {
             onDidOpenAslDoc?.dispose() // Handler should only run once.
             await startLspServer(extensionContext)
@@ -135,7 +135,7 @@ async function startLspServer(extensionContext: vscode.ExtensionContext) {
 
 function isASLFileOpen() {
     return vscode.window.visibleTextEditors.some(
-        textEditor => textEditor?.document && ASL_FORMATS.includes(textEditor.document.languageId)
+        (textEditor) => textEditor?.document && ASL_FORMATS.includes(textEditor.document.languageId)
     )
 }
 

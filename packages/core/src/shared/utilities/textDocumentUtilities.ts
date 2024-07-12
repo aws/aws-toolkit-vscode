@@ -42,7 +42,7 @@ export function findOccurencesOf(document: vscode.TextDocument, keyword: string)
  */
 export async function saveDocumentIfDirty(documentPath: string): Promise<void> {
     const path = _path.normalize(vscode.Uri.file(documentPath).fsPath)
-    const document = vscode.workspace.textDocuments.find(doc => {
+    const document = vscode.workspace.textDocuments.find((doc) => {
         if (!doc.isDirty) {
             return false
         }

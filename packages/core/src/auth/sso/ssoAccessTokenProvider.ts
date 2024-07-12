@@ -107,7 +107,7 @@ export abstract class SsoAccessTokenProvider {
         const access = await this.runFlow()
         const identity = this.tokenCacheKey
         await this.cache.token.save(identity, access)
-        await setSessionCreationDate(this.tokenCacheKey, new Date())
+        await globals.globalState.setSsoSessionCreationDate(this.tokenCacheKey, new globals.clock.Date())
 
         return { ...access.token, identity }
     }
@@ -201,12 +201,12 @@ export abstract class SsoAccessTokenProvider {
 
         // During certain flows, eg reauthentication, we are already running within a span (run())
         // so we don't need to create a new one.
-        const span = telemetry.spans.find(s => s.name === 'aws_loginWithBrowser')
+        const span = telemetry.spans.find((s) => s.name === 'aws_loginWithBrowser')
         if (span !== undefined) {
             return run(span as unknown as Metric<AwsLoginWithBrowser>)
         }
 
-        return telemetry.aws_loginWithBrowser.run(span => {
+        return telemetry.aws_loginWithBrowser.run((span) => {
             return run(span)
         })
     }
@@ -309,25 +309,13 @@ async function pollForTokenWithProgress<T extends { requestId?: string }>(
     )
 }
 
-const sessionCreationDateKey = '#sessionCreationDates'
-async function setSessionCreationDate(id: string, date: Date, memento = globals.context.globalState) {
-    try {
-        await memento.update(sessionCreationDateKey, {
-            ...memento.get(sessionCreationDateKey),
-            [id]: date.getTime(),
-        })
-    } catch (err) {
-        getLogger().verbose('auth: failed to set session creation date: %s', err)
-    }
-}
-
-function getSessionCreationDate(id: string, memento = globals.context.globalState): number | undefined {
-    return memento.get(sessionCreationDateKey, {} as Record<string, number>)[id]
-}
-
-function getSessionDuration(id: string, memento = globals.context.globalState) {
-    const creationDate = getSessionCreationDate(id, memento)
-
+/**
+ * Gets SSO session creation timestamp for the given session `id`.
+ *
+ * @param id Session id
+ */
+function getSessionDuration(id: string) {
+    const creationDate = globals.globalState.getSsoSessionCreationDate(id)
     return creationDate !== undefined ? Date.now() - creationDate : undefined
 }
 
@@ -550,7 +538,7 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
             // Temporary delay to make sure the auth ui was displayed to the user before closing
             // inspired by https://github.com/microsoft/vscode/blob/a49c81edea6647684eee87d204e50feed9c455f6/extensions/github-authentication/src/flows.ts#L262
             setTimeout(() => {
-                authServer.close().catch(e => {
+                authServer.close().catch((e) => {
                     getLogger().error(
                         'AuthFlowAuthorization: AuthSSOServer.close() failed: %s: %s',
                         (e as Error).name,

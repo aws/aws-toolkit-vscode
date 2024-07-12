@@ -55,7 +55,7 @@ export class ZipUtil {
 
     public getProjectPaths() {
         const workspaceFolders = vscode.workspace.workspaceFolders
-        return workspaceFolders?.map(folder => folder.uri.fsPath) ?? []
+        return workspaceFolders?.map((folder) => folder.uri.fsPath) ?? []
     }
 
     protected async getTextContent(uri: vscode.Uri) {
@@ -158,9 +158,9 @@ export class ZipUtil {
 
     protected processOtherFiles(zip: admZip, languageCount: Map<CodewhispererLanguage, number>) {
         vscode.workspace.textDocuments
-            .filter(document => document.uri.scheme === 'file')
-            .filter(document => vscode.workspace.getWorkspaceFolder(document.uri) === undefined)
-            .forEach(document =>
+            .filter((document) => document.uri.scheme === 'file')
+            .filter((document) => vscode.workspace.getWorkspaceFolder(document.uri) === undefined)
+            .forEach((document) =>
                 this.processFile(zip, document.uri, document.getText(), languageCount, document.uri.fsPath)
             )
     }
@@ -197,7 +197,7 @@ export class ZipUtil {
     }
 
     protected isFileOpenAndDirty(uri: vscode.Uri) {
-        return vscode.workspace.textDocuments.some(document => document.uri.fsPath === uri.fsPath && document.isDirty)
+        return vscode.workspace.textDocuments.some((document) => document.uri.fsPath === uri.fsPath && document.isDirty)
     }
 
     protected getZipDirPath(): string {

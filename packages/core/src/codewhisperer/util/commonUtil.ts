@@ -20,7 +20,7 @@ export function asyncCallWithTimeout<T>(asyncPromise: Promise<T>, message: strin
     const timeoutPromise = new Promise((_resolve, reject) => {
         timeoutHandle = setTimeout(() => reject(new Error(message)), timeLimit)
     })
-    return Promise.race([asyncPromise, timeoutPromise]).then(result => {
+    return Promise.race([asyncPromise, timeoutPromise]).then((result) => {
         clearTimeout(timeoutHandle)
         return result as T
     })
@@ -69,7 +69,7 @@ export function get(key: string, context: vscode.Memento): any {
 export async function set(key: string, value: any, context: vscode.Memento): Promise<void> {
     await context.update(key, value).then(
         () => {},
-        error => {
+        (error) => {
             getLogger().verbose(`Failed to update global state: ${error}`)
         }
     )
@@ -78,8 +78,8 @@ export async function set(key: string, value: any, context: vscode.Memento): Pro
 export function checkLeftContextKeywordsForJsonAndYaml(leftFileContent: string, language: string): boolean {
     if (
         (language === 'json' || language === 'yaml') &&
-        !AWSTemplateKeyWords.some(substring => leftFileContent.includes(substring)) &&
-        !AWSTemplateCaseInsensitiveKeyWords.some(substring => leftFileContent.toLowerCase().includes(substring))
+        !AWSTemplateKeyWords.some((substring) => leftFileContent.includes(substring)) &&
+        !AWSTemplateCaseInsensitiveKeyWords.some((substring) => leftFileContent.toLowerCase().includes(substring))
     ) {
         return true
     }

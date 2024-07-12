@@ -50,13 +50,6 @@ export function isAutomation(): boolean {
     return isCI() || !!process.env['AWS_TOOLKIT_AUTOMATION']
 }
 
-/**
- * Returns true if name mangling has occured to the extension source code.
- */
-export function isNameMangled(): boolean {
-    return isNameMangled.name !== 'isNameMangled'
-}
-
 export { extensionVersion }
 
 /**
@@ -145,7 +138,7 @@ export function getEnvVars<T extends string[]>(service: string, envVarNames: T):
         // e.g. gitHostname -> GIT_HOSTNAME
         const envVarName = name
             .split(/(?=[A-Z])/)
-            .map(s => s.toUpperCase())
+            .map((s) => s.toUpperCase())
             .join('_')
         envVars[name as T[number]] = `__${service.toUpperCase()}_${envVarName}`
     }
@@ -175,7 +168,7 @@ export function getServiceEnvVarConfig<T extends string[]>(service: string, conf
     // This allows us to log only once when env vars for a service change.
     if (overriden.length > 0) {
         if (!(service in logConfigsOnce)) {
-            logConfigsOnce[service] = onceChanged(vars => {
+            logConfigsOnce[service] = onceChanged((vars) => {
                 getLogger().info(`using env vars for ${service} config: ${vars}`)
             })
         }

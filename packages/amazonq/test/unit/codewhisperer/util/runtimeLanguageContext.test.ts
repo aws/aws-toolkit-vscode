@@ -46,7 +46,7 @@ describe('runtimeLanguageContext', function () {
             await resetCodeWhispererGlobalVariables()
         })
 
-        cases.forEach(tuple => {
+        cases.forEach((tuple) => {
             const languageId = tuple[0]
             const expected = tuple[1]
 
@@ -83,7 +83,7 @@ describe('runtimeLanguageContext', function () {
             [undefined, 'plaintext'],
         ]
 
-        cases.forEach(tuple => {
+        cases.forEach((tuple) => {
             const vscLanguageId = tuple[0]
             const expectedCwsprLanguageId = tuple[1]
             it(`given vscLanguage ${vscLanguageId} should return ${expectedCwsprLanguageId}`, function () {

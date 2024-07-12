@@ -27,7 +27,7 @@ export class UIMessageListener {
         this.referenceLogController = new ReferenceLogController()
         this.authController = new AuthController()
 
-        this.webViewMessageListener.onMessage(msg => {
+        this.webViewMessageListener.onMessage((msg) => {
             this.handleMessage(msg)
         })
     }
@@ -79,7 +79,7 @@ export class UIMessageListener {
                 this.chatItemVoted(msg)
                 break
             case 'chat-item-feedback':
-                this.chatItemFeedback(msg).catch(e => {
+                this.chatItemFeedback(msg).catch((e) => {
                     getLogger().error('chatItemFeedback failed: %s', (e as Error).message)
                 })
                 break

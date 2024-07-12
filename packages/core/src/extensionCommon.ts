@@ -35,7 +35,7 @@ import { LoginManager } from './auth/deprecated/loginManager'
 import { CredentialsStore } from './auth/credentials/store'
 import { initializeAwsCredentialsStatusBarItem } from './auth/ui/statusBarItem'
 import { RegionProvider, getEndpointsFromFetcher } from './shared/regions/regionProvider'
-import { getMachineId } from './shared/vscode/env'
+import { getMachineId, isAutomation } from './shared/vscode/env'
 import { registerCommandErrorHandler } from './shared/vscode/commands2'
 import { registerWebviewErrorHandler } from './webviews/server'
 import { showQuickStartWebview } from './shared/extensionStartup'
@@ -74,10 +74,10 @@ export async function activateCommon(
     localize = nls.loadMessageBundle()
 
     initialize(context, isWeb)
-    const homeDirLogs = await fs.init(context, homeDir => {
+    const homeDirLogs = await fs.init(context, (homeDir) => {
         void showViewLogsMessage(`Invalid home directory (check $HOME): "${homeDir}"`)
     })
-    errors.init(fs.getUsername())
+    errors.init(fs.getUsername(), isAutomation())
     await initializeComputeRegion()
 
     globals.contextPrefix = '' //todo: disconnect supplied argument
@@ -241,7 +241,7 @@ function wrapWithProgressForCloud9(channel: vscode.OutputChannel): (typeof vscod
         return withProgress(options, (progress, token) => {
             const newProgress: typeof progress = {
                 ...progress,
-                report: value => {
+                report: (value) => {
                     if (value.message) {
                         channel.appendLine(value.message)
                     }
@@ -274,15 +274,15 @@ export async function emitUserState() {
         const enabledScopes: Set<string> = new Set()
         if (Auth.instance.hasConnections) {
             authStatus = 'expired'
-            ;(await Auth.instance.listConnections()).forEach(conn => {
+            ;(await Auth.instance.listConnections()).forEach((conn) => {
                 const state = Auth.instance.getConnectionState(conn)
                 if (state === 'valid') {
                     authStatus = 'connected'
                 }
 
-                getAuthFormIdsFromConnection(conn).forEach(id => enabledConnections.add(id))
+                getAuthFormIdsFromConnection(conn).forEach((id) => enabledConnections.add(id))
                 if (isSsoConnection(conn)) {
-                    conn.scopes?.forEach(s => enabledScopes.add(s))
+                    conn.scopes?.forEach((s) => enabledScopes.add(s))
                 }
             })
         }

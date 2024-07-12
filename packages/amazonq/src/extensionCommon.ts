@@ -3,35 +3,38 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import * as semver from 'semver'
-import { join } from 'path'
+import { AuthUtils, CredentialsStore, LoginManager, SsoConnection, initializeAuth } from 'aws-core-vscode/auth'
 import {
+    AuthUtil,
     activate as activateCodeWhisperer,
     shutdown as shutdownCodeWhisperer,
-    AuthUtil,
 } from 'aws-core-vscode/codewhispererCommon'
+import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode/extensionCommon'
+import { CommonAuthWebview } from 'aws-core-vscode/login'
 import {
+    DefaultAWSClientBuilder,
+    DefaultAwsContext,
     ExtContext,
-    initialize,
+    RegionProvider,
+    Settings,
     activateLogger,
     activateTelemetry,
-    Settings,
-    DefaultAwsContext,
-    initializeComputeRegion,
-    DefaultAWSClientBuilder,
-    globals,
-    RegionProvider,
+    env,
+    errors,
+    fs,
     getLogger,
     getMachineId,
+    globals,
+    initialize,
+    initializeComputeRegion,
     messages,
+    setContext,
 } from 'aws-core-vscode/shared'
-import { fs, errors, setContext } from 'aws-core-vscode/shared'
-import { initializeAuth, CredentialsStore, LoginManager, AuthUtils, SsoConnection } from 'aws-core-vscode/auth'
-import { CommonAuthWebview } from 'aws-core-vscode/login'
+import { ExtStartUpSources, telemetry } from 'aws-core-vscode/telemetry'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
-import { telemetry, ExtStartUpSources } from 'aws-core-vscode/telemetry'
-import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode/extensionCommon'
+import { join } from 'path'
+import * as semver from 'semver'
+import * as vscode from 'vscode'
 import { registerCommands } from './commands'
 
 export const amazonQContextPrefix = 'amazonq'
@@ -41,10 +44,10 @@ export const amazonQContextPrefix = 'amazonq'
  */
 export async function activateAmazonQCommon(context: vscode.ExtensionContext, isWeb: boolean) {
     initialize(context, isWeb)
-    const homeDirLogs = await fs.init(context, homeDir => {
+    const homeDirLogs = await fs.init(context, (homeDir) => {
         void messages.showViewLogsMessage(`Invalid home directory (check $HOME): "${homeDir}"`)
     })
-    errors.init(fs.getUsername())
+    errors.init(fs.getUsername(), env.isAutomation())
     await initializeComputeRegion()
 
     globals.contextPrefix = 'amazonq.' //todo: disconnect from above line
@@ -70,12 +73,12 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
                                 } and older. Your AWS Toolkit was updated to version 3.0 or later.`,
                                 'Reload Now'
                             )
-                            .then(async resp => {
+                            .then(async (resp) => {
                                 if (resp === 'Reload Now') {
                                     await vscode.commands.executeCommand('workbench.action.reloadWindow')
                                 }
                             }),
-                    reason => {
+                    (reason) => {
                         getLogger().error('workbench.extensions.installExtension failed: %O', reason)
                     }
                 )

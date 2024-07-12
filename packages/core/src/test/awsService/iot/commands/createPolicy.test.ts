@@ -47,7 +47,7 @@ describe('createPolicyCommand', function () {
     it('prompts for policy name, creates policy, and shows success', async function () {
         const policyStub = sinon.stub()
         iot.createPolicy = policyStub
-        getTestWindow().onDidShowInputBox(input => {
+        getTestWindow().onDidShowInputBox((input) => {
             assert.strictEqual(input.prompt, 'Enter a new policy name')
             assert.strictEqual(input.placeholder, 'Policy Name')
             input.acceptValue(policyName)
@@ -66,13 +66,13 @@ describe('createPolicyCommand', function () {
     it('does nothing when prompt is canceled', async function () {
         const policyStub = sinon.stub()
         iot.createPolicy = policyStub
-        getTestWindow().onDidShowInputBox(input => input.hide())
+        getTestWindow().onDidShowInputBox((input) => input.hide())
 
         assert(policyStub.notCalled)
     })
 
     it('warns when policy name has invalid length', async function () {
-        getTestWindow().onDidShowInputBox(input => {
+        getTestWindow().onDidShowInputBox((input) => {
             input.acceptValue('')
             assert.strictEqual(input.validationMessage, 'Policy name must be between 1 and 128 characters long')
             input.hide()
@@ -81,7 +81,7 @@ describe('createPolicyCommand', function () {
     })
 
     it('warns when policy name has invalid characters', async function () {
-        getTestWindow().onDidShowInputBox(input => {
+        getTestWindow().onDidShowInputBox((input) => {
             input.acceptValue('illegal/characters')
             assert.strictEqual(
                 input.validationMessage,
@@ -96,7 +96,7 @@ describe('createPolicyCommand', function () {
         const policyStub = sinon.stub()
         iot.createPolicy = policyStub
         returnUndefined = true
-        getTestWindow().onDidShowInputBox(input => input.acceptValue(policyName))
+        getTestWindow().onDidShowInputBox((input) => input.acceptValue(policyName))
         await createPolicyCommand(node, getPolicy)
 
         assert(policyStub.notCalled)
@@ -106,7 +106,7 @@ describe('createPolicyCommand', function () {
     it('shows an error message when JSON is invalid', async function () {
         const policyStub = sinon.stub()
         iot.createPolicy = policyStub
-        getTestWindow().onDidShowInputBox(input => input.acceptValue(policyName))
+        getTestWindow().onDidShowInputBox((input) => input.acceptValue(policyName))
         returnUndefined = false
         policyDocument = 'not a JSON'
         await createPolicyCommand(node, getPolicy)
@@ -125,7 +125,7 @@ describe('createPolicyCommand', function () {
         iot.createPolicy = policyStub
         returnUndefined = false
 
-        getTestWindow().onDidShowInputBox(input => input.acceptValue(policyName))
+        getTestWindow().onDidShowInputBox((input) => input.acceptValue(policyName))
         await createPolicyCommand(node, getPolicy)
 
         getTestWindow()

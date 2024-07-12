@@ -92,7 +92,7 @@ describe('localLambdaRunner', async function () {
                     onStartDebugging: startDebuggingReturnsFalse,
                     onWillRetry,
                 })
-                .catch(e => e)
+                .catch((e) => e)
 
             assert.ok(results instanceof ToolkitError)
             assert.strictEqual(results.code, 'DebuggerRetryLimit')

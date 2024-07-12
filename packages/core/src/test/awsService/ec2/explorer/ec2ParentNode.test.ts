@@ -42,7 +42,7 @@ describe('ec2ParentNode', function () {
 
         getInstanceStub.callsFake(async () =>
             intoCollection(
-                instances.map(instance => ({
+                instances.map((instance) => ({
                     InstanceId: instance.InstanceId,
                     Tags: [{ Key: 'Name', Value: instance.name }],
                 }))
@@ -69,7 +69,7 @@ describe('ec2ParentNode', function () {
 
         assert.strictEqual(childNodes.length, instances.length, 'Unexpected child count')
 
-        childNodes.forEach(node =>
+        childNodes.forEach((node) =>
             assert.ok(node instanceof Ec2InstanceNode, 'Expected child node to be Ec2InstanceNode')
         )
     })
@@ -87,7 +87,7 @@ describe('ec2ParentNode', function () {
 
         const childNodes = await testNode.getChildren()
 
-        const actualChildOrder = childNodes.map(node => (node instanceof Ec2InstanceNode ? node.name : undefined))
+        const actualChildOrder = childNodes.map((node) => (node instanceof Ec2InstanceNode ? node.name : undefined))
         assert.deepStrictEqual(actualChildOrder, sortedText, 'Unexpected child sort order')
     })
 

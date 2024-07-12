@@ -22,7 +22,7 @@ export const staticCredentialsTemplate: ProfileTemplateProvider<StaticProfile> =
     label: 'Static Credentials',
     description: 'Use this for credentials that never expire',
     prompts: {
-        [SharedCredentialsKeys.AWS_ACCESS_KEY_ID]: name =>
+        [SharedCredentialsKeys.AWS_ACCESS_KEY_ID]: (name) =>
             createInputBox({
                 title: getTitle(name),
                 buttons: createCommonButtons(credentialHelpUrl),
@@ -33,9 +33,9 @@ export const staticCredentialsTemplate: ProfileTemplateProvider<StaticProfile> =
                     'Input the {0} Access Key',
                     getIdeProperties().company
                 ),
-                validateInput: value => getCredentialError(SharedCredentialsKeys.AWS_ACCESS_KEY_ID, value),
+                validateInput: (value) => getCredentialError(SharedCredentialsKeys.AWS_ACCESS_KEY_ID, value),
             }),
-        [SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY]: name =>
+        [SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY]: (name) =>
             createInputBox({
                 title: getTitle(name),
                 buttons: createCommonButtons(credentialHelpUrl),
@@ -46,7 +46,7 @@ export const staticCredentialsTemplate: ProfileTemplateProvider<StaticProfile> =
                     'Input the {0} Secret Key',
                     getIdeProperties().company
                 ),
-                validateInput: value => getCredentialError(SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY, value),
+                validateInput: (value) => getCredentialError(SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY, value),
                 password: true,
             }),
     },
@@ -60,7 +60,7 @@ export const processCredentialsTemplate: ProfileTemplateProvider<CredentialsProc
     label: 'External Process',
     description: 'Creates a new profile that fetches credentials from a process',
     prompts: {
-        [SharedCredentialsKeys.CREDENTIAL_PROCESS]: name =>
+        [SharedCredentialsKeys.CREDENTIAL_PROCESS]: (name) =>
             createInputBox({
                 title: getTitle(name),
                 prompt: 'Enter a command to run',

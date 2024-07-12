@@ -112,7 +112,7 @@ export async function buildListRecommendationRequest(
 
     const selectedCustomization = getSelectedCustomization()
     const supplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
-        ? supplementalContexts.supplementalContextItems.map(v => {
+        ? supplementalContexts.supplementalContextItems.map((v) => {
               return selectFrom(v, 'content', 'filePath')
           })
         : []

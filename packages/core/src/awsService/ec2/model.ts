@@ -71,11 +71,11 @@ export class Ec2ConnectionManager {
 
     public async hasProperPolicies(IamRoleArn: string): Promise<boolean> {
         const attachedPolicies = (await this.iamClient.listAttachedRolePolicies(IamRoleArn)).map(
-            policy => policy.PolicyName!
+            (policy) => policy.PolicyName!
         )
         const requiredPolicies = ['AmazonSSMManagedInstanceCore', 'AmazonSSMManagedEC2InstanceDefaultPolicy']
 
-        return requiredPolicies.length !== 0 && requiredPolicies.every(policy => attachedPolicies.includes(policy))
+        return requiredPolicies.length !== 0 && requiredPolicies.every((policy) => attachedPolicies.includes(policy))
     }
 
     public async isInstanceRunning(instanceId: string): Promise<boolean> {
@@ -153,7 +153,7 @@ export class Ec2ConnectionManager {
             shellArgs: shellArgs,
         }
 
-        await openRemoteTerminal(terminalOptions, () => this.ssmClient.terminateSession(session)).catch(err => {
+        await openRemoteTerminal(terminalOptions, () => this.ssmClient.terminateSession(session)).catch((err) => {
             throw ToolkitError.chain(err, 'Failed to open ec2 instance.')
         })
     }

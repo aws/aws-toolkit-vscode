@@ -67,7 +67,7 @@ function notifyUserSamCliNotDetected(SamCliSettings: SamCliSettings): void {
             learnMore,
             browseToSamCli
         )
-        .then(async userResponse => {
+        .then(async (userResponse) => {
             if (userResponse === learnMore) {
                 await vscode.commands.executeCommand('vscode.open', samInstallUrl)
             } else if (userResponse === browseToSamCli) {

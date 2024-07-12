@@ -17,7 +17,7 @@ import { DocumentItemNodeWriteable } from './explorer/documentItemNodeWriteable'
 import { updateDocumentVersion } from './commands/updateDocumentVersion'
 import { Commands } from '../shared/vscode/commands2'
 import * as constants from '../shared/constants'
-import { PerfLog } from '../shared/logger/logger'
+import { PerfLog } from '../shared/logger/perfLogger'
 
 // Activate SSM Document related functionality for the extension.
 export async function activate(
@@ -31,7 +31,7 @@ export async function activate(
     let onDidOpenSsmDoc: vscode.Disposable
     // PERFORMANCE: Start the LSP client/server _only_ when the first SSM document is opened.
     // eslint-disable-next-line prefer-const
-    onDidOpenSsmDoc = vscode.window.onDidChangeActiveTextEditor(async e => {
+    onDidOpenSsmDoc = vscode.window.onDidChangeActiveTextEditor(async (e) => {
         if (e?.document.languageId === constants.ssmJson || e?.document.languageId === constants.ssmYaml) {
             const perflog = new PerfLog('ssmDocument: start LSP client/server')
             await activateSSMLanguageServer(extensionContext)

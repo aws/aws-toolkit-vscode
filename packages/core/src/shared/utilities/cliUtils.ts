@@ -145,7 +145,7 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
                 localize('AWS.cli.failedInstall', 'Installation of the {0} CLI failed.', cliToInstall.name),
                 manualInstall
             )
-            .then(button => {
+            .then((button) => {
                 if (button === manualInstall) {
                     void openUrl(vscode.Uri.parse(cliToInstall.manualInstallLink))
                 }
@@ -157,14 +157,14 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
             getLogger().info('Cleaning up installer...')
             // nonblocking: use `then`
             tryRemoveFolder(tempDir).then(
-                success => {
+                (success) => {
                     if (success) {
                         getLogger().info('Removed installer.')
                     } else {
                         getLogger().warn(`installCli: failed to clean up temp directory: ${tempDir}`)
                     }
                 },
-                e => {
+                (e) => {
                     getLogger().error('installCli: tryRemoveFolder failed: %s', (e as Error).message)
                 }
             )
@@ -236,7 +236,7 @@ function getToolkitLocalCliPath(): string {
 }
 
 function handleError<T extends Promise<unknown>>(promise: T): T {
-    return promise.catch<never>(err => {
+    return promise.catch<never>((err) => {
         if (
             !(err instanceof CancellationError || err instanceof InstallerError || err instanceof InvalidPlatformError)
         ) {
