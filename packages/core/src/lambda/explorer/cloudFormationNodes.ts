@@ -49,13 +49,13 @@ export class CloudFormationNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const stacks = await toMapAsync(listCloudFormationStacks(this.client), stack => stack.StackId)
+        const stacks = await toMapAsync(listCloudFormationStacks(this.client), (stack) => stack.StackId)
 
         updateInPlace(
             this.stackNodes,
             stacks.keys(),
-            key => this.stackNodes.get(key)!.update(stacks.get(key)!),
-            key => new CloudFormationStackNode(this, this.regionCode, stacks.get(key)!)
+            (key) => this.stackNodes.get(key)!.update(stacks.get(key)!),
+            (key) => new CloudFormationStackNode(this, this.regionCode, stacks.get(key)!)
         )
     }
 }
@@ -124,14 +124,14 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
         const resources: string[] = await this.resolveLambdaResources()
         const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
             await toArrayAsync(listLambdaFunctions(this.lambdaClient)),
-            functionInfo => functionInfo.FunctionName
+            (functionInfo) => functionInfo.FunctionName
         )
 
         updateInPlace(
             this.functionNodes,
             intersection(resources, functions.keys()),
-            key => this.functionNodes.get(key)!.update(functions.get(key)!),
-            key => makeCloudFormationLambdaFunctionNode(this, this.regionCode, functions.get(key)!)
+            (key) => this.functionNodes.get(key)!.update(functions.get(key)!),
+            (key) => makeCloudFormationLambdaFunctionNode(this, this.regionCode, functions.get(key)!)
         )
     }
 
@@ -139,8 +139,8 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
         const response = await this.cloudformationClient.describeStackResources(this.stackSummary.StackName)
 
         if (response.StackResources) {
-            return response.StackResources.filter(it => it.ResourceType.includes('Lambda::Function')).map(
-                it => it.PhysicalResourceId || 'none'
+            return response.StackResources.filter((it) => it.ResourceType.includes('Lambda::Function')).map(
+                (it) => it.PhysicalResourceId || 'none'
             )
         }
 

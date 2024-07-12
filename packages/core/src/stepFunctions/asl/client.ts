@@ -148,8 +148,8 @@ export class ASLLanguageClient {
                         }
 
                         return client.sendRequest(DocumentRangeFormattingRequest.type, params, token).then(
-                            response => client.protocol2CodeConverter.asTextEdits(response),
-                            async error => {
+                            (response) => client.protocol2CodeConverter.asTextEdits(response),
+                            async (error) => {
                                 client.logFailedRequest(DocumentRangeFormattingRequest.type, error)
 
                                 return Promise.resolve([])
@@ -166,7 +166,7 @@ export class ASLLanguageClient {
             toDispose.push(disposableFunc)
             toDispose.push(config.onDidChange(({ key }) => key === 'format.enable' && updateFormatterRegistration()))
 
-            client.onNotification(ResultLimitReached, message => {
+            client.onNotification(ResultLimitReached, (message) => {
                 void window.showInformationMessage(
                     `${message}\nUse setting 'aws.stepfunctions.asl.maxItemsComputed' to configure the limit.`
                 )

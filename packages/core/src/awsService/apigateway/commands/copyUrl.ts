@@ -34,7 +34,7 @@ export async function copyUrlCommand(node: RestApiNode, regionProvider: RegionPr
                 cancellable: false,
                 location: ProgressLocation.Window,
             },
-            async progress => {
+            async (progress) => {
                 progress.report({
                     message: localize('AWS.apig.loadingStages', 'Loading stage list for API: {0}', node.name),
                 })
@@ -47,7 +47,7 @@ export async function copyUrlCommand(node: RestApiNode, regionProvider: RegionPr
         return
     }
 
-    const quickPickItems = stages.map<StageInvokeUrlQuickPick>(stage => ({
+    const quickPickItems = stages.map<StageInvokeUrlQuickPick>((stage) => ({
         label: stage.stageName!,
         detail: buildDefaultApiInvokeUrl(node.id, region, dnsSuffix, stage.stageName!),
     }))

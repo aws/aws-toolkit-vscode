@@ -86,7 +86,7 @@ async function runDownloadLambda(functionNode: LambdaFunctionNode): Promise<Resu
                 downloadLocationName
             ),
         },
-        async progress => {
+        async (progress) => {
             let lambdaLocation: string
 
             try {
@@ -112,7 +112,7 @@ async function runDownloadLambda(functionNode: LambdaFunctionNode): Promise<Resu
             try {
                 await openLambdaFile(lambdaLocation)
                 if (
-                    workspaceFolders.filter(val => {
+                    workspaceFolders.filter((val) => {
                         return selectedUri === val.uri
                     }).length === 0
                 ) {

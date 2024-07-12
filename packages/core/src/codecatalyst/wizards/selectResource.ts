@@ -85,7 +85,7 @@ function createResourcePrompter<T extends codecatalyst.CodeCatalystResource>(
     presentation: Omit<ExtendedQuickPickOptions<T>, 'buttons'>
 ): QuickPickPrompter<T> {
     const refresh = createRefreshButton()
-    const items = resources.map(p => p.map(asQuickpickItem))
+    const items = resources.map((p) => p.map(asQuickpickItem))
     const prompter = createQuickPick(items, {
         buttons: [refresh, ...createCommonButtons(helpUri)],
         ...presentation,
@@ -93,7 +93,7 @@ function createResourcePrompter<T extends codecatalyst.CodeCatalystResource>(
     })
 
     refresh.onClick = () => {
-        prompter.clearAndLoadItems(items).catch(e => {
+        prompter.clearAndLoadItems(items).catch((e) => {
             getLogger().error('clearAndLoadItems failed: %s', (e as Error).message)
         })
     }
@@ -146,7 +146,7 @@ export function createDevEnvPrompter(
 ): QuickPickPrompter<codecatalyst.DevEnvironment> {
     const helpUri = isCloud9() ? docs.cloud9.devenv : docs.vscode.devenv
     const envs = proj ? client.listDevEnvironments(proj) : client.listResources('devEnvironment')
-    const filtered = envs.map(arr => arr.filter(env => isDevenvVscode(env.ides)))
+    const filtered = envs.map((arr) => arr.filter((env) => isDevenvVscode(env.ides)))
     const isData = <T>(obj: T | DataQuickPickItem<T>['data']): obj is T => {
         return typeof obj !== 'function' && isValidResponse(obj)
     }
@@ -207,7 +207,7 @@ export async function selectRepoForDevEnv(
     const repos = associateDevEnv(client, client.listResources('repo').flatten())
 
     const refresh = createRefreshButton()
-    const items = repos.map(repo => [
+    const items = repos.map((repo) => [
         {
             ...asQuickpickItem(repo),
             invalidSelection: repo.devEnv !== undefined,
@@ -229,7 +229,7 @@ export async function selectRepoForDevEnv(
     })
 
     refresh.onClick = () => {
-        prompter.clearAndLoadItems(items).catch(e => {
+        prompter.clearAndLoadItems(items).catch((e) => {
             getLogger().error('clearAndLoadItems failed: %s', (e as Error).message)
         })
     }

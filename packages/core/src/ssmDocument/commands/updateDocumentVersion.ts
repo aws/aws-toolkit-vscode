@@ -79,7 +79,7 @@ export async function updateDocumentVersion(node: DocumentItemNodeWriteable, aws
 async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionInfo[]): Promise<string | undefined> {
     // Prompt user to pick document version
     const quickPickItems: vscode.QuickPickItem[] = []
-    versions.forEach(version => {
+    versions.forEach((version) => {
         if (version.DocumentVersion) {
             quickPickItems.push({
                 label: version.DocumentVersion,

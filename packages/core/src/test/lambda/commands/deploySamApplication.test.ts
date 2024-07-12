@@ -582,7 +582,7 @@ function assertErrorLogsSwallowed(text: string, exactMatch: boolean) {
     assert.ok(
         getTestLogger()
             .getLoggedEntries('error')
-            .some(e => !(e instanceof Error) && (exactMatch ? e === text : e.includes(text))),
+            .some((e) => !(e instanceof Error) && (exactMatch ? e === text : e.includes(text))),
         `Expected to find "${text}" in the error logs, but not as a thrown error`
     )
 }

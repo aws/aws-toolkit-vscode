@@ -27,7 +27,7 @@ describe('RegistryItemNode', function () {
 
     it('puts documents into right registry', async function () {
         return Promise.all(
-            registryNames.map(async registry => {
+            registryNames.map(async (registry) => {
                 let owner: string
                 if (registry === 'Owned by Amazon') {
                     owner = 'Amazon'

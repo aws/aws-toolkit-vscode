@@ -53,7 +53,7 @@ export class RegionProvider {
     }
 
     public isServiceInRegion(serviceId: string, regionId: string): boolean {
-        return !!this.regionData.get(regionId)?.serviceIds.find(x => x === serviceId) ?? false
+        return !!this.regionData.get(regionId)?.serviceIds.find((x) => x === serviceId) ?? false
     }
 
     public getPartitionId(regionId: string): string | undefined {
@@ -78,8 +78,8 @@ export class RegionProvider {
 
     public getRegions(partitionId = this.defaultPartitionId): Region[] {
         return [...this.regionData.values()]
-            .filter(region => region.partitionId === partitionId)
-            .map(region => region.region)
+            .filter((region) => region.partitionId === partitionId)
+            .map((region) => region.region)
     }
 
     public getExplorerRegions(): string[] {
@@ -130,8 +130,8 @@ export class RegionProvider {
 
     private loadFromEndpoints(endpoints: Endpoints) {
         this.regionData.clear()
-        endpoints.partitions.forEach(partition => {
-            partition.regions.forEach(region =>
+        endpoints.partitions.forEach((partition) => {
+            partition.regions.forEach((region) =>
                 this.regionData.set(region.id, {
                     dnsSuffix: partition.dnsSuffix,
                     partitionId: partition.id,
@@ -140,8 +140,8 @@ export class RegionProvider {
                 })
             )
 
-            partition.services.forEach(service => {
-                service.endpoints.forEach(endpoint => {
+            partition.services.forEach((service) => {
+                service.endpoints.forEach((endpoint) => {
                     const regionData = this.regionData.get(endpoint.regionId)
 
                     if (regionData) {
@@ -179,7 +179,7 @@ export class RegionProvider {
             }
         }
 
-        load().catch(err => {
+        load().catch((err) => {
             getLogger().error('Failure while loading Endpoints Manifest: %s', err)
 
             return vscode.window.showErrorMessage(

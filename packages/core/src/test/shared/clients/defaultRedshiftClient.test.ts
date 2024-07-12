@@ -50,9 +50,9 @@ describe('DefaultRedshiftClient', function () {
         mockRedshiftServerless = <RedshiftServerless>{}
         defaultRedshiftClient = new DefaultRedshiftClient(
             'us-east-1',
-            async r => Promise.resolve(mockRedshiftData),
-            async r => Promise.resolve(mockRedshift),
-            async r => Promise.resolve(mockRedshiftServerless)
+            async (r) => Promise.resolve(mockRedshiftData),
+            async (r) => Promise.resolve(mockRedshift),
+            async (r) => Promise.resolve(mockRedshiftServerless)
         )
     })
 

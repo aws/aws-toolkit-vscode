@@ -577,7 +577,7 @@ async function typing(editor: vscode.TextEditor, s: string) {
     const initialContent = editor.document.getText()
     const positionBefore = editor.document.offsetAt(editor.selection.active)
 
-    await editor.edit(edit => {
+    await editor.edit((edit) => {
         edit.insert(editor.selection.active, s)
     })
 

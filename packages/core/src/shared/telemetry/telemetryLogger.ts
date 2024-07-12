@@ -42,7 +42,7 @@ export const mapMetadata = (excludeKeys: string[]) => (metadata: Required<Metric
     const result: Metadata = {}
     return metadata
         .filter(isValidEntry)
-        .filter(a => !excludeKeys.includes(a.Key))
+        .filter((a) => !excludeKeys.includes(a.Key))
         .reduce((a, b) => ((a[b.Key] = b.Value), a), result)
 }
 
@@ -107,7 +107,7 @@ export class TelemetryLogger {
      */
     public query(query: MetricQuery): Metadata[] {
         return this.queryFull(query)
-            .map(m => m.Metadata ?? [])
+            .map((m) => m.Metadata ?? [])
             .map(mapMetadata(query.excludeKeys ?? []))
     }
 
@@ -115,6 +115,6 @@ export class TelemetryLogger {
      * Queries telemetry for metrics, returning the entire structure.
      */
     public queryFull(query: MetricQuery): MetricDatum[] {
-        return this._metrics.filter(m => m.MetricName === query.metricName)
+        return this._metrics.filter((m) => m.MetricName === query.metricName)
     }
 }

@@ -36,7 +36,7 @@ export async function showSettingsFailedMsg(kind: 'read' | 'update', key?: strin
 
     const items = [openSettingsItem, logsItem]
     const p = vscode.window.showErrorMessage(msg, {}, ...items)
-    return p.then<string | undefined>(async selection => {
+    return p.then<string | undefined>(async (selection) => {
         if (selection === logsItem) {
             globals.logOutputChannel.show(true)
         } else if (selection === openSettingsItem) {
@@ -49,7 +49,7 @@ export async function showSettingsFailedMsg(kind: 'read' | 'update', key?: strin
 /**
  * Shows an error message if we couldn't update settings, unless the last message was for the same `key`.
  */
-const showSettingsUpdateFailedMsgOnce = onceChanged(key => {
+const showSettingsUpdateFailedMsgOnce = onceChanged((key) => {
     // Edge cases:
     //  - settings.json may intentionally be readonly. #4043
     //  - settings.json may be open in multiple vscodes. #4453
@@ -226,7 +226,7 @@ export class Settings {
     ): vscode.Disposable {
         const toRelative = (sub: string) => (section ? [section, sub] : [sub]).join('.')
 
-        return this.workspace.onDidChangeConfiguration(e => {
+        return this.workspace.onDidChangeConfiguration((e) => {
             const affectsConfiguration = (section: string) => e.affectsConfiguration(toRelative(section), this.scope)
 
             if (!section || e.affectsConfiguration(section, this.scope)) {
@@ -411,9 +411,9 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             // value is a valid way to express that the key exists but no (valid) value is set.
 
             const props = keys(descriptor)
-            const store = toRecord(props, p => this._getOrUndefined(p))
+            const store = toRecord(props, (p) => this._getOrUndefined(p))
             const emitter = new vscode.EventEmitter<{ readonly key: keyof T }>()
-            const listener = this.#settings.onDidChangeSection(section, event => {
+            const listener = this.#settings.onDidChangeSection(section, (event) => {
                 const isDifferent = (p: keyof T & string) => {
                     const isDifferentLazy = () => {
                         const previous = store[p]
@@ -576,12 +576,14 @@ export function fromExtensionManifest<T extends TypeDescriptor & Partial<Section
     //
     // As long as the above holds true, throwing an error here will always be caught by CI
 
-    const resolved = keys(descriptor).map(k => `${section}.${k}`)
-    const missing = resolved.filter(k => (settingsProps as Record<string, any>)[k] === undefined)
+    const resolved = keys(descriptor).map((k) => `${section}.${k}`)
+    const missing = resolved.filter((k) => (settingsProps as Record<string, any>)[k] === undefined)
 
     if (missing.length > 0) {
         const message = `The following configuration keys were missing from package.json: ${missing.join(', ')}`
-        getLogger().error(`Settings (fromExtensionManifest): missing fields:\n${missing.map(k => `\t${k}`).join('\n')}`)
+        getLogger().error(
+            `Settings (fromExtensionManifest): missing fields:\n${missing.map((k) => `\t${k}`).join('\n')}`
+        )
 
         throw new Error(message)
     }

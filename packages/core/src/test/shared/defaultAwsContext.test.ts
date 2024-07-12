@@ -72,8 +72,8 @@ describe('DefaultAwsContext', function () {
 
         const awsCredentials = makeSampleAwsContextCredentials()
 
-        await new Promise<void>(async resolve => {
-            testContext.onDidChangeContext(awsContextChangedEvent => {
+        await new Promise<void>(async (resolve) => {
+            testContext.onDidChangeContext((awsContextChangedEvent) => {
                 assert.strictEqual(awsContextChangedEvent.profileName, awsCredentials.credentialsId)
                 assert.strictEqual(awsContextChangedEvent.accountId, awsCredentials.accountId)
                 resolve()

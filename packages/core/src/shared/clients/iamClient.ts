@@ -62,7 +62,7 @@ export class DefaultIamClient {
         // Ignore deny from Organization SCP.  These can result in false negatives.
         // See https://github.com/aws/aws-sdk/issues/102
         return permissionResponse.EvaluationResults.filter(
-            r => r.EvalDecision !== 'allowed' && r.OrganizationsDecisionDetail?.AllowedByOrganizations !== false
+            (r) => r.EvalDecision !== 'allowed' && r.OrganizationsDecisionDetail?.AllowedByOrganizations !== false
         )
     }
 
@@ -87,8 +87,8 @@ export class DefaultIamClient {
 
         const collection = pageableToCollection(requester, { RoleName: roleName }, 'Marker', 'AttachedPolicies')
             .flatten()
-            .filter(p => p !== undefined)
-            .map(p => p!)
+            .filter((p) => p !== undefined)
+            .map((p) => p!)
 
         const policies = await collection.promise()
 

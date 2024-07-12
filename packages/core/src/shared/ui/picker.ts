@@ -135,7 +135,7 @@ export async function promptUser<T extends vscode.QuickPickItem>({
 
         return response
     } finally {
-        disposables.forEach(d => d.dispose() as void)
+        disposables.forEach((d) => d.dispose() as void)
         picker.hide()
     }
 }
@@ -237,7 +237,7 @@ export class IteratingQuickPickController<TResponse> {
             getLogger().debug('IteratingQuickPickController is already done iterating. Call reset() and start again')
             return
         }
-        this.loadItems().catch(e => {
+        this.loadItems().catch((e) => {
             getLogger().error('IteratingQuickPickController: loadItems failed: %s', (e as Error).message)
         })
     }
@@ -248,7 +248,7 @@ export class IteratingQuickPickController<TResponse> {
     public async reset(): Promise<void> {
         // Promise is necessary to ensure that cancelExecutionFn() is called to completion before reset() completes.
         // Open to suggestions if you know a better way to do this.
-        await new Promise<void>(resolve => {
+        await new Promise<void>((resolve) => {
             getLogger().debug('Resetting IteratingQuickPickController and cancelling any current execution')
 
             if (this.state.cancelExecutionFn) {
@@ -301,11 +301,11 @@ export class IteratingQuickPickController<TResponse> {
                     new Promise<IteratorResult<vscode.QuickPickItem[], any>>((resolve, reject) => {
                         this.state.iterator
                             .next()
-                            .then(newItems => {
+                            .then((newItems) => {
                                 getLogger().debug(`Returning a payload of size: ${newItems.value.length}`)
                                 resolve(newItems)
                             })
-                            .catch(e => {
+                            .catch((e) => {
                                 // append error node
                                 // give quickpick item an error message
                                 // we should not blow away the existing items, they should still be viable

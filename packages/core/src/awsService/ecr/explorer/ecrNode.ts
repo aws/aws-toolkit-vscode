@@ -29,7 +29,7 @@ export class EcrNode extends AWSTreeNodeBase {
             getChildNodes: async () => {
                 const response = await toArrayAsync(this.ecr.describeRepositories())
 
-                return response.map(item => new EcrRepositoryNode(this, this.ecr, item))
+                return response.map((item) => new EcrRepositoryNode(this, this.ecr, item))
             },
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.ecr.noRepositories', '[No repositories found]')),

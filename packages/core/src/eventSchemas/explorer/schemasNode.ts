@@ -40,13 +40,13 @@ export class SchemasNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const registries = await toMapAsync(listRegistryItems(this.client), registry => registry.RegistryName)
+        const registries = await toMapAsync(listRegistryItems(this.client), (registry) => registry.RegistryName)
 
         updateInPlace(
             this.registryNodes,
             registries.keys(),
-            key => this.registryNodes.get(key)!.update(registries.get(key)!),
-            key => new RegistryItemNode(registries.get(key)!, this.client)
+            (key) => this.registryNodes.get(key)!.update(registries.get(key)!),
+            (key) => new RegistryItemNode(registries.get(key)!, this.client)
         )
     }
 }

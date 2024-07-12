@@ -37,7 +37,7 @@ describe('createBucketCommand', function () {
         })
         s3.createBucket = stub
 
-        getTestWindow().onDidShowInputBox(input => {
+        getTestWindow().onDidShowInputBox((input) => {
             assert.strictEqual(input.prompt, 'Enter a new bucket name')
             assert.strictEqual(input.placeholder, 'Bucket Name')
             input.acceptValue(bucketName)
@@ -55,7 +55,7 @@ describe('createBucketCommand', function () {
     it('does nothing when prompt is cancelled', async function () {
         const stub = sinon.stub()
         s3.createBucket = stub
-        getTestWindow().onDidShowInputBox(input => input.hide())
+        getTestWindow().onDidShowInputBox((input) => input.hide())
         await assert.rejects(() => createBucketCommand(node), CancellationError)
 
         assert(stub.notCalled)
@@ -65,7 +65,7 @@ describe('createBucketCommand', function () {
         const stub = sinon.stub().rejects()
         s3.createBucket = stub
 
-        getTestWindow().onDidShowInputBox(input => input.acceptValue(bucketName))
+        getTestWindow().onDidShowInputBox((input) => input.acceptValue(bucketName))
         await assert.rejects(() => createBucketCommand(node), /Failed to create bucket/)
 
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)

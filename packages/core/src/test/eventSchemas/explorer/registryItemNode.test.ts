@@ -103,7 +103,7 @@ describe('DefaultRegistryNode', function () {
     it('Sorts Registries', async function () {
         const inputRegistryNames: string[] = ['zebra', 'Antelope', 'aardvark', 'elephant']
         const client = createSchemaClient({
-            registries: inputRegistryNames.map(name => ({ RegistryName: name })),
+            registries: inputRegistryNames.map((name) => ({ RegistryName: name })),
         })
 
         const schemasNode = new SchemasNode(client)

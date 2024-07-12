@@ -30,7 +30,7 @@ describe('createQuickPick', function () {
         const prompter = createQuickPick([])
         const picker = prompter.quickPick
 
-        Object.keys(picker).forEach(key => {
+        Object.keys(picker).forEach((key) => {
             const defaultValue = (defaultQuickpickOptions as Record<string, any>)[key]
             if (defaultValue !== undefined) {
                 assert.strictEqual(picker[key as keyof vscode.QuickPick<any>], defaultValue)
@@ -45,7 +45,7 @@ describe('createQuickPick', function () {
 
     it('creates a new prompter when given a promise for items', async function () {
         let resolveItems!: (items: DataQuickPickItem<string>[]) => void
-        const itemsPromise = new Promise<DataQuickPickItem<string>[]>(resolve => (resolveItems = resolve))
+        const itemsPromise = new Promise<DataQuickPickItem<string>[]>((resolve) => (resolveItems = resolve))
         const prompter = createQuickPick(itemsPromise)
         void prompter.prompt()
         assert.strictEqual(prompter.quickPick.busy, true)
@@ -60,8 +60,8 @@ describe('createQuickPick', function () {
     it('creates a new prompter when given an AsyncIterable', async function () {
         let r1!: (v?: any) => void
         let r2!: (v?: any) => void
-        const p1 = new Promise(r => (r1 = r))
-        const p2 = new Promise(r => (r2 = r))
+        const p1 = new Promise((r) => (r1 = r))
+        const p2 = new Promise((r) => (r2 = r))
 
         async function* generator() {
             for (const item of items) {
@@ -76,11 +76,11 @@ describe('createQuickPick', function () {
 
         const prompter = createQuickPick(generator())
         r1()
-        await new Promise(r => setImmediate(r))
+        await new Promise((r) => setImmediate(r))
         assert.deepStrictEqual(prompter.quickPick.items, [items[0]])
         assert.strictEqual(prompter.quickPick.busy, true)
         r2()
-        await new Promise(r => setImmediate(r))
+        await new Promise((r) => setImmediate(r))
         assert.deepStrictEqual(prompter.quickPick.items, items)
         assert.strictEqual(prompter.quickPick.busy, false)
     })
@@ -92,7 +92,7 @@ describe('createLabelQuickPick', function () {
         const prompter = createLabelQuickPick(labelItems)
         assert.deepStrictEqual(
             prompter.quickPick.items,
-            labelItems.map(item => ({ label: item.label, data: item.label }))
+            labelItems.map((item) => ({ label: item.label, data: item.label }))
         )
     })
 
@@ -145,7 +145,7 @@ describe('QuickPickPrompter', function () {
     })
 
     it('can selectively enable input when loading', async function () {
-        const p = testPrompter.loadItems(new Promise(r => setImmediate(() => r([]))), false)
+        const p = testPrompter.loadItems(new Promise((r) => setImmediate(() => r([]))), false)
         assert.strictEqual(testPrompter.quickPick.enabled, true)
         await p
         assert.strictEqual(testPrompter.quickPick.enabled, true)
@@ -192,7 +192,7 @@ describe('QuickPickPrompter', function () {
 
     it('does not show a `noItemsFound` item if busy', async function () {
         let resolveItems!: (items: DataQuickPickItem<number>[]) => void
-        const itemsPromise = new Promise<DataQuickPickItem<number>[]>(resolve => (resolveItems = resolve))
+        const itemsPromise = new Promise<DataQuickPickItem<number>[]>((resolve) => (resolveItems = resolve))
         const noItemsFoundItem = { label: 'placeholder', data: 0 }
 
         testPrompter = new QuickPickPrompter(picker, { noItemsFoundItem })
@@ -255,24 +255,24 @@ describe('QuickPickPrompter', function () {
 
     it('stops requesting from an AsyncIterable when hidden', async function () {
         let unlock!: () => void
-        let lock = new Promise<void>(r => (unlock = r))
+        let lock = new Promise<void>((r) => (unlock = r))
         async function* generator() {
             for (const item of testItems) {
                 await lock
                 yield [item]
-                lock = new Promise<void>(r => (unlock = r))
+                lock = new Promise<void>((r) => (unlock = r))
             }
         }
 
         picker.show()
         void testPrompter.clearAndLoadItems(generator())
         picker.hide()
-        await new Promise(r => picker.onDidHide(r))
+        await new Promise((r) => picker.onDidHide(r))
         unlock()
-        await new Promise(r => setImmediate(r))
+        await new Promise((r) => setImmediate(r))
         picker.assertItems([testItems[0]])
         unlock()
-        await new Promise(r => setImmediate(r))
+        await new Promise((r) => setImmediate(r))
         picker.assertItems([testItems[0]])
     })
 
@@ -316,7 +316,7 @@ describe('FilterBoxQuickPickPrompter', function () {
         const input = '123'
 
         picker.onDidShow(async () => {
-            picker.onDidChangeActive(items => {
+            picker.onDidChangeActive((items) => {
                 if (items[0]?.description !== undefined) {
                     picker.acceptItem(items[0])
                 }
@@ -331,7 +331,7 @@ describe('FilterBoxQuickPickPrompter', function () {
         const input = '456'
 
         picker.onDidShow(async () => {
-            picker.onDidChangeActive(items => {
+            picker.onDidChangeActive((items) => {
                 if (items[0]?.description !== undefined) {
                     picker.acceptItem(items[0])
                 }
@@ -353,7 +353,7 @@ describe('FilterBoxQuickPickPrompter', function () {
         const input = '123'
 
         picker.onDidShow(async () => {
-            picker.onDidChangeActive(items => {
+            picker.onDidChangeActive((items) => {
                 if (items[0]?.description !== undefined) {
                     picker.acceptItem(items[0])
                 }
@@ -370,7 +370,7 @@ describe('FilterBoxQuickPickPrompter', function () {
         const input = 'not a number'
 
         picker.onDidShow(async () => {
-            const disposable = picker.onDidChangeActive(async items => {
+            const disposable = picker.onDidChangeActive(async (items) => {
                 const item = items[0]
                 if (
                     isNonNullable(item) &&
@@ -379,7 +379,7 @@ describe('FilterBoxQuickPickPrompter', function () {
                     hasKey(item, 'invalidSelection') &&
                     item.invalidSelection
                 ) {
-                    picker.onDidChangeActive(items => {
+                    picker.onDidChangeActive((items) => {
                         if (items.length > 0) {
                             picker.acceptItem(items[0])
                         }

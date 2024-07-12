@@ -50,12 +50,12 @@ function verifyChildNodeCounts(
     expectedLoadMoreNodeCount: number
 ) {
     const provisionedNodes = childNodes.filter(
-        childNode => (childNode as RedshiftWarehouseNode).warehouseType === RedshiftWarehouseType.PROVISIONED
+        (childNode) => (childNode as RedshiftWarehouseNode).warehouseType === RedshiftWarehouseType.PROVISIONED
     )
     const serverlessNodes = childNodes.filter(
-        childNode => (childNode as RedshiftWarehouseNode).warehouseType === RedshiftWarehouseType.SERVERLESS
+        (childNode) => (childNode as RedshiftWarehouseNode).warehouseType === RedshiftWarehouseType.SERVERLESS
     )
-    const loadMoreNodes = childNodes.filter(childNode => childNode instanceof MoreResultsNode)
+    const loadMoreNodes = childNodes.filter((childNode) => childNode instanceof MoreResultsNode)
     assert.strictEqual(
         childNodes.length,
         expectedProvisionedNodeCount + expectedServerlessNodeCount + expectedLoadMoreNodeCount,
@@ -95,8 +95,8 @@ describe('redshiftNode', function () {
             redshiftClient = new DefaultRedshiftClient(
                 'us-east-1',
                 undefined,
-                async r => Promise.resolve(mockRedshift),
-                async r => Promise.resolve(mockRedshiftServerless)
+                async (r) => Promise.resolve(mockRedshift),
+                async (r) => Promise.resolve(mockRedshiftServerless)
             )
             mockRedshift.describeClusters = describeClustersStub
             mockRedshiftServerless.listWorkgroups = listWorkgroupsStub

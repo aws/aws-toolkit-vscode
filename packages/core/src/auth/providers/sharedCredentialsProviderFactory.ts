@@ -49,7 +49,7 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
 
         const result = await loadSharedCredentialsSections()
         if (result.errors.length > 0) {
-            const errors = result.errors.map(e => e.message).join('\t\n')
+            const errors = result.errors.map((e) => e.message).join('\t\n')
             getLogger().warn(`credentials: errors while parsing:\n%s`, errors)
         }
 
@@ -57,7 +57,9 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
         this.loadedConfigModificationMillis = await this.getLastModifiedMillis(getConfigFilename())
         await updateAwsSdkLoadConfigEnvVar()
 
-        getLogger().verbose(`credentials: found sections: ${result.sections.map(s => `${s.type}:${s.name}`).join(' ')}`)
+        getLogger().verbose(
+            `credentials: found sections: ${result.sections.map((s) => `${s.type}:${s.name}`).join(' ')}`
+        )
         for (const section of result.sections) {
             if (section.type === 'profile') {
                 await this.addProviderIfValid(

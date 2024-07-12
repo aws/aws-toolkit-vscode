@@ -29,7 +29,7 @@ export class ImportAdderProvider implements vscode.CodeLensProvider {
     static #instance: ImportAdderProvider
 
     constructor() {
-        application().clearCodeWhispererUIListener(_ => {
+        application().clearCodeWhispererUIListener((_) => {
             this.clear()
         })
     }
@@ -55,14 +55,14 @@ export class ImportAdderProvider implements vscode.CodeLensProvider {
         ) {
             const line = findLineToInsertImportStatement(editor, firstLineOfRecommendation)
             let mergedStatements = ``
-            r.mostRelevantMissingImports?.forEach(async i => {
+            r.mostRelevantMissingImports?.forEach(async (i) => {
                 // trust service response that this to-be-added import is necessary
                 if (i.statement) {
                     mergedStatements += i.statement + '\n'
                 }
             })
             await editor.edit(
-                builder => {
+                (builder) => {
                     builder.insert(new vscode.Position(line, 0), mergedStatements)
                 },
                 { undoStopAfter: true, undoStopBefore: true }

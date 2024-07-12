@@ -74,7 +74,7 @@ describe.skip('GitExtension', function () {
         }
 
         // API may not be initialized by the time this test starts
-        await new Promise<string | void>(r => (git.$api.state === 'initialized' ? r() : git.$api.onDidChangeState(r)))
+        await new Promise<string | void>((r) => (git.$api.state === 'initialized' ? r() : git.$api.onDidChangeState(r)))
         await initConfig()
 
         // realpath is used in case of symlinks
@@ -102,7 +102,7 @@ describe.skip('GitExtension', function () {
     it('can detect opening a repository', async function () {
         const newRepoUri = vscode.Uri.file(await realpath(await makeTemporaryToolkitFolder()))
         const onOpen = new Promise<Repository>((resolve, reject) => {
-            git.onDidOpenRepository(repo => {
+            git.onDidOpenRepository((repo) => {
                 if (repo.rootUri.fsPath === newRepoUri.fsPath) {
                     resolve(repo)
                 }
@@ -115,12 +115,12 @@ describe.skip('GitExtension', function () {
     })
 
     it('can detect changed branch', async function () {
-        const wrapped = (await git.getRepositories()).find(r => r.rootUri.fsPath === testRepo.rootUri.fsPath)
+        const wrapped = (await git.getRepositories()).find((r) => r.rootUri.fsPath === testRepo.rootUri.fsPath)
         if (!wrapped) {
             throw new Error('Failed to find repository')
         }
         const checkBranch = new Promise<GitTypes.Branch | undefined>((resolve, reject) => {
-            wrapped.onDidChangeBranch(branch => {
+            wrapped.onDidChangeBranch((branch) => {
                 resolve(branch)
             })
             setTimeout(() => reject(new Error('Timed out waiting for branch to change')), testTimeout)
@@ -136,10 +136,10 @@ describe.skip('GitExtension', function () {
 
     it('can list remotes and branches', async function () {
         const targetBranch = `${testRemoteName}/${testRemoteBranch}`
-        const remote = (await git.getRemotes()).find(r => r.name === testRemoteName)
+        const remote = (await git.getRemotes()).find((r) => r.name === testRemoteName)
         assert.ok(remote, `Did not find "${testRemoteName}" in list of remotes`)
         await testRepo.fetch({ remote: testRemoteName, ref: testRemoteBranch }).catch(parseGitError)
-        const branch = (await git.getBranchesForRemote(remote)).find(branch => branch.name === targetBranch)
+        const branch = (await git.getBranchesForRemote(remote)).find((branch) => branch.name === targetBranch)
         assert.ok(branch, `Failed to find "${targetBranch}" associated with remote`)
     })
 
@@ -162,11 +162,11 @@ describe.skip('GitExtension', function () {
         this.timeout(listRemoteTimeout)
         const result = await git.listAllRemoteFiles({ fetchUrl: testRemoteUrl, branch: testRemoteHead })
 
-        const readme = result.files.find(f => f.name === 'NOTICE')
+        const readme = result.files.find((f) => f.name === 'NOTICE')
         assert.ok(readme, 'Expected to find NOTICE file in repository root')
         const contents = await readme.read()
         assert.ok(contents.startsWith('AWS Vscode Toolkit'))
-        const extension = result.files.find(f => f.name === 'src/extension.ts')
+        const extension = result.files.find((f) => f.name === 'src/extension.ts')
         assert.ok(extension, 'Expected to find "extension.ts" under "src"')
 
         if (!result.stats.downloadSize) {

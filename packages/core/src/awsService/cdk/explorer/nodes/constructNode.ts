@@ -53,8 +53,8 @@ export class ConstructNode implements TreeNode {
 
 export function generateConstructNodes(app: CdkAppLocation, children: NonNullable<ConstructTreeEntity['children']>) {
     return Object.values(children)
-        .filter(c => treeInspector.includeConstructInTree(c))
-        .map(c => new ConstructNode(app, c))
+        .filter((c) => treeInspector.includeConstructInTree(c))
+        .map((c) => new ConstructNode(app, c))
 }
 
 /**

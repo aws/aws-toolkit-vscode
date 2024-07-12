@@ -78,7 +78,7 @@ export class ApplicationComposer {
 
         // Handle messages from the webview
         this.disposables.push(
-            panel.webview.onDidReceiveMessage(message =>
+            panel.webview.onDidReceiveMessage((message) =>
                 handleMessage(message, {
                     panel: panel,
                     textDocument: textDocument,
@@ -98,7 +98,7 @@ export class ApplicationComposer {
             }
             this.isPanelDisposed = true
             this.onVisualizationDisposeEmitter.fire()
-            this.disposables.forEach(disposable => {
+            this.disposables.forEach((disposable) => {
                 disposable.dispose()
             })
             this.onVisualizationDisposeEmitter.dispose()

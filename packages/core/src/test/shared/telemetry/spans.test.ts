@@ -107,7 +107,7 @@ describe('TelemetryTracer', function () {
         })
 
         it('does not clobber subsequent writes to individual spans', function () {
-            tracer.run(metricName, span => {
+            tracer.run(metricName, (span) => {
                 tracer.record({ source: 'bar' })
                 span.record({ source: 'foo' })
             })
@@ -156,7 +156,7 @@ describe('TelemetryTracer', function () {
         })
 
         it('does not change the active span when using a different span', function () {
-            tracer.run(metricName, span => {
+            tracer.run(metricName, (span) => {
                 tracer.vscode_executeCommand.record({ command: 'foo', debounceCount: 1 })
                 assert.strictEqual(tracer.activeSpan, span)
             })
@@ -168,7 +168,7 @@ describe('TelemetryTracer', function () {
 
     describe('increment()', function () {
         it('starts at 0 for uninitialized fields', function () {
-            tracer.vscode_executeCommand.run(span => {
+            tracer.vscode_executeCommand.run((span) => {
                 span.record({ command: 'foo' })
                 span.increment({ debounceCount: 1 })
                 span.increment({ debounceCount: 1 })
@@ -182,15 +182,15 @@ describe('TelemetryTracer', function () {
         })
 
         it('applies to spans independently from one another', function () {
-            tracer.vscode_executeCommand.run(span => {
+            tracer.vscode_executeCommand.run((span) => {
                 span.record({ debounceCount: 1 })
                 span.increment({ debounceCount: 1 })
-                tracer.vscode_executeCommand.run(span => {
+                tracer.vscode_executeCommand.run((span) => {
                     span.increment({ debounceCount: 10 })
                 })
             })
 
-            const metrics = getMetrics('vscode_executeCommand').map(m => selectFrom(m, 'debounceCount'))
+            const metrics = getMetrics('vscode_executeCommand').map((m) => selectFrom(m, 'debounceCount'))
             assert.deepStrictEqual(metrics[0], { debounceCount: '10' })
             assert.deepStrictEqual(metrics[1], { debounceCount: '2' })
         })
@@ -204,13 +204,13 @@ describe('TelemetryTracer', function () {
         })
 
         it('sets the active span', function () {
-            const checkSpan = () => tracer.run(metricName, span => assert.strictEqual(tracer.activeSpan, span))
+            const checkSpan = () => tracer.run(metricName, (span) => assert.strictEqual(tracer.activeSpan, span))
 
             assert.doesNotThrow(checkSpan)
         })
 
         it('uses a span over a telemetry metric', function () {
-            tracer.run(metricName, span => span.record({ source: 'bar' }))
+            tracer.run(metricName, (span) => span.record({ source: 'bar' }))
 
             assertTelemetry(metricName, { result: 'Succeeded', source: 'bar' })
         })
@@ -239,10 +239,10 @@ describe('TelemetryTracer', function () {
             const nestedName = 'nested_metric' as MetricName
 
             it('can record metadata in nested spans', function () {
-                tracer.run(metricName, span1 => {
+                tracer.run(metricName, (span1) => {
                     span1.record({ source: 'bar' })
 
-                    tracer.run(nestedName, span2 => {
+                    tracer.run(nestedName, (span2) => {
                         span1.record({ attempts: 1 })
                         span2.record({ source: 'foo' })
                     })
@@ -276,7 +276,7 @@ describe('TelemetryTracer', function () {
                 tracer.run(metricName, () => {
                     tracer.run(metricName, () => {
                         assert.strictEqual(tracer.spans.length, 2)
-                        assert.ok(tracer.spans.every(s => s.name === metricName))
+                        assert.ok(tracer.spans.every((s) => s.name === metricName))
                     })
                 })
             })

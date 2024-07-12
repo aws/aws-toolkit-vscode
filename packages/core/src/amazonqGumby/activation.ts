@@ -22,7 +22,7 @@ export async function activate(context: ExtContext) {
     new ProposedTransformationExplorer(context.extensionContext)
     // Register an activation event listener to determine when the IDE opens, closes or users
     // select to open a new workspace
-    const workspaceChangeEvent = vscode.workspace.onDidChangeWorkspaceFolders(event => {
+    const workspaceChangeEvent = vscode.workspace.onDidChangeWorkspaceFolders((event) => {
         // A loophole to register the IDE closed. This is when no folders were added nor
         // removed, but the event still fired. This assumes the user closed the workspace
         if (event.added.length === 0 && event.removed.length === 0) {

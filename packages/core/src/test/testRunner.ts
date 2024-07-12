@@ -95,7 +95,7 @@ export async function runTests(
 
     // The `require` option for Mocha isn't working for some reason (maybe user error?)
     // So instead we are loading the modules ourselves and registering the relevant hooks
-    initTests.forEach(relativePath => {
+    initTests.forEach((relativePath) => {
         const fullPath = path.join(dist, relativePath).replace('.ts', '.js')
         if (!fs.pathExistsSync(fullPath)) {
             console.error(`error: missing ${fullPath}`)
@@ -115,9 +115,9 @@ export async function runTests(
     })
 
     function runMocha(files: string[]): Promise<void> {
-        files.forEach(f => mocha.addFile(path.resolve(dist, f)))
+        files.forEach((f) => mocha.addFile(path.resolve(dist, f)))
         return new Promise<void>((resolve, reject) => {
-            mocha.run(failures => {
+            mocha.run((failures) => {
                 if (failures > 0) {
                     reject(new Error(`${failures} tests failed.`))
                 } else {

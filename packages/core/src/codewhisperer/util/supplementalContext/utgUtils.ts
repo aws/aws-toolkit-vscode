@@ -175,7 +175,7 @@ async function getRelevantUtgFiles(editor: vscode.TextEditor): Promise<string[]>
     const targetFile = editor.document.uri.fsPath
     const language = editor.document.languageId
 
-    return await getOpenFilesInWindow(async candidateFile => {
+    return await getOpenFilesInWindow(async (candidateFile) => {
         return (
             targetFile !== candidateFile &&
             path.extname(targetFile) === path.extname(candidateFile) &&

@@ -191,7 +191,7 @@ export async function activate(extensionContext: ExtensionContext) {
     let savedDocument: vscode.Uri | undefined = undefined
 
     toDispose.push(
-        vscode.workspace.onDidSaveTextDocument(document => {
+        vscode.workspace.onDidSaveTextDocument((document) => {
             if (document.uri.scheme !== 'file') {
                 return
             }
@@ -199,7 +199,7 @@ export async function activate(extensionContext: ExtensionContext) {
         })
     )
     toDispose.push(
-        vscode.window.onDidChangeActiveTextEditor(editor => {
+        vscode.window.onDidChangeActiveTextEditor((editor) => {
             if (savedDocument && editor && editor.document.uri.fsPath !== savedDocument.fsPath) {
                 void LspClient.instance.updateIndex(savedDocument.fsPath)
             }

@@ -32,7 +32,7 @@ describe('deleteTag', function () {
     })
 
     it('confirms deletion, deletes file, shows status bar confirmation, and refreshes parent node', async function () {
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Delete')?.select())
         const stub = sandbox.stub(ecr, 'deleteTag').callsFake(async (name, tag) => {
             assert.strictEqual(name, repositoryName)
             assert.strictEqual(tag, tagName)
@@ -50,7 +50,7 @@ describe('deleteTag', function () {
     })
 
     it('does nothing when deletion is cancelled', async function () {
-        getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
+        getTestWindow().onDidShowMessage((m) => m.selectItem('Cancel'))
         const spy = sandbox.spy(ecr, 'deleteTag')
 
         await deleteTag(node)
@@ -67,7 +67,7 @@ describe('deleteTag', function () {
             throw new Error('network broke')
         })
 
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Delete')?.select())
 
         await deleteTag(node)
 

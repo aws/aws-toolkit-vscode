@@ -64,7 +64,7 @@ export class S3FileProvider implements FileProvider {
     }
 
     public async read(): Promise<Uint8Array> {
-        return telemetry.s3_downloadObject.run(span => {
+        return telemetry.s3_downloadObject.run((span) => {
             span.record({ component: 'viewer' })
 
             const result = downloadFile(this._file, {
@@ -90,7 +90,7 @@ export class S3FileProvider implements FileProvider {
     }
 
     public async write(content: Uint8Array): Promise<void> {
-        return telemetry.s3_uploadObject.run(async span => {
+        return telemetry.s3_uploadObject.run(async (span) => {
             span.record({ component: 'viewer' })
 
             const mimeType = mime.contentType(path.extname(this._file.name)) || undefined
@@ -101,7 +101,7 @@ export class S3FileProvider implements FileProvider {
                     bucketName: this._file.bucket.name,
                     contentType: this._file.ContentType ?? mimeType,
                 })
-                .then(u => u.promise())
+                .then((u) => u.promise())
 
             this.updateETag(result.ETag)
             this._file.lastModified = new Date()
@@ -135,20 +135,20 @@ export class S3FileViewerManager {
 
     /** Disposes all active editors and underlying files. */
     public async closeEditors(): Promise<void> {
-        await Promise.all(Object.values(this.activeTabs).map(v => v?.dispose()))
+        await Promise.all(Object.values(this.activeTabs).map((v) => v?.dispose()))
     }
 
     /** Disposes all active editors, underlying files, providers, and other resources. */
     public async dispose(): Promise<void> {
         await Promise.all([
-            ...Object.values(this.activeTabs).map(v => v?.dispose()),
-            ...Object.values(this.providers).map(v => v?.dispose()),
+            ...Object.values(this.activeTabs).map((v) => v?.dispose()),
+            ...Object.values(this.providers).map((v) => v?.dispose()),
         ])
         vscode.Disposable.from(...this.disposables).dispose()
     }
 
     private registerTabCleanup(): vscode.Disposable {
-        return vscode.workspace.onDidCloseTextDocument(async doc => {
+        return vscode.workspace.onDidCloseTextDocument(async (doc) => {
             const key = this.fs.uriToKey(doc.uri)
             await this.activeTabs[key]?.dispose()
         })
@@ -170,7 +170,7 @@ export class S3FileViewerManager {
             if (!contentType || mime.charset(contentType) !== 'UTF-8') {
                 await vscode.commands.executeCommand('vscode.open', fileUri)
                 return vscode.window.visibleTextEditors.find(
-                    e => this.fs.uriToKey(e.document.uri) === this.fs.uriToKey(fileUri)
+                    (e) => this.fs.uriToKey(e.document.uri) === this.fs.uriToKey(fileUri)
                 )
             }
 
@@ -184,8 +184,8 @@ export class S3FileViewerManager {
     private async closeEditor(editor: vscode.TextEditor | undefined): Promise<void> {
         if (editor && !editor.document.isClosed) {
             await vscode.window.showTextDocument(editor.document, { preserveFocus: false }).then(
-                r => vscode.commands.executeCommand('workbench.action.closeActiveEditor'),
-                e => {
+                (r) => vscode.commands.executeCommand('workbench.action.closeActiveEditor'),
+                (e) => {
                     getLogger().warn('S3FileViewer: showTextDocument failed to open: "%s"', editor.document.uri)
                 }
             )
@@ -358,7 +358,7 @@ export class S3FileViewerManager {
         const dontShow = localize('AWS.s3.fileViewer.button.dismiss', "Don't show again")
         const help = localize('AWS.generic.message.learnMore', 'Learn more')
 
-        await vscode.window.showWarningMessage(message, dontShow, help).then<unknown>(selection => {
+        await vscode.window.showWarningMessage(message, dontShow, help).then<unknown>((selection) => {
             if (selection === dontShow) {
                 return this.settings.disablePrompt(promptOnEditKey)
             }

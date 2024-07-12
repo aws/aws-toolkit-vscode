@@ -63,7 +63,7 @@ export class KeyStrokeHandler {
             }
 
             this.invokeAutomatedTrigger('IdleTime', editor, client, config, event)
-                .catch(e => {
+                .catch((e) => {
                     getLogger().error('invokeAutomatedTrigger failed: %s', (e as Error).message)
                 })
                 .finally(() => {

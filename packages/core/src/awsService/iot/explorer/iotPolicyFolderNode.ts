@@ -29,7 +29,7 @@ const certPreviewLength = 8
  * Represents the group of all IoT Policies.
  */
 export class IotPolicyFolderNode extends AWSTreeNodeBase implements LoadMoreNode {
-    private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
+    private readonly childLoader = new ChildNodeLoader(this, (token) => this.loadPage(token))
 
     public constructor(
         public readonly iot: IotClient,
@@ -69,14 +69,14 @@ export class IotPolicyFolderNode extends AWSTreeNodeBase implements LoadMoreNode
         })
         const newPolicies =
             response.policies
-                ?.filter(policy => policy.policyArn && policy.policyName)
+                ?.filter((policy) => policy.policyArn && policy.policyName)
                 .map(
-                    async policy =>
+                    async (policy) =>
                         new IotPolicyWithVersionsNode(
                             { arn: policy.policyArn!, name: policy.policyName! },
                             this,
                             this.iot,
-                            (await this.iot.listPolicyTargets({ policyName: policy.policyName! })).map(certId =>
+                            (await this.iot.listPolicyTargets({ policyName: policy.policyName! })).map((certId) =>
                                 certId.slice(-certIdLength, -certIdLength + certPreviewLength)
                             )
                         )

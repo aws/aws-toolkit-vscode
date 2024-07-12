@@ -39,7 +39,7 @@ describe('RegionNode', function () {
 
         const childNodes = await regionNode.getChildren()
         assert.ok(
-            childNodes.filter(node => node instanceof SchemasNode).length === 0,
+            childNodes.filter((node) => node instanceof SchemasNode).length === 0,
             'Expected Schemas node to be absent from child nodes'
         )
     })

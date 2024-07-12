@@ -188,7 +188,7 @@ export function isDifferentVersion(context: vscode.ExtensionContext, currVersion
  * @param context VS Code Extension Context
  */
 export function setMostRecentVersion(context: vscode.ExtensionContext): void {
-    context.globalState.update(mostRecentVersionKey, extensionVersion).then(undefined, e => {
+    context.globalState.update(mostRecentVersionKey, extensionVersion).then(undefined, (e) => {
         getLogger().error('globalState.update() failed: %s', (e as Error).message)
     })
 }
@@ -354,7 +354,7 @@ export class UserActivity implements vscode.Disposable {
         )
 
         if (customEvents) {
-            customEvents.forEach(event =>
+            customEvents.forEach((event) =>
                 this.register(
                     event(() => {
                         throttledEmit(event)
@@ -384,7 +384,7 @@ export class UserActivity implements vscode.Disposable {
             vscode.window.onDidChangeTextEditorViewColumn,
         ]
 
-        activityEvents.forEach(event =>
+        activityEvents.forEach((event) =>
             this.register(
                 event(() => {
                     throttledEmit(event)
@@ -397,7 +397,7 @@ export class UserActivity implements vscode.Disposable {
         //
 
         this.register(
-            vscode.window.onDidChangeWindowState(e => {
+            vscode.window.onDidChangeWindowState((e) => {
                 if ((e as any).active === false || e.focused === false) {
                     return
                 }
@@ -406,7 +406,7 @@ export class UserActivity implements vscode.Disposable {
         )
 
         this.register(
-            vscode.workspace.onDidChangeTextDocument(e => {
+            vscode.workspace.onDidChangeTextDocument((e) => {
                 const activeUri = vscode.window.activeTextEditor?.document?.uri?.toString()
                 if (!activeUri || activeUri !== e.document.uri?.toString() || e.document.uri.scheme === 'output') {
                     // User is not editing this document, or document is an Output channel.
@@ -417,7 +417,7 @@ export class UserActivity implements vscode.Disposable {
         )
 
         this.register(
-            vscode.workspace.onDidOpenTextDocument(e => {
+            vscode.workspace.onDidOpenTextDocument((e) => {
                 const activeUri = vscode.window.activeTextEditor?.document?.uri?.toString()
                 if (!activeUri || activeUri !== e.uri?.toString() || e.uri.scheme === 'output') {
                     // User is not editing this document, or document is an Output channel.
@@ -428,7 +428,7 @@ export class UserActivity implements vscode.Disposable {
         )
 
         this.register(
-            vscode.window.onDidChangeTextEditorSelection(e => {
+            vscode.window.onDidChangeTextEditorSelection((e) => {
                 if (e.textEditor.document.uri.scheme === 'output') {
                     // Document is an Output channel, which may autoscroll.
                     return
@@ -438,7 +438,7 @@ export class UserActivity implements vscode.Disposable {
         )
 
         this.register(
-            vscode.window.onDidChangeTextEditorVisibleRanges(e => {
+            vscode.window.onDidChangeTextEditorVisibleRanges((e) => {
                 if (e.textEditor.document.uri.scheme === 'output') {
                     // Document is an Output channel, which may autoscroll.
                     return
@@ -453,6 +453,6 @@ export class UserActivity implements vscode.Disposable {
     }
 
     dispose() {
-        this.disposables.forEach(d => d.dispose())
+        this.disposables.forEach((d) => d.dispose())
     }
 }

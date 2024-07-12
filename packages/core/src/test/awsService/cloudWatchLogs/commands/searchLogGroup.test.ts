@@ -40,7 +40,7 @@ describe('searchLogGroup', async function () {
 
         it('prompts for filterPattern and accepts input', async function () {
             const testInput = 'this is my filterPattern'
-            getTestWindow().onDidShowInputBox(input => {
+            getTestWindow().onDidShowInputBox((input) => {
                 // assert.strictEqual(input.prompt, '...')
                 // assert.strictEqual(input.placeholder, '...')
                 input.acceptValue(testInput)
@@ -75,7 +75,7 @@ describe('searchLogGroup', async function () {
         describe('custom date input', async function () {
             it('accepts valid date (YYYY/MM/DD-YYYY/MM/DD)', async function () {
                 const validInput = '2000/10/06-2001/11/08'
-                getTestWindow().onDidShowInputBox(input => {
+                getTestWindow().onDidShowInputBox((input) => {
                     input.acceptValue(validInput)
                 })
                 const customTimeRangePrompter = testTimeRangeMenu.createDateBox()
@@ -106,11 +106,11 @@ describe('searchLogGroup', async function () {
             // Has previous selection range from Jan 1st to Jan 10th
             const prompter = new TimeFilterSubmenu({ startTime: january1st, endTime: january10th })
 
-            getTestWindow().onDidShowQuickPick(input => {
+            getTestWindow().onDidShowQuickPick((input) => {
                 input.acceptItem('Custom time range')
             })
 
-            getTestWindow().onDidShowInputBox(input => {
+            getTestWindow().onDidShowInputBox((input) => {
                 // Should be our previously selected range
                 input.acceptValue(input.value)
             })

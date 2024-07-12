@@ -27,7 +27,7 @@ describe('compareSamLambdaRuntime', async function () {
         { lowerRuntime: 'nodejs14.x (Image)', higherRuntime: 'nodejs16.x' },
     ]
 
-    scenarios.forEach(scenario => {
+    scenarios.forEach((scenario) => {
         it(`${scenario.lowerRuntime} < ${scenario.higherRuntime}`, () => {
             assert.ok(compareSamLambdaRuntime(scenario.lowerRuntime, scenario.higherRuntime) < 0)
         })
@@ -40,7 +40,7 @@ describe('compareSamLambdaRuntime', async function () {
 
 describe('getDependencyManager', function () {
     it('all runtimes are handled', function () {
-        samZipLambdaRuntimes.forEach(runtime => {
+        samZipLambdaRuntimes.forEach((runtime) => {
             assert.ok(getDependencyManager(runtime))
         })
     })
@@ -57,7 +57,7 @@ describe('getFamily', function () {
         assert.strictEqual(getFamily('foo'), RuntimeFamily.Unknown)
     })
     it('handles all known runtimes', function () {
-        samZipLambdaRuntimes.forEach(runtime => {
+        samZipLambdaRuntimes.forEach((runtime) => {
             assert.notStrictEqual(getFamily(runtime), RuntimeFamily.Unknown)
         })
     })
@@ -146,7 +146,7 @@ describe('getNodeMajorVersion()', () => {
     })
 
     describe('extracts a version from existing runtimes', function () {
-        nodeJsRuntimes.forEach(versionString => {
+        nodeJsRuntimes.forEach((versionString) => {
             it(`extracts from runtime: "${versionString}"`, () => {
                 const version = getNodeMajorVersion(versionString)
                 assert(version !== undefined)

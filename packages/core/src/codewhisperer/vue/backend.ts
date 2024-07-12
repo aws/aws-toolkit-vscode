@@ -41,8 +41,8 @@ export class CodeWhispererWebview extends VueWebview {
         const localFilePath = this.getLocalFilePath(fileName)
         if ((await fs.existsFile(localFilePath)) && this.isFileSaved) {
             const fileUri = vscode.Uri.file(localFilePath)
-            await vscode.workspace.openTextDocument(fileUri).then(async doc => {
-                await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active).then(editor => {
+            await vscode.workspace.openTextDocument(fileUri).then(async (doc) => {
+                await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active).then((editor) => {
                     const endOfDocument = new vscode.Position(
                         doc.lineCount - 1,
                         doc.lineAt(doc.lineCount - 1).text.length
@@ -61,8 +61,8 @@ export class CodeWhispererWebview extends VueWebview {
             await fs.writeFile(localFilePath, fileContent)
             this.isFileSaved = true
             // Opening the text document
-            await vscode.workspace.openTextDocument(localFilePath).then(async doc => {
-                await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active).then(editor => {
+            await vscode.workspace.openTextDocument(localFilePath).then(async (doc) => {
+                await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active).then((editor) => {
                     // Set the selection to the end of the document
                     const endOfDocument = new vscode.Position(
                         doc.lineCount - 1,

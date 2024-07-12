@@ -92,7 +92,7 @@ export const builderIdStartUrl = 'https://view.awsapps.com/start'
 export const trustedDomainCancellation = 'TrustedDomainCancellation'
 
 const tryOpenHelpUrl = (url: vscode.Uri) =>
-    openUrl(url).catch(e => getLogger().verbose('auth: failed to open help URL: %s', e))
+    openUrl(url).catch((e) => getLogger().verbose('auth: failed to open help URL: %s', e))
 
 export function truncateStartUrl(startUrl: string) {
     return startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? startUrl

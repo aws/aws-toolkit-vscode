@@ -116,7 +116,7 @@ export class AsyncCloudFormationTemplateRegistry {
                 this.isSetup = true
                 cancelSetup.dispose()
             },
-            e => {
+            (e) => {
                 getLogger().error('AsyncCloudFormationTemplateRegistry: setupPromise failed: %s', (e as Error).message)
             }
         )
@@ -138,8 +138,8 @@ export function getResourcesForHandler(
     unfilteredTemplates: WatchedItem<CloudFormation.Template>[]
 ): { templateDatum: WatchedItem<CloudFormation.Template>; name: string; resourceData: CloudFormation.Resource }[] {
     // TODO: Array.flat and Array.flatMap not introduced until >= Node11.x -- migrate when VS Code updates Node ver
-    const o = unfilteredTemplates.map(templateDatum => {
-        return getResourcesForHandlerFromTemplateDatum(filepath, handler, templateDatum).map(resource => {
+    const o = unfilteredTemplates.map((templateDatum) => {
+        return getResourcesForHandlerFromTemplateDatum(filepath, handler, templateDatum).map((resource) => {
             return {
                 ...resource,
                 templateDatum,

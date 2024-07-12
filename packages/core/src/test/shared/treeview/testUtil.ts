@@ -37,7 +37,7 @@ export async function assertChildren(model: Node, ...expected: Matcher[]): Promi
     const children = await resolveNode(model).getChildren?.()
     assert.ok(children, 'Expected tree node to have children')
 
-    const items = await Promise.all(children.map(child => child.getTreeItem()))
+    const items = await Promise.all(children.map((child) => child.getTreeItem()))
     const matched = items.map((item, i) => applyMatcher(item, expected[i]))
     assert.deepStrictEqual(matched, expected)
 }

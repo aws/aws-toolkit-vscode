@@ -17,7 +17,7 @@ import { prepareCommand } from './util'
 function createValidTaskFilter(containerName: string) {
     return function (t: ECS.Task): t is ECS.Task & { taskArn: string } {
         const managed = !!t.containers?.find(
-            c => c?.name === containerName && c.managedAgents?.find(a => a.name === 'ExecuteCommandAgent')
+            (c) => c?.name === containerName && c.managedAgents?.find((a) => a.name === 'ExecuteCommandAgent')
         )
 
         return t.taskArn !== undefined && managed
@@ -90,7 +90,7 @@ export class Service {
         const containers = definition.containerDefinitions ?? []
 
         return containers.map(
-            c =>
+            (c) =>
                 new Container(this.client, this.description.serviceName!, {
                     ...c,
                     enableExecuteCommand: this.description.enableExecuteCommand,
@@ -142,7 +142,7 @@ export class Service {
                 listResources: async () => {
                     const containers = await this.listContainers()
 
-                    return containers.map(c => c.toTreeNode())
+                    return containers.map((c) => c.toTreeNode())
                 },
             },
         })
@@ -160,7 +160,7 @@ export class Cluster {
     public listServices(): AsyncCollection<Service[]> {
         return this.client
             .listServices({ cluster: this.cluster.clusterArn! })
-            .map(services => services.map(s => new Service(this.client, s)))
+            .map((services) => services.map((s) => new Service(this.client, s)))
     }
 
     public getTreeItem() {
@@ -177,7 +177,7 @@ export class Cluster {
             placeholder: localize('AWS.explorerNode.ecs.noContainers', '[No Containers found]'),
             childrenProvider: {
                 paginated: true,
-                listResources: () => this.listServices().map(services => services.map(s => s.toTreeNode())),
+                listResources: () => this.listServices().map((services) => services.map((s) => s.toTreeNode())),
             },
         })
     }
@@ -195,7 +195,7 @@ class Ecs {
     }
 
     public listClusters(): AsyncCollection<Cluster[]> {
-        return this.client.listClusters().map(clusters => clusters.map(c => new Cluster(this.client, c)))
+        return this.client.listClusters().map((clusters) => clusters.map((c) => new Cluster(this.client, c)))
     }
 }
 
@@ -206,7 +206,7 @@ export function getEcsRootNode(region: string) {
         placeholder: localize('AWS.explorerNode.ecs.noClusters', '[No Clusters found]'),
         childrenProvider: {
             paginated: true,
-            listResources: () => controller.listClusters().map(clusters => clusters.map(c => c.toTreeNode())),
+            listResources: () => controller.listClusters().map((clusters) => clusters.map((c) => c.toTreeNode())),
         },
     })
 }

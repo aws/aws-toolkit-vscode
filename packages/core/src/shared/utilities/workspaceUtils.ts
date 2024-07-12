@@ -49,8 +49,8 @@ export class GitIgnoreFilter {
     }
 
     public filterFiles(files: vscode.Uri[]) {
-        return files.filter(file =>
-            this.acceptors.every(acceptor => {
+        return files.filter((file) =>
+            this.acceptors.every((acceptor) => {
                 if (!isInDirectory(acceptor.folderPath, file.fsPath)) {
                     // .gitignore file is responsible only for it's subfolders
                     return true
@@ -103,11 +103,13 @@ export async function addFolderToWorkspace(
 
     try {
         // Wait for the WorkspaceFolders changed notification for the folder of interest before returning to caller
-        return await new Promise<boolean>(resolve => {
+        return await new Promise<boolean>((resolve) => {
             vscode.workspace.onDidChangeWorkspaceFolders(
-                workspaceFoldersChanged => {
+                (workspaceFoldersChanged) => {
                     if (
-                        workspaceFoldersChanged.added.some(addedFolder => addedFolder.uri.fsPath === folder.uri.fsPath)
+                        workspaceFoldersChanged.added.some(
+                            (addedFolder) => addedFolder.uri.fsPath === folder.uri.fsPath
+                        )
                     ) {
                         resolve(true)
                     }
@@ -156,12 +158,12 @@ export async function findParentProjectFile(
     }
 
     const workspaceProjectFiles = globals.codelensRootRegistry.items
-        .filter(item => item.item.match(projectFile))
-        .map(item => item.path)
+        .filter((item) => item.item.match(projectFile))
+        .map((item) => item.path)
 
     // Use the project file "closest" in the parent chain to sourceCodeUri
     const parentProjectFiles = workspaceProjectFiles
-        .filter(uri => {
+        .filter((uri) => {
             const dirname = normalizedDirnameWithTrailingSlash(uri)
 
             return normalize(sourceCodeUri.fsPath).startsWith(dirname)
@@ -193,7 +195,7 @@ export async function openTextDocument(filenameGlob: vscode.GlobPattern): Promis
         return undefined
     }
     await vscode.commands.executeCommand('vscode.open', found[0])
-    const textDocument = vscode.workspace.textDocuments.find(o => o.uri.fsPath.includes(found[0].fsPath))
+    const textDocument = vscode.workspace.textDocuments.find((o) => o.uri.fsPath.includes(found[0].fsPath))
     return textDocument
 }
 
@@ -251,11 +253,11 @@ export function getWorkspaceParentDirectory(
  * This only checks text documents; the API does not expose webviews.
  */
 export function checkUnsavedChanges(): boolean {
-    return vscode.workspace.textDocuments.some(doc => doc.isDirty)
+    return vscode.workspace.textDocuments.some((doc) => doc.isDirty)
 }
 
 export function getExcludePattern(additionalPatterns: string[] = []) {
-    const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map(pattern => `**/${pattern}/*`)
+    const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map((pattern) => `**/${pattern}/*`)
     const extraPatterns = [
         '**/package-lock.json',
         '**/yarn.lock',
@@ -321,7 +323,7 @@ export async function collectFiles(
     const workspaceToPrefix = new Map<vscode.WorkspaceFolder, string>(
         workspaceFoldersMapping === undefined
             ? [[workspaceFolders[0], '']]
-            : Object.entries(workspaceFoldersMapping).map(value => [value[1], value[0]])
+            : Object.entries(workspaceFoldersMapping).map((value) => [value[1], value[0]])
     )
     const prefixWithFolderPrefix = (folder: vscode.WorkspaceFolder, path: string) => {
         const prefix = workspaceToPrefix.get(folder)
@@ -423,7 +425,7 @@ export function getWorkspaceFoldersByPrefixes(
     if (folders.length <= 1) {
         return undefined
     }
-    let remainingWorkspaceFoldersToMap = folders.map(f => ({
+    let remainingWorkspaceFoldersToMap = folders.map((f) => ({
         folder: f,
         preferredPrefixQueue: f.uri.fsPath
             .split(path.sep)

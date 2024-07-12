@@ -68,7 +68,7 @@ export abstract class Prompter<T> {
         }
 
         return (this.pending ??= this.promptUser()
-            .then(r => this.applyTransforms(r))
+            .then((r) => this.applyTransforms(r))
             .finally(() => {
                 this.disposed = true
             }))

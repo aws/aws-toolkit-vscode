@@ -86,11 +86,11 @@ export async function createWizardTester<T extends Partial<T>>(wizard: Wizard<T>
     }
 
     function showableChildren(parent: string): string[] {
-        return form.properties.filter(prop => prop !== parent && prop.startsWith(parent) && canShowPrompter(prop))
+        return form.properties.filter((prop) => prop !== parent && prop.startsWith(parent) && canShowPrompter(prop))
     }
 
     function getRelativeOrder(prop: string): number {
-        return form.properties.filter(prop => canShowPrompter(prop)).indexOf(prop)
+        return form.properties.filter((prop) => canShowPrompter(prop)).indexOf(prop)
     }
 
     function assertOrder(prop: string, expected: number): void {
@@ -113,7 +113,7 @@ export async function createWizardTester<T extends Partial<T>>(wizard: Wizard<T>
     function assertShowNone(prop: string): MockWizardFormElement<T>['assertDoesNotShowAny'] {
         return () => {
             const children = showableChildren(prop)
-            const message = children.map(p => p.replace(`${prop}.`, '')).join('\n\t')
+            const message = children.map((p) => p.replace(`${prop}.`, '')).join('\n\t')
 
             failIf(children.length !== 0, `Property "${prop}" would show the following:\n\t${message}`)
         }
@@ -164,7 +164,10 @@ export async function createWizardTester<T extends Partial<T>>(wizard: Wizard<T>
                             return assertValue(propPath)
                         case SHOW_COUNT:
                             return (count: number) =>
-                                assert.strictEqual(form.properties.filter(prop => canShowPrompter(prop)).length, count)
+                                assert.strictEqual(
+                                    form.properties.filter((prop) => canShowPrompter(prop)).length,
+                                    count
+                                )
                         default:
                             return Reflect.get(obj, prop, rec) ?? createFormWrapper([...path, prop.toString()])
                     }

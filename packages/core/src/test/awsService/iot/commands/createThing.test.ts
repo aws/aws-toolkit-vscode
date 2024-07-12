@@ -37,7 +37,7 @@ describe('createThingCommand', function () {
         })
         iot.createThing = createStub
 
-        getTestWindow().onDidShowInputBox(input => {
+        getTestWindow().onDidShowInputBox((input) => {
             assert.strictEqual(input.prompt, 'Enter a new Thing name')
             assert.strictEqual(input.placeholder, 'Thing Name')
             input.acceptValue(thingName)
@@ -55,14 +55,14 @@ describe('createThingCommand', function () {
     it('does nothing when prompt is cancelled', async function () {
         const createStub = sinon.stub()
         iot.createThing = createStub
-        getTestWindow().onDidShowInputBox(input => input.hide())
+        getTestWindow().onDidShowInputBox((input) => input.hide())
         await createThingCommand(node)
 
         assert(createStub.notCalled)
     })
 
     it('warns when thing name has invalid length', async function () {
-        getTestWindow().onDidShowInputBox(input => {
+        getTestWindow().onDidShowInputBox((input) => {
             input.acceptValue('')
             assert.strictEqual(input.validationMessage, 'Thing name must be between 1 and 128 characters long')
             input.hide()
@@ -71,7 +71,7 @@ describe('createThingCommand', function () {
     })
 
     it('warns when thing name has invalid characters', async function () {
-        getTestWindow().onDidShowInputBox(input => {
+        getTestWindow().onDidShowInputBox((input) => {
             input.acceptValue('illegal/characters')
             assert.strictEqual(
                 input.validationMessage,
@@ -86,7 +86,7 @@ describe('createThingCommand', function () {
         const createStub = sinon.stub().rejects()
         iot.createThing = createStub
 
-        getTestWindow().onDidShowInputBox(input => input.acceptValue(thingName))
+        getTestWindow().onDidShowInputBox((input) => input.acceptValue(thingName))
         await createThingCommand(node)
 
         getTestWindow()

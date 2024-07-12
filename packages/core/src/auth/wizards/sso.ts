@@ -37,7 +37,7 @@ export function createAccountPrompter(provider: SsoAccessTokenProvider, region: 
     }
 
     const client = SsoClient.create(region, provider)
-    const items = client.listAccounts({}).map(accounts => accounts.map(toItem))
+    const items = client.listAccounts({}).map((accounts) => accounts.map(toItem))
 
     return createQuickPick(items, {
         title: localize('AWS.sso.promptAccount.title', 'Select an account ({0})', region),
@@ -54,7 +54,7 @@ export function createRolePrompter(provider: SsoAccessTokenProvider, region: str
     }
 
     const client = SsoClient.create(region, provider)
-    const items = client.listAccountRoles({ accountId }).map(roles => roles.map(toItem))
+    const items = client.listAccountRoles({ accountId }).map((roles) => roles.map(toItem))
 
     return createQuickPick(items, {
         title: localize('AWS.sso.promptRole.title', 'Select a role in {0} ({1})', accountId, region),
@@ -94,22 +94,22 @@ export class SsoWizard extends Wizard<SsoWizardState> {
     public constructor(init: Partial<SsoProfile> = {}) {
         super({ initState: init })
 
-        this.form.region.bindPrompter(() => createRegionPrompter().transform(r => r.id))
+        this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id))
         this.form.startUrl.bindPrompter(createStartUrlPrompter)
 
         this.form.tokenProvider.bindPrompter(
             ({ region, startUrl }) => new TokenLoader({ region: region!, startUrl: startUrl!, scopes: init.scopes })
         )
 
-        this.form.accountId.bindPrompter(state => {
+        this.form.accountId.bindPrompter((state) => {
             // If we fail here, we should just abort the wizard
             // prevents having to write messy back-tracking logic
             assertHasProps(state, 'tokenProvider', 'region')
-            return createAccountPrompter(state.tokenProvider, state.region).transform(a => a.accountId)
+            return createAccountPrompter(state.tokenProvider, state.region).transform((a) => a.accountId)
         })
-        this.form.roleName.bindPrompter(state => {
+        this.form.roleName.bindPrompter((state) => {
             assertHasProps(state, 'tokenProvider', 'region', 'accountId')
-            return createRolePrompter(state.tokenProvider, state.region, state.accountId).transform(r => r.roleName)
+            return createRolePrompter(state.tokenProvider, state.region, state.accountId).transform((r) => r.roleName)
         })
     }
 }

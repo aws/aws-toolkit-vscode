@@ -185,7 +185,7 @@ export abstract class CommonAuthWebview extends VueWebview {
     abstract signout(): Promise<void>
 
     async listSsoConnections(): Promise<SsoConnection[]> {
-        return (await Auth.instance.listConnections()).filter(conn => isSsoConnection(conn)) as SsoConnection[]
+        return (await Auth.instance.listConnections()).filter((conn) => isSsoConnection(conn)) as SsoConnection[]
     }
 
     /**

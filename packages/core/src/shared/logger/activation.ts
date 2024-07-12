@@ -39,7 +39,7 @@ export async function activate(
         outputChannels: [logChannel],
         useConsoleLog: isWeb(),
     })
-    logChannel.onDidChangeLogLevel?.(logLevel => {
+    logChannel.onDidChangeLogLevel?.((logLevel) => {
         const newLogLevel = fromVscodeLogLevel(logLevel)
         mainLogger.setLogLevel(newLogLevel) // Also logs a message.
     })

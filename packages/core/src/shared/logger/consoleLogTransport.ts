@@ -32,7 +32,7 @@ export class ConsoleLogTransport extends TransportStream {
      *          for testing.
      */
     public override log(logEntry: LogEntry, next: () => void): Promise<void> {
-        const promise = new Promise<void>(resolve => {
+        const promise = new Promise<void>((resolve) => {
             // We use setImmediate to not block execution since
             // log order does not matter in this case
             globals.clock.setImmediate(() => {
