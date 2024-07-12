@@ -46,7 +46,7 @@ describe('downloadFileAsCommand', function () {
     })
 
     it('prompts for save location, downloads file with progress, and shows output channel', async function () {
-        getTestWindow().onDidShowDialog(dialog => {
+        getTestWindow().onDidShowDialog((dialog) => {
             assert.deepStrictEqual(dialog.filters, { 'All Files': ['*'], '*.jpg': ['jpg'] })
             assert.strictEqual(dialog.acceptButtonLabel, 'Download')
             dialog.accept()
@@ -69,14 +69,14 @@ describe('downloadFileAsCommand', function () {
     it('does nothing when prompt is cancelled', async function () {
         const stub = sinon.stub()
         s3.downloadFileStream = stub
-        getTestWindow().onDidShowDialog(d => d.close())
+        getTestWindow().onDidShowDialog((d) => d.close())
         await assert.rejects(() => downloadFileAsCommand(node), /cancelled/i)
 
         assert(stub.notCalled)
     })
 
     it('throws when download fails', async function () {
-        getTestWindow().onDidShowDialog(d => d.selectItem(saveLocation))
+        getTestWindow().onDidShowDialog((d) => d.selectItem(saveLocation))
         s3.downloadFileStream = sinon.stub().rejects(new Error('Expected failure'))
 
         await assert.rejects(() => downloadFileAsCommand(node, new MockOutputChannel()), /Failed to download/)

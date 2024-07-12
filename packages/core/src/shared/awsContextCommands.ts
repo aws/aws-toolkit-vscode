@@ -104,8 +104,8 @@ export class AwsContextCommands {
             return false // User canceled.
         }
 
-        const selected = result.map(res => res.detail).filter(isNonNullable)
-        if (selected.length !== currentRegions.size || selected.some(r => !currentRegions.has(r))) {
+        const selected = result.map((res) => res.detail).filter(isNonNullable)
+        if (selected.length !== currentRegions.size || selected.some((r) => !currentRegions.has(r))) {
             await this._regionProvider.updateExplorerRegions(selected)
             await vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
         }

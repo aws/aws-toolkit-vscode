@@ -97,7 +97,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         Commands.register('aws.resources.viewDocs', async (node: ResourceTypeNode) => {
             await openUrl(vscode.Uri.parse(node.metadata.documentation))
         }),
-        vscode.workspace.onDidChangeTextDocument(textDocumentEvent => {
+        vscode.workspace.onDidChangeTextDocument((textDocumentEvent) => {
             if (resourceDiagnostics.has(textDocumentEvent.document.uri)) {
                 let diagnostics: vscode.Diagnostic[] = []
                 const resource = resourceManager.fromUri(textDocumentEvent.document.uri)
@@ -110,7 +110,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 resourceDiagnostics.set(textDocumentEvent.document.uri, diagnostics)
             }
         }),
-        vscode.workspace.onDidCloseTextDocument(closeDocumentEvent => {
+        vscode.workspace.onDidCloseTextDocument((closeDocumentEvent) => {
             return resourceManager.close(closeDocumentEvent.uri, true)
         }),
         vscode.languages.registerCodeLensProvider(

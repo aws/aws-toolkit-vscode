@@ -166,7 +166,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         return {
             type: 'sso',
             identifier: sessionName,
-            scopes: scopes?.split(',').map(s => s.trim()),
+            scopes: scopes?.split(',').map((s) => s.trim()),
             startUrl: sessionData[SharedCredentialsKeys.SSO_START_URL],
             ssoRegion: sessionData[SharedCredentialsKeys.SSO_REGION] ?? defaultRegion,
         }
@@ -276,7 +276,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             profilesTraversed.push(profileName)
 
             // Missing reference
-            if (!this.sections.some(s => s.name === profileName && s.type === 'profile')) {
+            if (!this.sections.some((s) => s.name === profileName && s.type === 'profile')) {
                 return `Shared Credentials Profile ${profileName} not found. Reference chain: ${profilesTraversed.join(
                     ' -> '
                 )}`
@@ -395,13 +395,13 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         // So the workaround is to do give the SDK the merged profiles directly
         const profileSections = this.sections.filter(isProfileSection)
         const profiles = toRecord(
-            profileSections.map(s => s.name),
-            k => this.getProfile(k)
+            profileSections.map((s) => s.name),
+            (k) => this.getProfile(k)
         )
 
         return fromIni({
             profile: this.profileName,
-            mfaCodeProvider: async mfaSerial => await getMfaTokenFromUser(mfaSerial, this.profileName),
+            mfaCodeProvider: async (mfaSerial) => await getMfaTokenFromUser(mfaSerial, this.profileName),
             roleAssumer: assumeRole,
             loadedConfig: Promise.resolve({
                 credentialsFile: loadedCreds ?? profiles,

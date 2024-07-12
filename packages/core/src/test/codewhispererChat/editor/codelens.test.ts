@@ -115,7 +115,7 @@ describe('TryChatCodeLensProvider', () => {
             stub.restore()
         }
 
-        const testStates = Object.values(AuthStates).filter(s => s !== AuthStates.connected)
+        const testStates = Object.values(AuthStates).filter((s) => s !== AuthStates.connected)
         for (const state of testStates) {
             await testConnection(state)
         }

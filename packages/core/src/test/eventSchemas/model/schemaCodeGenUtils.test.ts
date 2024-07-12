@@ -56,7 +56,7 @@ describe('SchemaCodeGenUtils', async function () {
     ]
 
     describe('buildSchemaPackageName', async function () {
-        testScenarios.forEach(test => {
+        testScenarios.forEach((test) => {
             it(test.scenario, async () => {
                 const codeGen = new SchemaCodeGenUtils()
                 const result = codeGen.buildSchemaPackageName(test.input)

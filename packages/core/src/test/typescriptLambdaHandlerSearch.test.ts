@@ -89,7 +89,7 @@ describe('TypescriptLambdaHandlerSearch', function () {
     function assertCandidateHandlers(actual: RootlessLambdaHandlerCandidate[], expectedHandlerNames: Set<string>) {
         assert.strictEqual(actual.length, expectedHandlerNames.size)
         assert.strictEqual(
-            actual.map(handler => handler.handlerName).every(handlerName => expectedHandlerNames.has(handlerName)),
+            actual.map((handler) => handler.handlerName).every((handlerName) => expectedHandlerNames.has(handlerName)),
             true
         )
     }

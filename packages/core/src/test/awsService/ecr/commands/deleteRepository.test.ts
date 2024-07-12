@@ -31,12 +31,12 @@ describe('deleteRepositoryCommand', function () {
     })
 
     it('Confirms deletion, deletes repository, shows progress bar, and refreshes parent node', async function () {
-        getTestWindow().onDidShowInputBox(input => {
+        getTestWindow().onDidShowInputBox((input) => {
             assert.strictEqual(input.prompt, `Enter ${repositoryName} to confirm deletion`)
             assert.strictEqual(input.placeholder, repositoryName)
             input.acceptValue(repositoryName)
         })
-        const stub = sandbox.stub(ecr, 'deleteRepository').callsFake(async name => {
+        const stub = sandbox.stub(ecr, 'deleteRepository').callsFake(async (name) => {
             assert.strictEqual(name, repositoryName)
         })
 
@@ -48,7 +48,7 @@ describe('deleteRepositoryCommand', function () {
     })
 
     it('Does nothing when deletion is cancelled', async function () {
-        getTestWindow().onDidShowInputBox(input => input.hide())
+        getTestWindow().onDidShowInputBox((input) => input.hide())
         const spy = sandbox.spy(ecr, 'deleteRepository')
 
         await deleteRepository(node)
@@ -61,7 +61,7 @@ describe('deleteRepositoryCommand', function () {
             throw Error('Network busted')
         })
 
-        getTestWindow().onDidShowInputBox(input => input.acceptValue(repositoryName))
+        getTestWindow().onDidShowInputBox((input) => input.acceptValue(repositoryName))
         await deleteRepository(node)
 
         getTestWindow().getFirstMessage().assertError(`Failed to delete repository: ${repositoryName}`)
@@ -69,7 +69,7 @@ describe('deleteRepositoryCommand', function () {
     })
 
     it('Warns when confirmation is invalid', async function () {
-        getTestWindow().onDidShowInputBox(input => {
+        getTestWindow().onDidShowInputBox((input) => {
             input.acceptValue('something other than the repo name')
             assert.strictEqual(input.validationMessage, `Enter ${repositoryName} to confirm deletion`)
             input.hide()

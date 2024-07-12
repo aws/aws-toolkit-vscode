@@ -21,12 +21,12 @@ function tryGetValidFileEnvVar(envVar: string): string | undefined {
     if (envVal) {
         const f = resolve(envVal)
         fs.existsFile(f)
-            .then(r => {
+            .then((r) => {
                 if (!r) {
                     getLogger().error('$%s filepath is invalid (or is a directory): %O', envVar, f)
                 }
             })
-            .catch(e => getLogger().error(e))
+            .catch((e) => getLogger().error(e))
         return f
     }
 }

@@ -93,7 +93,7 @@ describe('lambda func url prompter', async () => {
         const prompter = createLambdaFuncUrlPrompter(configList)
         const tester = createQuickPickPrompterTester(prompter)
         tester.assertItems(
-            configList.map(c => {
+            configList.map((c) => {
                 return { label: c.FunctionArn, data: c.FunctionUrl } // order matters
             })
         )

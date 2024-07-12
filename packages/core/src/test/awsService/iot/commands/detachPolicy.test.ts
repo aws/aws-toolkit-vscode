@@ -34,7 +34,7 @@ describe('detachPolicyCommand', function () {
     it('confirms detach, detaches policy, and refreshes node', async function () {
         const stub = sinon.stub()
         iot.detachPolicy = stub
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Detach')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Detach')?.select())
         await detachPolicyCommand(node)
 
         getTestWindow().getFirstMessage().assertWarn('Are you sure you want to detach policy test-policy?')
@@ -45,7 +45,7 @@ describe('detachPolicyCommand', function () {
     it('does nothing when cancelled', async function () {
         const stub = sinon.stub()
         iot.detachPolicy = stub
-        getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
+        getTestWindow().onDidShowMessage((m) => m.selectItem('Cancel'))
         await detachPolicyCommand(node)
 
         assert(stub.notCalled)
@@ -55,7 +55,7 @@ describe('detachPolicyCommand', function () {
         const stub = sinon.stub().rejects()
         iot.detachPolicy = stub
 
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Detach')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Detach')?.select())
         await detachPolicyCommand(node)
 
         getTestWindow()

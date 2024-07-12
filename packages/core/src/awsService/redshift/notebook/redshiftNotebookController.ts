@@ -103,7 +103,7 @@ export class RedshiftNotebookController {
             } while (nextToken)
 
             if (columnMetadata) {
-                const columnNames: string[] = columnMetadata.map(column => column.name || 'UnknownColumnName')
+                const columnNames: string[] = columnMetadata.map((column) => column.name || 'UnknownColumnName')
                 if (columnNames) {
                     const htmlTable = this.getAsTable(connectionParams, columnNames, records)
                     return new vscode.NotebookCellOutput([vscode.NotebookCellOutputItem.text(htmlTable, 'text/html')])

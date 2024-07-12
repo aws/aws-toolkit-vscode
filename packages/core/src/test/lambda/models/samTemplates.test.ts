@@ -127,7 +127,7 @@ describe('getSamCliTemplateParameter', function () {
 
 describe('getTemplateDescription', async function () {
     it('all templates are handled', async function () {
-        validTemplateOptions.forEach(template => {
+        validTemplateOptions.forEach((template) => {
             // Checking that call does not throw
             getTemplateDescription(template)
         })

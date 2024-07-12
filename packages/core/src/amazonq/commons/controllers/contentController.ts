@@ -15,16 +15,16 @@ export class EditorContentController {
         if (editor) {
             const cursorStart = editor.selection.active
             editor
-                .edit(editBuilder => {
+                .edit((editBuilder) => {
                     editBuilder.insert(cursorStart, text)
                 })
                 .then(
-                    appliedEdits => {
+                    (appliedEdits) => {
                         if (appliedEdits) {
                             trackCodeEdit(editor, cursorStart)
                         }
                     },
-                    e => {
+                    (e) => {
                         getLogger().error('TextEditor.edit failed: %s', (e as Error).message)
                     }
                 )

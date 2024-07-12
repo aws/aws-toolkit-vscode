@@ -40,12 +40,13 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const ec2Instances = await (await this.ec2Client.getInstances()).toMap(instance => instance.InstanceId)
+        const ec2Instances = await (await this.ec2Client.getInstances()).toMap((instance) => instance.InstanceId)
         updateInPlace(
             this.ec2InstanceNodes,
             ec2Instances.keys(),
-            key => this.ec2InstanceNodes.get(key)!.updateInstance(ec2Instances.get(key)!),
-            key => new Ec2InstanceNode(this, this.ec2Client, this.regionCode, this.partitionId, ec2Instances.get(key)!)
+            (key) => this.ec2InstanceNodes.get(key)!.updateInstance(ec2Instances.get(key)!),
+            (key) =>
+                new Ec2InstanceNode(this, this.ec2Client, this.regionCode, this.partitionId, ec2Instances.get(key)!)
         )
     }
 

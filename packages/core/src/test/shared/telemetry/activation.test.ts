@@ -96,7 +96,7 @@ describe('hasUserSeenTelemetryNotice', async function () {
         { currentState: 9999, expectedHasSeen: true, desc: 'seen a future version' },
     ]
 
-    scenarios.forEach(scenario => {
+    scenarios.forEach((scenario) => {
         it(scenario.desc, async () => {
             await extensionContext.globalState.update(TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED, scenario.currentState)
             assert.strictEqual(hasUserSeenTelemetryNotice(extensionContext), scenario.expectedHasSeen)

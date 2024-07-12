@@ -44,7 +44,7 @@ describe('deletePolicyVersionCommand', function () {
     it('confirms deletion, deletes policy, and refreshes node', async function () {
         const deleteStub = sinon.stub()
         iot.deletePolicyVersion = deleteStub
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Delete')?.select())
         await deletePolicyVersionCommand(node)
 
         getTestWindow()
@@ -59,7 +59,7 @@ describe('deletePolicyVersionCommand', function () {
     it('does nothing when deletion is cancelled', async function () {
         const deleteStub = sinon.stub()
         iot.deletePolicyVersion = deleteStub
-        getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
+        getTestWindow().onDidShowMessage((m) => m.selectItem('Cancel'))
         await deletePolicyVersionCommand(node)
 
         assert(deleteStub.notCalled)
@@ -69,7 +69,7 @@ describe('deletePolicyVersionCommand', function () {
         const deleteStub = sinon.stub().rejects()
         iot.deletePolicyVersion = deleteStub
 
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Delete')?.select())
         await deletePolicyVersionCommand(node)
 
         getTestWindow()

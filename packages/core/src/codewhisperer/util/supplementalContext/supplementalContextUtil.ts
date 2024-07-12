@@ -34,7 +34,7 @@ export async function fetchSupplementalContext(
     }
 
     return supplementalContextPromise
-        .then(value => {
+        .then((value) => {
             if (value) {
                 return {
                     isUtg: isUtg,
@@ -48,7 +48,7 @@ export async function fetchSupplementalContext(
                 return undefined
             }
         })
-        .catch(err => {
+        .catch((err) => {
             if (err instanceof ToolkitError && err.cause instanceof CancellationError) {
                 return {
                     isUtg: isUtg,

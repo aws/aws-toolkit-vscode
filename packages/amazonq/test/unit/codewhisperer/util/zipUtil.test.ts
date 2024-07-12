@@ -94,7 +94,7 @@ describe('zipUtil', function () {
 
             const document = await vscode.workspace.openTextDocument(appCodePath)
             await vscode.window.showTextDocument(document)
-            void vscode.window.activeTextEditor?.edit(editBuilder => {
+            void vscode.window.activeTextEditor?.edit((editBuilder) => {
                 editBuilder.insert(new vscode.Position(0, 0), '// a comment\n')
             })
 

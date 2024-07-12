@@ -57,7 +57,7 @@ describe('FileSystem', function () {
             const fileName = 'test.txt'
             const path = await makeFile(fileName, 'hello world', { mode: 0o000 })
 
-            await assert.rejects(fs.readFileAsString(path), err => {
+            await assert.rejects(fs.readFileAsString(path), (err) => {
                 assert(err instanceof PermissionsError)
                 assert.strictEqual(err.code, 'InvalidPermissions')
                 assert(err.message.includes(fileName))
@@ -102,7 +102,7 @@ describe('FileSystem', function () {
             const fileName = 'test.txt'
             const filePath = await makeFile(fileName, 'hello world', { mode: 0o000 })
 
-            await assert.rejects(fs.writeFile(filePath, 'MyContent'), err => {
+            await assert.rejects(fs.writeFile(filePath, 'MyContent'), (err) => {
                 assert(err instanceof PermissionsError)
                 assert.strictEqual(err.code, 'InvalidPermissions')
                 assert(err.message.includes(fileName))
@@ -498,7 +498,7 @@ describe('FileSystem', function () {
                 it('bubbles up ENOENT', async function () {
                     const dirPath = path.join(testDir, `dir${runCounter}`)
                     await fs.mkdir(dirPath)
-                    const err = await fs.readFileAsString(path.join(dirPath, 'foo')).catch(e => e)
+                    const err = await fs.readFileAsString(path.join(dirPath, 'foo')).catch((e) => e)
                     assertError(err, Error)
                     assert.ok(isFileNotFoundError(err))
                 })
@@ -508,7 +508,7 @@ describe('FileSystem', function () {
                 it('fails writing a new file to a directory without `u+x`', async function () {
                     const dirPath = path.join(testDir, `dir${runCounter}`)
                     await nodefs.mkdir(dirPath, { mode: 0o677 })
-                    const err = await fs.writeFile(path.join(dirPath, 'foo'), 'foo').catch(e => e)
+                    const err = await fs.writeFile(path.join(dirPath, 'foo'), 'foo').catch((e) => e)
                     assert.match(
                         formatError(err),
                         /incorrect permissions. Expected rwx, found rw-. \[InvalidPermissions\] \(isOwner: true; mode: drw-r.xr-x [^ ]* \d+\)/
@@ -521,7 +521,7 @@ describe('FileSystem', function () {
                 it('fails writing a new file to a directory without `u+w`', async function () {
                     const dirPath = path.join(testDir, `dir${runCounter}`)
                     await nodefs.mkdir(dirPath, { mode: 0o577 })
-                    const err = await fs.writeFile(path.join(dirPath, 'foo'), 'foo').catch(e => e)
+                    const err = await fs.writeFile(path.join(dirPath, 'foo'), 'foo').catch((e) => e)
                     assert.match(
                         formatError(err),
                         /incorrect permissions. Expected rwx, found r-x. \[InvalidPermissions\] \(isOwner: true; mode: dr-xr.xr-x [^ ]* \d+\)/
@@ -535,7 +535,7 @@ describe('FileSystem', function () {
                 it('fails writing an existing file without `u+w`', async function () {
                     const filePath = path.join(testDir, `file${runCounter}`)
                     await nodefs.writeFile(filePath, 'foo', { mode: 0o400 })
-                    const err = await fs.writeFile(filePath, 'foo2').catch(e => e)
+                    const err = await fs.writeFile(filePath, 'foo2').catch((e) => e)
                     assert.match(
                         formatError(err),
                         /incorrect permissions. Expected rw-, found r--. \[InvalidPermissions\] \(isOwner: true; mode: -r-------- [^ ]* \d+\)/
@@ -549,7 +549,7 @@ describe('FileSystem', function () {
                 it('fails reading an existing file without `u+r`', async function () {
                     const filePath = path.join(testDir, `file${runCounter}`)
                     await fs.writeFile(filePath, 'foo', { mode: 0o200 })
-                    const err = await fs.readFile(filePath).catch(e => e)
+                    const err = await fs.readFile(filePath).catch((e) => e)
                     assert.match(
                         formatError(err),
                         /incorrect permissions. Expected rw-, found -w-. \[InvalidPermissions\] \(isOwner: true; mode: --w------- [^ ]* \d+\)/
@@ -577,7 +577,7 @@ describe('FileSystem', function () {
 
                     it('fails to delete without `u+w` on the parent', async function () {
                         await nodefs.chmod(dirPath, 0o577)
-                        const err = await fs.delete(filePath).catch(e => e)
+                        const err = await fs.delete(filePath).catch((e) => e)
                         assert.match(
                             formatError(err),
                             /incorrect permissions. Expected rwx, found r-x. \[InvalidPermissions\] \(isOwner: true; mode: dr-xrwxrwx [^ ]* \d+\)/
@@ -590,7 +590,7 @@ describe('FileSystem', function () {
 
                     it('fails to delete without `u+x` on the parent', async function () {
                         await nodefs.chmod(dirPath, 0o677)
-                        const err = await fs.delete(filePath).catch(e => e)
+                        const err = await fs.delete(filePath).catch((e) => e)
                         assert.match(
                             formatError(err),
                             /incorrect permissions. Expected rwx, found rw-. \[InvalidPermissions\] \(isOwner: true; mode: drw-rwxrwx [^ ]* \d+\)/

@@ -61,7 +61,7 @@ describe('ResourcesNode', function () {
 
         assert.strictEqual(childNodes.length, resourceTypes.length, 'Unexpected child count')
 
-        childNodes.forEach(node =>
+        childNodes.forEach((node) =>
             assert.ok(node instanceof ResourceTypeNode, 'Expected child node to be ResourceTypeNode')
         )
     })
@@ -69,7 +69,7 @@ describe('ResourcesNode', function () {
     it('has child nodes with ResourceTypeNode contextValue', async function () {
         const childNodes = await testNode.getChildren()
 
-        childNodes.forEach(node =>
+        childNodes.forEach((node) =>
             assert.strictEqual(
                 node.contextValue?.endsWith('ResourceTypeNode'),
                 true,
@@ -85,7 +85,7 @@ describe('ResourcesNode', function () {
 
         const childNodes = await testNode.getChildren()
 
-        const actualChildOrder = childNodes.map(node => node.label)
+        const actualChildOrder = childNodes.map((node) => node.label)
         assert.deepStrictEqual(actualChildOrder, sortedText, 'Unexpected child sort order')
     })
 
@@ -102,7 +102,7 @@ describe('ResourcesNode', function () {
     function prepareMock(resourceTypes: string[]) {
         const listStub = sinon.stub().returns(
             asyncGenerator<CloudFormation.TypeSummary>(
-                resourceTypes.map<CloudFormation.TypeSummary>(resourceType => {
+                resourceTypes.map<CloudFormation.TypeSummary>((resourceType) => {
                     return {
                         TypeName: resourceType,
                     }

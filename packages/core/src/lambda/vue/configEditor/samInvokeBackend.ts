@@ -126,7 +126,7 @@ export class SamInvokeWebview extends VueWebview {
      */
     public async getSamplePayload(): Promise<string | undefined> {
         try {
-            const inputs: SampleQuickPickItem[] = (await getSampleLambdaPayloads()).map(entry => {
+            const inputs: SampleQuickPickItem[] = (await getSampleLambdaPayloads()).map((entry) => {
                 return { label: entry.name ?? '', filename: entry.filename ?? '' }
             })
 
@@ -311,7 +311,7 @@ const WebviewPanel = VueWebview.compilePanel(SamInvokeWebview)
 export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposable {
     return Commands.register('aws.launchConfigForm', async (launchConfig?: AwsSamDebuggerConfiguration) => {
         const webview = new WebviewPanel(context.extensionContext, context, launchConfig)
-        await telemetry.sam_openConfigUi.run(async span => {
+        await telemetry.sam_openConfigUi.run(async (span) => {
             await webview.show({
                 title: localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration'),
                 // TODO: make this only open `Beside` when executed via CodeLens

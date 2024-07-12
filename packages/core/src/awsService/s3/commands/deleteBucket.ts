@@ -37,7 +37,7 @@ export async function deleteBucketCommand(node: S3BucketNode): Promise<void> {
 
         getLogger().info(`Deleting bucket: ${node.bucket.name}`)
         await deleteWithProgress(node)
-            .catch(e => {
+            .catch((e) => {
                 const message = localize(
                     'AWS.s3.deleteBucket.error.general',
                     'Failed to delete bucket {0}',
@@ -55,7 +55,7 @@ async function showConfirmationDialog(bucketName: string): Promise<boolean> {
     const confirmationInput = await vscode.window.showInputBox({
         prompt,
         placeHolder: bucketName,
-        validateInput: input => (input !== bucketName ? prompt : undefined),
+        validateInput: (input) => (input !== bucketName ? prompt : undefined),
     })
 
     return confirmationInput === bucketName

@@ -59,8 +59,8 @@ exit !$?
                 logging: 'noparams',
             } as const
             const result = await new ChildProcess('powershell.exe', ['-Command', script], options).run({
-                onStdout: text => getLogger().verbose(`ssh (ssh-agent): ${text}`),
-                onStderr: text => getLogger().verbose(`ssh (ssh-agent): ${text}`),
+                onStdout: (text) => getLogger().verbose(`ssh (ssh-agent): ${text}`),
+                onStderr: (text) => getLogger().verbose(`ssh (ssh-agent): ${text}`),
             })
 
             if (!result.stdout.includes(runningMessage) && !result.stderr) {
@@ -130,7 +130,7 @@ export async function startVscodeRemote(
     const workspaceUri = `vscode-remote://ssh-remote+${userAt}${hostname}${targetDirectory}`
 
     const settings = new RemoteSshSettings()
-    settings.ensureDefaultExtension(VSCODE_EXTENSION_ID.awstoolkit).catch(e => {
+    settings.ensureDefaultExtension(VSCODE_EXTENSION_ID.awstoolkit).catch((e) => {
         // Non-fatal. Some users intentionally have readonly settings.
         getLogger().warn('startVscodeRemote: failed to set "defaultExtensions": %s', (e as Error).message)
     })

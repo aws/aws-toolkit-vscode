@@ -23,7 +23,7 @@ import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
  * Represents the group of all IoT Things.
  */
 export class IotThingFolderNode extends AWSTreeNodeBase implements LoadMoreNode {
-    private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
+    private readonly childLoader = new ChildNodeLoader(this, (token) => this.loadPage(token))
 
     public constructor(
         public readonly iot: IotClient,
@@ -65,8 +65,8 @@ export class IotThingFolderNode extends AWSTreeNodeBase implements LoadMoreNode 
         let newThings: IotThingNode[] = []
         if (response.things) {
             newThings = response.things
-                .filter(thing => thing.thingName && thing.thingArn)
-                .map(thing => new IotThingNode({ name: thing.thingName!, arn: thing.thingArn! }, this, this.iot))
+                .filter((thing) => thing.thingName && thing.thingArn)
+                .map((thing) => new IotThingNode({ name: thing.thingName!, arn: thing.thingArn! }, this, this.iot))
         }
 
         getLogger().debug(`Loaded things: %O`, newThings)

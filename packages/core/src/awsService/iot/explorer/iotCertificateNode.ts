@@ -30,7 +30,7 @@ const contextBase = 'awsIotCertificateNode'
  * Certificate Folder Node as a parent.
  */
 export abstract class IotCertificateNode extends AWSTreeNodeBase implements AWSResourceNode {
-    private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
+    private readonly childLoader = new ChildNodeLoader(this, (token) => this.loadPage(token))
 
     public constructor(
         public readonly certificate: IotCertificate,
@@ -91,9 +91,9 @@ export abstract class IotCertificateNode extends AWSTreeNodeBase implements AWSR
 
         const newPolicies =
             response.policies
-                ?.filter(policy => policy.policyArn && policy.policyName)
+                ?.filter((policy) => policy.policyArn && policy.policyName)
                 .map(
-                    policy =>
+                    (policy) =>
                         new IotPolicyCertNode({ arn: policy.policyArn!, name: policy.policyName! }, this, this.iot)
                 ) ?? []
 

@@ -44,7 +44,7 @@ describe('updateCertificate', function () {
         it('confirms deactivation, deactivates cert, and refreshes tree', async function () {
             const stub = sinon.stub()
             iot.updateCertificate = stub
-            getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Deactivate')?.select())
+            getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Deactivate')?.select())
             await deactivateCertificateCommand(node)
 
             getTestWindow().getFirstMessage().assertWarn('Are you sure you want to deactivate certificate test-cert?')
@@ -56,7 +56,7 @@ describe('updateCertificate', function () {
         it('does nothing when deactivation is cancelled', async function () {
             const stub = sinon.stub()
             iot.updateCertificate = stub
-            getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
+            getTestWindow().onDidShowMessage((m) => m.selectItem('Cancel'))
             await deactivateCertificateCommand(node)
 
             assert(stub.notCalled)
@@ -65,7 +65,7 @@ describe('updateCertificate', function () {
         it('shows an error message if deactivating the certificate fails', async function () {
             const stub = sinon.stub().rejects()
             iot.updateCertificate = stub
-            getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Deactivate')?.select())
+            getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Deactivate')?.select())
             await deactivateCertificateCommand(node)
 
             getTestWindow()
@@ -91,7 +91,7 @@ describe('updateCertificate', function () {
         it('confirms activation, activates cert, and refreshes tree', async function () {
             const stub = sinon.stub()
             iot.updateCertificate = stub
-            getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Activate')?.select())
+            getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Activate')?.select())
             await activateCertificateCommand(node)
 
             getTestWindow().getFirstMessage().assertWarn('Are you sure you want to activate certificate test-cert?')
@@ -105,7 +105,7 @@ describe('updateCertificate', function () {
         it('does nothing when activation is cancelled', async function () {
             const stub = sinon.stub()
             iot.updateCertificate = stub
-            getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
+            getTestWindow().onDidShowMessage((m) => m.selectItem('Cancel'))
             await activateCertificateCommand(node)
 
             assert(stub.notCalled)
@@ -114,7 +114,7 @@ describe('updateCertificate', function () {
         it('shows an error message if deactivating the certificate fails', async function () {
             const stub = sinon.stub().rejects()
             iot.updateCertificate = stub
-            getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Activate')?.select())
+            getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Activate')?.select())
             await activateCertificateCommand(node)
 
             getTestWindow()
@@ -136,7 +136,7 @@ describe('updateCertificate', function () {
         it('confirms revocation, revokes cert, and refreshes tree', async function () {
             const stub = sinon.stub()
             iot.updateCertificate = stub
-            getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Revoke')?.select())
+            getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Revoke')?.select())
             await revokeCertificateCommand(node)
 
             getTestWindow().getFirstMessage().assertWarn('Are you sure you want to revoke certificate test-cert?')
@@ -150,7 +150,7 @@ describe('updateCertificate', function () {
         it('does nothing when revocation is cancelled', async function () {
             const stub = sinon.stub()
             iot.updateCertificate = stub
-            getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
+            getTestWindow().onDidShowMessage((m) => m.selectItem('Cancel'))
             await revokeCertificateCommand(node)
 
             assert(stub.notCalled)
@@ -159,7 +159,7 @@ describe('updateCertificate', function () {
         it('shows an error message if revoking the certificate fails', async function () {
             const stub = sinon.stub().rejects()
             iot.updateCertificate = stub
-            getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Revoke')?.select())
+            getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Revoke')?.select())
             await revokeCertificateCommand(node)
 
             getTestWindow()

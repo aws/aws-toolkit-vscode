@@ -76,7 +76,7 @@ export function mapCache<T, U, K>(cache: KeyedCache<T, K>, get: (data: T) => U, 
 
     return {
         clear: (key, reason) => cache.clear(key, reason),
-        load: key => cache.load(key).then(getIf),
+        load: (key) => cache.load(key).then(getIf),
         save: (key, data) => cache.save(key, set(data)),
     }
 }
@@ -103,7 +103,7 @@ export function createDiskCache<T, K>(
     }
 
     return {
-        load: async key => {
+        load: async (key) => {
             const target = mapKey(key)
 
             try {
@@ -179,7 +179,7 @@ export function createSecretsCache(
     }
 
     return {
-        load: async key => {
+        load: async (key) => {
             try {
                 const value = await secrets.get(key)
 

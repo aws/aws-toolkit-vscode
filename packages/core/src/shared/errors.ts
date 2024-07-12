@@ -488,7 +488,7 @@ export function findBestErrorInChain(error: Error, preferredErrors = _preferredE
         // const preferBest = ...
         const errCode = err.code?.trim() ?? ''
         const prefer =
-            (errCode !== '' && preferredErrors.some(re => re.test(errCode))) ||
+            (errCode !== '' && preferredErrors.some((re) => re.test(errCode))) ||
             // In priority order:
             isFilesystemError(err) ||
             isPermissionsError(err)

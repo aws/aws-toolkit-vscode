@@ -354,7 +354,7 @@ describe('Controller', () => {
             const getSessionStub = sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
 
             const rejectFile = await fileClicked(getSessionStub, 'reject-change', filePath)
-            assert.strictEqual(rejectFile.state.filePaths?.find(i => i.relativePath === filePath)?.rejected, true)
+            assert.strictEqual(rejectFile.state.filePaths?.find((i) => i.relativePath === filePath)?.rejected, true)
         })
 
         it('clicking the "Reject File" button and then "Revert Reject File", updates the file state to "rejected: false"', async () => {
@@ -364,7 +364,10 @@ describe('Controller', () => {
 
             await fileClicked(getSessionStub, 'reject-change', filePath)
             const revertRejection = await fileClicked(getSessionStub, 'revert-rejection', filePath)
-            assert.strictEqual(revertRejection.state.filePaths?.find(i => i.relativePath === filePath)?.rejected, false)
+            assert.strictEqual(
+                revertRejection.state.filePaths?.find((i) => i.relativePath === filePath)?.rejected,
+                false
+            )
         })
     })
 

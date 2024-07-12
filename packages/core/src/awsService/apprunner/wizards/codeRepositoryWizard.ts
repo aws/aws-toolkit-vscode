@@ -36,7 +36,7 @@ function validateCommand(command: string): string | undefined {
 
 function createRepoPrompter(git: GitExtension): QuickPickPrompter<Remote> {
     const mapRemote = (remote: Remote) => ({ label: remote.name, detail: remote.fetchUrl, data: remote })
-    const remotes = git.getRemotes().then(r => r.map(mapRemote))
+    const remotes = git.getRemotes().then((r) => r.map(mapRemote))
     const userInputString = localize('AWS.apprunner.createService.customRepo', 'Enter GitHub URL')
 
     return createQuickPick(remotes, {
@@ -47,7 +47,7 @@ function createRepoPrompter(git: GitExtension): QuickPickPrompter<Remote> {
         ),
         filterBoxInputSettings: {
             label: userInputString,
-            transform: resp => ({ name: 'UserRemote', isReadOnly: true, fetchUrl: resp }),
+            transform: (resp) => ({ name: 'UserRemote', isReadOnly: true, fetchUrl: resp }),
         },
         buttons: createCommonButtons(),
     })
@@ -61,10 +61,10 @@ function createBranchPrompter(
     const last = cache[repo]
     const branchItems =
         last ??
-        git.getBranchesForRemote({ name: '', fetchUrl: repo } as any).then(branches => {
+        git.getBranchesForRemote({ name: '', fetchUrl: repo } as any).then((branches) => {
             const branchItems = branches
-                .filter(b => b.name !== undefined && b.name !== '')
-                .map(branch => ({
+                .filter((b) => b.name !== undefined && b.name !== '')
+                .map((branch) => ({
                     label: branch.name!.split('/').slice(1).join('/'),
                 }))
             cache[repo] = branchItems
@@ -75,7 +75,7 @@ function createBranchPrompter(
         title: localize('AWS.apprunner.createService.selectBranch.title', 'Select a branch'),
         filterBoxInputSettings: {
             label: userInputString,
-            transform: resp => resp,
+            transform: (resp) => resp,
         },
         buttons: createCommonButtons(),
         placeholder: localize(
@@ -107,7 +107,7 @@ function createBuildCommandPrompter(runtime: AppRunner.Runtime): InputBoxPrompte
         title: localize('AWS.apprunner.createService.buildCommand.title', 'Enter a build command'),
         buttons: createCommonButtons(apprunnerRuntimeHelpUrl),
         placeholder:
-            buildCommandMap[Object.keys(buildCommandMap).filter(key => runtime.toLowerCase().includes(key))[0]],
+            buildCommandMap[Object.keys(buildCommandMap).filter((key) => runtime.toLowerCase().includes(key))[0]],
         validateInput: validateCommand,
     })
 }
@@ -122,7 +122,7 @@ function createStartCommandPrompter(runtime: AppRunner.Runtime): InputBoxPrompte
         title: localize('AWS.apprunner.createService.startCommand.title', 'Enter a start command'),
         buttons: createCommonButtons(apprunnerRuntimeHelpUrl),
         placeholder:
-            startCommandMap[Object.keys(startCommandMap).filter(key => runtime.toLowerCase().includes(key))[0]],
+            startCommandMap[Object.keys(startCommandMap).filter((key) => runtime.toLowerCase().includes(key))[0]],
         validateInput: validateCommand,
     })
 }
@@ -162,7 +162,7 @@ export function createConnectionPrompter(client: AppRunnerClient) {
     const getItems = async () => {
         const resp = await client.listConnections()
 
-        return resp.ConnectionSummaryList.filter(conn => conn.Status === 'AVAILABLE').map(conn => ({
+        return resp.ConnectionSummaryList.filter((conn) => conn.Status === 'AVAILABLE').map((conn) => ({
             label: conn.ConnectionName!,
             data: conn,
         }))
@@ -205,9 +205,9 @@ function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.Co
     const subform = new WizardForm<AppRunner.CodeRepository>()
     const form = subform.body
 
-    form.RepositoryUrl.bindPrompter(() => createRepoPrompter(git).transform(r => r.fetchUrl!))
-    form.SourceCodeVersion.Value.bindPrompter(state =>
-        createBranchPrompter(git, state.stepCache, state.RepositoryUrl).transform(resp =>
+    form.RepositoryUrl.bindPrompter(() => createRepoPrompter(git).transform((r) => r.fetchUrl!))
+    form.SourceCodeVersion.Value.bindPrompter((state) =>
+        createBranchPrompter(git, state.stepCache, state.RepositoryUrl).transform((resp) =>
             resp.replace(`${state.RepositoryUrl}/`, '')
         )
     )
@@ -216,8 +216,8 @@ function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.Co
 
     const codeConfigForm = new WizardForm<AppRunner.CodeConfigurationValues>()
     codeConfigForm.body.Runtime.bindPrompter(createRuntimePrompter)
-    codeConfigForm.body.BuildCommand.bindPrompter(state => createBuildCommandPrompter(state.Runtime!))
-    codeConfigForm.body.StartCommand.bindPrompter(state => createStartCommandPrompter(state.Runtime!))
+    codeConfigForm.body.BuildCommand.bindPrompter((state) => createBuildCommandPrompter(state.Runtime!))
+    codeConfigForm.body.StartCommand.bindPrompter((state) => createStartCommandPrompter(state.Runtime!))
     codeConfigForm.body.Port.bindPrompter(createPortPrompter)
     codeConfigForm.body.RuntimeEnvironmentVariables.bindPrompter(() =>
         createVariablesPrompter(createCommonButtons(apprunnerCreateServiceDocsUrl))
@@ -225,7 +225,7 @@ function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.Co
     // TODO: ask user if they would like to save their parameters into an App Runner config file
 
     form.CodeConfiguration.CodeConfigurationValues.applyBoundForm(codeConfigForm, {
-        showWhen: state => state.CodeConfiguration?.ConfigurationSource === 'API',
+        showWhen: (state) => state.CodeConfiguration?.ConfigurationSource === 'API',
     })
 
     return subform
@@ -241,7 +241,7 @@ export class AppRunnerCodeRepositoryWizard extends Wizard<AppRunner.SourceConfig
         const form = this.form
 
         form.AuthenticationConfiguration.ConnectionArn.bindPrompter(() =>
-            createConnectionPrompter(client).transform(conn => conn.ConnectionArn!)
+            createConnectionPrompter(client).transform((conn) => conn.ConnectionArn!)
         )
         form.CodeRepository.applyBoundForm(createCodeRepositorySubForm(git))
         form.AutoDeploymentsEnabled.setDefault(() => autoDeployButton.state === 'on')

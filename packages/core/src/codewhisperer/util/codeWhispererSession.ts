@@ -67,7 +67,7 @@ class CodeWhispererSession {
     }
 
     setCompletionType(index: number, recommendation: Recommendation) {
-        const nonBlankLines = recommendation.content.split('\n').filter(line => line.trim() !== '').length
+        const nonBlankLines = recommendation.content.split('\n').filter((line) => line.trim() !== '').length
         this.completionTypes.set(index, nonBlankLines > 1 ? 'Block' : 'Line')
     }
 

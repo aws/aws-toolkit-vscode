@@ -59,7 +59,7 @@ export class SharedFileTransport extends TransportStream {
 
         if (!this.resolvesAfterLogsWritten) {
             // we create a promise which resolves once logs are written to the file
-            this.resolvesAfterLogsWritten = new Promise(resolve => {
+            this.resolvesAfterLogsWritten = new Promise((resolve) => {
                 this.doResolve = resolve.bind(this)
             })
         }
@@ -97,7 +97,7 @@ export class SharedFileTransport extends TransportStream {
             return
         }
 
-        const logMessages = this.bufferedLogEntries.map(logEntry => logEntry[MESSAGE])
+        const logMessages = this.bufferedLogEntries.map((logEntry) => logEntry[MESSAGE])
 
         // Remove the logs that were written to the file from the buffer.
         // But we have to keep in mind new logs may have been

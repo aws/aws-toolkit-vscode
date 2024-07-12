@@ -40,7 +40,7 @@ export async function configureResources(settings = new ResourcesSettings()): Pr
     if (result) {
         await settings.update(
             'enabledResources',
-            result.map(res => res.label)
+            result.map((res) => res.label)
         )
         telemetry.dynamicresource_selectResources.emit()
         return true

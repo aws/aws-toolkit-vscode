@@ -41,7 +41,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
             return ((await importedApi?.listConnections()) as AwsConnection[]).filter(
                 // No need to display Builder ID as an existing connection,
                 // users can just select the Builder ID login option and it would have the same effect.
-                conn => conn.startUrl !== builderIdStartUrl
+                (conn) => conn.startUrl !== builderIdStartUrl
             )
         }
         return []

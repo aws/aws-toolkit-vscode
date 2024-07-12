@@ -10,7 +10,7 @@ import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 export async function saveTemplate(templatePath: string, runtime: string, ...functionNames: string[]) {
     const functionResources = functionNames
         .map(
-            functionName => `    ${functionName}:
+            (functionName) => `    ${functionName}:
         Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
         Properties:
             CodeUri: hello_world/

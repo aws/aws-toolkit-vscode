@@ -62,7 +62,7 @@ describe('runCommand', function () {
         const viewLogsDialog = getTestWindow().waitForMessage(/Something failed/)
 
         await Promise.all([
-            viewLogsDialog.then(dialog => dialog.close()),
+            viewLogsDialog.then((dialog) => dialog.close()),
             testCommand.execute(new ToolkitError('Something failed', { code: 'SomethingFailed' })),
         ])
 
@@ -91,7 +91,7 @@ describe('runCommand', function () {
         async function runAndWaitForMessage(expectedMsg: string | RegExp, willThrow: () => Promise<never>) {
             const viewLogsDialog = getTestWindow().waitForMessage(expectedMsg)
 
-            await Promise.all([viewLogsDialog.then(dialog => dialog.close()), testCommand.execute(willThrow)])
+            await Promise.all([viewLogsDialog.then((dialog) => dialog.close()), testCommand.execute(willThrow)])
         }
 
         function assertTelem(reason: string) {
@@ -121,7 +121,7 @@ describe('runCommand', function () {
             })()
             await runAndWaitForMessage(pat, async () => {
                 // Try to write to the current directory. 💩
-                const err = await fs.writeFile('.', 'foo').catch(e => e)
+                const err = await fs.writeFile('.', 'foo').catch((e) => e)
                 const err2 = new Error('generic error')
                 ;(err2 as any).cause = err
                 throw err2
@@ -134,7 +134,7 @@ describe('runCommand', function () {
         it('nodejs ISDIR', async function () {
             await runAndWaitForMessage(/EISDIR: illegal operation on a directory/, async () => {
                 // Try to write to the current directory. 💩
-                const err = await fsPromises.writeFile('.', 'foo').catch(e => e)
+                const err = await fsPromises.writeFile('.', 'foo').catch((e) => e)
                 const err2 = new Error('generic error')
                 ;(err2 as any).cause = err
                 throw err2
@@ -153,9 +153,9 @@ describe('runCommand', function () {
             const viewLogsDialog = getTestWindow().waitForMessage(expectedMsg)
 
             await Promise.all([
-                viewLogsDialog.then(dialog => dialog.close()),
+                viewLogsDialog.then((dialog) => dialog.close()),
                 testCommand.execute(async () => {
-                    const err = await fs.writeFile(unwritableFile, 'bar').catch(e => e)
+                    const err = await fs.writeFile(unwritableFile, 'bar').catch((e) => e)
                     throw fakeErrorChain(err, new Error('error 3'))
                 }),
             ])
@@ -171,9 +171,9 @@ describe('runCommand', function () {
             const viewLogsDialog = getTestWindow().waitForMessage(expectedMsg)
 
             await Promise.all([
-                viewLogsDialog.then(dialog => dialog.close()),
+                viewLogsDialog.then((dialog) => dialog.close()),
                 testCommand.execute(async () => {
-                    const err = await fsPromises.writeFile(unwritableFile, 'bar').catch(e => e)
+                    const err = await fsPromises.writeFile(unwritableFile, 'bar').catch((e) => e)
                     throw fakeErrorChain(err, new Error('error 3'))
                 }),
             ])
@@ -187,7 +187,7 @@ describe('runCommand', function () {
             const expectedMsg = /Invalid client ID provided/
             const viewLogsDialog = getTestWindow().waitForMessage(expectedMsg)
             await Promise.all([
-                viewLogsDialog.then(dialog => dialog.close()),
+                viewLogsDialog.then((dialog) => dialog.close()),
                 testCommand.execute(async () => {
                     const err = await getAwsServiceError()
 
@@ -213,7 +213,7 @@ describe('runCommand', function () {
 
             const events = globals.telemetry.logger
                 .query({ metricName: 'vscode_executeCommand' })
-                .filter(event => event.command === command.id)
+                .filter((event) => event.command === command.id)
 
             assert.strictEqual(events.length, 1)
             assertTelemetry('vscode_executeCommand', {

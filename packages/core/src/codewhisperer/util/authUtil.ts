@@ -103,7 +103,7 @@ export class AuthUtil {
     public constructor(public readonly auth = Auth.instance) {}
 
     public initCodeWhispererHooks = once(() => {
-        this.auth.onDidChangeConnectionState(async e => {
+        this.auth.onDidChangeConnectionState(async (e) => {
             getLogger().info(`codewhisperer: connection changed to ${e.state}: ${e.id}`)
             if (e.state !== 'authenticating') {
                 await this.refreshCodeWhisperer()
@@ -403,7 +403,7 @@ export class AuthUtil {
                 state[Features.codewhispererCore] = AuthStates.connected
             }
             if (isValidAmazonQConnection(conn)) {
-                Object.values(Features).forEach(v => (state[v as Feature] = AuthStates.connected))
+                Object.values(Features).forEach((v) => (state[v as Feature] = AuthStates.connected))
             }
         }
 

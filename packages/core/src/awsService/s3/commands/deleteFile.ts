@@ -45,7 +45,7 @@ export async function deleteFileCommand(node: S3FileNode): Promise<void> {
 
         await node
             .deleteFile()
-            .catch(e => {
+            .catch((e) => {
                 const message = localize('AWS.s3.deleteFile.error.general', 'Failed to delete file {0}', node.file.name)
                 throw ToolkitError.chain(e, message)
             })

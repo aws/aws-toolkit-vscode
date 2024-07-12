@@ -184,7 +184,7 @@ describe('sanitizeFilename', function () {
         { input: 'foo.txt', output: 'foo.txt', case: 'keeps dot' },
         { input: 'züb', output: 'züb', case: 'keeps special chars' },
     ]
-    cases.forEach(testCase => {
+    cases.forEach((testCase) => {
         it(testCase.case, function () {
             assert.strictEqual(sanitizeFilename(testCase.input, testCase.replaceString), testCase.output)
         })
@@ -200,7 +200,7 @@ describe('undefinedIfEmpty', function () {
         { input: ' foo ', output: ' foo ', case: 'return original str without trim' },
     ]
 
-    cases.forEach(testCases => {
+    cases.forEach((testCases) => {
         it(testCases.case, function () {
             assert.strictEqual(undefinedIfEmpty(testCases.input), testCases.output)
         })

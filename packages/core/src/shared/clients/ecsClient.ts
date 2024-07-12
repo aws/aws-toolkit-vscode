@@ -39,7 +39,7 @@ export class DefaultEcsClient {
         const requester = async (req: ECS.ListClustersRequest) => (await client).listClusters(req).promise()
         const collection = pageableToCollection(requester, request, 'nextToken', 'clusterArns')
 
-        return collection.filter(isNonNullable).map(async clusters => {
+        return collection.filter(isNonNullable).map(async (clusters) => {
             if (clusters.length === 0) {
                 return []
             }
@@ -70,7 +70,7 @@ export class DefaultEcsClient {
         const requester = async (req: ECS.ListServicesRequest) => (await client).listServices(req).promise()
         const collection = pageableToCollection(requester, request, 'nextToken', 'serviceArns')
 
-        return collection.filter(isNonNullable).map(async services => {
+        return collection.filter(isNonNullable).map(async (services) => {
             if (services.length === 0) {
                 return []
             }

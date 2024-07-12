@@ -53,7 +53,7 @@ export class CodeCatalystRemoteSourceProvider implements RemoteSourceProvider {
     }
 
     public async getRemoteSources(query?: string): Promise<RemoteSource[] | undefined> {
-        return this.commands.withClient(async client => {
+        return this.commands.withClient(async (client) => {
             const intoRemote = async (repo: CodeCatalystRepo): Promise<RemoteSource> => {
                 const resource = { name: repo.name, project: repo.project.name, org: repo.org.name }
                 const url = await client.getRepoCloneUrl({

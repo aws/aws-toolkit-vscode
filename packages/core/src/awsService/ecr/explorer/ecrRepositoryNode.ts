@@ -37,7 +37,7 @@ export class EcrRepositoryNode extends AWSTreeNodeBase implements AWSResourceNod
             getChildNodes: async () => {
                 const response = await toArrayAsync(this.ecr.describeTags(this.repository.repositoryName))
 
-                return response.map(item => new EcrTagNode(this, this.ecr, this.repository, item))
+                return response.map((item) => new EcrTagNode(this, this.ecr, this.repository, item))
             },
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.ecr.noTags', '[No tags found]')),

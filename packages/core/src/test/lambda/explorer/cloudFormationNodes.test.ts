@@ -28,7 +28,7 @@ const regionCode = 'someregioncode'
 
 function createLambdaClient(...functionNames: string[]) {
     const client = stub(DefaultLambdaClient, { regionCode })
-    client.listFunctions.returns(asyncGenerator(functionNames.map(name => ({ FunctionName: name }))))
+    client.listFunctions.returns(asyncGenerator(functionNames.map((name) => ({ FunctionName: name }))))
 
     return client
 }
@@ -38,7 +38,7 @@ function createCloudFormationClient(...stackNames: string[]) {
     client.describeStackResources.resolves({ StackResources: [] })
     client.listStacks.returns(
         asyncGenerator(
-            stackNames.map(name => {
+            stackNames.map((name) => {
                 return {
                     StackId: name,
                     StackName: name,
@@ -73,7 +73,7 @@ describe('CloudFormationStackNode', function () {
     }
 
     function generateStackResources(...functionNames: string[]): CloudFormation.StackResource[] {
-        return functionNames.map(name => ({
+        return functionNames.map((name) => ({
             PhysicalResourceId: name,
             LogicalResourceId: name,
             ResourceStatus: 'CREATED',
@@ -107,7 +107,7 @@ describe('CloudFormationStackNode', function () {
 
         assert.strictEqual(childNodes.length, 2, 'Unexpected child count')
 
-        childNodes.forEach(node =>
+        childNodes.forEach((node) =>
             assert.ok(node instanceof LambdaFunctionNode, 'Expected child node to be LambdaFunctionNode')
         )
     })
@@ -121,7 +121,7 @@ describe('CloudFormationStackNode', function () {
         const node = generateTestNode({ lambdaClient, cloudFormationClient })
         const childNodes = await node.getChildren()
 
-        childNodes.forEach(node =>
+        childNodes.forEach((node) =>
             assert.strictEqual(
                 node.contextValue,
                 contextValueCloudformationLambdaFunction,
@@ -142,7 +142,7 @@ describe('CloudFormationStackNode', function () {
         assert.strictEqual(childNodes.length, 2, 'Unexpected child node count')
 
         assert.deepStrictEqual(
-            new Set<string>(childNodes.map(node => getLabel(node))),
+            new Set<string>(childNodes.map((node) => getLabel(node))),
             new Set<string>(['lambda1', 'lambda3']),
             'Unexpected child sort order'
         )
@@ -163,7 +163,7 @@ describe('CloudFormationNode', function () {
         const cloudFormationNode = new CloudFormationNode(regionCode, client)
         const children = await cloudFormationNode.getChildren()
 
-        children.forEach(node =>
+        children.forEach((node) =>
             assert.ok(node instanceof CloudFormationStackNode, 'Expected child node to be CloudFormationStackNode')
         )
     })
@@ -173,7 +173,7 @@ describe('CloudFormationNode', function () {
         const cloudFormationNode = new CloudFormationNode(regionCode, client)
         const children = await cloudFormationNode.getChildren()
 
-        const actualChildOrder = children.map(node => (node as CloudFormationStackNode).stackName)
+        const actualChildOrder = children.map((node) => (node as CloudFormationStackNode).stackName)
         assert.deepStrictEqual(actualChildOrder, ['a', 'b'], 'Unexpected child sort order')
     })
 

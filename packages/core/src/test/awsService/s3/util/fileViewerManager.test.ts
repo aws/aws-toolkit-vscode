@@ -50,8 +50,8 @@ function createS3() {
     const files = new Map<string, DataFile>()
     const client = stub(DefaultS3Client, { regionCode: bucket.region })
     client.downloadFileStream.callsFake(async (_, key) => bufferToStream(getFile(key).content))
-    client.headObject.callsFake(async req => getFile(req.key))
-    client.uploadFile.callsFake(async req => {
+    client.headObject.callsFake(async (req) => getFile(req.key))
+    client.uploadFile.callsFake(async (req) => {
         if (req.content instanceof vscode.Uri) {
             throw new TypeError('Did not expect a URI, expected a Buffer')
         }
@@ -184,7 +184,7 @@ describe('FileViewerManager', function () {
     let disposables: vscode.Disposable[]
 
     function findEditors(documentName: string, window = vscode.window) {
-        return window.visibleTextEditors.filter(e => e.document.fileName.endsWith(documentName))
+        return window.visibleTextEditors.filter((e) => e.document.fileName.endsWith(documentName))
     }
 
     function registerFileSystemProviders(): vscode.Disposable[] {
@@ -223,7 +223,7 @@ describe('FileViewerManager', function () {
         const didOpen = fileViewerManager.openInReadMode({ ...bigImage, bucket })
         await getTestWindow()
             .waitForMessage(/File size is more than 4MB/)
-            .then(message => message.selectItem(/Continue/))
+            .then((message) => message.selectItem(/Continue/))
         await (await didOpen)?.dispose()
     })
 
@@ -232,7 +232,7 @@ describe('FileViewerManager', function () {
         const didOpen = fileViewerManager.openInReadMode({ ...bigImage, bucket })
         await getTestWindow()
             .waitForMessage(/File size is more than 4MB/)
-            .then(message => message.selectItem(/Cancel/))
+            .then((message) => message.selectItem(/Cancel/))
         await assert.rejects(didOpen)
     })
 
@@ -271,7 +271,7 @@ describe('FileViewerManager', function () {
         it('can open in edit mode, showing a warning with two options', async function () {
             const shownMessage = getTestWindow()
                 .waitForMessage(/You are now editing an S3 file./)
-                .then(message => {
+                .then((message) => {
                     message.assertSeverity(SeverityLevel.Warning)
                     assert.strictEqual(message.items.length, 2)
                     return message
@@ -314,7 +314,7 @@ describe('FileViewerManager', function () {
 
         it('rejects if the file does not exist', async function () {
             const file = makeFile('foo.txt', Buffer.from('0', 'utf-8'))
-            const err = await fileViewerManager.openInReadMode({ ...file, bucket }).catch(e => e)
+            const err = await fileViewerManager.openInReadMode({ ...file, bucket }).catch((e) => e)
             assert.ok(err instanceof ToolkitError)
         })
 

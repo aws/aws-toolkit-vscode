@@ -57,7 +57,7 @@ async function finalizeTsHandlers(
 ): Promise<LambdaHandlerCandidate[]> {
     const relativePath = path.relative(path.dirname(rootUri.fsPath), path.dirname(fileUri.fsPath))
 
-    return handlers.map(handler => {
+    return handlers.map((handler) => {
         return {
             filename: handler.filename,
             handlerName: normalizeSeparator(path.join(relativePath, handler.handlerName)),

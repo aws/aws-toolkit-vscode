@@ -20,7 +20,7 @@ describe('ConsoleLogTransport', async function () {
     })
 
     const allLevels = Object.keys(Levels) as Level[]
-    allLevels.forEach(level => {
+    allLevels.forEach((level) => {
         it(`logs to console with level: '${level}'`, async function () {
             const untilLogged = instance.log({ level, message: 'myMessage', [MESSAGE]: 'myMessageFormatted' }, next)
             await untilLogged

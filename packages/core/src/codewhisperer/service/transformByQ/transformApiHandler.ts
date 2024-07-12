@@ -303,7 +303,7 @@ const mavenExcludedExtensions = ['.repositories', '.sha1']
  * @returns {boolean} Returns true if the path ends with an extension associated with Maven metadata files; otherwise, false.
  */
 function isExcludedDependencyFile(path: string): boolean {
-    return mavenExcludedExtensions.some(extension => path.endsWith(extension))
+    return mavenExcludedExtensions.some((extension) => path.endsWith(extension))
 }
 
 /**
@@ -319,7 +319,7 @@ function isExcludedDependencyFile(path: string): boolean {
  */
 function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string[] {
     const entries = fs.readdirSync(dir, { withFileTypes: true })
-    const files = entries.flatMap(entry => {
+    const files = entries.flatMap((entry) => {
         const res = path.resolve(dir, entry.name)
         // exclude 'target' directory from ZIP (except if zipping dependencies) due to issues in backend
         if (entry.isDirectory()) {
@@ -580,7 +580,7 @@ export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [
 
 export function getTableMapping(stepZeroProgressUpdates: ProgressUpdates) {
     const map: { [key: string]: string } = {}
-    stepZeroProgressUpdates.forEach(update => {
+    stepZeroProgressUpdates.forEach((update) => {
         // description should never be undefined since even if no data we show an empty table
         // but just in case, empty string allows us to skip this table without errors when rendering
         map[update.name] = update.description ?? ''
@@ -644,7 +644,7 @@ export async function getTransformationPlan(jobId: string) {
             CodeWhispererConstants.planIntroductionMessage
         }</p></div>${getJobStatisticsHtml(jobStatistics)}</div>`
         plan += `<div style="margin-top: 32px; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p style="font-size: 18px; margin-bottom: 4px;"><b>${CodeWhispererConstants.planHeaderMessage}</b></p><i>${CodeWhispererConstants.planDisclaimerMessage} <a href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html">Read more.</a></i><br><br>`
-        response.transformationPlan.transformationSteps.slice(1).forEach(step => {
+        response.transformationPlan.transformationSteps.slice(1).forEach((step) => {
             plan += `<div style="border: 1px solid #424750; border-radius: 8px; padding: 20px;"><div style="display:flex; justify-content:space-between; align-items:center;"><p style="font-size: 16px; margin-bottom: 4px;">${step.name}</p><a href="#top">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle"></a></div><p>${step.description}</p>`
             plan = addTableMarkdown(plan, step.id, tableMapping)
             plan += `</div><br>`

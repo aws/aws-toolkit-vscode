@@ -18,7 +18,7 @@ let currentConn: Auth['activeConnection']
 const auths = new Map<string, SecondaryAuth>()
 const multiConnectionListeners = new WeakMap<Auth, vscode.Disposable>()
 const registerAuthListener = (auth: Auth) => {
-    return auth.onDidChangeActiveConnection(async newConn => {
+    return auth.onDidChangeActiveConnection(async (newConn) => {
         // When we change the active connection, there may be
         // secondary auths that were dependent on the previous active connection.
         // To ensure secondary auths still work, when we change to a new active connection,
@@ -26,9 +26,9 @@ const registerAuthListener = (auth: Auth) => {
         const oldConn = currentConn
         if (newConn && oldConn?.state === 'valid') {
             const saveableAuths = Array.from(auths.values()).filter(
-                a => !a.hasSavedConnection && a.isUsable(oldConn) && !a.isUsable(newConn)
+                (a) => !a.hasSavedConnection && a.isUsable(oldConn) && !a.isUsable(newConn)
             )
-            await Promise.all(saveableAuths.map(a => a.saveConnection(oldConn)))
+            await Promise.all(saveableAuths.map((a) => a.saveConnection(oldConn)))
         }
         currentConn = newConn
     })
@@ -55,14 +55,14 @@ export function getSecondaryAuth<T extends Connection>(
  * Gets all {@link SecondaryAuth} instances that have saved the connection
  */
 export function getDependentAuths(conn: Connection): SecondaryAuth[] {
-    return Array.from(auths.values()).filter(auth => auth.hasSavedConnection && auth.activeConnection?.id === conn.id)
+    return Array.from(auths.values()).filter((auth) => auth.hasSavedConnection && auth.activeConnection?.id === conn.id)
 }
 
 export function getAllConnectionsInUse(auth: Auth): StatefulConnection[] {
     const connMap = new Map<Connection['id'], StatefulConnection>()
     const toolConns = Array.from(auths.values())
-        .filter(a => a.hasSavedConnection)
-        .map(a => a.activeConnection)
+        .filter((a) => a.hasSavedConnection)
+        .map((a) => a.activeConnection)
 
     for (const conn of [auth.activeConnection, ...toolConns].filter(isNonNullable)) {
         connMap.set(conn.id, { ...conn, state: auth.getConnectionState(conn) ?? 'invalid' })
@@ -112,25 +112,25 @@ export class SecondaryAuth<T extends Connection = Connection> {
             }
         }
 
-        this.auth.onDidUpdateConnection(conn => {
+        this.auth.onDidUpdateConnection((conn) => {
             if (this.#savedConnection?.id === conn.id) {
                 this.#savedConnection = conn as unknown as T
                 this.#onDidChangeActiveConnection.fire(this.activeConnection)
             }
         })
 
-        this.auth.onDidChangeConnectionState(e => {
+        this.auth.onDidChangeConnectionState((e) => {
             if (this.activeConnection?.id === e.id) {
                 this.#onDidChangeActiveConnection.fire(this.activeConnection)
             }
         })
 
         // Register listener and handle connection immediately in case we were instantiated late
-        handleConnectionChanged(this.auth.activeConnection).catch(e => {
+        handleConnectionChanged(this.auth.activeConnection).catch((e) => {
             getLogger().error('handleConnectionChanged() failed: %s', (e as Error).message)
         })
         this.auth.onDidChangeActiveConnection(handleConnectionChanged)
-        this.auth.onDidDeleteConnection(async event => {
+        this.auth.onDidDeleteConnection(async (event) => {
             if (event.connId === this.#activeConnection?.id) {
                 await this.clearActiveConnection()
             }

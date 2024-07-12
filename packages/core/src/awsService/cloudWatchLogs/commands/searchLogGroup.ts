@@ -96,7 +96,7 @@ export async function searchLogGroup(
     source: string,
     logData?: { regionName: string; groupName: string }
 ): Promise<void> {
-    await telemetry.cloudwatchlogs_open.run(async span => {
+    await telemetry.cloudwatchlogs_open.run(async (span) => {
         const wizard = new SearchLogGroupWizard(logData)
         span.record({ cloudWatchResourceType: 'logGroup', source: source })
         const response = await wizard.run()
@@ -113,7 +113,7 @@ export async function searchLogGroup(
 async function getLogGroupsFromRegion(regionCode: string): Promise<DataQuickPickItem<string>[]> {
     const client = new DefaultCloudWatchLogsClient(regionCode)
     const logGroups = await logGroupsToArray(client.describeLogGroups())
-    const options = logGroups.map<DataQuickPickItem<string>>(logGroupString => ({
+    const options = logGroups.map<DataQuickPickItem<string>>((logGroupString) => ({
         label: logGroupString,
         data: logGroupString,
     }))
@@ -152,7 +152,7 @@ export class SearchPatternPrompter extends InputBoxPrompter {
         if (this.retryState.searchPattern) {
             this.inputBox.value = this.retryState.searchPattern
         }
-        this.inputBox.onDidChangeValue(val => {
+        this.inputBox.onDidChangeValue((val) => {
             this.inputBox.validationMessage = undefined
         })
     }
@@ -282,7 +282,7 @@ export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
 
         this.form.submenuResponse.bindPrompter(createRegionSubmenu)
         this.form.timeRange.bindPrompter(() => new TimeFilterSubmenu())
-        this.form.filterPattern.bindPrompter(state => {
+        this.form.filterPattern.bindPrompter((state) => {
             if (!state.submenuResponse) {
                 throw Error('state.submenuResponse is null')
             }

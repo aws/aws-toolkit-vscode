@@ -115,7 +115,7 @@ export async function activate(extensionContext: ExtensionContext) {
     languages.setLanguageConfiguration('ssm-yaml', yamlLanguageConfiguration)
 
     return client.onReady().then(() => {
-        client.onNotification(ResultLimitReached, message => {
+        client.onNotification(ResultLimitReached, (message) => {
             void window.showInformationMessage(
                 `${message}\nUse setting 'aws.ssmDocument.ssm.maxItemsComputed' to configure the limit.`
             )

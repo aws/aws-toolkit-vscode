@@ -78,14 +78,14 @@ describe('Amazon Q Feature Dev', function () {
 
     function waitForButtons(buttons: FollowUpTypes[]) {
         return tab.waitForEvent(() => {
-            return buttons.every(value => tab.hasButton(value))
+            return buttons.every((value) => tab.hasButton(value))
         })
     }
 
     async function waitForText(text: string) {
         await tab.waitForEvent(
             () => {
-                return tab.getChatItems().some(chatItem => chatItem.body === text)
+                return tab.getChatItems().some((chatItem) => chatItem.body === text)
             },
             {
                 waitIntervalInMs: 250,

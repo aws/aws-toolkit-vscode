@@ -31,7 +31,7 @@ export async function activate(
     let onDidOpenSsmDoc: vscode.Disposable
     // PERFORMANCE: Start the LSP client/server _only_ when the first SSM document is opened.
     // eslint-disable-next-line prefer-const
-    onDidOpenSsmDoc = vscode.window.onDidChangeActiveTextEditor(async e => {
+    onDidOpenSsmDoc = vscode.window.onDidChangeActiveTextEditor(async (e) => {
         if (e?.document.languageId === constants.ssmJson || e?.document.languageId === constants.ssmYaml) {
             const perflog = new PerfLog('ssmDocument: start LSP client/server')
             await activateSSMLanguageServer(extensionContext)

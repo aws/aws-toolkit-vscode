@@ -20,7 +20,7 @@ import {
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
         Commands.register('aws.ec2.openTerminal', async (node?: Ec2InstanceNode) => {
-            await telemetry.ec2_connectToInstance.run(async span => {
+            await telemetry.ec2_connectToInstance.run(async (span) => {
                 span.record({ ec2ConnectionType: 'ssm' })
                 await openTerminal(node)
             })
@@ -35,7 +35,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         }),
 
         Commands.register('aws.ec2.startInstance', async (node?: Ec2Node) => {
-            await telemetry.ec2_changeState.run(async span => {
+            await telemetry.ec2_changeState.run(async (span) => {
                 span.record({ ec2InstanceState: 'start' })
                 await startInstance(node)
                 refreshExplorer(node)
@@ -43,7 +43,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         }),
 
         Commands.register('aws.ec2.stopInstance', async (node?: Ec2Node) => {
-            await telemetry.ec2_changeState.run(async span => {
+            await telemetry.ec2_changeState.run(async (span) => {
                 span.record({ ec2InstanceState: 'stop' })
                 await stopInstance(node)
                 refreshExplorer(node)
@@ -51,7 +51,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         }),
 
         Commands.register('aws.ec2.rebootInstance', async (node?: Ec2Node) => {
-            await telemetry.ec2_changeState.run(async span => {
+            await telemetry.ec2_changeState.run(async (span) => {
                 span.record({ ec2InstanceState: 'reboot' })
                 await rebootInstance(node)
                 refreshExplorer(node)

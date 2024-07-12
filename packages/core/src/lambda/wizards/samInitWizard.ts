@@ -65,7 +65,7 @@ function createSamTemplatePrompter(
     samCliVersion: string
 ): QuickPickPrompter<SamTemplate> {
     const templates = getSamTemplateWizardOption(currRuntime, packageType, samCliVersion)
-    const items = templates.toArray().map(template => ({
+    const items = templates.toArray().map((template) => ({
         label: template,
         data: template,
         detail: getTemplateDescription(template),
@@ -82,12 +82,12 @@ function createSchemaRegionPrompter(regions: Region[], defaultRegion?: string): 
         title: localize('AWS.samcli.initWizard.schemas.region.prompt', 'Select an EventBridge Schemas Region'),
         buttons: createCommonButtons(eventBridgeSchemasDocUrl),
         defaultRegion,
-    }).transform(r => r.id)
+    }).transform((r) => r.id)
 }
 
 function createDependencyPrompter(currRuntime: Runtime): QuickPickPrompter<DependencyManager> {
     const dependencyManagers = getDependencyManager(currRuntime)
-    const items = dependencyManagers.map(dependencyManager => ({ label: dependencyManager }))
+    const items = dependencyManagers.map((dependencyManager) => ({ label: dependencyManager }))
 
     return createLabelQuickPick(items, {
         title: localize('AWS.samcli.initWizard.dependencyManager.prompt', 'Select a Dependency Manager'),
@@ -99,7 +99,7 @@ function createRegistryPrompter(region: string, credentials?: AWS.Credentials): 
     const client = new DefaultSchemaClient(region)
     const items = SchemasDataProvider.getInstance()
         .getRegistries(region, client, credentials!)
-        .then(registryNames => {
+        .then((registryNames) => {
             if (!registryNames) {
                 void vscode.window.showInformationMessage(
                     localize(
@@ -110,7 +110,7 @@ function createRegistryPrompter(region: string, credentials?: AWS.Credentials): 
                 return []
             }
 
-            return registryNames.map(registry => ({
+            return registryNames.map((registry) => ({
                 label: registry,
             }))
         })
@@ -129,7 +129,7 @@ function createSchemaPrompter(
     const client = new DefaultSchemaClient(region)
     const items = SchemasDataProvider.getInstance()
         .getSchemas(region, registry, client, credentials!)
-        .then(schemas => {
+        .then((schemas) => {
             if (!schemas) {
                 void vscode.window.showInformationMessage(
                     localize(
@@ -148,7 +148,7 @@ function createSchemaPrompter(
                 return []
             }
 
-            return schemas.map(schema => ({
+            return schemas.map((schema) => ({
                 label: schema.SchemaName!,
             }))
         })
@@ -204,15 +204,18 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
 
         this.form.runtimeAndPackage.bindPrompter(() => createRuntimePrompter(context.samCliVersion))
 
-        this.form.dependencyManager.bindPrompter(state => createDependencyPrompter(state.runtimeAndPackage!.runtime!), {
-            showWhen: state =>
-                state.runtimeAndPackage?.runtime !== undefined &&
-                getDependencyManager(state.runtimeAndPackage.runtime).length > 1,
-            setDefault: state =>
-                state.runtimeAndPackage?.runtime !== undefined
-                    ? getDependencyManager(state.runtimeAndPackage.runtime)[0]
-                    : undefined,
-        })
+        this.form.dependencyManager.bindPrompter(
+            (state) => createDependencyPrompter(state.runtimeAndPackage!.runtime!),
+            {
+                showWhen: (state) =>
+                    state.runtimeAndPackage?.runtime !== undefined &&
+                    getDependencyManager(state.runtimeAndPackage.runtime).length > 1,
+                setDefault: (state) =>
+                    state.runtimeAndPackage?.runtime !== undefined
+                        ? getDependencyManager(state.runtimeAndPackage.runtime)[0]
+                        : undefined,
+            }
+        )
 
         // TODO: remove `partial` when updated wizard types gets merged (need to make the PR first of course...)
         function canShowArchitecture(
@@ -234,7 +237,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
             showWhen: canShowArchitecture,
         })
 
-        this.form.template.bindPrompter(state =>
+        this.form.template.bindPrompter((state) =>
             createSamTemplatePrompter(
                 state.runtimeAndPackage!.runtime!,
                 state.runtimeAndPackage!.packageType!,
@@ -250,12 +253,12 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
             showWhen: isStarterTemplate,
         })
 
-        this.form.registryName.bindPrompter(form => createRegistryPrompter(form.region!, context.credentials), {
+        this.form.registryName.bindPrompter((form) => createRegistryPrompter(form.region!, context.credentials), {
             showWhen: isStarterTemplate,
         })
 
         this.form.schemaName.bindPrompter(
-            state => createSchemaPrompter(state.region!, state.registryName!, context.credentials),
+            (state) => createSchemaPrompter(state.region!, state.registryName!, context.credentials),
             {
                 showWhen: isStarterTemplate,
             }
@@ -272,7 +275,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
             })
         )
 
-        this.form.name.bindPrompter(async state => {
+        this.form.name.bindPrompter(async (state) => {
             const fname = await getNonexistentFilename(
                 state.location!.fsPath,
                 `lambda-${state.runtimeAndPackage!.runtime}`,

@@ -21,7 +21,7 @@ describe('createRepositoryCommand', function () {
     })
 
     it('Validates repository name against large regex the service uses', function () {
-        ;['abc--a', 'abc//a', 'abc__a', 'abc-', 'abc/', 'abc_'].forEach(item =>
+        ;['abc--a', 'abc//a', 'abc__a', 'abc-', 'abc/', 'abc_'].forEach((item) =>
             assert.strictEqual(validateRepositoryName(item), 'Invalid repository name')
         )
     })

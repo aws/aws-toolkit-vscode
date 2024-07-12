@@ -45,7 +45,7 @@ describe('securityScanLanguageContext', function () {
             await resetCodeWhispererGlobalVariables()
         })
 
-        cases.forEach(tuple => {
+        cases.forEach((tuple) => {
             const languageId = tuple[0]
             const expected = tuple[1]
 

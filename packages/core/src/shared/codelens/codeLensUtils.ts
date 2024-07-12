@@ -150,7 +150,7 @@ export async function invokeCodeLensCommandPalette(
 ): Promise<void> {
     const labelRenderRange = 200
     const handlers: (vscode.QuickPickItem & { lens?: vscode.CodeLens })[] = lenses
-        .filter(lens => {
+        .filter((lens) => {
             // remove codelenses that go to the invoker UI
             // maybe move this into the workflow at some point (drop down to one)
             return (
@@ -161,7 +161,7 @@ export async function invokeCodeLensCommandPalette(
                 lens.command.arguments![2] !== true
             )
         })
-        .map(lens => {
+        .map((lens) => {
             return {
                 // lens is currently pulling the entire function, not just the declaration
                 label: document.getText(
@@ -230,7 +230,7 @@ export async function pickAddSamDebugConfiguration(
 
     const templateItemsMap = new Map<string, AddSamDebugConfigurationInput>()
     const templateItems: vscode.QuickPickItem[] = []
-    templateConfigs.forEach(templateConfig => {
+    templateConfigs.forEach((templateConfig) => {
         const label = `${
             getWorkspaceRelativePath(templateConfig.rootUri.fsPath)?.relativePath ?? templateConfig.rootUri.fsPath
         }:${templateConfig.resourceName}`
