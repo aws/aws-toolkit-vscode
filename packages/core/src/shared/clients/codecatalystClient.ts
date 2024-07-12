@@ -11,7 +11,7 @@ const localize = nls.loadMessageBundle()
 
 import * as AWS from 'aws-sdk'
 import * as logger from '../logger/logger'
-import { PerfLog } from '../logger/logger'
+import { PerfLog } from '../logger/perfLogger'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { CancellationError, Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
 import { isUserCancelledError } from '../../shared/errors'

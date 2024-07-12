@@ -33,6 +33,7 @@ import { AuthEnabledFeatures, AuthError, AuthFlowState, AuthUiClick, TelemetryMe
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { DevSettings } from '../../../shared/settings'
 import { AuthSSOServer } from '../../../auth/sso/server'
+import { getLogger } from '../../../shared/logger/logger'
 
 export abstract class CommonAuthWebview extends VueWebview {
     private metricMetadata: TelemetryMetadata = {}
@@ -75,7 +76,8 @@ export abstract class CommonAuthWebview extends VueWebview {
                 await setupFunc()
                 return
             } catch (e) {
-                console.log(e)
+                getLogger().error('ssoSetup encountered an error: %s', e)
+
                 if (e instanceof ToolkitError && e.code === 'NotOnboarded') {
                     /**
                      * Connection is fine, they just skipped onboarding so not an actual error.
