@@ -31,6 +31,7 @@ export async function searchDynamoDbTables(source: string, dbData?: { regionName
         }
         const tableOutput = await getItemsFromTable(response.submenuResponse.region, response.submenuResponse.data)
 
+        // This is a temporary change
         const output = `${JSON.stringify(tableOutput.Items, undefined, 4)}\n`
         const filePath = process.env['HOME'] + '/Documents/dynamoDbItems.json'
         await fs.writeFile(filePath, output)
