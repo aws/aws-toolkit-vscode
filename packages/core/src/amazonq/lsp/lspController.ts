@@ -316,7 +316,6 @@ export class LspController {
             const files = await collectFilesForIndex(
                 projPaths,
                 vscode.workspace.workspaceFolders as CurrentWsFolders,
-                true,
                 CodeWhispererSettings.instance.getMaxIndexSize() * 1024 * 1024
             )
             const totalSizeBytes = files.reduce(
