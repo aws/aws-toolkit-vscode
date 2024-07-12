@@ -31,7 +31,11 @@ describe('eslint', function () {
                 '**/resources/js/graphStateMachine.js',
                 '--ext',
                 '.ts',
-                '.',
+                '../amazonq',
+                '../core',
+                '../toolkit',
+                // TODO: fix lint issues in scripts/
+                // '../../scripts',
             ],
             {
                 throws: false,
