@@ -49,7 +49,7 @@ describe('awsFiletypes', function () {
         const r = await waitUntil(
             async () => {
                 const metrics = await toArrayAsync(
-                    globals.telemetry.findIter(m => {
+                    globals.telemetry.findIter((m) => {
                         return m.MetricName === 'file_editAwsFile'
                     })
                 )
@@ -60,7 +60,7 @@ describe('awsFiletypes', function () {
 
         assert(r, 'did not emit expected telemetry')
         assert(r.length === 3, 'emitted file_editAwsFile too many times')
-        const metrics = r.map(o => o.Metadata?.find(o => o.Key === 'awsFiletype')?.Value)
+        const metrics = r.map((o) => o.Metadata?.find((o) => o.Key === 'awsFiletype')?.Value)
         // The order is arbitrary (decided by vscode event system).
         metrics.sort()
         assert.deepStrictEqual(metrics, ['awsCredentials', 'cloudformationSam', 'ssmDocument'])
@@ -72,7 +72,7 @@ describe('awsFiletypes', function () {
             return await waitUntil(
                 async () => {
                     const metrics = await toArrayAsync(
-                        globals.telemetry.findIter(m => {
+                        globals.telemetry.findIter((m) => {
                             return m.MetricName === 'file_editAwsFile'
                         })
                     )

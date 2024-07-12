@@ -75,7 +75,7 @@ export class TestStatusBar implements Pick<typeof vscode.window, 'setStatusBarMe
      * This is sorted in the order they would normally appear, i.e. left to right
      */
     public get messages(): string[] {
-        return this.#items.filter(i => i.visible).map(i => i.text)
+        return this.#items.filter((i) => i.visible).map((i) => i.text)
     }
 
     public setStatusBarMessage(text: string, hideWhen?: number | Thenable<any>): vscode.Disposable {

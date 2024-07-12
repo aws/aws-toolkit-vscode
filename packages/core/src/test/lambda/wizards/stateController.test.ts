@@ -76,18 +76,18 @@ describe('StateMachineController', function () {
         const step1 = sinon.stub()
         const step2 = sinon.stub()
         const step3 = sinon.stub()
-        step1.callsFake(state => {
+        step1.callsFake((state) => {
             assert.strictEqual(state.mystring, '')
             state.mystring = 'a string'
             return state
         })
-        step2.callsFake(state => {
+        step2.callsFake((state) => {
             const last = state.isGood
             state.isGood = false
             return { ...state, isGood: last }
         })
         step3.onFirstCall().returns(undefined)
-        step3.onSecondCall().callsFake(state => state)
+        step3.onSecondCall().callsFake((state) => state)
         controller.addStep(step1)
         controller.addStep(step2)
         controller.addStep(step3)
@@ -116,7 +116,7 @@ describe('StateMachineController', function () {
             const stub2 = sinon.stub()
             stub1.returns({ nextState: { answer: true } })
             stub2.onFirstCall().returns({ controlSignal: ControlSignal.Retry })
-            stub2.onSecondCall().callsFake(state => ({ nextState: state }))
+            stub2.onSecondCall().callsFake((state) => ({ nextState: state }))
             controller.addStep(stub1)
             controller.addStep(stub2)
 
@@ -142,7 +142,7 @@ describe('StateMachineController', function () {
             const branchStep1 = sinon.stub()
             const branchStep2 = sinon.stub()
             step1.returns({ nextState: {}, nextSteps: [branchStep1, branchStep2] })
-            branchStep1.callsFake(state => assertStepsPassthrough(controller, 2, 3, { nextState: state }))
+            branchStep1.callsFake((state) => assertStepsPassthrough(controller, 2, 3, { nextState: state }))
             branchStep2.returns({})
             controller.addStep(step1)
 
@@ -157,9 +157,9 @@ describe('StateMachineController', function () {
             const branch2 = sinon.stub()
             const step5 = sinon.stub()
             step1.returns({ nextState: {}, nextSteps: [branch1Step1, branch1Step2] })
-            branch1Step1.callsFake(state => assertStepsPassthrough(controller, 2, 4, state))
+            branch1Step1.callsFake((state) => assertStepsPassthrough(controller, 2, 4, state))
             branch1Step2.returns({ nextState: {}, nextSteps: [branch2] })
-            branch2.callsFake(state => assertStepsPassthrough(controller, 4, 5, state))
+            branch2.callsFake((state) => assertStepsPassthrough(controller, 4, 5, state))
             step5.returns({})
             controller.addStep(step1)
             controller.addStep(step5)
@@ -215,11 +215,11 @@ describe('StateMachineController', function () {
                 })
             )
             branch1.returns(undefined)
-            branch2.callsFake(state =>
+            branch2.callsFake((state) =>
                 assertStepsPassthrough(controller, 2, 3, { nextState: { branch2: 'yes', branch1: state.branch1 } })
             )
             step3.onFirstCall().returns(undefined)
-            step3.onSecondCall().callsFake(state => state)
+            step3.onSecondCall().callsFake((state) => state)
             controller.addStep(step1)
             controller.addStep(step3)
 

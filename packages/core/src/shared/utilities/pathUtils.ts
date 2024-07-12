@@ -106,8 +106,8 @@ export function normalize(p: string): string {
 export function getLocalRootVariants(filePath: string): string[] {
     if (process.platform === 'win32' && driveLetterRegex.test(filePath)) {
         return [
-            filePath.replace(driveLetterRegex, match => match.toLowerCase()),
-            filePath.replace(driveLetterRegex, match => match.toUpperCase()),
+            filePath.replace(driveLetterRegex, (match) => match.toLowerCase()),
+            filePath.replace(driveLetterRegex, (match) => match.toUpperCase()),
         ]
     }
 

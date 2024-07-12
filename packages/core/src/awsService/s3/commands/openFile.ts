@@ -51,7 +51,7 @@ async function isFileSizeValid(size: number | undefined, fileNode: S3FileNode): 
                 ),
                 downloadAs
             )
-            .then(async response => {
+            .then(async (response) => {
                 if (response === downloadAs) {
                     await downloadFileAsCommand(fileNode)
                 }

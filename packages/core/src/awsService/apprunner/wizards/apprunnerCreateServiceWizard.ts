@@ -61,7 +61,7 @@ function createInstanceStep(): Prompter<AppRunner.InstanceConfiguration> {
         [2, 4],
     ]
 
-    const items: picker.DataQuickPickItem<AppRunner.InstanceConfiguration>[] = enumerations.map(e => ({
+    const items: picker.DataQuickPickItem<AppRunner.InstanceConfiguration>[] = enumerations.map((e) => ({
         label: `${e[0]} vCPUs, ${e[1]} GBs Memory`,
         data: { Cpu: `${e[0]} vCPU`, Memory: `${e[1]} GB` },
     }))
@@ -127,10 +127,10 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
         form.SourceConfiguration.bindPrompter(() => createSourcePrompter(autoDeployButton))
 
         form.SourceConfiguration.applyBoundForm(imageRepositoryWizard.boundForm, {
-            showWhen: state => state.SourceConfiguration?.ImageRepository !== undefined,
+            showWhen: (state) => state.SourceConfiguration?.ImageRepository !== undefined,
         })
         form.SourceConfiguration.applyBoundForm(codeRepositoryWizard.boundForm, {
-            showWhen: state => state.SourceConfiguration?.CodeRepository !== undefined,
+            showWhen: (state) => state.SourceConfiguration?.CodeRepository !== undefined,
         })
 
         form.ServiceName.bindPrompter(() =>

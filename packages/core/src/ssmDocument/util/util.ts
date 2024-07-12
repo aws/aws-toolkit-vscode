@@ -14,7 +14,7 @@ export async function promptUserForDocumentFormat(
     params?: { step?: number; totalSteps?: number }
 ): Promise<string | undefined> {
     // Prompt user to pick document format
-    const quickPickItems: vscode.QuickPickItem[] = formats.map(format => {
+    const quickPickItems: vscode.QuickPickItem[] = formats.map((format) => {
         return {
             label: format,
             description: `Download document as ${format}`,

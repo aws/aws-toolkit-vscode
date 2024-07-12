@@ -55,7 +55,7 @@ export async function listScanResults(
     const collection = pageableToCollection(requester, { jobId, codeScanFindingsSchema }, 'nextToken')
     const issues = await collection
         .flatten()
-        .map(resp => {
+        .map((resp) => {
             logger.verbose(`Request id: ${resp.$response.requestId}`)
             if ('codeScanFindings' in resp) {
                 return resp.codeScanFindings
@@ -63,13 +63,13 @@ export async function listScanResults(
             return resp.codeAnalysisFindings
         })
         .promise()
-    issues.forEach(issue => {
+    issues.forEach((issue) => {
         mapToAggregatedList(codeScanIssueMap, issue, editor, scope)
     })
     codeScanIssueMap.forEach((issues, key) => {
         // Project path example: /Users/username/project
         // Key example: project/src/main/java/com/example/App.java
-        projectPaths.forEach(projectPath => {
+        projectPaths.forEach((projectPath) => {
             // We need to remove the project path from the key to get the absolute path to the file
             // Do not use .. in between because there could be multiple project paths in the same parent dir.
             const filePath = path.join(projectPath, key.split('/').slice(1).join('/'))
@@ -118,11 +118,11 @@ export function mapToAggregatedList(
     scope: CodeWhispererConstants.CodeAnalysisScope
 ) {
     const codeScanIssues: RawCodeScanIssue[] = JSON.parse(json)
-    const filteredIssues = codeScanIssues.filter(issue => {
+    const filteredIssues = codeScanIssues.filter((issue) => {
         if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE && editor) {
             for (let lineNumber = issue.startLine; lineNumber <= issue.endLine; lineNumber++) {
                 const line = editor.document.lineAt(lineNumber - 1)?.text
-                const codeContent = issue.codeSnippet.find(codeIssue => codeIssue.number === lineNumber)?.content
+                const codeContent = issue.codeSnippet.find((codeIssue) => codeIssue.number === lineNumber)?.content
                 if (line !== codeContent) {
                     return false
                 }
@@ -131,7 +131,7 @@ export function mapToAggregatedList(
         return true
     })
 
-    filteredIssues.forEach(issue => {
+    filteredIssues.forEach((issue) => {
         const filePath = issue.filePath
         if (codeScanIssueMap.has(filePath)) {
             codeScanIssueMap.get(filePath)?.push(issue)
@@ -196,7 +196,7 @@ export async function createScanJob(
         scope: scope,
         codeScanName: scanName,
     }
-    const resp = await client.createCodeScan(req).catch(err => {
+    const resp = await client.createCodeScan(req).catch((err) => {
         getLogger().error(`Failed creating scan job. Request id: ${err.requestId}`)
         throw new CreateCodeScanError(err)
     })
@@ -227,7 +227,7 @@ export async function getPresignedUrlAndUpload(
         },
     }
     logger.verbose(`Prepare for uploading src context...`)
-    const srcResp = await client.createUploadUrl(srcReq).catch(err => {
+    const srcResp = await client.createUploadUrl(srcReq).catch((err) => {
         getLogger().error(`Failed getting presigned url for uploading src context. Request id: ${err.requestId}`)
         throw new CreateUploadUrlError(err)
     })

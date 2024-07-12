@@ -201,12 +201,12 @@ export abstract class SsoAccessTokenProvider {
 
         // During certain flows, eg reauthentication, we are already running within a span (run())
         // so we don't need to create a new one.
-        const span = telemetry.spans.find(s => s.name === 'aws_loginWithBrowser')
+        const span = telemetry.spans.find((s) => s.name === 'aws_loginWithBrowser')
         if (span !== undefined) {
             return run(span as unknown as Metric<AwsLoginWithBrowser>)
         }
 
-        return telemetry.aws_loginWithBrowser.run(span => {
+        return telemetry.aws_loginWithBrowser.run((span) => {
             return run(span)
         })
     }
@@ -538,7 +538,7 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
             // Temporary delay to make sure the auth ui was displayed to the user before closing
             // inspired by https://github.com/microsoft/vscode/blob/a49c81edea6647684eee87d204e50feed9c455f6/extensions/github-authentication/src/flows.ts#L262
             setTimeout(() => {
-                authServer.close().catch(e => {
+                authServer.close().catch((e) => {
                     getLogger().error(
                         'AuthFlowAuthorization: AuthSSOServer.close() failed: %s: %s',
                         (e as Error).name,

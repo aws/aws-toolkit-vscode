@@ -207,7 +207,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public constructor(readonly extContext: ExtContext) {}
 
     public get workspaceFolders(): vscode.Uri[] | undefined {
-        return (vscode.workspace.workspaceFolders || []).map(f => f.uri)
+        return (vscode.workspace.workspaceFolders || []).map((f) => f.uri)
     }
 
     public async determineIfTemplateHasImages(templatePath: vscode.Uri): Promise<boolean> {
@@ -217,8 +217,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             return false
         } else {
             return Object.keys(resources)
-                .filter(key => resources[key]?.Type === 'AWS::Serverless::Function')
-                .map(key => resources[key]?.Properties?.PackageType)
+                .filter((key) => resources[key]?.Type === 'AWS::Serverless::Function')
+                .map((key) => resources[key]?.Properties?.PackageType)
                 .includes('Image')
         }
     }
@@ -368,7 +368,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 step: step,
                 totalSteps: this.totalSteps + this.additionalSteps,
             },
-            items: partitionRegions.map(region => ({
+            items: partitionRegions.map((region) => ({
                 label: region.name,
                 detail: region.id,
                 // this is the only way to get this to show on going back
@@ -448,7 +448,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         // Not awaiting lets us display a "loading" quick pick for immediate feedback.
         // Does not use an IteratingQuickPick because listing S3 buckets by region is not a paginated operation.
         populateS3QuickPick(quickPick, selectedRegion, SamCliSettings.instance, messages, profile, accountId).catch(
-            e => {
+            (e) => {
                 getLogger().error('populateS3QuickPick: %s', (e as Error).message)
             }
         )
@@ -549,7 +549,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
         const populator = new IteratorTransformer<EcrRepository, vscode.QuickPickItem>(
             () => new DefaultEcrClient(selectedRegion).describeRepositories(),
-            response => (response === undefined ? [] : [{ label: response.repositoryName, repository: response }])
+            (response) => (response === undefined ? [] : [{ label: response.repositoryName, repository: response }])
         )
         const controller = new picker.IteratingQuickPickController(quickPick, populator)
         controller.startRequests()
@@ -737,7 +737,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
         }
 
         const requiredParameterNames = new Set<string>(
-            filter(parameters.keys(), name => parameters.get(name)!.required)
+            filter(parameters.keys(), (name) => parameters.get(name)!.required)
         )
         const overriddenParameters = await this.context.getOverriddenParameters(this.response.template)
         if (!overriddenParameters) {
@@ -773,13 +773,13 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
         return wizardContinue(this.skipOrPromptRegion(this.S3_BUCKET))
     }
 
-    private readonly REGION: WizardStep = async step => {
+    private readonly REGION: WizardStep = async (step) => {
         this.response.region = await this.context.promptUserForRegion(step, this.response.region)
 
         return this.response.region ? wizardContinue(this.S3_BUCKET) : WIZARD_GOBACK
     }
 
-    private readonly S3_BUCKET: WizardStep = async step => {
+    private readonly S3_BUCKET: WizardStep = async (step) => {
         const profile = this.context.extContext.awsContext.getCredentialProfileName() || ''
         const accountId = this.context.extContext.awsContext.getCredentialAccountId() || ''
         const response = await this.context.promptUserForS3Bucket(
@@ -836,7 +836,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
         return this.hasImages ? wizardContinue(this.ECR_REPO) : wizardContinue(this.STACK_NAME)
     }
 
-    private readonly ECR_REPO: WizardStep = async step => {
+    private readonly ECR_REPO: WizardStep = async (step) => {
         const response = await this.context.promptUserForEcrRepo(step, this.response.region, this.response.ecrRepo)
 
         this.response.ecrRepo = response
@@ -943,11 +943,11 @@ function validateStackName(value: string): string | undefined {
 }
 
 async function getTemplateChoices(...workspaceFolders: vscode.Uri[]): Promise<SamTemplateQuickPickItem[]> {
-    const templateUris = (await globals.templateRegistry).items.map(o => vscode.Uri.file(o.path))
+    const templateUris = (await globals.templateRegistry).items.map((o) => vscode.Uri.file(o.path))
     const uriToLabel: Map<vscode.Uri, string> = new Map<vscode.Uri, string>()
     const labelCounts: Map<string, number> = new Map()
 
-    templateUris.forEach(uri => {
+    templateUris.forEach((uri) => {
         const label = SamTemplateQuickPickItem.getLabel(uri)
         uriToLabel.set(uri, label)
         labelCounts.set(label, 1 + (labelCounts.get(label) || 0))
@@ -977,7 +977,7 @@ async function populateS3QuickPick(
     profile?: string,
     accountId?: string
 ): Promise<void> {
-    return new Promise(async resolve => {
+    return new Promise(async (resolve) => {
         const goBack: string = localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back')
         const baseItems: vscode.QuickPickItem[] = []
         const cloud9Bucket = `cloud9-${accountId}-sam-deployments-${selectedRegion}`
@@ -1026,8 +1026,8 @@ async function populateS3QuickPick(
                 ]
             } else {
                 const bucketItems = buckets
-                    .filter(bucket => bucket.name !== recent && !(isCloud9() && bucket.name === cloud9Bucket))
-                    .map(bucket => {
+                    .filter((bucket) => bucket.name !== recent && !(isCloud9() && bucket.name === cloud9Bucket))
+                    .map((bucket) => {
                         return {
                             label: bucket.name,
                         }

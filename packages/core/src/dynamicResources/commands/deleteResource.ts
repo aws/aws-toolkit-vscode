@@ -34,7 +34,7 @@ export async function deleteResource(
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
         },
-        async progress => {
+        async (progress) => {
             let result: Result = 'Succeeded'
             const startTime = new globals.clock.Date()
 

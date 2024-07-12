@@ -26,7 +26,7 @@ import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
  * Represents an IoT Thing that may have attached certificates.
  */
 export class IotThingNode extends AWSTreeNodeBase implements AWSResourceNode, LoadMoreNode {
-    private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
+    private readonly childLoader = new ChildNodeLoader(this, (token) => this.loadPage(token))
 
     public constructor(
         public readonly thing: IotThing,
@@ -70,9 +70,9 @@ export class IotThingNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
 
         const newCerts =
             response.certificates
-                ?.filter(cert => cert.certificateArn && cert.certificateId && cert.status && cert.creationDate)
+                ?.filter((cert) => cert.certificateArn && cert.certificateId && cert.status && cert.creationDate)
                 .map(
-                    cert =>
+                    (cert) =>
                         new IotThingCertNode(
                             {
                                 arn: cert.certificateArn!,

@@ -103,14 +103,14 @@ export class IotPolicyWithVersionsNode extends IotPolicyNode {
     public async updateChildren(): Promise<void> {
         const versions: Map<string, Iot.PolicyVersion> = toMap(
             await toArrayAsync(this.iot.listPolicyVersions({ policyName: this.policy.name })),
-            version => version.versionId
+            (version) => version.versionId
         )
 
         updateInPlace(
             this.versionNodes,
             versions.keys(),
-            key => this.versionNodes.get(key)!.update(versions.get(key)!),
-            key => new IotPolicyVersionNode(this.policy, versions.get(key)!, false, this, this.iot)
+            (key) => this.versionNodes.get(key)!.update(versions.get(key)!),
+            (key) => new IotPolicyVersionNode(this.policy, versions.get(key)!, false, this, this.iot)
         )
     }
 

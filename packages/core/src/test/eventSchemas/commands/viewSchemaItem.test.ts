@@ -104,7 +104,7 @@ describe('viewSchemaItem', async function () {
             edit: () => {},
         } as any as vscode.TextEditor
 
-        sinon.stub(textEditor, 'edit').callsFake(async editBuilder => {
+        sinon.stub(textEditor, 'edit').callsFake(async (editBuilder) => {
             editBuilder(textEdit)
 
             return true

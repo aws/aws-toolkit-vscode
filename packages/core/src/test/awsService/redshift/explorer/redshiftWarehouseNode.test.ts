@@ -23,12 +23,12 @@ import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBa
 
 function verifyChildNodes(childNodes: AWSTreeNodeBase[], databaseNodeCount: number, shouldHaveLoadMore: boolean) {
     assert.strictEqual(childNodes.length, databaseNodeCount + (shouldHaveLoadMore ? 1 : 0) + 1)
-    const startButtonNodes = childNodes.filter(node => node instanceof CreateNotebookNode)
+    const startButtonNodes = childNodes.filter((node) => node instanceof CreateNotebookNode)
     assert.strictEqual(startButtonNodes.length, 1)
     assert.ok(childNodes[0] instanceof CreateNotebookNode)
-    const databaseNodes = childNodes.filter(node => node instanceof RedshiftDatabaseNode)
+    const databaseNodes = childNodes.filter((node) => node instanceof RedshiftDatabaseNode)
     assert.strictEqual(databaseNodes.length, databaseNodeCount)
-    const loadMoreNodes = childNodes.filter(node => node instanceof MoreResultsNode)
+    const loadMoreNodes = childNodes.filter((node) => node instanceof MoreResultsNode)
     assert.strictEqual(loadMoreNodes.length, shouldHaveLoadMore ? 1 : 0)
 }
 
@@ -54,7 +54,7 @@ describe('redshiftWarehouseNode', function () {
         const mockRedshiftData = <RedshiftData>{}
         const redshiftClient = new DefaultRedshiftClient(
             'us-east-1',
-            async r => Promise.resolve(mockRedshiftData),
+            async (r) => Promise.resolve(mockRedshiftData),
             undefined,
             undefined
         )

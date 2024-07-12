@@ -290,7 +290,7 @@ export abstract class VueWebview {
 
             public register(params: Omit<WebviewViewParams, 'id' | 'webviewJs'>): vscode.Disposable {
                 return vscode.window.registerWebviewViewProvider(this.instance.id, {
-                    resolveWebviewView: async view => {
+                    resolveWebviewView: async (view) => {
                         view.title = params.title ?? view.title
                         view.description = params.description ?? view.description
                         updateWebview(this.context, view.webview, {
@@ -369,7 +369,7 @@ function createWebviewPanel(ctx: vscode.ExtensionContext, params: WebviewPanelPa
 }
 
 function resolveRelative(webview: vscode.Webview, rootUri: vscode.Uri, files: string[]): vscode.Uri[] {
-    return files.map(f => webview.asWebviewUri(vscode.Uri.joinPath(rootUri, f)))
+    return files.map((f) => webview.asWebviewUri(vscode.Uri.joinPath(rootUri, f)))
 }
 
 /**
@@ -399,8 +399,8 @@ function updateWebview(ctx: vscode.ExtensionContext, webview: vscode.Webview, pa
     const mainScript = webview.asWebviewUri(vscode.Uri.joinPath(dist, params.webviewJs))
 
     webview.html = resolveWebviewHtml({
-        scripts: libs.map(p => `<script src="${p}"></script>`).join('\n'),
-        stylesheets: css.map(p => `<link rel="stylesheet" href="${p}">\n`).join('\n'),
+        scripts: libs.map((p) => `<script src="${p}"></script>`).join('\n'),
+        stylesheets: css.map((p) => `<link rel="stylesheet" href="${p}">\n`).join('\n'),
         main: mainScript,
         webviewJs: params.webviewJs,
         cspSource: updateCspSource(webview.cspSource),

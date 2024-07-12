@@ -33,7 +33,7 @@ export async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<Lambd
         (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri)) ??
         []
 
-    return symbols.filter(isTopLevelFunction).map<LambdaHandlerCandidate>(symbol => {
+    return symbols.filter(isTopLevelFunction).map<LambdaHandlerCandidate>((symbol) => {
         return {
             filename,
             handlerName: `${handlerPath}.${symbol.name}`,

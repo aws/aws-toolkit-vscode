@@ -31,7 +31,7 @@ function lazyProgress<T extends Record<string, any>>(timeout: Timeout): LazyProg
     let dispose!: () => void
     let progress: vscode.Progress<T>
     const location = vscode.ProgressLocation.Notification
-    const thenable = new Promise<void>(resolve => {
+    const thenable = new Promise<void>((resolve) => {
         dispose = resolve
         timeout.token.onCancellationRequested(() => resolve)
     })
@@ -39,11 +39,11 @@ function lazyProgress<T extends Record<string, any>>(timeout: Timeout): LazyProg
     return {
         dispose,
         getToken: () => timeout,
-        report: value => {
+        report: (value) => {
             if (!progress) {
                 void vscode.window.withProgress({ location, cancellable: true }, (p, t) => {
                     progress = p
-                    t.onCancellationRequested(e => timeout.cancel())
+                    t.onCancellationRequested((e) => timeout.cancel())
                     return thenable
                 })
             }
@@ -85,7 +85,7 @@ async function openTerminal(client: CodeCatalystClient, progress: LazyProgress<{
 export async function installVsixCommand(ctx: vscode.ExtensionContext) {
     const commands = CodeCatalystCommands.fromContext(ctx)
 
-    await commands.withClient(async client => {
+    await commands.withClient(async (client) => {
         const env = await selectCodeCatalystResource(client, 'devEnvironment')
         if (!env) {
             return
@@ -105,7 +105,9 @@ async function promptVsix(
     ctx: vscode.ExtensionContext,
     progress?: LazyProgress<{ message: string }>
 ): Promise<vscode.Uri | undefined> {
-    const folders = (vscode.workspace.workspaceFolders ?? []).map(f => f.uri).concat(vscode.Uri.file(ctx.extensionPath))
+    const folders = (vscode.workspace.workspaceFolders ?? [])
+        .map((f) => f.uri)
+        .concat(vscode.Uri.file(ctx.extensionPath))
 
     const isDevelopmentWindow = ctx.extensionMode === vscode.ExtensionMode.Development
     const extPath = isDevelopmentWindow ? ctx.extensionPath : folders[0].fsPath
@@ -164,13 +166,13 @@ async function promptVsix(
 
         for (const f of folders) {
             const paths = await glob('*.vsix', { cwd: f.fsPath })
-            const uris = paths.map(v => vscode.Uri.file(path.join(f.fsPath, v)))
+            const uris = paths.map((v) => vscode.Uri.file(path.join(f.fsPath, v)))
 
             if (uris.length > 0 && seps.length > 0) {
                 yield [seps.shift()!]
             }
 
-            yield uris.map(v => ({
+            yield uris.map((v) => ({
                 label: path.basename(v.fsPath),
                 detail: v.fsPath,
                 data: v,
@@ -196,7 +198,7 @@ async function installVsix(
     progress: LazyProgress<{ message: string }>,
     env: DevEnvironment
 ): Promise<void> {
-    const resp = await promptVsix(ctx, progress).then(r => r?.fsPath)
+    const resp = await promptVsix(ctx, progress).then((r) => r?.fsPath)
 
     if (!resp) {
         return
@@ -222,7 +224,7 @@ async function installVsix(
 
         // Using `.vscodeignore` would be nice here but `rsync` doesn't understand glob patterns
         const excludes = ['.git/', 'node_modules/', '/src/', '/scripts/', '/dist/src/test/']
-            .map(p => ['--exclude', p])
+            .map((p) => ['--exclude', p])
             .reduce((a, b) => a.concat(b))
 
         const installCommand = [`cd ${destName}`, 'npm i --ignore-scripts'].join(' && ')
@@ -241,7 +243,7 @@ async function installVsix(
             .split('-')
             .reverse()
             .slice(0, 2)
-            .map(s => s.replace('.vsix', ''))
+            .map((s) => s.replace('.vsix', ''))
         const destName = [extId, ...suffixParts.reverse()].join('-')
 
         const installCmd = [
@@ -263,7 +265,7 @@ async function installVsix(
 export async function deleteDevEnvCommand(ctx: vscode.ExtensionContext) {
     const commands = CodeCatalystCommands.fromContext(ctx)
 
-    await commands.withClient(async client => {
+    await commands.withClient(async (client) => {
         const devenv = await selectCodeCatalystResource(client, 'devEnvironment')
         if (!devenv) {
             return

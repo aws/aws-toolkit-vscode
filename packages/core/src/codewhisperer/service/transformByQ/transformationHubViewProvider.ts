@@ -41,10 +41,10 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     startInterval()
                 }
                 await this.showPlanProgress(startTime)
-                    .then(jobPlanProgress => {
+                    .then((jobPlanProgress) => {
                         this._view!.webview.html = jobPlanProgress
                     })
-                    .catch(e => {
+                    .catch((e) => {
                         getLogger().error('showPlanProgress failed: %s', (e as Error).message)
                     })
             }
@@ -71,10 +71,10 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             this._view!.webview.html = this.showJobHistory()
         } else {
             this.showPlanProgress(Date.now())
-                .then(jobPlanProgress => {
+                .then((jobPlanProgress) => {
                     this._view!.webview.html = jobPlanProgress
                 })
-                .catch(e => {
+                .catch((e) => {
                     getLogger().error('showPlanProgress failed: %s', (e as Error).message)
                 })
         }
@@ -319,7 +319,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             jobPlanProgress.generatePlan,
             jobPlanProgress.transformCode,
         ]
-            .map(it => (it === StepProgress.Succeeded ? 1 : 0) as number)
+            .map((it) => (it === StepProgress.Succeeded ? 1 : 0) as number)
             .reduce((prev, current) => prev + current)
         // When we receive plan step details, we want those to be active -> increment activeStepId
         activeStepId += planSteps === undefined || planSteps.length === 0 ? 0 : 1

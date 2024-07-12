@@ -24,7 +24,7 @@ export async function getDirSize(dirPath: string, startTime: number, duration: n
         return 0
     }
     const files = await fs.readdir(dirPath)
-    const fileSizes = files.map(async file => {
+    const fileSizes = files.map(async (file) => {
         const [fileName, type] = file
         const filePath = path.join(dirPath, fileName)
 

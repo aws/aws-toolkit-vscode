@@ -100,7 +100,7 @@ export class GlobalState implements vscode.Memento {
     tryUpdate(key: globalKey, value: any): void {
         this.memento.update(key, value).then(
             undefined, // TODO: log.debug() ?
-            e => {
+            (e) => {
                 getLogger().error('GlobalState: failed to set "%s": %s', key, (e as Error).message)
             }
         )

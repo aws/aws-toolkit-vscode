@@ -59,7 +59,7 @@ describe('openDocumentItem', async function () {
     }
 
     it('create DocumentItemNode and openDocumentItem functionality', async function () {
-        getTestWindow().onDidShowDialog(dialog => dialog.selectItem(vscode.Uri.file('test')))
+        getTestWindow().onDidShowDialog((dialog) => dialog.selectItem(vscode.Uri.file('test')))
         sinon.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(fakeFormatSelection))
         sinon.stub(picker, 'verifySinglePickerOutput').onFirstCall().returns(fakeFormatSelectionResult)
 

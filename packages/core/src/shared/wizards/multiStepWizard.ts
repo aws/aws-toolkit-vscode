@@ -180,7 +180,7 @@ export async function promptUserForLocation(
     }
 ): Promise<vscode.Uri | undefined> {
     const items: FolderQuickPickItem[] = (context.workspaceFolders || [])
-        .map<FolderQuickPickItem>(f => new WorkspaceFolderQuickPickItem(f))
+        .map<FolderQuickPickItem>((f) => new WorkspaceFolderQuickPickItem(f))
         .concat([
             new BrowseFolderQuickPickItem(
                 context,

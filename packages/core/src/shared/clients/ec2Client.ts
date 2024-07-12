@@ -46,10 +46,10 @@ export class Ec2Client {
         instances: AsyncCollection<EC2.Instance>
     ): Promise<AsyncCollection<EC2.Instance>> {
         return instances
-            .map(async instance => {
+            .map(async (instance) => {
                 return { ...instance, status: await this.getInstanceStatus(instance.InstanceId!) }
             })
-            .map(instance => {
+            .map((instance) => {
                 return instanceHasName(instance!)
                     ? { ...instance, name: lookupTagKey(instance!.Tags!, 'Name') }
                     : instance!
@@ -61,9 +61,9 @@ export class Ec2Client {
     ): AsyncCollection<EC2.Instance> {
         return reservations
             .flatten()
-            .map(instanceList => instanceList?.Instances)
+            .map((instanceList) => instanceList?.Instances)
             .flatten()
-            .filter(instance => instance!.InstanceId !== undefined)
+            .filter((instance) => instance!.InstanceId !== undefined)
     }
 
     public async getInstanceStatus(instanceId: string): Promise<EC2.InstanceStateName> {
@@ -78,7 +78,7 @@ export class Ec2Client {
             'InstanceStatuses'
         )
             .flatten()
-            .map(instanceStatus => instanceStatus!.InstanceState!.Name!)
+            .map((instanceStatus) => instanceStatus!.InstanceState!.Name!)
             .promise()
 
         return response[0]
@@ -200,7 +200,7 @@ export class Ec2Client {
             'IamInstanceProfileAssociations'
         )
             .flatten()
-            .filter(association => association !== undefined)
+            .filter((association) => association !== undefined)
             .promise()
 
         return response[0]!
@@ -222,9 +222,9 @@ export function getNameOfInstance(instance: EC2.Instance): string | undefined {
 }
 
 export function instanceHasName(instance: EC2.Instance): boolean {
-    return instance.Tags !== undefined && instance.Tags.some(tag => tag.Key === 'Name')
+    return instance.Tags !== undefined && instance.Tags.some((tag) => tag.Key === 'Name')
 }
 
 function lookupTagKey(tags: EC2.Tag[], targetKey: string) {
-    return tags.filter(tag => tag.Key === targetKey)[0].Value
+    return tags.filter((tag) => tag.Key === targetKey)[0].Value
 }

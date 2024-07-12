@@ -41,10 +41,10 @@ export class TemplateSymbolResolver {
         const allSymbols = await this.symbolProvider.getSymbols(this.document, waitForSymbols)
         // Only want top level (TODO: is this actually true?)
         const funSymbols = (
-            allSymbols.find(o => o.name === 'Resources' && o.kind === vscode.SymbolKind.Module)?.children ?? []
-        ).filter(r => this.isCfnType(CloudFormation.SERVERLESS_FUNCTION_TYPE, r))
+            allSymbols.find((o) => o.name === 'Resources' && o.kind === vscode.SymbolKind.Module)?.children ?? []
+        ).filter((r) => this.isCfnType(CloudFormation.SERVERLESS_FUNCTION_TYPE, r))
         if (kind === 'function') {
-            return funSymbols.map(r => ({ name: r.name, range: r.range, kind: kind }))
+            return funSymbols.map((r) => ({ name: r.name, range: r.range, kind: kind }))
         }
         // Api symbols:
         //
@@ -52,11 +52,11 @@ export class TemplateSymbolResolver {
         // track of the associated resource (Function) name.
         const apiSymbols: TemplateFunctionResource[] = []
         for (const funSymbol of funSymbols) {
-            const found = this.findDescendants([funSymbol], 'Events', vscode.SymbolKind.Module).filter(r =>
+            const found = this.findDescendants([funSymbol], 'Events', vscode.SymbolKind.Module).filter((r) =>
                 this.isCfnType('Api', r)
             )
             apiSymbols.push(
-                ...found.map(o => ({
+                ...found.map((o) => ({
                     // We want the resource name of the Function node (not Api,
                     // that node is always named "Events".)
                     name: funSymbol.name,
@@ -76,7 +76,7 @@ export class TemplateSymbolResolver {
         name: string,
         kind: vscode.SymbolKind
     ): vscode.DocumentSymbol[] {
-        const found = symbols.filter(v => v.name === name && v.kind === kind)
+        const found = symbols.filter((v) => v.name === name && v.kind === kind)
         for (const s of symbols) {
             found.push(...this.findDescendants(s.children, name, kind))
         }

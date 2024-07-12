@@ -50,7 +50,7 @@ const MessageTimeOut = 5_000
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.amazonq.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
     (suggestionState: CodeSuggestionsState) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        await telemetry.aws_modifySetting.run(async span => {
+        await telemetry.aws_modifySetting.run(async (span) => {
             span.record({
                 settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
             })
@@ -91,7 +91,7 @@ export const enableCodeSuggestions = Commands.declare(
 export const toggleCodeScans = Commands.declare(
     { id: 'aws.codeWhisperer.toggleCodeScan', compositeKey: { 1: 'source' } },
     (scansState: CodeScansState) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        await telemetry.aws_modifySetting.run(async span => {
+        await telemetry.aws_modifySetting.run(async (span) => {
             if (isBuilderIdConnection(AuthUtil.instance.conn)) {
                 throw new Error(`Auto-scans are not supported with the Amazon Builder ID connection.`)
             }
@@ -220,8 +220,8 @@ export const connectWithCustomization = Commands.declare(
             // Otherwise if only a prefix is given, find an entry that matches it.
             // Backwards compatible with previous implementation.
             const match = customizationArn
-                ? persistedCustomizations.find(c => c.arn === customizationArn)
-                : persistedCustomizations.find(c => c.name?.startsWith(customizationNamePrefix as string))
+                ? persistedCustomizations.find((c) => c.arn === customizationArn)
+                : persistedCustomizations.find((c) => c.name?.startsWith(customizationNamePrefix as string))
 
             // If no match is found, nothing to do :)
             if (!match) {
@@ -289,7 +289,7 @@ export const openSecurityIssuePanel = Commands.declare(
 export const notifyNewCustomizationsCmd = Commands.declare(
     { id: 'aws.amazonq.notifyNewCustomizations', logging: false },
     () => () => {
-        notifyNewCustomizations().catch(e => {
+        notifyNewCustomizations().catch((e) => {
             getLogger().error('notifyNewCustomizations failed: %s', (e as Error).message)
         })
     }
@@ -430,7 +430,7 @@ const registerToolkitApiCallbackOnce = once(() => {
     getLogger().info(`toolkitApi: Registering callbacks of toolkit api`)
     const auth = Auth.instance
 
-    auth.onDidChangeConnectionState(async e => {
+    auth.onDidChangeConnectionState(async (e) => {
         if (_toolkitApi && 'declareConnection' in _toolkitApi) {
             const id = e.id
             const conn = await auth.getConnection({ id })
@@ -446,7 +446,7 @@ const registerToolkitApiCallbackOnce = once(() => {
             }
         }
     })
-    auth.onDidDeleteConnection(async event => {
+    auth.onDidDeleteConnection(async (event) => {
         if (_toolkitApi && 'undeclareConnection' in _toolkitApi && event.storedProfile?.type === 'sso') {
             const startUrl = event.storedProfile.startUrl
             getLogger().info(`toolkitApi: undeclare connection ${event.connId} with starturl: ${startUrl}`)

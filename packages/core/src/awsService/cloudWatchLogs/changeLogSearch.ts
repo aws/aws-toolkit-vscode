@@ -73,7 +73,7 @@ export async function changeLogSearchParams(
     registry: LogDataRegistry,
     param: 'filterPattern' | 'timeFilter'
 ): Promise<void> {
-    await telemetry.cloudwatchlogs_open.run(async span => {
+    await telemetry.cloudwatchlogs_open.run(async (span) => {
         const oldUri = getActiveDocumentUri(registry)
         span.record({
             source: 'Editor',

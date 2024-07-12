@@ -134,7 +134,7 @@ describe('createNewSamApp', function () {
                 )
             )
             assert.ok(launchConfigs)
-            const matchingConfigs = launchConfigs?.filter(config => {
+            const matchingConfigs = launchConfigs?.filter((config) => {
                 return pathutils.areEqual(
                     fakeWorkspaceFolder.uri.fsPath,
                     (config.invokeTarget as TemplateTargetProperties).templatePath,
@@ -169,7 +169,7 @@ describe('createNewSamApp', function () {
                 )
             )
             assert.ok(launchConfigs)
-            const matchingConfigs = launchConfigs?.filter(config => {
+            const matchingConfigs = launchConfigs?.filter((config) => {
                 return (
                     pathutils.areEqual(
                         fakeWorkspaceFolder.uri.fsPath,

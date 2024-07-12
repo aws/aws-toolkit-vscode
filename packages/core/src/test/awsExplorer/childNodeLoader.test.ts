@@ -36,7 +36,7 @@ describe('ChildNodeLoader', function () {
     }
 
     function continuedChildLoader(continuationToken?: string): ChildNodeLoader {
-        return new ChildNodeLoader(fakeLoadMore, _token =>
+        return new ChildNodeLoader(fakeLoadMore, (_token) =>
             Promise.resolve({
                 newChildren: [fakeNode],
                 newContinuationToken: continuationToken,
@@ -45,8 +45,8 @@ describe('ChildNodeLoader', function () {
     }
 
     function delayedChildLoader(continuationToken: string): ChildNodeLoader {
-        return new ChildNodeLoader(fakeLoadMore, _token => {
-            return new Promise(resolve =>
+        return new ChildNodeLoader(fakeLoadMore, (_token) => {
+            return new Promise((resolve) =>
                 setTimeout(() =>
                     resolve({
                         newChildren: [fakeNode],

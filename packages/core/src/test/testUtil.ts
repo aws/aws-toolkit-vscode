@@ -256,7 +256,7 @@ export function assertTelemetry<K extends MetricName>(
         delete expectedCopy['passive']
 
         Object.keys(expectedCopy).forEach(
-            k => ((expectedCopy as any)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
+            (k) => ((expectedCopy as any)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
         )
 
         const msg = `telemetry metric ${i + 1} (of ${
@@ -345,7 +345,7 @@ export async function assertTabCount(size: number): Promise<void | never> {
     const tabs = await waitUntil(
         async () => {
             const tabs = vscode.window.tabGroups.all
-                .map(tabGroup => tabGroup.tabs)
+                .map((tabGroup) => tabGroup.tabs)
                 .reduce((acc, curVal) => acc.concat(curVal), [])
 
             if (tabs.length === size) {
@@ -383,7 +383,7 @@ export async function closeAllEditors(): Promise<void> {
             editors.length = 0
             editors.push(
                 ...vscode.window.visibleTextEditors.filter(
-                    editor => !ignorePatterns.some(p => p.test(editor.document.fileName))
+                    (editor) => !ignorePatterns.some((p) => p.test(editor.document.fileName))
                 )
             )
 
@@ -397,7 +397,7 @@ export async function closeAllEditors(): Promise<void> {
     )
 
     if (!noVisibleEditor) {
-        const editorNames = editors.map(editor => `\t${editor.document.fileName}`)
+        const editorNames = editors.map((editor) => `\t${editor.document.fileName}`)
         throw new Error(`Editors were still open after closeAllEditors():\n${editorNames.join('\n')}`)
     }
 }
@@ -427,7 +427,7 @@ export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
     let idx = 0
     const emits: T[] = []
     const listeners: vscode.Disposable[] = []
-    listeners.push(event(data => emits.push(data)))
+    listeners.push(event((data) => emits.push(data)))
 
     return {
         emits,
@@ -458,7 +458,7 @@ export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
 export function captureEventOnce<T>(event: vscode.Event<T>, timeout?: number): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         const stop = () => reject(new Error('Timed out waiting for event'))
-        event(data => resolve(data))
+        event((data) => resolve(data))
 
         if (timeout !== undefined) {
             setTimeout(stop, timeout)

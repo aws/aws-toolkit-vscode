@@ -24,7 +24,7 @@ describe('messages', function () {
             const isConfirmed = showConfirmationMessage({ prompt, confirm, cancel })
             await getTestWindow()
                 .waitForMessage(prompt)
-                .then(message => message.selectItem(confirm))
+                .then((message) => message.selectItem(confirm))
 
             assert.strictEqual(await isConfirmed, true)
         })
@@ -33,7 +33,7 @@ describe('messages', function () {
             const isConfirmed = showConfirmationMessage({ prompt, confirm, cancel })
             await getTestWindow()
                 .waitForMessage(prompt)
-                .then(message => message.selectItem(cancel))
+                .then((message) => message.selectItem(cancel))
 
             assert.strictEqual(await isConfirmed, false)
         })
@@ -42,7 +42,7 @@ describe('messages', function () {
             const isConfirmed = showConfirmationMessage({ prompt, confirm, cancel })
             await getTestWindow()
                 .waitForMessage(prompt)
-                .then(message => message.close())
+                .then((message) => message.close())
 
             assert.strictEqual(await isConfirmed, false)
         })
@@ -63,7 +63,7 @@ describe('messages', function () {
         const message = 'message'
 
         it('shows error message with a button to view logs', async function () {
-            getTestWindow().onDidShowMessage(m => m.selectItem('View Logs...'))
+            getTestWindow().onDidShowMessage((m) => m.selectItem('View Logs...'))
             await showViewLogsMessage(message)
             getTestWindow().getFirstMessage().assertError(message)
         })
@@ -84,7 +84,7 @@ describe('messages', function () {
             // timeout.cancel()  // Force complete.
             await getTestWindow()
                 .waitForMessage(msg)
-                .then(message => {
+                .then((message) => {
                     message.close()
                 })
             timeout.cancel() // Cleanup.

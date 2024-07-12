@@ -27,7 +27,7 @@ import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
  * Represents an S3 bucket that may contain folders and/or objects.
  */
 export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, LoadMoreNode {
-    private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
+    private readonly childLoader = new ChildNodeLoader(this, (token) => this.loadPage(token))
 
     public constructor(
         public readonly bucket: Bucket,
@@ -69,8 +69,8 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
             maxResults: this.getMaxItemsPerPage(),
         })
 
-        const newFolders = response.folders.map(folder => new S3FolderNode(this.bucket, folder, this.s3))
-        const newFiles = response.files.map(file => new S3FileNode(this.bucket, file, this, this.s3))
+        const newFolders = response.folders.map((folder) => new S3FolderNode(this.bucket, folder, this.s3))
+        const newFiles = response.files.map((file) => new S3FileNode(this.bucket, file, this, this.s3))
 
         getLogger().debug(`Loaded folders: %O and files: %O`, newFolders, newFiles)
         return {

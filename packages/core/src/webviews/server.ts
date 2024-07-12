@@ -56,7 +56,7 @@ export function registerWebviewServer(
 
             if (handler instanceof vscode.EventEmitter) {
                 // TODO: make server dipose of event if client calls `dispose`
-                eventListeners.push(handler.event(e => webview.postMessage({ command, event: true, data: e })))
+                eventListeners.push(handler.event((e) => webview.postMessage({ command, event: true, data: e })))
                 getLogger().verbose(`Registered event handler for: ${command}`)
                 return webview.postMessage({ id, command, event: true })
             }

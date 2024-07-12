@@ -80,7 +80,7 @@ export async function getAddConfigCodeLens(
 
                 // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
                 // not shown to the user and do not affect how our extension is working
-                codeLenses = codeLenses.filter(codeLens => {
+                codeLenses = codeLenses.filter((codeLens) => {
                     if (codeLens.command && codeLens.command.arguments && codeLens.command.arguments.length === 3) {
                         return codeLens.command.command === 'aws.pickAddSamDebugConfiguration'
                     }

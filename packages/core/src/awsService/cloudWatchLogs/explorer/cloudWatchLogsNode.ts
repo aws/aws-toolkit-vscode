@@ -50,8 +50,8 @@ export abstract class CloudWatchLogsBase extends AWSTreeNodeBase {
         updateInPlace(
             this.logGroupNodes,
             logGroups.keys(),
-            key => this.logGroupNodes.get(key)!.update(logGroups.get(key)!),
-            key => new LogGroupNode(this.regionCode, logGroups.get(key)!)
+            (key) => this.logGroupNodes.get(key)!.update(logGroups.get(key)!),
+            (key) => new LogGroupNode(this.regionCode, logGroups.get(key)!)
         )
     }
 }
@@ -64,6 +64,6 @@ export class CloudWatchLogsNode extends CloudWatchLogsBase {
     }
 
     protected async getLogGroups(client: DefaultCloudWatchLogsClient): Promise<Map<string, CloudWatchLogs.LogGroup>> {
-        return toMap(await toArrayAsync(client.describeLogGroups()), configuration => configuration.logGroupName)
+        return toMap(await toArrayAsync(client.describeLogGroups()), (configuration) => configuration.logGroupName)
     }
 }

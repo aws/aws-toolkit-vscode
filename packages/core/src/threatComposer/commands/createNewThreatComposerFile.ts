@@ -21,7 +21,7 @@ const createNewThreatComposerFile = async () => {
 
         const title = await vscode.window.showInputBox({
             prompt: 'Enter name for file',
-            validateInput: async text => {
+            validateInput: async (text) => {
                 if (text && (await fs.existsFile(path.join(rootFolder, `${text}.tc.json`)))) {
                     return 'The specified file already exists'
                 }

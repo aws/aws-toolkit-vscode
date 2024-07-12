@@ -125,7 +125,7 @@ export class ApiError extends ToolkitError {
 export const denyListedErrors: string[] = ['Deserialization error', 'Inaccessible host']
 
 export function createUserFacingErrorMessage(message: string) {
-    if (denyListedErrors.some(err => message.includes(err))) {
+    if (denyListedErrors.some((err) => message.includes(err))) {
         return `${featureName} API request failed`
     }
     return message

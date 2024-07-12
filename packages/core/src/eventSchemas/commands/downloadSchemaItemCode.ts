@@ -236,7 +236,7 @@ export class CodeGenerationStatusPoller {
                 )
             }
 
-            await new Promise<void>(resolve => globals.clock.setTimeout(resolve, retryInterval))
+            await new Promise<void>((resolve) => globals.clock.setTimeout(resolve, retryInterval))
         }
         throw new UserNotifiedError(
             localize(

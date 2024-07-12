@@ -76,7 +76,7 @@ export async function showMessageWithUrl(
     const items = [...extraItems, urlItem]
 
     const p = showMessageWithItems(message, kind, items, useModal)
-    return p.then<string | undefined>(selection => {
+    return p.then<string | undefined>((selection) => {
         if (selection === urlItem) {
             void openUrl(uri)
         }
@@ -103,7 +103,7 @@ export async function showViewLogsMessage(
     const items = [...extraItems, logsItem]
 
     const p = showMessageWithItems(message, kind, items)
-    return p.then<string | undefined>(selection => {
+    return p.then<string | undefined>((selection) => {
         if (selection === logsItem) {
             globals.logOutputChannel.show(true)
         }
@@ -172,7 +172,7 @@ export async function showReauthenticateMessage({
 
     await telemetry.toolkit_showNotification.run(async () => {
         telemetry.record({ id: suppressId, source })
-        await vscode.window.showInformationMessage(message, connect, localizedText.dontShow).then(async resp => {
+        await vscode.window.showInformationMessage(message, connect, localizedText.dontShow).then(async (resp) => {
             await telemetry.toolkit_invokeAction.run(async () => {
                 telemetry.record({ id: suppressId, source })
 

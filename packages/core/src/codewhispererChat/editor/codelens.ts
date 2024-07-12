@@ -51,7 +51,7 @@ export class TryChatCodeLensProvider implements vscode.CodeLensProvider {
             vscode.window.onDidChangeTextEditorSelection(() => this._onDidChangeCodeLenses.fire())
         )
 
-        isAmazonQVisibleEvent(visible => {
+        isAmazonQVisibleEvent((visible) => {
             this.isAmazonQVisible = visible
             this._onDidChangeCodeLenses.fire()
         })
@@ -77,7 +77,7 @@ export class TryChatCodeLensProvider implements vscode.CodeLensProvider {
         document: vscode.TextDocument,
         token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.CodeLens[]> {
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
             token.onCancellationRequested(() => resolve([]))
 
             /**
@@ -152,7 +152,7 @@ export class TryChatCodeLensProvider implements vscode.CodeLensProvider {
     dispose() {
         void globals.context.globalState.update(TryChatCodeLensProvider.showCodeLensId, false)
         TryChatCodeLensProvider.providerDisposable?.dispose()
-        this.disposables.forEach(d => d.dispose())
+        this.disposables.forEach((d) => d.dispose())
     }
 }
 

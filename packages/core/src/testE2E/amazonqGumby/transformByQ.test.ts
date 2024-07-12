@@ -98,7 +98,7 @@ describe('transformByQ', async function () {
     it('WHEN zipCode THEN ZIP contains all expected files and no unexpected files', async function () {
         const zipFiles = new AdmZip(zippedCodePath).getEntries()
         const zipFileNames: string[] = []
-        zipFiles.forEach(file => {
+        zipFiles.forEach((file) => {
             zipFileNames.push(file.name)
         })
         assert.strictEqual(zipFileNames.length, 2) // expecting only a dummy txt file and a manifest.json

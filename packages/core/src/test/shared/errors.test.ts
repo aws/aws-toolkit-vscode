@@ -119,7 +119,7 @@ export async function getAwsServiceError(): Promise<Error> {
             deviceCode: 'xx',
             grantType: 'urn:ietf:params:oauth:grant-type:device_code',
         })
-        .catch(e => e)
+        .catch((e) => e)
 }
 
 describe('ToolkitError', function () {
@@ -347,12 +347,12 @@ describe('resolveErrorMessageToDisplay()', function () {
         'ValidationException',
         'ResourceNotFoundException',
     ]
-    const prioritiziedAwsErrors: TestAwsError[] = preferredErrors.map(name => {
+    const prioritiziedAwsErrors: TestAwsError[] = preferredErrors.map((name) => {
         return new TestAwsError(name, awsErrorMessage, errorTime)
     })
 
     // Sanity check specific errors are resolved as expected
-    prioritiziedAwsErrors.forEach(error => {
+    prioritiziedAwsErrors.forEach((error) => {
         it(`resolves ${error.code} message when provided directly`, function () {
             const message = resolveErrorMessageToDisplay(error, defaultMessage)
             assert.strictEqual(message, `${defaultMessage}: ${awsErrorMessage}`)

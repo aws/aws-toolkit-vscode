@@ -33,14 +33,14 @@ export function runSafeAsync<T>(
     errorMessage: string,
     token: CancellationToken
 ): Thenable<any | ResponseError<any>> {
-    return new Promise<T | ResponseError<any>>(resolve => {
+    return new Promise<T | ResponseError<any>>((resolve) => {
         setImmediate(() => {
             if (token.isCancellationRequested) {
                 resolve(cancelValue())
             }
 
             return func().then(
-                result => {
+                (result) => {
                     if (token.isCancellationRequested) {
                         resolve(cancelValue())
 
@@ -49,7 +49,7 @@ export function runSafeAsync<T>(
                         resolve(result)
                     }
                 },
-                e => {
+                (e) => {
                     console.error(formatError(errorMessage, e))
                     resolve(errorVal)
                 }
@@ -64,7 +64,7 @@ export function runSafe<T, E>(
     errorMessage: string,
     token: CancellationToken
 ): Thenable<T | ResponseError<E>> {
-    return new Promise<T | ResponseError<E>>(resolve => {
+    return new Promise<T | ResponseError<E>>((resolve) => {
         setImmediate(() => {
             if (token.isCancellationRequested) {
                 resolve(cancelValue())

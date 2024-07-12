@@ -45,10 +45,10 @@ export async function activateYamlExtension(): Promise<YamlExtension | undefined
     }
     yamlExt.exports.registerContributor(
         AWS_SCHEME,
-        resource => {
+        (resource) => {
             return schemaMap.get(resource)?.toString()
         },
-        uri => {
+        (uri) => {
             try {
                 // SLOW: This request happens on every keystroke! (5MB+ read from filesystem).
                 // This is a design flaw in this registerContributor() API.
@@ -62,7 +62,7 @@ export async function activateYamlExtension(): Promise<YamlExtension | undefined
 
     return {
         assignSchema: (path, schema) => schemaMap.set(path.toString(), applyScheme(AWS_SCHEME, evaluate(schema))),
-        removeSchema: path => schemaMap.delete(path.toString()),
-        getSchema: path => schemaMap.get(path.toString()),
+        removeSchema: (path) => schemaMap.delete(path.toString()),
+        getSchema: (path) => schemaMap.get(path.toString()),
     }
 }

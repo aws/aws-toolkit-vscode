@@ -84,7 +84,7 @@ class MockSamParamComplItemProviderContext implements SamParameterCompletionItem
                 return 0
             },
         },
-        getWorkspaceFolder = uri => undefined,
+        getWorkspaceFolder = (uri) => undefined,
         executeCommand = async (command, ...rest) => undefined as any,
         loadTemplate = async () => ({}),
     }: Partial<SamParameterCompletionItemProviderContext>) {

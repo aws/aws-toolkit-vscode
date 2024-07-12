@@ -25,7 +25,7 @@ describe('SamCliPackageInvocation', async function () {
     })
 
     it('includes a template, s3 bucket, output template file, and region', async function () {
-        const invoker = new MockSamCliProcessInvoker(args => {
+        const invoker = new MockSamCliProcessInvoker((args) => {
             invokeCount++
             assertArgsContainArgument(args, '--template-file', 'template')
             assertArgsContainArgument(args, '--s3-bucket', 'bucket')
@@ -40,7 +40,7 @@ describe('SamCliPackageInvocation', async function () {
     })
 
     it('includes a template, s3 bucket, output template file, region, and repo', async function () {
-        const invoker = new MockSamCliProcessInvoker(args => {
+        const invoker = new MockSamCliProcessInvoker((args) => {
             invokeCount++
             assertArgsContainArgument(args, '--template-file', 'template')
             assertArgsContainArgument(args, '--s3-bucket', 'bucket')

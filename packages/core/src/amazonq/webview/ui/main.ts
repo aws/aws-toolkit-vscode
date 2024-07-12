@@ -23,7 +23,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
     // eslint-disable-next-line prefer-const
     let connector: Connector
     const tabsStorage = new TabsStorage({
-        onTabTimeout: tabID => {
+        onTabTimeout: (tabID) => {
             mynahUI.addChatItem(tabID, {
                 type: ChatItemType.ANSWER,
                 body: 'This conversation has timed out after 48 hours. It will not be saved. Start a new conversation.',
@@ -163,7 +163,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
             })
             tabsStorage.updateTabStatus(tabID, 'free')
         },
-        sendMessageToExtension: message => {
+        sendMessageToExtension: (message) => {
             ideApi.postMessage(message)
         },
         onChatAnswerUpdated: (tabID: string, item: ChatItem) => {
@@ -239,8 +239,8 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 type: ChatItemType.ANSWER,
                 fileList: {
                     rootFolderTitle: 'Changes',
-                    filePaths: filePaths.map(i => i.zipFilePath),
-                    deletedFiles: deletedFiles.map(i => i.zipFilePath),
+                    filePaths: filePaths.map((i) => i.zipFilePath),
+                    deletedFiles: deletedFiles.map((i) => i.zipFilePath),
                     details: getDetails(filePaths),
                     actions: getActions([...filePaths, ...deletedFiles]),
                 },

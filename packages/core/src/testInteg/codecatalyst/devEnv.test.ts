@@ -44,7 +44,7 @@ describe('InactivityMessage', function () {
             const timestamp = getLatestTimestamp()
             return timestamp
         })
-        devEnvActivity.onActivityUpdate.callsFake(activityCallback => {
+        devEnvActivity.onActivityUpdate.callsFake((activityCallback) => {
             const timestamp = getLatestTimestamp()
             activityCallback(timestamp)
         })
@@ -170,7 +170,7 @@ describe('InactivityMessage', function () {
     function startCapturingMessages() {
         const start = Date.now()
         const messages: { message: string; minute: number }[] = []
-        testWindow.onDidShowMessage(async message => {
+        testWindow.onDidShowMessage(async (message) => {
             const now = Date.now()
             messages.push({
                 message: message.message,

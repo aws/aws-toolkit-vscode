@@ -28,7 +28,7 @@ import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { formatLocalized } from '../../../shared/utilities/textUtilities'
 
 export async function viewLogStream(node: LogGroupNode, registry: LogDataRegistry): Promise<void> {
-    await telemetry.cloudwatchlogs_open.run(async span => {
+    await telemetry.cloudwatchlogs_open.run(async (span) => {
         span.record({ cloudWatchResourceType: 'logStream', source: 'Explorer' })
         const r = await new SelectLogStreamWizard(node).run()
         if (r === undefined || r.kind === 'cancelled' || r.kind === 'failed') {
@@ -108,14 +108,14 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
         const populator = new IteratorTransformer(
             () =>
                 getPaginatedAwsCallIter({
-                    awsCall: request => client.describeLogStreams(request),
+                    awsCall: (request) => client.describeLogStreams(request),
                     nextTokenNames: {
                         request: 'nextToken',
                         response: 'nextToken',
                     },
                     request,
                 }),
-            response => convertDescribeLogToQuickPickItems(response)
+            (response) => convertDescribeLogToQuickPickItems(response)
         )
 
         const controller = new picker.IteratingQuickPickController(qp, populator)
@@ -183,7 +183,7 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
 export function convertDescribeLogToQuickPickItems(
     response: CloudWatchLogs.DescribeLogStreamsResponse
 ): vscode.QuickPickItem[] {
-    return (response.logStreams ?? []).map<vscode.QuickPickItem>(stream => ({
+    return (response.logStreams ?? []).map<vscode.QuickPickItem>((stream) => ({
         label: stream.logStreamName!,
         detail: stream.lastEventTimestamp
             ? formatLocalized(new Date(stream.lastEventTimestamp))

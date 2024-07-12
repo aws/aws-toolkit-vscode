@@ -79,7 +79,7 @@ describe('Settings', function () {
             settings = vscode.workspace.getConfiguration()
         })
 
-        scenarios.forEach(scenario => {
+        scenarios.forEach((scenario) => {
             it(scenario.desc, async () => {
                 await settings.update(settingKey, scenario.testValue, settingsTarget)
 
@@ -112,7 +112,7 @@ describe('Settings', function () {
     })
 
     describe('update', function () {
-        scenarios.forEach(scenario => {
+        scenarios.forEach((scenario) => {
             it(scenario.desc, async () => {
                 await sut.update(settingKey, scenario.testValue)
 
@@ -218,7 +218,7 @@ describe('Settings', function () {
             await sut.update(settingKey, true)
 
             const subKey = settingKey.replace(`${rootSection}.`, '')
-            const affectsConfiguration = await changedEvent.then(e => e.affectsConfiguration.bind(e))
+            const affectsConfiguration = await changedEvent.then((e) => e.affectsConfiguration.bind(e))
 
             assert.strictEqual(affectsConfiguration('foo'), false)
             assert.strictEqual(affectsConfiguration(subKey), true)
@@ -452,7 +452,7 @@ describe('PromptSetting', function () {
                 desc: 'suppresses prompt',
             },
         ]
-        scenarios.forEach(scenario => {
+        scenarios.forEach((scenario) => {
             it(scenario.desc, async () => {
                 const defaultSetting = settings.get(promptSettingKey, Object)
                 await settings.update(promptSettingKey, scenario.testValue)
@@ -494,7 +494,7 @@ describe('PromptSetting', function () {
             },
         ]
 
-        scenarios.forEach(scenario => {
+        scenarios.forEach((scenario) => {
             it(scenario.desc, async () => {
                 await settings.update(promptSettingKey, scenario.testValue)
                 const before = settings.get(promptSettingKey, Object, {})
@@ -544,7 +544,7 @@ describe('Experiments', function () {
 
         try {
             const key = new Promise<string>((resolve, reject) => {
-                experiments.onDidChange(event => resolve(event.key))
+                experiments.onDidChange((event) => resolve(event.key))
                 setTimeout(() => reject(new Error('Timed out waiting for settings event')), 5000)
             })
 

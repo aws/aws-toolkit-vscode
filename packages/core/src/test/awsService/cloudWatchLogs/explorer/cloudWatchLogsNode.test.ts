@@ -26,7 +26,7 @@ describe('CloudWatchLogsNode', function () {
 
     function createClient() {
         const client = stub(DefaultCloudWatchLogsClient, { regionCode: fakeRegionCode })
-        client.describeLogGroups.callsFake(() => asyncGenerator(logGroupNames.map(name => ({ logGroupName: name }))))
+        client.describeLogGroups.callsFake(() => asyncGenerator(logGroupNames.map((name) => ({ logGroupName: name }))))
 
         return client
     }
@@ -49,13 +49,13 @@ describe('CloudWatchLogsNode', function () {
 
         assert.strictEqual(childNodes.length, logGroupNames.length, 'Unexpected child count')
 
-        childNodes.forEach(node => assert.ok(node instanceof LogGroupNode, 'Expected child node to be LogGroupNode'))
+        childNodes.forEach((node) => assert.ok(node instanceof LogGroupNode, 'Expected child node to be LogGroupNode'))
     })
 
     it('has child nodes with CloudWatch Log contextValue', async function () {
         const childNodes = await testNode.getChildren()
 
-        childNodes.forEach(node =>
+        childNodes.forEach((node) =>
             assert.strictEqual(
                 node.contextValue,
                 contextValueCloudwatchLog,
@@ -69,7 +69,7 @@ describe('CloudWatchLogsNode', function () {
 
         const childNodes = await testNode.getChildren()
 
-        const actualChildOrder = childNodes.map(node => node.label)
+        const actualChildOrder = childNodes.map((node) => node.label)
         assert.deepStrictEqual(actualChildOrder, sortedText, 'Unexpected child sort order')
     })
 

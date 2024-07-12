@@ -95,7 +95,7 @@ export async function uploadFileCommand(
         }
 
         uploadRequests.push(
-            ...filesToUpload.map(file => {
+            ...filesToUpload.map((file) => {
                 const key = node!.path + path.basename(file.fsPath)
                 return fileToUploadRequest(node!.bucket.name, key, file)
             })
@@ -125,7 +125,7 @@ export async function uploadFileCommand(
                 return
             }
 
-            const bucketResponse = await getBucket(s3Client).catch(e => {})
+            const bucketResponse = await getBucket(s3Client).catch((e) => {})
 
             if (!bucketResponse) {
                 telemetry.s3_uploadObject.emit({ result: 'Failed' })
@@ -155,7 +155,7 @@ export async function uploadFileCommand(
             }
 
             uploadRequests.push(
-                ...filesToUpload.map(file => {
+                ...filesToUpload.map((file) => {
                     const key =
                         bucketResponse.folder !== undefined
                             ? bucketResponse.folder.path + path.basename(file.fsPath)
@@ -210,7 +210,7 @@ async function runBatchUploads(uploadRequests: UploadRequest[], outputChannel = 
     )
 
     while (failedRequests.length > 0) {
-        const failedKeys = failedRequests.map(request => request.key)
+        const failedKeys = failedRequests.map((request) => request.key)
         getLogger().error(`List of requests failed to upload:\n${failedRequests.toString().split(',').join('\n')}`)
 
         if (failedRequests.length > 5) {
@@ -263,7 +263,7 @@ async function uploadBatchOfFiles(
     uploadRequests: UploadRequest[],
     outputChannel = globals.outputChannel
 ): Promise<UploadRequest[]> {
-    const totalBytes = uploadRequests.map(r => r.fileSizeBytes).reduce((a, b) => a + b, 0)
+    const totalBytes = uploadRequests.map((r) => r.fileSizeBytes).reduce((a, b) => a + b, 0)
     const response = await vscode.window.withProgress(
         {
             cancellable: true,
@@ -279,7 +279,7 @@ async function uploadBatchOfFiles(
             let requestIdx: number = 0
             const failedRequests: UploadRequest[] = []
 
-            token.onCancellationRequested(e => {
+            token.onCancellationRequested((e) => {
                 if (uploadRequests[requestIdx].ongoingUpload) {
                     uploadRequests[requestIdx].ongoingUpload?.abort()
                 }
@@ -310,7 +310,7 @@ async function uploadBatchOfFiles(
                     },
                 }
 
-                const uploadResult = await uploadWithProgress(request, progressWithCount, token).catch(err => {
+                const uploadResult = await uploadWithProgress(request, progressWithCount, token).catch((err) => {
                     showOutputMessage(
                         localize(
                             'AWS.s3.uploadFile.error.general',
@@ -376,7 +376,7 @@ async function uploadWithProgress(
     request.ongoingUpload = currentStream
 
     const cancelled = new Promise<void>((_, reject) => {
-        token.onCancellationRequested(e => {
+        token.onCancellationRequested((e) => {
             currentStream.abort()
             reject(new CancellationError('user'))
         })
@@ -422,7 +422,7 @@ export async function promptUserForBucket(
         throw new Error('Failed to list buckets from client')
     }
 
-    const s3Buckets = allBuckets.filter(bucket => {
+    const s3Buckets = allBuckets.filter((bucket) => {
         return bucket && bucket.Name
     }) as S3.Bucket[]
 
@@ -430,7 +430,7 @@ export async function promptUserForBucket(
         label: localize('AWS.command.s3.createBucket', 'Create new bucket'),
         bucket: undefined,
     }
-    const bucketItems: BucketQuickPickItem[] = s3Buckets.map(bucket => {
+    const bucketItems: BucketQuickPickItem[] = s3Buckets.map((bucket) => {
         return {
             label: bucket.Name!,
             bucket,
