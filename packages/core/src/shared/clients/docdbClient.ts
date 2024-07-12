@@ -228,6 +228,21 @@ export class DefaultDocumentDBClient {
         }
     }
 
+    public async modifyInstance(input: DocDB.ModifyDBInstanceMessage): Promise<DocDB.DBInstance | undefined> {
+        getLogger().debug('ModifyInstance called')
+        const client = await this.getClient()
+
+        try {
+            const command = new DocDB.ModifyDBInstanceCommand(input)
+            const response = await client.send(command)
+            return response.DBInstance
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to modify DocumentDB instance')
+        } finally {
+            client.destroy()
+        }
+    }
+
     public async deleteInstance(input: DocDB.DeleteDBInstanceMessage): Promise<DocDB.DBInstance | undefined> {
         getLogger().debug('DeleteInstance called')
         const client = await this.getClient()

@@ -2021,8 +2021,14 @@
                     "when": "viewItem == awsDocDB.cluster.running"
                 },
                 {
+                    "command": "aws.docdb.renameInstance",
+                    "when": "viewItem == awsDocDB.instance.available",
+                    "group": "0@1"
+                },
+                {
                     "command": "aws.docdb.deleteInstance",
-                    "when": "viewItem =~ /^awsDocDB.instance/"
+                    "when": "viewItem == awsDocDB.instance.available",
+                    "group": "0@2"
                 }
             ],
             "aws.toolkit.auth": [
@@ -3584,7 +3590,7 @@
                 "title": "%AWS.command.docdb.createInstance%",
                 "icon": "$(add)",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB.cluster/",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3593,9 +3599,20 @@
             },
             {
                 "command": "aws.docdb.deleteInstance",
-                "title": "%AWS.command.docdb.deleteInstance%",
+                "title": "%AWS.generic.promptDelete%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB.instance/",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.renameInstance",
+                "title": "%AWS.command.docdb.renameInstance%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB.instance/",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3618,7 +3635,7 @@
             },
             {
                 "command": "aws.docdb.deleteCluster",
-                "title": "%AWS.command.docdb.deleteCluster%",
+                "title": "%AWS.generic.promptDelete%",
                 "category": "%AWS.title%",
                 "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB.cluster.running/",
                 "cloud9": {

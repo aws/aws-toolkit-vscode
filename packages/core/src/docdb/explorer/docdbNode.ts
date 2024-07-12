@@ -22,6 +22,7 @@ export const DocDBContext = {
     ClusterRunning: 'awsDocDB.cluster.running',
     ClusterStopped: 'awsDocDB.cluster.stopped',
     Instance: 'awsDocDB.instance',
+    InstanceAvailable: 'awsDocDB.instance.available',
 } as const
 
 export type DocDBNodeContext = (typeof DocDBContext)[keyof typeof DocDBContext]

@@ -268,8 +268,7 @@
     "AWS.amazonq.toggleCodeScan": "Toggle Auto-Scans",
     "AWS.command.docdb.createCluster": "Create DocumentDB Cluster",
     "AWS.command.docdb.createInstance": "Create Instance",
-    "AWS.command.docdb.deleteInstance": "Delete Instance",
+    "AWS.command.docdb.renameInstance": "Rename...",
     "AWS.command.docdb.startCluster": "Start Cluster",
-    "AWS.command.docdb.stopCluster": "Stop Cluster",
-    "AWS.command.docdb.deleteCluster": "Delete Cluster"
+    "AWS.command.docdb.stopCluster": "Stop Cluster"
 }

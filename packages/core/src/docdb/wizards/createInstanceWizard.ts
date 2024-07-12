@@ -52,7 +52,8 @@ export class CreateInstanceWizard extends Wizard<CreateInstanceState> {
             createInputBox({
                 step: 1,
                 title: this.title,
-                placeholder: localize('AWS.docdb.createInstance.name.prompt', 'Specify a unique instance name'),
+                prompt: localize('AWS.docdb.createInstance.name.prompt', 'Instance Name'),
+                placeholder: localize('AWS.docdb.createInstance.name.placeholder', 'Specify a unique identifier'),
                 validateInput: validateInstanceName,
             })
         )
