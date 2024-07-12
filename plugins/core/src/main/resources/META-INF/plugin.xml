@@ -12,6 +12,10 @@
     <idea-version since-build="232" />
     <depends>com.intellij.modules.platform</depends>
 
+    <incompatible-with>com.intellij.cwm.guest</incompatible-with>
+    <incompatible-with>com.intellij.jetbrains.client</incompatible-with>
+    <incompatible-with>com.intellij.gateway</incompatible-with>
+
     <xi:include href="/META-INF/module-core.xml" />
 
     <extensions defaultExtensionNs="com.intellij">

@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Don't allow Q/Core to be installed in the unsupported thin client context (#4658)"
+}
