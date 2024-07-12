@@ -3,6 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// Disable because it is a front-end file.
+/* eslint-disable aws-toolkits/no-console-log */
+
 import { defineComponent } from 'vue'
 import { AwsSamDebuggerConfiguration } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { AwsSamDebuggerConfigurationLoose, SamInvokeWebview } from './samInvokeBackend'
