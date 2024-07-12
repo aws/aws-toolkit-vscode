@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import * as vscode from 'vscode'
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
 import { LoginManager } from '../auth/deprecated/loginManager'
 import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
@@ -151,6 +151,7 @@ export function initialize(context: ExtensionContext, isWeb: boolean = false): T
         manifestPaths: {} as ToolkitGlobals['manifestPaths'],
         visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],
         isWeb,
+        isEmbedded: !!(vscode.window.sendMessage && vscode.window.receiveMessage),
     })
     void setContext('aws.isWebExtHost', isWeb)
 
@@ -161,10 +162,6 @@ export function initialize(context: ExtensionContext, isWeb: boolean = false): T
 
 export function isWeb() {
     return globals.isWeb
-}
-
-export function isEmbedded() {
-    return globals.isEmbedded
 }
 
 export { globals as default }

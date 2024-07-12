@@ -3,9 +3,7 @@
     "compilerOptions": {
         "outDir": "dist",
         "baseUrl": ".",
-        "rootDir": ".",
-        "typeRoots": ["../core/types", "../node_modules/@types"],
-        "types": ["../core/types/vscode.web"]
+        "rootDir": "."
     },
     "exclude": ["node_modules", ".vscode-test", "dist"]
 }

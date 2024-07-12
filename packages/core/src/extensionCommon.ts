@@ -81,7 +81,6 @@ export async function activateCommon(
     await initializeComputeRegion()
 
     globals.contextPrefix = '' //todo: disconnect supplied argument
-    globals.isEmbedded = !!(vscode.window.sendMessage && vscode.window.receiveMessage)
 
     registerCommandErrorHandler((info, error) => {
         const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
