@@ -8,10 +8,16 @@ import * as codecatalyst from './clients/codecatalystClient'
 import * as codewhisperer from '../codewhisperer/client/codewhisperer'
 import packageJson from '../../package.json'
 import { getLogger } from './logger'
-import { cast, FromDescriptor, Record, TypeConstructor, TypeDescriptor } from './utilities/typeConstructors'
+import {
+    cast,
+    FromDescriptor,
+    isNameMangled,
+    Record,
+    TypeConstructor,
+    TypeDescriptor,
+} from './utilities/typeConstructors'
 import { assertHasProps, ClassToInterfaceType, keys } from './utilities/tsUtils'
 import { toRecord } from './utilities/collectionUtils'
-import { isNameMangled } from './vscode/env'
 import { once, onceChanged } from './utilities/functionUtils'
 import { ToolkitError } from './errors'
 import { telemetry } from './telemetry/telemetry'

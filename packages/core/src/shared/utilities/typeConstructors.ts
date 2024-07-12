@@ -3,8 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { isNameMangled } from '../vscode/env'
 import { isNonNullable } from './tsUtils'
+
+export function isNameMangled(): boolean {
+    return isNameMangled.name !== 'isNameMangled'
+}
 
 /**
  * A 'type constructor' is any function that resolves to the given type.
@@ -73,7 +76,7 @@ export function addTypeName<F extends (input: unknown) => unknown>(name: string,
 }
 
 /**
- * A utility function to validate or transform an unknown input into a known shape.
+ * Validates or transforms an unknown input into a known shape.
  *
  * This **will throw** in the following scenarios:
  *   - `type` is a {@link primitives "primitive" constructor} and `input` is a different primitive type

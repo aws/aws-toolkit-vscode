@@ -5,6 +5,10 @@
 
 import { Region } from '../../../shared/regions/endpoints'
 
+// Sigil treated such that the connection wizard is not triggered during explorer node refresh after
+// connection deletion.
+export const deleteConnection = 'DELETE_CONNECTION' as const
+
 export class ConnectionParams {
     constructor(
         public readonly connectionType: ConnectionType,

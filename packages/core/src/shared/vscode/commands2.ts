@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { toTitleCase } from '../utilities/textUtilities'
-import { isNameMangled } from './env'
 import { getLogger, NullLogger } from '../logger/logger'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
@@ -16,6 +15,7 @@ import crypto from 'crypto'
 import { keysAsInt } from '../utilities/tsUtils'
 import { partialClone } from '../utilities/collectionUtils'
 import { isAmazonQ } from '../extensionUtilities'
+import { isNameMangled } from '../utilities/typeConstructors'
 
 type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T

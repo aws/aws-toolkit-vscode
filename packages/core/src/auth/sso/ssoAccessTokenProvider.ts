@@ -107,7 +107,7 @@ export abstract class SsoAccessTokenProvider {
         const access = await this.runFlow()
         const identity = this.tokenCacheKey
         await this.cache.token.save(identity, access)
-        await setSessionCreationDate(this.tokenCacheKey, new Date())
+        await globals.globalState.setSsoSessionCreationDate(this.tokenCacheKey, new globals.clock.Date())
 
         return { ...access.token, identity }
     }
@@ -309,25 +309,13 @@ async function pollForTokenWithProgress<T extends { requestId?: string }>(
     )
 }
 
-const sessionCreationDateKey = '#sessionCreationDates'
-async function setSessionCreationDate(id: string, date: Date, memento = globals.context.globalState) {
-    try {
-        await memento.update(sessionCreationDateKey, {
-            ...memento.get(sessionCreationDateKey),
-            [id]: date.getTime(),
-        })
-    } catch (err) {
-        getLogger().verbose('auth: failed to set session creation date: %s', err)
-    }
-}
-
-function getSessionCreationDate(id: string, memento = globals.context.globalState): number | undefined {
-    return memento.get(sessionCreationDateKey, {} as Record<string, number>)[id]
-}
-
-function getSessionDuration(id: string, memento = globals.context.globalState) {
-    const creationDate = getSessionCreationDate(id, memento)
-
+/**
+ * Gets SSO session creation timestamp for the given session `id`.
+ *
+ * @param id Session id
+ */
+function getSessionDuration(id: string) {
+    const creationDate = globals.globalState.getSsoSessionCreationDate(id)
     return creationDate !== undefined ? Date.now() - creationDate : undefined
 }
 
