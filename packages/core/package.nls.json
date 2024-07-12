@@ -265,7 +265,7 @@
     "AWS.toolkit.walkthrough.appComposer.title": "Working in Application Composer",
     "AWS.toolkit.walkthrough.appBuilder.title": "Application builder within File Explorer",
     "AWS.toolkit.walkthrough.build.title": "Build your application",
-    "AWS.toolkit.walkthrough.test.title": "Invoke your function",
+    "AWS.toolkit.walkthrough.test.title": "Invoke your function locally",
     "AWS.toolkit.walkthrough.debug.title": "Debug your application",
     "AWS.toolkit.walkthrough.deploy.title": "Deploy your application",
     "AWS.toolkit.walkthrough.remoteInovke.title": "Invoke functions in the cloud",

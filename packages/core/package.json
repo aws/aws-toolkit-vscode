@@ -2925,7 +2925,7 @@
             },
             {
                 "command": "aws.toolkit.walkthrough",
-                "title": "Learn more from walkthrough",
+                "title": "Application builder walkthrough",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -3651,7 +3651,7 @@
                     {
                         "id": "aws-cli",
                         "title": "Install AWS Cli",
-                        "description": "AWS CLI is a prerequisite for installing SAM CLI \n[Install AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)\n Follow [Configure the AWS CLI](https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html) to setup profile required for AWS CLI",
+                        "description": "AWS CLI is a prerequisite for installing SAM CLI \n[Install AWS CLI](command:aws.toolkit.installAWSCLI)\n If installation failed please go to [Installation Page](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)\n Follow [Configure the AWS CLI](https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html) to setup profile required for AWS CLI",
                         "media": {
                             "markdown": "./resources/walkthrough/setup-connect.md"
                         }
@@ -3669,7 +3669,7 @@
                     {
                         "id": "2",
                         "title": "Install SAM Cli",
-                        "description": "SAM CLI is required to enable working locally with your function (buidling, invoking, deploying) \n[Install SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html)",
+                        "description": "SAM CLI is required to enable working locally with your function (buidling, invoking, deploying) \n[Install SAM CLI](command:aws.toolkit.installSAMCLI)\n If installation failed please go to [Installation Page](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html)",
                         "media": {
                             "markdown": "./resources/walkthrough/setup-toolchain.md"
                         }
@@ -3842,7 +3842,7 @@
                     {
                         "id": "1",
                         "title": "Setup AWS Profile",
-                        "description": "Click Toolkit extension button on the left bottom, choose to sign in with your AWS credentials\n If you haven't registered an AWS account or having trouble authenticating, please refer to the [User Guide](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/connect.html)",
+                        "description": "Click Toolkit extension button on the left bottom, choose to sign in with your AWS credentials\n If you haven't registered an AWS account or having trouble authenticating, please refer to the [User Guide](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/connect.html), [open](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.amazon-q-vscode%23aws.amazonq.walkthrough%22%7D)",
                         "media": {
                             "svg": "resources/aws-logo.svg",
                             "altText": "test"

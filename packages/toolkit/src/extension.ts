@@ -12,6 +12,11 @@ import { createCommonButtons } from 'aws-core-vscode/shared'
 import { createQuickPick } from 'aws-core-vscode/shared'
 import * as nls from 'vscode-nls'
 import * as vscode from 'vscode'
+import fetch from 'node-fetch'
+import { createWriteStream } from 'node:fs'
+import { pipeline } from 'node:stream'
+import { promisify } from 'node:util'
+import * as child_process from 'child_process'
 
 const serverlessLandUrl = 'https://serverlessland.com/'
 
@@ -52,6 +57,37 @@ export async function activate(context: ExtensionContext) {
     Commands.register('aws.toolkit.getRuntime', () => () => {
         const walkthroughRuntime = context.globalState.get('walkthroughRuntime')
         return walkthroughRuntime
+    })
+
+    const installOnMac = async (downloadUrl: URL, packageName: string) => {
+        let date = new Date()
+        const installer_path = `/private/tmp/${packageName}-${date.toISOString().split('T')[0]}.pkg`
+        // const download_url = 'https://awscli.amazonaws.com/AWSCLIV2.pkg'
+
+        const streamPipeline = promisify(pipeline)
+        const response = await fetch(downloadUrl)
+
+        if (!response.ok) throw new Error(`unexpected response ${response.statusText}`)
+
+        await streamPipeline(response.body, createWriteStream(installer_path))
+        child_process.exec(`open ${installer_path}`)
+    }
+
+    Commands.register('aws.toolkit.installAWSCLI', async () => {
+        // get arch/sys => support win/mac
+        //const installer_path = `/private/tmp/AWSCLIV2-${date.toISOString().split('T')[0]}.pkg`;
+        // if mac
+        const downloadUrl = new URL('https://awscli.amazonaws.com/AWSCLIV2.pkg')
+        await installOnMac(downloadUrl, 'awscli')
+    })
+
+    Commands.register('aws.toolkit.installSAMCLI', async () => {
+        // get arch/sys => support win/mac
+        //if mac
+        const downloadUrl = new URL(
+            'https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-macos-x86_64.pkg'
+        )
+        await installOnMac(downloadUrl, 'samcli')
     })
 
     Commands.register('aws.toolkit.getRuntimeQP', async () => {
