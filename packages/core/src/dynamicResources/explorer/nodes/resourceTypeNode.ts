@@ -30,7 +30,7 @@ export const contextValueResource = 'ResourceNode'
 const unavailableResource = localize('AWS.explorerNode.resources.unavailable', 'Unavailable in region')
 
 export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
-    private readonly childLoader: ChildNodeLoader = new ChildNodeLoader(this, token => this.loadPage(token))
+    private readonly childLoader: ChildNodeLoader = new ChildNodeLoader(this, (token) => this.loadPage(token))
     private readonly childContextValue: string
 
     public constructor(
@@ -45,7 +45,7 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
         )
         this.tooltip = typeName
         const supportedOperations = metadata.operations
-            ? metadata.operations.map(op => contextValueResourceOperations[op])
+            ? metadata.operations.map((op) => contextValueResourceOperations[op])
             : Object.values(contextValueResourceOperations)
 
         if (!metadata.available) {
@@ -115,7 +115,7 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
         if (this.typeName === 'AWS::S3::Bucket') {
             const s3 = new DefaultS3Client(this.parent.region)
             const buckets = await s3.listBuckets()
-            newResources = buckets.buckets.map(bucket => new ResourceNode(this, bucket.name, this.childContextValue))
+            newResources = buckets.buckets.map((bucket) => new ResourceNode(this, bucket.name, this.childContextValue))
         } else {
             const response = await this.cloudControl.listResources({
                 TypeName: this.typeName,

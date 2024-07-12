@@ -205,7 +205,7 @@ export async function startSecurityScan(
         const { total, withFixes } = securityRecommendationCollection.reduce(
             (accumulator, current) => ({
                 total: accumulator.total + current.issues.length,
-                withFixes: accumulator.withFixes + current.issues.filter(i => i.suggestedFixes.length > 0).length,
+                withFixes: accumulator.withFixes + current.issues.filter((i) => i.suggestedFixes.length > 0).length,
             }),
             { total: 0, withFixes: 0 }
         )
@@ -339,7 +339,7 @@ function showScanCompletedNotification(total: number, scannedFiles: Set<string>)
     const items = [CodeWhispererConstants.showScannedFilesMessage]
     void vscode.window
         .showInformationMessage(`Security scan completed for ${totalFiles}. ${totalIssues} found.`, ...items)
-        .then(value => {
+        .then((value) => {
             if (value === CodeWhispererConstants.showScannedFilesMessage) {
                 const [, codeScanOutpuChan] = getLogOutputChan()
                 codeScanOutpuChan.show()

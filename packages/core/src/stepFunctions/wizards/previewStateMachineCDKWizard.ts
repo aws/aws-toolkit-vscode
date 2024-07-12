@@ -18,8 +18,8 @@ import { ConstructTreeEntity } from '../../awsService/cdk/explorer/tree/types'
 import { getDisplayLabel } from '../../awsService/cdk/explorer/tree/treeInspector'
 
 function createLocationPrompter() {
-    const items = detectCdkProjects(vscode.workspace.workspaceFolders).then(locations => {
-        return locations.map(l => ({
+    const items = detectCdkProjects(vscode.workspace.workspaceFolders).then((locations) => {
+        return locations.map((l) => ({
             label: vscode.workspace.asRelativePath(l.cdkJsonUri),
             data: l,
         }))
@@ -51,9 +51,9 @@ export function getStateMachines(construct: ConstructTreeEntity) {
 
 function createResourcePrompter(location: CdkAppLocation) {
     const items = getApp(location)
-        .then(app => getStateMachines(app.constructTree.tree))
-        .then(constructs =>
-            constructs.map(c => ({
+        .then((app) => getStateMachines(app.constructTree.tree))
+        .then((constructs) =>
+            constructs.map((c) => ({
                 label: getDisplayLabel(c),
                 description: path.dirname(c.path),
                 data: { construct: c, location: location.treeUri.with({ fragment: c.path }) },

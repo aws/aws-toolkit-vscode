@@ -24,7 +24,7 @@ describe('pythonCodeLensProvider', async function () {
                 },
             ]
 
-            testScenarios.forEach(test => {
+            testScenarios.forEach((test) => {
                 it(`Returns cased-drive variants for windows platforms: ${test.situation}`, async () => {
                     const variants = getLocalRootVariants(test.inputText)
                     assert.ok(variants)
@@ -63,7 +63,7 @@ describe('pythonCodeLensProvider', async function () {
                 },
             ]
 
-            testScenarios.forEach(test => {
+            testScenarios.forEach((test) => {
                 it(`Returns the same string for non-windows platforms: ${test.situation}`, async () => {
                     const variants = getLocalRootVariants(test.inputText)
                     assert.ok(variants)

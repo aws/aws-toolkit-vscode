@@ -107,7 +107,7 @@ export class DefaultCodeWhispererClient {
                 credentials: await AuthUtil.instance.getCredentials(),
                 endpoint: cwsprConfig.endpoint,
                 onRequestSetup: [
-                    req => {
+                    (req) => {
                         if (req.operation === 'listRecommendations') {
                             req.on('build', () => {
                                 req.httpRequest.headers['x-amzn-codewhisperer-optout'] = `${isOptedOut}`
@@ -117,12 +117,12 @@ export class DefaultCodeWhispererClient {
                         // credentials. Once the Toolkit adds a file watcher for credentials it won't be needed.
 
                         if (hasVendedIamCredentials()) {
-                            req.on('retry', resp => {
+                            req.on('retry', (resp) => {
                                 if (
                                     resp.error?.code === 'AccessDeniedException' &&
                                     resp.error.message.match(/expired/i)
                                 ) {
-                                    AuthUtil.instance.reauthenticate().catch(e => {
+                                    AuthUtil.instance.reauthenticate().catch((e) => {
                                         getLogger().error('reauthenticate failed: %s', (e as Error).message)
                                     })
                                     resp.error.retryable = true
@@ -150,7 +150,7 @@ export class DefaultCodeWhispererClient {
                 endpoint: cwsprConfig.endpoint,
                 credentials: new Credentials({ accessKeyId: 'xxx', secretAccessKey: 'xxx' }),
                 onRequestSetup: [
-                    req => {
+                    (req) => {
                         req.on('build', ({ httpRequest }) => {
                             httpRequest.headers['Authorization'] = `Bearer ${bearerToken}`
                         })
@@ -233,9 +233,9 @@ export class DefaultCodeWhispererClient {
             client.listAvailableCustomizations(request).promise()
         return pageableToCollection(requester, {}, 'nextToken')
             .promise()
-            .then(resps => {
+            .then((resps) => {
                 let logStr = 'amazonq: listAvailableCustomizations API request:'
-                resps.forEach(resp => {
+                resps.forEach((resp) => {
                     const requestId = resp.$response.requestId
                     logStr += `\n${indent('RequestID: ', 4)}${requestId},\n${indent('Customizations:', 4)}`
                     resp.customizations.forEach((c, index) => {

@@ -65,7 +65,7 @@ describe('supplementalContextUtil', function () {
             await assertTabCount(4)
 
             const actual = new Set<string>(
-                await getOpenFilesInWindow(async fileName => path.extname(fileName) === '.java')
+                await getOpenFilesInWindow(async (fileName) => path.extname(fileName) === '.java')
             )
             assert.strictEqual(actual.size, 2)
             assert.ok(actual.has(path.join(tempFolder, 'file-1.java')))

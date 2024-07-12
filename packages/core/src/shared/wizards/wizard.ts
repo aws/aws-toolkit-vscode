@@ -152,7 +152,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     public async init?(): Promise<this>
 
     private assignSteps(): void {
-        this._form.properties.forEach(prop => {
+        this._form.properties.forEach((prop) => {
             const provider = this._form.getPrompterProvider(prop)
             if (!this.boundSteps.has(prop) && provider !== undefined) {
                 this.boundSteps.set(prop, this.createBoundStep(prop, provider))
@@ -168,7 +168,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         }
 
         this.assignSteps()
-        this.resolveNextSteps((this.options.initState ?? {}) as TState).forEach(step =>
+        this.resolveNextSteps((this.options.initState ?? {}) as TState).forEach((step) =>
             this.stateController.addStep(step)
         )
 
@@ -180,7 +180,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     private createStepEstimator<TProp>(state: TState, prop: string): StepEstimator<TProp> {
         state = _.cloneDeep(state)
 
-        return response => {
+        return (response) => {
             if (response !== undefined && !isValidResponse(response)) {
                 return 0
             }
@@ -195,7 +195,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     }
 
     private createExitStep(provider: NonNullable<WizardOptions<TState>['exitPrompterProvider']>): StepFunction<TState> {
-        return async state => {
+        return async (state) => {
             const prompter = provider(state)
             prompter.setSteps(this.currentStep, this.totalSteps)
             const didExit = await prompter.prompt()
@@ -210,7 +210,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     private createBoundStep<TProp>(prop: string, provider: PrompterProvider<TState, TProp>): StepFunction<TState> {
         const stepCache: StepCache = {}
 
-        return async state => {
+        return async (state) => {
             const stateWithCache = Object.assign(
                 { stepCache: stepCache, estimator: this.createStepEstimator(state, prop) },
                 this._form.applyDefaults(state)

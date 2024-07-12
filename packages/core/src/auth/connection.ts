@@ -60,7 +60,7 @@ export const isValidCodeCatalystConnection = (conn?: Connection): conn is SsoCon
     isSsoConnection(conn) && hasScopes(conn, scopesCodeCatalyst)
 
 export function hasScopes(target: SsoConnection | SsoProfile | string[], scopes: string[]): boolean {
-    return scopes?.every(s => (Array.isArray(target) ? target : target.scopes)?.includes(s))
+    return scopes?.every((s) => (Array.isArray(target) ? target : target.scopes)?.includes(s))
 }
 
 /**
@@ -69,7 +69,7 @@ export function hasScopes(target: SsoConnection | SsoProfile | string[], scopes:
  */
 export function hasExactScopes(target: SsoConnection | SsoProfile | string[], scopes: string[]): boolean {
     const targetScopes = Array.isArray(target) ? target : target.scopes ?? []
-    return scopes.length === targetScopes.length && scopes.every(s => targetScopes.includes(s))
+    return scopes.length === targetScopes.length && scopes.every((s) => targetScopes.includes(s))
 }
 
 export function createBuilderIdProfile(
@@ -314,12 +314,12 @@ export async function* loadLinkedProfilesIntoStore(
 
     const stream = client
         .listAccounts()
-        .catch(e => {
+        .catch((e) => {
             getLogger().error('listAccounts() failed: %s', (e as Error).message)
             return []
         })
         .flatten()
-        .map(resp => {
+        .map((resp) => {
             accounts.add(resp.accountId)
             return client.listAccountRoles({ accountId: resp.accountId }).flatten()
         })
@@ -347,7 +347,7 @@ export async function* loadLinkedProfilesIntoStore(
     }
 
     /** Does `ssoProfile` have scopes other than "sso:account:access"? */
-    const hasScopes = !!ssoProfile.scopes?.some(s => !scopesSsoAccountAccess.includes(s))
+    const hasScopes = !!ssoProfile.scopes?.some((s) => !scopesSsoAccountAccess.includes(s))
     if (!hasScopes && (accounts.size === 0 || found.size === 0)) {
         // SSO user has no OIDC scopes nor IAM roles. Possible causes:
         // - user is not an "Assigned user" in any account in the SSO org

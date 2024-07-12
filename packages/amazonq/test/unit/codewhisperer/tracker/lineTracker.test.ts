@@ -29,7 +29,7 @@ describe('LineTracker class', function () {
             selection: 0,
             content: 0,
         }
-        disposable = sut.onDidChangeActiveLines(e => {
+        disposable = sut.onDidChangeActiveLines((e) => {
             if (e.reason === 'content') {
                 counts.content++
             } else if (e.reason === 'selection') {
@@ -59,7 +59,7 @@ describe('LineTracker class', function () {
 
     it('ready will emit onReady event', async function () {
         let messageReceived = 0
-        disposable = sut.onReady(_ => {
+        disposable = sut.onReady((_) => {
             messageReceived++
         })
 
@@ -86,7 +86,7 @@ describe('LineTracker class', function () {
                 preview: false,
             })
 
-            const vscodeSelections = selections.map(s => {
+            const vscodeSelections = selections.map((s) => {
                 return new Selection(new Position(s.anchor, 0), new Position(s.active, 0))
             })
 

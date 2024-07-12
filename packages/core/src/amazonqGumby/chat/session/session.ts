@@ -42,7 +42,7 @@ export class Session {
 
     public updateCandidateProjects(newCandidateProjects: TransformationCandidateProject[]) {
         this.candidateProjects = new Map<string, TransformationCandidateProject>()
-        newCandidateProjects.map(candidateProject => {
+        newCandidateProjects.map((candidateProject) => {
             this.candidateProjects.set(candidateProject.path, candidateProject)
         })
     }

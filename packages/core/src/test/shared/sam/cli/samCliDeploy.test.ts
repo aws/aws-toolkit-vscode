@@ -27,7 +27,7 @@ describe('runSamCliDeploy', async function () {
     })
 
     it('does not include --parameter-overrides if there are no overrides', async function () {
-        const invoker = new MockSamCliProcessInvoker(args => {
+        const invoker = new MockSamCliProcessInvoker((args) => {
             invokeCount++
             assertArgNotPresent(args, '--parameter-overrides')
         })
@@ -38,10 +38,10 @@ describe('runSamCliDeploy', async function () {
     })
 
     it('includes overrides as a string of key=value pairs', async function () {
-        const invoker = new MockSamCliProcessInvoker(args => {
+        const invoker = new MockSamCliProcessInvoker((args) => {
             invokeCount++
             assertArgIsPresent(args, '--parameter-overrides')
-            const overridesIndex = args.findIndex(arg => arg === '--parameter-overrides')
+            const overridesIndex = args.findIndex((arg) => arg === '--parameter-overrides')
             assert.strictEqual(overridesIndex > -1, true)
             assert.strictEqual(args.length >= overridesIndex + 3, true)
             assert.strictEqual(args[overridesIndex + 1], 'key1=value1')
@@ -62,7 +62,7 @@ describe('runSamCliDeploy', async function () {
     })
 
     it('includes a template, stack name, bucket, and region', async function () {
-        const invoker = new MockSamCliProcessInvoker(args => {
+        const invoker = new MockSamCliProcessInvoker((args) => {
             invokeCount++
             assertArgsContainArgument(args, '--template-file', fakeTemplateFile)
             assertArgsContainArgument(args, '--stack-name', fakeStackName)
@@ -76,7 +76,7 @@ describe('runSamCliDeploy', async function () {
     })
 
     it('Passes all cloudformation capabilities', async function () {
-        const invoker = new MockSamCliProcessInvoker(args => {
+        const invoker = new MockSamCliProcessInvoker((args) => {
             invokeCount++
             assertArgIsPresent(args, '--capabilities')
             assertArgIsPresent(args, 'CAPABILITY_IAM')

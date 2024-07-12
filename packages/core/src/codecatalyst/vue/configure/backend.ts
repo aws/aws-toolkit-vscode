@@ -114,7 +114,7 @@ export class CodeCatalystConfigureWebview extends VueWebview {
         const spaceName = this.devenv.summary.org.name
         const subscriptionType = await this.client
             .getSubscription({ spaceName })
-            .then(resp => (isValidSubscriptionType(resp.subscriptionType) ? resp.subscriptionType : 'FREE'))
+            .then((resp) => (isValidSubscriptionType(resp.subscriptionType) ? resp.subscriptionType : 'FREE'))
 
         async function prompt(prompter: Prompter<any>) {
             prompter.recentItem = settings[key]

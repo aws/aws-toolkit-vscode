@@ -14,7 +14,7 @@ import { getLogger } from '../../shared/logger'
 export function refreshExplorer(node?: Ec2Node) {
     if (node) {
         const n = node instanceof Ec2InstanceNode ? node.parent : node
-        n.refreshNode().catch(e => {
+        n.refreshNode().catch((e) => {
             getLogger().error('refreshNode failed: %s', (e as Error).message)
         })
     }

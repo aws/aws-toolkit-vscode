@@ -128,7 +128,7 @@ describe('TelemetryService', function () {
 
         assert.deepStrictEqual(
             await toArrayAsync(
-                service.findIter(m => {
+                service.findIter((m) => {
                     return m.MetricName === 'bogus'
                 })
             ),
@@ -136,7 +136,7 @@ describe('TelemetryService', function () {
         )
         assert.deepStrictEqual(
             await toArrayAsync(
-                service.findIter(m => {
+                service.findIter((m) => {
                     return m.MetricName === 'metric1'
                 })
             ),
@@ -144,7 +144,7 @@ describe('TelemetryService', function () {
         )
         assert.deepStrictEqual(
             await toArrayAsync(
-                service.findIter(m => {
+                service.findIter((m) => {
                     return !!m.Passive
                 })
             ),
@@ -266,7 +266,7 @@ describe('TelemetryService', function () {
         const metadata = metricDatum.Metadata
         assert.ok(metadata, 'Metric metadata was undefined')
         assert.ok(
-            metadata.some(item => item.Key === 'awsAccount' && item.Value === expectedAccountId),
+            metadata.some((item) => item.Key === 'awsAccount' && item.Value === expectedAccountId),
             'Expected metadata to contain the test account'
         )
     }

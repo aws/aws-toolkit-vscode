@@ -51,7 +51,7 @@ export async function checkPermissionsForSsm(
     })
 
     if (deniedActions.length !== 0) {
-        const deniedMsg = deniedActions.map(o => o.EvalActionName).join(', ')
+        const deniedMsg = deniedActions.map((o) => o.EvalActionName).join(', ')
         const message = localize(
             'AWS.command.ecs.runCommandInContainer.missingPermissions',
             'Insufficient permissions to execute command, ensure the [task role is configured]({0}). Task role {1} is not authorized to perform: {2}',
@@ -63,7 +63,7 @@ export async function checkPermissionsForSsm(
         throw new ToolkitError(message, {
             code: 'MissingPermissions',
             documentationUri: ecsTaskPermissionsUrl,
-            details: { deniedActions: deniedActions.map(a => a.EvalActionName) },
+            details: { deniedActions: deniedActions.map((a) => a.EvalActionName) },
         })
     }
 }
@@ -82,7 +82,7 @@ export async function prepareCommand(
     } catch (execErr) {
         await checkPermissionsForSsm(new DefaultIamClient(globals.regionProvider.defaultRegionId), {
             taskRoleArn: taskRoleArn,
-        }).catch(permErr => {
+        }).catch((permErr) => {
             throw ToolkitError.chain(permErr, `${execErr}`)
         })
 
@@ -96,7 +96,7 @@ export async function prepareCommand(
         const ssm = await globals.sdkClientBuilder.createAwsService(SSM, undefined, client.regionCode)
         ssm.terminateSession({ SessionId: sessionId })
             .promise()
-            .catch(err => {
+            .catch((err) => {
                 getLogger().warn(`ecs: failed to terminate session "${sessionId}": %s`, err)
             })
     }

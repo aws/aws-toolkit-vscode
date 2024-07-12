@@ -52,19 +52,19 @@ describe('AsyncCollection', function () {
 
     it('can turn into a map using property key', async function () {
         const map = await toCollection(genItem).toMap('name')
-        items.forEach(v => assert.strictEqual(map.get(v.name), v))
+        items.forEach((v) => assert.strictEqual(map.get(v.name), v))
     })
 
     it('can turn into a map using function', async function () {
-        const map = await toCollection(genItem).toMap(i => i.data.toString())
-        items.forEach(v => assert.strictEqual(map.get(v.data.toString()), v))
+        const map = await toCollection(genItem).toMap((i) => i.data.toString())
+        items.forEach((v) => assert.strictEqual(map.get(v.data.toString()), v))
     })
 
     it('can map', async function () {
         const mapped = toCollection(gen)
-            .map(o => o + 1)
-            .map(o => o.toString())
-            .map(s => `${s}!`)
+            .map((o) => o + 1)
+            .map((o) => o.toString())
+            .map((s) => `${s}!`)
         assert.deepStrictEqual(await mapped.promise(), ['1!', '2!', '3!'])
     })
 
@@ -80,14 +80,14 @@ describe('AsyncCollection', function () {
         const collection = toCollection(async function* () {
             yield await toCollection(returnGen).promise()
             yield await toCollection(returnGen)
-                .map(i => i + 1)
+                .map((i) => i + 1)
                 .promise()
             return await toCollection(returnGen)
-                .map(i => i + 2)
+                .map((i) => i + 2)
                 .promise()
         })
 
-        const flat = collection.flatten().map(i => i * 2)
+        const flat = collection.flatten().map((i) => i * 2)
         const expected = 0 + 2 + 4 + (2 + 4 + 6) + (4 + 6 + 8) // Writing it all out for readability
         const actual = (await flat.promise()).reduce((a, b) => a + b, 0)
         assert.deepStrictEqual(actual, expected)
@@ -95,18 +95,18 @@ describe('AsyncCollection', function () {
 
     it('can flatten generators that yield async iterables', async function () {
         const collection = toCollection(async function* () {
-            yield toCollection(gen).filter(i => i > 1)
-            yield toCollection(gen).map(i => i + 1)
+            yield toCollection(gen).filter((i) => i > 1)
+            yield toCollection(gen).map((i) => i + 1)
         })
 
-        const flat = collection.flatten().map(i => i * 2)
+        const flat = collection.flatten().map((i) => i * 2)
         const actual = (await flat.promise()).reduce((a, b) => a + b, 0)
         assert.deepStrictEqual(actual, 4 + (2 + 4 + 6))
     })
 
     it('can filter', async function () {
         const filtered = toCollection(genPage)
-            .filter(o => o.includes(5))
+            .filter((o) => o.includes(5))
             .flatten()
         const expected = [3, 4, 5]
         assert.deepStrictEqual(await filtered.promise(), expected)
@@ -118,8 +118,8 @@ describe('AsyncCollection', function () {
     })
 
     it('can find a matching element', async function () {
-        assert.deepStrictEqual(await toCollection(gen).find(x => x > 0), 1)
-        assert.deepStrictEqual(await toCollection(gen).find(x => x > 2), undefined)
+        assert.deepStrictEqual(await toCollection(gen).find((x) => x > 0), 1)
+        assert.deepStrictEqual(await toCollection(gen).find((x) => x > 2), undefined)
     })
 
     it('returns nothing if using non-positive limit count', async function () {
@@ -131,10 +131,10 @@ describe('AsyncCollection', function () {
 
     it('is immutable', async function () {
         const x = toCollection(gen)
-        const y = x.map(o => o + 1)
+        const y = x.map((o) => o + 1)
         const z = y
-            .filter(o => o !== 1)
-            .map(o => [o, o])
+            .filter((o) => o !== 1)
+            .map((o) => [o, o])
             .flatten()
 
         assert.deepStrictEqual(await x.promise(), [0, 1, 2])
@@ -146,11 +146,11 @@ describe('AsyncCollection', function () {
         const double = async (n: number) => 2 * n
 
         const mapped = toCollection(gen)
-            .map(o => o + 1)
+            .map((o) => o + 1)
             .map(double)
-            .map(o => o - 1)
+            .map((o) => o - 1)
             .map(double)
-            .map(o => `${o}!`)
+            .map((o) => `${o}!`)
 
         assert.deepStrictEqual(await mapped.promise(), ['2!', '6!', '10!'])
     })
@@ -180,11 +180,11 @@ describe('AsyncCollection', function () {
     it('does not iterate over the generator when applying transformations', async function () {
         const counter = createCounter()
         const x = toCollection(counter)
-            .filter(o => o > 1)
-            .map(o => [o, o * o])
+            .filter((o) => o > 1)
+            .map((o) => [o, o * o])
             .flatten()
 
-        await new Promise(r => setImmediate(r))
+        await new Promise((r) => setImmediate(r))
         assert.strictEqual(counter.callCount, 0)
         assert.deepStrictEqual(await x.limit(6).promise(), [2, 4, 3, 9, 4, 16])
         assert.strictEqual(counter.callCount, 6)
@@ -193,9 +193,9 @@ describe('AsyncCollection', function () {
     it('does not iterate over the generator after finding a match', async function () {
         const counter = createCounter()
         const x = await toCollection(counter)
-            .filter(o => o > 1)
-            .map(o => [o, o * o])
-            .find(o => o[1] > 25)
+            .filter((o) => o > 1)
+            .map((o) => [o, o * o])
+            .find((o) => o[1] > 25)
 
         assert.deepStrictEqual(x, [6, 36])
         assert.strictEqual(counter.callCount, 7)
@@ -209,8 +209,8 @@ describe('AsyncCollection', function () {
 
         it('bubbles errors up when using a promise', async function () {
             const errorPromise = toCollection(error)
-                .map(o => o)
-                .filter(_ => true)
+                .map((o) => o)
+                .filter((_) => true)
                 .flatten()
                 .promise()
             await assert.rejects(errorPromise)
@@ -218,8 +218,8 @@ describe('AsyncCollection', function () {
 
         it('bubbles errors up when iterating', async function () {
             const errorIter = toCollection(error)
-                .map(o => o)
-                .filter(_ => true)
+                .map((o) => o)
+                .filter((_) => true)
                 .flatten()
             const iterate = async () => {
                 for await (const _ of errorIter) {

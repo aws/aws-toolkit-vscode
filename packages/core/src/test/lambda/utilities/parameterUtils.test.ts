@@ -135,7 +135,7 @@ describe('parameterUtils', async function () {
 
         it('throws if template is not in the workspace', async function () {
             const context: GetOverriddenParametersContext = {
-                getWorkspaceFolder: uri => undefined,
+                getWorkspaceFolder: (uri) => undefined,
                 loadTemplatesConfig: async () => ({
                     templates: {},
                 }),

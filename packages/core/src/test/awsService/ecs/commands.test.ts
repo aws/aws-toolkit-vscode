@@ -22,9 +22,9 @@ describe('toggleExecuteCommandFlag', async function () {
 
     it('attempts to enable service', async function () {
         const client = stub(DefaultEcsClient, { regionCode: '' })
-        client.updateService.callsFake(async request => assert.strictEqual(request.enableExecuteCommand, true))
+        client.updateService.callsFake(async (request) => assert.strictEqual(request.enableExecuteCommand, true))
         const service = new Service(client, {})
-        const didChange = new Promise<boolean>(resolve => {
+        const didChange = new Promise<boolean>((resolve) => {
             service.onDidChangeTreeItem(() => resolve(true))
             setTimeout(() => resolve(false), 1000)
         })
@@ -36,9 +36,9 @@ describe('toggleExecuteCommandFlag', async function () {
 
     it('attempts to disable service', async function () {
         const client = stub(DefaultEcsClient, { regionCode: '' })
-        client.updateService.callsFake(async request => assert.strictEqual(request.enableExecuteCommand, false))
+        client.updateService.callsFake(async (request) => assert.strictEqual(request.enableExecuteCommand, false))
         const service = new Service(client, { enableExecuteCommand: true })
-        const didChange = new Promise<boolean>(resolve => {
+        const didChange = new Promise<boolean>((resolve) => {
             service.onDidChangeTreeItem(() => resolve(true))
             setTimeout(() => resolve(false), 1000)
         })
@@ -59,9 +59,9 @@ describe('openTaskInTerminal', async function () {
 
     it('attempts to enable service', async function () {
         const client = stub(DefaultEcsClient, { regionCode: '' })
-        client.updateService.callsFake(async request => assert.strictEqual(request.enableExecuteCommand, true))
+        client.updateService.callsFake(async (request) => assert.strictEqual(request.enableExecuteCommand, true))
         const service = new Service(client, {})
-        const didChange = new Promise<boolean>(resolve => {
+        const didChange = new Promise<boolean>((resolve) => {
             service.onDidChangeTreeItem(() => resolve(true))
             setTimeout(() => resolve(false), 1000)
         })
@@ -73,9 +73,9 @@ describe('openTaskInTerminal', async function () {
 
     it('attempts to disable service', async function () {
         const client = stub(DefaultEcsClient, { regionCode: '' })
-        client.updateService.callsFake(async request => assert.strictEqual(request.enableExecuteCommand, false))
+        client.updateService.callsFake(async (request) => assert.strictEqual(request.enableExecuteCommand, false))
         const service = new Service(client, { enableExecuteCommand: true })
-        const didChange = new Promise<boolean>(resolve => {
+        const didChange = new Promise<boolean>((resolve) => {
             service.onDidChangeTreeItem(() => resolve(true))
             setTimeout(() => resolve(false), 1000)
         })

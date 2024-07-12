@@ -204,7 +204,7 @@ describe('CodeCatalyst Connect Script', function () {
             try {
                 const data = await new Promise<string>((resolve, reject) => {
                     req.on('error', reject)
-                    req.on('data', d => resolve(d.toString()))
+                    req.on('data', (d) => resolve(d.toString()))
                 })
 
                 const body = JSON.parse(data)

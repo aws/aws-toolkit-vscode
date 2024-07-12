@@ -24,7 +24,7 @@ class TestCredentialsProviderFactory implements CredentialsProviderFactory {
         providerSubIds: string[]
     ) {
         this.providers.push(
-            ...providerSubIds.map<CredentialsProvider>(subId => {
+            ...providerSubIds.map<CredentialsProvider>((subId) => {
                 return makeSampleCredentialsProvider(this.credentialSource, subId, true)
             })
         )
@@ -39,7 +39,7 @@ class TestCredentialsProviderFactory implements CredentialsProviderFactory {
     }
 
     public getProvider(credentialsProviderId: CredentialsId): CredentialsProvider | undefined {
-        const providers = this.providers.filter(p => isEqual(p.getCredentialsId(), credentialsProviderId))
+        const providers = this.providers.filter((p) => isEqual(p.getCredentialsId(), credentialsProviderId))
 
         if (providers.length === 0) {
             return undefined
@@ -106,7 +106,7 @@ describe('CredentialsProviderManager', async function () {
 
             assert.strictEqual(providers.length, 4, 'Manager did not return the expected number of providers')
             assert.ok(
-                providers.some(x =>
+                providers.some((x) =>
                     isEqual(x.getCredentialsId(), {
                         credentialSource: 'profile',
                         credentialTypeId: 'one',
@@ -115,7 +115,7 @@ describe('CredentialsProviderManager', async function () {
                 'Manager did not return the first provider'
             )
             assert.ok(
-                providers.some(x =>
+                providers.some((x) =>
                     isEqual(x.getCredentialsId(), {
                         credentialSource: 'env',
                         credentialTypeId: 'two',
@@ -124,7 +124,7 @@ describe('CredentialsProviderManager', async function () {
                 'Manager did not return the second provider'
             )
             assert.ok(
-                providers.some(x =>
+                providers.some((x) =>
                     isEqual(x.getCredentialsId(), {
                         credentialSource: 'env',
                         credentialTypeId: 'three',
@@ -133,7 +133,7 @@ describe('CredentialsProviderManager', async function () {
                 'Manager did not return the third provider'
             )
             assert.ok(
-                providers.some(x =>
+                providers.some((x) =>
                     isEqual(x.getCredentialsId(), {
                         credentialSource: 'profile',
                         credentialTypeId: 'two',

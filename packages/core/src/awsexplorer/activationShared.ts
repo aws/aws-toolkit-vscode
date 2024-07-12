@@ -21,7 +21,7 @@ export function registerToolView(viewNode: ToolView, context: vscode.ExtensionCo
         toolView.onDidChangeVisibility(({ visible }) => visible && CdkRootNode.instance.refresh())
     }
 
-    toolView.onDidExpandElement(e => {
+    toolView.onDidExpandElement((e) => {
         if (e.element.resource instanceof CdkRootNode) {
             // Legacy CDK metric, remove this when we add something generic
             telemetry.cdk_appExpanded.emit()

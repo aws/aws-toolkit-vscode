@@ -98,7 +98,7 @@ export class RegistryItemNode extends AWSTreeNodeBase {
         const documents = new Map<string, SSM.Types.DocumentIdentifier>()
 
         const docs = await this.getDocumentByOwner(this.client)
-        docs.forEach(doc => {
+        docs.forEach((doc) => {
             documents.set(doc.Name!, doc)
         })
 
@@ -106,15 +106,15 @@ export class RegistryItemNode extends AWSTreeNodeBase {
             updateInPlace(
                 this.documentNodes,
                 documents.keys(),
-                key => this.documentNodes.get(key)!.update(documents.get(key)!),
-                key => new DocumentItemNodeWriteable(documents.get(key)!, this.client, this.regionCode, this)
+                (key) => this.documentNodes.get(key)!.update(documents.get(key)!),
+                (key) => new DocumentItemNodeWriteable(documents.get(key)!, this.client, this.regionCode, this)
             )
         } else {
             updateInPlace(
                 this.documentNodes,
                 documents.keys(),
-                key => this.documentNodes.get(key)!.update(documents.get(key)!),
-                key => new DocumentItemNode(documents.get(key)!, this.client, this.regionCode)
+                (key) => this.documentNodes.get(key)!.update(documents.get(key)!),
+                (key) => new DocumentItemNode(documents.get(key)!, this.client, this.regionCode)
             )
         }
     }

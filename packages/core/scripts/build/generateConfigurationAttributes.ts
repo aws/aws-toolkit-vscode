@@ -43,7 +43,7 @@ function addBaseClass(generated: string, topLevelClass: string): string {
 
 async function generateConfigurationAttributes(): Promise<void> {
     for (const debugConfiguration of packageJson.contributes.debuggers) {
-        const debuggerConfig = config.find(cfg => {
+        const debuggerConfig = config.find((cfg) => {
             return cfg.debugger === debugConfiguration.type
         })
         if (debuggerConfig === undefined) {
@@ -52,9 +52,9 @@ async function generateConfigurationAttributes(): Promise<void> {
         // JSONSchema4 impl doesn't like properties with type undefined, but the compilation works correctly
         const schema = debugConfiguration.configurationAttributes[debuggerConfig.requestType] as any as JSONSchema4
         await compile(schema, 'DirectInvoke', { bannerComment: header })
-            .then(ts => addBaseClass(ts, debuggerConfig.topLevelClass))
-            .then(ts => ts.replace(docRegex, replacer))
-            .then(ts => fs.writeFileSync(debuggerConfig.outputFile, ts))
+            .then((ts) => addBaseClass(ts, debuggerConfig.topLevelClass))
+            .then((ts) => ts.replace(docRegex, replacer))
+            .then((ts) => fs.writeFileSync(debuggerConfig.outputFile, ts))
     }
 }
 

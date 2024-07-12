@@ -40,7 +40,7 @@ async function showDeploymentCostNotification(): Promise<void> {
         const viewPricing = localize('aws.apprunner.createService.priceNotice.view', 'View Pricing')
         const pricingUri = vscode.Uri.parse(apprunnerPricingUrl)
 
-        await vscode.window.showInformationMessage(notice, viewPricing, dontShow).then(async button => {
+        await vscode.window.showInformationMessage(notice, viewPricing, dontShow).then(async (button) => {
             if (button === viewPricing) {
                 await openUrl(pricingUri)
                 await showDeploymentCostNotification()

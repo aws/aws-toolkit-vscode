@@ -13,7 +13,7 @@ export function dispatchWebViewMessagesToApps(
     webview: Webview,
     webViewToAppsMessagePublishers: Map<TabType, MessagePublisher<any>>
 ) {
-    webview.onDidReceiveMessage(msg => {
+    webview.onDidReceiveMessage((msg) => {
         const appMessagePublisher = webViewToAppsMessagePublishers.get(msg.tabType)
         if (appMessagePublisher === undefined) {
             return
@@ -23,8 +23,8 @@ export function dispatchWebViewMessagesToApps(
 }
 
 export function dispatchAppsMessagesToWebView(webView: Webview, appsMessageListener: MessageListener<any>) {
-    appsMessageListener.onMessage(msg => {
-        webView.postMessage(JSON.stringify(msg)).then(undefined, e => {
+    appsMessageListener.onMessage((msg) => {
+        webView.postMessage(JSON.stringify(msg)).then(undefined, (e) => {
             getLogger().error('webView.postMessage failed: %s', (e as Error).message)
         })
     })

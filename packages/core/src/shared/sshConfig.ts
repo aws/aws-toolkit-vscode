@@ -96,7 +96,7 @@ export class SshConfig {
         )
 
         const openConfig = localize('AWS.ssh.openConfig', 'Open config...')
-        await vscode.window.showWarningMessage(oldConfig, openConfig).then(resp => {
+        await vscode.window.showWarningMessage(oldConfig, openConfig).then((resp) => {
             if (resp === openConfig) {
                 void vscode.window.showTextDocument(vscode.Uri.file(getSshConfigPath()))
             }

@@ -40,7 +40,7 @@ describe('deleteThingCommand', function () {
         const deleteStub = sinon.stub()
         iot.deleteThing = deleteStub
 
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Delete')?.select())
         await deleteThingCommand(node)
 
         getTestWindow().getFirstMessage().assertWarn('Are you sure you want to delete Thing iot-thing?')
@@ -55,7 +55,7 @@ describe('deleteThingCommand', function () {
         const listStub = sinon.stub().resolves({ principals: ['string'] })
         iot.listThingPrincipals = listStub
 
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Delete')?.select())
         await deleteThingCommand(node)
 
         getTestWindow()
@@ -69,7 +69,7 @@ describe('deleteThingCommand', function () {
     it('does nothing when deletion is cancelled', async function () {
         const deleteStub = sinon.stub()
         iot.deleteThing = deleteStub
-        getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
+        getTestWindow().onDidShowMessage((m) => m.selectItem('Cancel'))
         await deleteThingCommand(node)
 
         assert(deleteStub.notCalled)
@@ -79,7 +79,7 @@ describe('deleteThingCommand', function () {
         const deleteStub = sinon.stub().rejects()
         iot.deleteThing = deleteStub
 
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Delete')?.select())
         await deleteThingCommand(node)
 
         getTestWindow()
@@ -93,7 +93,7 @@ describe('deleteThingCommand', function () {
         const listStub = sinon.stub().rejects()
         iot.listThingPrincipals = listStub
 
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Delete')?.select())
         await deleteThingCommand(node)
 
         getTestWindow()

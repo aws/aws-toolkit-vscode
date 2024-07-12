@@ -81,7 +81,7 @@ describe('SharedCredentialsProviderFactory', async function () {
 
         assert.strictEqual(providers.length, 2, 'Expected two providers to be created')
         assert.ok(
-            providers.find(p =>
+            providers.find((p) =>
                 isEqual(p.getCredentialsId(), {
                     credentialSource: 'profile',
                     credentialTypeId: validProfileName1,
@@ -90,7 +90,7 @@ describe('SharedCredentialsProviderFactory', async function () {
             'Expected to find the first profile'
         )
         assert.ok(
-            providers.find(p =>
+            providers.find((p) =>
                 isEqual(p.getCredentialsId(), {
                     credentialSource: 'profile',
                     credentialTypeId: validProfileName2,

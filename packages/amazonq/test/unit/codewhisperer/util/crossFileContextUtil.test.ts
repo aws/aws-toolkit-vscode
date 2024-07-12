@@ -156,7 +156,7 @@ describe('crossFileContextUtil', function () {
             await closeAllEditors()
         })
 
-        fileExtLists.forEach(fileExt => {
+        fileExtLists.forEach((fileExt) => {
             it('should be empty if userGroup is control', async function () {
                 const editor = await openATextEditorWithText('content-1', `file-1.${fileExt}`, tempFolder)
                 await openATextEditorWithText('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
@@ -188,7 +188,7 @@ describe('crossFileContextUtil', function () {
             await closeAllEditors()
         })
 
-        fileExtLists.forEach(fileExt => {
+        fileExtLists.forEach((fileExt) => {
             it('should be non empty if usergroup is Crossfile', async function () {
                 const editor = await openATextEditorWithText('content-1', `file-1.${fileExt}`, tempFolder)
                 await openATextEditorWithText('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
@@ -220,7 +220,7 @@ describe('crossFileContextUtil', function () {
             await closeAllEditors()
         })
 
-        fileExtLists.forEach(fileExt => {
+        fileExtLists.forEach((fileExt) => {
             it('should be non empty', async function () {
                 const editor = await openATextEditorWithText('content-1', `file-1.${fileExt}`, tempFolder)
                 await openATextEditorWithText('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })

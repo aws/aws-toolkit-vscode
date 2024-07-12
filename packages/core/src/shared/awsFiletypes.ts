@@ -118,9 +118,9 @@ export function activate(): void {
 
 async function isSameMetricPending(filetype: string, fileExt: string | undefined): Promise<boolean> {
     const pendingMetrics = await collectionUtil.first(
-        globals.telemetry.findIter(m => {
-            const m1 = m.Metadata?.find(o => o.Key === 'awsFiletype')
-            const m2 = m.Metadata?.find(o => o.Key === 'filenameExt')
+        globals.telemetry.findIter((m) => {
+            const m1 = m.Metadata?.find((o) => o.Key === 'awsFiletype')
+            const m2 = m.Metadata?.find((o) => o.Key === 'filenameExt')
             return m.MetricName === 'file_editAwsFile' && m1?.Value === filetype && m2?.Value === fileExt
         })
     )

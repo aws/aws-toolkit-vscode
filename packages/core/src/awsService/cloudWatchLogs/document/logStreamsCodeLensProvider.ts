@@ -55,7 +55,7 @@ export class LogStreamCodeLensProvider implements vscode.CodeLensProvider {
         const linesToGenerateCodeLens = await this.getStartingLineOfEachStreamId(document)
 
         // Create a code lens at the start of each Log Stream in the document
-        linesToGenerateCodeLens.forEach(idWithLine => {
+        linesToGenerateCodeLens.forEach((idWithLine) => {
             codelenses.push(this.createLogStreamCodeLens(logGroupInfo, idWithLine))
         })
         return codelenses

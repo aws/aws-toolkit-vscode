@@ -123,13 +123,13 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
 
         const partitionRegions = this.regionProvider.getRegions()
         const userVisibleRegionCodes = this.regionProvider.getExplorerRegions()
-        const regionMap = toMap(partitionRegions, r => r.id)
+        const regionMap = toMap(partitionRegions, (r) => r.id)
 
         updateInPlace(
             this.regionNodes,
             intersection(regionMap.keys(), userVisibleRegionCodes),
-            key => this.regionNodes.get(key)!.update(regionMap.get(key)!),
-            key => new RegionNode(regionMap.get(key)!, this.regionProvider)
+            (key) => this.regionNodes.get(key)!.update(regionMap.get(key)!),
+            (key) => new RegionNode(regionMap.get(key)!, this.regionProvider)
         )
 
         if (this.regionNodes.size === 0) {

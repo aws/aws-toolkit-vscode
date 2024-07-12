@@ -79,7 +79,7 @@ export class StateMachineGraphCache {
             lastDownloadedURLKey: scriptsLastDownloadedUrl,
             currentURL: visualizationScriptUrl,
             filePath: this.jsFilePath,
-        }).catch(error => {
+        }).catch((error) => {
             this.logger.error('Failed to update State Machine Graph script assets')
             this.logger.error(error as Error)
 
@@ -91,7 +91,7 @@ export class StateMachineGraphCache {
             lastDownloadedURLKey: cssLastDownloadedUrl,
             currentURL: visualizationCssUrl,
             filePath: this.cssFilePath,
-        }).catch(error => {
+        }).catch((error) => {
             this.logger.error('Failed to update State Machine Graph css assets')
             this.logger.error(error as Error)
 
@@ -221,7 +221,7 @@ export async function isDocumentValid(text: string, textDocument?: vscode.TextDo
     const doc = ASLTextDocument.create(textDocument.uri.path, textDocument.languageId, textDocument.version, text)
     const jsonDocument = languageService.parseJSONDocument(doc)
     const diagnostics = await languageService.doValidation(doc, jsonDocument, documentSettings)
-    const isValid = !diagnostics.some(diagnostic => diagnostic.severity === DiagnosticSeverity.Error)
+    const isValid = !diagnostics.some((diagnostic) => diagnostic.severity === DiagnosticSeverity.Error)
 
     return isValid
 }

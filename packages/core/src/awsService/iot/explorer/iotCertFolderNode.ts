@@ -23,7 +23,7 @@ import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
  * Represents the group of all IoT Certificates.
  */
 export class IotCertsFolderNode extends AWSTreeNodeBase implements LoadMoreNode {
-    private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
+    private readonly childLoader = new ChildNodeLoader(this, (token) => this.loadPage(token))
 
     public constructor(
         public readonly iot: IotClient,
@@ -64,9 +64,9 @@ export class IotCertsFolderNode extends AWSTreeNodeBase implements LoadMoreNode 
 
         const newCerts =
             response.certificates
-                ?.filter(cert => cert.certificateArn && cert.certificateId && cert.status && cert.creationDate)
+                ?.filter((cert) => cert.certificateArn && cert.certificateId && cert.status && cert.creationDate)
                 .map(
-                    async cert =>
+                    async (cert) =>
                         new IotCertWithPoliciesNode(
                             {
                                 arn: cert.certificateArn!,

@@ -271,8 +271,8 @@ export class TelemetryTracer extends TelemetryBase {
 
             if (result instanceof Promise) {
                 return result
-                    .then(v => (span.stop(), v))
-                    .catch(e => {
+                    .then((v) => (span.stop(), v))
+                    .catch((e) => {
                         span.stop(e)
                         throw e
                     }) as unknown as T
@@ -320,15 +320,15 @@ export class TelemetryTracer extends TelemetryBase {
 
         return {
             name,
-            emit: data => getSpan().emit(data),
-            record: data => getSpan().record(data),
-            run: fn => this.run(name as MetricName, fn),
-            increment: data => getSpan().increment(data),
+            emit: (data) => getSpan().emit(data),
+            record: (data) => getSpan().record(data),
+            run: (fn) => this.run(name as MetricName, fn),
+            increment: (data) => getSpan().increment(data),
         }
     }
 
     private getSpan(name: string): TelemetrySpan {
-        return this.spans.find(s => s.name === name) ?? this.createSpan(name)
+        return this.spans.find((s) => s.name === name) ?? this.createSpan(name)
     }
 
     private createSpan(name: string): TelemetrySpan {

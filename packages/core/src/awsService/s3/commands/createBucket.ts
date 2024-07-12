@@ -34,7 +34,7 @@ export async function createBucketCommand(node: S3Node): Promise<void> {
         getLogger().info(`Creating bucket: ${bucketName}`)
         const bucket = await node
             .createBucket({ bucketName })
-            .catch(e => {
+            .catch((e) => {
                 const message = localize(
                     'AWS.s3.createBucket.error.general',
                     'Failed to create bucket: {0}',

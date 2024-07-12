@@ -108,7 +108,7 @@ describe('LoginManager', async function () {
         const passive = true
         getCredentialsProviderStub.reset()
         getCredentialsProviderStub.resolves(undefined)
-        const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials').callsFake(async credentials => {
+        const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials').callsFake(async (credentials) => {
             // Verify that logout is called
             assert.strictEqual(credentials, undefined)
         })
@@ -122,7 +122,7 @@ describe('LoginManager', async function () {
         const passive = false
         getAccountIdStub.reset()
         getAccountIdStub.resolves(undefined)
-        const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials').callsFake(async credentials => {
+        const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials').callsFake(async (credentials) => {
             // Verify that logout is called
             assert.strictEqual(credentials, undefined)
         })
@@ -136,7 +136,7 @@ describe('LoginManager', async function () {
         const passive = false
         getAccountIdStub.reset()
         getAccountIdStub.throws('Simulating getAccountId throwing an Error')
-        const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials').callsFake(async credentials => {
+        const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials').callsFake(async (credentials) => {
             // Verify that logout is called
             assert.strictEqual(credentials, undefined)
         })

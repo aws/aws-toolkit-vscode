@@ -69,7 +69,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
 
     after(async function () {
         sinon.restore()
-        await closeAllEditors().catch(e => getLogger().warn(`closeAllEditors failed: ${e}`))
+        await closeAllEditors().catch((e) => getLogger().warn(`closeAllEditors failed: ${e}`))
     })
 
     it('Test AslVisualization on setup all properties are correct', async function () {
@@ -202,7 +202,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
 
         const errorMessage = getTestWindow().waitForMessage(/no active text editor/i)
 
-        await Promise.all([previewStateMachineCommand.execute(), errorMessage.then(dialog => dialog.close())])
+        await Promise.all([previewStateMachineCommand.execute(), errorMessage.then((dialog) => dialog.close())])
     })
 
     it('Test AslVisualisation sendUpdateMessage posts a correct update message for YAML files', async function () {

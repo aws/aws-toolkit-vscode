@@ -116,7 +116,7 @@ export function createQuickPickPrompterTester<T>(
     }
 
     async function result(expected?: PromptResult<T>): Promise<PromptResult<T>> {
-        start().catch(e => {
+        start().catch((e) => {
             getLogger().error('createQuickPickPrompterTester.start failed: %s', (e as Error).message)
         })
         const result = await prompter.prompt()

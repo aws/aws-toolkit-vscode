@@ -154,7 +154,7 @@ export function assertLogsContain(text: string, exactMatch: boolean, severity: L
     assert.ok(
         getTestLogger()
             .getLoggedEntries(severity)
-            .some(e =>
+            .some((e) =>
                 e instanceof Error
                     ? exactMatch
                         ? e.message === text

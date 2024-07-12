@@ -133,8 +133,8 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
         })
 
         beforeEach(function () {
-            getTestWindow().onDidShowMessage(m => {
-                const updateSshConfigItem = m.items.find(i => i.title === 'Update SSH config')
+            getTestWindow().onDidShowMessage((m) => {
+                const updateSshConfigItem = m.items.find((i) => i.title === 'Update SSH config')
                 updateSshConfigItem?.select()
             })
         })
@@ -330,8 +330,8 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             // List all Dev Envs
             const listedDevEnvs = await getAllTestDevEnvironments(isolatedProjectName)
 
-            const actualDevEnvIds = listedDevEnvs.map(d => d.id)
-            const expectedDevEnvIds = createdDevEnvs.map(d => d.id)
+            const actualDevEnvIds = listedDevEnvs.map((d) => d.id)
+            const expectedDevEnvIds = createdDevEnvs.map((d) => d.id)
             assert.deepStrictEqual(
                 actualDevEnvIds.sort((a, b) => a.localeCompare(b)),
                 expectedDevEnvIds.sort((a, b) => a.localeCompare(b)),
@@ -339,12 +339,12 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             )
 
             // Delete all Dev Envs
-            await Promise.all(listedDevEnvs.map(devEnv => commands.deleteDevEnv(devEnv)))
+            await Promise.all(listedDevEnvs.map((devEnv) => commands.deleteDevEnv(devEnv)))
             const remainingDevEnvs = await getAllTestDevEnvironments(isolatedProjectName)
             if (remainingDevEnvs.length > 0) {
                 // Dev Envs may still be returned if they are still in the process of being deleted.
                 // Just ensure they are in the process or fully deleted.
-                remainingDevEnvs.forEach(devEnv => {
+                remainingDevEnvs.forEach((devEnv) => {
                     assert.ok(['DELETING', 'DELETED'].includes(devEnv.status), 'Dev Env was not successfully deleted')
                 })
             }
@@ -352,7 +352,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
 
         it('lists all spaces for the given user', async function () {
             const spaces = await client.listSpaces().flatten().promise()
-            assert.ok(spaces.find(space => space.name === spaceName))
+            assert.ok(spaces.find((space) => space.name === spaceName))
         })
 
         // TODO: Re-add this test when the CoCa SDK offers a way to delete projects.
@@ -362,7 +362,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             for (let index = 0; index < 30; index++) {
                 ephemeralProjectNames.push(`ephemeral-project-${index}`)
             }
-            await Promise.all(ephemeralProjectNames.map(name => tryCreateTestProject(spaceName, name)))
+            await Promise.all(ephemeralProjectNames.map((name) => tryCreateTestProject(spaceName, name)))
             await client.listProjects({ spaceName }).flatten().promise()
         })
 
@@ -507,13 +507,13 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
         // Deleting a dev env that has already been deleted will throw an error.
         // We need to be selective about which dev envs get explicitly deleted.
         const devEnvsToDelete = environments
-            .filter(devEnv => !['DELETING', 'DELETED'].includes(devEnv.status))
-            .map(async devEnv => deleteDevEnv(devEnv.project.name, devEnv.id))
+            .filter((devEnv) => !['DELETING', 'DELETED'].includes(devEnv.status))
+            .map(async (devEnv) => deleteDevEnv(devEnv.project.name, devEnv.id))
 
         // These dev envs are already in the process of being deleted, so we just need to wait until they are fully deleted.
         const devEnvsToWaitForDeletion = environments
-            .filter(devEnv => ['DELETING'].includes(devEnv.status))
-            .map(async devEnv => waitUntilDevEnvDeleted(devEnv.project.name, devEnv.id))
+            .filter((devEnv) => ['DELETING'].includes(devEnv.status))
+            .map(async (devEnv) => waitUntilDevEnvDeleted(devEnv.project.name, devEnv.id))
 
         await Promise.all([...devEnvsToDelete, ...devEnvsToWaitForDeletion])
     }
@@ -529,10 +529,10 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
         const oneDayInMs = 60 * 60 * 24 * 1000
         await Promise.all(
             environments
-                .filter(devEnv => Date.now() - devEnv.lastUpdatedTime.getTime() >= oneDayInMs)
-                .filter(devEnv => !['DELETING', 'DELETED'].includes(devEnv.status))
-                .map(devEnv =>
-                    deleteDevEnv(devEnv.project.name, devEnv.id).catch(err => {
+                .filter((devEnv) => Date.now() - devEnv.lastUpdatedTime.getTime() >= oneDayInMs)
+                .filter((devEnv) => !['DELETING', 'DELETED'].includes(devEnv.status))
+                .map((devEnv) =>
+                    deleteDevEnv(devEnv.project.name, devEnv.id).catch((err) => {
                         getLogger().warn(`tests: failed to deleted old dev environment "${devEnv.id}": %s`, err)
                     })
                 )
@@ -549,13 +549,13 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
 
     function getAllTestDevEnvironments(projectName?: CodeCatalystProject['name']) {
         const projects = Array.from(
-            testDevEnvironments.map(env => env.project.name).reduce((set, name) => set.add(name), new Set<string>())
+            testDevEnvironments.map((env) => env.project.name).reduce((set, name) => set.add(name), new Set<string>())
         )
 
-        const currentDevEnvs = toCollection(() => toStream(projects.map(name => getAllDevEnvs(name))))
+        const currentDevEnvs = toCollection(() => toStream(projects.map((name) => getAllDevEnvs(name))))
             .flatten()
-            .filter(env => !!testDevEnvironments.some(other => other.id === env.id))
-            .filter(env => !projectName || env.project.name === projectName)
+            .filter((env) => !!testDevEnvironments.some((other) => other.id === env.id))
+            .filter((env) => !projectName || env.project.name === projectName)
 
         return currentDevEnvs.promise()
     }

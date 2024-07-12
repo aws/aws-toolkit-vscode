@@ -80,7 +80,7 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'iam-only' 
  * See {@link addScopes} for details about how scopes are requested for new and existing connections.
  */
 export async function promptAndUseConnection(...[auth, type]: Parameters<typeof promptForConnection>) {
-    return telemetry.aws_setCredentials.run(async span => {
+    return telemetry.aws_setCredentials.run(async (span) => {
         let conn = await promptForConnection(auth, type)
         if (!conn) {
             throw new CancellationError('user')
@@ -107,15 +107,15 @@ export async function signout(auth: Auth, conn: Connection | undefined = auth.ac
         // this makes it disappear from the list of available connections
         await auth.deleteConnection(conn)
 
-        const iamConnections = (await auth.listConnections()).filter(c => c.type === 'iam')
-        const fallbackConn = iamConnections.find(c => c.id === 'profile:default') ?? iamConnections[0]
+        const iamConnections = (await auth.listConnections()).filter((c) => c.type === 'iam')
+        const fallbackConn = iamConnections.find((c) => c.id === 'profile:default') ?? iamConnections[0]
         if (fallbackConn !== undefined) {
             await auth.useConnection(fallbackConn)
         }
     } else {
         await auth.logout()
 
-        const fallbackConn = (await auth.listConnections()).find(c => c.type === 'sso')
+        const fallbackConn = (await auth.listConnections()).find((c) => c.type === 'sso')
         if (fallbackConn !== undefined) {
             await auth.useConnection(fallbackConn)
         }
@@ -296,7 +296,7 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
     const refreshPrompter = () => {
         // This function should not return a promise, or else tests fail.
 
-        prompter.clearAndLoadItems(loadItems()).catch(e => {
+        prompter.clearAndLoadItems(loadItems()).catch((e) => {
             getLogger().error(`Auth: Failed loading connections in quickpick: %s`, e)
             throw e
         })
@@ -337,7 +337,7 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
         },
     })
 
-    prompter.quickPick.onDidTriggerItemButton(async e => {
+    prompter.quickPick.onDidTriggerItemButton(async (e) => {
         // User wants to delete a specific connection
         if (e.button.tooltip === deleteConnection) {
             telemetry.ui_click.emit({ elementId: 'connection_deleteFromList' })
@@ -358,7 +358,7 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
     ): AsyncGenerator<DataQuickPickItem<Connection | 'addNewConnection' | 'editCredentials'>[]> {
         let connections = auth.listAndTraverseConnections()
         if (excludeSso) {
-            connections = connections.filter(item => item.type !== 'sso')
+            connections = connections.filter((item) => item.type !== 'sso')
         }
 
         let hasShownEdit = false
@@ -428,7 +428,7 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
                           } else {
                               await prompter.clearAndLoadItems(loadItems())
                               prompter.selectItems(
-                                  ...prompter.quickPick.items.filter(i => i.label.includes(conn.label))
+                                  ...prompter.quickPick.items.filter((i) => i.label.includes(conn.label))
                               )
                           }
                       }
@@ -461,7 +461,7 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
 
 function mapEventType<T, U = void>(event: vscode.Event<T>, fn?: (val: T) => U): vscode.Event<U> {
     const emitter = new vscode.EventEmitter<U>()
-    event(val => (fn ? emitter.fire(fn(val)) : emitter.fire(undefined as U)))
+    event((val) => (fn ? emitter.fire(fn(val)) : emitter.fire(undefined as U)))
 
     return emitter.event
 }
@@ -483,7 +483,7 @@ export class AuthNode implements TreeNode<Auth> {
                     : ExtStartUpSources.reload
                 void setContext('aws.explorer.showAuthView', !this.resource.hasConnections)
             })
-            .catch(e => {
+            .catch((e) => {
                 getLogger().error('tryAutoConnect failed: %s', (e as Error).message)
             })
 
@@ -676,7 +676,7 @@ export class ExtensionUse {
     }
 
     private updateMemento(memento: vscode.Memento, key: string, val: any) {
-        memento.update(key, val).then(undefined, e => {
+        memento.update(key, val).then(undefined, (e) => {
             getLogger().error('Memento.update failed: %s', (e as Error).message)
         })
     }

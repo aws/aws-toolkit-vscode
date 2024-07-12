@@ -311,7 +311,7 @@ async function startDebugger(
     // Create a Promise that encapsulates our success critera
     const success = new Promise<void>((resolve, reject) => {
         testDisposables.push(
-            vscode.debug.onDidTerminateDebugSession(async session => {
+            vscode.debug.onDidTerminateDebugSession(async (session) => {
                 logSession('END', session.name)
                 const sessionRuntime = (session.configuration as any).runtime
                 if (!sessionRuntime) {
@@ -401,7 +401,7 @@ describe('SAM Integration Tests', async function () {
     after(async function () {
         await tryRemoveFolder(testSuiteRoot)
         // Print a summary of session that were seen by `onDidStartDebugSession`.
-        const sessionReport = sessionLog.map(x => `    ${x}`).join('\n')
+        const sessionReport = sessionLog.map((x) => `    ${x}`).join('\n')
         await config.update('server.launchMode', javaLanguageSetting)
         console.log(`DebugSessions seen in this run:\n${sessionReport}`)
     })
@@ -500,7 +500,7 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 afterEach(async function () {
-                    testDisposables.forEach(d => d.dispose())
+                    testDisposables.forEach((d) => d.dispose())
                     await stopDebugger(undefined)
                 })
 

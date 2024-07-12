@@ -14,7 +14,7 @@ export const openTemplateInComposerCommand = Commands.declare(
     'aws.openInApplicationComposer',
     (manager: ApplicationComposerManager) => async (arg?: vscode.TextEditor | vscode.Uri) => {
         let result: vscode.WebviewPanel | undefined
-        await telemetry.appcomposer_openTemplate.run(async span => {
+        await telemetry.appcomposer_openTemplate.run(async (span) => {
             const amazonqApi = await getAmazonqApi()
 
             let hasChatAuth = false

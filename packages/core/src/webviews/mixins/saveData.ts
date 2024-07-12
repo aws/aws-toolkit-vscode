@@ -45,11 +45,11 @@ const saveData: Vue.ComponentOptionsMixin = {
         _unids.add(unid)
         const old = state[unid] ?? {}
 
-        Object.keys(this.$data).forEach(k => {
+        Object.keys(this.$data).forEach((k) => {
             this.$data[k] = old[k] ?? this.$data[k]
         })
 
-        Object.keys(this.$data).forEach(k => {
+        Object.keys(this.$data).forEach((k) => {
             this.$watch(
                 k,
                 (v: unknown) => {

@@ -160,7 +160,7 @@ export class ChildProcess {
                 timeout,
                 logger: this.#log,
                 stop: this.stop.bind(this),
-                reportError: err => errorHandler(err instanceof Error ? err : new Error(err)),
+                reportError: (err) => errorHandler(err instanceof Error ? err : new Error(err)),
             }
 
             if (timeout && timeout?.completed) {
@@ -276,12 +276,12 @@ export class ChildProcess {
 
             if (force === true) {
                 waitUntil(async () => this.stopped, { timeout: 3000, interval: 200, truthy: true })
-                    .then(stopped => {
+                    .then((stopped) => {
                         if (!stopped) {
                             child.kill('SIGKILL')
                         }
                     })
-                    .catch(e => {
+                    .catch((e) => {
                         this.#log.warn(`stop(): SIGKILL failed: pid=${pid} command=${command}`)
                     })
             }
@@ -332,10 +332,10 @@ export class ChildProcess {
         }
 
         if (input === eof) {
-            return new Promise<void>(resolve => stdin.end('', resolve))
+            return new Promise<void>((resolve) => stdin.end('', resolve))
         }
 
-        return new Promise<void>((resolve, reject) => stdin.write(input, e => (e ? reject(e) : resolve())))
+        return new Promise<void>((resolve, reject) => stdin.write(input, (e) => (e ? reject(e) : resolve())))
     }
 
     /**

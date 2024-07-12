@@ -75,7 +75,7 @@ async function downloadS3File(
                 token.onCancellationRequested(() => downloadStream.destroy(new CancellationError('user')))
                 downloadStream.on('data', report)
 
-                return new Promise<void>(resolve => result.finally(resolve))
+                return new Promise<void>((resolve) => result.finally(resolve))
             }
         )
     }
@@ -88,7 +88,7 @@ export async function downloadFile(file: S3File, options?: BufferOptions): Promi
 export async function downloadFile(file: S3File, options?: FileOptions | BufferOptions): Promise<Buffer | void> {
     const client = options?.client ?? new DefaultS3Client(file.bucket.region)
 
-    return downloadS3File(client, file, options).catch(err => {
+    return downloadS3File(client, file, options).catch((err) => {
         const message = localize('AWS.s3.downloadFile.error.general', 'Failed to download file {0}', file.name)
 
         throw ToolkitError.chain(err, message, {

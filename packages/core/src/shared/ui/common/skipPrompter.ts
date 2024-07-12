@@ -16,7 +16,7 @@ export class SkipPrompter<T> extends Prompter<T> {
     }
 
     protected async promptUser(): Promise<PromptResult<T>> {
-        const promptPromise = new Promise<PromptResult<T>>(resolve => {
+        const promptPromise = new Promise<PromptResult<T>>((resolve) => {
             resolve(this.val)
         })
 

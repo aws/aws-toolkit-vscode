@@ -166,7 +166,9 @@ export class SsoClient {
             this.call(this.client.listAccounts, request)
         const collection = pageableToCollection(requester, request, 'nextToken', 'accountList')
 
-        return collection.filter(isNonNullable).map(accounts => accounts.map(a => (assertHasProps(a, 'accountId'), a)))
+        return collection
+            .filter(isNonNullable)
+            .map((accounts) => accounts.map((a) => (assertHasProps(a, 'accountId'), a)))
     }
 
     public listAccountRoles(
@@ -178,7 +180,7 @@ export class SsoClient {
 
         return collection
             .filter(isNonNullable)
-            .map(roles => roles.map(r => (assertHasProps(r, 'roleName', 'accountId'), r)))
+            .map((roles) => roles.map((r) => (assertHasProps(r, 'roleName', 'accountId'), r)))
     }
 
     public async getRoleCredentials(request: Omit<GetRoleCredentialsRequest, OmittedProps>) {
@@ -241,7 +243,7 @@ export class SsoClient {
 
 function addLoggingMiddleware(client: SSOOIDCClient) {
     client.middlewareStack.add(
-        (next, context) => args => {
+        (next, context) => (args) => {
             if (HttpRequest.isInstance(args.request)) {
                 const { hostname, path } = args.request
                 const input = partialClone(
@@ -259,13 +261,13 @@ function addLoggingMiddleware(client: SSOOIDCClient) {
     )
 
     client.middlewareStack.add(
-        (next, context) => async args => {
+        (next, context) => async (args) => {
             if (!HttpRequest.isInstance(args.request)) {
                 return next(args)
             }
 
             const { hostname, path } = args.request
-            const result = await next(args).catch(e => {
+            const result = await next(args).catch((e) => {
                 if (e instanceof Error && !(e instanceof AuthorizationPendingException)) {
                     const err = { ...e }
                     delete err['stack']

@@ -33,7 +33,7 @@ export class CreateNotebookNode extends AWSCommandTreeNode {
 }
 
 export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourceNode, LoadMoreNode {
-    private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
+    private readonly childLoader = new ChildNodeLoader(this, (token) => this.loadPage(token))
     public arn: string
     public name: string
     public redshiftClient: DefaultRedshiftClient
@@ -87,7 +87,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
 
                 if (listDatabasesResponse.Databases?.sort()) {
                     childNodes.push(
-                        ...listDatabasesResponse.Databases.map(db => {
+                        ...listDatabasesResponse.Databases.map((db) => {
                             return new RedshiftDatabaseNode(db, this.redshiftClient, this.connectionParams!)
                         })
                     )

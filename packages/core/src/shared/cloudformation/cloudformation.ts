@@ -470,9 +470,9 @@ export function validateTemplate(template: Template): void {
     }
 
     const lambdaResources = Object.getOwnPropertyNames(template.Resources)
-        .map(key => template.Resources![key]!)
-        .filter(resource => resource.Type === SERVERLESS_FUNCTION_TYPE)
-        .map(resource => resource as Resource)
+        .map((key) => template.Resources![key]!)
+        .filter((resource) => resource.Type === SERVERLESS_FUNCTION_TYPE)
+        .map((resource) => resource as Resource)
 
     if (lambdaResources.length <= 0) {
         throw new Error('Template does not contain any Lambda resources')
@@ -553,13 +553,13 @@ export async function getResourceFromTemplateResources(params: {
     const resources = params.templateResources || {}
 
     const matches = Object.keys(resources)
-        .filter(key =>
+        .filter((key) =>
             matchesHandler({
                 resource: resources[key],
                 handlerName: params.handlerName,
             })
         )
-        .map(key => resources[key]!)
+        .map((key) => resources[key]!)
 
     if (matches.length < 1) {
         throw new Error(`Could not find a SAM resource for handler ${params.handlerName}`)

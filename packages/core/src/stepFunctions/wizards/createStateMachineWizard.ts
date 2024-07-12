@@ -94,7 +94,7 @@ export class CreateStateMachineWizard extends Wizard<CreateStateMachineWizardRes
             })
         )
 
-        const templateItems = Object.values(TemplateFormats).map(v => ({ label: v, data: v }))
+        const templateItems = Object.values(TemplateFormats).map((v) => ({ label: v, data: v }))
         this.form.templateFormat.bindPrompter(() =>
             createQuickPick(templateItems, {
                 title: localize(

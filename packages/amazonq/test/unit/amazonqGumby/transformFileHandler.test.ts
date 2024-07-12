@@ -45,9 +45,8 @@ describe('Amazon Q Transform - transformFileHandler tests', function () {
                 </dependencies>
                 </DependencyUpdatesReport>
                 `
-            const { latestVersion, majorVersions, minorVersions, status } = await parseVersionsListFromPomFile(
-                testXmlReport
-            )
+            const { latestVersion, majorVersions, minorVersions, status } =
+                await parseVersionsListFromPomFile(testXmlReport)
 
             assert.strictEqual(latestVersion, '1.18.32')
             assert.strictEqual(minorVersions[0], '0.12.0')
