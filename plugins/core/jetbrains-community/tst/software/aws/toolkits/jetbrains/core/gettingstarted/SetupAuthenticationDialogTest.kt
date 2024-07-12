@@ -105,6 +105,7 @@ class SetupAuthenticationDialogTest {
                 UserConfigSsoSessionProfile("", region.id, startUrl, scopes),
                 configFacade,
                 any(),
+                any(),
                 any()
             )
         }
@@ -158,6 +159,7 @@ class SetupAuthenticationDialogTest {
                 projectExtension.project,
                 UserConfigSsoSessionProfile("", region.id, startUrl, scopes + "sso:account:access"),
                 configFacade,
+                any(),
                 any(),
                 any()
             )

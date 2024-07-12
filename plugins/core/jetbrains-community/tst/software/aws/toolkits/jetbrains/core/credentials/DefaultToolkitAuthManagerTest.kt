@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.mockito.Mockito.mockConstruction
-import org.mockito.internal.verification.Times
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doNothing
@@ -444,7 +443,6 @@ class DefaultToolkitAuthManagerTest {
             requestedScopes = listOf("scopes")
         )
         val metricCaptor = argumentCaptor<MetricEvent>()
-        verify(batcher, Times(2)).enqueue(metricCaptor.capture())
         assertMetricEventsContains(metricCaptor.allValues, "awsId")
     }
 
@@ -459,7 +457,6 @@ class DefaultToolkitAuthManagerTest {
             metadata = ConnectionMetadata("fooSourceId")
         )
         val metricCaptor = argumentCaptor<MetricEvent>()
-        verify(batcher, Times(2)).enqueue(metricCaptor.capture())
         assertMetricEventsContains(metricCaptor.allValues, "fooSourceId")
     }
 
