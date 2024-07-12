@@ -50,13 +50,6 @@ export function isAutomation(): boolean {
     return isCI() || !!process.env['AWS_TOOLKIT_AUTOMATION']
 }
 
-/**
- * Returns true if name mangling has occured to the extension source code.
- */
-export function isNameMangled(): boolean {
-    return isNameMangled.name !== 'isNameMangled'
-}
-
 export { extensionVersion }
 
 /**

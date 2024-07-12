@@ -35,7 +35,7 @@ import { LoginManager } from './auth/deprecated/loginManager'
 import { CredentialsStore } from './auth/credentials/store'
 import { initializeAwsCredentialsStatusBarItem } from './auth/ui/statusBarItem'
 import { RegionProvider, getEndpointsFromFetcher } from './shared/regions/regionProvider'
-import { getMachineId } from './shared/vscode/env'
+import { getMachineId, isAutomation } from './shared/vscode/env'
 import { registerCommandErrorHandler } from './shared/vscode/commands2'
 import { registerWebviewErrorHandler } from './webviews/server'
 import { showQuickStartWebview } from './shared/extensionStartup'
@@ -77,7 +77,7 @@ export async function activateCommon(
     const homeDirLogs = await fs.init(context, homeDir => {
         void showViewLogsMessage(`Invalid home directory (check $HOME): "${homeDir}"`)
     })
-    errors.init(fs.getUsername())
+    errors.init(fs.getUsername(), isAutomation())
     await initializeComputeRegion()
 
     globals.contextPrefix = '' //todo: disconnect supplied argument
