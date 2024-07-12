@@ -140,7 +140,7 @@ export class GlobalState implements vscode.Memento {
     getRedshiftConnection(warehouseArn: string): redshift.ConnectionParams | undefined | 'DELETE_CONNECTION' {
         const all = this.tryGet<Record<string, redshift.ConnectionParams | 'DELETE_CONNECTION'>>(
             'aws.redshift.connections',
-            v => {
+            (v) => {
                 if (v !== undefined && typeof v !== 'object') {
                     throw new Error()
                 }
@@ -185,7 +185,7 @@ export class GlobalState implements vscode.Memento {
     getSsoSessionCreationDate(id: string): number | undefined {
         const all = this.tryGet<Record<string, number>>(
             '#sessionCreationDates',
-            v => {
+            (v) => {
                 if (v !== undefined && typeof v !== 'object') {
                     throw new Error()
                 }

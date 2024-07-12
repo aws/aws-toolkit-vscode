@@ -221,7 +221,7 @@ describe('keyStrokeHandler', function () {
             ['function suggestedByIntelliSense():', DocumentChangedSource.Unknown],
         ]
 
-        cases.forEach(tuple => {
+        cases.forEach((tuple) => {
             const input = tuple[0]
             const expected = tuple[1]
             it(`test input ${input} should return ${expected}`, function () {

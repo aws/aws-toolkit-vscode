@@ -28,5 +28,5 @@ export function injectJSDOM() {
     })
 
     // jsdom doesn't have support for structuredClone. See https://github.com/jsdom/jsdom/issues/3363
-    global.structuredClone = val => JSON.parse(JSON.stringify(val))
+    global.structuredClone = (val) => JSON.parse(JSON.stringify(val))
 }

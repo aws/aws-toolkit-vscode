@@ -51,7 +51,7 @@ export class Messenger {
         }
 
         const lastChatItem = this.getChatItems().pop()
-        const option = lastChatItem?.followUp?.options?.filter(option => option.type === type)
+        const option = lastChatItem?.followUp?.options?.filter((option) => option.type === type)
         if (!option || option.length > 1) {
             assert.fail('Could not find follow up option')
         }
@@ -61,9 +61,9 @@ export class Messenger {
 
     findCommand(command: string) {
         return this.getCommands()
-            .map(groups => groups.commands)
+            .map((groups) => groups.commands)
             .flat()
-            .filter(commands => commands.command === command)
+            .filter((commands) => commands.command === command)
     }
 
     getCommands() {
@@ -82,7 +82,7 @@ export class Messenger {
         return (
             this.getChatItems()
                 .pop()
-                ?.followUp?.options?.map(opt => opt.type)
+                ?.followUp?.options?.map((opt) => opt.type)
                 .includes(type) ?? false
         )
     }

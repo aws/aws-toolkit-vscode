@@ -16,7 +16,7 @@
         "singleQuote": true,
         "semi": false,
         "bracketSpacing": true,
-        "arrowParens": "avoid",
+        "arrowParens": "always",
         "endOfLine": "lf"
     },
     "scripts": {
