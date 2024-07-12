@@ -116,7 +116,7 @@ const serviceCandidates: ServiceNode[] = [
     {
         allRegions: true,
         serviceId: 'dynamodb',
-        createFn: (regionCode: string) => new DynamoDbInstanceNode(regionCode, new DynamoDbClient(regionCode)),
+        createFn: (regionCode: string) => new DynamoDbInstanceNode(regionCode),
     },
 ]
 

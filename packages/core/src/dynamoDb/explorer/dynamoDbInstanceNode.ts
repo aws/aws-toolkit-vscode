@@ -14,7 +14,10 @@ export class DynamoDbInstanceNode extends AWSTreeNodeBase {
     protected readonly placeHolderMessage = '[No Tables Found]'
     protected dynamoDbTableNodes: Map<string, DynamoDbTableNode>
 
-    public constructor(public override readonly regionCode: string, protected readonly dynamoDbClient: DynamoDbClient) {
+    public constructor(
+        public override readonly regionCode: string,
+        protected readonly dynamoDbClient = new DynamoDbClient(regionCode)
+    ) {
         super('DynamoDB', vscode.TreeItemCollapsibleState.Collapsed)
         this.dynamoDbTableNodes = new Map<string, DynamoDbTableNode>()
         this.contextValue = 'awsDynamoDbRootNode'
