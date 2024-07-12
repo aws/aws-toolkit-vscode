@@ -333,6 +333,29 @@ describe('collectFiles', function () {
         assert.deepStrictEqual(1, result.length)
         assert.deepStrictEqual('non-license.md', result[0].relativeFilePath)
     })
+    it(`does not return files that do not qualify`, async function () {
+        const workspace = await createTestWorkspaceFolder()
+
+        sinon.stub(vscode.workspace, 'workspaceFolders').value([workspace])
+        for (const fmt of ['java', 'py', 'c']) {
+            await toFile('', workspace.uri.fsPath, `f.${fmt}`)
+            await toFile('content', workspace.uri.fsPath, 'src', `f.${fmt}`)
+        }
+        const qualifier = (name: string, size: number) => {
+            return size > 0 && name.endsWith('java')
+        }
+        const result = await collectFiles(
+            [workspace.uri.fsPath],
+            [workspace],
+            true,
+            1000 * 1024 * 1024,
+            false,
+            false,
+            qualifier
+        )
+
+        assert.deepStrictEqual(1, result.length)
+    })
 })
 
 describe('getWorkspaceFoldersByPrefixes', function () {
