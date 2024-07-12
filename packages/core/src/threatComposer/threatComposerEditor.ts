@@ -12,6 +12,7 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { onFileChanged } from './handlers/onFileChangedHandler'
 import { onThemeChanged } from './handlers/onThemeChangedHandler'
 import { sendThreatComposerOpenCancelled } from './handlers/webviewTelemetryHandler'
+import { getLogger } from '../shared/logger'
 
 const localize = nls.loadMessageBundle()
 
@@ -130,7 +131,7 @@ export class ThreatComposerEditor {
             },
             (progress, token) => {
                 token.onCancellationRequested(async () => {
-                    console.log('User canceled opening in TC operation')
+                    getLogger().debug('User canceled opening in TC operation')
                     await cancelOpenInThreatComposer('User canceled opening in THreatComposer operation')
                 })
 

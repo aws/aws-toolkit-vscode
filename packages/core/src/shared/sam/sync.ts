@@ -686,6 +686,8 @@ class ProcessTerminal implements vscode.Pseudoterminal {
     public constructor(private readonly process: ChildProcess) {
         // Used in integration tests
         if (isAutomation()) {
+            // Disable because it is a test.
+            // eslint-disable-next-line aws-toolkits/no-console-log
             this.onDidWrite(text => console.log(text.trim()))
         }
     }
