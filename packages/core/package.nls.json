@@ -269,6 +269,7 @@
     "AWS.command.docdb.createCluster": "Create DocumentDB Cluster",
     "AWS.command.docdb.createInstance": "Create Instance",
     "AWS.command.docdb.renameInstance": "Rename...",
+    "AWS.command.docdb.modifyInstance": "Modify Class...",
     "AWS.command.docdb.startCluster": "Start Cluster",
     "AWS.command.docdb.stopCluster": "Stop Cluster"
 }

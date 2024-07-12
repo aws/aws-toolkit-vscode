@@ -10,6 +10,7 @@ import { DBInstance } from '../../shared/clients/docdbClient'
 import { DocDBContext, DocDBNodeContext } from './docdbNode'
 import { DBClusterNode } from './dbClusterNode'
 import { ModifyDBInstanceMessage } from '@aws-sdk/client-docdb'
+import { waitUntil } from '../../shared'
 
 /**
  * An AWS Explorer node representing a DocumentDB instance.
@@ -50,6 +51,20 @@ export class DBInstanceNode extends AWSTreeNodeBase {
 
     public get status(): string | undefined {
         return this.instance.DBInstanceStatus
+    }
+
+    public async waitUntilStatusChanged(): Promise<boolean> {
+        const currentStatus = this.status
+
+        await waitUntil(
+            async () => {
+                const instance = await this.parent.client.getInstance(this.instance.DBInstanceIdentifier!)
+                return instance?.DBInstanceStatus !== currentStatus
+            },
+            { timeout: 30000, interval: 500, truthy: true }
+        )
+
+        return false
     }
 
     public [inspect.custom](): string {
