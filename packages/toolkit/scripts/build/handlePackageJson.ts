@@ -47,7 +47,7 @@ function main() {
         const coreSettings = coreLibPackageJson.contributes.configuration.properties
 
         // Remove Amazon Q extension settings stored in core
-        Object.keys(coreSettings).forEach(key => {
+        Object.keys(coreSettings).forEach((key) => {
             if (key.startsWith('amazonQ')) {
                 delete coreSettings[key]
             }

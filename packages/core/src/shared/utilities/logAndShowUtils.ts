@@ -38,7 +38,7 @@ export async function logAndShowError(
     if (error instanceof ToolkitError && error.documentationUri) {
         await showMessageWithUrl(message, error.documentationUri, 'View Documentation', 'error')
     } else {
-        await vscode.window.showErrorMessage(message, logsItem).then(async resp => {
+        await vscode.window.showErrorMessage(message, logsItem).then(async (resp) => {
             if (resp === logsItem) {
                 await Logging.instance.viewLogsAtMessage.execute(logId)
             }
@@ -59,7 +59,7 @@ export function logAndShowWebviewError(localize: nls.LocalizeFunc, err: unknown,
     // detailed information in the logs.
     const detailedError = ToolkitError.chain(err, `Webview backend command failed: "${command}()"`)
     const userFacingError = ToolkitError.chain(detailedError, 'Webview error')
-    logAndShowError(localize, userFacingError, `webviewId="${webviewId}"`, 'Webview error').catch(e => {
+    logAndShowError(localize, userFacingError, `webviewId="${webviewId}"`, 'Webview error').catch((e) => {
         getLogger().error('logAndShowError failed: %s', (e as Error).message)
     })
 }

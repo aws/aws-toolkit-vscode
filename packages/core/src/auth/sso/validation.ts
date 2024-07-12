@@ -27,7 +27,7 @@ export async function validateIsNewSsoUrlAsync(
     url: string,
     requiredScopes?: string[]
 ): Promise<string | undefined> {
-    return auth.listConnections().then(conns => {
+    return auth.listConnections().then((conns) => {
         return validateIsNewSsoUrl(url, requiredScopes, conns.filter(isAnySsoConnection))
     })
 }
@@ -41,7 +41,7 @@ export function validateIsNewSsoUrl(
         const uri = vscode.Uri.parse(url, true)
         const isSameAuthority = (a: vscode.Uri, b: vscode.Uri) =>
             a.authority.toLowerCase() === b.authority.toLowerCase()
-        const oldConn = existingSsoConns.find(conn => isSameAuthority(vscode.Uri.parse(conn.startUrl), uri))
+        const oldConn = existingSsoConns.find((conn) => isSameAuthority(vscode.Uri.parse(conn.startUrl), uri))
 
         if (oldConn && (!requiredScopes || hasScopes(oldConn, requiredScopes))) {
             return 'A connection for this start URL already exists. Sign out before creating a new one.'

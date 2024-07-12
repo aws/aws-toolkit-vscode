@@ -137,7 +137,7 @@ export class ThreatComposerEditor {
 
                 progress.report({ increment: 0 })
 
-                return new Promise<void>(async resolve => {
+                return new Promise<void>(async (resolve) => {
                     contextObject.loaderNotification = {
                         progress: progress,
                         cancellationToken: token,
@@ -165,14 +165,16 @@ export class ThreatComposerEditor {
 
                     // Hook up event handler to update the UI on theme changes within VSCode.
                     contextObject.disposables.push(
-                        vscode.window.onDidChangeActiveColorTheme(async data => {
+                        vscode.window.onDidChangeActiveColorTheme(async (data) => {
                             await onThemeChanged(data, contextObject.panel)
                         })
                     )
 
                     // Handle messages from the webview
                     this.disposables.push(
-                        this.webviewPanel.webview.onDidReceiveMessage(message => handleMessage(message, contextObject))
+                        this.webviewPanel.webview.onDidReceiveMessage((message) =>
+                            handleMessage(message, contextObject)
+                        )
                     )
 
                     // When the panel is closed, dispose of any disposables/remove subscriptions
@@ -181,14 +183,14 @@ export class ThreatComposerEditor {
                             return
                         }
 
-                        await telemetry.threatComposer_closed.run(async span => {
+                        await telemetry.threatComposer_closed.run(async (span) => {
                             span.record({
                                 id: this.fileId,
                             })
                             this.isPanelDisposed = true
                             contextObject.loaderNotification?.promiseResolve()
                             this.onVisualizationDisposeEmitter.fire()
-                            this.disposables.forEach(disposable => {
+                            this.disposables.forEach((disposable) => {
                                 disposable.dispose()
                             })
                             this.onVisualizationDisposeEmitter.dispose()

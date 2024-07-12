@@ -115,7 +115,7 @@ describe('codewhisperer', async function () {
             ideCategory: 'VSCODE',
             operatingSystem: getOperatingSystem(),
             product: 'CodeWhisperer',
-            clientId: await getClientId(globals.context.globalState),
+            clientId: getClientId(globals.context.globalState),
         }
 
         await codeWhispererClient.sendTelemetryEvent({ telemetryEvent: userTriggerDecisionPayload })

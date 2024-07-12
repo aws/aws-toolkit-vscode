@@ -68,14 +68,14 @@ export class MultiStepInputFlowController {
                 }
                 input.buttons = [...(this.steps.length > 1 ? [QuickInputButtons.Back] : []), ...(buttons || [])]
                 disposables.push(
-                    input.onDidTriggerButton(item => {
+                    input.onDidTriggerButton((item) => {
                         if (item === QuickInputButtons.Back) {
                             reject(InputFlowAction.back)
                         } else {
                             resolve(item as any)
                         }
                     }),
-                    input.onDidChangeSelection(inputItems => resolve(inputItems[0])),
+                    input.onDidChangeSelection((inputItems) => resolve(inputItems[0])),
                     input.onDidHide(() => {
                         ;(async () => {
                             reject(
@@ -91,7 +91,7 @@ export class MultiStepInputFlowController {
                 this.current.show()
             })
         } finally {
-            disposables.forEach(d => d.dispose() as void)
+            disposables.forEach((d) => d.dispose() as void)
         }
     }
 
@@ -119,7 +119,7 @@ export class MultiStepInputFlowController {
                 input.ignoreFocusOut = ignoreFocusOut ? ignoreFocusOut : false
                 let validating = validate('')
                 disposables.push(
-                    input.onDidTriggerButton(async item => {
+                    input.onDidTriggerButton(async (item) => {
                         if (item === QuickInputButtons.Back) {
                             reject(InputFlowAction.back)
                         } else if (typeof (item as any).onClick === 'function') {
@@ -141,7 +141,7 @@ export class MultiStepInputFlowController {
                         input.enabled = true
                         input.busy = false
                     }),
-                    input.onDidChangeValue(async text => {
+                    input.onDidChangeValue(async (text) => {
                         const current = validate(text)
                         validating = current
                         const validationMessage = await current
@@ -164,7 +164,7 @@ export class MultiStepInputFlowController {
                 this.current.show()
             })
         } finally {
-            disposables.forEach(d => d.dispose() as void)
+            disposables.forEach((d) => d.dispose() as void)
         }
     }
 

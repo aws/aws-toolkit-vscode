@@ -44,7 +44,7 @@ export const amazonQContextPrefix = 'amazonq'
  */
 export async function activateAmazonQCommon(context: vscode.ExtensionContext, isWeb: boolean) {
     initialize(context, isWeb)
-    const homeDirLogs = await fs.init(context, homeDir => {
+    const homeDirLogs = await fs.init(context, (homeDir) => {
         void messages.showViewLogsMessage(`Invalid home directory (check $HOME): "${homeDir}"`)
     })
     errors.init(fs.getUsername(), env.isAutomation())
@@ -73,12 +73,12 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
                                 } and older. Your AWS Toolkit was updated to version 3.0 or later.`,
                                 'Reload Now'
                             )
-                            .then(async resp => {
+                            .then(async (resp) => {
                                 if (resp === 'Reload Now') {
                                     await vscode.commands.executeCommand('workbench.action.reloadWindow')
                                 }
                             }),
-                    reason => {
+                    (reason) => {
                         getLogger().error('workbench.extensions.installExtension failed: %O', reason)
                     }
                 )

@@ -38,8 +38,8 @@ export function createRolePrompter(client: IamClient, options: RolePrompterOptio
         return client
             .getRoles()
             .map(filterRoles)
-            .map(roles =>
-                roles.map(r => ({
+            .map((roles) =>
+                roles.map((r) => ({
                     label: r.RoleName,
                     data: r,
                 }))
@@ -71,14 +71,14 @@ function addCreateRoleButton(
 
     const makeRole = () => {
         const items = createRole()
-            .then(role => [{ label: role.RoleName, data: role }])
-            .catch(err => {
+            .then((role) => [{ label: role.RoleName, data: role }])
+            .catch((err) => {
                 getLogger().error('role prompter: Failed to create new role: %s', err)
                 void showViewLogsMessage(localize('AWS.rolePrompter.createRole.failed', 'Failed to create new role'))
                 return []
             })
 
-        prompter.loadItems(items).catch(e => {
+        prompter.loadItems(items).catch((e) => {
             getLogger().error('addCreateRoleButton: loadItems() failed: %s', (e as Error).message)
         })
     }

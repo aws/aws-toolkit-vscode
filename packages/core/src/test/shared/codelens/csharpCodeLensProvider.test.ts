@@ -146,7 +146,7 @@ describe('isPublicMethodSymbol', async function () {
         },
     ]
 
-    validPublicMethodTests.forEach(test => {
+    validPublicMethodTests.forEach((test) => {
         const sampleMethodSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
             'FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)',
             '',

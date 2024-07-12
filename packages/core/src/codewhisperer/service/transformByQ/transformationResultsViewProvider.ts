@@ -125,7 +125,7 @@ export class DiffModel {
     public copyProject(pathToWorkspace: string, changedFiles: ParsedDiff[]) {
         const pathToTmpSrcDir = path.join(os.tmpdir(), `project-copy-${Date.now()}`)
         fs.mkdirSync(pathToTmpSrcDir)
-        changedFiles.forEach(file => {
+        changedFiles.forEach((file) => {
             const pathToTmpFile = path.join(pathToTmpSrcDir, file.oldFileName!.substring(2))
             // use mkdirsSync to create parent directories in pathToTmpFile too
             fs.mkdirsSync(path.dirname(pathToTmpFile))
@@ -178,7 +178,7 @@ export class DiffModel {
                 }
             },
         })
-        this.changes = changedFiles.flatMap(file => {
+        this.changes = changedFiles.flatMap((file) => {
             /* ex. file.oldFileName = 'a/src/java/com/project/component/MyFile.java'
              * ex. file.newFileName = 'b/src/java/com/project/component/MyFile.java'
              * use substring(2) to ignore the 'a/' and 'b/'
@@ -209,7 +209,7 @@ export class DiffModel {
     }
 
     public saveChanges() {
-        this.changes.forEach(file => {
+        this.changes.forEach((file) => {
             file.saveChange()
         })
 

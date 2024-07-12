@@ -121,7 +121,7 @@ export class CodeCatalystCreateWebview extends VueWebview {
             })
             .flatten()
 
-        const branches = repos.map(r =>
+        const branches = repos.map((r) =>
             this.client
                 .listBranches({
                     spaceName: r.org.name,
@@ -155,7 +155,7 @@ export class CodeCatalystCreateWebview extends VueWebview {
         const subscriptionType = isNonNullable(org)
             ? await this.client
                   .getSubscription({ spaceName: org.name })
-                  .then(resp => (isValidSubscriptionType(resp.subscriptionType) ? resp.subscriptionType : 'FREE'))
+                  .then((resp) => (isValidSubscriptionType(resp.subscriptionType) ? resp.subscriptionType : 'FREE'))
             : 'FREE'
 
         async function prompt(prompter: Prompter<any>) {
@@ -256,7 +256,7 @@ export async function showCreateDevEnv(
     commands: typeof CodeCatalystCommands.declared
 ): Promise<void> {
     submitPromise ??= new Promise<void>((resolve, reject) => {
-        activePanel ??= new Panel(ctx, client, commands, devenv => {
+        activePanel ??= new Panel(ctx, client, commands, (devenv) => {
             if (devenv === undefined) {
                 reject(new CancellationError('user'))
             } else {

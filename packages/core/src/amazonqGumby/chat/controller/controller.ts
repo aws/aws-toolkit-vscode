@@ -86,55 +86,55 @@ export class GumbyController {
         this.sessionStorage = ChatSessionManager.Instance
         this.authController = new AuthController()
 
-        this.chatControllerMessageListeners.transformSelected.event(data => {
+        this.chatControllerMessageListeners.transformSelected.event((data) => {
             return this.transformInitiated(data)
         })
 
-        this.chatControllerMessageListeners.tabOpened.event(data => {
+        this.chatControllerMessageListeners.tabOpened.event((data) => {
             return this.tabOpened(data)
         })
 
-        this.chatControllerMessageListeners.tabClosed.event(data => {
+        this.chatControllerMessageListeners.tabClosed.event((data) => {
             return this.tabClosed(data)
         })
 
-        this.chatControllerMessageListeners.authClicked.event(data => {
+        this.chatControllerMessageListeners.authClicked.event((data) => {
             this.authClicked(data)
         })
 
-        this.chatControllerMessageListeners.commandSentFromIDE.event(data => {
+        this.chatControllerMessageListeners.commandSentFromIDE.event((data) => {
             return this.commandSentFromIDE(data)
         })
 
-        this.chatControllerMessageListeners.formActionClicked.event(data => {
+        this.chatControllerMessageListeners.formActionClicked.event((data) => {
             return this.formActionClicked(data)
         })
 
-        this.chatControllerMessageListeners.transformationFinished.event(data => {
+        this.chatControllerMessageListeners.transformationFinished.event((data) => {
             return this.transformationFinished(data)
         })
 
-        this.chatControllerMessageListeners.processHumanChatMessage.event(data => {
+        this.chatControllerMessageListeners.processHumanChatMessage.event((data) => {
             return this.processHumanChatMessage(data)
         })
 
-        this.chatControllerMessageListeners.linkClicked.event(data => {
+        this.chatControllerMessageListeners.linkClicked.event((data) => {
             this.openLink(data)
         })
 
-        this.chatControllerMessageListeners.humanInTheLoopStartIntervention.event(data => {
+        this.chatControllerMessageListeners.humanInTheLoopStartIntervention.event((data) => {
             return this.startHILIntervention(data)
         })
 
-        this.chatControllerMessageListeners.humanInTheLoopPromptUserForDependency.event(data => {
+        this.chatControllerMessageListeners.humanInTheLoopPromptUserForDependency.event((data) => {
             return this.HILPromptForDependency(data)
         })
 
-        this.chatControllerMessageListeners.humanInTheLoopSelectionUploaded.event(data => {
+        this.chatControllerMessageListeners.humanInTheLoopSelectionUploaded.event((data) => {
             return this.HILDependencySelectionUploaded(data)
         })
 
-        this.chatControllerMessageListeners.errorThrown.event(data => {
+        this.chatControllerMessageListeners.errorThrown.event((data) => {
             return this.handleError(data)
         })
     }

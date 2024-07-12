@@ -33,14 +33,14 @@ export abstract class SecurityIssueProvider {
             }
         )
 
-        this._issues = this._issues.map(group => {
+        this._issues = this._issues.map((group) => {
             if (group.filePath !== event.document.fileName) {
                 return group
             }
             return {
                 ...group,
                 issues: group.issues
-                    .filter(issue => {
+                    .filter((issue) => {
                         const range = new vscode.Range(
                             issue.startLine,
                             event.document.lineAt(issue.startLine)?.range.start.character ?? 0,
@@ -54,7 +54,7 @@ export abstract class SecurityIssueProvider {
                             !CodeScansState.instance.isScansEnabled()
                         )
                     })
-                    .map(issue => {
+                    .map((issue) => {
                         if (issue.startLine < changedRange.end.line) {
                             return issue
                         }
@@ -62,7 +62,9 @@ export abstract class SecurityIssueProvider {
                             ...issue,
                             startLine: issue.startLine + lineOffset,
                             endLine: issue.endLine + lineOffset,
-                            suggestedFixes: issue.suggestedFixes.map(fix => this._offsetSuggestedFix(fix, lineOffset)),
+                            suggestedFixes: issue.suggestedFixes.map((fix) =>
+                                this._offsetSuggestedFix(fix, lineOffset)
+                            ),
                         }
                     }),
             }
@@ -94,13 +96,13 @@ export abstract class SecurityIssueProvider {
     }
 
     public removeIssue(uri: vscode.Uri, issue: CodeScanIssue) {
-        this._issues = this._issues.map(group => {
+        this._issues = this._issues.map((group) => {
             if (group.filePath !== uri.fsPath) {
                 return group
             }
             return {
                 ...group,
-                issues: group.issues.filter(i => i.findingId !== issue.findingId),
+                issues: group.issues.filter((i) => i.findingId !== issue.findingId),
             }
         })
     }

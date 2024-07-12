@@ -13,7 +13,7 @@ import { telemetry } from '../../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../../shared/errors'
 
 export async function presignedURLCommand(node: S3FileNode): Promise<void> {
-    await telemetry.s3_copyUrl.run(async span => {
+    await telemetry.s3_copyUrl.run(async (span) => {
         span.record({ presigned: true })
 
         const validTime = await promptTime(node.file.key)
@@ -25,7 +25,7 @@ export async function presignedURLCommand(node: S3FileNode): Promise<void> {
             operation: 'getObject',
         }
 
-        const url = await s3Client.getSignedUrl(request).catch(e => {
+        const url = await s3Client.getSignedUrl(request).catch((e) => {
             throw ToolkitError.chain(
                 e,
                 'Error creating the presigned URL. Make sure you have access to the requested file.'

@@ -60,7 +60,7 @@ function createEcrRole(client: IamClient): Promise<IAM.Role> {
             }`,
             AssumeRolePolicyDocument: JSON.stringify(policy),
         })
-        .then(resp => {
+        .then((resp) => {
             const role = resp.Role
             return client.attachRolePolicy({ RoleName: role.RoleName, PolicyArn: ecrPolicy }).then(() => role)
         })
@@ -75,12 +75,16 @@ function createImagePrompter(
     const imageRepos =
         last ??
         toArrayAsync(ecrClient.describeRepositories())
-            .then(resp => {
-                const repos = resp.map(repo => ({ label: repo.repositoryName, detail: repo.repositoryUri, data: repo }))
+            .then((resp) => {
+                const repos = resp.map((repo) => ({
+                    label: repo.repositoryName,
+                    detail: repo.repositoryUri,
+                    data: repo,
+                }))
                 cache['repos'] = repos
                 return repos
             })
-            .catch(err => {
+            .catch((err) => {
                 getLogger().error(`Unabled to list repositories: %s`, err)
                 return [
                     {
@@ -171,7 +175,7 @@ function createTagPrompter(
     const tagItems =
         last ??
         toArrayAsync(ecrClient.describeTags(imageRepo.repositoryName))
-            .then(tags => {
+            .then((tags) => {
                 if (tags.length === 0) {
                     return [
                         {
@@ -182,11 +186,11 @@ function createTagPrompter(
                     ]
                 }
 
-                const tagT = tags.map(tag => ({ label: tag }))
+                const tagT = tags.map((tag) => ({ label: tag }))
                 cache[imageRepo.repositoryName] = tagT
                 return tagT
             })
-            .catch(err => {
+            .catch((err) => {
                 getLogger().error(`Unabled to list tags for repository "${imageRepo.repositoryName}": %s`, err)
                 return [
                     {
@@ -211,8 +215,8 @@ export class ImageIdentifierForm extends WizardForm<{ repo: TaggedEcrRepository 
     constructor(ecrClient: EcrClient, options: ImagePrompterOptions = {}) {
         super()
 
-        this.body.repo.bindPrompter(state => createImagePrompter(ecrClient, state.stepCache, options))
-        this.body.repo.tag.bindPrompter(state => createTagPrompter(ecrClient, state.repo!, state.stepCache), {
+        this.body.repo.bindPrompter((state) => createImagePrompter(ecrClient, state.stepCache, options))
+        this.body.repo.tag.bindPrompter((state) => createTagPrompter(ecrClient, state.repo!, state.stepCache), {
             requireParent: true,
         })
     }
@@ -232,14 +236,14 @@ function createImageRepositorySubForm(
     })
 
     form.ImageIdentifier.bindPrompter(() =>
-        new WizardPrompter(imageIdentifierWizard).transform(resp => `${resp.repo.repositoryUri}:${resp.repo.tag}`)
+        new WizardPrompter(imageIdentifierWizard).transform((resp) => `${resp.repo.repositoryUri}:${resp.repo.tag}`)
     )
 
     function isPublic(imageRepo: string): boolean {
         return imageRepo.search(/^public.ecr.aws/) !== -1
     }
 
-    form.ImageRepositoryType.setDefault(state =>
+    form.ImageRepositoryType.setDefault((state) =>
         state.ImageIdentifier !== undefined ? (isPublic(state.ImageIdentifier) ? 'ECR_PUBLIC' : 'ECR') : undefined
     )
 
@@ -259,14 +263,14 @@ export class AppRunnerImageRepositoryWizard extends Wizard<AppRunner.SourceConfi
             return createRolePrompter(iamClient, {
                 title: localize('AWS.apprunner.createService.selectRole.title', 'Select a role to pull from ECR'),
                 helpUrl: vscode.Uri.parse(apprunnerCreateServiceDocsUrl),
-                roleFilter: role => (role.AssumeRolePolicyDocument ?? '').includes(appRunnerEcrEntity),
+                roleFilter: (role) => (role.AssumeRolePolicyDocument ?? '').includes(appRunnerEcrEntity),
                 createRole: createEcrRole.bind(undefined, iamClient),
-            }).transform(resp => resp.Arn)
+            }).transform((resp) => resp.Arn)
         }
 
         form.ImageRepository.applyBoundForm(createImageRepositorySubForm(ecrClient, autoDeployButton))
         form.AuthenticationConfiguration.AccessRoleArn.bindPrompter(createAccessRolePrompter, {
-            showWhen: form => form.ImageRepository?.ImageRepositoryType === 'ECR',
+            showWhen: (form) => form.ImageRepository?.ImageRepositoryType === 'ECR',
         })
         form.AutoDeploymentsEnabled.setDefault(() => autoDeployButton.state === 'on')
     }

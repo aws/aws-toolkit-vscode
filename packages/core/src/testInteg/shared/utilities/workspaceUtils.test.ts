@@ -95,7 +95,7 @@ describe('findParentProjectFile', async function () {
         globals.codelensRootRegistry.dispose()
     })
 
-    testScenarios.forEach(test => {
+    testScenarios.forEach((test) => {
         it(test.scenario, async () => {
             filesToDelete = test.filesToUse
             for (const file of test.filesToUse) {
@@ -182,7 +182,7 @@ describe('collectFiles', function () {
         sinon.stub(vscode.workspace, 'workspaceFolders').value(workspaces)
 
         const result = await collectFiles(
-            workspaces.map(ws => ws.uri.fsPath),
+            workspaces.map((ws) => ws.uri.fsPath),
             workspaces,
             false
         )

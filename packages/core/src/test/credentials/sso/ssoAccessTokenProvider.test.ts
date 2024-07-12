@@ -144,7 +144,7 @@ describe('SsoAccessTokenProvider', function () {
             await cache.token.save(startUrl, access)
             assert.deepStrictEqual(await sut.getToken(), refreshedToken)
 
-            const cachedToken = await cache.token.load(startUrl).then(a => a?.token)
+            const cachedToken = await cache.token.load(startUrl).then((a) => a?.token)
             assert.deepStrictEqual(cachedToken, refreshedToken)
         })
 
@@ -154,7 +154,7 @@ describe('SsoAccessTokenProvider', function () {
 
             assert.strictEqual(await sut.getToken(), undefined)
 
-            const cachedToken = await cache.token.load(startUrl).then(a => a?.token)
+            const cachedToken = await cache.token.load(startUrl).then((a) => a?.token)
             assert.strictEqual(cachedToken, undefined)
         })
 
@@ -183,7 +183,7 @@ describe('SsoAccessTokenProvider', function () {
                 await cache.token.save(startUrl, access)
                 await assert.rejects(sut.getToken())
 
-                const cachedToken = await cache.token.load(startUrl).then(a => a?.token)
+                const cachedToken = await cache.token.load(startUrl).then((a) => a?.token)
                 assert.deepStrictEqual(cachedToken, refreshableToken)
             })
         })
@@ -191,7 +191,7 @@ describe('SsoAccessTokenProvider', function () {
 
     describe('createToken', function () {
         beforeEach(function () {
-            getTestWindow().onDidShowMessage(m => {
+            getTestWindow().onDidShowMessage((m) => {
                 if (m.items[0]?.title.match(proceedToBrowser)) {
                     m.items[0].select()
                 }
@@ -223,7 +223,7 @@ describe('SsoAccessTokenProvider', function () {
             stubOpen()
 
             assert.deepStrictEqual(await sut.createToken(), { ...token, identity: startUrl })
-            const cachedToken = await cache.token.load(startUrl).then(a => a?.token)
+            const cachedToken = await cache.token.load(startUrl).then((a) => a?.token)
             assert.deepStrictEqual(cachedToken, token)
             assert.deepStrictEqual(await cache.registration.load({ startUrl, region }), registration)
             assertTelemetry('aws_loginWithBrowser', {
@@ -389,7 +389,7 @@ describe('SsoAccessTokenProvider', function () {
 
             it('stops the flow if cancelled from the progress notification', async function () {
                 stubOpen()
-                getTestWindow().onDidShowMessage(m => {
+                getTestWindow().onDidShowMessage((m) => {
                     if (m.severity === SeverityLevel.Progress) {
                         m.selectItem('Cancel')
                     }

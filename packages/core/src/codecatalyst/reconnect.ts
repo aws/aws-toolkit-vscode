@@ -26,7 +26,7 @@ const maxReconnectTime = 10 * 60 * 1000
 
 export function watchRestartingDevEnvs(ctx: ExtContext, authProvider: CodeCatalystAuthenticationProvider) {
     let restartHandled = false
-    authProvider.onDidChangeActiveConnection(async conn => {
+    authProvider.onDidChangeActiveConnection(async (conn) => {
         if (restartHandled || conn === undefined || authProvider.auth.getConnectionState(conn) !== 'valid') {
             return
         }
@@ -55,7 +55,7 @@ function handleRestart(conn: SsoConnection, ctx: ExtContext, envId: string | und
         getLogger().info('codecatalyst: attempting to poll dev environments')
 
         // Reconnect devenvs (if coming from a restart)
-        reconnectDevEnvs(conn, ctx).catch(err => {
+        reconnectDevEnvs(conn, ctx).catch((err) => {
             getLogger().error(`codecatalyst: error while resuming devenvs: ${err}`)
         })
     }
@@ -173,7 +173,7 @@ async function pollDevEnvs(
                         message: `Dev Environment ${devenvName} is now running. Attempting to reconnect.`,
                     })
 
-                    openReconnectedDevEnv(client, id, details, shouldCloseRootInstance).catch(e => {
+                    openReconnectedDevEnv(client, id, details, shouldCloseRootInstance).catch((e) => {
                         getLogger().error('openReconnectedDevEnv failed: %s', (e as Error).message)
                     })
 

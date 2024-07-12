@@ -164,15 +164,15 @@ describe('visualizeStateMachine', async function () {
         assert.ok(result)
 
         if (result) {
-            const viewStateChanged = new Promise<vscode.WebviewPanelOnDidChangeViewStateEvent>(resolve => {
-                result.onDidChangeViewState(e => {
+            const viewStateChanged = new Promise<vscode.WebviewPanelOnDidChangeViewStateEvent>((resolve) => {
+                result.onDidChangeViewState((e) => {
                     // Ensure that this event fires after document is saved
                     assert.ok(e)
                     resolve(e)
                 })
             })
 
-            await textEditor.edit(eb => {
+            await textEditor.edit((eb) => {
                 eb.replace(
                     new vscode.Range(
                         textEditor.document.positionAt(0),
@@ -213,7 +213,7 @@ describe('visualizeStateMachine', async function () {
         }
 
         // Update and save the file that we are NOT visualizing
-        await textEditor2.edit(eb => {
+        await textEditor2.edit((eb) => {
             eb.replace(
                 new vscode.Range(
                     textEditor2.document.positionAt(0),

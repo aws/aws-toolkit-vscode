@@ -227,7 +227,7 @@ export class TelemetryHelper {
             codewhispererCursorOffset: session.startCursorOffset,
             codewhispererSuggestionState: this.getAggregatedSuggestionState(events),
             codewhispererSuggestionImportCount: events
-                .map(e => e.codewhispererSuggestionImportCount || 0)
+                .map((e) => e.codewhispererSuggestionImportCount || 0)
                 .reduce((a, b) => a + b, 0),
             codewhispererTypeaheadLength: 0,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
@@ -259,7 +259,7 @@ export class TelemetryHelper {
         const generatedLines =
             acceptedRecommendationContent.trim() === '' ? 0 : acceptedRecommendationContent.split('\n').length
         const suggestionCount = this.sessionDecisions
-            .map(e => e.codewhispererSuggestionCount)
+            .map((e) => e.codewhispererSuggestionCount)
             .reduce((a, b) => a + b, 0)
 
         const aggregated: CodewhispererUserTriggerDecision = {
@@ -275,7 +275,7 @@ export class TelemetryHelper {
             codewhispererLineNumber: this.sessionDecisions[0].codewhispererLineNumber,
             codewhispererCursorOffset: this.sessionDecisions[0].codewhispererCursorOffset,
             codewhispererSuggestionImportCount: this.sessionDecisions
-                .map(e => e.codewhispererSuggestionImportCount || 0)
+                .map((e) => e.codewhispererSuggestionImportCount || 0)
                 .reduce((a, b) => a + b, 0),
             codewhispererTypeaheadLength: this.typeAheadLength,
             codewhispererTimeSinceLastDocumentChange: this.timeSinceLastModification
@@ -335,7 +335,7 @@ export class TelemetryHelper {
                 },
             })
             .then()
-            .catch(error => {
+            .catch((error) => {
                 let requestId: string | undefined
                 if (isAwsError(error)) {
                     requestId = error.requestId
@@ -548,7 +548,7 @@ export class TelemetryHelper {
                 },
             })
             .then()
-            .catch(error => {
+            .catch((error) => {
                 let requestId: string | undefined
                 if (isAwsError(error)) {
                     requestId = error.requestId
@@ -597,7 +597,7 @@ export class TelemetryHelper {
                 },
             })
             .then()
-            .catch(error => {
+            .catch((error) => {
                 let requestId: string | undefined
                 if (isAwsError(error)) {
                     requestId = error.requestId

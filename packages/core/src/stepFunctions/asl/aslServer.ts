@@ -195,7 +195,7 @@ class LimitExceededWarnings {
 
 let formatterRegistration: Thenable<Disposable> | undefined
 
-connection.onDidChangeConfiguration(change => {
+connection.onDidChangeConfiguration((change) => {
     const settings = <Settings>change.settings
 
     foldingRangeLimit = Math.trunc(
@@ -214,8 +214,8 @@ connection.onDidChangeConfiguration(change => {
             }
         } else if (formatterRegistration) {
             formatterRegistration.then(
-                r => r.dispose(),
-                e => {
+                (r) => r.dispose(),
+                (e) => {
                     console.error('formatterRegistration failed: %s', (e as Error).message)
                 }
             )
@@ -225,12 +225,12 @@ connection.onDidChangeConfiguration(change => {
 })
 
 // Retry schema validation on all open documents
-connection.onRequest(ForceValidateRequest, async uri => {
-    return new Promise<Diagnostic[]>(resolve => {
+connection.onRequest(ForceValidateRequest, async (uri) => {
+    return new Promise<Diagnostic[]>((resolve) => {
         const document = documents.get(uri)
         if (document) {
             // updateConfiguration()
-            validateTextDocument(document, diagnostics => {
+            validateTextDocument(document, (diagnostics) => {
                 resolve(diagnostics)
             })
         } else {
@@ -241,13 +241,13 @@ connection.onRequest(ForceValidateRequest, async uri => {
 
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
-documents.onDidChangeContent(change => {
+documents.onDidChangeContent((change) => {
     LimitExceededWarnings.cancel(change.document.uri)
     triggerValidation(change.document)
 })
 
 // a document has closed: clear all diagnostics
-documents.onDidClose(event => {
+documents.onDidClose((event) => {
     LimitExceededWarnings.cancel(event.document.uri)
     cleanPendingValidation(event.document)
     connection.sendDiagnostics({ uri: event.document.uri, diagnostics: [] })
@@ -300,7 +300,7 @@ function validateTextDocument(textDocument: TextDocument, callback?: (diagnostic
     getLanguageService(textDocument.languageId)
         .doValidation(textDocument, jsonDocument, documentSettings)
         .then(
-            diagnostics => {
+            (diagnostics) => {
                 setTimeout(() => {
                     const currDocument = documents.get(textDocument.uri)
                     if (currDocument && currDocument.version === version) {
@@ -308,16 +308,16 @@ function validateTextDocument(textDocument: TextDocument, callback?: (diagnostic
                     }
                 }, 100)
             },
-            error => {
+            (error) => {
                 connection.console.error(formatError(`Error while validating ${textDocument.uri}`, error))
             }
         )
 }
 
-connection.onDidChangeWatchedFiles(change => {
+connection.onDidChangeWatchedFiles((change) => {
     // Monitored files have changed in VSCode
     let hasChanges = false
-    change.changes.forEach(c => {
+    change.changes.forEach((c) => {
         if (getLanguageService('asl').resetSchema(c.uri)) {
             hasChanges = true
         }
@@ -327,10 +327,10 @@ connection.onDidChangeWatchedFiles(change => {
     }
 })
 
-const jsonDocuments = getLanguageModelCache<JSONDocument>(10, 60, document =>
+const jsonDocuments = getLanguageModelCache<JSONDocument>(10, 60, (document) =>
     getLanguageService('asl').parseJSONDocument(document)
 )
-documents.onDidClose(e => {
+documents.onDidClose((e) => {
     jsonDocuments.onDocumentRemoved(e.document)
 })
 connection.onShutdown(() => {

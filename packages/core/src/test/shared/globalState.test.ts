@@ -33,7 +33,7 @@ describe('GlobalState', function () {
     ]
 
     describe('get()', function () {
-        scenarios.forEach(scenario => {
+        scenarios.forEach((scenario) => {
             it(scenario.desc, async () => {
                 await globalState.update(testKey, scenario.testValue)
 
@@ -44,7 +44,7 @@ describe('GlobalState', function () {
     })
 
     describe('update()', function () {
-        scenarios.forEach(scenario => {
+        scenarios.forEach((scenario) => {
             it(scenario.desc, async () => {
                 await globalState.update(testKey, scenario.testValue)
                 const savedValue = globalState.get(testKey)

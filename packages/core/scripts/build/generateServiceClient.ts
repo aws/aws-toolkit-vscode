@@ -21,7 +21,7 @@ interface ServiceClientDefinition {
 async function generateServiceClients(serviceClientDefinitions: ServiceClientDefinition[]): Promise<void> {
     const tempJsSdkPath = path.join(repoRoot, 'node_modules', '.zzz-awssdk2')
     console.log(`Temp JS SDK Repo location: ${tempJsSdkPath}`)
-    console.log('Service Clients to Generate: ', serviceClientDefinitions.map(x => x.serviceName).join(', '))
+    console.log('Service Clients to Generate: ', serviceClientDefinitions.map((x) => x.serviceName).join(', '))
 
     await cloneJsSdk(tempJsSdkPath)
     await insertServiceClientsIntoJsSdk(tempJsSdkPath, serviceClientDefinitions)
@@ -106,7 +106,7 @@ async function insertServiceClientsIntoJsSdk(
     jsSdkPath: string,
     serviceClientDefinitions: ServiceClientDefinition[]
 ): Promise<void> {
-    serviceClientDefinitions.forEach(serviceClientDefinition => {
+    serviceClientDefinitions.forEach((serviceClientDefinition) => {
         const apiVersion = getApiVersion(serviceClientDefinition.serviceJsonPath)
 
         // Copy the Service Json into the JS SDK for generation
@@ -121,7 +121,7 @@ async function insertServiceClientsIntoJsSdk(
     const apiMetadataPath = path.join(jsSdkPath, 'apis', 'metadata.json')
     await patchServicesIntoApiMetadata(
         apiMetadataPath,
-        serviceClientDefinitions.map(x => x.serviceName)
+        serviceClientDefinitions.map((x) => x.serviceName)
     )
 }
 
@@ -151,7 +151,7 @@ async function patchServicesIntoApiMetadata(apiMetadataPath: string, serviceName
     const apiMetadataJson = fs.readFileSync(apiMetadataPath).toString()
     const apiMetadata = JSON.parse(apiMetadataJson) as ApiMetadata
 
-    serviceNames.forEach(serviceName => {
+    serviceNames.forEach((serviceName) => {
         apiMetadata[serviceName.toLowerCase()] = { name: serviceName }
     })
 

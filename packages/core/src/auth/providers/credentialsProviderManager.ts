@@ -102,7 +102,7 @@ export class CredentialsProviderManager {
     }
 
     public removeProvider(id: CredentialsId) {
-        const idx = this.providers.findIndex(p => isEqual(id, p.getCredentialsId()))
+        const idx = this.providers.findIndex((p) => isEqual(id, p.getCredentialsId()))
         if (idx !== -1) {
             this.providers.splice(idx, 1)
         }

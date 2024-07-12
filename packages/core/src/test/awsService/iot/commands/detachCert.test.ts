@@ -45,7 +45,7 @@ describe('detachThingCertCommand', function () {
     it('confirms detach, detaches certificate, and refreshes node', async function () {
         const stub = sinon.stub()
         iot.detachThingPrincipal = stub
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Detach')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Detach')?.select())
         await detachThingCertCommand(node)
 
         getTestWindow()
@@ -60,7 +60,7 @@ describe('detachThingCertCommand', function () {
     it('does nothing when cancelled', async function () {
         const stub = sinon.stub()
         iot.detachThingPrincipal = stub
-        getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
+        getTestWindow().onDidShowMessage((m) => m.selectItem('Cancel'))
         await detachThingCertCommand(node)
 
         assert(stub.notCalled)
@@ -70,7 +70,7 @@ describe('detachThingCertCommand', function () {
         const stub = sinon.stub().rejects()
         iot.detachThingPrincipal = stub
 
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Detach')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Detach')?.select())
         await detachThingCertCommand(node)
 
         getTestWindow()

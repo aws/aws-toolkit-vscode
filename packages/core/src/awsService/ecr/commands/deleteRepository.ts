@@ -48,7 +48,7 @@ async function showConfirmationDialog(repositoryName: string): Promise<boolean> 
     const confirmationInput = await vscode.window.showInputBox({
         prompt,
         placeHolder: repositoryName,
-        validateInput: input => (input !== repositoryName ? prompt : undefined),
+        validateInput: (input) => (input !== repositoryName ? prompt : undefined),
     })
 
     return confirmationInput === repositoryName

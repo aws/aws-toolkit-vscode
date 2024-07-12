@@ -74,8 +74,8 @@ export class ResourcesNode extends AWSTreeNodeBase {
         updateInPlace(
             this.resourceTypeNodes,
             enabledResources,
-            key => this.resourceTypeNodes.get(key)!.clearChildren(),
-            key => {
+            (key) => this.resourceTypeNodes.get(key)!.clearChildren(),
+            (key) => {
                 const metadata = resourceTypes.get(key) ?? ({} as ResourceTypeMetadata)
                 metadata.available = availableTypes.has(key)
                 return new ResourceTypeNode(this, key, this.cloudControl, metadata)

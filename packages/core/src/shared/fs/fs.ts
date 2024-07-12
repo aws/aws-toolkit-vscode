@@ -35,7 +35,7 @@ function createPermissionsErrorHandler(
             throw new PermissionsError(uri, stats, userInfo, perms, err)
         }
 
-        const stats = await nodefs.stat(uri.fsPath).catch(async err2 => {
+        const stats = await nodefs.stat(uri.fsPath).catch(async (err2) => {
             if (!isPermissionsError(err2) && !(isFileNotFoundError(err2) && perms[1] === 'w')) {
                 throw err
             }
@@ -158,8 +158,8 @@ export class FileSystem {
         }
 
         const r = await this.stat(uri).then(
-            r => r,
-            err => !isFileNotFoundError(err)
+            (r) => r,
+            (err) => !isFileNotFoundError(err)
         )
         if (typeof r === 'boolean') {
             return r
@@ -237,7 +237,7 @@ export class FileSystem {
         if (opt.recursive) {
             // Error messages may be misleading if using the `recursive` option.
             // Need to implement our own recursive delete if we want detailed info.
-            return vfs.delete(uri, opt).then(undefined, err => {
+            return vfs.delete(uri, opt).then(undefined, (err) => {
                 if (!opt.force || !isFileNotFoundError(err)) {
                     throw err
                 }
@@ -245,7 +245,7 @@ export class FileSystem {
             })
         }
 
-        return vfs.delete(uri, opt).then(undefined, async err => {
+        return vfs.delete(uri, opt).then(undefined, async (err) => {
             const notFound = isFileNotFoundError(err)
 
             if (notFound && opt.force) {
@@ -285,7 +285,7 @@ export class FileSystem {
 
         // readdir is not a supported vscode API in Cloud9
         if (isCloud9()) {
-            return (await nodefs.readdir(path.fsPath, { withFileTypes: true })).map(e => [
+            return (await nodefs.readdir(path.fsPath, { withFileTypes: true })).map((e) => [
                 e.name,
                 e.isDirectory() ? vscode.FileType.Directory : vscode.FileType.File,
             ])

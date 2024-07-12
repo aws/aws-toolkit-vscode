@@ -243,10 +243,10 @@ export class LineAnnotationController implements vscode.Disposable {
         }
 
         this._disposable = vscode.Disposable.from(
-            subscribeOnce(this.container.lineTracker.onReady)(async _ => {
+            subscribeOnce(this.container.lineTracker.onReady)(async (_) => {
                 await this.onReady()
             }),
-            RecommendationService.instance.suggestionActionEvent(async e => {
+            RecommendationService.instance.suggestionActionEvent(async (e) => {
                 if (!this._isReady) {
                     return
                 }
@@ -266,10 +266,10 @@ export class LineAnnotationController implements vscode.Disposable {
 
                 await this.refresh(e.editor, 'codewhisperer')
             }),
-            this.container.lineTracker.onDidChangeActiveLines(async e => {
+            this.container.lineTracker.onDidChangeActiveLines(async (e) => {
                 await this.onActiveLinesChanged(e)
             }),
-            this.container.auth.auth.onDidChangeConnectionState(async e => {
+            this.container.auth.auth.onDidChangeConnectionState(async (e) => {
                 if (e.state !== 'authenticating') {
                     await this.refresh(vscode.window.activeTextEditor, 'editor')
                 }

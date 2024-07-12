@@ -52,7 +52,7 @@ export abstract class BaseCredentialsProviderFactory<T extends CredentialsProvid
     }
 
     protected removeProvider(provider: T) {
-        this.providers = this.providers.filter(x => x !== provider)
+        this.providers = this.providers.filter((x) => x !== provider)
     }
 
     protected resetProviders() {

@@ -17,7 +17,7 @@ import { getIcon } from '../../../shared/icons'
 import { showViewLogsFetchMessage } from '../messageUtils'
 
 export class RedshiftSchemaNode extends AWSTreeNodeBase implements LoadMoreNode {
-    private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
+    private readonly childLoader = new ChildNodeLoader(this, (token) => this.loadPage(token))
     public constructor(
         public readonly schemaName: string,
         public readonly redshiftClient: DefaultRedshiftClient,
@@ -52,7 +52,7 @@ export class RedshiftSchemaNode extends AWSTreeNodeBase implements LoadMoreNode 
                 )
                 if (listTablesResponse.Tables?.sort()) {
                     newChildren.push(
-                        ...listTablesResponse.Tables.filter(table => !table.name?.endsWith('_pkey')).map(table => {
+                        ...listTablesResponse.Tables.filter((table) => !table.name?.endsWith('_pkey')).map((table) => {
                             return new RedshiftTableNode(table.name ?? 'UnknownTable')
                         })
                     )

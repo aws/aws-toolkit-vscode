@@ -156,7 +156,7 @@ async function buildLambdaHandler(
     const err = await samBuild
         .execute(timer)
         .then(() => {})
-        .catch(e => UnknownError.cast(e))
+        .catch((e) => UnknownError.cast(e))
     const failure = err ?? samBuild.failure()
     if (failure) {
         // TODO(sijaden): ask SAM CLI for a way to map exit codes to error codes
@@ -223,7 +223,7 @@ async function invokeLambdaHandler(
                 timeout: timer,
                 name: config.name,
             })
-            .catch(err => {
+            .catch((err) => {
                 const msg = `SAM local start-api failed${err instanceof SamCliError ? ': ' + err.message : ''}`
 
                 throw ToolkitError.chain(err, msg)
@@ -317,7 +317,7 @@ export async function runLambdaFunction(
     // SAM CLI and any API requests are executed in parallel
     // A failure from either is a failure for the whole invocation
     const [process] = await Promise.all([invokeLambdaHandler(timer, envVars, config, settings), apiRequest]).catch(
-        err => {
+        (err) => {
             timer.cancel()
             throw err
         }
@@ -327,7 +327,7 @@ export async function runLambdaFunction(
         return config
     }
 
-    const terminationListener = vscode.debug.onDidTerminateDebugSession(session => {
+    const terminationListener = vscode.debug.onDidTerminateDebugSession((session) => {
         const config = session.configuration as SamLaunchRequestArgs
         if (config.invokeTarget?.target === 'api') {
             stopApi(process, config)
@@ -404,7 +404,7 @@ async function requestLocalApi(
         retry: {
             // note: `calculateDelay` overrides the default function, so any functionality normally specified in the
             // retry options needs to be implemented yourself
-            calculateDelay: obj => {
+            calculateDelay: (obj) => {
                 if (obj.error.response !== undefined) {
                     getLogger().debug('Local API response: %s : %O', uri, obj.error.response.statusMessage)
                 }

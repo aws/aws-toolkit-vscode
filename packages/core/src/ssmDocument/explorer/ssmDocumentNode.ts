@@ -49,8 +49,8 @@ export class SsmDocumentNode extends AWSTreeNodeBase {
         updateInPlace(
             this.documentTypeNodes,
             documentTypes,
-            key => this.documentTypeNodes.get(key)!.update(key),
-            key => new DocumentTypeNode(this.regionCode, key, this.client)
+            (key) => this.documentTypeNodes.get(key)!.update(key),
+            (key) => new DocumentTypeNode(this.regionCode, key, this.client)
         )
     }
 }

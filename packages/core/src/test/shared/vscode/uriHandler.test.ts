@@ -20,21 +20,21 @@ describe('UriHandler', function () {
     })
 
     it('can register a handler', async function () {
-        uriHandler.onPath(testPath, q => assert.strictEqual(q.get('key'), 'value'))
+        uriHandler.onPath(testPath, (q) => assert.strictEqual(q.get('key'), 'value'))
         return uriHandler.handleUri(makeUri('key=value'))
     })
 
     it('uses parser if available', async function () {
         uriHandler.onPath(
             testPath,
-            q => assert.strictEqual(q.myNumber, 123),
+            (q) => assert.strictEqual(q.myNumber, 123),
             (q: SearchParams) => ({ myNumber: Number(q.get('myString')) })
         )
         return uriHandler.handleUri(makeUri('myString=123'))
     })
 
     it('can handle lists', async function () {
-        uriHandler.onPath(testPath, q => assert.deepStrictEqual(q.get('list'), ['1', '2', '3']))
+        uriHandler.onPath(testPath, (q) => assert.deepStrictEqual(q.get('list'), ['1', '2', '3']))
         return uriHandler.handleUri(makeUri('list=1&list=2&list=3'))
     })
 

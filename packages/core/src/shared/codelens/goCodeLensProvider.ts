@@ -61,8 +61,8 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
         )) ?? []
 
     return symbols
-        .filter(symbol => isValidFuncSignature(document, symbol))
-        .map<LambdaHandlerCandidate>(symbol => {
+        .filter((symbol) => isValidFuncSignature(document, symbol))
+        .map<LambdaHandlerCandidate>((symbol) => {
             return {
                 filename,
                 handlerName: basename(dirname(filename)),

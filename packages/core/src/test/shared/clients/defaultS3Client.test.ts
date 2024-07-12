@@ -19,7 +19,7 @@ class FakeProgressCaptor {
     public progress = 0
 
     public listener(): (loadedBytes: number) => void {
-        return loadedBytes => {
+        return (loadedBytes) => {
             this.progress += loadedBytes
         }
     }

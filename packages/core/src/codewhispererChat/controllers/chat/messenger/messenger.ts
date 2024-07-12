@@ -152,7 +152,7 @@ export class Messenger {
                     ) {
                         codeReference = [
                             ...codeReference,
-                            ...chatEvent.codeReferenceEvent.references.map(reference => ({
+                            ...chatEvent.codeReferenceEvent.references.map((reference) => ({
                                 ...reference,
                                 recommendationContentSpan: {
                                     start: reference.recommendationContentSpan?.start ?? 0,

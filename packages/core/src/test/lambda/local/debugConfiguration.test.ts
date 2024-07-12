@@ -95,7 +95,7 @@ describe('makeCoreCLRDebugConfiguration', function () {
         it('uses the specified port', async function () {
             const config = await makeConfig({})
             assert.strictEqual(
-                config.windows.pipeTransport.pipeArgs.some(arg => arg.includes(config.debugPort!.toString())),
+                config.windows.pipeTransport.pipeArgs.some((arg) => arg.includes(config.debugPort!.toString())),
                 true
             )
         })
@@ -111,7 +111,7 @@ describe('makeCoreCLRDebugConfiguration', function () {
             const config = await makeConfig({})
 
             assert.strictEqual(
-                config.pipeTransport.pipeArgs.some(arg => arg.includes(config.debugPort!.toString())),
+                config.pipeTransport.pipeArgs.some((arg) => arg.includes(config.debugPort!.toString())),
                 true
             )
         })

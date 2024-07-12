@@ -55,7 +55,7 @@ export class Logging {
         contextPrefix: string
     ) {
         this.viewLogs = Commands.register(`aws.${contextPrefix}.viewLogs`, () => this.openLogUri())
-        this.viewLogsAtMessage = Commands.register(`aws.${contextPrefix}.viewLogsAtMessage`, id => this.openLogId(id))
+        this.viewLogsAtMessage = Commands.register(`aws.${contextPrefix}.viewLogsAtMessage`, (id) => this.openLogId(id))
     }
 
     public async openLogUri(): Promise<vscode.TextEditor | undefined> {

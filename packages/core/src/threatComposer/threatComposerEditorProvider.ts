@@ -124,7 +124,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         webviewPanel: vscode.WebviewPanel,
         _token: vscode.CancellationToken
     ): Promise<void> {
-        await telemetry.threatComposer_opened.run(async span => {
+        await telemetry.threatComposer_opened.run(async (span) => {
             if (!this.webviewHtml) {
                 await this.fetchWebviewHtml()
             }

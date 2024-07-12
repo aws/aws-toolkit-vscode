@@ -36,8 +36,8 @@ export async function getOpenFilesInWindow(
 
     try {
         const tabArrays = vscode.window.tabGroups.all
-        tabArrays.forEach(tabArray => {
-            tabArray.tabs.forEach(tab => {
+        tabArrays.forEach((tabArray) => {
+            tabArray.tabs.forEach((tab) => {
                 filesOpenedInEditor.push((tab.input as any).uri.fsPath)
             })
         })
@@ -49,13 +49,13 @@ export async function getOpenFilesInWindow(
         // since we are not able to use async predicate in array.filter
         // return filesOpenedInEditor.filter(async filePath => await filterPredicate(filePath))
         const resultsWithNulls = await Promise.all(
-            filesOpenedInEditor.map(async file => {
+            filesOpenedInEditor.map(async (file) => {
                 const aResult = await filterPredicate(file)
                 return aResult ? file : undefined
             })
         )
 
-        return resultsWithNulls.filter(item => item !== undefined) as string[]
+        return resultsWithNulls.filter((item) => item !== undefined) as string[]
     } else {
         return filesOpenedInEditor
     }

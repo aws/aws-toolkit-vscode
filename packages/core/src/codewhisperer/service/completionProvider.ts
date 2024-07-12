@@ -50,7 +50,7 @@ export function getCompletionItem(
     if (recommendationDetail.references !== undefined && recommendationDetail.references.length > 0) {
         references = recommendationDetail.references
         const licenses = [
-            ...new Set(references.map(r => `[${r.licenseName}](${LicenseUtil.getLicenseHtml(r.licenseName)})`)),
+            ...new Set(references.map((r) => `[${r.licenseName}](${LicenseUtil.getLicenseHtml(r.licenseName)})`)),
         ].join(', ')
         completionItem.documentation.appendMarkdown(CodeWhispererConstants.suggestionDetailReferenceText(licenses))
     }

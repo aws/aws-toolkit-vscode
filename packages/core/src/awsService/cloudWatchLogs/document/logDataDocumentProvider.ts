@@ -19,7 +19,7 @@ export class LogDataDocumentProvider implements vscode.TextDocumentContentProvid
     }
 
     public constructor(private readonly registry: LogDataRegistry) {
-        this.registry.onDidChange(uri => {
+        this.registry.onDidChange((uri) => {
             getLogger().debug(`Registry item changed: ${uri.path}`)
             this._onDidChange.fire(uri)
         })

@@ -62,7 +62,7 @@ export class qTestingFramework {
          * This implements the VSCode -> Mynah UI flow
          */
         this.disposables.push(
-            DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessageListener().onMessage(async message => {
+            DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessageListener().onMessage(async (message) => {
                 // Emulate the json format of postMessage
                 const event = {
                     data: JSON.stringify(message),

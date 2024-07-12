@@ -30,7 +30,7 @@ export class DevEnvActivityStarter {
         }
 
         DevEnvActivityStarter._instance ??= new DevEnvActivityStarter(authProvider)
-        DevEnvActivityStarter._instance.retryStartActivityHeartbeat().catch(e => {
+        DevEnvActivityStarter._instance.retryStartActivityHeartbeat().catch((e) => {
             getLogger().error('retryStartActivityHeartbeat failed: %s', (e as Error).message)
         })
     }
@@ -40,7 +40,7 @@ export class DevEnvActivityStarter {
 
     protected constructor(private readonly authProvider: CodeCatalystAuthenticationProvider) {
         this.onDidChangeAuth = authProvider.onDidChangeActiveConnection(() => {
-            this.tryStartActivityHeartbeat(true).catch(e => {
+            this.tryStartActivityHeartbeat(true).catch((e) => {
                 getLogger().error('tryStartActivityHeartbeat failed: %s', (e as Error).message)
             })
         })
@@ -67,7 +67,7 @@ export class DevEnvActivityStarter {
             return
         }
 
-        const thisDevenv = (await getThisDevEnv(this.authProvider))?.unwrapOrElse(err => {
+        const thisDevenv = (await getThisDevEnv(this.authProvider))?.unwrapOrElse((err) => {
             getLogger().warn('codecatalyst: failed to get current devenv: %s', err)
             return undefined
         })
@@ -80,7 +80,7 @@ export class DevEnvActivityStarter {
             if (connection) {
                 void vscode.window
                     .showErrorMessage('CodeCatalyst: Reauthenticate your connection.', 'Reauthenticate')
-                    .then(async res => {
+                    .then(async (res) => {
                         if (res !== 'Reauthenticate') {
                             return
                         }
@@ -169,7 +169,7 @@ export class InactivityMessage implements vscode.Disposable {
         await devEnvActivity.sendActivityUpdate()
 
         // Reset (redefine) the timer whenever user is active.
-        devEnvActivity.onActivityUpdate(async lastActivity => {
+        devEnvActivity.onActivityUpdate(async (lastActivity) => {
             this.clear()
 
             const { millisToWait, minutesSinceActivity } = this.millisUntilNextWholeMinute(lastActivity, oneMin)
@@ -188,7 +188,7 @@ export class InactivityMessage implements vscode.Disposable {
             /** Wait until we are {@link InactivityMessage.shutdownWarningThreshold} minutes before shutdown. */
             this.#showMessageTimer = globals.clock.setTimeout(() => {
                 const userIsActive = () => {
-                    devEnvActivity.sendActivityUpdate().catch(e => {
+                    devEnvActivity.sendActivityUpdate().catch((e) => {
                         getLogger().error('DevEnvActivity.sendActivityUpdate failed: %s', (e as Error).message)
                     })
                 }
@@ -201,7 +201,7 @@ export class InactivityMessage implements vscode.Disposable {
                     Math.round(Math.max(0, minutesUntilShutdown - minutesUntilMessage)),
                     userIsActive,
                     willRefreshOnStaleTimestamp
-                ).catch(e => {
+                ).catch((e) => {
                     getLogger().error('InactivityMessage.show failed: %s', (e as Error).message)
                 })
             }, timerInterval)
@@ -265,7 +265,7 @@ export class InactivityMessage implements vscode.Disposable {
                 { modal: true },
                 imHere
             )
-            .then(res => {
+            .then((res) => {
                 if (res === imHere) {
                     userIsActive()
                 }

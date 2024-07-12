@@ -31,7 +31,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 await invokeRemoteLambda(context, { outputChannel: context.outputChannel, functionNode: node })
         ),
         // Capture debug finished events, and delete the temporary directory if it exists
-        vscode.debug.onDidTerminateDebugSession(async session => {
+        vscode.debug.onDidTerminateDebugSession(async (session) => {
             if (
                 session.configuration?.sam?.buildDir === undefined &&
                 session.configuration?.baseBuildDir !== undefined

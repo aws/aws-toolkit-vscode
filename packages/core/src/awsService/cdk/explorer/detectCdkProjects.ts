@@ -21,7 +21,7 @@ export async function detectCdkProjects(
         []
     )
 
-    projects.forEach(p => results.set(p.cdkJsonUri.toString(), p))
+    projects.forEach((p) => results.set(p.cdkJsonUri.toString(), p))
 
     return Array.from(results.values())
 }

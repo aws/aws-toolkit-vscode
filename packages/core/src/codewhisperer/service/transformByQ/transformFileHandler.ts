@@ -164,7 +164,7 @@ async function setHilAnnotationObjectDetails(lineNumber: number = 0) {
 }
 
 function findLineNumber(uri: vscode.Uri, searchString: string): number | undefined {
-    const textDocument = vscode.workspace.textDocuments.find(doc => doc.uri.toString() === uri.toString())
+    const textDocument = vscode.workspace.textDocuments.find((doc) => doc.uri.toString() === uri.toString())
     if (!textDocument) {
         return undefined
     }

@@ -95,7 +95,7 @@ export function getSectionOrThrow<T extends Section['type'] = Section['type']>(
     name: SectionName,
     type: T
 ): Section & { type: T } {
-    const section = sections.find(s => s.name === name && s.type === type) as (Section & { type: T }) | undefined
+    const section = sections.find((s) => s.name === name && s.type === type) as (Section & { type: T }) | undefined
     if (!section) {
         const friendlyName = type === 'sso-session' ? 'Session' : 'Profile'
         throw new Error(`${friendlyName} not found: ${name}`)
@@ -116,7 +116,7 @@ export function getSectionDataOrThrow(sections: Section[], name: SectionName, ty
 const sectionTypes = ['profile', 'sso-session'] as const
 function validateSection(section: BaseSection): asserts section is Section {
     // eslint-disable-next-line unicorn/prefer-includes
-    if (!sectionTypes.some(t => t === section.type)) {
+    if (!sectionTypes.some((t) => t === section.type)) {
         throw ParseError.fromSection(
             section,
             `Invalid section type "${section.type}". Expected one of: ${sectionTypes.join(', ')}`
@@ -175,7 +175,7 @@ export function mergeAndValidateSections(data: BaseSection[]): ParseResult {
 
 export function parseIni(iniData: string, source: vscode.Uri): BaseSection[] {
     const sections = [] as BaseSection[]
-    const lines = iniData.split(/\r?\n/).map(l => l.split(/(^|\s)[;#]/)[0]) // remove comments
+    const lines = iniData.split(/\r?\n/).map((l) => l.split(/(^|\s)[;#]/)[0]) // remove comments
     lines.forEach((line, lineNumber) => {
         const section = line.match(/^\s*\[([^\[\]]+)]\s*$/)
         const currentSection: BaseSection | undefined = sections[sections.length - 1]

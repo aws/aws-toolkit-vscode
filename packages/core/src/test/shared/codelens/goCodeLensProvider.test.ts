@@ -33,7 +33,7 @@ describe('getLambdaHandlerCandidates', async function () {
 
     it('Detects only good function symbols from a mock program', async function () {
         const textDoc: vscode.TextDocument = await vscode.workspace.openTextDocument(programFile)
-        const candidates: vscode.DocumentSymbol[] = getDocumentSymbols().filter(symbol =>
+        const candidates: vscode.DocumentSymbol[] = getDocumentSymbols().filter((symbol) =>
             isValidFuncSignature(textDoc, symbol)
         )
 

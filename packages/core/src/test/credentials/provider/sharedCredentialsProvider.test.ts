@@ -297,7 +297,7 @@ describe('SharedCredentialsProvider', async function () {
 
         beforeEach(function () {
             const client = stub(SsoClient, { region: 'foo' })
-            client.getRoleCredentials.callsFake(async request => {
+            client.getRoleCredentials.callsFake(async (request) => {
                 assert.strictEqual(request.accountId, '012345678910')
                 assert.strictEqual(request.roleName, 'MyRole')
 
@@ -399,7 +399,7 @@ describe('SharedCredentialsProvider', async function () {
             sut: SharedCredentialsProvider,
             resolvedProfile: ParsedIniData
         ): Promise<void> {
-            const makeIni = sandbox.stub(sut as any, 'makeSharedIniFileCredentialsProvider').callsFake(profile => {
+            const makeIni = sandbox.stub(sut as any, 'makeSharedIniFileCredentialsProvider').callsFake((profile) => {
                 // The SDK does not care if fields are undefined, but we need to remove them to test
                 stripUndefined(profile as any)
                 assert.deepStrictEqual(profile, resolvedProfile)
@@ -463,5 +463,5 @@ describe('SharedCredentialsProvider', async function () {
 
 function assertSubstringsInText(text: string | undefined, ...substrings: string[]) {
     assert.ok(text)
-    substrings.forEach(substring => assert.notStrictEqual(text!.indexOf(substring), -1))
+    substrings.forEach((substring) => assert.notStrictEqual(text!.indexOf(substring), -1))
 }
