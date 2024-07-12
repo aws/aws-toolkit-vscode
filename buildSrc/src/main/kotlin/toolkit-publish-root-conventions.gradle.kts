@@ -23,7 +23,7 @@ val toolkitVersion: String by project
 // please check changelog generation logic if this format is changed
 version = "$toolkitVersion-${ideProfile.shortName}"
 
-tasks.withType<PatchPluginXmlTask>().all {
+tasks.withType<PatchPluginXmlTask>().configureEach {
     sinceBuild.set(toolkitIntelliJ.ideProfile().map { it.sinceVersion })
     untilBuild.set(toolkitIntelliJ.ideProfile().map { it.untilVersion })
 }
@@ -31,7 +31,7 @@ tasks.withType<PatchPluginXmlTask>().all {
 // attach the current commit hash on local builds
 if (!project.isCi()) {
     val buildMetadata = buildMetadata()
-    tasks.withType<PatchPluginXmlTask>().all {
+    tasks.withType<PatchPluginXmlTask>().configureEach {
         pluginVersion.set("${project.version}+$buildMetadata")
     }
 

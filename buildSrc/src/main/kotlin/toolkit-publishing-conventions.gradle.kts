@@ -25,7 +25,7 @@ intellijPlatform {
 }
 
 configurations {
-    all {
+    configureEach {
         // IDE provides netty
         exclude("io.netty")
     }

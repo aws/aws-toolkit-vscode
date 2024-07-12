@@ -29,7 +29,7 @@ allprojects {
         gradlePluginPortal()
     }
 
-    configurations.all {
+    configurations.configureEach {
         resolutionStrategy {
             failOnDynamicVersions()
 //            failOnChangingVersions()

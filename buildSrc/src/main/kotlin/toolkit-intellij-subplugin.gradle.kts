@@ -45,12 +45,12 @@ configurations {
         exclude(group = "org.jetbrains.kotlinx")
     }
 
-    all {
+    configureEach {
         // IDE provides netty
         exclude("io.netty")
 
         if (name.startsWith("detekt")) {
-            return@all
+            return@configureEach
         }
 
         resolutionStrategy.eachDependency {
@@ -112,7 +112,7 @@ tasks.jar {
     archiveBaseName.set(toolkitIntelliJ.ideFlavor.map { "${project.buildTreePath.replace(':', '-')}-$it" })
 }
 
-tasks.withType<Test>().all {
+tasks.withType<Test>().configureEach {
     systemProperty("log.dir", intellijPlatform.sandboxContainer.map { "$it-test/logs" }.get())
     systemProperty("testDataPath", project.rootDir.resolve("testdata").absolutePath)
     val jetbrainsCoreTestResources = project(":plugin-toolkit:jetbrains-core").projectDir.resolve("tst-resources")
@@ -120,7 +120,7 @@ tasks.withType<Test>().all {
     systemProperty("org.gradle.project.ideProfileName", ideProfile.name)
 }
 
-tasks.withType<JavaExec> {
+tasks.withType<JavaExec>().configureEach {
     systemProperty("aws.toolkits.enableTelemetry", false)
 }
 

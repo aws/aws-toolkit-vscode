@@ -60,7 +60,7 @@ artifacts {
     add("testArtifacts", testJar)
 }
 
-tasks.withType<Test>().all {
+tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 
     ciOnly {
@@ -105,7 +105,7 @@ tasks.jacocoTestReport.configure {
 
 // Share the coverage data to be aggregated for the whole product
 // this can be removed once we're using jvm-test-suites properly
-configurations.create("coverageDataElements") {
+configurations.register("coverageDataElements") {
     isVisible = false
     isCanBeResolved = false
     isCanBeConsumed = true
@@ -115,7 +115,7 @@ configurations.create("coverageDataElements") {
         attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.DOCUMENTATION))
         attribute(DocsType.DOCS_TYPE_ATTRIBUTE, objects.named("jacoco-coverage-data"))
     }
-    tasks.withType<Test> {
+    tasks.withType<Test>().configureEach {
         outgoing.artifact(extensions.getByType<JacocoTaskExtension>().destinationFile!!)
     }
 }

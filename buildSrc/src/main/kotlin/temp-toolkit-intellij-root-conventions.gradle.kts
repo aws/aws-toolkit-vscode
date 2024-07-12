@@ -37,11 +37,11 @@ val toolkitVersion: String by project
 // also sync with gateway version
 version = "$toolkitVersion-${ideProfile.shortName}"
 
-val resharperDlls = configurations.create("resharperDlls") {
+val resharperDlls = configurations.register("resharperDlls") {
     isCanBeConsumed = false
 }
 
-val gatewayResources = configurations.create("gatewayResources") {
+val gatewayResources = configurations.register("gatewayResources") {
     isCanBeConsumed = false
 }
 
@@ -90,7 +90,7 @@ ciOnly {
     extensions.getByType<JacocoPluginExtension>().applyTo(tasks.withType<TestIdeUiTask>())
 }
 
-tasks.withType<TestIdeUiTask>().all {
+tasks.withType<TestIdeUiTask>().configureEach {
     systemProperty("robot-server.port", remoteRobotPort)
     // mac magic
     systemProperty("ide.mac.message.dialogs.as.sheets", "false")

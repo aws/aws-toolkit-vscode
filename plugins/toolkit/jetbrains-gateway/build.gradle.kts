@@ -140,7 +140,7 @@ tasks.jar {
     duplicatesStrategy = DuplicatesStrategy.WARN
 }
 
-tasks.withType<PrepareSandboxTask>().all {
+tasks.withType<PrepareSandboxTask>().configureEach {
     intoChild(intellijPlatform.projectName.map { "$it/gateway-resources" })
         .from(gatewayResourcesDir)
 }

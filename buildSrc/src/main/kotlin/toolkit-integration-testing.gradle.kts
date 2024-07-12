@@ -22,7 +22,7 @@ sourceSets {
         runtimeClasspath += main.get().output + test.get().output
 
         // different convention for intellij projects
-        plugins.withType<ToolkitIntellijSubpluginPlugin> {
+        plugins.withType<ToolkitIntellijSubpluginPlugin>().configureEach {
             val ideProfile = IdeVersions.ideProfile(project)
             java.srcDirs(findFolders(project, "it", ideProfile))
             resources.srcDirs(findFolders(project, "it-resources", ideProfile))
@@ -30,7 +30,7 @@ sourceSets {
     }
 }
 
-configurations.getByName("integrationTestCompileClasspath") {
+configurations.named("integrationTestCompileClasspath").configure {
     extendsFrom(configurations.getByName(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME))
     attributes {
         attribute(Attributes.extracted, true)
@@ -38,7 +38,7 @@ configurations.getByName("integrationTestCompileClasspath") {
     }
 }
 
-configurations.getByName("integrationTestRuntimeClasspath") {
+configurations.named("integrationTestRuntimeClasspath").configure {
     extendsFrom(configurations.getByName(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME))
     attributes {
         attribute(Attributes.extracted, true)
@@ -48,7 +48,7 @@ configurations.getByName("integrationTestRuntimeClasspath") {
 }
 
 // Add the integration test source set to test jar
-val testJar = tasks.named<Jar>("testJar") {
+val testJar = tasks.named<Jar>("testJar").configure {
     from(integrationTests.output)
 }
 
@@ -79,7 +79,7 @@ tasks.check {
 }
 
 afterEvaluate {
-    plugins.withType<ToolkitIntellijSubpluginPlugin> {
+    plugins.withType<ToolkitIntellijSubpluginPlugin>().configureEach {
         // intellij plugin overrides with instrumented classes that we don't want or need
         integTestTask.configure {
             testClassesDirs = integrationTests.output.classesDirs

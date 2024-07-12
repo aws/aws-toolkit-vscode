@@ -36,14 +36,14 @@ detekt {
     autoCorrect = true
 }
 
-tasks.withType<Detekt> {
+tasks.withType<Detekt>().configureEach {
     reports {
         html.required.set(true) // Human readable report
         xml.required.set(true) // Checkstyle like format for CI tool integrations
     }
 }
 
-tasks.withType<DetektCreateBaselineTask> {
+tasks.withType<DetektCreateBaselineTask>().configureEach {
     // weird issue where the baseline tasks can't find the source code
     source.plus(detektFiles)
 }
