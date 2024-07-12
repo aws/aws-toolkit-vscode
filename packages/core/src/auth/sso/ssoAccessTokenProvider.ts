@@ -29,7 +29,7 @@ import {
     isNetworkError,
 } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
-import { AwsLoginWithBrowser, AwsRefreshCredentials, Metric, telemetry } from '../../shared/telemetry/telemetry'
+import { AwsLoginWithBrowser, AwsRefreshCredentials, telemetry } from '../../shared/telemetry/telemetry'
 import { indent, toBase64URL } from '../../shared/utilities/textUtilities'
 import { AuthSSOServer } from './server'
 import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
@@ -204,7 +204,7 @@ export abstract class SsoAccessTokenProvider {
         func: T,
         args?: CreateTokenArgs
     ): ReturnType<T> {
-        const run = (span: Metric<AwsLoginWithBrowser>) => {
+        return telemetry.aws_loginWithBrowser.run(span => {
             span.record({
                 credentialStartUrl: this.profile.startUrl,
                 source: SsoAccessTokenProvider._authSource,
@@ -217,17 +217,6 @@ export abstract class SsoAccessTokenProvider {
             SsoAccessTokenProvider.authSource = 'unknown'
 
             return func()
-        }
-
-        // During certain flows, eg reauthentication, we are already running within a span (run())
-        // so we don't need to create a new one.
-        const span = telemetry.spans.find((s) => s.name === 'aws_loginWithBrowser')
-        if (span !== undefined) {
-            return run(span as unknown as Metric<AwsLoginWithBrowser>)
-        }
-
-        return telemetry.aws_loginWithBrowser.run((span) => {
-            return run(span)
         })
     }
 
