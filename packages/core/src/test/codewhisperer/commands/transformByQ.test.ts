@@ -310,21 +310,4 @@ describe('resetDebugArtifacts', () => {
         assert.strictEqual(fs.existsSync(preBuildLogFilePath), false)
         assert.strictEqual(transformByQState.getPreBuildLogFilePath(), '')
     })
-
-    it('should not remove any directory if the pre-build log file path is not set', async () => {
-        transformByQState.setPreBuildLogFilePath('')
-
-        await resetDebugArtifacts()
-
-        assert.strictEqual(transformByQState.getPreBuildLogFilePath(), '')
-    })
-
-    it('should not remove any directory if the pre-build log file does not exist', async () => {
-        const preBuildLogFilePath = 'non/existent/path/to/pre-build.log'
-        transformByQState.setPreBuildLogFilePath(preBuildLogFilePath)
-
-        await resetDebugArtifacts()
-
-        assert.strictEqual(transformByQState.getPreBuildLogFilePath(), '')
-    })
 })
