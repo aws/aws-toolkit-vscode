@@ -270,6 +270,7 @@ export class GumbyController {
         const typedAction = MessengerUtils.stringToEnumValue(ButtonActions, message.action as any)
         switch (typedAction) {
             case ButtonActions.CONFIRM_TRANSFORMATION_FORM:
+                await resetDebugArtifacts()
                 await this.initiateTransformationOnProject(message)
                 break
             case ButtonActions.CANCEL_TRANSFORMATION_FORM:
@@ -473,6 +474,7 @@ export class GumbyController {
                 undefined,
                 GumbyNamedMessages.JOB_FAILED_IN_PRE_BUILD
             )
+            await openBuildLogFile()
             this.messenger.sendViewBuildLog(message.tabID)
         }
     }

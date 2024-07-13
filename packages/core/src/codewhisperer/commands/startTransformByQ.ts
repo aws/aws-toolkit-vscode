@@ -532,7 +532,7 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
         const pathToLog = path.join(tmpDir, 'buildCommandOutput.log')
         transformByQState.setPreBuildLogFilePath(pathToLog)
 
-        if (fs.existsSync(pathToLog)) {
+        if (fs.existsSync(pathToLog) && !transformByQState.isCancelled()) {
             throw new TransformationPreBuildError()
         } else {
             throw new PollJobError()
@@ -736,11 +736,11 @@ export async function cleanupTransformationJob() {
 }
 
 export async function resetDebugArtifacts() {
-    const buildLogPath = transformByQState.getPreBuildLogFilePath()
-    if (buildLogPath && fs.existsSync(buildLogPath)) {
-        fs.rmSync(path.dirname(transformByQState.getPreBuildLogFilePath()), { recursive: true, force: true })
+    const buildLogDir = path.join(os.tmpdir(), 'q-transformation-build-logs')
+    if (fs.existsSync(buildLogDir)) {
+        fs.rmSync(buildLogDir, { recursive: true, force: true })
+        transformByQState.setPreBuildLogFilePath('')
     }
-    transformByQState.setPreBuildLogFilePath('')
 }
 
 export async function stopTransformByQ(
