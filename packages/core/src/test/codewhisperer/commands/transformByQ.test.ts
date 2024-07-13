@@ -6,6 +6,7 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
+import * as os from 'os'
 import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
@@ -300,9 +301,9 @@ describe('transformByQ', function () {
 
 describe('resetDebugArtifacts', () => {
     it('should remove the directory containing the pre-build log file if it exists', async () => {
-        const dirPath = await createTestWorkspaceFolder()
-        const preBuildLogFilePath = path.join(dirPath.uri.fsPath, 'DummyLog.log')
-        await toFile('', preBuildLogFilePath)
+        const dirPath = path.join(os.tmpdir(), 'q-transformation-build-logs')
+        const preBuildLogFilePath = path.join(dirPath, 'DummyLog.log')
+        await toFile('<logs>', preBuildLogFilePath)
         transformByQState.setPreBuildLogFilePath(preBuildLogFilePath)
 
         await resetDebugArtifacts()
