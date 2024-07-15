@@ -102,17 +102,9 @@ export class OidcClient {
                 return true
             }
 
-            // Sessions may "expire" earlier than expected due to network faults.
-            // TODO: add more cases from node_modules/@aws-sdk/client-sso-oidc/dist-types/models/models_0.d.ts
-            // ExpiredTokenException
-            // InternalServerException
-            // InvalidClientException
-            // InvalidRequestException
-            // SlowDownException
-            // UnsupportedGrantTypeException
-            // InvalidRequestRegionException
-            // InvalidRedirectUriException
-            // InvalidRedirectUriException
+            // As part of SIM IDE-10703, there was an assumption that retrying on InvalidGrantException
+            // may be useful. This may not be the case anymore and if more research is done, this may not be needed.
+            // TODO: setup some telemetry to see if there are any successes on a subsequent retry for this case.
             return err.name === 'InvalidGrantException'
         }
         const client = new SSOOIDC({
@@ -124,7 +116,9 @@ export class OidcClient {
             ),
             customUserAgent: getUserAgent({ includePlatform: true, includeClientId: true }),
             requestHandler: {
-                requestTimeout: 30_000,
+                // This field may have a bug: https://github.com/aws/aws-sdk-js-v3/issues/6271
+                // If the bug is real but is fixed, then we can probably remove this field and just have no timeout by default
+                requestTimeout: 5000,
             },
         })
 
