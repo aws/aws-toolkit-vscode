@@ -204,7 +204,7 @@ export abstract class SsoAccessTokenProvider {
         func: T,
         args?: CreateTokenArgs
     ): ReturnType<T> {
-        return telemetry.aws_loginWithBrowser.run(span => {
+        return telemetry.aws_loginWithBrowser.run((span) => {
             span.record({
                 credentialStartUrl: this.profile.startUrl,
                 source: SsoAccessTokenProvider._authSource,

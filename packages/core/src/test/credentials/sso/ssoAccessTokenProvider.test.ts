@@ -246,7 +246,7 @@ describe('SsoAccessTokenProvider', function () {
                 oidcClient.createToken.rejects(new Error('random error')) // Forces failure during SSO flow
                 reAuthState.set({ startUrl }, { reAuthReason: 'thisReasonWillNotBeCleared' })
 
-                await assert.rejects(sut.createToken({isReAuth: true})) // function under test
+                await assert.rejects(sut.createToken({ isReAuth: true })) // function under test
 
                 assert.deepStrictEqual(reAuthState.get({ startUrl }), {
                     ...reAuthState.default,
@@ -257,13 +257,13 @@ describe('SsoAccessTokenProvider', function () {
             it('clears the reAuthReason on successful login', async () => {
                 reAuthState.set({ startUrl }, { reAuthReason: 'myReAuthReason' })
 
-                await sut.createToken({isReAuth: true}) // function under test
+                await sut.createToken({ isReAuth: true }) // function under test
 
                 assertTelemetry('aws_loginWithBrowser', {
                     result: 'Succeeded',
                     credentialStartUrl: startUrl,
                     isReAuth: true,
-                    reAuthReason: 'myReAuthReason'
+                    reAuthReason: 'myReAuthReason',
                 })
                 assert.deepStrictEqual(reAuthState.exists({ startUrl }), false)
             })
@@ -271,7 +271,7 @@ describe('SsoAccessTokenProvider', function () {
             it('no reAuthReason if isReAuth is false', async () => {
                 reAuthState.set({ startUrl }, { reAuthReason: 'thisReasonWontBeUsed' })
 
-                await sut.createToken({isReAuth: false}) // function under test
+                await sut.createToken({ isReAuth: false }) // function under test
 
                 assertTelemetry('aws_loginWithBrowser', {
                     result: 'Succeeded',
@@ -281,15 +281,15 @@ describe('SsoAccessTokenProvider', function () {
             })
 
             it('telemetry does not fail is reAuthReason does not exist', async () => {
-                assert.deepStrictEqual(reAuthState.exists({startUrl}), false)
+                assert.deepStrictEqual(reAuthState.exists({ startUrl }), false)
 
-                await sut.createToken({isReAuth: true}) // function under test
+                await sut.createToken({ isReAuth: true }) // function under test
 
                 assertTelemetry('aws_loginWithBrowser', {
                     result: 'Succeeded',
                     isReAuth: true,
                     credentialStartUrl: startUrl,
-                    reAuthReason: undefined // this does not exist, but it is fine.
+                    reAuthReason: undefined, // this does not exist, but it is fine.
                 })
             })
         })
@@ -469,11 +469,11 @@ describe('SsoAccessTokenProvider', function () {
             super()
         }
 
-        override asKey(profile: { readonly identifier?: string; readonly startUrl: string; }): string {
+        override asKey(profile: { readonly identifier?: string; readonly startUrl: string }): string {
             return super.asKey(profile)
         }
 
-        override get default(): { reAuthReason?: string; } {
+        override get default(): { reAuthReason?: string } {
             return super.default
         }
     }

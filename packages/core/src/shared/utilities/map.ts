@@ -3,19 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger } from "../logger"
+import { getLogger } from '../logger'
 
 /**
  * Simply maps a Key to an Object. Everything is done in memory, allowing for atomic updates.
- * 
+ *
  * There is a common use case for this class, so look to reuse this when possible.
  * Benefits, instead of making your own:
  * - A key does not have to be a string, {@link MemoryMap.asKey} enables this
  * - Implements most of the boilerplate
  */
-export abstract class MemoryMap<Key, Value = { [key: string]: any }>
-    implements MapSync<Key, Value>
-{
+export abstract class MemoryMap<Key, Value = { [key: string]: any }> implements MapSync<Key, Value> {
     private readonly data: { [key: string]: Value | undefined } = {}
 
     exists(key: Key): boolean {
@@ -59,7 +57,7 @@ export abstract class MemoryMap<Key, Value = { [key: string]: any }>
     protected abstract get default(): Value
 }
 
-/** 
+/**
  * A synchronous version of a Map of Maps.
  * - This allows for atomic updates as it is not async.
  * - They Key does not need to be a string
