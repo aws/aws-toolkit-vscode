@@ -39,7 +39,7 @@ export async function modifyInstance(node: DBInstanceNode) {
     const parent = node.parent as DBClusterNode
 
     const quickPickItems = await getInstanceClassOptions(parent.client, parent.cluster)
-    const newInstanceClass = await getInstanceClass(quickPickItems, node.instance.DBInstanceClass!)
+    const newInstanceClass = await promptForInstanceClass(quickPickItems, node.instance.DBInstanceClass!)
 
     if (!newInstanceClass) {
         getLogger().info('ModifyInstance cancelled')
@@ -90,7 +90,7 @@ async function getInstanceClassOptions(
     return items
 }
 
-async function getInstanceClass(items: any[], currentValue: string) {
+async function promptForInstanceClass(items: any[], currentValue: string) {
     const prompter = createQuickPick<string>(items, {
         title: localize('AWS.docdb.createInstance.instanceClass.prompt', 'Select instance class'),
         value: currentValue,
