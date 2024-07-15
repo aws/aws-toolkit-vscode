@@ -1,7 +1,5 @@
 * @aws/aws-ides-team
 
-
-amazonqFeatureDev/ @aws/earlybird
 chat/ @aws/dexp
 codemodernizer/ @aws/elastic-gumby
 codetransform/ @aws/elastic-gumby
@@ -10,3 +8,6 @@ codewhisperer/ @aws/codewhisperer-team
 mynah-ui/ @aws/dexp
 mynah-ui/package.json @aws/dexp @aws/elastic-gumby @aws/earlybird
 mynah-ui/package-lock.json @aws/dexp @aws/elastic-gumby @aws/earlybird
+
+# nested within chat/, so needs to be after to take precedence
+amazonqFeatureDev/ @aws/earlybird
