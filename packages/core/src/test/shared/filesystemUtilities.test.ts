@@ -219,7 +219,7 @@ describe('filesystemUtilities', function () {
      */
     describe('neighborFiles', function () {
         it('return files with distance less than or equal to 1', async function () {
-            const root = (await createTestWorkspaceFolder()).uri.fsPath
+            const root = (await createTestWorkspaceFolder('root')).uri.fsPath
             foldersToCleanUp.push(root)
             const a = path.join(root, 'util', 'context', 'a.java')
             const b = path.join(root, 'util', 'b.java')
@@ -228,7 +228,6 @@ describe('filesystemUtilities', function () {
             const e = path.join(root, 'util', 'context', 'e.java')
             const f = path.join(root, 'util', 'foo', 'bar', 'baz', 'f.java')
 
-            await createTestWorkspaceFolder()
             await toFile('a', a)
             await toFile('b', b)
             await toFile('c', c)

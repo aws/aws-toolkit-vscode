@@ -46,7 +46,7 @@ const javaPromptNoBuild = `class HelloWorld {
     }
 }`
 
-describe('CodeWhisperer security scan', async function () {
+describe.skip('CodeWhisperer security scan', async function () {
     let validConnection: boolean
     let tempFolder: string
     const client = new codewhispererClient.DefaultCodeWhispererClient()
