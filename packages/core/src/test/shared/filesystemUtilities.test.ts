@@ -16,7 +16,7 @@ import {
     neighborFiles,
     tempDirPath,
 } from '../../shared/filesystemUtilities'
-import { createTestWorkspaceFolder, openATextEditorWithText, toFile } from '..'
+import { createTestWorkspaceFolder, toFile } from '..'
 
 describe('filesystemUtilities', function () {
     const targetFilename = 'findThisFile12345.txt'
