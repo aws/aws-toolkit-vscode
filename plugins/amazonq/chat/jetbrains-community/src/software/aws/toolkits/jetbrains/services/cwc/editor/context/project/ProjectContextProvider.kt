@@ -9,38 +9,33 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.guessModuleDir
 import com.intellij.openapi.project.guessProjectDir
-import com.intellij.openapi.project.modules
-import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.openapi.vfs.isFile
+import com.intellij.openapi.vcs.changes.ChangeListManager
+import com.intellij.openapi.vfs.VfsUtil
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPlainText
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererUnknownLanguage
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
+import software.aws.toolkits.jetbrains.services.amazonq.FeatureDevSessionContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
 import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.TelemetryHelper
 import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.getStartUrl
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.Stack
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 class ProjectContextProvider(val project: Project, private val encoderServer: EncoderServer) : Disposable {
-    private val scope = disposableCoroutineScope(this)
-
     private val retryCount = AtomicInteger(0)
     val isIndexComplete = AtomicBoolean(false)
     private val mapper = jacksonObjectMapper()
+    private val scope = disposableCoroutineScope(this)
     init {
         scope.launch {
             if (CodeWhispererSettings.getInstance().isProjectContextEnabled()) {
@@ -224,6 +219,7 @@ class ProjectContextProvider(val project: Project, private val encoderServer: En
     }
 
     fun updateIndex(filePath: String) {
+        if (!isIndexComplete.get()) return
         logger.info { "project context: updating index for $filePath on port ${encoderServer.port}" }
         val url = URL("http://localhost:${encoderServer.port}/updateIndex")
         val payload = UpdateIndexRequestPayload(filePath)
@@ -264,59 +260,35 @@ class ProjectContextProvider(val project: Project, private val encoderServer: En
     }
 
     private fun isBuildOrBin(filePath: String): Boolean {
-        val regex = Regex("""[/\\](bin|build|node_modules|env|\.idea)[/\\]""", RegexOption.IGNORE_CASE)
+        val regex = Regex("""[/\\](bin|build|node_modules|venv|env|\.idea)[/\\]""", RegexOption.IGNORE_CASE)
         return regex.find(filePath) != null
     }
 
-    // TODO: this code needs to be refactored and shared with code scan
-    @Suppress("LoopWithTooManyJumpStatements")
     private fun collectFiles(): FileCollectionResult {
-        val files = mutableSetOf<String>()
-        val traversedDirectories = mutableSetOf<VirtualFile>()
+        val collectedFiles = mutableListOf<String>()
         var currentTotalFileSize = 0L
-        val stack = Stack<VirtualFile>()
-        moduleLoop@ for (module in project.modules) {
-            if (module.guessModuleDir() != null) {
-                stack.push(module.guessModuleDir())
-                while (stack.isNotEmpty()) {
-                    val current = stack.pop()
-
-                    if (!current.isDirectory) {
-                        if (current.isFile) {
-                            if (isBuildOrBin(current.path) || current.length > 10 * 1024 * 102) {
-                                continue
-                            }
-                            if (willExceedPayloadLimit(currentTotalFileSize, current.length)) {
-                                break
-                            } else {
-                                try {
-                                    val language = current.programmingLanguage()
-                                    if (language != CodeWhispererPlainText.INSTANCE && language != CodeWhispererUnknownLanguage.INSTANCE) {
-                                        files.add(current.path)
-                                        currentTotalFileSize += current.length
-                                    }
-                                } catch (e: Exception) {
-                                    logger.debug { "Error parsing the file: ${current.path} with error: ${e.message}" }
-                                    continue
-                                }
-                            }
-                        }
-                    } else {
-                        if (
-                            !traversedDirectories.contains(current) && current.isValid
-                        ) {
-                            for (child in current.children) {
-                                stack.push(child)
-                            }
-                        }
-                        traversedDirectories.add(current)
-                    }
-                }
+        val changeListManager = ChangeListManager.getInstance(project)
+        val featureDevSessionContext = FeatureDevSessionContext(project)
+        val allFiles = project.guessProjectDir()?.let {
+            VfsUtil.collectChildrenRecursively(it).filter { child ->
+                !changeListManager.isIgnoredFile(child) &&
+                    !isBuildOrBin(child.path) &&
+                    runBlocking { !featureDevSessionContext.ignoreFile(child, scope) } &&
+                    child.length <= 10 * 1024 * 1024
             }
+        }.orEmpty()
+
+        for (file in allFiles) {
+            if (willExceedPayloadLimit(currentTotalFileSize, file.length)) {
+                break
+            }
+            collectedFiles.add(file.path)
+            currentTotalFileSize += file.length
         }
+
         return FileCollectionResult(
-            files = files.toList(),
-            fileSize = (currentTotalFileSize / 1024 / 102).toInt()
+            files = collectedFiles.toList(),
+            fileSize = (currentTotalFileSize / 1024 / 1024).toInt()
         )
     }
 
