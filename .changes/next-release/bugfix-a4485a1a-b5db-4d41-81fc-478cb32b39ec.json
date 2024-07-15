@@ -1,0 +1,4 @@
+{
+  "type": "bugfix",
+  "description": "AmazonQ chat `@workspace` file indexing respects user's git-ignore"
+}

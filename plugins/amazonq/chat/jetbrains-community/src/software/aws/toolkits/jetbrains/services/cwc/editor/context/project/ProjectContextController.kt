@@ -15,7 +15,7 @@ import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
 
 @Service(Service.Level.PROJECT)
-class ProjectContextController(val project: Project) : Disposable {
+class ProjectContextController(private val project: Project) : Disposable {
     private val encoderServer: EncoderServer = EncoderServer(project)
     private val projectContextProvider: ProjectContextProvider = ProjectContextProvider(project, encoderServer)
     private val scope = disposableCoroutineScope(this)
