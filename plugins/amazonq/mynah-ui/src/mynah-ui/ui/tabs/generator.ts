@@ -45,9 +45,7 @@ export class TabDataGenerator {
         ],
         [
             'featuredev',
-            `Hi, I'm the Amazon Q Developer Agent for software development.
-
-I can generate code to implement new functionality across your workspace. We'll start by discussing an implementation plan, and then we can review and regenerate code based on your feedback. 
+            `I can generate code to implement new functionality across your workspace. We'll start by discussing an implementation plan, and then we can review and regenerate code based on your feedback.
 
 To get started, describe the task you are trying to accomplish.
 `,

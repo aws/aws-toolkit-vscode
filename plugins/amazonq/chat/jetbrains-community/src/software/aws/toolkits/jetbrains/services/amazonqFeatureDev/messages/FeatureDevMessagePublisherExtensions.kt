@@ -8,7 +8,6 @@ import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublishe
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.CodeReferenceGenerated
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.DeletedFileInfo
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.NewFileZipInfo
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.SessionStatePhase
 import software.aws.toolkits.jetbrains.services.cwc.messages.CodeReference
 import software.aws.toolkits.jetbrains.services.cwc.messages.RecommendationContentSpan
 import software.aws.toolkits.resources.message
@@ -97,15 +96,6 @@ suspend fun MessagePublisher.sendAuthNeededException(tabId: String, triggerId: S
     this.publish(message)
 }
 
-private suspend fun MessagePublisher.sendErrorMessage(tabId: String, message: String, title: String) {
-    val errorMessage = ErrorMessage(
-        tabId = tabId,
-        title = title,
-        message = message
-    )
-    this.publish(errorMessage)
-}
-
 suspend fun MessagePublisher.sendAuthenticationInProgressMessage(tabId: String) {
     this.sendAnswer(
         tabId = tabId,
@@ -121,14 +111,14 @@ suspend fun MessagePublisher.sendChatInputEnabledMessage(tabId: String, enabled:
     this.publish(chatInputEnabledMessage)
 }
 
-suspend fun MessagePublisher.sendError(tabId: String, errMessage: String, retries: Int, phase: SessionStatePhase? = null, conversationId: String? = null) {
+suspend fun MessagePublisher.sendError(tabId: String, errMessage: String?, retries: Int, conversationId: String? = null, showDefaultMessage: Boolean? = false) {
     val conversationIdText = if (conversationId == null) "" else "\n\nConversation ID: **$conversationId**"
 
     if (retries == 0) {
         this.sendAnswer(
             tabId = tabId,
             messageType = FeatureDevMessageType.Answer,
-            message = message("amazonqFeatureDev.no_retries.error_text") + conversationIdText,
+            message = if (showDefaultMessage == true) errMessage else message("amazonqFeatureDev.no_retries.error_text") + conversationIdText,
         )
 
         this.sendAnswer(
@@ -145,22 +135,11 @@ suspend fun MessagePublisher.sendError(tabId: String, errMessage: String, retrie
         return
     }
 
-    when (phase) {
-        SessionStatePhase.APPROACH -> {
-            this.sendErrorMessage(
-                tabId = tabId,
-                title = message("amazonqFeatureDev.approach_gen.error_text"),
-                message = errMessage + conversationIdText,
-            )
-        }
-        else -> {
-            this.sendErrorMessage(
-                tabId = tabId,
-                title = message("amazonqFeatureDev.error_text"),
-                message = errMessage + conversationIdText,
-            )
-        }
-    }
+    this.sendAnswer(
+        tabId = tabId,
+        messageType = FeatureDevMessageType.Answer,
+        message = errMessage + conversationIdText,
+    )
 
     this.sendAnswer(
         tabId = tabId,
