@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.runBlockingTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
@@ -32,6 +33,7 @@ import software.aws.toolkits.resources.message
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+@Ignore("deadlocks IDE 242")
 @ExperimentalCoroutinesApi
 class QueryActorTest : BaseCoroutineTest() {
     private lateinit var client: CloudWatchLogsClient

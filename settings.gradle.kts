@@ -72,7 +72,9 @@ rootProject.name = "aws-toolkit-jetbrains"
 include("detekt-rules")
 include("ui-tests")
 include("sandbox-all")
-include("tmp-all")
+when (providers.gradleProperty("ideProfileName").get()) {
+    "2023.2", "2023.3", "2024.1" -> include("tmp-all")
+}
 
 /*
 plugins/

@@ -33,7 +33,6 @@ import com.intellij.ui.dsl.builder.columns
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.builder.toMutableProperty
 import com.intellij.ui.dsl.builder.toNullableProperty
-import com.intellij.ui.layout.listCellRenderer
 import com.intellij.ui.layout.selected
 import com.intellij.util.text.nullize
 import kotlinx.coroutines.Deferred
@@ -204,8 +203,8 @@ internal class PushToEcrDialog(
         row(message("ecr.push.source")) {
             comboBox(
                 localImageRepoTags,
-                listCellRenderer { value, _, _ ->
-                    text = value.tag ?: value.imageId.take(15)
+                SimpleListCellRenderer.create("") { value ->
+                    value.tag ?: value.imageId.take(15)
                 }
             ).bindItem(::localImage.toNullableProperty())
                 .applyToComponent { ComboboxSpeedSearch(this) }
@@ -220,9 +219,9 @@ internal class PushToEcrDialog(
             rebuildRunConfigurationComboBoxModel(model)
             comboBox(
                 model,
-                listCellRenderer { value, _, _ ->
-                    icon = value.icon
-                    text = value.name
+                SimpleListCellRenderer.create { label, value, _ ->
+                    label.icon = value.icon
+                    label.text = value.name
                 }
             ).bindItem(::runConfiguration.toNullableProperty())
                 .applyToComponent {

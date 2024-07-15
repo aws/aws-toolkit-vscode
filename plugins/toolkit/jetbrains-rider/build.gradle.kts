@@ -56,7 +56,6 @@ dependencies {
 
     implementation(project(":plugin-toolkit:jetbrains-core"))
 
-    testImplementation(project(":plugin-toolkit:jetbrains-core"))
     testImplementation(project(path = ":plugin-toolkit:jetbrains-core", configuration = "testArtifacts"))
     testImplementation(testFixtures(project(":plugin-core:jetbrains-community")))
 }
@@ -321,6 +320,9 @@ tasks.test {
         filter.excludeTestsMatching("software.aws.toolkits.jetbrains.services.lambda.dotnet.LambdaGutterMarkHighlightingTest*")
     }
 
+    // On Windows, complains that the computeSystemScaleFactor "Must be precomputed"
+    systemProperty("hidpi", false)
+
     useTestNG()
     environment("LOCAL_ENV_RUN", true)
     maxHeapSize = "1024m"
@@ -339,4 +341,15 @@ tasks.integrationTest {
 // fix implicit dependency on generated source
 tasks.withType<DetektCreateBaselineTask>().configureEach {
     dependsOn(generateModels)
+}
+
+configurations.all {
+    if (name.contains("detekt")) {
+        return@all
+    }
+
+    // test runner not happy with coroutines, but not clear where it's coming from:
+    //   java.lang.Throwable: Thread context was already set: InstalledThreadContext(snapshot=null, context=EmptyCoroutineContext).
+    //   Most likely, you are using 'runBlocking' instead of 'runBlockingCancellable' somewhere in the asynchronous stack.
+    exclude("org.jetbrains.kotlinx")
 }

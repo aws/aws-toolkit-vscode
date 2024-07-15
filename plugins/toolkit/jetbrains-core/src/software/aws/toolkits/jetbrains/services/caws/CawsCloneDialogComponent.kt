@@ -19,12 +19,12 @@ import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.ui.CollectionComboBoxModel
 import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.SearchTextField
+import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.components.JBList
 import com.intellij.ui.dsl.builder.Align
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.panel
-import com.intellij.ui.layout.listCellRenderer
 import com.intellij.util.ui.StatusText
 import com.intellij.util.ui.UIUtil
 import git4idea.checkout.GitCheckoutProvider
@@ -64,7 +64,7 @@ class CawsCloneDialogComponent(
     private val repoList = JBList(repoListModel).apply {
         setPaintBusy(true)
         setEmptyText(message("loading_resource.loading"))
-        cellRenderer = listCellRenderer { value, _, _ -> text = value.presentableString }
+        cellRenderer = SimpleListCellRenderer.create("") { it.presentableString }
 
         addListSelectionListener { _ ->
             selectedValue?.let {

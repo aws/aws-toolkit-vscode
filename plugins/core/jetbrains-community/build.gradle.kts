@@ -3,6 +3,7 @@
 
 import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
+import org.jetbrains.intellij.platform.gradle.DependencyVersion
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import software.aws.toolkits.gradle.intellij.IdeFlavor
 import software.aws.toolkits.telemetry.generator.gradle.GenerateTelemetry
@@ -53,9 +54,10 @@ configurations.testFixturesApi {
 
 dependencies {
     intellijPlatform {
-        testFramework(TestFrameworkType.Platform)
-        testFramework(TestFrameworkType.JUnit5)
-        testFramework(TestFrameworkType.Plugin.Java)
+        // https://github.com/JetBrains/intellij-platform-gradle-plugin/issues/1677
+        testFramework(TestFrameworkType.Plugin.Java, DependencyVersion.Closest)
+        testFramework(TestFrameworkType.Platform, DependencyVersion.Closest)
+        testFramework(TestFrameworkType.JUnit5, DependencyVersion.Closest)
     }
 
     compileOnlyApi(project(":plugin-core:core"))

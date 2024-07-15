@@ -17,6 +17,7 @@ import org.junit.rules.ExternalResource
 import org.junit.rules.TemporaryFolder
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.readText
+import java.net.InetAddress
 import java.nio.file.Paths
 
 class SshServerRule(private val tempFolderRule: TemporaryFolder) : ExternalResource() {
@@ -26,6 +27,7 @@ class SshServerRule(private val tempFolderRule: TemporaryFolder) : ExternalResou
 
     private var knownHosts: String? = null
     private val hostsFile = Paths.get(System.getProperty("user.home"), ".ssh", "known_hosts")
+    private val loopback by lazy { InetAddress.getLoopbackAddress().hostAddress }
 
     override fun before() {
         if (hostsFile.exists()) {
@@ -43,6 +45,7 @@ class SshServerRule(private val tempFolderRule: TemporaryFolder) : ExternalResou
             .build()
 
         server = SshServer.setUpDefaultServer().also {
+            it.host = loopback
             it.port = NetUtils.findAvailableSocketPort()
             it.keyPairProvider = SimpleGeneratorHostKeyProvider(tempFolderRule.newFile().toPath())
             it.forwardingFilter = AcceptAllForwardingFilter()

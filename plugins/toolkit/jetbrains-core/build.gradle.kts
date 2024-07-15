@@ -50,7 +50,11 @@ tasks.compileJava {
 
 // toolkit depends on :plugin-toolkit:jetbrains-core setting the version instead of being defined on the root project
 PatchPluginXmlTask.register(project)
-val patchPluginXml by tasks.getting(PatchPluginXmlTask::class)
+val patchPluginXml = tasks.named<PatchPluginXmlTask>("patchPluginXml")
+patchPluginXml.configure {
+    val buildSuffix = if (!project.isCi()) "+${buildMetadata()}" else ""
+    pluginVersion.set("$toolkitVersion-${ideProfile.shortName}$buildSuffix")
+}
 
 tasks.jar {
     dependsOn(patchPluginXml, changelog)
@@ -191,6 +195,12 @@ dependencies {
     // instead of trying to fix the classpath, since it's built by gradle-intellij-plugin, shove slf4j >= 2.0.9 onto the test classpath, which uses a ServiceLoader and call it done
     testImplementation(libs.slf4j.api)
     testRuntimeOnly(libs.slf4j.jdk14)
+
+    // FIX_WHEN_MIN_IS_233: very dumb hack for 2023.2
+    // Unable to load class 'org.codehaus.plexus.logging.Logger'
+    when (providers.gradleProperty("ideProfileName").getOrNull()) {
+        "2023.2" -> testImplementation("org.eclipse.sisu:org.eclipse.sisu.plexus:0.3.4")
+    }
 }
 
 fun transformXml(document: Document, path: Path) {

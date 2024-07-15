@@ -31,9 +31,13 @@ namespace AWS.Daemon.RunMarkers
 
                 var range = declaration.GetNameDocumentRange();
 
-                var highlighting = new RunMarkerHighlighting(declaration,
-                    LambdaRunMarkerAttributeIds.LAMBDA_RUN_METHOD_MARKER_ID, range,
-                    file.GetPsiModule().TargetFrameworkId);
+                var highlighting = new RunMarkerHighlighting(
+                    method,
+                    declaration,
+                    LambdaRunMarkerAttributeIds.LAMBDA_RUN_METHOD_MARKER_ID,
+                    range,
+                    file.GetPsiModule().TargetFrameworkId
+                );
 
                 consumer.AddHighlighting(highlighting, range);
             }

@@ -1,11 +1,14 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
+@file:OptIn(kotlin.io.encoding.ExperimentalEncodingApi::class)
 
 import net.bytebuddy.utility.RandomString
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.intellij.platform.gradle.tasks.PrepareSandboxTask
+import org.jetbrains.kotlin.gradle.internal.ensureParentDirsCreated
 import software.aws.toolkits.gradle.intellij.IdeFlavor
 import software.aws.toolkits.gradle.intellij.toolkitIntelliJ
+import kotlin.io.encoding.Base64
 
 plugins {
     id("toolkit-kotlin-conventions")
@@ -171,4 +174,21 @@ tasks.buildPlugin {
 tasks.integrationTest {
     val testToken = RandomString.make(32)
     environment("CWM_HOST_STATUS_OVER_HTTP_TOKEN", testToken)
+}
+
+tasks.verifyPlugin {
+    doFirst {
+        ides.forEach { ide ->
+            val productInfo = ide.resolve("product-info.json")
+            val moduleDescriptors = ide.resolve("modules").resolve("module-descriptors.jar")
+            if (productInfo.isFile && !moduleDescriptors.isFile) {
+                logger.warn("modules/module-descriptors.jar does not exist in $ide. This is probably a JetBrains platform bug")
+                moduleDescriptors.ensureParentDirsCreated()
+                // hack create an empty zip
+                moduleDescriptors.outputStream().use {
+                    it.write(Base64.decode("UEsFBgAAAAAAAAAAAAAAAAAAAAAAAA=="))
+                }
+            }
+        }
+    }
 }
