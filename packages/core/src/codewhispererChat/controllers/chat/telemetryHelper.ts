@@ -359,6 +359,9 @@ export class CWCTelemetryHelper {
         }
 
         telemetry.amazonq_addMessage.emit(event)
+        const language = this.isProgrammingLanguageSupported(triggerPayload.fileLanguage)
+            ? { languageName: triggerPayload.fileLanguage as string }
+            : undefined
         codeWhispererClient
             .sendTelemetryEvent({
                 telemetryEvent: {
@@ -367,9 +370,7 @@ export class CWCTelemetryHelper {
                         messageId: event.cwsprChatMessageId,
                         userIntent: triggerPayload.userIntent,
                         hasCodeSnippet: event.cwsprChatHasCodeSnippet,
-                        programmingLanguage: this.isProgrammingLanguageSupported(triggerPayload.fileLanguage)
-                            ? { languageName: triggerPayload.fileLanguage as string }
-                            : undefined,
+                        ...(language !== undefined ? { programmingLanguage: language } : {}),
                         activeEditorTotalCharacters: event.cwsprChatActiveEditorTotalCharacters,
                         timeToFirstChunkMilliseconds: event.cwsprChatTimeToFirstChunk,
                         timeBetweenChunks: this.getResponseStreamTimeBetweenChunks(message.tabID),
