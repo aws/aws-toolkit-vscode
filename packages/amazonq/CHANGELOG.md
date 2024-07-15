@@ -1,3 +1,9 @@
+## 1.15.0 2024-07-15
+
+- **Bug Fix** Amazon Q Chat: Fixes a bug when the prompt input exceeds the width of the chat box it's not always wrapped correctly.
+- **Bug Fix** Amazon Q: Corrected a miswording in the Amazon Q: Share Content With AWS setting.
+- **Bug Fix** Amazon Q Chat: Fixes a bug when user input contains 4 or more spaces at the beginning of the line for multiline inputs, that line appears like a code block instead of a paragraph
+
 ## 1.14.0 2024-07-11
 
 - **Feature** Amazon Q/dev proactively show code generation iterations

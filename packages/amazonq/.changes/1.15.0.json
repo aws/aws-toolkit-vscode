@@ -1,0 +1,18 @@
+{
+	"date": "2024-07-15",
+	"version": "1.15.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Fixes a bug when the prompt input exceeds the width of the chat box it's not always wrapped correctly."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q: Corrected a miswording in the Amazon Q: Share Content With AWS setting."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Fixes a bug when user input contains 4 or more spaces at the beginning of the line for multiline inputs, that line appears like a code block instead of a paragraph"
+		}
+	]
+}
