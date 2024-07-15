@@ -13,8 +13,10 @@ import {
     getNonexistentFilename,
     isInDirectory,
     makeTemporaryToolkitFolder,
+    neighborFiles,
     tempDirPath,
 } from '../../shared/filesystemUtilities'
+import { createTestWorkspaceFolder, openATextEditorWithText, toFile } from '..'
 
 describe('filesystemUtilities', function () {
     const targetFilename = 'findThisFile12345.txt'
@@ -189,6 +191,77 @@ describe('filesystemUtilities', function () {
             fileB = 'C:\\FOO\\BAR\\B.txt'
             const actual = getFileDistance(fileA, fileB)
             assert.strictEqual(actual, 3)
+        })
+    })
+
+    /**
+     *     1. A: root/util/context/a.ts
+     *     2. B: root/util/b.ts
+     *     3. C: root/util/service/c.ts
+     *     4. D: root/d.ts
+     *     5. E: root/util/context/e.ts
+     *     6. F: root/util/foo/bar/baz/f.ts
+     *
+     *   neighborfiles(A) = [B, E]
+     *   neighborfiles(B) = [A, C, D, E]
+     *   neighborfiles(C) = [B,]
+     *   neighborfiles(D) = [B,]
+     *   neighborfiles(E) = [A, B]
+     *   neighborfiles(F) = []
+     *
+     *      A B C D E F
+     *   A  x 1 2 2 0 4
+     *   B  1 x 1 1 1 3
+     *   C  2 1 x 2 2 4
+     *   D  2 1 2 x 2 4
+     *   E  0 1 2 2 x 4
+     *   F  4 3 4 4 4 x
+     */
+    describe('neighborFiles', function () {
+        it('return files with distance less than or equal to 1', async function () {
+            const root = (await createTestWorkspaceFolder()).uri.fsPath
+            foldersToCleanUp.push(root)
+            const a = path.join(root, 'util', 'context', 'a.java')
+            const b = path.join(root, 'util', 'b.java')
+            const c = path.join(root, 'util', 'service', 'c.java')
+            const d = path.join(root, 'd.java')
+            const e = path.join(root, 'util', 'context', 'e.java')
+            const f = path.join(root, 'util', 'foo', 'bar', 'baz', 'f.java')
+
+            await createTestWorkspaceFolder()
+            await toFile('a', a)
+            await toFile('b', b)
+            await toFile('c', c)
+            await toFile('d', d)
+            await toFile('e', e)
+            await toFile('f', f)
+
+            const neighborOfA = await neighborFiles(a)
+            const neighborOfB = await neighborFiles(b)
+            const neighborOfC = await neighborFiles(c)
+            const neighborOfD = await neighborFiles(d)
+            const neighborOfE = await neighborFiles(e)
+            const neighborOfF = await neighborFiles(f)
+
+            assert.deepStrictEqual(neighborOfA, new Set([b, e]))
+            assert.strictEqual(getFileDistance(a, b), 1)
+            assert.strictEqual(getFileDistance(a, e), 0)
+
+            assert.deepStrictEqual(neighborOfB, new Set([a, c, d, e]))
+            assert.strictEqual(getFileDistance(b, c), 1)
+            assert.strictEqual(getFileDistance(b, d), 1)
+            assert.strictEqual(getFileDistance(b, e), 1)
+
+            assert.deepStrictEqual(neighborOfC, new Set([b]))
+            assert.deepStrictEqual(neighborOfD, new Set([b]))
+            assert.deepStrictEqual(neighborOfE, new Set([a, b]))
+
+            assert.deepStrictEqual(neighborOfF, new Set([]))
+            assert.strictEqual(getFileDistance(f, a), 4)
+            assert.strictEqual(getFileDistance(f, b), 3)
+            assert.strictEqual(getFileDistance(f, c), 4)
+            assert.strictEqual(getFileDistance(f, d), 4)
+            assert.strictEqual(getFileDistance(f, e), 4)
         })
     })
 })
