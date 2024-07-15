@@ -219,14 +219,15 @@ describe('filesystemUtilities', function () {
      */
     describe('neighborFiles', function () {
         it('return files with distance less than or equal to 1', async function () {
-            const root = (await createTestWorkspaceFolder('root')).uri.fsPath
-            foldersToCleanUp.push(root)
-            const a = path.join(root, 'util', 'context', 'a.java')
-            const b = path.join(root, 'util', 'b.java')
-            const c = path.join(root, 'util', 'service', 'c.java')
-            const d = path.join(root, 'd.java')
-            const e = path.join(root, 'util', 'context', 'e.java')
-            const f = path.join(root, 'util', 'foo', 'bar', 'baz', 'f.java')
+            const ws = await createTestWorkspaceFolder('root')
+            const rootUri = ws.uri.fsPath
+            foldersToCleanUp.push(rootUri)
+            const a = path.join(rootUri, 'util', 'context', 'a.java')
+            const b = path.join(rootUri, 'util', 'b.java')
+            const c = path.join(rootUri, 'util', 'service', 'c.java')
+            const d = path.join(rootUri, 'd.java')
+            const e = path.join(rootUri, 'util', 'context', 'e.java')
+            const f = path.join(rootUri, 'util', 'foo', 'bar', 'baz', 'f.java')
 
             await toFile('a', a)
             await toFile('b', b)
@@ -235,12 +236,12 @@ describe('filesystemUtilities', function () {
             await toFile('e', e)
             await toFile('f', f)
 
-            const neighborOfA = await neighborFiles(a)
-            const neighborOfB = await neighborFiles(b)
-            const neighborOfC = await neighborFiles(c)
-            const neighborOfD = await neighborFiles(d)
-            const neighborOfE = await neighborFiles(e)
-            const neighborOfF = await neighborFiles(f)
+            const neighborOfA = await neighborFiles(a, { workspaceFolders: [ws] })
+            const neighborOfB = await neighborFiles(b, { workspaceFolders: [ws] })
+            const neighborOfC = await neighborFiles(c, { workspaceFolders: [ws] })
+            const neighborOfD = await neighborFiles(d, { workspaceFolders: [ws] })
+            const neighborOfE = await neighborFiles(e, { workspaceFolders: [ws] })
+            const neighborOfF = await neighborFiles(f, { workspaceFolders: [ws] })
 
             assert.deepStrictEqual(neighborOfA, new Set([b, e]))
             assert.strictEqual(getFileDistance(a, b), 1)

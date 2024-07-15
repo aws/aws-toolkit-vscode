@@ -11,6 +11,7 @@ import { getLogger } from './logger'
 import * as pathutils from './utilities/pathUtils'
 import globals from '../shared/extensionGlobals'
 import fs from '../shared/fs/fs'
+import { getWorkspaceParentDirectory } from './utilities/workspaceUtils'
 
 export const tempDirPath = path.join(
     // https://github.com/aws/aws-toolkit-vscode/issues/240
@@ -202,8 +203,15 @@ export function getFileDistance(fileA: string, fileB: string): number {
  *   E  0 1 2 2 x 4
  *   F  4 3 4 4 4 x
  */
-export async function neighborFiles(uri: string): Promise<Set<string>> {
-    const parent = path.dirname(uri)
+export async function neighborFiles(
+    uri: string,
+    args: {
+        workspaceFolders?: readonly vscode.WorkspaceFolder[]
+    } = {
+        workspaceFolders: vscode.workspace.workspaceFolders,
+    }
+): Promise<Set<string>> {
+    const parent = getWorkspaceParentDirectory(uri, args)
 
     if (!parent) {
         return new Set()
@@ -247,7 +255,7 @@ export async function neighborFiles(uri: string): Promise<Set<string>> {
 
                     dirs = v.map((it) => path.join(dir, it))
                 } else {
-                    const parentDir = path.dirname(dir)
+                    const parentDir = getWorkspaceParentDirectory(dir, args)
                     if (parentDir) {
                         dirs = [parentDir]
                     }
