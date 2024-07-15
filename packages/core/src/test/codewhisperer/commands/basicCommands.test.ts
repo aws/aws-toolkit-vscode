@@ -114,15 +114,13 @@ describe('CodeWhisperer-basicCommands', function () {
             codeSuggestionsState = new TestCodeSuggestionsState()
         })
 
-        it('has suggestions disabled by default', async function () {
+        it('has suggestions enabled by default', async function () {
             targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
-            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
         })
 
         it('toggles states as expected', async function () {
             targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
-            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
-            await targetCommand.execute(placeholder, cwQuickPickSource)
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
             await targetCommand.execute(placeholder, cwQuickPickSource)
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
@@ -131,10 +129,7 @@ describe('CodeWhisperer-basicCommands', function () {
         })
 
         it('setSuggestionsEnabled() works as expected', async function () {
-            // initially false
-            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
-
-            await codeSuggestionsState.setSuggestionsEnabled(true)
+            // initially true
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
 
             // set new state to current state
@@ -160,21 +155,10 @@ describe('CodeWhisperer-basicCommands', function () {
             assert.strictEqual(eventListener.callCount, 1)
         })
 
-        it('emits aws_modifySetting event on user toggling autoSuggestion - deactivate', async function () {
-            codeSuggestionsState = new TestCodeSuggestionsState(true)
-            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
-
-            targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
-            await targetCommand.execute(placeholder, cwQuickPickSource)
-
+        it('emits aws_modifySetting event on user toggling autoSuggestion - activate', async function () {
+            codeSuggestionsState = new TestCodeSuggestionsState(false)
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
-            assertTelemetryCurried('aws_modifySetting')({
-                settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
-                settingState: CodeWhispererConstants.autoSuggestionConfig.deactivated,
-            })
-        })
 
-        it('emits aws_modifySetting event on user toggling autoSuggestion -- activate', async function () {
             targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
             await targetCommand.execute(placeholder, cwQuickPickSource)
 
@@ -182,6 +166,17 @@ describe('CodeWhisperer-basicCommands', function () {
             assertTelemetryCurried('aws_modifySetting')({
                 settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
                 settingState: CodeWhispererConstants.autoSuggestionConfig.activated,
+            })
+        })
+
+        it('emits aws_modifySetting event on user toggling autoSuggestion -- deactivate', async function () {
+            targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
+            await targetCommand.execute(placeholder, cwQuickPickSource)
+
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
+            assertTelemetryCurried('aws_modifySetting')({
+                settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
+                settingState: CodeWhispererConstants.autoSuggestionConfig.deactivated,
             })
         })
 
