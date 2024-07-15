@@ -2018,7 +2018,7 @@
                 },
                 {
                     "command": "aws.docdb.createInstance",
-                    "when": "viewItem == awsDocDB.cluster.running"
+                    "when": "viewItem =~ /^awsDocDB.cluster/"
                 },
                 {
                     "command": "aws.docdb.renameInstance",
@@ -3590,7 +3590,7 @@
                 "title": "%AWS.command.docdb.createInstance%",
                 "icon": "$(add)",
                 "category": "%AWS.title%",
-                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB.cluster/",
+                "enablement": "(isCloud9 || !aws.isWebExtHost)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

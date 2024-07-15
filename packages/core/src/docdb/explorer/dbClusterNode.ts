@@ -44,17 +44,22 @@ export class DBClusterNode extends AWSTreeNodeBase implements AWSResourceNode {
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
-                const instances: DBInstance[] = (await this.client.listInstances([this.arn])).map(i => {
+                const instances: DBInstance[] = (await this.client.listInstances([this.arn])).map((i) => {
                     const member = this.cluster.DBClusterMembers?.find(
-                        m => m.DBInstanceIdentifier === i.DBInstanceIdentifier
+                        (m) => m.DBInstanceIdentifier === i.DBInstanceIdentifier
                     )
                     return { ...i, ...member }
                 })
-                const nodes = instances.map(instance => new DBInstanceNode(this, instance))
+                const nodes = instances.map((instance) => new DBInstanceNode(this, instance))
                 return nodes
             },
-            getNoChildrenPlaceholderNode: async () =>
-                new PlaceholderNode(this, localize('AWS.explorerNode.docdb.noInstances', '[No Instances found]')),
+            getNoChildrenPlaceholderNode: async () => {
+                const title = localize('AWS.explorerNode.docdb.addInstance', 'Add instance...')
+                const placeholder = new PlaceholderNode(this, title)
+                placeholder.contextValue = 'awsDocDB.placeholder'
+                placeholder.command = { title, command: 'aws.docdb.createInstance', arguments: [this] }
+                return placeholder
+            },
             sort: (item1, item2) => item1.name.localeCompare(item2.name),
         })
     }
