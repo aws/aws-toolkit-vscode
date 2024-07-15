@@ -3579,7 +3579,7 @@
             },
             {
                 "command": "aws.dynamoDb.copyArn",
-                "title": "%AWS.command.dynamoDb.copyArn",
+                "title": "%AWS.command.copyArn",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
@@ -3590,7 +3590,7 @@
             },
             {
                 "command": "aws.dynamoDb.refreshExplorer",
-                "title": "%AWS.command.dynamoDb.refreshExplorer%",
+                "title": "%AWS.command.refreshAwsExplorer%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(refresh)",
