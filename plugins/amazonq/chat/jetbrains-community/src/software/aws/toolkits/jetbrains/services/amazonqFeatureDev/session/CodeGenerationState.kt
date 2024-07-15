@@ -25,7 +25,9 @@ class CodeGenerationState(
     val uploadId: String,
     val currentIteration: Int,
     val repositorySize: Double,
-    val messenger: MessagePublisher
+    val messenger: MessagePublisher,
+    var codeGenerationRemainingIterationCount: Int? = null,
+    var codeGenerationTotalIterationCount: Int? = null
 ) : SessionState {
     override val phase = SessionStatePhase.CODEGEN
 
@@ -51,6 +53,8 @@ class CodeGenerationState(
             val codeGenerationResult = generateCode(codeGenerationId = response.codeGenerationId())
             numberOfReferencesGenerated = codeGenerationResult.references.size
             numberOfFilesGenerated = codeGenerationResult.newFiles.size
+            codeGenerationRemainingIterationCount = codeGenerationResult.codeGenerationRemainingIterationCount
+            codeGenerationTotalIterationCount = codeGenerationResult.codeGenerationTotalIterationCount
 
             val nextState = PrepareCodeGenerationState(
                 tabID = tabID,
@@ -62,6 +66,8 @@ class CodeGenerationState(
                 currentIteration = currentIteration + 1,
                 uploadId = uploadId,
                 messenger = messenger,
+                codeGenerationRemainingIterationCount = codeGenerationRemainingIterationCount,
+                codeGenerationTotalIterationCount = codeGenerationTotalIterationCount
             )
 
             // It is not needed to interact right away with the PrepareCodeGeneration.
@@ -117,7 +123,9 @@ private suspend fun CodeGenerationState.generateCode(codeGenerationId: String): 
                 return CodeGenerationResult(
                     newFiles = newFileInfo,
                     deletedFiles = deletedFileInfo,
-                    references = codeGenerationStreamResult.references
+                    references = codeGenerationStreamResult.references,
+                    codeGenerationRemainingIterationCount = codeGenerationResultState.codeGenerationRemainingIterationCount(),
+                    codeGenerationTotalIterationCount = codeGenerationResultState.codeGenerationTotalIterationCount()
                 )
             }
             CodeGenerationWorkflowStatus.IN_PROGRESS -> delay(requestDelay)

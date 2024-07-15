@@ -52,6 +52,8 @@ data class CodeGenerationResult(
     var newFiles: List<NewFileZipInfo>,
     var deletedFiles: List<DeletedFileInfo>,
     var references: List<CodeReferenceGenerated>,
+    var codeGenerationRemainingIterationCount: Int? = null,
+    var codeGenerationTotalIterationCount: Int? = null
 )
 
 data class CodeReferenceGenerated(

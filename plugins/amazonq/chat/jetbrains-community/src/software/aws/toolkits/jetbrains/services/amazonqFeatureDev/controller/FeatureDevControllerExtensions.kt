@@ -51,6 +51,8 @@ suspend fun FeatureDevController.onCodeGeneration(session: Session, message: Str
         var deletedFiles: List<DeletedFileInfo> = emptyList()
         var references: List<CodeReferenceGenerated> = emptyList()
         var uploadId = ""
+        var remainingIterations: Int? = null
+        var totalIterations: Int? = null
 
         when (state) {
             is PrepareCodeGenerationState -> {
@@ -58,6 +60,8 @@ suspend fun FeatureDevController.onCodeGeneration(session: Session, message: Str
                 deletedFiles = state.deletedFiles
                 references = state.references
                 uploadId = state.uploadId
+                remainingIterations = state.codeGenerationRemainingIterationCount
+                totalIterations = state.codeGenerationTotalIterationCount
             }
         }
 
@@ -87,6 +91,14 @@ suspend fun FeatureDevController.onCodeGeneration(session: Session, message: Str
         }
 
         messenger.sendCodeResult(tabId = tabId, uploadId = uploadId, filePaths = filePaths, deletedFiles = deletedFiles, references = references)
+
+        if (remainingIterations != null && totalIterations != null) {
+            messenger.sendAnswer(
+                tabId = tabId,
+                messageType = FeatureDevMessageType.Answer,
+                message = message("amazonqFeatureDev.code_generation.iteration_counts", remainingIterations, totalIterations)
+            )
+        }
 
         messenger.sendSystemPrompt(tabId = tabId, followUp = getFollowUpOptions(session.sessionState.phase, interactionSucceeded = true))
 
