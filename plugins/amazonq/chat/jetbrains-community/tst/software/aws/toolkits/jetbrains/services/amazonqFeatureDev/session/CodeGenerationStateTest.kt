@@ -88,6 +88,8 @@ class CodeGenerationStateTest : FeatureDevTestBase() {
                 listOf(DeletedFileInfo("deleted.ts", false))
             )
             assertThat(nextState.references).isEqualTo(testReferences)
+            assertThat(nextState.codeGenerationRemainingIterationCount).isEqualTo(2)
+            assertThat(nextState.codeGenerationTotalIterationCount).isEqualTo(3)
             assertThat(actual.interaction.interactionSucceeded).isEqualTo(true)
             assertThat(actual.interaction.content).isEqualTo("")
         }
@@ -155,6 +157,8 @@ class CodeGenerationStateTest : FeatureDevTestBase() {
             assertThat(nextState.filePaths).isEqualTo(emptyList<NewFileZipInfo>())
             assertThat(nextState.deletedFiles).isEqualTo(emptyList<String>())
             assertThat(nextState.references).isEqualTo(emptyList<CodeReference>())
+            assertThat(nextState.codeGenerationRemainingIterationCount).isEqualTo(null)
+            assertThat(nextState.codeGenerationTotalIterationCount).isEqualTo(null)
             assertThat(actual.interaction.interactionSucceeded).isEqualTo(true)
             assertThat(actual.interaction.content).isEqualTo("")
         }

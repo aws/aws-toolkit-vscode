@@ -1019,6 +1019,12 @@
                 },
                 "codeGenerationStatus": {
                     "shape": "CodeGenerationStatus"
+                },
+                "codeGenerationRemainingIterationCount": {
+                    "shape": "Integer"
+                },
+                "codeGenerationTotalIterationCount": {
+                    "shape": "Integer"
                 }
             }
         },

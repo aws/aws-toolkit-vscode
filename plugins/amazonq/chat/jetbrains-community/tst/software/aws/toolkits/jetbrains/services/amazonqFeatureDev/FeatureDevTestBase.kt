@@ -104,6 +104,8 @@ open class FeatureDevTestBase(
     internal val exampleCompleteGetTaskAssistCodeGenerationResponse = GetTaskAssistCodeGenerationResponse.builder()
         .conversationId(testConversationId)
         .codeGenerationStatus(CodeGenerationStatus.builder().status(CodeGenerationWorkflowStatus.COMPLETE).currentStage("Complete").build())
+        .codeGenerationRemainingIterationCount(2)
+        .codeGenerationTotalIterationCount(3)
         .responseMetadata(DefaultAwsResponseMetadata.create(mapOf(AwsHeader.AWS_REQUEST_ID to testRequestId)))
         .build() as GetTaskAssistCodeGenerationResponse
 
