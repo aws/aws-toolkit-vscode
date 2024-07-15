@@ -11,7 +11,6 @@ import { getLogger } from './logger'
 import * as pathutils from './utilities/pathUtils'
 import globals from '../shared/extensionGlobals'
 import fs from '../shared/fs/fs'
-import { getWorkspaceParentDirectory } from './utilities/workspaceUtils'
 
 export const tempDirPath = path.join(
     // https://github.com/aws/aws-toolkit-vscode/issues/240
@@ -178,107 +177,6 @@ export function getFileDistance(fileA: string, fileB: string): number {
     }
 
     return filePathA.slice(i).length + filePathB.slice(i).length
-}
-
-/**
- *     1. A: root/util/context/a.ts
- *     2. B: root/util/b.ts
- *     3. C: root/util/service/c.ts
- *     4. D: root/d.ts
- *     5. E: root/util/context/e.ts
- *     6. F: root/util/foo/bar/baz/f.ts
- *
- *   neighborfiles(A) = [B, E]
- *   neighborfiles(B) = [A, C, D, E]
- *   neighborfiles(C) = [B,]
- *   neighborfiles(D) = [B,]
- *   neighborfiles(E) = [A, B]
- *   neighborfiles(F) = []
- *
- *      A B C D E F
- *   A  x 1 2 2 0 4
- *   B  1 x 1 1 1 3
- *   C  2 1 x 2 2 4
- *   D  2 1 2 x 2 4
- *   E  0 1 2 2 x 4
- *   F  4 3 4 4 4 x
- */
-export async function neighborFiles(
-    uri: string,
-    args: {
-        workspaceFolders?: readonly vscode.WorkspaceFolder[]
-    } = {
-        workspaceFolders: vscode.workspace.workspaceFolders,
-    }
-): Promise<Set<string>> {
-    const parent = getWorkspaceParentDirectory(uri, args)
-
-    if (!parent) {
-        return new Set()
-    }
-
-    async function search(directoryUri: string, distance: number, goDown: boolean) {
-        let d = distance
-        const res: string[] = []
-        const pendingVisit: string[] = [directoryUri]
-        const visited: Map<string, boolean> = new Map()
-
-        while (d >= 0 && pendingVisit.length !== 0) {
-            let toVisit: string[] = []
-            for (const dir of pendingVisit) {
-                if (visited.get(dir) === true) {
-                    continue
-                }
-
-                const files = (await fs.readdir(dir))
-                    .filter((datum) => {
-                        const fileType = datum[1]
-                        return fileType === vscode.FileType.File
-                    })
-                    .map((datum) => {
-                        return datum[0]
-                    })
-                    .map((it) => path.join(dir, it))
-
-                res.push(...files)
-
-                let dirs: string[] = []
-                if (goDown) {
-                    const v = (await fs.readdir(dir))
-                        .filter((datum) => {
-                            const fileType = datum[1]
-                            return fileType === vscode.FileType.Directory
-                        })
-                        .map((datum) => {
-                            return datum[0]
-                        })
-
-                    dirs = v.map((it) => path.join(dir, it))
-                } else {
-                    const parentDir = getWorkspaceParentDirectory(dir, args)
-                    if (parentDir) {
-                        dirs = [parentDir]
-                    }
-                }
-
-                toVisit = dirs
-                visited.set(dir, true)
-            }
-
-            pendingVisit.push(...toVisit)
-            d--
-        }
-
-        return new Set(res)
-    }
-
-    const down = await search(parent, 1, true)
-    const up = await search(parent, 1, false)
-
-    const lst = [...down, ...up].filter((it) => it !== uri)
-
-    const deduped = new Set(lst)
-    return deduped
 }
 
 /**
