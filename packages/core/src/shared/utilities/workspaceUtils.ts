@@ -608,10 +608,11 @@ export async function collectFilesForIndex(
 export async function listFilesWithinDistanceAgainstFile(
     uri: string,
     distance: number,
-    searchChild: boolean,
     args: {
+        searchChild: boolean
         workspaceFolders?: readonly vscode.WorkspaceFolder[]
     } = {
+        searchChild: true,
         workspaceFolders: vscode.workspace.workspaceFolders,
     }
 ) {
@@ -645,7 +646,7 @@ export async function listFilesWithinDistanceAgainstFile(
 
             // search child/parent
             let dirs: string[] = []
-            if (searchChild) {
+            if (args.searchChild) {
                 const childDirectorysUri = (await fs.readdir(dir))
                     .filter((datum) => {
                         const fileType = datum[1]
@@ -704,7 +705,13 @@ export async function neighborFiles(
         workspaceFolders: vscode.workspace.workspaceFolders,
     }
 ): Promise<Set<string>> {
-    const neighborInChildDir = await listFilesWithinDistanceAgainstFile(uri, 1, true, args)
-    const neighborInParentDir = await listFilesWithinDistanceAgainstFile(uri, 1, false, args)
+    const neighborInChildDir = await listFilesWithinDistanceAgainstFile(uri, 1, {
+        searchChild: true,
+        workspaceFolders: args.workspaceFolders,
+    })
+    const neighborInParentDir = await listFilesWithinDistanceAgainstFile(uri, 1, {
+        searchChild: false,
+        workspaceFolders: args.workspaceFolders,
+    })
     return new Set([...neighborInChildDir, ...neighborInParentDir].filter((it) => it !== uri))
 }

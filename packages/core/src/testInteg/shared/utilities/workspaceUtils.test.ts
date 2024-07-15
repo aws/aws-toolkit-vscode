@@ -451,21 +451,30 @@ describe('listFilesWithinDistanceAgainstFile', function () {
 
         // search child dirs and distance 0 against file a
         assert.deepStrictEqual(
-            await listFilesWithinDistanceAgainstFile(a, 0, true, { workspaceFolders: [ws] }),
+            await listFilesWithinDistanceAgainstFile(a, 0, {
+                searchChild: true,
+                workspaceFolders: [ws],
+            }),
             new Set([a, e])
         )
         assert.strictEqual(getFileDistance(a, e), 0)
 
         // search parent dirs and distance 1 against file a
         assert.deepStrictEqual(
-            await listFilesWithinDistanceAgainstFile(a, 1, false, { workspaceFolders: [ws] }),
+            await listFilesWithinDistanceAgainstFile(a, 1, {
+                searchChild: false,
+                workspaceFolders: [ws],
+            }),
             new Set([a, b, e])
         )
         assert.strictEqual(getFileDistance(a, b), 1)
 
         // search child dirs and distance 1 against file b
         assert.deepStrictEqual(
-            await listFilesWithinDistanceAgainstFile(b, 1, true, { workspaceFolders: [ws] }),
+            await listFilesWithinDistanceAgainstFile(b, 1, {
+                searchChild: true,
+                workspaceFolders: [ws],
+            }),
             new Set([a, b, c, e])
         )
         assert.strictEqual(getFileDistance(b, a), 1)
@@ -474,7 +483,10 @@ describe('listFilesWithinDistanceAgainstFile', function () {
 
         // search parent dirs and distance 1 against file b
         assert.deepStrictEqual(
-            await listFilesWithinDistanceAgainstFile(b, 1, false, { workspaceFolders: [ws] }),
+            await listFilesWithinDistanceAgainstFile(b, 1, {
+                searchChild: false,
+                workspaceFolders: [ws],
+            }),
             new Set([b, d])
         )
         assert.strictEqual(getFileDistance(b, d), 1)
