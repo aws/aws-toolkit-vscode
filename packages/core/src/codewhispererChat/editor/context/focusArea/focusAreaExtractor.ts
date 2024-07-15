@@ -210,6 +210,7 @@ export class FocusAreaContextExtractor {
                         range.end.line,
                         charLimit - selectionSizeWithoutLastLine - 1
                     )
+                    return range
                 }
             }
         }
