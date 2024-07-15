@@ -633,12 +633,11 @@ export async function listFilesWithinDistanceAgainstFile(
                 continue
             }
 
+            const filesAndDirs = await fs.readdir(dir)
+
             // neighbor files with distance of [distance - d] under directory [dir]
-            const files = (await fs.readdir(dir))
-                .filter((datum) => {
-                    const fileType = datum[1]
-                    return fileType === vscode.FileType.File
-                })
+            const files = filesAndDirs
+                .filter((datum) => datum[1] === vscode.FileType.File)
                 .map((datum) => datum[0])
                 .map((simpleName) => path.join(dir, simpleName))
 
@@ -647,11 +646,8 @@ export async function listFilesWithinDistanceAgainstFile(
             // search child/parent
             let dirs: string[] = []
             if (args.searchChild) {
-                const childDirectorysUri = (await fs.readdir(dir))
-                    .filter((datum) => {
-                        const fileType = datum[1]
-                        return fileType === vscode.FileType.Directory
-                    })
+                const childDirectorysUri = filesAndDirs
+                    .filter((datum) => datum[1] === vscode.FileType.Directory)
                     .map((datum) => datum[0])
                     .map((simpleName) => path.join(dir, simpleName))
 
