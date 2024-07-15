@@ -14,6 +14,7 @@ import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { featureDevScheme } from '../constants'
 import {
+    CodeGenerationDefaultError,
     FeatureDevServiceError,
     IllegalStateTransition,
     PromptRefusalException,
@@ -298,19 +299,13 @@ abstract class CodeGenBase {
                 case CodeGenerationStatus.FAILED: {
                     switch (true) {
                         case codegenResult.codeGenerationStatusDetail?.includes('Guardrails'): {
-                            throw new FeatureDevServiceError(
-                                "I'm sorry, I'm having trouble generating your code. Please try again.",
-                                'GuardrailsException'
-                            )
+                            throw new FeatureDevServiceError(CodeGenerationDefaultError, 'GuardrailsException')
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('PromptRefusal'): {
                             throw new PromptRefusalException()
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('EmptyPatch'): {
-                            throw new FeatureDevServiceError(
-                                "I'm sorry, I'm having trouble generating your code. Please try again.",
-                                'EmptyPatchException'
-                            )
+                            throw new FeatureDevServiceError(CodeGenerationDefaultError, 'EmptyPatchException')
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('Throttling'): {
                             throw new FeatureDevServiceError(

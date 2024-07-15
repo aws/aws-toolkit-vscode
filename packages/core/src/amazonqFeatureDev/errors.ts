@@ -7,6 +7,8 @@ import { ToolkitError } from '../shared/errors'
 import { featureName } from './constants'
 import { uploadCodeError } from './userFacingText'
 
+export const CodeGenerationDefaultError = "I'm sorry, I'm having trouble generating your code."
+
 export class ConversationIdNotFoundError extends ToolkitError {
     constructor() {
         super('Conversation id must exist before starting code generation', { code: 'ConversationIdNotFound' })
