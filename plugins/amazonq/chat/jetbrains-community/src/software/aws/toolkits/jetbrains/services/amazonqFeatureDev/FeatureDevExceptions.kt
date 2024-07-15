@@ -18,6 +18,9 @@ class CodeIterationLimitError(override val message: String, override val cause: 
 
 class MonthlyConversationLimitError(override val message: String, override val cause: Throwable?) : RuntimeException()
 
+internal fun featureDevServiceError(message: String?): Nothing =
+    throw FeatureDevException(message)
+
 internal fun codeGenerationFailedError(): Nothing =
     throw FeatureDevException(message("amazonqFeatureDev.code_generation.failed_generation"))
 

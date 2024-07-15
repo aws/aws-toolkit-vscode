@@ -10,6 +10,7 @@ import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublisher
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FEATURE_NAME
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.codeGenerationFailedError
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.featureDevServiceError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAnswerPart
 import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.getStartUrl
 import software.aws.toolkits.resources.message
@@ -129,7 +130,23 @@ private suspend fun CodeGenerationState.generateCode(codeGenerationId: String): 
                 )
             }
             CodeGenerationWorkflowStatus.IN_PROGRESS -> delay(requestDelay)
-            CodeGenerationWorkflowStatus.FAILED -> codeGenerationFailedError()
+            CodeGenerationWorkflowStatus.FAILED -> {
+                when (true) {
+                    codeGenerationResultState.codeGenerationStatusDetail()?.contains(
+                        "Guardrails"
+                    ) -> featureDevServiceError(message("amazonqFeatureDev.exception.guardrails"))
+                    codeGenerationResultState.codeGenerationStatusDetail()?.contains(
+                        "PromptRefusal"
+                    ) -> featureDevServiceError(message("amazonqFeatureDev.exception.prompt_refusal"))
+                    codeGenerationResultState.codeGenerationStatusDetail()?.contains(
+                        "EmptyPatch"
+                    ) -> featureDevServiceError(message("amazonqFeatureDev.exception.guardrails"))
+                    codeGenerationResultState.codeGenerationStatusDetail()?.contains(
+                        "Throttling"
+                    ) -> featureDevServiceError(message("amazonqFeatureDev.exception.throttling"))
+                    else -> codeGenerationFailedError()
+                }
+            }
             else -> error("Unknown status: ${codeGenerationResultState.codeGenerationStatus().status()}")
         }
     }
