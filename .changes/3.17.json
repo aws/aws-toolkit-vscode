@@ -1,0 +1,17 @@
+{
+  "date" : "2024-07-15",
+  "version" : "3.17",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Amazon Q/dev: proactively show code generation iterations"
+  }, {
+    "type" : "bugfix",
+    "description" : "Don't allow Q/Core to be installed in the unsupported thin client context (#4658)"
+  }, {
+    "type" : "bugfix",
+    "description" : "AmazonQ chat `@workspace` file indexing respects user's git-ignore"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q /dev command: improve user error messages"
+  } ]
+}

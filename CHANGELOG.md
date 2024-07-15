@@ -1,3 +1,9 @@
+# _3.17_ (2024-07-15)
+- **(Feature)** Amazon Q/dev: proactively show code generation iterations
+- **(Bug Fix)** Don't allow Q/Core to be installed in the unsupported thin client context ([#4658](https://github.com/aws/aws-toolkit-jetbrains/issues/4658))
+- **(Bug Fix)** AmazonQ chat `@workspace` file indexing respects user's git-ignore
+- **(Bug Fix)** Amazon Q /dev command: improve user error messages
+
 # _3.16_ (2024-07-10)
 - **(Feature)** Add support for [Amazon Q Chat Workspace Context](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/workspace-context.html). Customers can use `@workspace` to ask questions regarding local workspace.
 
