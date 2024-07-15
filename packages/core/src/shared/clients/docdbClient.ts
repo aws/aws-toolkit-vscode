@@ -88,7 +88,7 @@ export class DefaultDocumentDBClient {
                 instanceClasses.push(...(page.OrderableDBInstanceOptions ?? []))
             }
 
-            return instanceClasses.filter(ic => storageType === ic.StorageType || storageType === undefined)
+            return instanceClasses.filter((ic) => storageType === ic.StorageType || storageType === undefined)
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to get instance classes')
         } finally {
@@ -210,6 +210,24 @@ export class DefaultDocumentDBClient {
             }
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to stop DocumentDB cluster')
+        }
+    }
+
+    public async getInstance(instanceId: string): Promise<DBInstance | undefined> {
+        getLogger().debug('GetInstance called')
+        const client = await this.getClient()
+
+        try {
+            const input: DocDB.DescribeDBInstancesCommandInput = {
+                DBInstanceIdentifier: instanceId,
+            }
+            const command = new DocDB.DescribeDBInstancesCommand(input)
+            const response = await client.send(command)
+            return response.DBInstances ? response.DBInstances[0] : undefined
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to get DocumentDB instance')
+        } finally {
+            client.destroy()
         }
     }
 
