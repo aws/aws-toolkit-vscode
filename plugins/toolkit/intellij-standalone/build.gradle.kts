@@ -2,9 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 import org.jetbrains.intellij.platform.gradle.Constants.Tasks
 import org.jetbrains.intellij.platform.gradle.tasks.PatchPluginXmlTask
+import software.aws.toolkits.gradle.findFolders
+import software.aws.toolkits.gradle.intellij.IdeVersions
 
 plugins {
     id("temp-toolkit-intellij-root-conventions")
+}
+
+sourceSets {
+    main {
+        val ideProfile = IdeVersions.ideProfile(project)
+        resources.srcDirs(findFolders(project, "resources", ideProfile))
+    }
 }
 
 intellijPlatform {
