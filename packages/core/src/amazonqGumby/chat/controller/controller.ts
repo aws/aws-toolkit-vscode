@@ -310,7 +310,7 @@ export class GumbyController {
     // prompt user to pick project and specify source JDK version
     private async initiateTransformationOnProject(message: any) {
         const authType = await getAuthType()
-        telemetry.codeTransform_jobStart.emit({
+        telemetry.codeTransform_jobIsStartedFromChatPrompt.emit({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             credentialSourceId: authType,
             result: MetadataResult.Pass,
