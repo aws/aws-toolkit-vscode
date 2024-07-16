@@ -33,7 +33,6 @@ import { DevSettings } from '../shared/settings'
 import { Ec2Client } from '../shared/clients/ec2Client'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { DynamoDbInstanceNode } from '../dynamoDb/explorer/dynamoDbInstanceNode'
-import { DynamoDbClient } from '../shared/clients/dynamoDbClient'
 
 interface ServiceNode {
     allRegions?: boolean

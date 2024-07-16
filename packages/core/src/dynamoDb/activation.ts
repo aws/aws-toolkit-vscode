@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { Commands } from '../shared/vscode/commands2'
-// import { scanTable } from './commands/viewDynamoDbTable'
 import { copyDynamoDbArn } from './commands/sortDynamoDbTables'
 import { DynamoDbTableNode } from './explorer/dynamoDbTableNode'
 import { searchDynamoDbTables } from './commands/searchDynamoDbTables'
