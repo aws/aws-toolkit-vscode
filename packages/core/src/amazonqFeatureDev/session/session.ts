@@ -91,7 +91,7 @@ export class Session {
             span.record({ amazonqConversationId: this._conversationId, credentialStartUrl: AuthUtil.instance.startUrl })
         })
 
-        this.showDevPortabl(msg)
+        this.showDevPortal(msg)
 
         this._state = new PrepareRefinementState(
             {
@@ -249,7 +249,7 @@ export class Session {
         }
     }
 
-    showDevPortabl(msg: string) {
+    showDevPortal(msg: string) {
         this._devPortalWebviewPanel?.show({
             title: msg,
             viewColumn: vscode.ViewColumn.Active,
