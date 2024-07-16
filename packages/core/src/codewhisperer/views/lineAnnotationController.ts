@@ -308,7 +308,7 @@ export class LineAnnotationController implements vscode.Disposable {
     async dismissTutorial() {
         this._currentState = new EndState()
         await setContext('aws.codewhisperer.tutorial.workInProgress', false)
-        await globals.globalState.tryUpdate(inlinehintKey, this._currentState.id)
+        await globals.globalState.update(inlinehintKey, this._currentState.id)
     }
 
     private async onActiveLinesChanged(e: LinesChangeEvent) {
@@ -422,7 +422,7 @@ export class LineAnnotationController implements vscode.Disposable {
 
         decorationOptions.range = range
 
-        await globals.globalState.tryUpdate(inlinehintKey, this._currentState.id)
+        await globals.globalState.update(inlinehintKey, this._currentState.id)
         await setContext('aws.codewhisperer.tutorial.workInProgress', true)
         editor.setDecorations(this.cwLineHintDecoration, [decorationOptions])
     }

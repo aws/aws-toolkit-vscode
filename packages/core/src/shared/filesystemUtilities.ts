@@ -267,9 +267,9 @@ export async function getDefaultDownloadPath(): Promise<string> {
 export async function setDefaultDownloadPath(downloadPath: string) {
     try {
         if (await fs.existsDir(downloadPath)) {
-            globals.globalState.tryUpdate('aws.downloadPath', downloadPath)
+            await globals.globalState.update('aws.downloadPath', downloadPath)
         } else {
-            globals.globalState.tryUpdate('aws.downloadPath', path.dirname(downloadPath))
+            await globals.globalState.update('aws.downloadPath', path.dirname(downloadPath))
         }
     } catch (err) {
         getLogger().error('Error while setting "aws.downloadPath"', err as Error)

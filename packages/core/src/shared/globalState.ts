@@ -118,18 +118,25 @@ export class GlobalState implements vscode.Memento {
         }
     }
 
-    /** Asynchronously updates globalState, or logs an error on failure. */
-    tryUpdate(key: globalKey, value: any) {
-        return this.memento.update(key, value).then(
-            undefined, // TODO: log.debug() ?
-            (e) => {
-                getLogger().error('GlobalState: failed to set "%s": %s', key, (e as Error).message)
-            }
-        )
+    /**
+     * Asynchronously updates globalState, or logs an error on failure.
+     *
+     * Only for callers that cannot `await` or don't care about errors and race conditions. Prefer
+     * `await update()` where possible.
+     */
+    tryUpdate(key: globalKey, value: any): void {
+        this.update(key, value).then(undefined, () => {
+            // Errors are logged by update().
+        })
     }
 
-    update(key: globalKey, value: any): Thenable<void> {
-        return this.memento.update(key, value)
+    async update(key: globalKey, value: any): Promise<void> {
+        try {
+            await this.memento.update(key, value)
+        } catch (e) {
+            getLogger().error('GlobalState: failed to set "%s": %s', key, (e as Error).message)
+            throw e
+        }
     }
 
     clear() {

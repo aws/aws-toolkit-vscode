@@ -134,7 +134,7 @@ export const setSelectedCustomization = async (customization: Customization) => 
     selectedCustomizationObj[AuthUtil.instance.conn.label] = customization
     getLogger().debug(`Selected customization ${customization.name} for ${AuthUtil.instance.conn.label}`)
 
-    await globals.globalState.tryUpdate('CODEWHISPERER_SELECTED_CUSTOMIZATION', selectedCustomizationObj)
+    await globals.globalState.update('CODEWHISPERER_SELECTED_CUSTOMIZATION', selectedCustomizationObj)
     vsCodeState.isFreeTierLimitReached = false
     await Commands.tryExecute('aws.amazonq.refreshStatusBar')
 }
@@ -161,7 +161,7 @@ export const setPersistedCustomizations = async (customizations: Customization[]
         {}
     )
     persistedCustomizationsObj[AuthUtil.instance.conn.label] = customizations
-    await globals.globalState.tryUpdate('CODEWHISPERER_PERSISTED_CUSTOMIZATIONS', persistedCustomizationsObj)
+    await globals.globalState.update('CODEWHISPERER_PERSISTED_CUSTOMIZATIONS', persistedCustomizationsObj)
 }
 
 export const getNewCustomizationsAvailable = () => {
@@ -169,7 +169,7 @@ export const getNewCustomizationsAvailable = () => {
 }
 
 export const setNewCustomizationsAvailable = async (num: number) => {
-    await globals.globalState.tryUpdate('aws.amazonq.codewhisperer.newCustomizations', num)
+    await globals.globalState.update('aws.amazonq.codewhisperer.newCustomizations', num)
     vsCodeState.isFreeTierLimitReached = false
 }
 

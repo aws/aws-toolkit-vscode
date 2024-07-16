@@ -92,7 +92,7 @@ export class CodeSuggestionsState {
     async toggleSuggestions() {
         const autoTriggerEnabled = this.isSuggestionsEnabled()
         const toSet: boolean = !autoTriggerEnabled
-        await globals.globalState.tryUpdate('CODEWHISPERER_AUTO_TRIGGER_ENABLED', toSet)
+        await globals.globalState.update('CODEWHISPERER_AUTO_TRIGGER_ENABLED', toSet)
         this.#onDidChangeState.fire(toSet)
         return toSet
     }
@@ -131,7 +131,7 @@ export class CodeScansState {
     async toggleScans() {
         const autoScansEnabled = this.isScansEnabled()
         const toSet: boolean = !autoScansEnabled
-        await globals.globalState.tryUpdate('CODEWHISPERER_AUTO_SCANS_ENABLED', toSet)
+        await globals.globalState.update('CODEWHISPERER_AUTO_SCANS_ENABLED', toSet)
         this.#onDidChangeState.fire(toSet)
         return toSet
     }
