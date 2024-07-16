@@ -28,6 +28,7 @@ import {
 import { Auth } from '../../../auth/auth'
 import { StaticProfile, StaticProfileKeyErrorMessage } from '../../../auth/credentials/types'
 import { telemetry } from '../../../shared/telemetry'
+import { AuthAddConnection } from '../../../shared/telemetry/telemetry'
 import { AuthSources } from '../util'
 import { AuthEnabledFeatures, AuthError, AuthFlowState, AuthUiClick, TelemetryMetadata, userCancelled } from './types'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
@@ -201,7 +202,7 @@ export abstract class CommonAuthWebview extends VueWebview {
         telemetry.auth_addConnection.emit({
             ...this.metricMetadata,
             source: this.authSource,
-        })
+        } as AuthAddConnection)
     }
 
     /**
