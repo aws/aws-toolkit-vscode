@@ -25,6 +25,7 @@ import {
 import { getLogger, Logger } from './shared/logger/logger'
 import { activate as activateEcr } from './awsService/ecr/activation'
 import { activate as activateEc2 } from './awsService/ec2/activation'
+import { activate as activateDynamoDb } from './dynamoDb/activation'
 import { activate as activateSam } from './shared/sam/activation'
 import { activate as activateS3 } from './awsService/s3/activation'
 import * as awsFiletypes from './shared/awsFiletypes'
@@ -166,6 +167,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateSam(extContext)
 
         await activateS3(extContext)
+
+        await activateDynamoDb(context)
 
         await activateEc2(extContext)
 

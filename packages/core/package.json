@@ -1208,6 +1208,14 @@
                 {
                     "command": "aws.newThreatComposerFile",
                     "when": "false"
+                },
+                {
+                    "command": "aws.dynamoDb.copyArn",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.dynamoDb.refreshExplorer",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -1998,6 +2006,21 @@
                     "command": "aws.codecatalyst.signout",
                     "when": "viewItem =~ /^awsCodeCatalystNode/&& !isCloud9 && aws.codecatalyst.connected",
                     "group": "0@2"
+                },
+                {
+                    "command": "aws.dynamoDb.searchTables",
+                    "group": "inline@1",
+                    "when": "view == aws.explorer && viewItem =~ /^awsDynamoDbRootNode$/"
+                },
+                {
+                    "command": "aws.dynamoDb.copyArn",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem =~ /^awsDynamoDbTableNode/"
+                },
+                {
+                    "command": "aws.dynamoDb.refreshExplorer",
+                    "group": "inline@1",
+                    "when": "view == aws.explorer && viewItem =~ /^awsDynamoDbRootNode$/"
                 }
             ],
             "aws.toolkit.auth": [
@@ -3536,6 +3559,41 @@
                 "command": "aws.newThreatComposerFile",
                 "title": "%AWS.command.threatComposer.newFile%",
                 "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.dynamoDb.searchTables",
+                "title": "%AWS.command.dynamoDb.searchTables%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": "$(search-view-icon)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.dynamoDb.copyArn",
+                "title": "%AWS.command.copyArn",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.dynamoDb.refreshExplorer",
+                "title": "%AWS.command.refreshAwsExplorer%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": "$(refresh)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
