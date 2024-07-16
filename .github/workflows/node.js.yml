@@ -32,16 +32,27 @@ jobs:
               uses: coactions/setup-xvfb@v1
               with:
                   run: npm test
-            - name: Code coverage
+            - name: Toolkit code coverage
               env:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
               uses: codecov/codecov-action@v4
               with:
-                  flags: macos-unittests
+                  flags: macos-toolkit-unittests
                   verbose: true
-                  file: ./coverage/lcov.info
+                  file: ./coverage/core/lcov.info
+                  token: ${{ secrets.CODECOV_TOKEN }}
+            - name: Amazon Q code coverage
+              env:
+                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
+                  NODE_OPTIONS: ''
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
+              uses: codecov/codecov-action@v4
+              with:
+                  flags: macos-amazonq-unittests
+                  verbose: true
+                  file: ./coverage/amazonq/lcov.info
                   token: ${{ secrets.CODECOV_TOKEN }}
             - name: Code coverage (CodeWhisperer)
               env:
@@ -52,7 +63,7 @@ jobs:
               with:
                   flags: codewhisperer
                   verbose: true
-                  file: ./coverage/lcov.info
+                  file: ./coverage/core/lcov.info
                   token: ${{ secrets.CODECOV_TOKEN }}
 
     web:
