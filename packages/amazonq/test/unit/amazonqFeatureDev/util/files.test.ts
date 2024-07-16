@@ -10,7 +10,7 @@ import {
     ContentLengthError,
     maxRepoSizeBytes,
 } from 'aws-core-vscode/amazonqFeatureDev'
-import { createTestWorkspace } from 'aws-core-vscode/test'
+import { assertTelemetry, createTestWorkspace } from 'aws-core-vscode/test'
 import { fs, AmazonqCreateUpload, Metric } from 'aws-core-vscode/shared'
 import sinon from 'sinon'
 
@@ -52,6 +52,7 @@ describe('file utils', () => {
             // checksum is not the same across different test executions because some unique random folder names are generated
             assert.strictEqual(result.zipFileChecksum.length, 44)
             assert.strictEqual(telemetry.repositorySize, 0)
+            assertTelemetry('amazonq_bundleExtensionIgnored', { filenameExt: 'mp4', count: 1 })
         })
 
         // Test the logic that allows the customer to modify root source folder
