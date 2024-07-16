@@ -22,7 +22,7 @@ import {
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import fs from '../../shared/fs/fs'
 import { ZipUtil } from '../../codewhisperer/util/zipUtil'
-import { randomUUID } from '../../common/crypto'
+import { randomUUID } from '../../shared/crypto'
 
 const filePromptWithSecurityIssues = `from flask import app
 

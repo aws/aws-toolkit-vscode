@@ -31,7 +31,6 @@
         "./web": "./dist/src/extensionWeb.js",
         "./webShared": "./dist/src/extensionWebShared.js",
         "./extensionCommon": "./dist/src/extensionCommon.js",
-        "./common": "./dist/src/common/index.js",
         "./amazonq": "./dist/src/amazonq/index.js",
         "./codewhisperer": "./dist/src/codewhisperer/index.js",
         "./codewhispererCommon": "./dist/src/codewhisperer/indexCommon.js",
