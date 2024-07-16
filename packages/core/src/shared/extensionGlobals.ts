@@ -151,7 +151,7 @@ export function initialize(context: ExtensionContext, isWeb: boolean = false): T
         manifestPaths: {} as ToolkitGlobals['manifestPaths'],
         visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],
         isWeb,
-        isEmbedded: !!(vscode.window.sendMessage && vscode.window.receiveMessage),
+        isEmbedded: isWeb && !!(vscode.window.sendMessage && vscode.window.receiveMessage),
     })
     void setContext('aws.isWebExtHost', isWeb)
 
