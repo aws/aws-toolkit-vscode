@@ -17,7 +17,6 @@ import { sanitizeFilename } from './textUtilities'
 import { GitIgnoreAcceptor } from '@gerhobbelt/gitignore-parser'
 import * as parser from '@gerhobbelt/gitignore-parser'
 import fs from '../fs/fs'
-import { crossFileContextConfig } from '../../codewhisperer'
 
 type GitIgnoreRelativeAcceptor = {
     folderPath: string
@@ -700,7 +699,7 @@ export async function neighborFiles(
         fileDistance: number
         workspaceFolders?: readonly vscode.WorkspaceFolder[]
     } = {
-        fileDistance: crossFileContextConfig.neighborFileDistance,
+        fileDistance: 1, // todo: crossFileContextConfig.neighborFileDistance will cause circular dependency
         workspaceFolders: vscode.workspace.workspaceFolders,
     }
 ): Promise<Set<string>> {
