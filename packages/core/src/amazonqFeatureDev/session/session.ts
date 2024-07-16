@@ -4,6 +4,7 @@
  */
 
 import * as path from 'path'
+import * as vscode from 'vscode'
 
 import { ConversationNotStartedState, PrepareCodeGenState, PrepareRefinementState } from './sessionState'
 import {
@@ -25,6 +26,9 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceLogViewProvider'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
+import { VueWebviewPanel } from '../../webviews/main'
+import { DevPortalWebviewPanel } from '../webview/devPortalWebview'
+import { globals } from '../../shared'
 
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
@@ -37,6 +41,7 @@ export class Session {
     private preloaderFinished = false
     private _latestMessage: string = ''
     private _telemetry: TelemetryHelper
+    private _devPortalWebviewPanel?: VueWebviewPanel
 
     // Used to keep track of whether or not the current session is currently authenticating/needs authenticating
     public isAuthenticating: boolean
@@ -56,6 +61,8 @@ export class Session {
 
         this._telemetry = new TelemetryHelper()
         this.isAuthenticating = false
+
+        this._devPortalWebviewPanel = new DevPortalWebviewPanel(globals.context)
     }
 
     /**
@@ -83,6 +90,8 @@ export class Session {
             this._conversationId = await this.proxyClient.createConversation()
             span.record({ amazonqConversationId: this._conversationId, credentialStartUrl: AuthUtil.instance.startUrl })
         })
+
+        this.showDevPortable(msg)
 
         this._state = new PrepareRefinementState(
             {
@@ -239,6 +248,15 @@ export class Session {
                 break
         }
     }
+
+    showDevPortable(msg: string) {
+        this._devPortalWebviewPanel?.show({
+            title: msg,
+            viewColumn: vscode.ViewColumn.Active,
+            retainContextWhenHidden: true,
+        })
+    }
+
     get conversationId() {
         if (!this._conversationId) {
             throw new ConversationIdNotFoundError()
@@ -257,5 +275,9 @@ export class Session {
 
     get telemetry() {
         return this._telemetry
+    }
+
+    get devPortalWebviewPanel() {
+        return this._devPortalWebviewPanel
     }
 }
