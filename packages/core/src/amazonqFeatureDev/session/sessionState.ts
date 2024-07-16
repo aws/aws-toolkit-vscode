@@ -13,8 +13,15 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { featureDevScheme } from '../constants'
-import { IllegalStateTransition, UserMessageNotFoundError } from '../errors'
 import {
+    CodeGenerationDefaultError,
+    FeatureDevServiceError,
+    IllegalStateTransition,
+    PromptRefusalException,
+    UserMessageNotFoundError,
+} from '../errors'
+import {
+    CodeGenerationStatus,
     CurrentWsFolders,
     DeletedFileInfo,
     DevPhase,
@@ -268,8 +275,8 @@ abstract class CodeGenBase {
 
             getLogger().debug(`Codegen response: %O`, codegenResult)
             telemetry.setCodeGenerationResult(codegenResult.codeGenerationStatus.status)
-            switch (codegenResult.codeGenerationStatus.status) {
-                case 'Complete': {
+            switch (codegenResult.codeGenerationStatus.status as CodeGenerationStatus) {
+                case CodeGenerationStatus.COMPLETE: {
                     const { newFileContents, deletedFiles, references } =
                         await this.config.proxyClient.exportResultArchive(this.conversationId)
                     const newFileInfo = registerNewFiles(fs, newFileContents, this.uploadId, workspaceFolders)
@@ -282,24 +289,34 @@ abstract class CodeGenBase {
                         codeGenerationTotalIterationCount: codeGenerationTotalIterationCount,
                     }
                 }
-                case 'predict-ready':
-                case 'InProgress': {
+                case CodeGenerationStatus.PREDICT_READY:
+                case CodeGenerationStatus.IN_PROGRESS: {
                     await new Promise((f) => globals.clock.setTimeout(f, this.requestDelay))
                     break
                 }
-                case 'predict-failed':
-                case 'debate-failed':
-                case 'Failed': {
-                    /** 
-                     * 
-                     * TODO: Here we need to implement the granular error handling for 
-                     *  Code generation GuardrailsException
-                        Code generation PromptRefusalException
-                        Code generation EmptyPatchException
-                        Code generation ThrottlingException
-                     * 
-                     * */
-                    throw new ToolkitError('Code generation failed', { code: 'CodeGenFailed' })
+                case CodeGenerationStatus.PREDICT_FAILED:
+                case CodeGenerationStatus.DEBATE_FAILED:
+                case CodeGenerationStatus.FAILED: {
+                    switch (true) {
+                        case codegenResult.codeGenerationStatusDetail?.includes('Guardrails'): {
+                            throw new FeatureDevServiceError(CodeGenerationDefaultError, 'GuardrailsException')
+                        }
+                        case codegenResult.codeGenerationStatusDetail?.includes('PromptRefusal'): {
+                            throw new PromptRefusalException()
+                        }
+                        case codegenResult.codeGenerationStatusDetail?.includes('EmptyPatch'): {
+                            throw new FeatureDevServiceError(CodeGenerationDefaultError, 'EmptyPatchException')
+                        }
+                        case codegenResult.codeGenerationStatusDetail?.includes('Throttling'): {
+                            throw new FeatureDevServiceError(
+                                "I'm sorry, I'm experiencing high demand at the moment and can't generate your code. This attempt won't count toward usage limits. Please try again.",
+                                'ThrottlingException'
+                            )
+                        }
+                        default: {
+                            throw new ToolkitError('Code generation failed', { code: 'CodeGenFailed' })
+                        }
+                    }
                 }
                 default: {
                     const errorMessage = `Unknown status: ${codegenResult.codeGenerationStatus.status}\n`

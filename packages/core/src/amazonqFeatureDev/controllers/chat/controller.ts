@@ -14,14 +14,17 @@ import { featureDevScheme } from '../../constants'
 import {
     CodeIterationLimitError,
     ContentLengthError,
+    FeatureDevServiceError,
     MonthlyConversationLimitError,
     PlanIterationLimitError,
     PrepareRepoFailedError,
+    PromptRefusalException,
     SelectedFolderNotInWorkspaceFolderError,
     TabIdNotFoundError,
     UploadCodeError,
     UserMessageNotFoundError,
     WorkspaceFolderNotFoundError,
+    ZipFileError,
     createUserFacingErrorMessage,
     denyListedErrors,
 } from '../../errors'
@@ -263,6 +266,7 @@ export class FeatureDevController {
                 })
                 break
 
+            case FeatureDevServiceError.name:
             case UploadCodeError.name:
             case UserMessageNotFoundError.name:
             case TabIdNotFoundError.name:
@@ -273,6 +277,10 @@ export class FeatureDevController {
                     this.retriesRemaining(session),
                     session?.conversationIdUnsafe
                 )
+                break
+            case PromptRefusalException.name:
+            case ZipFileError.name:
+                this.messenger.sendErrorMessage(errorMessage, message.tabID, 0, session?.conversationIdUnsafe, true)
                 break
             case CodeIterationLimitError.name:
                 this.messenger.sendAnswer({

@@ -7,6 +7,8 @@ import { ToolkitError } from '../shared/errors'
 import { featureName } from './constants'
 import { uploadCodeError } from './userFacingText'
 
+export const CodeGenerationDefaultError = "I'm sorry, I'm having trouble generating your code."
+
 export class ConversationIdNotFoundError extends ToolkitError {
     constructor() {
         super('Conversation id must exist before starting code generation', { code: 'ConversationIdNotFound' })
@@ -57,6 +59,23 @@ export class SelectedFolderNotInWorkspaceFolderError extends ToolkitError {
     }
 }
 
+export class PromptRefusalException extends ToolkitError {
+    constructor() {
+        super(
+            'I\'m sorry, I can\'t generate code for your request. Please make sure your message and code files comply with the <a href="https://aws.amazon.com/machine-learning/responsible-ai/policy/">AWS Responsible AI Policy.</a>',
+            {
+                code: 'PromptRefusalException',
+            }
+        )
+    }
+}
+
+export class FeatureDevServiceError extends ToolkitError {
+    constructor(message: string, code: string) {
+        super(message, { code })
+    }
+}
+
 export class PrepareRepoFailedError extends ToolkitError {
     constructor() {
         super('Sorry, I ran into an issue while trying to upload your code. Please try again.', {
@@ -83,6 +102,12 @@ export class ContentLengthError extends ToolkitError {
             'The folder you selected is too large for me to use as context. Please choose a smaller folder to work on. For more information on quotas, see the <a href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/software-dev.html#quotas" target="_blank">Amazon Q Developer documentation.</a>',
             { code: 'ContentLengthError' }
         )
+    }
+}
+
+export class ZipFileError extends ToolkitError {
+    constructor() {
+        super('The zip file is corrupted', { code: 'ZipFileError' })
     }
 }
 

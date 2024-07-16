@@ -30,6 +30,15 @@ export enum DevPhase {
     CODEGEN = 'Codegen',
 }
 
+export enum CodeGenerationStatus {
+    COMPLETE = 'Complete',
+    PREDICT_READY = 'predict-ready',
+    IN_PROGRESS = 'InProgress',
+    PREDICT_FAILED = 'predict-failed',
+    DEBATE_FAILED = 'debate-failed',
+    FAILED = 'Failed',
+}
+
 export enum FollowUpTypes {
     GenerateCode = 'GenerateCode',
     InsertCode = 'InsertCode',
