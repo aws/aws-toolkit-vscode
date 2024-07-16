@@ -6,11 +6,10 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
-import * as os from 'os'
 import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
-import { resetDebugArtifacts, stopTransformByQ } from '../../../codewhisperer/commands/startTransformByQ'
+import { stopTransformByQ } from '../../../codewhisperer/commands/startTransformByQ'
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
@@ -296,19 +295,5 @@ describe('transformByQ', function () {
             '-1': '{"columnNames":["relativePath","action"],"rows":[{"relativePath":"pom.xml","action":"Update"}, {"relativePath":"src/main/java/com/bhoruka/bloodbank/BloodbankApplication.java","action":"Update"}]}',
         }
         assert.deepStrictEqual(actual, expected)
-    })
-})
-
-describe('resetDebugArtifacts', () => {
-    it('should remove the directory containing the pre-build log file if it exists', async () => {
-        const dirPath = path.join(os.tmpdir(), 'q-transformation-build-logs')
-        const preBuildLogFilePath = path.join(dirPath, 'DummyLog.log')
-        await toFile('<logs>', preBuildLogFilePath)
-        transformByQState.setPreBuildLogFilePath(preBuildLogFilePath)
-
-        await resetDebugArtifacts()
-
-        assert.strictEqual(fs.existsSync(preBuildLogFilePath), false)
-        assert.strictEqual(transformByQState.getPreBuildLogFilePath(), '')
     })
 })
