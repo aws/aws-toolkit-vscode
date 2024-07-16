@@ -11,7 +11,6 @@ class DevPortalWebview extends VueWebview {
 
     constructor() {
         super(DevPortalWebview.sourcePath)
-        VueWebview.compileView
     }
 }
 
