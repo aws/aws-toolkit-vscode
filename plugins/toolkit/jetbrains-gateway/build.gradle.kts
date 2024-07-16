@@ -4,6 +4,7 @@
 
 import net.bytebuddy.utility.RandomString
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.tasks.PatchPluginXmlTask
 import org.jetbrains.intellij.platform.gradle.tasks.PrepareSandboxTask
 import org.jetbrains.kotlin.gradle.internal.ensureParentDirsCreated
 import software.aws.toolkits.gradle.intellij.IdeFlavor
@@ -159,6 +160,12 @@ listOf(
         intoChild(intellijPlatform.projectName.map { "$it/lib" })
             .from(gatewayOnlyResourcesJar)
     }
+}
+
+tasks.jarSearchableOptions {
+    dependsOn(":plugin-toolkit:jetbrains-core:pluginXmlForGateway")
+
+    pluginXml.set(project(":plugin-toolkit:jetbrains-core").tasks.maybeCreate<PatchPluginXmlTask>("pluginXmlForGateway").outputFile)
 }
 
 tasks.buildPlugin {

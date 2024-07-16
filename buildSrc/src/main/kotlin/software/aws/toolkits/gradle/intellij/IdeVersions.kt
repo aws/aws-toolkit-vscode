@@ -108,6 +108,7 @@ object IdeVersions {
                     "org.jetbrains.idea.maven",
                 ),
                 marketplacePlugins = listOf(
+                    "org.toml.lang:241.14494.150",
                     "PythonCore:241.14494.240",
                     "Docker:241.14494.251"
                 )
@@ -122,6 +123,7 @@ object IdeVersions {
                     "com.jetbrains.codeWithMe",
                 ),
                 marketplacePlugins = listOf(
+                    "org.toml.lang:241.14494.150",
                     "Pythonid:241.14494.314",
                     "org.jetbrains.plugins.go:241.14494.240",
                 )
@@ -138,25 +140,26 @@ object IdeVersions {
             name = "2024.2",
             gateway = ProductProfile(
                 sdkFlavor = IdeFlavor.GW,
-                sdkVersion = "242.19890-EAP-CANDIDATE-SNAPSHOT",
+                sdkVersion = "242.20224-EAP-CANDIDATE-SNAPSHOT",
                 bundledPlugins = listOf("org.jetbrains.plugins.terminal")
             ),
             community = ProductProfile(
                 sdkFlavor = IdeFlavor.IC,
-                sdkVersion = "242.19890-EAP-CANDIDATE-SNAPSHOT",
+                sdkVersion = "242.20224-EAP-CANDIDATE-SNAPSHOT",
                 bundledPlugins = commonPlugins + listOf(
                     "com.intellij.java",
                     "com.intellij.gradle",
                     "org.jetbrains.idea.maven",
                 ),
                 marketplacePlugins = listOf(
-                    "PythonCore:242.19890.14",
-                    "Docker:242.19890.32"
+                    "org.toml.lang:242.20224.33",
+                    "PythonCore:242.20224.38",
+                    "Docker:242.20224.44"
                 )
             ),
             ultimate = ProductProfile(
                 sdkFlavor = IdeFlavor.IU,
-                sdkVersion = "242.19890-EAP-CANDIDATE-SNAPSHOT",
+                sdkVersion = "242.20224-EAP-CANDIDATE-SNAPSHOT",
                 bundledPlugins = commonPlugins + listOf(
                     "JavaScript",
                     "JavaScriptDebugger",
@@ -164,8 +167,9 @@ object IdeVersions {
                     "com.jetbrains.codeWithMe",
                 ),
                 marketplacePlugins = listOf(
-                    "Pythonid:242.19890.14",
-                    "org.jetbrains.plugins.go:242.19890.14",
+                    "org.toml.lang:242.20224.33",
+                    "Pythonid:242.20224.38",
+                    "org.jetbrains.plugins.go:242.20224.38",
                 )
             ),
             rider = RiderProfile(

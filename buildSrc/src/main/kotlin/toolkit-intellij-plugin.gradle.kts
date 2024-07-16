@@ -19,15 +19,8 @@ intellijPlatform {
 // there is an issue if this is declared more than once in a project (either directly or through script plugins)
 repositories {
     intellijPlatform {
-        localPlatformArtifacts()
-        intellijDependencies()
-        releases()
-        snapshots()
-        marketplace()
+        defaultRepositories()
         jetbrainsRuntime()
-        // binary releases take the lowest priority
-        // but maybe this is only needed for rider?
-        jetBrainsCdn()
     }
 }
 

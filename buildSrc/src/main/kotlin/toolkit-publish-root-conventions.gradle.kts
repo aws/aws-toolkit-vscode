@@ -82,7 +82,7 @@ dependencies {
                 provider { IntelliJPlatformType.IntellijIdeaCommunity } to toolkitIntelliJ.version()
             }
 
-            create(type, version)
+            create(type, version, useInstaller = false)
             jetbrainsRuntime()
         }
     }
