@@ -182,16 +182,17 @@ async function createInstanceClassPrompter(docdbClient: DocumentDBClient, engine
 }
 
 function instanceCountItems(max: number = 16): DataQuickPickItem<number>[] {
+    const defaultCount = Math.min(3, max)
     const items = []
 
     for (let index = 1; index <= max; index++) {
         const item: DataQuickPickItem<number> = {
             label: index.toString(),
             data: index,
+            description: index === defaultCount ? '(recommended)' : undefined,
         }
         items.push(item)
     }
 
-    items[2].description = '(recommended)'
     return items
 }
