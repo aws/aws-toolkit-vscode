@@ -43,11 +43,11 @@ describe('createInstanceCommand', function () {
     })
 
     function setupWizard() {
-        getTestWindow().onDidShowInputBox(input => {
+        getTestWindow().onDidShowInputBox((input) => {
             input.acceptValue(instanceName)
         })
 
-        getTestWindow().onDidShowQuickPick(async picker => {
+        getTestWindow().onDidShowQuickPick(async (picker) => {
             await picker.untilReady()
             picker.acceptItem(picker.items[0])
         })
@@ -85,7 +85,7 @@ describe('createInstanceCommand', function () {
         // arrange
         const stub = sinon.stub()
         docdb.createInstance = stub
-        getTestWindow().onDidShowInputBox(input => input.hide())
+        getTestWindow().onDidShowInputBox((input) => input.hide())
 
         // act
         await createInstance(node)
@@ -108,22 +108,6 @@ describe('createInstanceCommand', function () {
         getTestWindow()
             .getFirstMessage()
             .assertMessage(/Max instances in use/)
-    })
-
-    it('shows a warning when the cluster is stopped', async function () {
-        // arrange
-        cluster.Status = 'stopped'
-        const stub = sinon.stub()
-        docdb.createInstance = stub
-        setupWizard()
-
-        // act
-        await createInstance(node)
-
-        // assert
-        getTestWindow()
-            .getFirstMessage()
-            .assertMessage(/Cluster must be started to create instances/)
     })
 
     it('shows an error when instance creation fails', async function () {

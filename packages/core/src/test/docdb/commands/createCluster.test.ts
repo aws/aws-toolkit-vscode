@@ -8,8 +8,7 @@ import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { getTestWindow } from '../../shared/vscode/window'
 import { DocumentDBNode } from '../../../docdb/explorer/docdbNode'
-import { DocumentDBClient } from '../../../shared/clients/docdbClient'
-import { CreateDBClusterMessage } from '@aws-sdk/client-docdb'
+import { DBStorageType, DocumentDBClient } from '../../../shared/clients/docdbClient'
 import { createCluster } from '../../../docdb/commands/createCluster'
 
 describe('createClusterCommand', function () {
@@ -27,6 +26,10 @@ describe('createClusterCommand', function () {
 
         docdb = { regionCode: 'us-east-1' } as DocumentDBClient
         docdb.listEngineVersions = sinon.stub().resolves([{ EngineVersion: 'test-version' }])
+        docdb.listInstanceClassOptions = sinon
+            .stub()
+            .resolves([{ DBInstanceClass: 'db.t3.medium', StorageType: DBStorageType.Standard }])
+
         node = new DocumentDBNode(docdb)
     })
 
@@ -36,7 +39,7 @@ describe('createClusterCommand', function () {
     })
 
     function setupWizard() {
-        getTestWindow().onDidShowInputBox(input => {
+        getTestWindow().onDidShowInputBox((input) => {
             let value: string
             switch (input.step) {
                 case 1:
@@ -55,7 +58,7 @@ describe('createClusterCommand', function () {
             input.acceptValue(value)
         })
 
-        getTestWindow().onDidShowQuickPick(async picker => {
+        getTestWindow().onDidShowQuickPick(async (picker) => {
             await picker.untilReady()
             picker.acceptItem(picker.items[0])
         })
@@ -63,10 +66,14 @@ describe('createClusterCommand', function () {
 
     it('prompts for cluster params, creates cluster, shows success, and refreshes node', async function () {
         // arrange
-        const stub = sinon.stub().resolves({
+        const createClusterStub = sinon.stub().resolves({
             DBClusterIdentifier: clusterName,
         })
-        docdb.createCluster = stub
+        const createInstanceStub = sinon.stub().resolves({
+            DBInstanceIdentifier: clusterName,
+        })
+        docdb.createCluster = createClusterStub
+        docdb.createInstance = createInstanceStub
         setupWizard()
 
         // act
@@ -77,16 +84,28 @@ describe('createClusterCommand', function () {
             .getFirstMessage()
             .assertInfo(/Created cluster: docdb-1234/)
 
-        const expectedArgs: CreateDBClusterMessage = {
-            Engine: 'docdb',
-            EngineVersion: 'test-version',
-            DBClusterIdentifier: clusterName,
-            MasterUsername: username,
-            MasterUserPassword: password,
-            StorageEncrypted: true,
-        }
+        assert(
+            createClusterStub.calledOnceWithExactly({
+                Engine: 'docdb',
+                EngineVersion: 'test-version',
+                DBClusterIdentifier: clusterName,
+                MasterUsername: username,
+                MasterUserPassword: password,
+                StorageEncrypted: true,
+                DBInstanceCount: 1,
+                DBInstanceClass: 'db.t3.medium',
+            })
+        )
 
-        assert(stub.calledOnceWithExactly(expectedArgs))
+        assert(
+            createInstanceStub.calledOnceWithExactly({
+                Engine: 'docdb',
+                DBClusterIdentifier: clusterName,
+                DBInstanceIdentifier: clusterName,
+                DBInstanceClass: 'db.t3.medium',
+            })
+        )
+
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
     })
 
@@ -94,7 +113,7 @@ describe('createClusterCommand', function () {
         // arrange
         const stub = sinon.stub()
         docdb.createCluster = stub
-        getTestWindow().onDidShowInputBox(input => input.hide())
+        getTestWindow().onDidShowInputBox((input) => input.hide())
 
         // act
         await createCluster(node)
@@ -107,6 +126,21 @@ describe('createClusterCommand', function () {
         // arrange
         const stub = sinon.stub().rejects()
         docdb.createCluster = stub
+        setupWizard()
+
+        // act
+        await createCluster(node)
+
+        // assert
+        getTestWindow()
+            .getFirstMessage()
+            .assertError(/Failed to create cluster: docdb-1234/)
+    })
+
+    it('shows an error when instance creation fails', async function () {
+        // arrange
+        docdb.createCluster = sinon.stub().resolves({ DBClusterIdentifier: clusterName })
+        docdb.createInstance = sinon.stub().rejects()
         setupWizard()
 
         // act

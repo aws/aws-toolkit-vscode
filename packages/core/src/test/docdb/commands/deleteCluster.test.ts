@@ -39,7 +39,8 @@ describe('deleteClusterCommand', function () {
         deleteInstanceStub = sinon.stub().onFirstCall().resolves(instances[0]).onSecondCall().resolves(instances[1])
         docdb.deleteInstance = deleteInstanceStub
 
-        node = new DBClusterNode({} as DocumentDBNode, cluster, docdb)
+        const parentNode = new DocumentDBNode(docdb)
+        node = new DBClusterNode(parentNode, cluster, docdb)
         node.waitUntilStatusChanged = sinon.stub().resolves(true)
     })
 
@@ -49,11 +50,11 @@ describe('deleteClusterCommand', function () {
     })
 
     function setupWizard() {
-        getTestWindow().onDidShowInputBox(input => {
+        getTestWindow().onDidShowInputBox((input) => {
             input.acceptValue(input.placeholder!)
         })
 
-        getTestWindow().onDidShowQuickPick(async picker => {
+        getTestWindow().onDidShowQuickPick(async (picker) => {
             await picker.untilReady()
             picker.acceptItem(picker.items[0])
         })
@@ -78,15 +79,15 @@ describe('deleteClusterCommand', function () {
 
         assert(deleteClusterStub.calledOnceWithExactly(sinon.match({ DBClusterIdentifier: clusterName })))
         assert(deleteInstanceStub.calledTwice)
-        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node.parent)
     })
 
     it('does nothing when prompt is cancelled', async function () {
         // arrange
         const deleteClusterStub = sinon.stub()
         docdb.deleteCluster = deleteClusterStub
-        getTestWindow().onDidShowQuickPick(picker => picker.hide())
-        getTestWindow().onDidShowInputBox(input => input.hide())
+        getTestWindow().onDidShowQuickPick((picker) => picker.hide())
+        getTestWindow().onDidShowInputBox((input) => input.hide())
 
         // act
         await deleteCluster(node)

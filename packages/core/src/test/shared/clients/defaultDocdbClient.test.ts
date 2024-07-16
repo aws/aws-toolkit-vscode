@@ -18,6 +18,7 @@ describe('DefaultDocumentDBClient', function () {
                 DBClusters: [],
                 DBInstances: [],
             }),
+            destroy: sinon.stub(),
         })
     })
 
