@@ -22,7 +22,7 @@ const localize = nls.loadMessageBundle()
  *
  */
 export async function searchDynamoDbTables(source: string, dbData?: { regionName: string }): Promise<void> {
-    await telemetry.dynamodb_openTable.run(async span => {
+    await telemetry.dynamodb_openTable.run(async (span) => {
         const wizard = new SearchDynamoDbTablesWizard(dbData)
         span.record({ dynamoDbResourceType: 'table', source: source })
         const response = await wizard.run()
@@ -69,7 +69,7 @@ export function createRegionSubmenu() {
 async function getTablesFromRegion(regionCode: string): Promise<DataQuickPickItem<string>[]> {
     const client = new DynamoDbClient(regionCode)
     const dynamoDbTables = await dynamoDbTablesToArray(client.getTables())
-    const options = dynamoDbTables.map<DataQuickPickItem<string>>(tableName => ({
+    const options = dynamoDbTables.map<DataQuickPickItem<string>>((tableName) => ({
         label: tableName,
         data: tableName,
     }))

@@ -33,13 +33,13 @@ export class DynamoDbInstanceNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const tables = toMap(await toArrayAsync(this.dynamoDbClient.getTables()), configuration => configuration)
+        const tables = toMap(await toArrayAsync(this.dynamoDbClient.getTables()), (configuration) => configuration)
         const sortedTablesByName = new Map([...tables.entries()].sort((a, b) => a[0].localeCompare(b[0])))
         updateInPlace(
             this.dynamoDbTableNodes,
             sortedTablesByName.keys(),
-            key => this.dynamoDbTableNodes.get(key)!,
-            key => new DynamoDbTableNode(this.regionCode, key)
+            (key) => this.dynamoDbTableNodes.get(key)!,
+            (key) => new DynamoDbTableNode(this.regionCode, key)
         )
     }
 }
