@@ -27,7 +27,7 @@ import { TelemetryHelper } from '../util/telemetryHelper'
 import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceLogViewProvider'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { VueWebviewPanel } from '../../webviews/main'
-import { DevPortalWebviewPanel } from '../webview/devPortalWebview'
+import { DevPortalWebviewPanel } from '../webview/devPortal'
 import { globals } from '../../shared'
 
 export class Session {
@@ -91,7 +91,7 @@ export class Session {
             span.record({ amazonqConversationId: this._conversationId, credentialStartUrl: AuthUtil.instance.startUrl })
         })
 
-        this.showDevPortal(msg)
+        await this.showDevPortal(msg)
 
         this._state = new PrepareRefinementState(
             {
@@ -249,8 +249,8 @@ export class Session {
         }
     }
 
-    showDevPortal(msg: string) {
-        this._devPortalWebviewPanel?.show({
+    async showDevPortal(msg: string) {
+        await this._devPortalWebviewPanel?.show({
             title: msg,
             viewColumn: vscode.ViewColumn.Active,
             retainContextWhenHidden: true,
