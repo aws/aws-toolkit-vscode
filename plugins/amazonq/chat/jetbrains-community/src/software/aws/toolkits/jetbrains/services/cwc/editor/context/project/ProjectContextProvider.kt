@@ -236,7 +236,7 @@ class ProjectContextProvider(val project: Project, private val encoderServer: En
 
     private fun setConnectionTimeout(connection: HttpURLConnection) {
         connection.connectTimeout = 5000 // 5 seconds
-        connection.readTimeout = 10000 // 10 second
+        connection.readTimeout = 5000 // 5 second
     }
 
     private fun setConnectionProperties(connection: HttpURLConnection) {
@@ -293,26 +293,15 @@ class ProjectContextProvider(val project: Project, private val encoderServer: En
     }
 
     private fun queryResultToRelevantDocuments(queryResult: List<Chunk>): List<RelevantDocument> {
-        val chunksMap: MutableMap<String, MutableList<Chunk>> = mutableMapOf()
+        val documents: MutableList<RelevantDocument> = mutableListOf()
         queryResult.forEach { chunk ->
             run {
-                if (chunk.relativePath == null) return@forEach
-                val list: MutableList<Chunk> = if (chunksMap.containsKey(chunk.relativePath)) {
-                    chunksMap[chunk.relativePath] ?: mutableListOf()
-                } else {
-                    mutableListOf()
-                }
-                list.add(chunk)
-                chunksMap[chunk.relativePath] = list
+                val path = chunk.relativePath.orEmpty()
+                val text = chunk.context ?: chunk.content.orEmpty()
+                val document = RelevantDocument(path, text.take(10240))
+                documents.add(document)
+                logger.info { "project context: query retrieved document $path with content: ${text.take(200)}" }
             }
-        }
-        val documents: MutableList<RelevantDocument> = mutableListOf()
-        chunksMap.forEach { (filePath, chunkList) ->
-            var text = ""
-            chunkList.forEach { chunk -> text += (chunk.context ?: chunk.content) }
-            val document = RelevantDocument(filePath, text)
-            documents.add(document)
-            logger.info { "project context: query retrieved document $filePath with content: ${text.take(200)}" }
         }
         return documents
     }

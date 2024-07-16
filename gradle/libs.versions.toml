@@ -31,7 +31,7 @@ sshd = "2.12.1"
 wiremock = "3.3.1"
 undercouch-download = "5.2.1"
 zjsonpatch = "0.4.16"
-nimbus-jose-jwt = "9.24.4"
+nimbus-jose-jwt = "9.40"
 
 [libraries]
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
