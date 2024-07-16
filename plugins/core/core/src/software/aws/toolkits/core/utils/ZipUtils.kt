@@ -3,6 +3,9 @@
 
 package software.aws.toolkits.core.utils
 
+import java.io.BufferedInputStream
+import java.io.ByteArrayInputStream
+import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
@@ -13,8 +16,14 @@ import java.util.zip.ZipOutputStream
  * Adds a new [ZipEntry] with the contents of [file] to the [ZipOutputStream].
  */
 fun ZipOutputStream.putNextEntry(entryName: String, file: Path) {
-    val bytes = Files.readAllBytes(file)
-    putNextEntry(entryName, bytes)
+    try {
+        BufferedInputStream(Files.newInputStream(file)).use { inputStream ->
+            putNextEntry(entryName, inputStream)
+        }
+    } catch (e: IOException) {
+        val bytes = Files.readAllBytes(file)
+        putNextEntry(entryName, ByteArrayInputStream(bytes).buffered())
+    }
 }
 
 /**
@@ -23,15 +32,6 @@ fun ZipOutputStream.putNextEntry(entryName: String, file: Path) {
 fun ZipOutputStream.putNextEntry(entryName: String, inputStream: InputStream) {
     this.putNextEntry(ZipEntry(entryName))
     inputStream.copyTo(this)
-    this.closeEntry()
-}
-
-/**
- * Adds a new [ZipEntry] with the contents of [data] to the [ZipOutputStream].
- */
-fun ZipOutputStream.putNextEntry(entryName: String, data: ByteArray) {
-    this.putNextEntry(ZipEntry(entryName))
-    this.write(data, 0, data.size)
     this.closeEntry()
 }
 
