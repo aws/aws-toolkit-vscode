@@ -4,7 +4,7 @@
  */
 
 import { CreateDBClusterMessage } from '@aws-sdk/client-docdb'
-import { DefaultDocumentDBClient, DocumentDBClient } from '../../shared/clients/docdbClient'
+import { DBStorageType, DefaultDocumentDBClient, DocumentDBClient } from '../../shared/clients/docdbClient'
 import { validateClusterName, validatePassword, validateUsername } from '../utils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Wizard, WizardOptions } from '../../shared/wizards/wizard'
@@ -12,6 +12,7 @@ import { createInputBox } from '../../shared/ui/inputPrompter'
 import { createExitPrompter } from '../../shared/ui/common/exitPrompter'
 import { DataQuickPickItem, createQuickPick } from '../../shared/ui/pickerPrompter'
 import { createCommonButtons } from '../../shared/ui/buttons'
+import { SkipPrompter } from '../../shared/ui/common/skipPrompter'
 
 const DocDBHelpUrl = 'https://docs.aws.amazon.com/documentdb/latest/developerguide/db-cluster-parameters.html'
 
@@ -27,6 +28,9 @@ export interface CreateClusterState extends CreateDBClusterMessage {
     KmsKeyId?: string | undefined
     DBSubnetGroupName?: string | undefined
     VpcSecurityGroupIds?: string[] | undefined
+    // Instance fields
+    DBInstanceCount?: number | undefined
+    DBInstanceClass?: string | undefined
 }
 
 /**
@@ -110,6 +114,21 @@ export class CreateClusterWizard extends Wizard<CreateClusterState> {
             )
         )
 
+        form.DBInstanceCount.bindPrompter(() =>
+            createQuickPick(instanceCountItems(), {
+                step: 6,
+                title: localize('AWS.docdb.createCluster.dbInstanceCount.prompt', 'Number of instances'),
+                buttons: createCommonButtons(DocDBHelpUrl),
+            })
+        )
+
+        form.DBInstanceClass.bindPrompter(
+            async (state) => await createInstanceClassPrompter(this.client, state.EngineVersion!)
+        )
+
+        form.DBInstanceCount.setDefault(3)
+        form.DBInstanceClass.setDefault('db.t3.medium')
+
         return this
     }
 }
@@ -119,7 +138,7 @@ async function createEngineVersionPrompter(docdbClient: DocumentDBClient) {
     // sort in descending order
     versions.sort((a, b) => b.EngineVersion!.localeCompare(a.EngineVersion!))
 
-    const items: DataQuickPickItem<string>[] = versions.map(v => {
+    const items: DataQuickPickItem<string>[] = versions.map((v) => {
         return {
             label: v.EngineVersion ?? '',
             data: v.EngineVersion,
@@ -137,4 +156,42 @@ async function createEngineVersionPrompter(docdbClient: DocumentDBClient) {
         title: localize('AWS.docdb.createCluster.engineVersion.prompt', 'Select engine version'),
         buttons: createCommonButtons(DocDBHelpUrl),
     })
+}
+
+async function createInstanceClassPrompter(docdbClient: DocumentDBClient, engineVersion: string) {
+    const options = await docdbClient.listInstanceClassOptions(engineVersion, DBStorageType.Standard)
+
+    const items: DataQuickPickItem<string>[] = options.map((option) => {
+        return {
+            data: option.DBInstanceClass,
+            label: option.DBInstanceClass ?? '(unknown)',
+            description: undefined,
+            detail: undefined,
+        }
+    })
+
+    if (items.length === 0) {
+        return new SkipPrompter('db.t3.medium')
+    }
+
+    return createQuickPick(items, {
+        step: 7,
+        title: localize('AWS.docdb.createInstance.instanceClass.prompt', 'Select instance class'),
+        buttons: createCommonButtons(DocDBHelpUrl),
+    })
+}
+
+function instanceCountItems(max: number = 16): DataQuickPickItem<number>[] {
+    const items = []
+
+    for (let index = 1; index <= max; index++) {
+        const item: DataQuickPickItem<number> = {
+            label: index.toString(),
+            data: index,
+        }
+        items.push(item)
+    }
+
+    items[2].description = '(recommended)'
+    return items
 }

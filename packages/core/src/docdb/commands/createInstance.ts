@@ -34,12 +34,6 @@ export async function createInstance(node: DBClusterNode) {
         )
         return
     }
-    if (node.status !== 'available') {
-        void vscode.window.showInformationMessage(
-            localize('AWS.docdb.createInstance.clusterStopped', 'Cluster must be started to create instances')
-        )
-        return
-    }
 
     const generateInstanceName = (clusterName: string) =>
         instances.length === 0 ? clusterName : `${clusterName}${++instances.length}`

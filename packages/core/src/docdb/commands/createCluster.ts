@@ -34,6 +34,18 @@ export async function createCluster(node?: DocumentDBNode) {
     try {
         const cluster = await node?.createCluster(result)
 
+        // create instances for cluster
+        if (cluster && result.DBInstanceCount) {
+            for (let index = 0; index < result.DBInstanceCount; index++) {
+                await node?.client.createInstance({
+                    Engine: 'docdb',
+                    DBClusterIdentifier: clusterName,
+                    DBInstanceIdentifier: index === 0 ? clusterName : `${clusterName}${index + 1}`,
+                    DBInstanceClass: result.DBInstanceClass ?? 'db.t3.medium',
+                })
+            }
+        }
+
         getLogger().info('Created cluster: %O', cluster)
         void vscode.window.showInformationMessage(
             localize('AWS.docdb.createCluster.success', 'Created cluster: {0}', clusterName)

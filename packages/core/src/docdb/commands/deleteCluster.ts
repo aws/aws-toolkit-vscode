@@ -75,13 +75,13 @@ export async function deleteCluster(node: DBClusterNode) {
 
         const cluster = await node.deleteCluster(finalSnapshotId)
 
-        getLogger().info('Deleted cluster: %O', cluster)
         void vscode.window.showInformationMessage(
             localize('AWS.docdb.deleteCluster.success', 'Deleting cluster: {0}', clusterName)
         )
 
         await node.waitUntilStatusChanged()
-        node.refresh()
+        node.parent.refresh()
+        getLogger().info('Deleted cluster: %O', cluster)
         return cluster
     } catch (e) {
         getLogger().error(`Failed to delete cluster ${clusterName}: %s`, e)
@@ -97,7 +97,7 @@ async function showConfirmationDialog(): Promise<boolean> {
     const confirmationInput = await vscode.window.showInputBox({
         prompt,
         placeHolder: confirmValue,
-        validateInput: input => (input?.toLowerCase() !== confirmValue ? prompt : undefined),
+        validateInput: (input) => (input?.toLowerCase() !== confirmValue ? prompt : undefined),
     })
 
     return confirmationInput === confirmValue
