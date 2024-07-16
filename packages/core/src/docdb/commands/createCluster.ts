@@ -20,6 +20,10 @@ import { CreateClusterWizard } from '../wizards/createClusterWizard'
 export async function createCluster(node?: DocumentDBNode) {
     getLogger().debug('CreateCluster called for: %O', node)
 
+    if (!node) {
+        throw new Error('No node specified for CreateCluster')
+    }
+
     const wizard = new CreateClusterWizard(node?.regionCode ?? '', {}, node?.client)
     const result = await wizard.run()
 
@@ -36,14 +40,20 @@ export async function createCluster(node?: DocumentDBNode) {
 
         // create instances for cluster
         if (cluster && result.DBInstanceCount) {
+            const tasks = []
+
             for (let index = 0; index < result.DBInstanceCount; index++) {
-                await node?.client.createInstance({
-                    Engine: 'docdb',
-                    DBClusterIdentifier: clusterName,
-                    DBInstanceIdentifier: index === 0 ? clusterName : `${clusterName}${index + 1}`,
-                    DBInstanceClass: result.DBInstanceClass ?? 'db.t3.medium',
-                })
+                tasks.push(
+                    node.client.createInstance({
+                        Engine: 'docdb',
+                        DBClusterIdentifier: clusterName,
+                        DBInstanceIdentifier: index === 0 ? clusterName : `${clusterName}${index + 1}`,
+                        DBInstanceClass: result.DBInstanceClass ?? 'db.t3.medium',
+                    })
+                )
             }
+
+            await Promise.all(tasks)
         }
 
         getLogger().info('Created cluster: %O', cluster)

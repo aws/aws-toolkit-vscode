@@ -87,11 +87,15 @@ export class DBClusterNode extends AWSTreeNodeBase implements AWSResourceNode {
     public async deleteCluster(finalSnapshotId: string | undefined): Promise<DBCluster | undefined> {
         const instances = await this.client.listInstances([this.arn])
 
+        const tasks = []
         for (const instance of instances) {
-            await this.client.deleteInstance({
-                DBInstanceIdentifier: instance.DBInstanceIdentifier,
-            })
+            tasks.push(
+                this.client.deleteInstance({
+                    DBInstanceIdentifier: instance.DBInstanceIdentifier,
+                })
+            )
         }
+        await Promise.all(tasks)
 
         return await this.client.deleteCluster({
             DBClusterIdentifier: this.cluster.DBClusterIdentifier,
