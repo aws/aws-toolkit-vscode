@@ -9,7 +9,10 @@ import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
 export class DynamoDbTableNode extends AWSTreeNodeBase implements AWSResourceNode {
-    public constructor(public override readonly regionCode: string, public dynamoDbtable: DynamoDB.Types.TableName) {
+    public constructor(
+        public override readonly regionCode: string,
+        public dynamoDbtable: DynamoDB.Types.TableName
+    ) {
         super('')
         this.dynamoDbtable = dynamoDbtable
         this.tooltip = `${this.dynamoDbtable}`
