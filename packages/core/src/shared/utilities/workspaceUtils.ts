@@ -17,6 +17,7 @@ import { sanitizeFilename } from './textUtilities'
 import { GitIgnoreAcceptor } from '@gerhobbelt/gitignore-parser'
 import * as parser from '@gerhobbelt/gitignore-parser'
 import fs from '../fs/fs'
+import { crossFileContextConfig } from '../../codewhisperer'
 
 type GitIgnoreRelativeAcceptor = {
     folderPath: string
@@ -696,16 +697,18 @@ export async function listFilesWithinDistanceAgainstFile(
 export async function neighborFiles(
     uri: string,
     args: {
+        fileDistance: number
         workspaceFolders?: readonly vscode.WorkspaceFolder[]
     } = {
+        fileDistance: crossFileContextConfig.neighborFileDistance,
         workspaceFolders: vscode.workspace.workspaceFolders,
     }
 ): Promise<Set<string>> {
-    const neighborInChildDir = await listFilesWithinDistanceAgainstFile(uri, 1, {
+    const neighborInChildDir = await listFilesWithinDistanceAgainstFile(uri, args.fileDistance, {
         searchChild: true,
         workspaceFolders: args.workspaceFolders,
     })
-    const neighborInParentDir = await listFilesWithinDistanceAgainstFile(uri, 1, {
+    const neighborInParentDir = await listFilesWithinDistanceAgainstFile(uri, args.fileDistance, {
         searchChild: false,
         workspaceFolders: args.workspaceFolders,
     })

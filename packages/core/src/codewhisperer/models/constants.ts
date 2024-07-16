@@ -657,6 +657,7 @@ export const crossFileContextConfig = {
     numberOfChunkToFetch: 60,
     topK: 3,
     numberOfLinesEachChunk: 10,
+    neighborFileDistance: 1,
 }
 
 export const utgConfig = {

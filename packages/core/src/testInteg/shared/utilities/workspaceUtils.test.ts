@@ -22,6 +22,7 @@ import { CodelensRootRegistry } from '../../../shared/fs/codelensRootRegistry'
 import { createTestWorkspace, createTestWorkspaceFolder, toFile } from '../../../test/testUtil'
 import sinon from 'sinon'
 import { getFileDistance } from '../../../shared'
+import { crossFileContextConfig } from '../../../codewhisperer'
 
 describe('findParentProjectFile', async function () {
     const workspaceDir = getTestWorkspaceFolder()
@@ -517,6 +518,10 @@ describe('listFilesWithinDistanceAgainstFile', function () {
  *   F  4 3 4 4 4 x
  */
 describe('neighborFiles', function () {
+    it('neighbor file default definition', function () {
+        assert.strictEqual(crossFileContextConfig.neighborFileDistance, 1)
+    })
+
     it('return files with distance less than or equal to 1', async function () {
         const ws = await createTestWorkspaceFolder('root')
         const rootUri = ws.uri.fsPath
@@ -535,12 +540,12 @@ describe('neighborFiles', function () {
         await toFile('e', e)
         await toFile('f', f)
 
-        const neighborOfA = await neighborFiles(a, { workspaceFolders: [ws] })
-        const neighborOfB = await neighborFiles(b, { workspaceFolders: [ws] })
-        const neighborOfC = await neighborFiles(c, { workspaceFolders: [ws] })
-        const neighborOfD = await neighborFiles(d, { workspaceFolders: [ws] })
-        const neighborOfE = await neighborFiles(e, { workspaceFolders: [ws] })
-        const neighborOfF = await neighborFiles(f, { workspaceFolders: [ws] })
+        const neighborOfA = await neighborFiles(a, { fileDistance: 1, workspaceFolders: [ws] })
+        const neighborOfB = await neighborFiles(b, { fileDistance: 1, workspaceFolders: [ws] })
+        const neighborOfC = await neighborFiles(c, { fileDistance: 1, workspaceFolders: [ws] })
+        const neighborOfD = await neighborFiles(d, { fileDistance: 1, workspaceFolders: [ws] })
+        const neighborOfE = await neighborFiles(e, { fileDistance: 1, workspaceFolders: [ws] })
+        const neighborOfF = await neighborFiles(f, { fileDistance: 1, workspaceFolders: [ws] })
 
         assert.deepStrictEqual(neighborOfA, new Set([b, e]))
         assert.strictEqual(getFileDistance(a, b), 1)
