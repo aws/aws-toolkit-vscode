@@ -6,7 +6,7 @@
 import { SinonStub, stub } from 'sinon'
 import assert from 'assert'
 import crossFetch from 'cross-fetch'
-import request, { RequestCancelledError, RequestError } from '../../common/request'
+import request, { RequestCancelledError, RequestError } from '../../shared/request'
 import globals from '../../shared/extensionGlobals'
 
 describe('fetch()', function () {
