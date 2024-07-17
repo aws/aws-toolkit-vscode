@@ -1,13 +1,13 @@
 * @aws/aws-ides-team
 
-chat/ @aws/dexp
+chat/ @aws/codewhisperer-team
 codemodernizer/ @aws/elastic-gumby
 codetransform/ @aws/elastic-gumby
 codewhisperer/ @aws/codewhisperer-team
 
 mynah-ui/ @aws/dexp
-mynah-ui/package.json @aws/dexp @aws/elastic-gumby @aws/earlybird
-mynah-ui/package-lock.json @aws/dexp @aws/elastic-gumby @aws/earlybird
+mynah-ui/package.json @aws/dexp @aws/elastic-gumby @aws/earlybird @aws/codewhisperer-team
+mynah-ui/package-lock.json @aws/dexp @aws/elastic-gumby @aws/earlybird @aws/codewhisperer-team
 
 # nested within chat/, so needs to be after to take precedence
 amazonqFeatureDev/ @aws/earlybird
