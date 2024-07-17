@@ -20,6 +20,7 @@ __pycache__
 
 # Auto generated definitions
 packages/*/src/**/*.gen.ts
+!packages/core/src/shared/settings-*.gen.ts
 src.gen/*
 
 # Test reports
