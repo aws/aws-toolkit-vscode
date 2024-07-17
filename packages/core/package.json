@@ -33,7 +33,7 @@
         "./extensionCommon": "./dist/src/extensionCommon.js",
         "./amazonq": "./dist/src/amazonq/index.js",
         "./codewhisperer": "./dist/src/codewhisperer/index.js",
-        "./codewhispererCommon": "./dist/src/codewhisperer/indexCommon.js",
+        "./codewhisperer/node": "./dist/src/codewhisperer/indexNode.js",
         "./shared": "./dist/src/shared/index.js",
         "./auth": "./dist/src/auth/index.js",
         "./amazonqGumby": "./dist/src/amazonqGumby/index.js",
