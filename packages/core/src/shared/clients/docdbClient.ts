@@ -164,6 +164,21 @@ export class DefaultDocumentDBClient {
         }
     }
 
+    public async modifyCluster(input: DocDB.ModifyDBClusterMessage): Promise<DocDB.DBCluster | undefined> {
+        getLogger().debug('ModifyCluster called')
+        const client = await this.getClient()
+
+        try {
+            const command = new DocDB.ModifyDBClusterCommand(input)
+            const response = await client.send(command)
+            return response.DBCluster
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to modify DocumentDB cluster')
+        } finally {
+            client.destroy()
+        }
+    }
+
     public async deleteCluster(input: DocDB.DeleteDBClusterMessage): Promise<DocDB.DBCluster | undefined> {
         getLogger().debug('DeleteCluster called')
         const client = await this.getClient()

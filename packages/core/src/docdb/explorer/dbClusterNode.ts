@@ -9,7 +9,7 @@ import { inspect } from 'util'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { waitUntil } from '../../shared'
-import { CreateDBInstanceMessage, DBCluster } from '@aws-sdk/client-docdb'
+import { CreateDBInstanceMessage, DBCluster, ModifyDBClusterMessage } from '@aws-sdk/client-docdb'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { DBInstanceNode } from './dbInstanceNode'
@@ -82,6 +82,15 @@ export class DBClusterNode extends AWSTreeNodeBase implements AWSResourceNode {
 
     public async createInstance(request: CreateDBInstanceMessage): Promise<DBInstance | undefined> {
         return await this.client.createInstance(request)
+    }
+
+    public async renameCluster(clusterName: string): Promise<DBCluster | undefined> {
+        const request: ModifyDBClusterMessage = {
+            DBClusterIdentifier: this.cluster.DBClusterIdentifier,
+            NewDBClusterIdentifier: clusterName,
+            ApplyImmediately: true,
+        }
+        return await this.parent.client.modifyCluster(request)
     }
 
     public async deleteCluster(finalSnapshotId: string | undefined): Promise<DBCluster | undefined> {
