@@ -71,6 +71,8 @@ Some components of the core library depend on the `package.json`s of the extensi
     -   Does not restore, it is a superset of what exists in `packages/core` for `configuration.properties`.
     -   To develop for the Amazon Q extension: add all changes to `packages/amazonq/package.json`, EXCEPT for settings that are references by code in the core library, or settings that already exist in the core `package.json`
 
+If you are modifying or registering new debuggers in VS Code via the `debuggers` contribution point, you may need to regenerate the [definitions file](../packages/core/src/shared/sam/debugger/awsSamDebugConfiguration.gen.ts). After updating ['toolkit/package.json'](../packages/toolkit/package.json), run `npm run generateConfigurationAttributes -w packages/toolkit`
+
 ## Shared vs Common names
 
 In this repo, the keywords **"shared"** and **"common"** have specific meanings in the context of file/folder names.
@@ -292,8 +294,8 @@ Commands and events are defined on the backend via sub-classes of `VueWebview`. 
     ```ts
     client
         .foo()
-        .then(response => console.log(response))
-        .catch(err => console.log(err))
+        .then((response) => console.log(response))
+        .catch((err) => console.log(err))
     ```
 
     The backend protocol is allowed to throw errors. These result in rejected Promises on the frontend.
@@ -301,13 +303,13 @@ Commands and events are defined on the backend via sub-classes of `VueWebview`. 
 -   Registering for events:
 
     ```ts
-    client.onBar(num => console.log(num))
+    client.onBar((num) => console.log(num))
     ```
 
 -   Methods called `init` will only return data on the initial webview load:
 
     ```ts
-    client.init(data => (this.data = data ?? this.data))
+    client.init((data) => (this.data = data ?? this.data))
     ```
 
 ## Webviews (non Vue)
@@ -493,8 +495,8 @@ class ExampleWizard extends Wizard<ExampleState> {
             { label: '1', data: 1 },
             { label: '2', data: 2 },
         ]
-        this.form.bar.bindPrompter(state => createQuickPick(items, { title: `Select a number (${state.foo})` }), {
-            showWhen: state => state.foo?.length > 5,
+        this.form.bar.bindPrompter((state) => createQuickPick(items, { title: `Select a number (${state.foo})` }), {
+            showWhen: (state) => state.foo?.length > 5,
         })
     }
 }
