@@ -57,7 +57,7 @@ describe('onInlineAcceptance', function () {
         })
 
         it('Should report telemetry that records this user decision event', async function () {
-            await globals.context.globalState.update('CODEWHISPERER_USER_GROUP', {
+            await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
                 group: UserGroup.Classifier,
                 version: extensionVersion,
             })

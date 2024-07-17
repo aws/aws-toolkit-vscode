@@ -8,6 +8,9 @@ import { getLogger } from './logger/logger'
 import * as redshift from '../awsService/redshift/models/models'
 import { TypeConstructor, cast } from './utilities/typeConstructors'
 
+type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId'
+export type ToolIdStateKey = `${ToolId}.savedConnectionId`
+
 type samInitStateKey =
     | 'ACTIVATION_TEMPLATE_PATH_KEY'
     | 'ACTIVATION_LAUNCH_PATH_KEY'
@@ -20,15 +23,17 @@ type stepFunctionsKey = 'SCRIPT_LAST_DOWNLOADED_URL' | 'CSS_LAST_DOWNLOADED_URL'
 type globalKey =
     | samInitStateKey
     | stepFunctionsKey
+    | ToolIdStateKey
+    | 'aws.amazonq.codewhisperer.newCustomizations'
+    | 'aws.amazonq.hasShownWalkthrough'
     | 'aws.downloadPath'
     | 'aws.lastTouchedS3Folder'
     | 'aws.lastUploadedToS3Folder'
     | 'aws.redshift.connections'
     | 'aws.toolkit.amazonq.dismissed'
     | 'aws.toolkit.amazonqInstall.dismissed'
-    | 'aws.toolkit.separationPromptDismissed'
     | 'aws.toolkit.separationPromptCommand'
-    | 'aws.amazonq.codewhisperer.newCustomizations'
+    | 'aws.toolkit.separationPromptDismissed'
     // Deprecated/legacy names. New keys should start with "aws.".
     | 'CODECATALYST_RECONNECT'
     | 'CODEWHISPERER_AUTO_SCANS_ENABLED'
@@ -38,6 +43,8 @@ type globalKey =
     | 'CODEWHISPERER_SELECTED_CUSTOMIZATION'
     | 'CODEWHISPERER_USER_GROUP'
     | 'gumby.wasQCodeTransformationUsed'
+    | 'isExtensionFirstUse'
+    | 'lastExtensionVersion'
     | 'hasAlreadyOpenedAmazonQ'
     // Legacy name from `ssoAccessTokenProvider.ts`.
     | '#sessionCreationDates'

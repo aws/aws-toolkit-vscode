@@ -629,15 +629,12 @@ export class ExtensionUse {
     /**
      * Check if this is the first use/session of the extension.
      */
-    isFirstUse(
-        state: vscode.Memento = globals.context.globalState,
-        hasExistingConnections = () => Auth.instance.hasConnections
-    ): boolean {
+    isFirstUse(hasExistingConnections = () => Auth.instance.hasConnections): boolean {
         if (this.isFirstUseCurrentSession !== undefined) {
             return this.isFirstUseCurrentSession
         }
 
-        this.isFirstUseCurrentSession = state.get(this.isExtensionFirstUseKey)
+        this.isFirstUseCurrentSession = globals.globalState.get('isExtensionFirstUse')
         if (this.isFirstUseCurrentSession === undefined) {
             // The variable in the store is not defined yet, fallback to checking if they have existing connections.
             this.isFirstUseCurrentSession = !hasExistingConnections()
@@ -650,7 +647,7 @@ export class ExtensionUse {
         }
 
         // Update state, so next time it is not first use
-        this.updateMemento(state, this.isExtensionFirstUseKey, false)
+        this.updateMemento('isExtensionFirstUse', false)
 
         return this.isFirstUseCurrentSession
     }
@@ -663,22 +660,20 @@ export class ExtensionUse {
      * Caveat: This may return true even if an update hadn't occurred IF
      * this function hasn't been called.
      */
-    wasUpdated(state: vscode.Memento = globals.context.globalState) {
+    wasUpdated() {
         if (this.wasExtensionUpdated !== undefined) {
             return this.wasExtensionUpdated
         }
         const currentVersion = extensionVersion
 
-        this.wasExtensionUpdated = currentVersion !== state.get(this.lastExtensionVersionKey)
-        this.updateMemento(state, this.lastExtensionVersionKey, currentVersion)
+        this.wasExtensionUpdated = currentVersion !== globals.globalState.get('lastExtensionVersion')
+        this.updateMemento(this.lastExtensionVersionKey, currentVersion)
 
         return this.wasExtensionUpdated
     }
 
-    private updateMemento(memento: vscode.Memento, key: string, val: any) {
-        memento.update(key, val).then(undefined, (e) => {
-            getLogger().error('Memento.update failed: %s', (e as Error).message)
-        })
+    private updateMemento(key: 'isExtensionFirstUse' | 'lastExtensionVersion', val: any) {
+        globals.globalState.tryUpdate(key, val)
     }
 
     static #instance: ExtensionUse

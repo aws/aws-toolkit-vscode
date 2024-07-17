@@ -114,7 +114,7 @@ describe('recommendationHandler', function () {
         })
 
         it('should call telemetry function that records a CodeWhisperer service invocation', async function () {
-            await globals.context.globalState.update('CODEWHISPERER_USER_GROUP', {
+            await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
                 group: UserGroup.CrossFile,
                 version: extensionVersion,
             })
@@ -166,7 +166,7 @@ describe('recommendationHandler', function () {
         })
 
         it('should call telemetry function that records a Empty userDecision event', async function () {
-            await globals.context.globalState.update('CODEWHISPERER_USER_GROUP', {
+            await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
                 group: UserGroup.CrossFile,
                 version: extensionVersion,
             })
