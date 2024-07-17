@@ -66,7 +66,15 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
         extensionUri: vscode.Uri.file('/fake/extension/dir/'),
         id: 'aws.toolkit.fake.extension',
         isActive: true,
-        packageJSON: {},
+        packageJSON: {
+            // Required for shared/vscode/env.ts, which may be referenced by any codepath.
+            engines: {
+                vscode: '^1.68.0',
+            },
+            devDependencies: {
+                '@types/node': '^16.18.95',
+            },
+        },
     }
 
     /**
