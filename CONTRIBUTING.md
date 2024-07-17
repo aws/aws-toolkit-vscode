@@ -132,7 +132,7 @@ You can also use these NPM tasks (see `npm run` for the full list):
 
     1. Declare a global unhandledRejection handler.
         ```ts
-        process.on('unhandledRejection', (e) => {
+        process.on('unhandledRejection', e => {
             getLogger('channel').error(
                 localize(
                     'AWS.channel.aws.toolkit.activation.error',

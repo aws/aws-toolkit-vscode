@@ -292,8 +292,8 @@ Commands and events are defined on the backend via sub-classes of `VueWebview`. 
     ```ts
     client
         .foo()
-        .then((response) => console.log(response))
-        .catch((err) => console.log(err))
+        .then(response => console.log(response))
+        .catch(err => console.log(err))
     ```
 
     The backend protocol is allowed to throw errors. These result in rejected Promises on the frontend.
@@ -301,13 +301,13 @@ Commands and events are defined on the backend via sub-classes of `VueWebview`. 
 -   Registering for events:
 
     ```ts
-    client.onBar((num) => console.log(num))
+    client.onBar(num => console.log(num))
     ```
 
 -   Methods called `init` will only return data on the initial webview load:
 
     ```ts
-    client.init((data) => (this.data = data ?? this.data))
+    client.init(data => (this.data = data ?? this.data))
     ```
 
 ## Webviews (non Vue)
@@ -493,8 +493,8 @@ class ExampleWizard extends Wizard<ExampleState> {
             { label: '1', data: 1 },
             { label: '2', data: 2 },
         ]
-        this.form.bar.bindPrompter((state) => createQuickPick(items, { title: `Select a number (${state.foo})` }), {
-            showWhen: (state) => state.foo?.length > 5,
+        this.form.bar.bindPrompter(state => createQuickPick(items, { title: `Select a number (${state.foo})` }), {
+            showWhen: state => state.foo?.length > 5,
         })
     }
 }
