@@ -4019,7 +4019,7 @@
         "generateConfigurationAttributes": "ts-node ./scripts/build/generateConfigurationAttributes.ts",
         "clean": "ts-node ../../scripts/clean.ts dist/",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
-        "buildScripts": "npm run generateClients && npm run generatePackage && npm run copyFiles",
+        "buildScripts": "npm run generateClients && npm run generateIcons && npm run copyFiles",
         "compile": "npm run testCompile && webpack",
         "compileOnly": "tsc -p ./",
         "compileDev": "npm run compile -- --mode development",
@@ -4033,7 +4033,7 @@
         "testInteg": "npm run testCompile && c8 ts-node ./scripts/test/testInteg.ts",
         "lint": "ts-node ./scripts/lint/testLint.ts",
         "generateClients": "ts-node ./scripts/build/generateServiceClient.ts ",
-        "generatePackage": "ts-node ./scripts/build/generateIcons.ts",
+        "generateIcons": "ts-node ../../scripts/generateIcons.ts",
         "generateTelemetry": "node ../../node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts"
     },
     "scriptsComments": {
