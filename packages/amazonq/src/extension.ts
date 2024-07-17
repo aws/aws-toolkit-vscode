@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { activateAmazonQCommon, amazonQContextPrefix, deactivateCommon } from './extensionCommon'
-import { DefaultAmazonQAppInitContext, activate as activateCWChat } from 'aws-core-vscode/amazonq'
+import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
 import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
 import { ExtContext } from 'aws-core-vscode/shared'
 import { updateDevMode } from 'aws-core-vscode/dev'
@@ -15,6 +15,7 @@ import { registerSubmitFeedback } from 'aws-core-vscode/feedback'
 import { DevOptions } from 'aws-core-vscode/dev'
 import { Auth } from 'aws-core-vscode/auth'
 import api from './api'
+import { activate as activateCWChat } from './app/chat/activation'
 
 export async function activate(context: vscode.ExtensionContext) {
     // IMPORTANT: No other code should be added to this function. Place it in one of the following 2 functions where appropriate.
