@@ -331,6 +331,40 @@ describe('FileSystem', function () {
         })
     })
 
+    describe('rename()', async () => {
+        it('renames a file', async () => {
+            const oldPath = await makeFile('oldFile.txt', 'hello world')
+            const newPath = path.join(path.dirname(oldPath), 'newFile.txt')
+
+            await fs.rename(oldPath, newPath)
+
+            assert.strictEqual(await fs.readFileAsString(newPath), 'hello world')
+            assert(!existsSync(oldPath))
+        })
+
+        it('renames a folder', async () => {
+            const oldPath = mkTestDir('test')
+            await fs.writeFile(path.join(oldPath, 'file.txt'), 'test text')
+            const newPath = path.join(path.dirname(oldPath), 'newName')
+
+            await fs.rename(oldPath, newPath)
+
+            assert(existsSync(newPath))
+            assert.deepStrictEqual(await fs.readFileAsString(path.join(newPath, 'file.txt')), 'test text')
+            assert(!existsSync(oldPath))
+        })
+
+        it('overwrites if destination exists', async () => {
+            const oldPath = await makeFile('oldFile.txt', 'hello world')
+            const newPath = await makeFile('newFile.txt', 'some content')
+
+            await fs.rename(oldPath, newPath)
+
+            assert.strictEqual(await fs.readFileAsString(newPath), 'hello world')
+            assert(!existsSync(oldPath))
+        })
+    })
+
     describe('getUserHomeDir()', function () {
         let fakeHome: string
         let saveEnv: EnvironmentVariables = {}

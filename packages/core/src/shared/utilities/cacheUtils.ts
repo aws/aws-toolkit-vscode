@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { dirname } from 'path'
 import { ToolkitError, isFileNotFoundError } from '../errors'
 import fs from '../../shared/fs/fs'
-import { promises as fsPromises } from 'fs'
 import crypto from 'crypto'
 import { isWeb } from '../extensionGlobals'
 
@@ -136,7 +135,7 @@ export function createDiskCache<T, K>(
                     // write, though there can still be race conditions with which version remains after overwrites.
                     const tempFile = `${target}.tmp-${crypto.randomBytes(4).toString('hex')}`
                     await fs.writeFile(tempFile, JSON.stringify(data), { mode: 0o600 })
-                    await fsPromises.rename(tempFile, target)
+                    await fs.rename(tempFile, target)
                 }
             } catch (error) {
                 throw ToolkitError.chain(error, `Failed to save "${target}"`, {
