@@ -37,8 +37,7 @@ Current quirks of the current monorepo status that should be resolved/evaluated 
     -   This package contains shortcuts to some of the `npm` scripts found in the subproject(s).
     -   `createRelease` and `newChange` run at the subproject level only, e.g. from root level, try npm run createRelease -w packages/toolkit
     -   To run a script not present in the root `package.json`, use `npm run -w packages/toolkit <script>`
--   `coverage/`, `.test-reports/`, `node_modules/` are hoisted to the project root. As more subprojects are added,
-    we will need to evaluate how to merge and publish coverage reports.
+-   `coverage/`, `.test-reports/`, `node_modules/` are hoisted to the project root.
     -   `dist/` however remains at the subproject level, along with a local `node_modules/`. See [`npm workspaces`](https://docs.npmjs.com/cli/v8/using-npm/workspaces)
         for more info on how `node_modules/` hoisting works.
     -   Because of `node_modules/` hoisting, references to this folder in code access the root project modules folder. This may be
