@@ -71,6 +71,7 @@ import DependencyVersions from '../../amazonqGumby/models/dependencies'
 import { dependencyNoAvailableVersions } from '../../amazonqGumby/models/constants'
 import { HumanInTheLoopManager } from '../service/transformByQ/humanInTheLoopManager'
 import { setContext } from '../../shared/vscode/setContext'
+import { makeTemporaryToolkitFolder } from '../../shared'
 
 function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
@@ -527,14 +528,26 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
         // Since we don't yet have a good way of knowing what the error was,
         // we try to fetch any build failure artifacts that may exist so that we can optionally
         // show them to the user if they exist.
-        const tmpDir = path.join(os.tmpdir(), 'q-transformation-build-logs')
-        await downloadAndExtractResultArchive(jobId, undefined, tmpDir, 'Logs')
-        const pathToLog = path.join(tmpDir, 'buildCommandOutput.log')
-        transformByQState.setPreBuildLogFilePath(pathToLog)
+        let pathToLog = ''
+        try {
+            const tempToolkitFolder = await makeTemporaryToolkitFolder()
+            const tempBuildLogsDir = path.join(tempToolkitFolder, 'q-transformation-build-logs')
+            await downloadAndExtractResultArchive(jobId, undefined, tempBuildLogsDir, 'Logs')
+            pathToLog = path.join(tempBuildLogsDir, 'buildCommandOutput.log')
+            transformByQState.setPreBuildLogFilePath(pathToLog)
+        } catch (e) {
+            transformByQState.setPreBuildLogFilePath('')
+            getLogger().error(
+                'CodeTransformation: failed to download any possible build error logs: ' + (e as Error).message
+            )
+            throw e
+        }
 
-        if (fs.existsSync(pathToLog)) {
+        if (fs.existsSync(pathToLog) && !transformByQState.isCancelled()) {
             throw new TransformationPreBuildError()
         } else {
+            // not strictly needed to reset path here and above; doing it just to represent unavailable logs
+            transformByQState.setPreBuildLogFilePath('')
             throw new PollJobError()
         }
     }
@@ -733,14 +746,6 @@ export async function cleanupTransformationJob() {
         CodeTransformTelemetryState.instance.getStartTime()
     )
     CodeTransformTelemetryState.instance.resetCodeTransformMetaDataField()
-}
-
-export async function resetDebugArtifacts() {
-    const buildLogPath = transformByQState.getPreBuildLogFilePath()
-    if (buildLogPath && fs.existsSync(buildLogPath)) {
-        fs.rmSync(path.dirname(transformByQState.getPreBuildLogFilePath()), { recursive: true, force: true })
-    }
-    transformByQState.setPreBuildLogFilePath('')
 }
 
 export async function stopTransformByQ(
