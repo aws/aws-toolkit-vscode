@@ -5,14 +5,14 @@ import {
   ServiceOutputTypes,
 } from "../CodeWhispererStreamingClient";
 import {
-  GenerateAssistantResponseRequest,
-  GenerateAssistantResponseRequestFilterSensitiveLog,
-  GenerateAssistantResponseResponse,
-  GenerateAssistantResponseResponseFilterSensitiveLog,
+  ConverseStreamRequest,
+  ConverseStreamRequestFilterSensitiveLog,
+  ConverseStreamResponse,
+  ConverseStreamResponseFilterSensitiveLog,
 } from "../models/models_0";
 import {
-  de_GenerateAssistantResponseCommand,
-  se_GenerateAssistantResponseCommand,
+  de_ConverseStreamCommand,
+  se_ConverseStreamCommand,
 } from "../protocols/Aws_restJson1";
 import { getSerdePlugin } from "@smithy/middleware-serde";
 import {
@@ -39,26 +39,26 @@ export { __MetadataBearer, $Command };
 /**
  * @public
  *
- * The input for {@link GenerateAssistantResponseCommand}.
+ * The input for {@link ConverseStreamCommand}.
  */
-export interface GenerateAssistantResponseCommandInput extends GenerateAssistantResponseRequest {}
+export interface ConverseStreamCommandInput extends ConverseStreamRequest {}
 /**
  * @public
  *
- * The output of {@link GenerateAssistantResponseCommand}.
+ * The output of {@link ConverseStreamCommand}.
  */
-export interface GenerateAssistantResponseCommandOutput extends GenerateAssistantResponseResponse, __MetadataBearer {}
+export interface ConverseStreamCommandOutput extends ConverseStreamResponse, __MetadataBearer {}
 
 /**
  * @public
- * API to generate assistant response.
+ *
  * @example
  * Use a bare-bones client and the command you need to make an API call.
  * ```javascript
- * import { CodeWhispererStreamingClient, GenerateAssistantResponseCommand } from "@amzn/codewhisperer-streaming"; // ES Modules import
- * // const { CodeWhispererStreamingClient, GenerateAssistantResponseCommand } = require("@amzn/codewhisperer-streaming"); // CommonJS import
+ * import { CodeWhispererStreamingClient, ConverseStreamCommand } from "@amzn/codewhisperer-streaming"; // ES Modules import
+ * // const { CodeWhispererStreamingClient, ConverseStreamCommand } = require("@amzn/codewhisperer-streaming"); // CommonJS import
  * const client = new CodeWhispererStreamingClient(config);
- * const input = { // GenerateAssistantResponseRequest
+ * const input = { // ConverseStreamRequest
  *   conversationState: { // ConversationState
  *     conversationId: "STRING_VALUE",
  *     history: [ // ChatHistory
@@ -338,12 +338,15 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  *     customizationArn: "STRING_VALUE",
  *   },
  *   profileArn: "STRING_VALUE",
+ *   source: "STRING_VALUE",
+ *   dryRun: true || false,
  * };
- * const command = new GenerateAssistantResponseCommand(input);
+ * const command = new ConverseStreamCommand(input);
  * const response = await client.send(command);
- * // { // GenerateAssistantResponseResponse
+ * // { // ConverseStreamResponse
  * //   conversationId: "STRING_VALUE", // required
- * //   generateAssistantResponseResponse: { // ChatResponseStream Union: only one key present
+ * //   utteranceId: "STRING_VALUE",
+ * //   converseStreamResponse: { // ChatResponseStream Union: only one key present
  * //     messageMetadataEvent: { // MessageMetadataEvent
  * //       conversationId: "STRING_VALUE",
  * //     },
@@ -402,20 +405,32 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  *
  * ```
  *
- * @param GenerateAssistantResponseCommandInput - {@link GenerateAssistantResponseCommandInput}
- * @returns {@link GenerateAssistantResponseCommandOutput}
- * @see {@link GenerateAssistantResponseCommandInput} for command's `input` shape.
- * @see {@link GenerateAssistantResponseCommandOutput} for command's `response` shape.
+ * @param ConverseStreamCommandInput - {@link ConverseStreamCommandInput}
+ * @returns {@link ConverseStreamCommandOutput}
+ * @see {@link ConverseStreamCommandInput} for command's `input` shape.
+ * @see {@link ConverseStreamCommandOutput} for command's `response` shape.
  * @see {@link CodeWhispererStreamingClientResolvedConfig | config} for CodeWhispererStreamingClient's `config` shape.
  *
  * @throws {@link InternalServerException} (server fault)
  *  This exception is thrown when an unexpected error occurred during the processing of a request.
+ *
+ * @throws {@link ServiceQuotaExceededException} (client fault)
+ *  This exception is thrown when request was denied due to caller exceeding their usage limits
+ *
+ * @throws {@link DryRunOperationException} (client fault)
+ *  This exception is translated to a 204 as it succeeded the IAM Auth.
  *
  * @throws {@link ThrottlingException} (client fault)
  *  This exception is thrown when request was denied due to request throttling.
  *
  * @throws {@link ValidationException} (client fault)
  *  This exception is thrown when the input fails to satisfy the constraints specified by the service.
+ *
+ * @throws {@link ConflictException} (client fault)
+ *  This exception is thrown when the action to perform could not be completed because the resource is in a conflicting state.
+ *
+ * @throws {@link ResourceNotFoundException} (client fault)
+ *  This exception is thrown when describing a resource that does not exist.
  *
  * @throws {@link AccessDeniedException} (client fault)
  *  This exception is thrown when the user does not have sufficient access to perform this action.
@@ -424,14 +439,14 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  * <p>Base exception class for all service exceptions from CodeWhispererStreaming service.</p>
  *
  */
-export class GenerateAssistantResponseCommand extends $Command<GenerateAssistantResponseCommandInput, GenerateAssistantResponseCommandOutput, CodeWhispererStreamingClientResolvedConfig> {
+export class ConverseStreamCommand extends $Command<ConverseStreamCommandInput, ConverseStreamCommandOutput, CodeWhispererStreamingClientResolvedConfig> {
   // Start section: command_properties
   // End section: command_properties
 
   /**
    * @public
    */
-  constructor(readonly input: GenerateAssistantResponseCommandInput) {
+  constructor(readonly input: ConverseStreamCommandInput) {
     // Start section: command_constructor
     super();
     // End section: command_constructor
@@ -444,25 +459,25 @@ export class GenerateAssistantResponseCommand extends $Command<GenerateAssistant
     clientStack: MiddlewareStack<ServiceInputTypes, ServiceOutputTypes>,
     configuration: CodeWhispererStreamingClientResolvedConfig,
     options?: __HttpHandlerOptions
-  ): Handler<GenerateAssistantResponseCommandInput, GenerateAssistantResponseCommandOutput> {
+  ): Handler<ConverseStreamCommandInput, ConverseStreamCommandOutput> {
     this.middlewareStack.use(getSerdePlugin(configuration, this.serialize, this.deserialize));
 
     const stack = clientStack.concat(this.middlewareStack);
 
     const { logger } = configuration;
     const clientName = "CodeWhispererStreamingClient";
-    const commandName = "GenerateAssistantResponseCommand";
+    const commandName = "ConverseStreamCommand";
     const handlerExecutionContext: HandlerExecutionContext = {
       logger,
       clientName,
       commandName,
       inputFilterSensitiveLog:
-        GenerateAssistantResponseRequestFilterSensitiveLog,
+        ConverseStreamRequestFilterSensitiveLog,
       outputFilterSensitiveLog:
-        GenerateAssistantResponseResponseFilterSensitiveLog,
+        ConverseStreamResponseFilterSensitiveLog,
       [SMITHY_CONTEXT_KEY]: {
         service: "AmazonCodeWhispererStreamingService",
-        operation: "GenerateAssistantResponse",
+        operation: "ConverseStream",
       },
     }
     const { requestHandler } = configuration;
@@ -477,10 +492,10 @@ export class GenerateAssistantResponseCommand extends $Command<GenerateAssistant
    * @internal
    */
   private serialize(
-    input: GenerateAssistantResponseCommandInput,
+    input: ConverseStreamCommandInput,
     context: __SerdeContext
   ): Promise<__HttpRequest> {
-    return se_GenerateAssistantResponseCommand(input, context);
+    return se_ConverseStreamCommand(input, context);
   }
 
   /**
@@ -489,8 +504,8 @@ export class GenerateAssistantResponseCommand extends $Command<GenerateAssistant
   private deserialize(
     output: __HttpResponse,
     context: __SerdeContext & __EventStreamSerdeContext
-  ): Promise<GenerateAssistantResponseCommandOutput> {
-    return de_GenerateAssistantResponseCommand(output, context);
+  ): Promise<ConverseStreamCommandOutput> {
+    return de_ConverseStreamCommand(output, context);
   }
 
   // Start section: command_body_extra
