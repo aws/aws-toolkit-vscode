@@ -333,7 +333,7 @@ export function getTelemetryResult(error: unknown | undefined): Result {
  */
 export function scrubNames(s: string, username?: string) {
     let r = ''
-    const fileExtRe = /\.[^.]{1,4}$/
+    const fileExtRe = /\.[^.\/]{1,4}$/
     const slashdot = /^[~.]*[\/\\]*/
 
     /** Allowlisted filepath segments. */
@@ -375,7 +375,6 @@ export function scrubNames(s: string, username?: string) {
         let scrubbed = ''
         // Get the frontmatter ("/", "../", "~/", or "./").
         const start = word.trimStart().match(slashdot)?.[0] ?? ''
-        const fileExt = word.trimEnd().match(fileExtRe)?.[0] ?? ''
         pathSegments[0] = pathSegments[0].trimStart().replace(slashdot, '')
         for (const seg of pathSegments) {
             if (driveLetterRegex.test(seg)) {
@@ -391,6 +390,8 @@ export function scrubNames(s: string, username?: string) {
             }
         }
 
+        // includes leading '.', eg: '.json'
+        const fileExt = pathSegments[pathSegments.length - 1].match(fileExtRe) ?? ''
         r += ` ${start.replace(/\\/g, '/')}${scrubbed.replace(/^[\/\\]+/, '')}${fileExt}`
     }
 
