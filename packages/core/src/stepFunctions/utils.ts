@@ -31,7 +31,7 @@ const scriptsLastDownloadedUrl = 'SCRIPT_LAST_DOWNLOADED_URL'
 const cssLastDownloadedUrl = 'CSS_LAST_DOWNLOADED_URL'
 
 export interface UpdateCachedScriptOptions {
-    globalStorage: vscode.Memento
+    globalState: vscode.Memento
     lastDownloadedURLKey: string
     currentURL: string
     filePath: string
@@ -73,9 +73,9 @@ export class StateMachineGraphCache {
         this.fileExists = fileExistsCustom ?? fileExists
     }
 
-    public async updateCache(globalStorage: vscode.Memento): Promise<void> {
+    public async updateCache(globalState: vscode.Memento): Promise<void> {
         const scriptUpdate = this.updateCachedFile({
-            globalStorage,
+            globalState: globalState,
             lastDownloadedURLKey: scriptsLastDownloadedUrl,
             currentURL: visualizationScriptUrl,
             filePath: this.jsFilePath,
@@ -87,7 +87,7 @@ export class StateMachineGraphCache {
         })
 
         const cssUpdate = this.updateCachedFile({
-            globalStorage,
+            globalState: globalState,
             lastDownloadedURLKey: cssLastDownloadedUrl,
             currentURL: visualizationCssUrl,
             filePath: this.cssFilePath,
@@ -102,7 +102,7 @@ export class StateMachineGraphCache {
     }
 
     public async updateCachedFile(options: UpdateCachedScriptOptions) {
-        const downloadedUrl = options.globalStorage.get<string>(options.lastDownloadedURLKey)
+        const downloadedUrl = options.globalState.get<string>(options.lastDownloadedURLKey)
         const cachedFileExists = await this.fileExists(options.filePath)
 
         // if current url is different than url that was previously used to download the assets
@@ -113,7 +113,7 @@ export class StateMachineGraphCache {
             await this.writeToLocalStorage(options.filePath, response)
 
             // save the url of the downloaded and cached assets
-            void options.globalStorage.update(options.lastDownloadedURLKey, options.currentURL)
+            void options.globalState.update(options.lastDownloadedURLKey, options.currentURL)
         }
     }
 
