@@ -477,10 +477,10 @@ describe('util', function () {
     it('scrubNames()', async function () {
         const fakeUser = 'jdoe123'
         assert.deepStrictEqual(scrubNames('', fakeUser), '')
-        assert.deepStrictEqual(scrubNames('a ./ b', fakeUser), 'a ././ b') // TODO: fix this
-        assert.deepStrictEqual(scrubNames('a ../ b', fakeUser), 'a .././ b') // TODO: fix this
-        assert.deepStrictEqual(scrubNames('a /.. b', fakeUser), 'a /.. b') // TODO: fix this
-        assert.deepStrictEqual(scrubNames('a //..// b', fakeUser), 'a //..//.// b') // TODO: fix this
+        assert.deepStrictEqual(scrubNames('a ./ b', fakeUser), 'a ./ b')
+        assert.deepStrictEqual(scrubNames('a ../ b', fakeUser), 'a ../ b')
+        assert.deepStrictEqual(scrubNames('a /.. b', fakeUser), 'a /.. b')
+        assert.deepStrictEqual(scrubNames('a //..// b', fakeUser), 'a //..// b')
         assert.deepStrictEqual(scrubNames('a / b', fakeUser), 'a / b')
         assert.deepStrictEqual(scrubNames('a ~/ b', fakeUser), 'a ~/ b')
         assert.deepStrictEqual(scrubNames('a //// b', fakeUser), 'a //// b')
@@ -501,6 +501,9 @@ describe('util', function () {
         assert.deepStrictEqual(scrubNames('/Users/user1/foo.jso (?)', fakeUser), '/Users/x/x.jso (?)')
         assert.deepStrictEqual(scrubNames('/Users/user1/foo.js (?)', fakeUser), '/Users/x/x.js (?)')
         assert.deepStrictEqual(scrubNames('/Users/user1/foo.longextension (?)', fakeUser), '/Users/x/x (?)')
+        assert.deepStrictEqual(scrubNames('/Users/user1/foo.ext1.ext2.ext3', fakeUser), '/Users/x/x.ext3')
+        assert.deepStrictEqual(scrubNames('/Users/user1/extMaxLength.1234', fakeUser), '/Users/x/x.1234')
+        assert.deepStrictEqual(scrubNames('/Users/user1/extExceedsMaxLength.12345', fakeUser), '/Users/x/x')
         assert.deepStrictEqual(scrubNames('c:\\fooß\\bar\\baz.txt', fakeUser), 'c:/xß/x/x.txt')
         assert.deepStrictEqual(
             scrubNames('uhh c:\\path with\\ spaces \\baz.. hmm...', fakeUser),
