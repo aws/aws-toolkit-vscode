@@ -24,6 +24,7 @@ import {
     ResponseBodyLinkClickMessage,
     ChatPromptCommandType,
     FooterInfoLinkClick,
+    AcceptDiff,
 } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
@@ -55,6 +56,7 @@ export interface ChatControllerMessagePublishers {
     readonly processTabClosedMessage: MessagePublisher<TabClosedMessage>
     readonly processTabChangedMessage: MessagePublisher<TabChangedMessage>
     readonly processInsertCodeAtCursorPosition: MessagePublisher<InsertCodeAtCursorPosition>
+    readonly processAcceptDiff: MessagePublisher<AcceptDiff>
     readonly processCopyCodeToClipboard: MessagePublisher<CopyCodeToClipboard>
     readonly processContextMenuCommand: MessagePublisher<EditorContextCommand>
     readonly processTriggerTabIDReceived: MessagePublisher<TriggerTabIDReceived>
@@ -73,6 +75,7 @@ export interface ChatControllerMessageListeners {
     readonly processTabClosedMessage: MessageListener<TabClosedMessage>
     readonly processTabChangedMessage: MessageListener<TabChangedMessage>
     readonly processInsertCodeAtCursorPosition: MessageListener<InsertCodeAtCursorPosition>
+    readonly processAcceptDiff: MessageListener<AcceptDiff>
     readonly processCopyCodeToClipboard: MessageListener<CopyCodeToClipboard>
     readonly processContextMenuCommand: MessageListener<EditorContextCommand>
     readonly processTriggerTabIDReceived: MessageListener<TriggerTabIDReceived>
@@ -138,6 +141,10 @@ export class ChatController {
 
         this.chatControllerMessageListeners.processInsertCodeAtCursorPosition.onMessage((data) => {
             return this.processInsertCodeAtCursorPosition(data)
+        })
+
+        this.chatControllerMessageListeners.processAcceptDiff.onMessage((data) => {
+            return this.processAcceptDiff(data)
         })
 
         this.chatControllerMessageListeners.processCopyCodeToClipboard.onMessage((data) => {
@@ -255,6 +262,12 @@ export class ChatController {
                 originalString: message.code,
             })
         })
+        this.telemetryHelper.recordInteractWithMessage(message)
+    }
+
+    private async processAcceptDiff(message: AcceptDiff) {
+        const context = this.triggerEventsStorage.getTriggerEvent((message.data as any)?.triggerID) || ''
+        void this.editorContentController.acceptDiff({ ...message, ...context })
         this.telemetryHelper.recordInteractWithMessage(message)
     }
 

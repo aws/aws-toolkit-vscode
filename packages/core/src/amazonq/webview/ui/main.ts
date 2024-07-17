@@ -3,7 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { Connector } from './connector'
-import { ChatItem, ChatItemType, MynahIcons, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui'
+import {
+    ChatItem,
+    ChatItemType,
+    CodeSelectionType,
+    MynahIcons,
+    MynahUI,
+    MynahUIDataModel,
+    NotificationType,
+    ReferenceTrackerInformation,
+} from '@aws/mynah-ui'
 import { ChatPrompt } from '@aws/mynah-ui/dist/static'
 import { TabsStorage, TabType } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
@@ -179,7 +188,7 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 } as ChatItem)
             }
         },
-        onChatAnswerReceived: (tabID: string, item: ChatItem) => {
+        onChatAnswerReceived: (tabID: string, item: ChatItem, messageData: any) => {
             if (item.type === ChatItemType.ANSWER_PART || item.type === ChatItemType.CODE_RESULT) {
                 mynahUI.updateLastChatAnswer(tabID, {
                     ...(item.messageId !== undefined ? { messageId: item.messageId } : {}),
@@ -201,7 +210,18 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 item.formItems !== undefined ||
                 item.buttons !== undefined
             ) {
-                mynahUI.addChatItem(tabID, item)
+                mynahUI.addChatItem(tabID, {
+                    ...item,
+                    messageId: item.messageId,
+                    codeBlockActions: {
+                        'accept-diff': {
+                            id: 'accept-diff',
+                            label: 'Accept Diff',
+                            icon: MynahIcons.OK_CIRCLED,
+                            data: messageData,
+                        },
+                    },
+                })
             }
 
             if (
@@ -389,6 +409,33 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 title: 'Your feedback is sent',
                 content: 'Thanks for your feedback.',
             })
+        },
+        onCodeBlockActionClicked: (
+            tabId: string,
+            messageId: string,
+            actionId: string,
+            data?: string,
+            code?: string,
+            type?: CodeSelectionType,
+            referenceTrackerInformation?: ReferenceTrackerInformation[],
+            eventId?: string,
+            codeBlockIndex?: number,
+            totalCodeBlocks?: number
+        ) => {
+            if (actionId === 'accept-diff') {
+                connector.onAcceptDiff(
+                    tabId,
+                    messageId,
+                    actionId,
+                    data,
+                    code,
+                    type,
+                    referenceTrackerInformation,
+                    eventId,
+                    codeBlockIndex,
+                    totalCodeBlocks
+                )
+            }
         },
         onCodeInsertToCursorPosition: connector.onCodeInsertToCursorPosition,
         onCopyCodeToClipboard: (

@@ -10,6 +10,7 @@ import { AmazonQAppInitContext } from '../amazonq/apps/initContext'
 import { MessageListener } from '../amazonq/messages/messageListener'
 import { MessagePublisher } from '../amazonq/messages/messagePublisher'
 import {
+    AcceptDiff,
     ChatItemFeedbackMessage,
     ChatItemVotedMessage,
     CopyCodeToClipboard,
@@ -34,6 +35,7 @@ export function init(appContext: AmazonQAppInitContext) {
         processTabClosedMessage: new EventEmitter<TabClosedMessage>(),
         processTabChangedMessage: new EventEmitter<TabChangedMessage>(),
         processInsertCodeAtCursorPosition: new EventEmitter<InsertCodeAtCursorPosition>(),
+        processAcceptDiff: new EventEmitter<AcceptDiff>(),
         processCopyCodeToClipboard: new EventEmitter<CopyCodeToClipboard>(),
         processContextMenuCommand: new EventEmitter<EditorContextCommand>(),
         processTriggerTabIDReceived: new EventEmitter<TriggerTabIDReceived>(),
@@ -62,6 +64,7 @@ export function init(appContext: AmazonQAppInitContext) {
         processInsertCodeAtCursorPosition: new MessageListener<InsertCodeAtCursorPosition>(
             cwChatControllerEventEmitters.processInsertCodeAtCursorPosition
         ),
+        processAcceptDiff: new MessageListener<AcceptDiff>(cwChatControllerEventEmitters.processAcceptDiff),
         processCopyCodeToClipboard: new MessageListener<CopyCodeToClipboard>(
             cwChatControllerEventEmitters.processCopyCodeToClipboard
         ),
@@ -108,6 +111,7 @@ export function init(appContext: AmazonQAppInitContext) {
         processInsertCodeAtCursorPosition: new MessagePublisher<InsertCodeAtCursorPosition>(
             cwChatControllerEventEmitters.processInsertCodeAtCursorPosition
         ),
+        processAcceptDiff: new MessagePublisher<AcceptDiff>(cwChatControllerEventEmitters.processAcceptDiff),
         processCopyCodeToClipboard: new MessagePublisher<CopyCodeToClipboard>(
             cwChatControllerEventEmitters.processCopyCodeToClipboard
         ),
