@@ -604,3 +604,112 @@ export async function collectFilesForIndex(
     // pick top 100k files below size limit
     return storage.slice(0, Math.min(100000, i))
 }
+
+export async function listFilesWithinDistanceAgainstFile(
+    uri: string,
+    distance: number,
+    args: {
+        searchChild: boolean
+        workspaceFolders?: readonly vscode.WorkspaceFolder[]
+    } = {
+        searchChild: true,
+        workspaceFolders: vscode.workspace.workspaceFolders,
+    }
+) {
+    const parentDir = getWorkspaceParentDirectory(uri, args)
+    if (!parentDir) {
+        return new Set(uri)
+    }
+
+    let d = distance
+    const res: string[] = []
+    const pendingVisit: string[] = [parentDir]
+    const visited: Map<string, boolean> = new Map()
+
+    while (d >= 0 && pendingVisit.length !== 0) {
+        let toVisit: string[] = []
+        for (const dir of pendingVisit) {
+            if (visited.get(dir) === true) {
+                continue
+            }
+
+            const filesAndDirs = await fs.readdir(dir)
+
+            // neighbor files with distance of [distance - d] under directory [dir]
+            const files = filesAndDirs
+                .filter((datum) => datum[1] === vscode.FileType.File)
+                .map((datum) => datum[0])
+                .map((simpleName) => path.join(dir, simpleName))
+
+            res.push(...files)
+
+            // search child/parent
+            let dirs: string[] = []
+            if (args.searchChild) {
+                const childDirectorysUri = filesAndDirs
+                    .filter((datum) => datum[1] === vscode.FileType.Directory)
+                    .map((datum) => datum[0])
+                    .map((simpleName) => path.join(dir, simpleName))
+
+                dirs = childDirectorysUri
+            } else {
+                const parentDir = getWorkspaceParentDirectory(dir, args)
+                if (parentDir) {
+                    dirs = [parentDir]
+                }
+            }
+
+            toVisit = dirs
+            visited.set(dir, true)
+        }
+
+        pendingVisit.push(...toVisit)
+        d--
+    }
+
+    return new Set(res)
+}
+
+/**
+ *     1. A: root/util/context/a.ts
+ *     2. B: root/util/b.ts
+ *     3. C: root/util/service/c.ts
+ *     4. D: root/d.ts
+ *     5. E: root/util/context/e.ts
+ *     6. F: root/util/foo/bar/baz/f.ts
+ *
+ *   neighborfiles(A) = [B, E]
+ *   neighborfiles(B) = [A, C, D, E]
+ *   neighborfiles(C) = [B,]
+ *   neighborfiles(D) = [B,]
+ *   neighborfiles(E) = [A, B]
+ *   neighborfiles(F) = []
+ *
+ *      A B C D E F
+ *   A  x 1 2 2 0 4
+ *   B  1 x 1 1 1 3
+ *   C  2 1 x 2 2 4
+ *   D  2 1 2 x 2 4
+ *   E  0 1 2 2 x 4
+ *   F  4 3 4 4 4 x
+ */
+export async function neighborFiles(
+    uri: string,
+    args: {
+        fileDistance: number
+        workspaceFolders?: readonly vscode.WorkspaceFolder[]
+    } = {
+        fileDistance: 1, // todo: crossFileContextConfig.neighborFileDistance will cause circular dependency
+        workspaceFolders: vscode.workspace.workspaceFolders,
+    }
+): Promise<Set<string>> {
+    const neighborInChildDir = await listFilesWithinDistanceAgainstFile(uri, args.fileDistance, {
+        searchChild: true,
+        workspaceFolders: args.workspaceFolders,
+    })
+    const neighborInParentDir = await listFilesWithinDistanceAgainstFile(uri, args.fileDistance, {
+        searchChild: false,
+        workspaceFolders: args.workspaceFolders,
+    })
+    return new Set([...neighborInChildDir, ...neighborInParentDir].filter((it) => it !== uri))
+}

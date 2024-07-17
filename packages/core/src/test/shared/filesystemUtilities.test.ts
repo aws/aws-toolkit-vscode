@@ -121,6 +121,12 @@ describe('filesystemUtilities', function () {
         let fileA: string
         let fileB: string
 
+        it('same file is of distance 0', function () {
+            fileA = 'foo/bar/a.java'
+            fileB = 'foo/bar/a.java'
+            assert.strictEqual(getFileDistance(fileA, fileB), 0)
+        })
+
         it('distance 0', function () {
             fileA = 'foo/bar/a.java'
             fileB = 'foo/bar/b.java'
