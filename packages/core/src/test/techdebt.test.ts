@@ -6,6 +6,7 @@
 import assert from 'assert'
 import * as semver from 'semver'
 import * as env from '../shared/vscode/env'
+import packageJson from '../../package.json'
 
 // Checks project config and dependencies, to remind us to remove old things
 // when possible.
@@ -17,7 +18,7 @@ describe('tech debt', function () {
     }
 
     it('vscode minimum version', async function () {
-        const minVscode = env.getMinVscodeVersion()
+        const minVscode = env.getMinVscodeVersion(packageJson)
 
         assert.ok(
             semver.lt(minVscode, '1.75.0'),
@@ -31,7 +32,7 @@ describe('tech debt', function () {
     })
 
     it('nodejs minimum version', async function () {
-        const minNodejs = env.getMinNodejsVersion()
+        const minNodejs = env.getMinNodejsVersion(packageJson)
 
         // XXX: available since node 16, but not sure how much work this will be, yet.
         assert.ok(
