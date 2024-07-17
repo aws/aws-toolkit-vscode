@@ -32,7 +32,7 @@ jobs:
               uses: coactions/setup-xvfb@v1
               with:
                   run: npm test
-            - name: Toolkit code coverage
+            - name: Code coverage (Toolkit)
               env:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
@@ -43,7 +43,7 @@ jobs:
                   verbose: true
                   file: ./coverage/core/lcov.info
                   token: ${{ secrets.CODECOV_TOKEN }}
-            - name: Amazon Q code coverage
+            - name: Code coverage (Amazon Q)
               env:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
