@@ -8,15 +8,31 @@ import { getLogger } from './logger/logger'
 import * as redshift from '../awsService/redshift/models/models'
 import { TypeConstructor, cast } from './utilities/typeConstructors'
 
+type samInitStateKey =
+    | 'ACTIVATION_TEMPLATE_PATH_KEY'
+    | 'ACTIVATION_LAUNCH_PATH_KEY'
+    | 'SAM_INIT_RUNTIME_KEY'
+    | 'SAM_INIT_IMAGE_BOOLEAN_KEY'
+    | 'SAM_INIT_ARCH_KEY'
+
 type globalKey =
+    | samInitStateKey
     | 'aws.downloadPath'
     | 'aws.lastTouchedS3Folder'
     | 'aws.lastUploadedToS3Folder'
     | 'aws.redshift.connections'
     | 'aws.toolkit.amazonq.dismissed'
     | 'aws.toolkit.amazonqInstall.dismissed'
+    | 'aws.toolkit.separationPromptDismissed'
+    | 'aws.toolkit.separationPromptCommand'
+    | 'aws.amazonq.codewhisperer.newCustomizations'
     // Deprecated/legacy names. New keys should start with "aws.".
     | 'CODECATALYST_RECONNECT'
+    | 'CODEWHISPERER_AUTO_SCANS_ENABLED'
+    | 'CODEWHISPERER_AUTO_TRIGGER_ENABLED'
+    | 'CODEWHISPERER_HINT_DISPLAYED'
+    | 'CODEWHISPERER_PERSISTED_CUSTOMIZATIONS'
+    | 'CODEWHISPERER_SELECTED_CUSTOMIZATION'
     | 'CODEWHISPERER_USER_GROUP'
     | 'gumby.wasQCodeTransformationUsed'
     | 'hasAlreadyOpenedAmazonQ'
@@ -40,6 +56,10 @@ export class GlobalState implements vscode.Memento {
 
     keys(): readonly string[] {
         return this.memento.keys()
+    }
+
+    values() {
+        return this.memento.keys().map((k) => this.memento.get(k))
     }
 
     /**
@@ -87,6 +107,8 @@ export class GlobalState implements vscode.Memento {
      * {@link String}, {@link Boolean}, etc.
      * @param defaultVal Value returned if `key` has no value.
      */
+    tryGet<T>(key: globalKey, type: TypeConstructor<T>): T | undefined
+    tryGet<T>(key: globalKey, type: TypeConstructor<T>, defaulVal: T): T
     tryGet<T>(key: globalKey, type: TypeConstructor<T>, defaulVal?: T): T | undefined {
         try {
             return this.getStrict(key, type, defaulVal)
@@ -96,18 +118,29 @@ export class GlobalState implements vscode.Memento {
         }
     }
 
-    /** Asynchronously updates globalState, or logs an error on failure. */
+    /**
+     * Asynchronously updates globalState, or logs an error on failure.
+     *
+     * Only for callers that cannot `await` or don't care about errors and race conditions. Prefer
+     * `await update()` where possible.
+     */
     tryUpdate(key: globalKey, value: any): void {
-        this.memento.update(key, value).then(
-            undefined, // TODO: log.debug() ?
-            (e) => {
-                getLogger().error('GlobalState: failed to set "%s": %s', key, (e as Error).message)
-            }
-        )
+        this.update(key, value).then(undefined, () => {
+            // Errors are logged by update().
+        })
     }
 
-    update(key: globalKey, value: any): Thenable<void> {
-        return this.memento.update(key, value)
+    async update(key: globalKey, value: any): Promise<void> {
+        try {
+            await this.memento.update(key, value)
+        } catch (e) {
+            getLogger().error('GlobalState: failed to set "%s": %s', key, (e as Error).message)
+            throw e
+        }
+    }
+
+    clear() {
+        return Promise.allSettled(this.memento.keys().map((k) => this.memento.update(k, undefined)))
     }
 
     /**
@@ -150,8 +183,7 @@ export class GlobalState implements vscode.Memento {
                     throw new Error()
                 }
                 return v
-            },
-            undefined
+            }
         )
         return all?.[warehouseArn]
     }
@@ -183,21 +215,17 @@ export class GlobalState implements vscode.Memento {
      * @param id Session id
      */
     getSsoSessionCreationDate(id: string): number | undefined {
-        const all = this.tryGet<Record<string, number>>(
-            '#sessionCreationDates',
-            (v) => {
-                if (v !== undefined && typeof v !== 'object') {
-                    throw new Error()
-                }
-                const item = (v as any)?.[id]
-                // Requested item must be a number.
-                if (item !== undefined && typeof item !== 'number') {
-                    throw new Error()
-                }
-                return v
-            },
-            undefined
-        )
+        const all = this.tryGet<Record<string, number>>('#sessionCreationDates', (v) => {
+            if (v !== undefined && typeof v !== 'object') {
+                throw new Error()
+            }
+            const item = (v as any)?.[id]
+            // Requested item must be a number.
+            if (item !== undefined && typeof item !== 'number') {
+                throw new Error()
+            }
+            return v
+        })
         return all?.[id]
     }
 }

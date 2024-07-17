@@ -71,8 +71,7 @@ async function showInitialViewBadge() {
  * @returns True if the badge should be shown, false otherwise
  */
 export async function shouldShowBadge(): Promise<boolean> {
-    const memento = globals.context.globalState
-    const hasAlreadyShown = memento.get('hasAlreadyOpenedAmazonQ')
+    const hasAlreadyShown = globals.globalState.get('hasAlreadyOpenedAmazonQ')
     if (!hasAlreadyShown) {
         const state = await AuthUtil.instance.getChatAuthState()
         if (state.codewhispererCore === 'connected' && state.codewhispererChat !== 'connected') {
