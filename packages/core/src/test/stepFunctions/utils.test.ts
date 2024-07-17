@@ -49,7 +49,7 @@ describe('StateMachineGraphCache', function () {
             })
 
             await cache.updateCachedFile({
-                globalStorage,
+                globalState: globalStorage,
                 lastDownloadedURLKey: storageKey,
                 currentURL: assetUrl,
                 filePath: filePath,
@@ -81,7 +81,7 @@ describe('StateMachineGraphCache', function () {
             })
 
             await cache.updateCachedFile({
-                globalStorage,
+                globalState: globalStorage,
                 lastDownloadedURLKey: storageKey,
                 currentURL: assetUrl,
                 filePath: filePath,
@@ -113,7 +113,7 @@ describe('StateMachineGraphCache', function () {
             })
 
             await cache.updateCachedFile({
-                globalStorage,
+                globalState: globalStorage,
                 lastDownloadedURLKey: storageKey,
                 currentURL: assetUrl,
                 filePath: filePath,
@@ -185,7 +185,7 @@ describe('StateMachineGraphCache', function () {
             })
 
             await cache.updateCachedFile({
-                globalStorage,
+                globalState: globalStorage,
                 lastDownloadedURLKey: storageKey,
                 currentURL: assetUrl,
                 filePath: filePath,
