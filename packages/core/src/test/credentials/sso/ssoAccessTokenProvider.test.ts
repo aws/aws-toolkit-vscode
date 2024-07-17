@@ -265,7 +265,7 @@ describe('SsoAccessTokenProvider', function () {
                     isReAuth: true,
                     reAuthReason: 'myReAuthReason',
                 })
-                assert.deepStrictEqual(reAuthState.exists({ startUrl }), false)
+                assert.deepStrictEqual(reAuthState.has({ startUrl }), false)
             })
 
             it('no reAuthReason if isReAuth is false', async () => {
@@ -281,7 +281,7 @@ describe('SsoAccessTokenProvider', function () {
             })
 
             it('telemetry does not fail is reAuthReason does not exist', async () => {
-                assert.deepStrictEqual(reAuthState.exists({ startUrl }), false)
+                assert.deepStrictEqual(reAuthState.has({ startUrl }), false)
 
                 await sut.createToken({ isReAuth: true }) // function under test
 

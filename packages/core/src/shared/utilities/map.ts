@@ -4,25 +4,28 @@
  */
 
 import { getLogger } from '../logger'
+import type { KeyedCache } from './cacheUtils'
 
 /**
  * Simply maps a Key to an Object. Everything is done in memory, allowing for atomic updates.
  *
  * There is a common use case for this class, so look to reuse this when possible.
  * Benefits, instead of making your own:
- * - A key does not have to be a string, {@link MemoryMap.asKey} enables this
+ * - A key does not have to be a string, {@link NestedMap.asKey} enables this
  * - Implements most of the boilerplate
+ * - Has a {@link NestedMap.default} property which is returned from {@link NestedMap.get()}
+ *   in the case {@link NestedMap.has()} would return false.
  */
-export abstract class MemoryMap<Key, Value = { [key: string]: any }> implements MapSync<Key, Value> {
+export abstract class NestedMap<Key, Value = { [key: string]: any }> implements MapSync<Key, Value> {
     private readonly data: { [key: string]: Value | undefined } = {}
 
-    exists(key: Key): boolean {
+    has(key: Key): boolean {
         return this.data[this.asKey(key)] !== undefined
     }
 
     /**
      * IMPORTANT: If getting a key without having {@link set()} a value, the {@link default} will be returned.
-     * Use {@link exists()} to check for existence before calling get(), if necessary.
+     * Use {@link has()} to check for existence before calling {@link get()}, if necessary.
      */
     get(key: Key): Value {
         const actualKey = this.asKey(key)
@@ -35,7 +38,7 @@ export abstract class MemoryMap<Key, Value = { [key: string]: any }> implements 
         this.data[this.asKey(key)] = { ...currentData, ...data }
     }
 
-    clear(key: Key, reason: string): void {
+    delete(key: Key, reason: string): void {
         delete this.data[this.asKey(key)]
         getLogger().debug(`${this.name}: cleared cache, key: ${JSON.stringify(key)}, reason: ${reason}`)
     }
@@ -52,7 +55,7 @@ export abstract class MemoryMap<Key, Value = { [key: string]: any }> implements 
     protected abstract get name(): string
 
     /**
-     * The default value returned from {@link get}() when {@link exists}() is false
+     * The default value returned from {@link get}() when {@link has}() is false
      */
     protected abstract get default(): Value
 }
@@ -61,13 +64,16 @@ export abstract class MemoryMap<Key, Value = { [key: string]: any }> implements 
  * A synchronous version of a Map of Maps.
  * - This allows for atomic updates as it is not async.
  * - They Key does not need to be a string
+ *
+ * There are similarities to {@link KeyedCache}, which is why this class' name
+ * explicitly has 'Sync'.
  */
 export interface MapSync<Key, ReturnObject = { [key: string]: any }> {
     /**
      * Attempts to read data stored at {@link key}.
      *
      * @param key Target key to read from.
-     * @returns `ReturnObject` regardless of cache hit or miss. Use {@link exists}() to verify existence,
+     * @returns `ReturnObject` regardless of cache hit or miss. Use {@link has()} to verify existence,
      *          otherwise a default object may be returned.
      */
     get(key: Key): ReturnObject
@@ -86,7 +92,7 @@ export interface MapSync<Key, ReturnObject = { [key: string]: any }> {
      * @param key Target key to check.
      * @returns True if the key exists, false otherwise.
      */
-    exists(key: Key): boolean
+    has(key: Key): boolean
 
     /**
      * Deletes data stored at {@link key}, if any.
@@ -94,5 +100,5 @@ export interface MapSync<Key, ReturnObject = { [key: string]: any }> {
      * @param key Target key to clear.
      * @param reason Partial log message explaining why the data is being deleted.
      */
-    clear(key: Key, reason: string): void
+    delete(key: Key, reason: string): void
 }

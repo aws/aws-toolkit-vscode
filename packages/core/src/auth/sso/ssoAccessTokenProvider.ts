@@ -41,7 +41,7 @@ import { isRemoteWorkspace, isWebWorkspace } from '../../shared/vscode/env'
 import { showInputBox } from '../../shared/ui/inputPrompter'
 import { DevSettings } from '../../shared/settings'
 import { onceChanged } from '../../shared/utilities/functionUtils'
-import { MemoryMap } from '../../shared/utilities/map'
+import { NestedMap } from '../../shared/utilities/map'
 
 export const authenticationPath = 'sso/authenticated'
 
@@ -123,7 +123,7 @@ export abstract class SsoAccessTokenProvider {
             // Authentication in the browser is successfully done, so the reauth reason is now stale.
             // We don't clear the reason on failure since we want to keep reporting it as the reason until
             // reauth is a success.
-            this.reAuthState.clear(this.profile, 'reauth successful')
+            this.reAuthState.delete(this.profile, 'reauth successful')
 
             return result
         } catch (err) {
@@ -668,7 +668,7 @@ class WebAuthorization extends SsoAccessTokenProvider {
  * then upon the next reauth use `get()`. Finally, use `clear()` if the reauth is
  * successful.
  */
-export class ReAuthState extends MemoryMap<ReAuthStateKey, ReAuthStateValue> {
+export class ReAuthState extends NestedMap<ReAuthStateKey, ReAuthStateValue> {
     static #instance: ReAuthState
     static get instance() {
         return (this.#instance ??= new ReAuthState())
