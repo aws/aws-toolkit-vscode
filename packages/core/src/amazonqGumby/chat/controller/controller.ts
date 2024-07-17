@@ -24,7 +24,6 @@ import {
     openHilPomFile,
     postTransformationJob,
     processTransformFormInput,
-    resetDebugArtifacts,
     startTransformByQ,
     stopTransformByQ,
     validateCanCompileProject,
@@ -286,7 +285,6 @@ export class GumbyController {
                 break
             case ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW:
                 this.resetTransformationChatFlow()
-                await resetDebugArtifacts()
                 this.messenger.sendCommandMessage({ ...message, command: GumbyCommands.CLEAR_CHAT })
                 await this.transformInitiated(message)
                 break
@@ -473,6 +471,7 @@ export class GumbyController {
                 undefined,
                 GumbyNamedMessages.JOB_FAILED_IN_PRE_BUILD
             )
+            await openBuildLogFile()
             this.messenger.sendViewBuildLog(message.tabID)
         }
     }
