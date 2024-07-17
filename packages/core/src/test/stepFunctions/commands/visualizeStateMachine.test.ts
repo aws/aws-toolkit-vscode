@@ -90,7 +90,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         const doc = await getDoc1()
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        await aslVisualizationManager.visualizeStateMachine(globals.globalState, doc)
+        await aslVisualizationManager.visualizeStateMachine(doc)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
@@ -101,10 +101,10 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         const doc = await getDoc1()
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        await aslVisualizationManager.visualizeStateMachine(globals.globalState, doc)
+        await aslVisualizationManager.visualizeStateMachine(doc)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
-        await aslVisualizationManager.visualizeStateMachine(globals.globalState, doc)
+        await aslVisualizationManager.visualizeStateMachine(doc)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
@@ -117,10 +117,10 @@ describe('StepFunctions VisualizeStateMachine', async function () {
 
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        await aslVisualizationManager.visualizeStateMachine(globals.globalState, doc1)
+        await aslVisualizationManager.visualizeStateMachine(doc1)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
-        await aslVisualizationManager.visualizeStateMachine(globals.globalState, doc2)
+        await aslVisualizationManager.visualizeStateMachine(doc2)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
@@ -134,16 +134,16 @@ describe('StepFunctions VisualizeStateMachine', async function () {
 
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        await aslVisualizationManager.visualizeStateMachine(globals.globalState, doc1)
+        await aslVisualizationManager.visualizeStateMachine(doc1)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
-        await aslVisualizationManager.visualizeStateMachine(globals.globalState, doc2)
+        await aslVisualizationManager.visualizeStateMachine(doc2)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
-        await aslVisualizationManager.visualizeStateMachine(globals.globalState, doc1)
+        await aslVisualizationManager.visualizeStateMachine(doc1)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
-        await aslVisualizationManager.visualizeStateMachine(globals.globalState, doc2)
+        await aslVisualizationManager.visualizeStateMachine(doc2)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
@@ -154,7 +154,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
     it('Test AslVisualizationManager managedVisualizations set removes visualization on visualization dispose, single vis', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        let panel = await aslVisualizationManager.visualizeStateMachine(globals.globalState, await getDoc1())
+        let panel = await aslVisualizationManager.visualizeStateMachine(await getDoc1())
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         // Dispose of visualization panel
@@ -171,10 +171,10 @@ describe('StepFunctions VisualizeStateMachine', async function () {
 
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        let panel = await aslVisualizationManager.visualizeStateMachine(globals.globalState, doc1)
+        let panel = await aslVisualizationManager.visualizeStateMachine(doc1)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
-        await aslVisualizationManager.visualizeStateMachine(globals.globalState, doc2)
+        await aslVisualizationManager.visualizeStateMachine(doc2)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
         // Dispose of first visualization panel
