@@ -42,6 +42,7 @@ type globalKey =
     | 'CODEWHISPERER_PERSISTED_CUSTOMIZATIONS'
     | 'CODEWHISPERER_SELECTED_CUSTOMIZATION'
     | 'CODEWHISPERER_USER_GROUP'
+    | 'globalsMostRecentVersion'
     | 'gumby.wasQCodeTransformationUsed'
     | 'isExtensionFirstUse'
     | 'lastExtensionVersion'

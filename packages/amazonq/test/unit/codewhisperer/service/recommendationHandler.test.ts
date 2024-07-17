@@ -22,7 +22,6 @@ import {
 import {
     assertTelemetryCurried,
     stub,
-    FakeMemento,
     createMockTextEditor,
     resetCodeWhispererGlobalVariables,
 } from 'aws-core-vscode/test'
@@ -41,7 +40,6 @@ describe('recommendationHandler', function () {
     })
 
     describe('getRecommendations', async function () {
-        const fakeMemeto = new FakeMemento()
         const mockClient = stub(DefaultCodeWhispererClient)
         const mockEditor = createMockTextEditor()
         const testStartUrl = 'testStartUrl'
@@ -63,8 +61,7 @@ describe('recommendationHandler', function () {
         it('should assign correct recommendations given input', async function () {
             assert.strictEqual(CodeWhispererCodeCoverageTracker.instances.size, 0)
             assert.strictEqual(
-                CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId, fakeMemeto)
-                    ?.serviceInvocationCount,
+                CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId)?.serviceInvocationCount,
                 0
             )
 
@@ -86,8 +83,7 @@ describe('recommendationHandler', function () {
             const expected: RecommendationsList = [{ content: "print('Hello World!')" }, { content: '' }]
             assert.deepStrictEqual(actual, expected)
             assert.strictEqual(
-                CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId, fakeMemeto)
-                    ?.serviceInvocationCount,
+                CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId)?.serviceInvocationCount,
                 1
             )
         })

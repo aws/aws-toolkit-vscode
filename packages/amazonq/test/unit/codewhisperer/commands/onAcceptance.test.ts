@@ -17,7 +17,7 @@ import {
     AuthUtil,
 } from 'aws-core-vscode/codewhisperer'
 import { resetCodeWhispererGlobalVariables, createMockTextEditor } from 'aws-core-vscode/test'
-import { assertTelemetryCurried, FakeExtensionContext } from 'aws-core-vscode/test'
+import { assertTelemetryCurried } from 'aws-core-vscode/test'
 import { globals } from 'aws-core-vscode/shared'
 import { extensionVersion } from 'aws-core-vscode/shared'
 
