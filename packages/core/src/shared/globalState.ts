@@ -35,6 +35,7 @@ type globalKey =
     | 'aws.toolkit.separationPromptCommand'
     | 'aws.toolkit.separationPromptDismissed'
     // Deprecated/legacy names. New keys should start with "aws.".
+    | '#sessionCreationDates' // Legacy name from `ssoAccessTokenProvider.ts`.
     | 'CODECATALYST_RECONNECT'
     | 'CODEWHISPERER_AUTO_SCANS_ENABLED'
     | 'CODEWHISPERER_AUTO_TRIGGER_ENABLED'
@@ -42,13 +43,12 @@ type globalKey =
     | 'CODEWHISPERER_PERSISTED_CUSTOMIZATIONS'
     | 'CODEWHISPERER_SELECTED_CUSTOMIZATION'
     | 'CODEWHISPERER_USER_GROUP'
+    | 'awsTelemetryNoticeVersionAck'
     | 'globalsMostRecentVersion'
     | 'gumby.wasQCodeTransformationUsed'
+    | 'hasAlreadyOpenedAmazonQ'
     | 'isExtensionFirstUse'
     | 'lastExtensionVersion'
-    | 'hasAlreadyOpenedAmazonQ'
-    // Legacy name from `ssoAccessTokenProvider.ts`.
-    | '#sessionCreationDates'
 
 /**
  * Extension-local (not visible to other vscode extensions) shared state which persists after IDE
