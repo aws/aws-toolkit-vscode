@@ -202,6 +202,18 @@ export class FileSystem {
         return vfs.writeFile(uri, content).then(undefined, errHandler)
     }
 
+    async rename(oldPath: vscode.Uri | string, newPath: vscode.Uri | string) {
+        const oldUri = this.#toUri(oldPath)
+        const newUri = this.#toUri(newPath)
+        const errHandler = createPermissionsErrorHandler(this.isWeb, oldUri, 'rw*')
+
+        if (isCloud9()) {
+            return nodefs.rename(oldUri.fsPath, newUri.fsPath).catch(errHandler)
+        }
+
+        return vfs.rename(oldUri, newUri, { overwrite: true }).then(undefined, errHandler)
+    }
+
     /**
      * The stat of the file,  throws if the file does not exist or on any other error.
      */
