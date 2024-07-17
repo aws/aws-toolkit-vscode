@@ -2013,6 +2013,10 @@
                     "when": "viewItem =~ /^awsDocDB.cluster.running/"
                 },
                 {
+                    "command": "aws.docdb.renameCluster",
+                    "when": "viewItem =~ /^awsDocDB.cluster.running/"
+                },
+                {
                     "command": "aws.docdb.deleteCluster",
                     "when": "viewItem =~ /^awsDocDB.cluster.running/"
                 },
@@ -3615,7 +3619,7 @@
             },
             {
                 "command": "aws.docdb.renameInstance",
-                "title": "%AWS.command.docdb.renameInstance%",
+                "title": "%AWS.generic.promptRename%",
                 "category": "%AWS.title%",
                 "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB.instance/",
                 "cloud9": {
@@ -3629,6 +3633,17 @@
                 "title": "%AWS.command.docdb.modifyInstance%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.renameCluster",
+                "title": "%AWS.generic.promptRename%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB.cluster/",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

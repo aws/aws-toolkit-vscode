@@ -12,6 +12,7 @@ import { createCluster } from './commands/createCluster'
 import { createInstance } from './commands/createInstance'
 import { deleteCluster } from './commands/deleteCluster'
 import { deleteInstance } from './commands/deleteInstance'
+import { renameCluster } from './commands/renameCluster'
 import { renameInstance } from './commands/renameInstance'
 import { modifyInstance } from './commands/modifyInstance'
 import { startCluster, stopCluster } from './commands/commands'
@@ -24,6 +25,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
         Commands.register('aws.docdb.createCluster', async (node?: DocumentDBNode) => {
             await createCluster(node)
+        }),
+
+        Commands.register('aws.docdb.renameCluster', async (node: DBClusterNode) => {
+            await renameCluster(node)
         }),
 
         Commands.register('aws.docdb.startCluster', async (node?: DBNode) => {
