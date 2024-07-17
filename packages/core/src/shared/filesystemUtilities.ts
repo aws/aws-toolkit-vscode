@@ -71,12 +71,7 @@ export async function fileExists(p: string): Promise<boolean> {
 }
 
 /**
- * @description Wraps readFileAsync and resolves the Buffer to a string for convenience
- *
- * @param filePath filename to read
- * @param encoding Optional - file encoding
- *
- * @returns the contents of the file as a string
+ * @deprecated use {@link fs} exist methods instead.
  */
 export async function readFileAsString(pathLike: string): Promise<string> {
     return fs.readFileAsString(pathLike)
@@ -272,9 +267,9 @@ export async function getDefaultDownloadPath(): Promise<string> {
 export async function setDefaultDownloadPath(downloadPath: string) {
     try {
         if (await fs.existsDir(downloadPath)) {
-            globals.globalState.tryUpdate('aws.downloadPath', downloadPath)
+            await globals.globalState.update('aws.downloadPath', downloadPath)
         } else {
-            globals.globalState.tryUpdate('aws.downloadPath', path.dirname(downloadPath))
+            await globals.globalState.update('aws.downloadPath', path.dirname(downloadPath))
         }
     } catch (err) {
         getLogger().error('Error while setting "aws.downloadPath"', err as Error)
