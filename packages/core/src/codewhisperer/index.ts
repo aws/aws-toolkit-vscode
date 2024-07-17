@@ -37,7 +37,7 @@ export {
 } from './service/transformByQ/transformationResultsViewProvider'
 export { parseVersionsListFromPomFile } from './service/transformByQ/transformFileHandler'
 export { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
-export { get, set, isInlineCompletionEnabled } from './util/commonUtil'
+export { isInlineCompletionEnabled } from './util/commonUtil'
 export { validateOpenProjects, getOpenProjects } from './service/transformByQ/transformProjectValidationHandler'
 export {
     DefaultCodeWhispererClient,

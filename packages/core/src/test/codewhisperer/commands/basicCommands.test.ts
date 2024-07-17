@@ -19,7 +19,7 @@ import {
     signoutCodeWhisperer,
     toggleCodeScans,
 } from '../../../codewhisperer/commands/basicCommands'
-import { FakeMemento, FakeExtensionContext } from '../../fakeExtensionContext'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { testCommand } from '../../shared/vscode/testUtils'
 import { Command, placeholder } from '../../../shared/vscode/commands2'
 import { SecurityPanelViewProvider } from '../../../codewhisperer/views/securityPanelViewProvider'
@@ -28,7 +28,6 @@ import { stub } from '../../utilities/stubber'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { ExtContext } from '../../../shared/extensions'
-import { get, set } from '../../../codewhisperer/util/commonUtil'
 import { getLogger } from '../../../shared/logger/logger'
 import {
     createAutoScans,
@@ -75,35 +74,10 @@ describe('CodeWhisperer-basicCommands', function () {
         sinon.restore()
     })
 
-    it('test get()', async function () {
-        const fakeMemeto = new FakeMemento()
-        await fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, true)
-
-        let res = get(CodeWhispererConstants.autoTriggerEnabledKey, fakeMemeto)
-        assert.strictEqual(res, true)
-
-        await fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, undefined)
-        res = get(CodeWhispererConstants.autoTriggerEnabledKey, fakeMemeto)
-        assert.strictEqual(res, undefined)
-
-        await fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, false)
-        res = get(CodeWhispererConstants.autoTriggerEnabledKey, fakeMemeto)
-        assert.strictEqual(res, false)
-    })
-
-    it('test set()', async function () {
-        const fakeMemeto = new FakeMemento()
-        await set(CodeWhispererConstants.autoTriggerEnabledKey, true, fakeMemeto)
-        assert.strictEqual(fakeMemeto.get(CodeWhispererConstants.autoTriggerEnabledKey), true)
-
-        await set(CodeWhispererConstants.autoTriggerEnabledKey, false, fakeMemeto)
-        assert.strictEqual(fakeMemeto.get(CodeWhispererConstants.autoTriggerEnabledKey), false)
-    })
-
     describe('toggleCodeSuggestion', function () {
         class TestCodeSuggestionsState extends CodeSuggestionsState {
             public constructor(initialState?: boolean) {
-                super(new FakeMemento(), initialState)
+                super(initialState)
             }
         }
 
@@ -190,7 +164,7 @@ describe('CodeWhisperer-basicCommands', function () {
     describe('toggleCodeScans', function () {
         class TestCodeScansState extends CodeScansState {
             public constructor(initialState?: boolean) {
-                super(new FakeMemento(), initialState)
+                super(initialState)
             }
         }
 
@@ -426,10 +400,10 @@ describe('CodeWhisperer-basicCommands', function () {
         it('shows expected quick pick items when connected', async function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
-            sinon.stub(CodeScansState.instance, 'isScansEnabled').returns(false)
+            await CodeScansState.instance.setScansEnabled(false)
             getTestWindow().onDidShowQuickPick((e) => {
                 e.assertContainsItems(
-                    createAutoSuggestions(false),
+                    createAutoSuggestions(true),
                     createOpenReferenceLog(),
                     createGettingStarted(),
                     createAutoScans(false),
@@ -449,11 +423,11 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
             sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(true)
             sinon.stub(AuthUtil.instance, 'isCustomizationFeatureEnabled').value(true)
-            sinon.stub(CodeScansState.instance, 'isScansEnabled').returns(false)
+            await CodeScansState.instance.setScansEnabled(false)
 
             getTestWindow().onDidShowQuickPick(async (e) => {
                 e.assertContainsItems(
-                    createAutoSuggestions(false),
+                    createAutoSuggestions(true),
                     createOpenReferenceLog(),
                     createGettingStarted(),
                     createAutoScans(false),
@@ -477,7 +451,7 @@ describe('CodeWhisperer-basicCommands', function () {
             getTestWindow().onDidShowQuickPick(async (e) => {
                 e.assertItems([
                     createSeparator('Inline Suggestions'),
-                    createAutoSuggestions(false),
+                    createAutoSuggestions(true),
                     createOpenReferenceLog(),
                     createGettingStarted(),
                     createSeparator('Security Scans'),

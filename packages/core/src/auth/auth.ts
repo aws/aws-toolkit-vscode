@@ -302,7 +302,7 @@ export class Auth implements AuthService, ConnectionManager {
 
         // Remove the split session logout prompt, if it exists.
         if (!isAmazonQ()) {
-            await globals.context.globalState.update(SessionSeparationPrompt.instance.dismissKey, true)
+            await globals.globalState.update('aws.toolkit.separationPromptDismissed', true)
         }
 
         try {
@@ -1029,9 +1029,6 @@ type LoginCommand = 'aws.toolkit.auth.manageConnections' | 'aws.codecatalyst.man
  * TODO: Remove after some time.
  */
 export class SessionSeparationPrompt {
-    public readonly dismissKey = 'aws.toolkit.separationPromptDismissed'
-    private readonly loginCmdKey = 'aws.toolkit.separationPromptCommand'
-
     // Local variable handles per session displays, e.g. we forgot a CodeCatalyst connection AND
     // an Explorer only connection. We only want to display once in this case.
     // However, we don't want to set this at the global state level until a user interacts with the
@@ -1043,7 +1040,7 @@ export class SessionSeparationPrompt {
      * which is useful to redisplay the prompt after reloads in case a user misses it.
      */
     public async showAnyPreviousPrompt() {
-        const cmd = globals.context.globalState.get<string>(this.loginCmdKey)
+        const cmd = globals.globalState.tryGet('aws.toolkit.separationPromptCommand', String)
         return cmd ? await this.showForCommand(cmd as LoginCommand) : undefined
     }
 
@@ -1053,11 +1050,14 @@ export class SessionSeparationPrompt {
      * (e.g. codecatalyst sign in vs explorer)
      */
     public async showForCommand(cmd: LoginCommand) {
-        if (this.#separationPromptDisplayed || globals.context.globalState.get<boolean>(this.dismissKey)) {
+        if (
+            this.#separationPromptDisplayed ||
+            globals.globalState.get<boolean>('aws.toolkit.separationPromptDismissed')
+        ) {
             return
         }
 
-        await globals.context.globalState.update(this.loginCmdKey, cmd)
+        await globals.globalState.update('aws.toolkit.separationPromptCommand', cmd)
 
         await telemetry.toolkit_showNotification.run(async () => {
             telemetry.record({ id: 'sessionSeparation' })
@@ -1077,7 +1077,7 @@ export class SessionSeparationPrompt {
                             telemetry.record({ action: 'dismiss' })
                         }
 
-                        await globals.context.globalState.update(this.dismissKey, true)
+                        await globals.globalState.update('aws.toolkit.separationPromptDismissed', true)
                     })
                 })
         })

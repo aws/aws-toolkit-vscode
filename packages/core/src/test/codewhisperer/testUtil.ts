@@ -32,7 +32,8 @@ export async function resetCodeWhispererGlobalVariables() {
     CodeWhispererCodeCoverageTracker.instances.clear()
     globals.telemetry.logger.clear()
     session.reset()
-    await CodeSuggestionsState.instance.setSuggestionsEnabled(false)
+    await globals.globalState.clear()
+    await CodeSuggestionsState.instance.setSuggestionsEnabled(true)
     await RecommendationHandler.instance.clearInlineCompletionStates()
 }
 
