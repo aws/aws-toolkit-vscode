@@ -268,7 +268,7 @@ export abstract class SsoAccessTokenProvider {
  * Supplementary arguments for the create token flow. This data can be used
  * for things like telemetry.
  */
-type CreateTokenArgs = {
+export type CreateTokenArgs = {
     /** true if the create token flow is for reauthentication */
     isReAuth?: boolean
 }
