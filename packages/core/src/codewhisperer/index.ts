@@ -6,9 +6,7 @@
 export { activate, shutdown } from './activation'
 export * from './util/authUtil'
 export * from './models/model'
-export * as model from './models/model'
 export * from './models/constants'
-export * as CodeWhispererConstants from './models/constants'
 export * from './commands/basicCommands'
 export * from './commands/types'
 export {
