@@ -20,6 +20,7 @@ export class DBInstanceNode extends AWSTreeNodeBase {
 
     constructor(public readonly parent: DBClusterNode, readonly instance: DBInstance) {
         super(instance.DBInstanceIdentifier ?? '[Instance]', vscode.TreeItemCollapsibleState.None)
+        this.id = instance.DBInstanceIdentifier
         this.description = this.makeDescription()
         this.contextValue = this.getContext()
         this.tooltip = `${this.name}\nClass: ${this.instance.DBInstanceClass}\nStatus: ${this.status}`
@@ -40,6 +41,11 @@ export class DBInstanceNode extends AWSTreeNodeBase {
         return DocDBContext.Instance
     }
 
+    public async rebootInstance(): Promise<boolean> {
+        const client = this.parent.client
+        return await client.rebootInstance(this.instance.DBInstanceIdentifier!)
+    }
+
     public async renameInstance(instanceName: string): Promise<DBInstance | undefined> {
         const request: ModifyDBInstanceMessage = {
             DBInstanceIdentifier: this.instance.DBInstanceIdentifier,
@@ -55,10 +61,11 @@ export class DBInstanceNode extends AWSTreeNodeBase {
 
     public async waitUntilStatusChanged(): Promise<boolean> {
         const currentStatus = this.status
+        const instanceId = this.instance.DBInstanceIdentifier!
 
         await waitUntil(
             async () => {
-                const instance = await this.parent.client.getInstance(this.instance.DBInstanceIdentifier!)
+                const instance = await this.parent.client.getInstance(instanceId)
                 return instance?.DBInstanceStatus !== currentStatus
             },
             { timeout: 30000, interval: 500, truthy: true }

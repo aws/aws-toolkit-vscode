@@ -15,6 +15,7 @@ import { deleteInstance } from './commands/deleteInstance'
 import { renameCluster } from './commands/renameCluster'
 import { renameInstance } from './commands/renameInstance'
 import { modifyInstance } from './commands/modifyInstance'
+import { rebootInstance } from './commands/rebootInstance'
 import { startCluster, stopCluster } from './commands/commands'
 
 /**
@@ -57,6 +58,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
         Commands.register('aws.docdb.modifyInstance', async (node: DBInstanceNode) => {
             await modifyInstance(node)
+        }),
+
+        Commands.register('aws.docdb.rebootInstance', async (node: DBInstanceNode) => {
+            await rebootInstance(node)
         })
     )
 }
