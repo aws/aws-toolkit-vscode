@@ -452,6 +452,7 @@ class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
     fun getTelemetryErrorMessage(e: Exception): String = when {
         e.message?.contains("Resource not found.") == true -> "Resource not found."
         e.message?.contains("Service returned HTTP status code 407") == true -> "Service returned HTTP status code 407"
+        e.message?.contains("Improperly formed request") == true -> "Improperly formed request"
         e.message?.contains("Service returned HTTP status code 403") == true -> "Service returned HTTP status code 403"
         e.message?.contains("invalid_grant: Invalid token provided") == true -> "invalid_grant: Invalid token provided"
         e.message?.contains("Connect timed out") == true -> "Unable to execute HTTP request: Connect timed out" // Error: Connect to host failed

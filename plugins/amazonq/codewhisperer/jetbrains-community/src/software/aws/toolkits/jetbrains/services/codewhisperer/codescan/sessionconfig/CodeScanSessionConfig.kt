@@ -19,6 +19,7 @@ import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.jetbrains.services.amazonq.FeatureDevSessionContext
+import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.cannotFindBuildArtifacts
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.cannotFindFile
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.fileTooLarge
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.noFileOpenError
@@ -32,6 +33,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.DEFAULT_PAYLOAD_LIMIT_IN_BYTES
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.FILE_SCAN_PAYLOAD_SIZE_LIMIT_IN_BYTES
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.FILE_SCAN_TIMEOUT_IN_SECONDS
+import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.File
 import java.nio.file.Path
@@ -91,17 +93,26 @@ class CodeScanSessionConfig(
 
         LOG.debug { "Creating payload. File selected as root for the context truncation: ${projectRoot.path}" }
 
-        val payloadMetadata = when (selectedFile) {
-            null -> getProjectPayloadMetadata()
-            else -> when (scope) {
-                CodeAnalysisScope.PROJECT -> getProjectPayloadMetadata()
-                CodeAnalysisScope.FILE -> if (selectedFile.path.startsWith(projectRoot.path)) {
-                    getFilePayloadMetadata(selectedFile)
-                } else {
-                    projectRoot = selectedFile.parent
-                    getFilePayloadMetadata(selectedFile)
+        val payloadMetadata: PayloadMetadata = try {
+            when (selectedFile) {
+                null -> getProjectPayloadMetadata()
+                else -> when (scope) {
+                    CodeAnalysisScope.PROJECT -> getProjectPayloadMetadata()
+                    CodeAnalysisScope.FILE -> if (selectedFile.path.startsWith(projectRoot.path)) {
+                        getFilePayloadMetadata(selectedFile)
+                    } else {
+                        projectRoot = selectedFile.parent
+                        getFilePayloadMetadata(selectedFile)
+                    }
                 }
             }
+        } catch (e: Exception) {
+            val errorMessage = when {
+                e.message?.contains("Illegal repetition near index") == true -> "Illegal repetition near index"
+                else -> e.message
+            }
+            LOG.debug { "Error creating payload metadata: $errorMessage" }
+            throw cannotFindBuildArtifacts(errorMessage ?: message("codewhisperer.codescan.run_scan_error_telemetry"))
         }
 
         // Copy all the included source files to the source zip

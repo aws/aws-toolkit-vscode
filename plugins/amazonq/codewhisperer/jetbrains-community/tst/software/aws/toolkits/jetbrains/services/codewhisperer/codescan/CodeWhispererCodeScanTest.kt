@@ -163,7 +163,8 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsigh
             Exception("invalid_grant: Invalid token provided"),
             Exception("Connect timed out"),
             Exception("Encountered an unexpected error when processing the request, please try again."),
-            Exception("Some other error message")
+            Exception("Some other error message"),
+            Exception("Improperly formed request")
         )
 
         val expectedMessages = listOf(
@@ -173,7 +174,8 @@ class CodeWhispererCodeScanTest : CodeWhispererCodeScanTestBase(PythonCodeInsigh
             "invalid_grant: Invalid token provided",
             "Unable to execute HTTP request: Connect timed out",
             "Encountered an unexpected error when processing the request, please try again.",
-            "Some other error message"
+            "Some other error message",
+            "Improperly formed request"
         )
 
         exceptions.forEachIndexed { index, exception ->

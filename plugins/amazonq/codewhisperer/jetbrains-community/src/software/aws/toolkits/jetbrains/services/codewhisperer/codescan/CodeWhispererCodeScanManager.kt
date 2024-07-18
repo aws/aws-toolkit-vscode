@@ -338,9 +338,8 @@ class CodeWhispererCodeScanManager(val project: Project) {
         val message = e.message
         return when {
             message.isNullOrBlank() -> null
-            message == message("codewhisperer.codescan.invalid_source_zip_telemetry") -> {
-                message("codewhisperer.codescan.run_scan_error")
-            }
+            message == message("codewhisperer.codescan.invalid_source_zip_telemetry") ||
+                message == "Illegal repetition near index" -> message("codewhisperer.codescan.run_scan_error")
             else -> message
         }
     }
