@@ -16,7 +16,7 @@ import { CodelensRootRegistry } from '../shared/fs/codelensRootRegistry'
 import { CloudFormationTemplateRegistry } from '../shared/fs/templateRegistry'
 import { getLogger, LogLevel } from '../shared/logger'
 import { setLogger } from '../shared/logger/logger'
-import { FakeExtensionContext, FakeMemento } from './fakeExtensionContext'
+import { FakeExtensionContext } from './fakeExtensionContext'
 import { TestLogger } from './testLogger'
 import * as testUtil from './testUtil'
 import { getTestWindow, resetTestWindow } from './shared/vscode/window'
@@ -52,7 +52,10 @@ export async function mochaGlobalSetup(extensionId: string) {
         const fakeContext = await FakeExtensionContext.create()
         fakeContext.globalStorageUri = (await testUtil.createTestWorkspaceFolder('globalStoragePath')).uri
         fakeContext.extensionPath = globals.context.extensionPath
-        Object.assign(globals, { context: fakeContext })
+        Object.assign(globals, {
+            context: fakeContext,
+            globalState: new GlobalState(fakeContext.globalState),
+        })
     }
 }
 
@@ -84,9 +87,8 @@ export const mochaHooks = {
         globals.telemetry.clearRecords()
         globals.telemetry.logger.clear()
         TelemetryDebounceInfo.instance.clear()
-        const fakeGlobalState = new FakeMemento()
-        ;(globals.context as FakeExtensionContext).globalState = fakeGlobalState
-        ;(globals as any).globalState = new GlobalState(fakeGlobalState)
+        // mochaGlobalSetup() set this to a fake, so it's safe to clear it here.
+        await globals.globalState.clear()
 
         await testUtil.closeAllEditors()
     },

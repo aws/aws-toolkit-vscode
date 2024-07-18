@@ -98,8 +98,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
         public readonly toolId: ToolId,
         public readonly toolLabel: string,
         public readonly isUsable: (conn: Connection) => conn is T,
-        private readonly auth: Auth,
-        private readonly memento = globals.context.globalState
+        private readonly auth: Auth
     ) {
         const handleConnectionChanged = async (newActiveConn?: Connection) => {
             if (newActiveConn === undefined && this.#activeConnection?.id) {
@@ -176,7 +175,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
     }
 
     public async saveConnection(conn: T) {
-        await this.memento.update(this.key, conn.id)
+        await globals.context.globalState.update(this.key, conn.id)
         this.#savedConnection = conn
         this.#onDidChangeActiveConnection.fire(this.activeConnection)
     }
@@ -207,7 +206,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
 
     /** Stop using the saved connection and fallback to using the active connection, if it is usable. */
     public async clearSavedConnection() {
-        await this.memento.update(this.key, undefined)
+        await globals.context.globalState.update(this.key, undefined)
         this.#savedConnection = undefined
         this.#onDidChangeActiveConnection.fire(this.activeConnection)
     }
@@ -252,7 +251,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
     })
 
     private async loadSavedConnection() {
-        const id = cast(this.memento.get(this.key), Optional(String))
+        const id = cast(globals.context.globalState.get(this.key), Optional(String))
         if (id === undefined) {
             return
         }
@@ -260,10 +259,10 @@ export class SecondaryAuth<T extends Connection = Connection> {
         const conn = await this.auth.getConnection({ id })
         if (conn === undefined) {
             getLogger().warn(`auth (${this.toolId}): removing saved connection "${this.key}" as it no longer exists`)
-            await this.memento.update(this.key, undefined)
+            await globals.context.globalState.update(this.key, undefined)
         } else if (!this.isUsable(conn)) {
             getLogger().warn(`auth (${this.toolId}): saved connection "${this.key}" is not valid`)
-            await this.memento.update(this.key, undefined)
+            await globals.context.globalState.update(this.key, undefined)
         } else {
             await this.auth.refreshConnectionState(conn)
             return conn
