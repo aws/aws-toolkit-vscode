@@ -15,8 +15,11 @@ type samInitStateKey =
     | 'SAM_INIT_IMAGE_BOOLEAN_KEY'
     | 'SAM_INIT_ARCH_KEY'
 
+type stepFunctionsKey = 'SCRIPT_LAST_DOWNLOADED_URL' | 'CSS_LAST_DOWNLOADED_URL'
+
 type globalKey =
     | samInitStateKey
+    | stepFunctionsKey
     | 'aws.downloadPath'
     | 'aws.lastTouchedS3Folder'
     | 'aws.lastUploadedToS3Folder'

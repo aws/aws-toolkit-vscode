@@ -31,8 +31,7 @@ const scriptsLastDownloadedUrl = 'SCRIPT_LAST_DOWNLOADED_URL'
 const cssLastDownloadedUrl = 'CSS_LAST_DOWNLOADED_URL'
 
 export interface UpdateCachedScriptOptions {
-    globalState: vscode.Memento
-    lastDownloadedURLKey: string
+    lastDownloadedURLKey: 'SCRIPT_LAST_DOWNLOADED_URL' | 'CSS_LAST_DOWNLOADED_URL'
     currentURL: string
     filePath: string
 }
@@ -73,9 +72,8 @@ export class StateMachineGraphCache {
         this.fileExists = fileExistsCustom ?? fileExists
     }
 
-    public async updateCache(globalState: vscode.Memento): Promise<void> {
+    public async updateCache(): Promise<void> {
         const scriptUpdate = this.updateCachedFile({
-            globalState: globalState,
             lastDownloadedURLKey: scriptsLastDownloadedUrl,
             currentURL: visualizationScriptUrl,
             filePath: this.jsFilePath,
@@ -87,7 +85,6 @@ export class StateMachineGraphCache {
         })
 
         const cssUpdate = this.updateCachedFile({
-            globalState: globalState,
             lastDownloadedURLKey: cssLastDownloadedUrl,
             currentURL: visualizationCssUrl,
             filePath: this.cssFilePath,
@@ -102,7 +99,7 @@ export class StateMachineGraphCache {
     }
 
     public async updateCachedFile(options: UpdateCachedScriptOptions) {
-        const downloadedUrl = options.globalState.get<string>(options.lastDownloadedURLKey)
+        const downloadedUrl = globals.globalState.tryGet<string>(options.lastDownloadedURLKey, String)
         const cachedFileExists = await this.fileExists(options.filePath)
 
         // if current url is different than url that was previously used to download the assets
@@ -113,7 +110,7 @@ export class StateMachineGraphCache {
             await this.writeToLocalStorage(options.filePath, response)
 
             // save the url of the downloaded and cached assets
-            void options.globalState.update(options.lastDownloadedURLKey, options.currentURL)
+            await globals.globalState.update(options.lastDownloadedURLKey, options.currentURL)
         }
     }
 
