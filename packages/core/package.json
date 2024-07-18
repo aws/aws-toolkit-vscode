@@ -2035,6 +2035,11 @@
                     "group": "0@1"
                 },
                 {
+                    "command": "aws.docdb.rebootInstance",
+                    "when": "viewItem == awsDocDB.instance.available",
+                    "group": "inline@1"
+                },
+                {
                     "command": "aws.docdb.deleteInstance",
                     "when": "viewItem == awsDocDB.instance.available",
                     "group": "0@2"
@@ -3633,6 +3638,18 @@
                 "title": "%AWS.command.docdb.modifyInstance%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.rebootInstance",
+                "title": "%AWS.command.docdb.rebootInstance%",
+                "icon": "$(debug-restart)",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem == awsDocDB.instance.available",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

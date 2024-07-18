@@ -290,4 +290,19 @@ export class DefaultDocumentDBClient {
             client.destroy()
         }
     }
+
+    public async rebootInstance(instanceId: string): Promise<boolean> {
+        getLogger().debug('RebootInstance called')
+        const client = await this.getClient()
+
+        try {
+            const command = new DocDB.RebootDBInstanceCommand({ DBInstanceIdentifier: instanceId })
+            const response = await client.send(command)
+            return !!response.DBInstance
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to reboot instance')
+        } finally {
+            client.destroy()
+        }
+    }
 }
