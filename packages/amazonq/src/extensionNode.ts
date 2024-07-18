@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { activateAmazonQCommon, amazonQContextPrefix, deactivateCommon } from './extensionCommon'
+import { activateAmazonQCommon, amazonQContextPrefix, deactivateCommon } from './extension'
 import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
 import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
 import { ExtContext } from 'aws-core-vscode/shared'

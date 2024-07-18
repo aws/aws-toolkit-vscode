@@ -9,7 +9,7 @@ import {
     activate as activateCodeWhisperer,
     shutdown as shutdownCodeWhisperer,
 } from 'aws-core-vscode/codewhisperer'
-import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode/extensionCommon'
+import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode'
 import { CommonAuthWebview } from 'aws-core-vscode/login'
 import {
     DefaultAWSClientBuilder,

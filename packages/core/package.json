@@ -27,10 +27,10 @@
     "main": "./dist/src/extensionNode.js",
     "browser": "./dist/src/extensionWebCore.js",
     "exports": {
+        ".": "./dist/src/extension.js",
         "./node": "./dist/src/extensionNode.js",
         "./web": "./dist/src/extensionWeb.js",
         "./webShared": "./dist/src/extensionWebShared.js",
-        "./extensionCommon": "./dist/src/extensionCommon.js",
         "./amazonq": "./dist/src/amazonq/index.js",
         "./codewhisperer": "./dist/src/codewhisperer/index.js",
         "./codewhisperer/node": "./dist/src/codewhisperer/indexNode.js",
