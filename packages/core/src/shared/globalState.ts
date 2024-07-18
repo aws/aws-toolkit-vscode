@@ -45,11 +45,19 @@ type globalKey =
     | 'CODEWHISPERER_SELECTED_CUSTOMIZATION'
     | 'CODEWHISPERER_USER_GROUP'
     | 'awsTelemetryNoticeVersionAck'
+    | 'codecatalyst.connections'
+    | 'dev.beta'
     | 'globalsMostRecentVersion'
     | 'gumby.wasQCodeTransformationUsed'
     | 'hasAlreadyOpenedAmazonQ'
     | 'isExtensionFirstUse'
     | 'lastExtensionVersion'
+    | 'lastSelectedRegion'
+    | 'recentCredentials'
+    // List of regions enabled in AWS Explorer.
+    | 'region'
+    // TODO: implement this via `PromptSettings` instead of globalState.
+    | 'sam.sync.updateMessage'
 
 /**
  * Extension-local (not visible to other vscode extensions) shared state which persists after IDE

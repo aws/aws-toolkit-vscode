@@ -99,7 +99,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
         public readonly toolLabel: string,
         public readonly isUsable: (conn: Connection) => conn is T,
         private readonly auth: Auth,
-        private readonly memento = globals.globalState
+        private readonly memento = globals.context.globalState
     ) {
         const handleConnectionChanged = async (newActiveConn?: Connection) => {
             if (newActiveConn === undefined && this.#activeConnection?.id) {
