@@ -145,7 +145,7 @@ class ProjectContextProvider(val project: Project, private val encoderServer: En
         val url = URL("http://localhost:${encoderServer.port}/indexFiles")
         val filesResult = collectFiles()
         val projectRoot = project.guessProjectDir()?.path ?: return false
-        val payload = IndexRequestPayload(filesResult.files, projectRoot, true)
+        val payload = IndexRequestPayload(filesResult.files, projectRoot, false)
         val payloadJson = mapper.writeValueAsString(payload)
         val encrypted = encoderServer.encrypt(payloadJson)
 
