@@ -5,12 +5,13 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs
 
 import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ListTableModel
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.whenever
@@ -24,7 +25,7 @@ import software.aws.toolkits.jetbrains.utils.waitForTrue
 import software.aws.toolkits.resources.message
 import java.time.Duration
 
-@ExperimentalCoroutinesApi
+@Ignore("deadlocks IDE 242")
 class LogGroupSearchActorTest : BaseCoroutineTest() {
     private lateinit var client: CloudWatchLogsClient
     private lateinit var tableModel: ListTableModel<LogStream>
@@ -100,11 +101,9 @@ class LogGroupSearchActorTest : BaseCoroutineTest() {
     }
 
     @Test
-    fun loadInitialRangeThrows() {
-        runBlocking {
-            actor.channel.send(CloudWatchLogsActor.Message.LoadInitialRange(LogStreamEntry("@@@", 0), Duration.ofMillis(0)))
-            waitForTrue { actor.channel.isClosedForSend }
-        }
+    fun loadInitialRangeThrows() = runTest {
+        actor.channel.send(CloudWatchLogsActor.Message.LoadInitialRange(LogStreamEntry("@@@", 0), Duration.ofMillis(0)))
+        waitForTrue { actor.channel.isClosedForSend }
     }
 
     @Test

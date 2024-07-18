@@ -22,14 +22,17 @@ fun Project.ciOnly(block: () -> Unit) {
 fun Project.isCi() : Boolean = providers.environmentVariable("CI").isPresent
 
 fun Project.jvmTarget(): Provider<JavaVersion> = withCurrentProfileName {
-    JavaVersion.VERSION_17
+    when (it) {
+        "2023.2", "2023.3", "2024.1" -> JavaVersion.VERSION_17
+        else -> JavaVersion.VERSION_21
+    }
 }
 
 // https://plugins.jetbrains.com/docs/intellij/using-kotlin.html#other-bundled-kotlin-libraries
 fun Project.kotlinTarget(): Provider<String> = withCurrentProfileName {
     when (it) {
         "2023.2" -> KotlinVersionEnum.KOTLIN_1_8
-        "2023.3", "2024.1" -> KotlinVersionEnum.KOTLIN_1_9
+        "2023.3", "2024.1", "2024.2" -> KotlinVersionEnum.KOTLIN_1_9
         else -> error("not set")
     }.version
 }

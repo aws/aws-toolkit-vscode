@@ -11,11 +11,11 @@ intellijToolkit {
     ideFlavor.set(IdeFlavor.IC)
 }
 
-intellij {
-    plugins.add(project(":plugin-core"))
-}
-
 dependencies {
+    intellijPlatform {
+        localPlugin(project(":plugin-core"))
+    }
+
     compileOnlyApi(project(":plugin-core:jetbrains-community"))
 
     // CodeWhispererTelemetryService uses a CircularFifoQueue

@@ -49,12 +49,17 @@ if (regionEnv.isPresent && bucketEnv.isPresent && prefixEnv.isPresent) {
 }
 
 plugins {
-    id("com.gradle.enterprise").version("3.15.1")
+    id("com.gradle.enterprise").version("3.17.5")
     id("com.github.burrunan.s3-build-cache").version("1.5")
 }
 
-gradleEnterprise {
+develocity {
     buildScan {
+        if (System.getenv("CI") == "true") {
+            termsOfUseUrl = "https://gradle.com/help/legal-terms-of-use"
+            termsOfUseAgree = "yes"
+        }
+
         obfuscation {
             username { "<username>" }
             hostname { "<hostname>" }
@@ -69,7 +74,9 @@ rootProject.name = "aws-toolkit-jetbrains"
 include("detekt-rules")
 include("ui-tests")
 include("sandbox-all")
-include("tmp-all")
+when (providers.gradleProperty("ideProfileName").get()) {
+    "2023.2", "2023.3", "2024.1" -> include("tmp-all")
+}
 
 /*
 plugins/

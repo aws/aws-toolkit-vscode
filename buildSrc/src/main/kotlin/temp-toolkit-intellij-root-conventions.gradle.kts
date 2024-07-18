@@ -1,32 +1,29 @@
 // Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.dependencies
-import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.invoke
 import org.gradle.kotlin.dsl.project
 import org.gradle.kotlin.dsl.provideDelegate
-import org.gradle.kotlin.dsl.withType
-import org.gradle.testing.jacoco.plugins.JacocoPluginExtension
-import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
-import org.jetbrains.intellij.tasks.DownloadRobotServerPluginTask
-import org.jetbrains.intellij.tasks.RunIdeForUiTestTask
-import org.jetbrains.intellij.utils.OpenedPackages
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
+import org.jetbrains.intellij.platform.gradle.extensions.IntelliJPlatformExtension
+import org.jetbrains.intellij.platform.gradle.plugins.project.DownloadRobotServerPluginTask
+import org.jetbrains.intellij.platform.gradle.tasks.TestIdeUiTask
 import software.aws.toolkits.gradle.ciOnly
 import software.aws.toolkits.gradle.intellij.IdeFlavor
 import software.aws.toolkits.gradle.intellij.IdeVersions
 import software.aws.toolkits.gradle.intellij.ToolkitIntelliJExtension
+import software.aws.toolkits.gradle.intellij.toolkitIntelliJ
 
 plugins {
-    id("org.jetbrains.intellij")
     id("toolkit-testing") // Needed so the coverage configurations are present
     id("toolkit-detekt")
     id("toolkit-publishing-conventions")
+    id("toolkit-publish-root-conventions")
 }
 
-val toolkitIntelliJ = project.extensions.create<ToolkitIntelliJExtension>("intellijToolkit").apply {
+toolkitIntelliJ.apply {
     val runIdeVariant = providers.gradleProperty("runIdeVariant")
     ideFlavor.set(IdeFlavor.values().firstOrNull { it.name == runIdeVariant.orNull } ?: IdeFlavor.IC)
 }
@@ -40,25 +37,22 @@ val toolkitVersion: String by project
 // also sync with gateway version
 version = "$toolkitVersion-${ideProfile.shortName}"
 
-val resharperDlls = configurations.create("resharperDlls") {
+val resharperDlls = configurations.register("resharperDlls") {
     isCanBeConsumed = false
 }
 
-val gatewayResources = configurations.create("gatewayResources") {
+val gatewayResources = configurations.register("gatewayResources") {
     isCanBeConsumed = false
 }
 
-intellij {
-    pluginName.set("aws-toolkit-jetbrains")
-
-    localPath.set(toolkitIntelliJ.localPath())
-    version.set(toolkitIntelliJ.version())
-
-    updateSinceUntilBuild.set(false)
-    instrumentCode.set(false)
+intellijPlatform {
+    projectName = "aws-toolkit-jetbrains"
+    instrumentCode = false
 }
 
 tasks.prepareSandbox {
+    val pluginName = intellijPlatform.projectName
+
     intoChild(pluginName.map { "$it/dotnet" })
         .from(resharperDlls)
 
@@ -72,6 +66,13 @@ tasks.test {
 }
 
 dependencies {
+    intellijPlatform {
+        val type = toolkitIntelliJ.ideFlavor.map { IntelliJPlatformType.fromCode(it.toString()) }
+        val version = toolkitIntelliJ.version()
+
+        create(type, version, useInstaller = false)
+    }
+
     implementation(project(":plugin-toolkit:jetbrains-core"))
     implementation(project(":plugin-toolkit:jetbrains-ultimate"))
     project.findProject(":plugin-toolkit:jetbrains-gateway")?.let {
@@ -86,13 +87,10 @@ dependencies {
 
 // Enable coverage for the UI test target IDE
 ciOnly {
-    extensions.getByType<JacocoPluginExtension>().applyTo(tasks.withType<RunIdeForUiTestTask>())
+    extensions.getByType<JacocoPluginExtension>().applyTo(tasks.withType<TestIdeUiTask>())
 }
-tasks.withType<DownloadRobotServerPluginTask> {
-    // TODO: https://github.com/gradle/gradle/issues/15383
-    version.set(versionCatalogs.named("libs").findVersion("intellijRemoteRobot").get().requiredVersion)
-}
-tasks.withType<RunIdeForUiTestTask>().all {
+
+tasks.withType<TestIdeUiTask>().configureEach {
     systemProperty("robot-server.port", remoteRobotPort)
     // mac magic
     systemProperty("ide.mac.message.dialogs.as.sheets", "false")
@@ -117,13 +115,6 @@ tasks.withType<RunIdeForUiTestTask>().all {
         enabled.set(true)
         suspend.set(false)
     }
-
-    jvmArgs(
-        OpenedPackages + listOf(
-            // very noisy in UI tests
-            "--add-opens=java.desktop/javax.swing.text=ALL-UNNAMED",
-        )
-    )
 
     ciOnly {
         configure<JacocoTaskExtension> {

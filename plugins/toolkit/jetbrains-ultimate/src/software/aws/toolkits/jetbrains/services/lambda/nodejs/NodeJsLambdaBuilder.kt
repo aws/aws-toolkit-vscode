@@ -86,7 +86,7 @@ class NodeJsLambdaBuilder : LambdaBuilder() {
                     val compilerOptions = tsConfigMap[TypeScriptConfig.COMPILER_OPTIONS_PROPERTY] as? MutableMap<String, Any>
                         ?: mutableMapOf<String, Any>(
                             TypeScriptConfig.TARGET_OPTION to TypeScriptConfig.LanguageTarget.ES6.libName,
-                            TypeScriptConfig.MODULE to TypeScriptConfig.MODULE_COMMON_JS,
+                            TypeScriptConfig.MODULE to "commonjs",
                             TypeScriptConfig.SOURCE_MAP to true
                         )
                     tsConfigMap[TypeScriptConfig.COMPILER_OPTIONS_PROPERTY] = compilerOptions

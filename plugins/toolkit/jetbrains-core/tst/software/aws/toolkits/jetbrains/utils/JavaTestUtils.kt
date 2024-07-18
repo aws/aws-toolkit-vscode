@@ -18,6 +18,7 @@ import com.intellij.openapi.projectRoots.JavaSdk
 import com.intellij.openapi.projectRoots.ProjectJdkTable
 import com.intellij.openapi.projectRoots.impl.JavaAwareProjectJdkTableImpl
 import com.intellij.openapi.projectRoots.impl.SdkConfigurationUtil
+import com.intellij.openapi.projectRoots.impl.SdkVersionUtil
 import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.Ref
@@ -34,6 +35,7 @@ import org.jetbrains.idea.maven.model.MavenExplicitProfiles
 import org.jetbrains.idea.maven.project.MavenProjectsManager
 import org.jetbrains.idea.maven.server.MavenServerManager
 import org.jetbrains.idea.maven.utils.MavenProgressIndicator.MavenProgressTracker
+import org.jetbrains.plugins.gradle.jvmcompat.GradleJvmSupportMatrix
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings
 import org.jetbrains.plugins.gradle.util.GradleConstants
 import org.junit.Assert.fail
@@ -47,7 +49,12 @@ import java.nio.file.Paths
 import kotlin.io.path.isDirectory
 
 fun HeavyJavaCodeInsightTestFixtureRule.setUpJdk(jdkName: String = "Real JDK"): String {
-    val jdkHome = IdeaTestUtil.requireRealJdkHome()
+    // attempt to find a JDK that works for gradle
+    val jdkHome = JavaSdk.getInstance().suggestHomePaths().firstOrNull {
+        val version = SdkVersionUtil.getJdkVersionInfo(it)?.version ?: return@firstOrNull false
+        version < GradleJvmSupportMatrix.getAllSupportedJavaVersionsByIdea().max()
+    } ?: IdeaTestUtil.requireRealJdkHome()
+    println("Using $jdkHome as JDK home")
 
     runInEdtAndWait {
         runWriteAction {

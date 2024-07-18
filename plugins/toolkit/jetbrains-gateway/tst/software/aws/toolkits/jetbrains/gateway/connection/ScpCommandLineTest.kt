@@ -53,7 +53,7 @@ class ScpCommandLineTest {
         val file = newFile()
 
         val sut = ScpCommandLine(
-            "localhost",
+            sshServer.server.host,
             tempFolder.newFolder().absolutePath,
             recursive = false,
             port = sshServer.server.port
@@ -72,7 +72,7 @@ class ScpCommandLineTest {
         val file2 = newFile()
 
         val sut = ScpCommandLine(
-            "localhost",
+            sshServer.server.host,
             tempFolder.newFolder().absolutePath,
             recursive = false,
             port = sshServer.server.port
@@ -94,7 +94,7 @@ class ScpCommandLineTest {
 
         val destination = tempFolder.newFolder()
         val sut = ScpCommandLine(
-            "localhost",
+            sshServer.server.host,
             destination.toString(),
             recursive = true,
             port = sshServer.server.port
@@ -114,9 +114,11 @@ class ScpCommandLineTest {
         val paths = mutableListOf<Path?>()
         attachScpListener(paths)
 
-        ExecUtil.execAndGetOutput(
-            this.knownHostsLocation(tempFolder.newFile().toPath())
-                .constructCommandLine()
+        println(
+            ExecUtil.execAndGetOutput(
+                this.knownHostsLocation(tempFolder.newFile().toPath())
+                    .constructCommandLine()
+            )
         )
 
         return paths

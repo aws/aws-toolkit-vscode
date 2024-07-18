@@ -1,19 +1,21 @@
 // Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import software.aws.toolkits.gradle.changelog.tasks.GeneratePluginChangeLog
 import software.aws.toolkits.gradle.intellij.IdeFlavor
 import software.aws.toolkits.gradle.intellij.IdeVersions
+import software.aws.toolkits.gradle.intellij.toolkitIntelliJ
 
 plugins {
     id("toolkit-publishing-conventions")
-    id("toolkit-patch-plugin-xml-conventions")
+    id("toolkit-publish-root-conventions")
     id("toolkit-jvm-conventions")
 }
 
 val changelog = tasks.register<GeneratePluginChangeLog>("pluginChangeLog") {
     includeUnreleased.set(true)
-    changeLogFile.set(project.file("$buildDir/changelog/change-notes.xml"))
+    changeLogFile.value(layout.buildDirectory.file("changelog/change-notes.xml"))
 }
 
 tasks.jar {
@@ -23,15 +25,11 @@ tasks.jar {
     }
 }
 
-intellij {
-    plugins.set(
-        listOf(
-            project(":plugin-core")
-        )
-    )
-}
-
 dependencies {
+    intellijPlatform {
+        localPlugin(project(":plugin-core"))
+    }
+
     implementation(project(":plugin-amazonq:chat"))
     implementation(project(":plugin-amazonq:codetransform"))
     implementation(project(":plugin-amazonq:codewhisperer"))
@@ -62,7 +60,5 @@ tasks.check {
         subDirs.forEach { insideService->
             dependsOn(":plugin-amazonq:${serviceSubDir.name}:${insideService.name}:check")
         }
-
     }
-
 }

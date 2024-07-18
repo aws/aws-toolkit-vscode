@@ -12,8 +12,8 @@ import com.intellij.ui.CheckBoxList
 import com.intellij.ui.FilterComponent
 import com.intellij.ui.ListSpeedSearch
 import com.intellij.ui.dsl.builder.Align
+import com.intellij.ui.dsl.builder.AlignY
 import com.intellij.ui.dsl.builder.panel
-import com.intellij.ui.dsl.gridLayout.VerticalAlign
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment
@@ -94,7 +94,7 @@ class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dyn
                         checklist.toggleAll(false)
                     }.widthGroup(sizeGroup)
                 }
-            }.verticalAlign(VerticalAlign.TOP)
+            }.align(AlignY.TOP)
         }.resizableRow()
     }
 

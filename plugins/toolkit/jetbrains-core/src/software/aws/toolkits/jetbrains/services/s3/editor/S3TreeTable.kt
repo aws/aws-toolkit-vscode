@@ -13,9 +13,8 @@ import com.intellij.openapi.util.io.FileUtilRt.getUserContentLoadLimit
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.VirtualFileWrapper
 import com.intellij.ui.DoubleClickListener
-import com.intellij.ui.TreeTableSpeedSearch
-import com.intellij.ui.treeStructure.treetable.TreeTable
-import com.intellij.util.containers.Convertor
+import com.intellij.ui.TreeSpeedSearch
+import com.intellij.ui.components.JBTreeTable
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.aws.toolkits.core.utils.error
@@ -37,19 +36,21 @@ import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.awt.event.MouseEvent
 import java.io.File
+import java.util.function.Function
 import javax.swing.tree.DefaultMutableTreeNode
+import javax.swing.tree.TreePath
 
 class S3TreeTable(
     private val treeTableModel: S3TreeTableModel,
     val rootNode: S3TreeDirectoryNode,
     val bucket: S3VirtualBucket,
     private val project: Project
-) : TreeTable(treeTableModel) {
+) : JBTreeTable(treeTableModel) {
     private val coroutineScope = projectCoroutineScope(project)
 
     private val dropTargetListener = object : DropTargetAdapter() {
         override fun drop(dropEvent: DropTargetDropEvent) {
-            val node = rowAtPoint(dropEvent.location).takeIf { it >= 0 }?.let { getNodeForRow(it) } ?: rootNode
+            val node = table.rowAtPoint(dropEvent.location).takeIf { it >= 0 }?.let { getNodeForRow(it) } ?: rootNode
             val data = try {
                 dropEvent.acceptDrop(DnDConstants.ACTION_COPY_OR_MOVE)
                 val list = dropEvent.transferable.getTransferData(DataFlavor.javaFileListFlavor) as List<*>
@@ -66,14 +67,14 @@ class S3TreeTable(
 
     private val openFileListener = object : DoubleClickListener() {
         override fun onDoubleClick(e: MouseEvent): Boolean {
-            val row = rowAtPoint(e.point).takeIf { it >= 0 } ?: return false
+            val row = table.rowAtPoint(e.point).takeIf { it >= 0 } ?: return false
             return handleOpeningFile(row, isDoubleClick = true)
         }
     }
 
     private val loadMoreListener = object : DoubleClickListener() {
         override fun onDoubleClick(e: MouseEvent): Boolean {
-            val row = rowAtPoint(e.point).takeIf { it >= 0 } ?: return false
+            val row = table.rowAtPoint(e.point).takeIf { it >= 0 } ?: return false
             return handleLoadingMore(row)
         }
     }
@@ -83,9 +84,9 @@ class S3TreeTable(
     }
 
     private fun doProcessKeyEvent(e: KeyEvent) {
-        if (e.keyCode == KeyEvent.VK_ENTER && selectedRowCount == 1) {
-            handleOpeningFile(selectedRow, isDoubleClick = false)
-            handleLoadingMore(selectedRow)
+        if (e.keyCode == KeyEvent.VK_ENTER && table.selectedRowCount == 1) {
+            handleOpeningFile(table.selectedRow, isDoubleClick = false)
+            handleLoadingMore(table.selectedRow)
         }
     }
 
@@ -156,12 +157,13 @@ class S3TreeTable(
             // Associate the drop target listener with this instance which will allow uploading by drag and drop
             DropTarget(this, dropTargetListener)
         }
-        TreeTableSpeedSearch(
-            this,
-            Convertor { obj ->
+        TreeSpeedSearch.installOn(
+            tree,
+            false,
+            Function<TreePath, String> { obj ->
                 val node = obj.lastPathComponent as DefaultMutableTreeNode
-                val userObject = node.userObject as? S3TreeNode ?: return@Convertor null
-                return@Convertor if (userObject !is S3TreeContinuationNode<*>) {
+                val userObject = node.userObject as? S3TreeNode ?: return@Function null
+                return@Function if (userObject !is S3TreeContinuationNode<*>) {
                     userObject.displayName()
                 } else {
                     null
@@ -175,17 +177,17 @@ class S3TreeTable(
 
     fun refresh() {
         runInEdt {
-            clearSelection()
+            table.clearSelection()
             treeTableModel.structureTreeModel.invalidate()
         }
     }
 
     private fun getNodeForRow(row: Int): S3TreeNode? {
-        val path = tree.getPathForRow(convertRowIndexToModel(row))
+        val path = tree.getPathForRow(table.convertRowIndexToModel(row))
         return (path.lastPathComponent as DefaultMutableTreeNode).userObject as? S3TreeNode
     }
 
-    fun getSelectedNodes(): List<S3TreeNode> = selectedRows.map { getNodeForRow(it) }.filterNotNull()
+    fun getSelectedNodes(): List<S3TreeNode> = table.selectedRows.map { getNodeForRow(it) }.filterNotNull()
 
     fun invalidateLevel(node: S3TreeNode) {
         when (node) {

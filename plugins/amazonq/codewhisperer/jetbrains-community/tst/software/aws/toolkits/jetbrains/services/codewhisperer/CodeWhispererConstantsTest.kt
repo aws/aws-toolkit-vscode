@@ -3,12 +3,11 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer
 
-import com.intellij.help.impl.HelpManagerImpl
-import com.intellij.openapi.help.HelpManager
 import com.intellij.testFramework.ApplicationRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
+import software.aws.toolkits.jetbrains.core.help.HelpIdTranslator
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 class CodeWhispererConstantsTest {
 
@@ -18,7 +17,7 @@ class CodeWhispererConstantsTest {
 
     @Test
     fun `codewhisperer help uri has correct doc link`() {
-        assertThat((HelpManager.getInstance() as HelpManagerImpl).getHelpUrl(HelpIds.CODEWHISPERER_LOGIN_YES_NO.id))
+        assertThat(HelpIdTranslator().getHelpPageUrl(HelpIds.CODEWHISPERER_LOGIN_YES_NO.id))
             .isEqualTo("https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/setup-credentials.html")
     }
 }

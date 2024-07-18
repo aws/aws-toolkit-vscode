@@ -9,8 +9,6 @@ import com.intellij.ide.util.projectWizard.ModuleWizardStep
 import com.intellij.ide.util.projectWizard.SettingsStep
 import com.intellij.ide.util.projectWizard.WizardContext
 import com.intellij.openapi.application.runInEdt
-import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.fileEditor.TextEditorWithPreview
 import com.intellij.openapi.module.ModuleType
 import com.intellij.openapi.options.ConfigurationException
@@ -26,7 +24,6 @@ import com.intellij.platform.ProjectTemplatesFactory
 import icons.AwsIcons
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfigurationProducer
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
@@ -132,11 +129,8 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
 
     private fun openReadmeFile(project: Project, contentRoot: VirtualFile) {
         VfsUtil.findRelativeFile(contentRoot, "README.md")?.let { readme ->
-            readme.putUserData(TextEditorWithPreview.DEFAULT_LAYOUT_FOR_FILE, TextEditorWithPreview.Layout.SHOW_PREVIEW)
-
-            val fileEditorManager = FileEditorManager.getInstance(project)
             runInEdt {
-                fileEditorManager.openTextEditor(OpenFileDescriptor(project, readme), true) ?: LOG.warn { "Failed to open README.md" }
+                TextEditorWithPreview.openPreviewForFile(project, readme)
             }
         }
     }

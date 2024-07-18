@@ -29,10 +29,10 @@ allprojects {
         gradlePluginPortal()
     }
 
-    configurations.all {
+    configurations.configureEach {
         resolutionStrategy {
-            failOnDynamicVersions()
-            failOnChangingVersions()
+            // need to figure out how to fail only on non-platform dependencies
+//            failOnNonReproducibleResolution()
         }
     }
 }

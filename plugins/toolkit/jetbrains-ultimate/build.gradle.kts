@@ -11,7 +11,14 @@ plugins {
     id("toolkit-integration-testing")
 }
 
+intellijToolkit {
+    ideFlavor.set(IdeFlavor.IU)
+}
+
 dependencies {
+    intellijPlatform {
+        localPlugin(project(":plugin-core"))
+    }
     compileOnlyApi(project(":plugin-toolkit:jetbrains-core"))
     compileOnlyApi(project(":plugin-core:jetbrains-ultimate"))
 
@@ -23,12 +30,4 @@ dependencies {
 
     // delete when fully split
     testRuntimeOnly(project(":plugin-core:jetbrains-ultimate"))
-}
-
-intellijToolkit {
-    ideFlavor.set(IdeFlavor.IU)
-}
-
-intellij {
-    plugins.add(project(":plugin-core"))
 }

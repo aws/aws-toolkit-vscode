@@ -8,6 +8,15 @@ env:
 phases:
   install:
     commands:
+      # FIX_WHEN_MIN_IS_233: 232 does not support jdk21
+      - |
+        $url = 'https://corretto.aws/downloads/latest/amazon-corretto-17-x64-windows-jdk.msi';
+        Write-Host ('Downloading from {0}' -f $url);
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;
+        Invoke-WebRequest -Uri $url -OutFile 'corretto_jdk_build.msi';
+        Start-Process 'corretto_jdk_build.msi' -PassThru | Wait-Process;
+        Write-Host 'Removing ...';
+        Remove-Item corretto_jdk_build.msi -Force;
       - |
         if(-Not($Env:CODE_COV_TOKEN -eq $null)) {
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;
@@ -30,13 +39,13 @@ phases:
           $Env:CODEARTIFACT_AUTH_TOKEN=aws codeartifact get-authorization-token --domain $Env:CODEARTIFACT_DOMAIN_NAME --query authorizationToken --output text --duration-seconds 3600
         }
 
-         # Rider is very expensive (spikes our CI jobs to 50% CPU, so let it do the prep work in parallel, but run tests later
-        ./gradlew -PideProfileName="$Env:ALTERNATIVE_IDE_PROFILE_NAME" check :plugin-toolkit:jetbrains-rider:compileTestKotlin --info --console plain --continue
+        # Rider is very expensive (spikes our CI jobs to 50% CPU, so let it do the prep work in parallel, but run tests later
+        ./gradlew -PideProfileName="$Env:ALTERNATIVE_IDE_PROFILE_NAME" check :plugin-toolkit:jetbrains-rider:compileTestKotlin -x :plugin-toolkit:jetbrains-rider:check --info --console plain --continue --stacktrace
         if ($LastExitCode -ne 0) {
           Write-Host "Command failed with exit code $LastExitCode"
           exit -1
         }
-       # ./gradlew -PideProfileName="$Env:ALTERNATIVE_IDE_PROFILE_NAME" :plugin-toolkit:jetbrains-rider:check coverageReport --info --console plain
+        ./gradlew -PideProfileName="$Env:ALTERNATIVE_IDE_PROFILE_NAME" :plugin-toolkit:jetbrains-rider:check coverageReport --info --console plain
 
   post_build:
     commands:
@@ -50,7 +59,7 @@ phases:
           }
         }
 
-        copyArtifacts "*\build\idea-sandbox\system*\log" $script:TEST_ARTIFACTS
+        copyArtifacts "*\build\idea-sandbox\*\log*" $script:TEST_ARTIFACTS
         copyArtifacts "*\build\reports" $script:TEST_ARTIFACTS
 
         copyArtifacts "*\test-results" $script:TEST_REPORTS

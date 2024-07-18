@@ -11,6 +11,7 @@ import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.whenever
@@ -23,6 +24,7 @@ import software.aws.toolkits.jetbrains.utils.waitForModelToBeAtLeast
 import software.aws.toolkits.jetbrains.utils.waitForTrue
 import software.aws.toolkits.resources.message
 
+@Ignore("deadlocks IDE 242")
 @ExperimentalCoroutinesApi
 class LogGroupActorTest : BaseCoroutineTest() {
     private lateinit var client: CloudWatchLogsClient

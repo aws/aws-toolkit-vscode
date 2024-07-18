@@ -51,12 +51,12 @@ class S3ViewerPanelTest {
     @Test
     fun `data provider selected nodes key returns table selected values`() {
         runInEdtAndWait {
-            val dataProvider = DataManager.getInstance().getDataContext(sut.component)
-            sut.treeTable.clearSelection()
-            assertThat(dataProvider.getData(S3EditorDataKeys.SELECTED_NODES)).isEmpty()
+            sut.treeTable.table.clearSelection()
+            assertThat(DataManager.getInstance().getDataContext(sut.component).getData(S3EditorDataKeys.SELECTED_NODES)).isEmpty()
 
-            sut.treeTable.addRowSelectionInterval(0, 0)
-            assertThat(dataProvider.getData(S3EditorDataKeys.SELECTED_NODES)).containsExactly(S3TreeDirectoryNode(s3Bucket, null, "folder/"))
+            sut.treeTable.table.addRowSelectionInterval(0, 0)
+            assertThat(DataManager.getInstance().getDataContext(sut.component).getData(S3EditorDataKeys.SELECTED_NODES))
+                .containsExactly(S3TreeDirectoryNode(s3Bucket, null, "folder/"))
         }
     }
 

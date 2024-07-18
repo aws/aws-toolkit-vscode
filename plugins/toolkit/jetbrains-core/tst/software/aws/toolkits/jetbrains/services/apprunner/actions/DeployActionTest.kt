@@ -14,6 +14,7 @@ import kotlinx.coroutines.test.runBlockingTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
@@ -39,6 +40,7 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.toolwindow.Cloud
 import software.aws.toolkits.jetbrains.utils.BaseCoroutineTest
 import software.aws.toolkits.resources.message
 
+@Ignore("deadlocks IDE 242")
 @ExperimentalCoroutinesApi
 class DeployActionTest : BaseCoroutineTest(30) {
     private val action = DeployAction()

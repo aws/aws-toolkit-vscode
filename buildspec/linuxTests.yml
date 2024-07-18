@@ -18,6 +18,8 @@ phases:
       - chown -R codebuild-user:codebuild-user /codebuild/output
       - chown -R codebuild-user:codebuild-user /codebuild/local-cache
       - setfacl -m d:o::rwx,o::rwx /root
+      - mkdir /tmp/testArtifacts; chmod 777 /tmp/testArtifacts
+      - export AWS_CODEARTIFACT_NUGET_LOGFILE=/tmp/testArtifacts/codeArtifactNuGet.log
       # (CVE-2022-24765) fatal: detected dubious ownership in repository
       - su codebuild-user -c "git config --global --add safe.directory \"$CODEBUILD_SRC_DIR\""
 
@@ -26,14 +28,14 @@ phases:
       - |
         if [ "$CODEARTIFACT_DOMAIN_NAME" ] && [ "$CODEARTIFACT_REPO_NAME" ]; then
           CODEARTIFACT_URL=$(aws codeartifact get-repository-endpoint --domain $CODEARTIFACT_DOMAIN_NAME --repository $CODEARTIFACT_REPO_NAME --format maven --query repositoryEndpoint --output text)
-          CODEARTIFACT_NUGET_URL=$(aws codeartifact get-repository-endpoint --domain $CODEARTIFACT_DOMAIN_NAME --repository $CODEARTIFACT_REPO_NAME --format nuget --query repositoryEndpoint --output text)
+          # CODEARTIFACT_NUGET_URL=$(aws codeartifact get-repository-endpoint --domain $CODEARTIFACT_DOMAIN_NAME --repository $CODEARTIFACT_REPO_NAME --format nuget --query repositoryEndpoint --output text)
           CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain $CODEARTIFACT_DOMAIN_NAME --query authorizationToken --output text --duration-seconds 3600)
           su codebuild-user -c "dotnet codeartifact-creds install"
         fi
 
       - chmod +x gradlew
       - su codebuild-user -c "./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME check coverageReport --info --console plain --continue"
-      - ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME :plugin-toolkit:intellij-standalone:buildPlugin :plugin-core:buildPlugin :plugin-amazonq:buildPlugin
+      - ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME buildPlugin
       - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
       - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
       - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
@@ -47,7 +49,7 @@ phases:
       - TEST_ARTIFACTS="/tmp/testArtifacts"
       - mkdir -p $TEST_ARTIFACTS/test-reports
       - mkdir -p $BUILD_ARTIFACTS
-      - rsync -rmq --include='*/' --include '**/build/idea-sandbox/system*/log/**' --exclude='*' . $TEST_ARTIFACTS/ || true
+      - rsync -rmq --include='*/' --include '**/build/idea-sandbox/**/log*/**' --exclude='*' . $TEST_ARTIFACTS/ || true
       - rsync -rmq --include='*/' --include '**/build/reports/**' --exclude='*' . $TEST_ARTIFACTS/ || true
       - rsync -rmq --include='*/' --include '**/test-results/**/*.xml' --exclude='*' . $TEST_ARTIFACTS/test-reports || true
       - cp -r ./plugins/**/build/distributions/*.zip $BUILD_ARTIFACTS/ || touch $BUILD_ARTIFACTS/build_failed

@@ -11,11 +11,11 @@ intellijToolkit {
     ideFlavor.set(IdeFlavor.IC)
 }
 
-intellij {
-    plugins.add(project(":plugin-core"))
-}
-
 dependencies {
+    intellijPlatform {
+        localPlugin(project(":plugin-core"))
+    }
+
     implementation(project(":plugin-amazonq:shared:jetbrains-community"))
     // everything references codewhisperer, which is not ideal
     implementation(project(":plugin-amazonq:codewhisperer:jetbrains-community"))

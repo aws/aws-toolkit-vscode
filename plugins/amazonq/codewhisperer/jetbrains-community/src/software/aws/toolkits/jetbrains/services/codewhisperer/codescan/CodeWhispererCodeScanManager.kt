@@ -75,7 +75,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.runIfIdcConne
 import software.aws.toolkits.jetbrains.utils.isQConnected
 import software.aws.toolkits.jetbrains.utils.isQExpired
 import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
-import software.aws.toolkits.jetbrains.utils.offsetSuggestedFix
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
 import java.time.Duration
@@ -786,4 +785,19 @@ data class CodeWhispererCodeScanIssue(
         if (startOffset < 0 || endOffset > document.textLength || startOffset > endOffset) return null
         return TextRange.create(startOffset, endOffset)
     }
+}
+
+private fun offsetSuggestedFix(suggestedFix: SuggestedFix, lines: Int): SuggestedFix {
+    val updatedCode = suggestedFix.code.replace(
+        Regex("""(@@ -)(\d+)(,\d+ \+)(\d+)(,\d+ @@)""")
+    ) { result ->
+        val prefix = result.groupValues[1]
+        val startLine = result.groupValues[2].toInt() + lines
+        val middle = result.groupValues[3]
+        val endLine = result.groupValues[4].toInt() + lines
+        val suffix = result.groupValues[5]
+        "$prefix$startLine$middle$endLine$suffix"
+    }
+
+    return suggestedFix.copy(code = updatedCode)
 }

@@ -11,11 +11,11 @@ intellijToolkit {
     ideFlavor.set(IdeFlavor.IC)
 }
 
-intellij {
-    plugins.add(project(":plugin-core"))
-}
-
 dependencies {
+    intellijPlatform {
+        localPlugin(project(":plugin-core"))
+    }
+
     implementation(project(":plugin-amazonq:shared:jetbrains-community"))
     // hack because transform has a chat entrypoint
     implementation(project(":plugin-amazonq:chat:jetbrains-community"))
@@ -28,10 +28,10 @@ dependencies {
 }
 
 // hack because our test structure currently doesn't make complete sense
-tasks.prepareTestingSandbox {
+tasks.prepareTestSandbox {
     val pluginXmlJar = project(":plugin-amazonq").tasks.jar
 
     dependsOn(pluginXmlJar)
-    intoChild(pluginName.map { "$it/lib" })
+    intoChild(intellijPlatform.projectName.map { "$it/lib" })
         .from(pluginXmlJar)
 }

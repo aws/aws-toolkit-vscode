@@ -1227,15 +1227,17 @@ class GettingStartedPanel(
     }
 
     companion object {
-        fun openPanel(project: Project, firstInstance: Boolean = false, connectionInitiatedFromExplorer: Boolean = false) = FileEditorManager.getInstance(
-            project
-        ).openTextEditor(
-            OpenFileDescriptor(
-                project,
-                GettingStartedVirtualFile(firstInstance, connectionInitiatedFromExplorer)
-            ),
-            true
-        )
+        fun openPanel(project: Project, firstInstance: Boolean = false, connectionInitiatedFromExplorer: Boolean = false) = runInEdt {
+            FileEditorManager.getInstance(
+                project
+            ).openTextEditor(
+                OpenFileDescriptor(
+                    project,
+                    GettingStartedVirtualFile(firstInstance, connectionInitiatedFromExplorer)
+                ),
+                true
+            )
+        }
     }
 
     override fun dispose() {

@@ -1,15 +1,20 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import com.jetbrains.plugin.structure.base.utils.inputStream
-import com.jetbrains.plugin.structure.base.utils.simpleName
 import com.jetbrains.plugin.structure.intellij.utils.JDOMUtil
-import org.jetbrains.intellij.transformXml
+import org.jdom2.Document
+import org.jdom2.output.Format
+import org.jdom2.output.XMLOutputter
+import org.jetbrains.intellij.platform.gradle.tasks.PatchPluginXmlTask
 import software.aws.toolkits.gradle.buildMetadata
 import software.aws.toolkits.gradle.changelog.tasks.GeneratePluginChangeLog
 import software.aws.toolkits.gradle.intellij.IdeFlavor
 import software.aws.toolkits.gradle.intellij.IdeVersions
 import software.aws.toolkits.gradle.isCi
+import java.io.StringWriter
+import java.nio.file.Path
+import kotlin.io.path.inputStream
+import kotlin.io.path.writeText
 
 val toolkitVersion: String by project
 val ideProfile = IdeVersions.ideProfile(project)
@@ -26,8 +31,10 @@ intellijToolkit {
     ideFlavor.set(IdeFlavor.IC)
 }
 
-intellij {
-    plugins.add(project(":plugin-core"))
+dependencies {
+    intellijPlatform {
+        localPlugin(project(":plugin-core"))
+    }
 }
 
 val changelog = tasks.register<GeneratePluginChangeLog>("pluginChangeLog") {
@@ -41,9 +48,22 @@ tasks.compileJava {
     options.isIncremental = false
 }
 
+// toolkit depends on :plugin-toolkit:jetbrains-core setting the version instead of being defined on the root project
+PatchPluginXmlTask.register(project)
+val patchPluginXml = tasks.named<PatchPluginXmlTask>("patchPluginXml")
+patchPluginXml.configure {
+    val buildSuffix = if (!project.isCi()) "+${buildMetadata()}" else ""
+    pluginVersion.set("$toolkitVersion-${ideProfile.shortName}$buildSuffix")
+}
+
 tasks.jar {
-    dependsOn(changelog)
+    dependsOn(patchPluginXml, changelog)
     from(changelog) {
+        into("META-INF")
+    }
+
+    from(patchPluginXml) {
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
         into("META-INF")
     }
 }
@@ -53,22 +73,23 @@ tasks.integrationTest {
     systemProperty("aws.dev.useDAG", true)
 }
 
-val gatewayPluginXml = tasks.create<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXmlForGateway") {
-    pluginXmlFiles.set(tasks.patchPluginXml.map { it.pluginXmlFiles }.get())
-    destinationDir.set(project.buildDir.resolve("patchedPluginXmlFilesGW"))
-
+val gatewayPluginXml = tasks.register<PatchPluginXmlTask>("pluginXmlForGateway") {
     val buildSuffix = if (!project.isCi()) "+${buildMetadata()}" else ""
-    version.set("GW-$toolkitVersion-${ideProfile.shortName}$buildSuffix")
+    pluginVersion.set("GW-$toolkitVersion-${ideProfile.shortName}$buildSuffix")
+}
+
+val patchGatewayPluginXml by tasks.registering {
+    dependsOn(gatewayPluginXml)
+
+    val output = temporaryDir.resolve("plugin.xml")
+    outputs.file(output)
 
     // jetbrains expects gateway plugin to be dynamic
     doLast {
-        pluginXmlFiles.get()
+        gatewayPluginXml.get().outputFile.asFile
             .map(File::toPath)
-            .forEach { p ->
-                val path = destinationDir.get()
-                    .asFile.toPath().toAbsolutePath()
-                    .resolve(p.simpleName)
-
+            .get()
+            .let { path ->
                 val document = path.inputStream().use { inputStream ->
                     JDOMUtil.loadDocument(inputStream)
                 }
@@ -77,7 +98,7 @@ val gatewayPluginXml = tasks.create<org.jetbrains.intellij.tasks.PatchPluginXmlT
                     .getAttribute("require-restart")
                     .setValue("false")
 
-                transformXml(document, path)
+                transformXml(document, output.toPath())
             }
     }
 }
@@ -94,7 +115,7 @@ val gatewayJar = tasks.create<Jar>("gatewayJar") {
     // unclear why the exclude() statement didn't work
     duplicatesStrategy = DuplicatesStrategy.WARN
 
-    dependsOn(tasks.instrumentedJar)
+    dependsOn(tasks.instrumentedJar, patchGatewayPluginXml)
 
     archiveBaseName.set("aws-toolkit-jetbrains-IC-GW")
     from(tasks.instrumentedJar.get().outputs.files.map { zipTree(it) }) {
@@ -103,7 +124,7 @@ val gatewayJar = tasks.create<Jar>("gatewayJar") {
         exclude("**/inactive")
     }
 
-    from(gatewayPluginXml) {
+    from(patchGatewayPluginXml) {
         into("META-INF")
     }
 
@@ -127,6 +148,9 @@ tasks.prepareSandbox {
 tasks.testJar {
     // classpath.index is a duplicate
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+    // not sure why this is getting pulled in
+    exclude("**/plugin.xml")
 }
 
 tasks.processTestResources {
@@ -171,4 +195,24 @@ dependencies {
     // instead of trying to fix the classpath, since it's built by gradle-intellij-plugin, shove slf4j >= 2.0.9 onto the test classpath, which uses a ServiceLoader and call it done
     testImplementation(libs.slf4j.api)
     testRuntimeOnly(libs.slf4j.jdk14)
+
+    // FIX_WHEN_MIN_IS_233: very dumb hack for 2023.2
+    // Unable to load class 'org.codehaus.plexus.logging.Logger'
+    when (providers.gradleProperty("ideProfileName").getOrNull()) {
+        "2023.2" -> testImplementation("org.eclipse.sisu:org.eclipse.sisu.plexus:0.3.4")
+    }
+}
+
+fun transformXml(document: Document, path: Path) {
+    val xmlOutput = XMLOutputter()
+    xmlOutput.format.apply {
+        indent = "  "
+        omitDeclaration = true
+        textMode = Format.TextMode.TRIM
+    }
+
+    StringWriter().use {
+        xmlOutput.output(document, it)
+        path.writeText(text = it.toString())
+    }
 }

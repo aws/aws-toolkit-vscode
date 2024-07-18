@@ -6,7 +6,8 @@ import com.jetbrains.rd.generator.gradle.RdGenPlugin
 import com.jetbrains.rd.generator.gradle.RdGenTask
 import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
-import org.jetbrains.intellij.tasks.PrepareSandboxTask
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.tasks.PrepareSandboxTask
 import org.jetbrains.kotlin.com.intellij.openapi.util.SystemInfo
 import software.aws.toolkits.gradle.intellij.IdeFlavor
 import software.aws.toolkits.gradle.intellij.IdeVersions
@@ -41,11 +42,6 @@ intellijToolkit {
     ideFlavor.set(IdeFlavor.RD)
 }
 
-intellij {
-    type.set("RD")
-    plugins.add(project(":plugin-core"))
-}
-
 sourceSets {
     main {
         java.srcDirs(layout.buildDirectory.dir("generated-src"))
@@ -53,9 +49,13 @@ sourceSets {
 }
 
 dependencies {
+    intellijPlatform {
+        localPlugin(project(":plugin-core"))
+        testFramework(TestFrameworkType.Bundled)
+    }
+
     implementation(project(":plugin-toolkit:jetbrains-core"))
 
-    testImplementation(project(":plugin-toolkit:jetbrains-core"))
     testImplementation(project(path = ":plugin-toolkit:jetbrains-core", configuration = "testArtifacts"))
     testImplementation(testFixtures(project(":plugin-core:jetbrains-community")))
 }
@@ -97,14 +97,21 @@ val rdgenDir = File("$nonLazyBuildDir/rdgen/")
 
 rdgenDir.mkdirs()
 
+// https://github.com/JetBrains/resharper-unity/blob/master/rider/build.gradle.kts
+val rdLibDirectory: () -> File = { file(intellijPlatform.platformPath.resolve("lib/rd/")) }
+
+val rdModelJarFile: File by lazy {
+    val jarFile = File(rdLibDirectory(), "rider-model.jar").canonicalFile
+    assert(jarFile.isFile)
+    return@lazy jarFile
+}
+
 configure<RdGenExtension> {
     verbose = true
     hashFolder = rdgenDir.toString()
 
     classpath({
-        val ijDependency = tasks.setupDependencies.flatMap { it.idea }.map { it.classes }.get()
-        println("Calculating classpath for rdgen, intellij.ideaDependency is: $ijDependency")
-        File(ijDependency, "lib/rd").resolve("rider-model.jar").absolutePath
+        rdModelJarFile
     })
 
     sources(projectDir.resolve("protocol/model"))
@@ -172,8 +179,6 @@ val prepareBuildProps = tasks.register("prepareBuildProps") {
 val prepareNuGetConfig = tasks.register("prepareNuGetConfig") {
     group = backendGroup
 
-    dependsOn(tasks.setupDependencies)
-
     val nugetConfigPath = File(projectDir, "NuGet.Config")
     // FIX_WHEN_MIN_IS_211 remove the projectDir one above
     val nugetConfigPath211 = Path.of(projectDir.absolutePath, "testData", "NuGet.config").toFile()
@@ -234,10 +239,10 @@ val buildReSharperPlugin = tasks.register("buildReSharperPlugin") {
 }
 
 fun getNugetPackagesPath(): File {
-    val sdkPath = tasks.setupDependencies.flatMap { it.idea }.map { it.classes }.get()
+    val sdkPath = intellijPlatform.platformPath
     println("SDK path: $sdkPath")
 
-    val riderSdk = File(sdkPath, "lib/DotNetSdkForRdPlugins")
+    val riderSdk = sdkPath.resolve("lib").resolve("DotNetSdkForRdPlugins").toAbsolutePath().toFile()
 
     println("NuGet packages: $riderSdk")
     if (!riderSdk.isDirectory) error("$riderSdk does not exist or not a directory")
@@ -288,15 +293,15 @@ tasks.clean {
 // `runIde` depends on `prepareSandbox` task and then executes IJ inside the sandbox dir
 // `prepareSandbox` depends on the standard Java `jar` and then copies everything into the sandbox dir
 
-intellij {
+intellijPlatform {
     // kotlin and .NET parts of the plugin need to be in the same plugin base directroy
-    pluginName.set("aws-toolkit-jetbrains")
+    projectName = "aws-toolkit-jetbrains"
 }
 
-tasks.withType<PrepareSandboxTask>().all {
+tasks.withType<PrepareSandboxTask>().configureEach {
     dependsOn(resharperDllsDir)
 
-    intoChild(pluginName.map { "$it/dotnet" })
+    intoChild(intellijPlatform.projectName.map { "$it/dotnet" })
         .from(resharperDllsDir)
 }
 
@@ -304,7 +309,7 @@ tasks.compileKotlin {
     dependsOn(generateModels)
 }
 
-tasks.withType<Detekt> {
+tasks.withType<Detekt>().configureEach {
     // Make sure kotlin code is generated before we execute detekt
     dependsOn(generateModels)
 }
@@ -314,6 +319,9 @@ tasks.test {
         // extremely flaky
         filter.excludeTestsMatching("software.aws.toolkits.jetbrains.services.lambda.dotnet.LambdaGutterMarkHighlightingTest*")
     }
+
+    // On Windows, complains that the computeSystemScaleFactor "Must be precomputed"
+    systemProperty("hidpi", false)
 
     useTestNG()
     environment("LOCAL_ENV_RUN", true)
@@ -331,6 +339,17 @@ tasks.integrationTest {
 }
 
 // fix implicit dependency on generated source
-tasks.withType<DetektCreateBaselineTask> {
+tasks.withType<DetektCreateBaselineTask>().configureEach {
     dependsOn(generateModels)
+}
+
+configurations.all {
+    if (name.contains("detekt")) {
+        return@all
+    }
+
+    // test runner not happy with coroutines, but not clear where it's coming from:
+    //   java.lang.Throwable: Thread context was already set: InstalledThreadContext(snapshot=null, context=EmptyCoroutineContext).
+    //   Most likely, you are using 'runBlocking' instead of 'runBlockingCancellable' somewhere in the asynchronous stack.
+    exclude("org.jetbrains.kotlinx")
 }

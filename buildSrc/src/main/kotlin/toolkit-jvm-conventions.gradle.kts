@@ -18,7 +18,7 @@ java {
     targetCompatibility = javaVersion
 }
 
-tasks.withType<KotlinCompile>().all {
+tasks.withType<KotlinCompile>().configureEach {
     kotlinOptions {
         jvmTarget = javaVersion.majorVersion
         apiVersion = project.kotlinTarget().get()

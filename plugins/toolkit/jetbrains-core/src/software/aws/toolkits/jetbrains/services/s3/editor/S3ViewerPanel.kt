@@ -101,18 +101,18 @@ class S3ViewerPanel(private val disposable: Disposable, private val project: Pro
             structureTreeModel
         )
         val treeTable = S3TreeTable(model, rootNode, virtualBucket, project).also {
-            it.setRootVisible(rootNode is S3TreePrefixedDirectoryNode)
-            it.cellSelectionEnabled = false
-            it.rowSelectionAllowed = true
-            it.rowSorter = S3RowSorter(it.model)
+            it.tree.setRootVisible(rootNode is S3TreePrefixedDirectoryNode)
+            it.table.cellSelectionEnabled = false
+            it.table.rowSelectionAllowed = true
+            it.table.rowSorter = S3RowSorter(it.table.model)
             // prevent accidentally moving the columns around. We don't account for the ability
             // to do this anywhere so better be safe than sorry. TODO audit logic to allow this
-            it.tableHeader.reorderingAllowed = false
-            it.columnModel.getColumn(1).maxWidth = 120
+            it.table.tableHeader.reorderingAllowed = false
+            it.table.columnModel.getColumn(1).maxWidth = 120
         }
 
         val treeRenderer = S3TreeCellRenderer(treeTable)
-        treeTable.setTreeCellRenderer(treeRenderer)
+        treeTable.tree.setCellRenderer(treeRenderer)
         val tableRenderer = DefaultTableCellRenderer().also { it.horizontalAlignment = SwingConstants.LEFT }
         treeTable.setDefaultRenderer(Any::class.java, tableRenderer)
 

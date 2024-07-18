@@ -6,7 +6,8 @@ assertJ = "3.26.0"
 awsSdk = "2.25.33"
 commonmark = "0.17.1"
 detekt = "1.23.6"
-intellijGradle = "1.17.3"
+intellijExt = "1.1.8"
+intellijGradle = "2.0.0-beta9"
 intellijRemoteRobot = "0.11.22"
 jackson = "2.16.1"
 jacoco = "0.8.12"
@@ -17,7 +18,7 @@ junit5 = "5.10.2"
 # https://kotlinlang.org/docs/releases.html#release-details
 kotlin = "1.9.23"
 # set in <root>/settings.gradle.kts
-kotlinCoroutines = "1.7.3"
+kotlinCoroutines = "1.8.0"
 mockito = "5.11.0"
 mockitoKotlin = "5.2.1"
 mockk = "1.13.10"
@@ -71,7 +72,8 @@ detekt-api = { module = "io.gitlab.arturbosch.detekt:detekt-api", version.ref = 
 detekt-formattingRules = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
 detekt-test = { module = "io.gitlab.arturbosch.detekt:detekt-test", version.ref = "detekt" }
 gradlePlugin-detekt = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
-gradlePlugin-intellij = { module = "org.jetbrains.intellij:org.jetbrains.intellij.gradle.plugin", version.ref = "intellijGradle" }
+gradlePlugin-ideaExt = { module = "gradle.plugin.org.jetbrains.gradle.plugin.idea-ext:gradle-idea-ext", version.ref = "intellijExt" }
+gradlePlugin-intellij = { module = "org.jetbrains.intellij.platform:intellij-platform-gradle-plugin", version.ref = "intellijGradle" }
 gradlePlugin-kotlin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 gradlePlugin-testLogger = { module = "com.adarshr:gradle-test-logger-plugin", version.ref = "testLogger" }
 gradlePlugin-testRetry = { module = "org.gradle:test-retry-gradle-plugin", version.ref = "testRetry" }

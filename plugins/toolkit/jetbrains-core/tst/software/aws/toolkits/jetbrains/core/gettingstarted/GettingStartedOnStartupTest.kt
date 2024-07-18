@@ -44,7 +44,7 @@ class GettingStartedOnStartupTest {
     @Test
     fun `does not show screen if aws settings exist and has credentials`() {
         mockkObject(GettingStartedPanel.Companion)
-        every { GettingStartedPanel.openPanel(any()) } returns null
+        every { GettingStartedPanel.openPanel(any()) } returns Unit
         val fp = getPersistentStateComponentStorageLocation(GettingStartedSettings::class.java) ?: error(
             "could not determine persistent storage for GettingStartedSettings"
         )
@@ -63,7 +63,7 @@ class GettingStartedOnStartupTest {
     @Test
     fun `does not show screen if has previously shown screen`() {
         mockkObject(GettingStartedPanel.Companion)
-        every { GettingStartedPanel.openPanel(any()) } returns null
+        every { GettingStartedPanel.openPanel(any()) } returns Unit
         GettingStartedSettings.getInstance().shouldDisplayPage = false
         sut.runActivity(projectExtension.project)
 
@@ -75,7 +75,7 @@ class GettingStartedOnStartupTest {
     @Test
     fun `shows screen if aws settings exist and no credentials`() {
         mockkObject(GettingStartedPanel.Companion)
-        every { GettingStartedPanel.openPanel(any()) } returns null
+        every { GettingStartedPanel.openPanel(any()) } returns Unit
         credManagerExtension.clear()
         val fp = getPersistentStateComponentStorageLocation(GettingStartedSettings::class.java) ?: error(
             "could not determine persistent storage for GettingStartedSettings"
@@ -95,7 +95,7 @@ class GettingStartedOnStartupTest {
     @Test
     fun `shows screen on first install`() {
         mockkObject(GettingStartedPanel.Companion)
-        every { GettingStartedPanel.openPanel(any()) } returns null
+        every { GettingStartedPanel.openPanel(any()) } returns Unit
         sut.runActivity(projectExtension.project)
 
         verify {

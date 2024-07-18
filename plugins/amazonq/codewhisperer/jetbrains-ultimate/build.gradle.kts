@@ -11,11 +11,11 @@ intellijToolkit {
     ideFlavor.set(IdeFlavor.IU)
 }
 
-intellij {
-    plugins.add(project(":plugin-core"))
-}
-
 dependencies {
+    intellijPlatform {
+        localPlugin(project(":plugin-core"))
+    }
+
     compileOnly(project(":plugin-amazonq:codewhisperer:jetbrains-community"))
     compileOnly(project(":plugin-amazonq:shared:jetbrains-ultimate"))
 

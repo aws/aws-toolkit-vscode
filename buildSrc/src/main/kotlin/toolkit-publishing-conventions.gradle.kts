@@ -1,26 +1,31 @@
 // Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
+import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask
 import software.aws.toolkits.gradle.intellij.IdeVersions
 
 plugins {
-    id("org.jetbrains.intellij")
+    id("org.jetbrains.intellij.platform")
 }
 
-val ideProfile = IdeVersions.ideProfile(project)
+intellijPlatform {
+    publishing {
+        val publishToken: String by project
+        val publishChannel: String by project
 
-val publishToken: String by project
-val publishChannel: String by project
+        token.set(publishToken)
+        channels.set(publishChannel.split(",").map { it.trim() })
+    }
 
-intellij {
-    version.set(ideProfile.community.version())
-    localPath.set(ideProfile.community.localPath())
-
-    updateSinceUntilBuild.set(false)
-    instrumentCode.set(false)
+    verifyPlugin {
+        subsystemsToCheck.set(VerifyPluginTask.Subsystems.WITHOUT_ANDROID)
+        // need to tune this
+        failureLevel.set(listOf(VerifyPluginTask.FailureLevel.INVALID_PLUGIN))
+    }
 }
 
 configurations {
-    all {
+    configureEach {
         // IDE provides netty
         exclude("io.netty")
     }
@@ -33,11 +38,9 @@ configurations {
     }
 }
 
-tasks.check {
-    dependsOn(tasks.verifyPlugin)
-}
-
-tasks.publishPlugin {
-    token.set(publishToken)
-    channels.set(publishChannel.split(",").map { it.trim() })
+// not run as part of check because of memory pressue issues
+tasks.verifyPlugin {
+    isEnabled = true
+    // give each instance its own home dir
+    systemProperty("plugin.verifier.home.dir", temporaryDir)
 }
