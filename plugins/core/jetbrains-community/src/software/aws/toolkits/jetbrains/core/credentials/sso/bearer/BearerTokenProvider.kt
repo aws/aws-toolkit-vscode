@@ -89,7 +89,7 @@ interface BearerTokenProvider : SdkTokenProvider, SdkAutoCloseable, ToolkitBeare
 }
 
 class InteractiveBearerTokenProvider(
-    startUrl: String,
+    val startUrl: String,
     region: String,
     val scopes: List<String>,
     id: String,

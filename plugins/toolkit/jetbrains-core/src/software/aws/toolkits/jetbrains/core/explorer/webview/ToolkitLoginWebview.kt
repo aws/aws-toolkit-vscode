@@ -307,9 +307,11 @@ class ToolkitWebviewBrowser(val project: Project, private val parentDisposable: 
 
     override fun loginIdC(url: String, region: AwsRegion, scopes: List<String>) {
         val onIdCError: (Exception, AuthProfile) -> Unit = { e, profile ->
+            stopAndClearBrowserOpenTimer()
             // TODO: telemetry
         }
         val onIdCSuccess: () -> Unit = {
+            stopAndClearBrowserOpenTimer()
             // TODO: telemetry
         }
 
@@ -317,6 +319,7 @@ class ToolkitWebviewBrowser(val project: Project, private val parentDisposable: 
 
         loginWithBackgroundContext {
             val connection = login.loginIdc(project)
+
             if (connection != null && scopes.contains(IDENTITY_CENTER_ROLE_ACCESS_SCOPE)) {
                 val tokenProvider = connection.getConnectionSettings().tokenProvider
 
