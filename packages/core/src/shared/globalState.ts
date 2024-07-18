@@ -26,6 +26,7 @@ type globalKey =
     | ToolIdStateKey
     | 'aws.amazonq.codewhisperer.newCustomizations'
     | 'aws.amazonq.hasShownWalkthrough'
+    | 'aws.amazonq.showTryChatCodeLens'
     | 'aws.downloadPath'
     | 'aws.lastTouchedS3Folder'
     | 'aws.lastUploadedToS3Folder'
