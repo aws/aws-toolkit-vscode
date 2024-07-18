@@ -433,8 +433,8 @@ describe('SsoAccessTokenProvider', function () {
             super()
         }
 
-        override asKey(profile: { readonly identifier?: string; readonly startUrl: string }): string {
-            return super.asKey(profile)
+        override hash(profile: { readonly identifier?: string; readonly startUrl: string }): string {
+            return super.hash(profile)
         }
 
         override get default(): { reAuthReason?: string } {
@@ -443,7 +443,7 @@ describe('SsoAccessTokenProvider', function () {
     }
 
     describe(ReAuthState.name, function () {
-        it(`asKey()`, async () => {
+        it(`hash()`, async () => {
             const profile1: Pick<SsoProfile, 'identifier' | 'startUrl'> = {
                 identifier: 'abc-123',
                 startUrl: 'https://sameUrl.com',
@@ -452,8 +452,8 @@ describe('SsoAccessTokenProvider', function () {
                 startUrl: 'https://sameUrl.com',
             }
 
-            assert.deepStrictEqual(reAuthState.asKey(profile1), profile1.identifier)
-            assert.deepStrictEqual(reAuthState.asKey(profile2), profile2.startUrl)
+            assert.deepStrictEqual(reAuthState.hash(profile1), profile1.identifier)
+            assert.deepStrictEqual(reAuthState.hash(profile2), profile2.startUrl)
         })
 
         it('default', () => {

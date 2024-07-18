@@ -11,7 +11,7 @@ import type { KeyedCache } from './cacheUtils'
  *
  * There is a common use case for this class, so look to reuse this when possible.
  * Benefits, instead of making your own:
- * - A key does not have to be a string, {@link NestedMap.asKey} enables this
+ * - A key does not have to be a string, {@link NestedMap.hash} enables this
  * - Implements most of the boilerplate
  * - Has a {@link NestedMap.default} property which is returned from {@link NestedMap.get()}
  *   in the case {@link NestedMap.has()} would return false.
@@ -20,7 +20,7 @@ export abstract class NestedMap<Key, Value = { [key: string]: any }> implements 
     private readonly data: { [key: string]: Value | undefined } = {}
 
     has(key: Key): boolean {
-        return this.data[this.asKey(key)] !== undefined
+        return this.data[this.hash(key)] !== undefined
     }
 
     /**
@@ -28,18 +28,18 @@ export abstract class NestedMap<Key, Value = { [key: string]: any }> implements 
      * Use {@link has()} to check for existence before calling {@link get()}, if necessary.
      */
     get(key: Key): Value {
-        const actualKey = this.asKey(key)
+        const actualKey = this.hash(key)
         const result = this.data[actualKey]
         return result ?? this.default
     }
 
     set(key: Key, data: Partial<Value>): void {
         const currentData = this.get(key)
-        this.data[this.asKey(key)] = { ...currentData, ...data }
+        this.data[this.hash(key)] = { ...currentData, ...data }
     }
 
     delete(key: Key, reason: string): void {
-        delete this.data[this.asKey(key)]
+        delete this.data[this.hash(key)]
         getLogger().debug(`${this.name}: cleared cache, key: ${JSON.stringify(key)}, reason: ${reason}`)
     }
 
@@ -47,7 +47,7 @@ export abstract class NestedMap<Key, Value = { [key: string]: any }> implements 
      * Converts the user-provided key to a string so that it can be used
      * as an object key.
      */
-    protected abstract asKey(key: Key): string
+    protected abstract hash(key: Key): string
 
     /**
      * The name of the implementation, for logging purposes

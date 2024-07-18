@@ -677,7 +677,7 @@ export class ReAuthState extends NestedMap<ReAuthStateKey, ReAuthStateValue> {
         super()
     }
 
-    protected override asKey(profile: ReAuthStateKey): string {
+    protected override hash(profile: ReAuthStateKey): string {
         return profile.identifier ?? profile.startUrl
     }
 

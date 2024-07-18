@@ -7,7 +7,7 @@ import assert from 'assert'
 import { NestedMap } from '../../../shared/utilities/map'
 
 class TestInMemoryMap extends NestedMap<string, { a?: string; b: number }> {
-    protected override asKey(key: string): string {
+    protected override hash(key: string): string {
         return key
     }
     protected override get name(): string {
