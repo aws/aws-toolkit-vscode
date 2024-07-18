@@ -3,12 +3,15 @@
 
 package software.aws.toolkits.jetbrains.services.amazonq.toolwindow
 
+import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.openapi.wm.ex.ToolWindowEx
+import com.intellij.ui.content.Content
+import com.intellij.ui.content.ContentManager
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
@@ -21,6 +24,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAu
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
 import software.aws.toolkits.jetbrains.core.webview.BrowserState
 import software.aws.toolkits.jetbrains.services.amazonq.QWebviewPanel
+import software.aws.toolkits.jetbrains.services.amazonq.RefreshQChatPanelButtonPressedListener
 import software.aws.toolkits.jetbrains.services.amazonq.gettingstarted.openMeetQPage
 import software.aws.toolkits.jetbrains.services.amazonq.isQSupportedInThisVersion
 import software.aws.toolkits.jetbrains.utils.isQConnected
@@ -33,6 +37,10 @@ import java.awt.event.ComponentEvent
 
 class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
+        if (toolWindow is ToolWindowEx) {
+            val actionManager = ActionManager.getInstance()
+            toolWindow.setTitleActions(listOf(actionManager.getAction("aws.q.toolwindow.titleBar")))
+        }
         val contentManager = toolWindow.contentManager
 
         project.messageBus.connect().subscribe(
@@ -45,10 +53,23 @@ class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
         )
 
         project.messageBus.connect().subscribe(
+            RefreshQChatPanelButtonPressedListener.TOPIC,
+            object : RefreshQChatPanelButtonPressedListener {
+                override fun onRefresh() {
+                    runInEdt {
+                        contentManager.removeAllContents(true)
+                        prepareChatContent(project, contentManager)
+                    }
+                }
+            }
+        )
+
+        project.messageBus.connect().subscribe(
             BearerTokenProviderListener.TOPIC,
             object : BearerTokenProviderListener {
                 override fun onChange(providerId: String, newScopes: List<String>?) {
                     if (ToolkitConnectionManager.getInstance(project).connectionStateForFeature(QConnection.getInstance()) == BearerTokenAuthState.AUTHORIZED) {
+                        contentManager.removeAllContents(true)
                         val content = contentManager.factory.createContent(AmazonQToolWindow.getInstance(project).component, null, false).also {
                             it.isCloseable = true
                             it.isPinnable = true
@@ -63,6 +84,16 @@ class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
             }
         )
 
+        val content = prepareChatContent(project, contentManager)
+
+        toolWindow.activate(null)
+        contentManager.setSelectedContent(content)
+    }
+
+    private fun prepareChatContent(
+        project: Project,
+        contentManager: ContentManager
+    ): Content {
         val component = if (isQConnected(project) && !isQExpired(project)) {
             AmazonQToolWindow.getInstance(project).component
         } else {
@@ -75,8 +106,7 @@ class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
             it.isPinnable = true
         }
         contentManager.addContent(content)
-        toolWindow.activate(null)
-        contentManager.setSelectedContent(content)
+        return content
     }
 
     override fun init(toolWindow: ToolWindow) {

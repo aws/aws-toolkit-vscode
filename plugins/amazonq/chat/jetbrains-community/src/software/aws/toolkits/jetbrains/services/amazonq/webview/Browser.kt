@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.amazonq.webview
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.util.Disposer
 import com.intellij.ui.jcef.JBCefJSQuery
 import org.cef.CefApp
 import software.aws.toolkits.jetbrains.services.amazonq.util.createBrowser
@@ -14,9 +15,9 @@ typealias MessageReceiver = Function<String, JBCefJSQuery.Response>
 /*
 Displays the web view for the Amazon Q tool window
  */
-class Browser(parent: Disposable) {
+class Browser : Disposable {
 
-    val jcefBrowser = createBrowser(parent)
+    val jcefBrowser = createBrowser(this)
 
     val receiveMessageQuery = JBCefJSQuery.create(jcefBrowser)
 
@@ -30,6 +31,10 @@ class Browser(parent: Disposable) {
             )
 
         loadWebView(isCodeTransformAvailable, isFeatureDevAvailable)
+    }
+
+    override fun dispose() {
+        Disposer.dispose(jcefBrowser)
     }
 
     fun component() = jcefBrowser.component

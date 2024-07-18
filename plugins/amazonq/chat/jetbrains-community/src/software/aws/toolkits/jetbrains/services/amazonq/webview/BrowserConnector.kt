@@ -27,7 +27,7 @@ class BrowserConnector(
     private val serializer: MessageSerializer = MessageSerializer.getInstance(),
     private val themeBrowserAdapter: ThemeBrowserAdapter = ThemeBrowserAdapter(),
 ) {
-    val uiReady = CompletableDeferred<Boolean>()
+    var uiReady = CompletableDeferred<Boolean>()
 
     suspend fun connect(
         browser: Browser,

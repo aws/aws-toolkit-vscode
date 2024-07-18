@@ -3,13 +3,17 @@
 
 package software.aws.toolkits.jetbrains.services.amazonq.toolwindow
 
+import com.intellij.ide.ui.LafManager
+import com.intellij.ide.ui.LafManagerListener
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindowManager
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import software.aws.toolkits.jetbrains.services.amazonq.QWebviewPanel
@@ -36,7 +40,7 @@ class AmazonQToolWindow private constructor(
     private val browserConnector = BrowserConnector()
     private val editorThemeAdapter = EditorThemeAdapter()
 
-    private val chatPanel = AmazonQPanel(parent = this)
+    private val chatPanel = AmazonQPanel()
 
     val component: JComponent = chatPanel.component
 
@@ -46,6 +50,18 @@ class AmazonQToolWindow private constructor(
         initConnections()
         connectUi()
         connectApps()
+    }
+
+    fun disposeAndRecreate() {
+        browserConnector.uiReady = CompletableDeferred()
+        chatPanel.disposeAndRecreate()
+
+        appConnections.clear()
+        initConnections()
+        connectUi()
+        connectApps()
+
+        ApplicationManager.getApplication().messageBus.syncPublisher(LafManagerListener.TOPIC).lookAndFeelChanged(LafManager.getInstance())
     }
 
     private fun sendMessage(message: AmazonQMessage, tabType: String) {

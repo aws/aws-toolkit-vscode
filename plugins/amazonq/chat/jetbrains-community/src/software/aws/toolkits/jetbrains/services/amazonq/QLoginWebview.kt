@@ -9,6 +9,7 @@ import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.dsl.builder.panel
@@ -73,6 +74,19 @@ class QWebviewPanel private constructor(val project: Project) : Disposable {
     }
 
     init {
+        init()
+    }
+
+    fun disposeAndRecreate() {
+        webviewContainer.removeAll()
+        val toDispose = browser
+        init()
+        if (toDispose != null) {
+            Disposer.dispose(toDispose)
+        }
+    }
+
+    private fun init() {
         if (!JBCefApp.isSupported()) {
             // Fallback to an alternative browser-less solution
             webviewContainer.add(JBTextArea("JCEF not supported"))
@@ -92,11 +106,13 @@ class QWebviewPanel private constructor(val project: Project) : Disposable {
     }
 }
 
-class QWebviewBrowser(val project: Project, private val parentDisposable: Disposable) : LoginBrowser(
-    project,
-    QWebviewBrowser.DOMAIN,
-    QWebviewBrowser.WEB_SCRIPT_URI
-) {
+class QWebviewBrowser(val project: Project, private val parentDisposable: Disposable) :
+    LoginBrowser(
+        project,
+        QWebviewBrowser.DOMAIN,
+        QWebviewBrowser.WEB_SCRIPT_URI
+    ),
+    Disposable {
     // TODO: confirm if we need such configuration or the default is fine
     override val jcefBrowser = createBrowser(parentDisposable)
     private val query = JBCefJSQuery.create(jcefBrowser)
@@ -115,6 +131,10 @@ class QWebviewBrowser(val project: Project, private val parentDisposable: Dispos
         loadWebView(query)
 
         query.addHandler(jcefHandler)
+    }
+
+    override fun dispose() {
+        Disposer.dispose(jcefBrowser)
     }
 
     fun component(): JComponent? = jcefBrowser.component
