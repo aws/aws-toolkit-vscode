@@ -524,7 +524,9 @@ export class ClassifierTrigger {
         const ideCoefficient = this.ideVscode
 
         const previousDecision = TelemetryHelper.instance.getLastTriggerDecisionForClassifier()
-        const languageCoefficient = this.languageCoefficientMap[language.languageName] ?? 0
+        const languageCoefficients = Object.values(this.languageCoefficientMap)
+        const avrgCoefficient = languageCoefficients.reduce((a, b) => a + b) / languageCoefficients.length
+        const languageCoefficient = this.languageCoefficientMap[language.languageName] ?? avrgCoefficient
 
         let previousDecisionCoefficient = 0
         if (previousDecision === 'Accept') {
