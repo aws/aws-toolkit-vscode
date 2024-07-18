@@ -24,10 +24,10 @@
         "onFileSystem:s3",
         "onFileSystem:s3-readonly"
     ],
-    "main": "./dist/src/extension.js",
+    "main": "./dist/src/extensionNode.js",
     "browser": "./dist/src/extensionWebCore.js",
     "exports": {
-        ".": "./dist/src/extension.js",
+        "./node": "./dist/src/extensionNode.js",
         "./web": "./dist/src/extensionWeb.js",
         "./webShared": "./dist/src/extensionWebShared.js",
         "./extensionCommon": "./dist/src/extensionCommon.js",
