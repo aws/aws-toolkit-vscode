@@ -11,6 +11,8 @@ import { TypeConstructor, cast } from './utilities/typeConstructors'
 type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId'
 export type ToolIdStateKey = `${ToolId}.savedConnectionId`
 
+export type JsonSchemasKey = 'devfileSchemaVersion' | 'samAndCfnSchemaVersion'
+
 type samInitStateKey =
     | 'ACTIVATION_TEMPLATE_PATH_KEY'
     | 'ACTIVATION_LAUNCH_PATH_KEY'
@@ -24,6 +26,7 @@ type globalKey =
     | samInitStateKey
     | stepFunctionsKey
     | ToolIdStateKey
+    | JsonSchemasKey
     | 'aws.amazonq.codewhisperer.newCustomizations'
     | 'aws.amazonq.hasShownWalkthrough'
     | 'aws.amazonq.showTryChatCodeLens'
