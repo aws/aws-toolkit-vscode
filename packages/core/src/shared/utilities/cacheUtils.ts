@@ -9,6 +9,7 @@ import { ToolkitError, isFileNotFoundError } from '../errors'
 import fs from '../../shared/fs/fs'
 import crypto from 'crypto'
 import { isWeb } from '../extensionGlobals'
+import type { MapSync } from './map'
 
 // TODO(sijaden): further generalize this concept over async references (maybe create a library?)
 // It's pretty clear that this interface (and VSC's `Memento`) reduce down to what is essentially
@@ -16,6 +17,8 @@ import { isWeb } from '../extensionGlobals'
 
 /**
  * A general, basic interface for a cache with key associativity.
+ *
+ * Look to use {@link MapSync} instead if you need atomicity.
  */
 export interface KeyedCache<T, K = string> {
     /**
