@@ -54,6 +54,7 @@ export async function mochaGlobalSetup(extensionId: string) {
         fakeContext.extensionPath = globals.context.extensionPath
         Object.assign(globals, {
             context: fakeContext,
+            // eslint-disable-next-line aws-toolkits/no-banned-usages
             globalState: new GlobalState(fakeContext.globalState),
         })
     }

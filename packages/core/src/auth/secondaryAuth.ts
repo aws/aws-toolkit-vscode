@@ -175,6 +175,8 @@ export class SecondaryAuth<T extends Connection = Connection> {
     }
 
     public async saveConnection(conn: T) {
+        // TODO: fix this
+        // eslint-disable-next-line aws-toolkits/no-banned-usages
         await globals.context.globalState.update(this.key, conn.id)
         this.#savedConnection = conn
         this.#onDidChangeActiveConnection.fire(this.activeConnection)
@@ -206,6 +208,8 @@ export class SecondaryAuth<T extends Connection = Connection> {
 
     /** Stop using the saved connection and fallback to using the active connection, if it is usable. */
     public async clearSavedConnection() {
+        // TODO: fix this
+        // eslint-disable-next-line aws-toolkits/no-banned-usages
         await globals.context.globalState.update(this.key, undefined)
         this.#savedConnection = undefined
         this.#onDidChangeActiveConnection.fire(this.activeConnection)
@@ -251,7 +255,10 @@ export class SecondaryAuth<T extends Connection = Connection> {
     })
 
     private async loadSavedConnection() {
-        const id = cast(globals.context.globalState.get(this.key), Optional(String))
+        // TODO: fix this
+        // eslint-disable-next-line aws-toolkits/no-banned-usages
+        const globalState = globals.context.globalState
+        const id = cast(globalState.get(this.key), Optional(String))
         if (id === undefined) {
             return
         }
@@ -259,10 +266,10 @@ export class SecondaryAuth<T extends Connection = Connection> {
         const conn = await this.auth.getConnection({ id })
         if (conn === undefined) {
             getLogger().warn(`auth (${this.toolId}): removing saved connection "${this.key}" as it no longer exists`)
-            await globals.context.globalState.update(this.key, undefined)
+            await globalState.update(this.key, undefined)
         } else if (!this.isUsable(conn)) {
             getLogger().warn(`auth (${this.toolId}): saved connection "${this.key}" is not valid`)
-            await globals.context.globalState.update(this.key, undefined)
+            await globalState.update(this.key, undefined)
         } else {
             await this.auth.refreshConnectionState(conn)
             return conn
