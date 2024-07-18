@@ -260,7 +260,7 @@ export class DefaultCodeWhispererClient {
                 ideVersion: extensionVersion,
             },
         }
-        if (!AuthUtil.instance.isValidEnterpriseSsoInUse() && !globals.telemetry.telemetryEnabled) {
+        if (!globals.telemetry.telemetryEnabled) {
             return
         }
         const response = await (await this.createUserSdkClient()).sendTelemetryEvent(requestWithCommonFields).promise()
