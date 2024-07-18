@@ -227,6 +227,7 @@ class ProjectContextProvider(val project: Project, private val encoderServer: En
         val encrypted = encoderServer.encrypt(payloadJson)
         with(url.openConnection() as HttpURLConnection) {
             setConnectionProperties(this)
+            setConnectionTimeout(this)
             setConnectionRequest(this, encrypted)
             val responseCode = responseCode
             logger.debug { "project context update index response code: $responseCode for $filePath" }
