@@ -62,7 +62,7 @@ export async function activate(
  */
 export const previewStateMachineCommand = Commands.declare(
     'aws.previewStateMachine',
-    (globalState: vscode.Memento, manager: AslVisualizationManager) => async (arg?: vscode.TextEditor | vscode.Uri) => {
+    (manager: AslVisualizationManager) => async (arg?: vscode.TextEditor | vscode.Uri) => {
         try {
             arg ??= vscode.window.activeTextEditor
             const input = arg instanceof vscode.Uri ? arg : arg?.document
@@ -71,7 +71,7 @@ export const previewStateMachineCommand = Commands.declare(
                 throw new ToolkitError('No active text editor or document found')
             }
 
-            return await manager.visualizeStateMachine(globalState, input)
+            return await manager.visualizeStateMachine(input)
         } finally {
             // TODO: Consider making the metric reflect the success/failure of the above call
             telemetry.stepfunctions_previewstatemachine.emit()
@@ -88,8 +88,8 @@ async function registerStepFunctionCommands(
     const cdkVisualizationManager = new AslVisualizationCDKManager(extensionContext)
 
     extensionContext.subscriptions.push(
-        previewStateMachineCommand.register(extensionContext.globalState, visualizationManager),
-        renderCdkStateMachineGraph.register(extensionContext.globalState, cdkVisualizationManager),
+        previewStateMachineCommand.register(visualizationManager),
+        renderCdkStateMachineGraph.register(cdkVisualizationManager),
         Commands.register('aws.stepfunctions.createStateMachineFromTemplate', async () => {
             try {
                 await createStateMachineFromTemplate(extensionContext)
