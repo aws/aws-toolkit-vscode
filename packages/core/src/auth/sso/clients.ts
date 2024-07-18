@@ -217,7 +217,7 @@ export class SsoClient {
     private async handleError(error: unknown): Promise<never> {
         if (error instanceof SSOServiceException && isClientFault(error) && error.name !== 'ForbiddenException') {
             getLogger().warn(`credentials (sso): invalidating stored token: ${error.message}`)
-            await this.provider.invalidate()
+            await this.provider.invalidate(`ssoClient:${error.name}`)
         }
 
         throw error
