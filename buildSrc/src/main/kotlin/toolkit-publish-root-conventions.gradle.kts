@@ -88,16 +88,6 @@ dependencies {
     }
 }
 
-// hack around: https://github.com/JetBrains/intellij-platform-gradle-plugin/issues/1620
-val pluginZip by configurations.creating {
-    isCanBeConsumed = true
-    isCanBeResolved = false
-}
-
-artifacts {
-    add("pluginZip", tasks.buildPlugin)
-}
-
 tasks.runIde {
     systemProperty("aws.toolkit.developerMode", true)
     systemProperty("ide.plugins.snapshot.on.unload.fail", true)

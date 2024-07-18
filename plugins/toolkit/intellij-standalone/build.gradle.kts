@@ -22,7 +22,7 @@ intellijPlatform {
 
 dependencies {
     intellijPlatform {
-        localPlugin(project(":plugin-core", "pluginZip"))
+        localPlugin(project(":plugin-core"))
     }
 }
 

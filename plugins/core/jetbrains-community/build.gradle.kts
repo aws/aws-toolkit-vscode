@@ -65,13 +65,13 @@ dependencies {
     api(libs.aws.iam)
 
     testFixturesApi(project(path = ":plugin-core:core", configuration = "testArtifacts"))
+    testFixturesApi(project(":plugin-core:resources"))
     testFixturesApi(libs.wiremock) {
         // conflicts with transitive inclusion from docker plugin
         exclude(group = "org.apache.httpcomponents.client5")
     }
 
     testImplementation(project(":plugin-core:core"))
-    testRuntimeOnly(project(":plugin-core:resources"))
     testRuntimeOnly(project(":plugin-core:sdk-codegen"))
 }
 

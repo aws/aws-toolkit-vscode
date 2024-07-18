@@ -24,13 +24,16 @@ dependencies {
         create(type, version, useInstaller = false)
         jetbrainsRuntime()
 
-        localPlugin(project(":plugin-core", "pluginZip"))
-        localPlugin(project(":plugin-amazonq", "pluginZip"))
+        localPlugin(project(":plugin-core"))
+        localPlugin(project(":plugin-amazonq"))
         plugin(toolkitIntelliJ.ideProfile().map { "aws.toolkit:2.19-${it.shortName}" })
 
         testFramework(TestFrameworkType.Bundled)
         testFramework(TestFrameworkType.JUnit5)
     }
+
+    // not sure why not plugin not resolving transitive deps
+    testRuntimeOnly(project(":plugin-core"))
 }
 
 intellijPlatform {
