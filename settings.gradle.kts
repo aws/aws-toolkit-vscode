@@ -53,10 +53,12 @@ plugins {
     id("com.github.burrunan.s3-build-cache").version("1.5")
 }
 
-gradleEnterprise {
+develocity {
     buildScan {
-        termsOfServiceUrl = "https://gradle.com/help/legal-terms-of-use"
-        termsOfServiceAgree = "yes"
+        if (System.getenv("CI") == "true") {
+            termsOfUseUrl = "https://gradle.com/help/legal-terms-of-use"
+            termsOfUseAgree = "yes"
+        }
 
         obfuscation {
             username { "<username>" }
