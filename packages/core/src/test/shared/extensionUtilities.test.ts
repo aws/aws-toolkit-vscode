@@ -11,12 +11,7 @@ import * as path from 'path'
 import * as sinon from 'sinon'
 import { DefaultEc2MetadataClient } from '../../shared/clients/ec2MetadataClient'
 import * as vscode from 'vscode'
-import {
-    UserActivity,
-    getComputeRegion,
-    initializeComputeRegion,
-    mostRecentVersionKey,
-} from '../../shared/extensionUtilities'
+import { UserActivity, getComputeRegion, initializeComputeRegion } from '../../shared/extensionUtilities'
 import { isDifferentVersion, setMostRecentVersion } from '../../shared/extensionUtilities'
 import * as filesystemUtilities from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
@@ -28,10 +23,11 @@ import { createQuickStartWebview } from '../../shared/extensionStartup'
 
 describe('extensionUtilities', function () {
     describe('createQuickStartWebview', async function () {
-        const context = await FakeExtensionContext.create()
+        let context: FakeExtensionContext
         let tempDir: string | undefined
 
         beforeEach(async function () {
+            context = await FakeExtensionContext.create()
             tempDir = await filesystemUtilities.makeTemporaryToolkitFolder()
             context.extensionPath = tempDir
         })
@@ -76,34 +72,28 @@ describe('extensionUtilities', function () {
     describe('isDifferentVersion', function () {
         it('returns false if the version exists and matches the existing version exactly', async function () {
             const goodVersion = '1.2.3'
-            const extContext = await FakeExtensionContext.create()
-            await extContext.globalState.update(mostRecentVersionKey, goodVersion)
+            await globals.globalState.update('globalsMostRecentVersion', goodVersion)
 
-            assert.strictEqual(isDifferentVersion(extContext, goodVersion), false)
+            assert.strictEqual(isDifferentVersion(goodVersion), false)
         })
 
         it("returns true if a most recent version isn't set", async () => {
-            const extContext = await FakeExtensionContext.create()
-
-            assert.ok(isDifferentVersion(extContext))
+            assert.ok(isDifferentVersion())
         })
 
         it("returns true if a most recent version doesn't match the current version", async () => {
             const oldVersion = '1.2.3'
             const newVersion = '4.5.6'
-            const extContext = await FakeExtensionContext.create()
-            await extContext.globalState.update(mostRecentVersionKey, oldVersion)
+            await globals.globalState.update('globalsMostRecentVersion', oldVersion)
 
-            assert.ok(isDifferentVersion(extContext, newVersion))
+            assert.ok(isDifferentVersion(newVersion))
         })
     })
 
     describe('setMostRecentVersion', function () {
         it('sets the most recent version', async function () {
-            const extContext = await FakeExtensionContext.create()
-            setMostRecentVersion(extContext)
-
-            assert.strictEqual(extContext.globalState.get<string>(mostRecentVersionKey), extensionVersion)
+            setMostRecentVersion()
+            assert.strictEqual(globals.globalState.get('globalsMostRecentVersion'), extensionVersion)
         })
     })
 })

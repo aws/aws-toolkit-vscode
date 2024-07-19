@@ -46,8 +46,6 @@ export function commandsPrefix(): string {
     return isAmazonQ() ? 'Amazon Q' : getIdeProperties().company
 }
 
-export const mostRecentVersionKey: string = 'globalsMostRecentVersion'
-
 export enum IDE {
     vscode,
     cloud9,
@@ -172,8 +170,8 @@ export function isCn(): boolean {
  * @param context VS Code Extension Context
  * @param currVersion Current version to compare stored most recent version against (useful for tests)
  */
-export function isDifferentVersion(context: vscode.ExtensionContext, currVersion: string = extensionVersion): boolean {
-    const mostRecentVersion = context.globalState.get<string>(mostRecentVersionKey)
+export function isDifferentVersion(currVersion: string = extensionVersion): boolean {
+    const mostRecentVersion = globals.globalState.tryGet('globalsMostRecentVersion', String)
     if (mostRecentVersion && mostRecentVersion === currVersion) {
         return false
     }
@@ -187,8 +185,8 @@ export function isDifferentVersion(context: vscode.ExtensionContext, currVersion
  *
  * @param context VS Code Extension Context
  */
-export function setMostRecentVersion(context: vscode.ExtensionContext): void {
-    context.globalState.update(mostRecentVersionKey, extensionVersion).then(undefined, (e) => {
+export function setMostRecentVersion(): void {
+    globals.globalState.update('globalsMostRecentVersion', extensionVersion).then(undefined, (e) => {
         getLogger().error('globalState.update() failed: %s', (e as Error).message)
     })
 }
@@ -240,8 +238,8 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
         return
     }
     try {
-        if (isDifferentVersion(context)) {
-            setMostRecentVersion(context)
+        if (isDifferentVersion()) {
+            setMostRecentVersion()
             if (!isCloud9()) {
                 void promptQuickstart()
             }
