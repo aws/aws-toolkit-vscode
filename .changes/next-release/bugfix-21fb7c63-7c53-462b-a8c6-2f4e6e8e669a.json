@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix bug when workspace index cache is not loaded"
-}

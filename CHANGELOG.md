@@ -1,3 +1,8 @@
+# _3.18_ (2024-07-19)
+- **(Feature)** Add support for 2024.2
+- **(Bug Fix)** Fix bug when workspace index cache is not loaded
+- **(Deprecation)** An upcoming release will remove support for JetBrains Gateway version 2024.1 and for IDEs based on the 2023.2 platform
+
 # _3.17_ (2024-07-15)
 - **(Feature)** Amazon Q/dev: proactively show code generation iterations
 - **(Bug Fix)** Don't allow Q/Core to be installed in the unsupported thin client context ([#4658](https://github.com/aws/aws-toolkit-jetbrains/issues/4658))

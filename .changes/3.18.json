@@ -1,0 +1,14 @@
+{
+  "date" : "2024-07-19",
+  "version" : "3.18",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Add support for 2024.2"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix bug when workspace index cache is not loaded"
+  }, {
+    "type" : "deprecation",
+    "description" : "An upcoming release will remove support for JetBrains Gateway version 2024.1 and for IDEs based on the 2023.2 platform"
+  } ]
+}
