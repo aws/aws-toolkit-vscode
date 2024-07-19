@@ -6,7 +6,7 @@
 import assert from 'assert'
 import { CodeCatalystAuthStorage, CodeCatalystAuthenticationProvider, defaultScopes } from '../../codecatalyst/auth'
 import { getTestWindow } from '../shared/vscode/window'
-import { FakeMemento, FakeSecretStorage } from '../fakeExtensionContext'
+import { FakeSecretStorage } from '../fakeExtensionContext'
 import { createBuilderIdProfile, createSsoProfile, createTestAuth } from '../credentials/testUtil'
 import Sinon from 'sinon'
 import { isAnySsoConnection } from '../../auth/connection'
@@ -21,7 +21,6 @@ describe('CodeCatalystAuthenticationProvider', async function () {
         auth = createTestAuth()
         codecatalystAuth = new CodeCatalystAuthenticationProvider(
             new CodeCatalystAuthStorage(new FakeSecretStorage()),
-            new FakeMemento(),
             auth
         )
     })

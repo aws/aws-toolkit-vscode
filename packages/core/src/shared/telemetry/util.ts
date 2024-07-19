@@ -241,7 +241,7 @@ export async function setupTelemetryId(extensionContext: vscode.ExtensionContext
                 getLogger().debug(`telemetry: Write telemetry client id to env ${currentClientId}`)
                 process.env[telemetryClientIdEnvKey] = currentClientId
             } else {
-                const clientId = getClientId(globals.context.globalState)
+                const clientId = getClientId(globals.globalState)
                 getLogger().debug(`telemetry: Setup telemetry client id ${clientId}`)
                 process.env[telemetryClientIdEnvKey] = clientId
             }

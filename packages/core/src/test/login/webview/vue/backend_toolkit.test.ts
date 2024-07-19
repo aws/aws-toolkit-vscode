@@ -16,7 +16,7 @@ import {
     CodeCatalystAuthStorage,
     defaultScopes,
 } from '../../../../codecatalyst/auth'
-import { FakeSecretStorage, FakeMemento } from '../../../fakeExtensionContext'
+import { FakeSecretStorage } from '../../../fakeExtensionContext'
 import * as authUtils from '../../../../auth/utils'
 
 // TODO: remove auth page and tests
@@ -37,7 +37,6 @@ describe('Toolkit Login', function () {
         auth = createTestAuth()
         codecatalystAuth = new CodeCatalystAuthenticationProvider(
             new CodeCatalystAuthStorage(new FakeSecretStorage()),
-            new FakeMemento(),
             auth
         )
         sandbox.stub(Auth, 'instance').value(auth)
