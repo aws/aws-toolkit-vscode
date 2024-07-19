@@ -25,7 +25,7 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
     ): vscode.Hover {
         const contents: vscode.MarkdownString[] = []
 
-        const fileIssues = this.issues.find(group => group.filePath === document.fileName)?.issues || []
+        const fileIssues = this.issues.find((group) => group.filePath === document.fileName)?.issues || []
 
         for (const issue of fileIssues) {
             const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
