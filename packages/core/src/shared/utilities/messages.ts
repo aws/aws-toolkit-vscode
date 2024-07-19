@@ -364,17 +364,14 @@ export async function copyToClipboard(data: string, label?: string): Promise<voi
     getLogger().verbose('copied %s to clipboard: %O', label ?? '', data)
 }
 
-export async function showOnce<T>(
-    key: string,
-    fn: () => Promise<T>,
-    memento = globals.context.globalState
-): Promise<T | undefined> {
-    if (memento.get(key)) {
+/** TODO: eliminate this, callers should use `PromptSettings` instead. */
+export async function showOnce<T>(key: 'sam.sync.updateMessage', fn: () => Promise<T>): Promise<T | undefined> {
+    if (globals.globalState.tryGet(key, Boolean, false)) {
         return
     }
 
     const result = fn()
-    await memento.update(key, true)
+    await globals.globalState.update(key, true)
 
     return result
 }

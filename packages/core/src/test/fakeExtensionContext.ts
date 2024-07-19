@@ -126,7 +126,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
                 validator: new FakeSamCliValidator(minSamCliVersionForGoSupport),
             } as SamCliContext
         }
-        const regionProvider = createTestRegionProvider({ globalState: ctx.globalState, awsContext })
+        const regionProvider = createTestRegionProvider({ awsContext })
         const outputChannel = new MockOutputChannel()
         const fakeTelemetryPublisher = new FakeTelemetryPublisher()
         const telemetryService = await DefaultTelemetryService.create(

@@ -5,19 +5,17 @@
 
 import assert from 'assert'
 import { showAmazonQWalkthroughOnce } from 'aws-core-vscode/amazonq'
-import { FakeMemento } from 'aws-core-vscode/test'
 import sinon from 'sinon'
 
 describe('showAmazonQWalkthroughOnce', function () {
     it('only shows once', async function () {
-        const state = new FakeMemento()
         const showWalkthroughStub = sinon.stub()
         assert.deepStrictEqual(showWalkthroughStub.callCount, 0)
-        await showAmazonQWalkthroughOnce(state, showWalkthroughStub)
+        await showAmazonQWalkthroughOnce(showWalkthroughStub)
         // Show walkthrough since our state indicates we haven't shown before
         assert.deepStrictEqual(showWalkthroughStub.callCount, 1)
 
-        await showAmazonQWalkthroughOnce(state, showWalkthroughStub)
+        await showAmazonQWalkthroughOnce(showWalkthroughStub)
         // On the second call we do not show again since we've shown before.
         assert.deepStrictEqual(showWalkthroughStub.callCount, 1)
     })

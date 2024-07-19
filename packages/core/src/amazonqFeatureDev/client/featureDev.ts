@@ -337,7 +337,7 @@ export class FeatureDevClient {
                     ideCategory: 'VSCODE',
                     operatingSystem: getOperatingSystem(),
                     product: 'FeatureDev', // Should be the same as in JetBrains
-                    clientId: getClientId(globals.context.globalState),
+                    clientId: getClientId(globals.globalState),
                     ideVersion: extensionVersion,
                 },
             }
