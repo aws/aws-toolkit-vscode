@@ -25,19 +25,19 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
     ): vscode.Hover {
         const contents: vscode.MarkdownString[] = []
 
-        const fileIssues = this.issues.find(group => group.filePath === document.fileName)?.issues || [];
+        const fileIssues = this.issues.find(group => group.filePath === document.fileName)?.issues || []
 
         for (const issue of fileIssues) {
-            const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0);
+            const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
             if (range.contains(position)) {
-                contents.push(this._getContent(document.fileName, issue));
+                contents.push(this._getContent(document.fileName, issue))
                 telemetry.codewhisperer_codeScanIssueHover.emit({
                     findingId: issue.findingId,
                     detectorId: issue.detectorId,
                     ruleId: issue.ruleId,
                     includesFix: !!issue.suggestedFixes.length,
                     credentialStartUrl: AuthUtil.instance.startUrl,
-                });
+                })
                 TelemetryHelper.instance.sendCodeScanRemediationsEvent(
                     document.languageId,
                     'CODESCAN_ISSUE_HOVER',
@@ -48,7 +48,7 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
                     undefined,
                     undefined,
                     !!issue.suggestedFixes.length
-                );
+                )
             }
         }
 
