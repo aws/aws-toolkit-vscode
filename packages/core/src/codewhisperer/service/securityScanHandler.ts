@@ -121,15 +121,15 @@ export function mapToAggregatedList(
     const filteredIssues = codeScanIssues.flatMap((issue) => {
         if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE && editor) {
             const isValidIssue = issue.codeSnippet.every((codeIssue, index) => {
-                const lineNumber = issue.startLine + index;
-                const line = editor.document.lineAt(lineNumber - 1)?.text;
-                const codeContent = codeIssue.content;
-                return line === codeContent;
-            });
-            return isValidIssue ? [issue] : [];
+                const lineNumber = issue.startLine + index
+                const line = editor.document.lineAt(lineNumber - 1)?.text
+                const codeContent = codeIssue.content
+                return line === codeContent
+            })
+            return isValidIssue ? [issue] : []
         }
-        return [issue];
-    });
+        return [issue]
+    })
 
     filteredIssues.forEach((issue) => {
         const filePath = issue.filePath
