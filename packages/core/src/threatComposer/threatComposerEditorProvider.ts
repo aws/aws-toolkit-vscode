@@ -130,7 +130,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
             }
 
             if (clientId === '') {
-                clientId = getClientId(globals.context.globalState)
+                clientId = getClientId(globals.globalState)
             }
             // Attempt to retrieve existing visualization if it exists.
             const existingVisualization = this.getExistingVisualization(document.uri.fsPath)

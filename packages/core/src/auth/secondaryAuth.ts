@@ -11,8 +11,11 @@ import { cast, Optional } from '../shared/utilities/typeConstructors'
 import { Auth } from './auth'
 import { once, onceChanged } from '../shared/utilities/functionUtils'
 import { isNonNullable } from '../shared/utilities/tsUtils'
+import { ToolIdStateKey } from '../shared/globalState'
 import { Connection, SsoConnection, StatefulConnection } from './connection'
 import { indent } from '../shared/utilities/textUtilities'
+
+export type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId'
 
 let currentConn: Auth['activeConnection']
 const auths = new Map<string, SecondaryAuth>()
@@ -36,7 +39,7 @@ const registerAuthListener = (auth: Auth) => {
 
 export function getSecondaryAuth<T extends Connection>(
     auth: Auth,
-    toolId: string,
+    toolId: ToolId,
     toolLabel: string,
     isValid: (conn: Connection) => conn is T
 ): SecondaryAuth<T> {
@@ -87,12 +90,12 @@ export class SecondaryAuth<T extends Connection = Connection> {
     #savedConnection: T | undefined
     protected static readonly logIfChanged = onceChanged((s: string) => getLogger().info(s))
 
-    private readonly key = `${this.toolId}.savedConnectionId`
+    private readonly key: ToolIdStateKey = `${this.toolId}.savedConnectionId`
     readonly #onDidChangeActiveConnection = new vscode.EventEmitter<T | undefined>()
     public readonly onDidChangeActiveConnection = this.#onDidChangeActiveConnection.event
 
     public constructor(
-        public readonly toolId: string,
+        public readonly toolId: ToolId,
         public readonly toolLabel: string,
         public readonly isUsable: (conn: Connection) => conn is T,
         private readonly auth: Auth,

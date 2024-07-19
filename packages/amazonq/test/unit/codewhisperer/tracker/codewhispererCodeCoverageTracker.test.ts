@@ -16,7 +16,7 @@ import {
 } from 'aws-core-vscode/codewhisperer'
 import { createMockDocument, createMockTextEditor, resetCodeWhispererGlobalVariables } from 'aws-core-vscode/test'
 import { globals, extensionVersion } from 'aws-core-vscode/shared'
-import { assertTelemetryCurried, FakeMemento } from 'aws-core-vscode/test'
+import { assertTelemetryCurried } from 'aws-core-vscode/test'
 
 describe('codewhispererCodecoverageTracker', function () {
     const language = 'python'
@@ -64,7 +64,6 @@ describe('codewhispererCodecoverageTracker', function () {
     })
 
     describe('test isActive', function () {
-        const fakeMemeto = new FakeMemento()
         let tracker: CodeWhispererCodeCoverageTracker | undefined
 
         afterEach(async function () {
@@ -77,7 +76,7 @@ describe('codewhispererCodecoverageTracker', function () {
             sinon.stub(TelemetryHelper.instance, 'isTelemetryEnabled').returns(true)
             sinon.stub(AuthUtil.instance, 'isConnected').returns(false)
 
-            tracker = CodeWhispererCodeCoverageTracker.getTracker('python', fakeMemeto)
+            tracker = CodeWhispererCodeCoverageTracker.getTracker('python')
             if (!tracker) {
                 assert.fail()
             }
@@ -89,7 +88,7 @@ describe('codewhispererCodecoverageTracker', function () {
             sinon.stub(TelemetryHelper.instance, 'isTelemetryEnabled').returns(false)
             sinon.stub(AuthUtil.instance, 'isConnected').returns(false)
 
-            tracker = CodeWhispererCodeCoverageTracker.getTracker('java', fakeMemeto)
+            tracker = CodeWhispererCodeCoverageTracker.getTracker('java')
             if (!tracker) {
                 assert.fail()
             }
@@ -101,7 +100,7 @@ describe('codewhispererCodecoverageTracker', function () {
             sinon.stub(TelemetryHelper.instance, 'isTelemetryEnabled').returns(true)
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
 
-            tracker = CodeWhispererCodeCoverageTracker.getTracker('javascript', fakeMemeto)
+            tracker = CodeWhispererCodeCoverageTracker.getTracker('javascript')
             if (!tracker) {
                 assert.fail()
             }
