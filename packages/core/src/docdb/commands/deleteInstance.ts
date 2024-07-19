@@ -75,7 +75,7 @@ async function showConfirmationDialog(instanceName: string): Promise<boolean> {
     const confirmationInput = await vscode.window.showInputBox({
         prompt,
         placeHolder: instanceName,
-        validateInput: input => (input !== instanceName ? prompt : undefined),
+        validateInput: (input) => (input !== instanceName ? prompt : undefined),
     })
 
     return confirmationInput === instanceName

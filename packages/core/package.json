@@ -2006,11 +2006,13 @@
                 },
                 {
                     "command": "aws.docdb.startCluster",
-                    "when": "viewItem =~ /^awsDocDB.cluster.stopped/"
+                    "when": "viewItem =~ /^awsDocDB.cluster.stopped/",
+                    "group": "inline@1"
                 },
                 {
                     "command": "aws.docdb.stopCluster",
-                    "when": "viewItem =~ /^awsDocDB.cluster.running/"
+                    "when": "viewItem =~ /^awsDocDB.cluster.running/",
+                    "group": "inline@1"
                 },
                 {
                     "command": "aws.docdb.renameCluster",
@@ -2022,12 +2024,12 @@
                 },
                 {
                     "command": "aws.docdb.createInstance",
-                    "when": "viewItem =~ /^awsDocDB.cluster/"
+                    "when": "viewItem =~ /^awsDocDB.cluster/ && viewItem != awsDocDB.cluster.stopped"
                 },
                 {
                     "command": "aws.docdb.renameInstance",
                     "when": "viewItem == awsDocDB.instance.available",
-                    "group": "0@1"
+                    "group": "0@3"
                 },
                 {
                     "command": "aws.docdb.modifyInstance",
@@ -3677,7 +3679,7 @@
             {
                 "command": "aws.docdb.stopCluster",
                 "title": "%AWS.command.docdb.stopCluster%",
-                "icon": "$(debug-stop)",
+                "icon": "$(debug-pause)",
                 "category": "%AWS.title%",
                 "enablement": "!aws.isWebExtHost && viewItem =~ /^awsDocDB.cluster.running/"
             },

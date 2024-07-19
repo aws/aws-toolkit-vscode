@@ -58,7 +58,7 @@ export class CreateInstanceWizard extends Wizard<CreateInstanceState> {
             })
         )
 
-        form.DBInstanceClass.bindPrompter(async state => await this.createInstanceClassPrompter(state.stepCache))
+        form.DBInstanceClass.bindPrompter(async (state) => await this.createInstanceClassPrompter(state.stepCache))
 
         return this
     }
@@ -73,7 +73,7 @@ export class CreateInstanceWizard extends Wizard<CreateInstanceState> {
             ))
         cache[this.client.regionCode] = options
 
-        const items: DataQuickPickItem<string>[] = options.map(option => {
+        const items: DataQuickPickItem<string>[] = options.map((option) => {
             return {
                 data: option.DBInstanceClass,
                 label: option.DBInstanceClass ?? '(unknown)',

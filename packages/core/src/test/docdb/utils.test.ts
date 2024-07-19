@@ -7,132 +7,75 @@ import assert from 'assert'
 import { validateClusterName, validateInstanceName, validatePassword, validateUsername } from '../../docdb/utils'
 
 describe('validateClusterName', function () {
-    it('Validates cluster name is not blank', function () {
-        const message = validateClusterName('')
-        assert.strictEqual(message, 'Cluster name must be between 1 and 63 characters long')
-    })
-
-    it('Validates cluster name is not too long', function () {
-        const message = validateClusterName('c'.repeat(64))
-        assert.strictEqual(message, 'Cluster name must be between 1 and 63 characters long')
-    })
-
-    it('Validates cluster name starts with a lowercase letter', function () {
-        const message = validateClusterName('404')
-        assert.strictEqual(message, 'Cluster name must start with a lowercase letter')
-    })
-
-    it('Validates cluster name does not contain uppercase characters', function () {
-        const message = validateClusterName('abcDEF')
-        assert.strictEqual(message, 'Cluster name must only contain lowercase letters, numbers, and hyphens')
-    })
-
-    it('Validates cluster name does not end with a dash', function () {
-        const message = validateClusterName('abc-')
-        assert.strictEqual(message, 'Cluster name cannot end with a hyphen or contain 2 consecutive hyphens')
-    })
-
-    it("Validates cluster name does not contain '--'", function () {
-        const message = validateClusterName('a--b')
-        assert.strictEqual(message, 'Cluster name cannot end with a hyphen or contain 2 consecutive hyphens')
-    })
-
-    it('Allows lowercase names with numbers and dashes', function () {
-        const message = validateClusterName('a-2')
-        assert.strictEqual(message, undefined)
+    it('vValidates', function () {
+        assert.strictEqual(validateClusterName(''), 'Cluster name must be between 1 and 63 characters long')
+        assert.strictEqual(validateClusterName('c'.repeat(64)), 'Cluster name must be between 1 and 63 characters long')
+        assert.strictEqual(validateClusterName('404'), 'Cluster name must start with a lowercase letter')
+        assert.strictEqual(
+            validateClusterName('abcDEF'),
+            'Cluster name must only contain lowercase letters, numbers, and hyphens'
+        )
+        assert.strictEqual(
+            validateClusterName('abc-'),
+            'Cluster name cannot end with a hyphen or contain 2 consecutive hyphens'
+        )
+        assert.strictEqual(
+            validateClusterName('a--b'),
+            'Cluster name cannot end with a hyphen or contain 2 consecutive hyphens'
+        )
+        assert.strictEqual(validateClusterName('a-2'), undefined)
     })
 })
 
 describe('validateUsername', function () {
-    it('Validates username is not blank', function () {
-        const message = validateUsername('')
-        assert.strictEqual(message, 'Username name must be between 1 and 63 characters long')
-    })
-
-    it('Validates username is not too long', function () {
-        const message = validateUsername('x'.repeat(64))
-        assert.strictEqual(message, 'Username name must be between 1 and 63 characters long')
-    })
-
-    it('Validates username starts with a letter', function () {
-        const message = validateUsername('123')
-        assert.strictEqual(message, 'Username must start with a letter')
-    })
-
-    it('Allows usernames with letters and numbers', function () {
-        const message = validateUsername('a2Z')
-        assert.strictEqual(message, undefined)
+    it('validates', function () {
+        assert.strictEqual(validateUsername(''), 'Username name must be between 1 and 63 characters long')
+        assert.strictEqual(validateUsername('x'.repeat(64)), 'Username name must be between 1 and 63 characters long')
+        assert.strictEqual(validateUsername('123'), 'Username must start with a letter')
+        assert.strictEqual(validateUsername('a2Z'), undefined)
     })
 })
 
 describe('validatePassword', function () {
-    it('Validates password is not too short', function () {
-        const message = validatePassword('1234567')
-        assert.strictEqual(message, 'Password must be between 8 and 100 characters long')
-    })
-
-    it('Validates password is not too long', function () {
-        const message = validatePassword('x'.repeat(101))
-        assert.strictEqual(message, 'Password must be between 8 and 100 characters long')
-    })
-
-    it('Validates password does not include slash, double quote or @ symbol', function () {
-        ;['pass/word', 'p@ssword', '"password"'].forEach(item =>
+    it('validates', function () {
+        assert.strictEqual(validatePassword('passw0rd |~'), undefined)
+        assert.strictEqual(validatePassword('1234567'), 'Password must be between 8 and 100 characters long')
+        assert.strictEqual(validatePassword('x'.repeat(101)), 'Password must be between 8 and 100 characters long')
+        void ['pass/word', 'p@ssword', '"password"'].forEach((item) =>
             assert.strictEqual(
                 validatePassword(item),
                 'Password must only contain printable ASCII characters (except for slash, double quotes and @ symbol)'
             )
         )
-    })
-
-    it('Validates password does not include non-printable ASCII characters', function () {
-        ;['password\x19', 'password\u{fe0f}'].forEach(item =>
+        void ['password\x19', 'password\u{fe0f}'].forEach((item) =>
             assert.strictEqual(
                 validatePassword(item),
                 'Password must only contain printable ASCII characters (except for slash, double quotes and @ symbol)'
             )
         )
-    })
-
-    it('Allows passwords with printable ASCII characters', function () {
-        const message = validatePassword('passw0rd |~')
-        assert.strictEqual(message, undefined)
     })
 })
 
 describe('validateInstanceName', function () {
-    it('Validates instance name is not blank', function () {
-        const message = validateInstanceName('')
-        assert.strictEqual(message, 'Instance name must be between 1 and 63 characters long')
-    })
-
-    it('Validates instance name is not too long', function () {
-        const message = validateInstanceName('c'.repeat(64))
-        assert.strictEqual(message, 'Instance name must be between 1 and 63 characters long')
-    })
-
-    it('Validates instance name starts with a lowercase letter', function () {
-        const message = validateInstanceName('404')
-        assert.strictEqual(message, 'Instance name must start with a lowercase letter')
-    })
-
-    it('Validates instance name does not contain uppercase characters', function () {
-        const message = validateInstanceName('abcDEF')
-        assert.strictEqual(message, 'Instance name must only contain lowercase letters, numbers, and hyphens')
-    })
-
-    it('Validates instance name does not end with a dash', function () {
-        const message = validateInstanceName('abc-')
-        assert.strictEqual(message, 'Instance name cannot end with a hyphen or contain 2 consecutive hyphens')
-    })
-
-    it("Validates instance name does not contain '--'", function () {
-        const message = validateInstanceName('a--b')
-        assert.strictEqual(message, 'Instance name cannot end with a hyphen or contain 2 consecutive hyphens')
-    })
-
-    it('Allows lowercase names with numbers and dashes', function () {
-        const message = validateInstanceName('a-2')
-        assert.strictEqual(message, undefined)
+    it('validates', function () {
+        assert.strictEqual(validateInstanceName(''), 'Instance name must be between 1 and 63 characters long')
+        assert.strictEqual(
+            validateInstanceName('c'.repeat(64)),
+            'Instance name must be between 1 and 63 characters long'
+        )
+        assert.strictEqual(validateInstanceName('404'), 'Instance name must start with a lowercase letter')
+        assert.strictEqual(
+            validateInstanceName('abcDEF'),
+            'Instance name must only contain lowercase letters, numbers, and hyphens'
+        )
+        assert.strictEqual(
+            validateInstanceName('abc-'),
+            'Instance name cannot end with a hyphen or contain 2 consecutive hyphens'
+        )
+        assert.strictEqual(
+            validateInstanceName('a--b'),
+            'Instance name cannot end with a hyphen or contain 2 consecutive hyphens'
+        )
+        assert.strictEqual(validateInstanceName('a-2'), undefined)
     })
 })

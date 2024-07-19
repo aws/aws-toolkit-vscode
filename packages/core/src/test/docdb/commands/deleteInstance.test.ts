@@ -45,7 +45,7 @@ describe('deleteInstanceCommand', function () {
     })
 
     function setupWizard() {
-        getTestWindow().onDidShowInputBox(input => {
+        getTestWindow().onDidShowInputBox((input) => {
             input.acceptValue(instanceName)
         })
     }
@@ -74,7 +74,7 @@ describe('deleteInstanceCommand', function () {
         // arrange
         const stub = sinon.stub()
         docdb.deleteInstance = stub
-        getTestWindow().onDidShowInputBox(input => input.hide())
+        getTestWindow().onDidShowInputBox((input) => input.hide())
 
         // act
         await deleteInstance(node)

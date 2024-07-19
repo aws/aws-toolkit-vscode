@@ -15,7 +15,7 @@ import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { DBInstanceNode } from './dbInstanceNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { DBInstance, DocumentDBClient } from '../../shared/clients/docdbClient'
-import { DocDBContext, DocDBNodeContext, DocumentDBNode } from './docdbNode'
+import { DocDBContext, DocDBNodeContext } from './docdbContext'
 
 /**
  * An AWS Explorer node representing DocumentDB clusters.
@@ -28,7 +28,7 @@ export class DBClusterNode extends AWSTreeNodeBase implements AWSResourceNode {
     arn: string = this.cluster.DBClusterArn ?? ''
 
     constructor(
-        public readonly parent: DocumentDBNode,
+        public readonly parent: AWSTreeNodeBase,
         readonly cluster: DBCluster,
         readonly client: DocumentDBClient
     ) {
@@ -90,7 +90,7 @@ export class DBClusterNode extends AWSTreeNodeBase implements AWSResourceNode {
             NewDBClusterIdentifier: clusterName,
             ApplyImmediately: true,
         }
-        return await this.parent.client.modifyCluster(request)
+        return await this.client.modifyCluster(request)
     }
 
     public async deleteCluster(finalSnapshotId: string | undefined): Promise<DBCluster | undefined> {

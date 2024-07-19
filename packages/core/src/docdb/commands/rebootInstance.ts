@@ -27,7 +27,7 @@ export async function rebootInstance(node: DBInstanceNode) {
         return
     }
 
-    const instanceName = node.id
+    const instanceName = node.instance.DBInstanceIdentifier
     try {
         const instance = await node.rebootInstance()
 

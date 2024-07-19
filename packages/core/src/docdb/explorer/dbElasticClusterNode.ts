@@ -8,7 +8,7 @@ import { inspect } from 'util'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { DBElasticCluster, DocumentDBClient } from '../../shared/clients/docdbClient'
-import { DocDBContext, DocDBNodeContext, DocumentDBNode } from './docdbNode'
+import { DocDBContext, DocDBNodeContext } from './docdbContext'
 
 /**
  * An AWS Explorer node representing DocumentDB elastic clusters.
@@ -19,7 +19,7 @@ export class DBElasticClusterNode extends AWSTreeNodeBase implements AWSResource
     arn: string = this.cluster.clusterArn ?? ''
 
     constructor(
-        public readonly parent: DocumentDBNode,
+        public readonly parent: AWSTreeNodeBase,
         readonly cluster: DBElasticCluster,
         readonly client: DocumentDBClient
     ) {

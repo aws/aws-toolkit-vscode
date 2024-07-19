@@ -20,10 +20,7 @@ function isElasticCluster(clusterId: string): boolean {
 
 export const DBStorageType = { Standard: 'standard', IOpt1: 'iopt1' } as const
 
-/**
- * <p>A list of Amazon DocumentDB clusters.</p>
- * @public
- */
+/** A list of Amazon DocumentDB clusters. */
 export interface DBElasticCluster extends DocDBElastic.ClusterInList {}
 
 export interface DBInstance extends DocDB.DBInstance {
@@ -38,7 +35,7 @@ export class DefaultDocumentDBClient {
     private async getSdkConfig() {
         const credentials = await globals.awsContext.getCredentials()
         return {
-            customUserAgent: await getUserAgent({ includePlatform: true, includeClientId: true }),
+            customUserAgent: getUserAgent({ includePlatform: true, includeClientId: true }),
             credentials: credentials,
             region: this.regionCode,
         }

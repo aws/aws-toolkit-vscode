@@ -17,16 +17,6 @@ import { CreateDBClusterMessage, DBCluster } from '@aws-sdk/client-docdb'
 
 export type DBNode = DBClusterNode | DBElasticClusterNode | DBInstanceNode
 
-export const DocDBContext = {
-    Cluster: 'awsDocDB.cluster',
-    ClusterRunning: 'awsDocDB.cluster.running',
-    ClusterStopped: 'awsDocDB.cluster.stopped',
-    Instance: 'awsDocDB.instance',
-    InstanceAvailable: 'awsDocDB.instance.available',
-} as const
-
-export type DocDBNodeContext = (typeof DocDBContext)[keyof typeof DocDBContext]
-
 /**
  * An AWS Explorer node representing DocumentDB.
  *
@@ -46,10 +36,10 @@ export class DocumentDBNode extends AWSTreeNodeBase {
             getChildNodes: async () => {
                 const nodes = []
                 const clusters = await this.client.listClusters()
-                nodes.push(...clusters.map(cluster => new DBClusterNode(this, cluster, this.client)))
+                nodes.push(...clusters.map((cluster) => new DBClusterNode(this, cluster, this.client)))
 
                 const elasticClusters = await this.client.listElasticClusters()
-                nodes.push(...elasticClusters.map(cluster => new DBElasticClusterNode(this, cluster, this.client)))
+                nodes.push(...elasticClusters.map((cluster) => new DBElasticClusterNode(this, cluster, this.client)))
 
                 return nodes
             },

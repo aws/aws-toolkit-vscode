@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { inspect } from 'util'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { DBInstance } from '../../shared/clients/docdbClient'
-import { DocDBContext, DocDBNodeContext } from './docdbNode'
+import { DocDBContext, DocDBNodeContext } from './docdbContext'
 import { DBClusterNode } from './dbClusterNode'
 import { ModifyDBInstanceMessage } from '@aws-sdk/client-docdb'
 import { waitUntil } from '../../shared'
@@ -18,9 +18,12 @@ import { waitUntil } from '../../shared'
 export class DBInstanceNode extends AWSTreeNodeBase {
     public name: string = this.instance.DBInstanceIdentifier ?? ''
 
-    constructor(public readonly parent: DBClusterNode, readonly instance: DBInstance) {
+    constructor(
+        public readonly parent: DBClusterNode,
+        readonly instance: DBInstance
+    ) {
         super(instance.DBInstanceIdentifier ?? '[Instance]', vscode.TreeItemCollapsibleState.None)
-        this.id = instance.DBInstanceIdentifier
+        this.id = instance.DBInstanceArn
         this.description = this.makeDescription()
         this.contextValue = this.getContext()
         this.tooltip = `${this.name}\nClass: ${this.instance.DBInstanceClass}\nStatus: ${this.status}`

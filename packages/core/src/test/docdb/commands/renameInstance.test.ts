@@ -46,7 +46,7 @@ describe('renameInstanceCommand', function () {
     })
 
     function setupWizard() {
-        getTestWindow().onDidShowInputBox(input => {
+        getTestWindow().onDidShowInputBox((input) => {
             input.acceptValue(newInstanceName)
         })
     }
@@ -81,7 +81,7 @@ describe('renameInstanceCommand', function () {
         // arrange
         const stub = sinon.stub()
         docdb.modifyInstance = stub
-        getTestWindow().onDidShowInputBox(input => input.hide())
+        getTestWindow().onDidShowInputBox((input) => input.hide())
 
         // act
         await renameInstance(node)
