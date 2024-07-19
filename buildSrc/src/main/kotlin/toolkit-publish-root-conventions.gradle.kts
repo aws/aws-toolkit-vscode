@@ -2,14 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
-import org.jetbrains.intellij.platform.gradle.tasks.BuildPluginTask
 import org.jetbrains.intellij.platform.gradle.tasks.PatchPluginXmlTask
-import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask
-import software.aws.toolkits.gradle.buildMetadata
 import software.aws.toolkits.gradle.intellij.IdeFlavor
-import software.aws.toolkits.gradle.intellij.IdeVersions
 import software.aws.toolkits.gradle.intellij.toolkitIntelliJ
-import software.aws.toolkits.gradle.isCi
 
 // publish-root should imply publishing-conventions, but we keep separate so that gateway always has the GW flavor
 plugins {
@@ -17,27 +12,9 @@ plugins {
     id("org.jetbrains.intellij.platform")
 }
 
-val ideProfile = IdeVersions.ideProfile(project)
-val toolkitVersion: String by project
-
-// please check changelog generation logic if this format is changed
-version = "$toolkitVersion-${ideProfile.shortName}"
-
 tasks.withType<PatchPluginXmlTask>().configureEach {
     sinceBuild.set(toolkitIntelliJ.ideProfile().map { it.sinceVersion })
     untilBuild.set(toolkitIntelliJ.ideProfile().map { it.untilVersion })
-}
-
-// attach the current commit hash on local builds
-if (!project.isCi()) {
-    val buildMetadata = buildMetadata()
-    tasks.withType<PatchPluginXmlTask>().configureEach {
-        pluginVersion.set("${project.version}+$buildMetadata")
-    }
-
-    tasks.named<BuildPluginTask>("buildPlugin") {
-        archiveClassifier.set(buildMetadata)
-    }
 }
 
 intellijPlatform {

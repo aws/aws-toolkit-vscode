@@ -52,7 +52,7 @@ phases:
       - rsync -rmq --include='*/' --include '**/build/idea-sandbox/**/log*/**' --exclude='*' . $TEST_ARTIFACTS/ || true
       - rsync -rmq --include='*/' --include '**/build/reports/**' --exclude='*' . $TEST_ARTIFACTS/ || true
       - rsync -rmq --include='*/' --include '**/test-results/**/*.xml' --exclude='*' . $TEST_ARTIFACTS/test-reports || true
-      - cp -r ./plugins/**/build/distributions/*.zip $BUILD_ARTIFACTS/ || touch $BUILD_ARTIFACTS/build_failed
+      - find plugins -path '*/build/distributions/*.zip' -exec cp {} $BUILD_ARTIFACTS/ \; || touch $BUILD_ARTIFACTS/build_failed
 
 reports:
   unit-test:
