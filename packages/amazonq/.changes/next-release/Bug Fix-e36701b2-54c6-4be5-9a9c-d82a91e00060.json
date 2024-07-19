@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Unexpected SSO expiration on Windows due to EPERM"
-}

@@ -1,3 +1,7 @@
+## 3.15.0 2024-07-18
+
+- **Bug Fix** Unexpected SSO expiration on Windows due to EPERM
+
 ## 3.14.0 2024-07-11
 
 - **Bug Fix** App composer generate suggestion unclickable when logged in
