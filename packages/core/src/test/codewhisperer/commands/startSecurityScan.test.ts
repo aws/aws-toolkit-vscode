@@ -7,13 +7,17 @@ import assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as semver from 'semver'
+import * as process from 'process'
 import { DefaultCodeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
 import * as startSecurityScan from '../../../codewhisperer/commands/startSecurityScan'
 import { SecurityPanelViewProvider } from '../../../codewhisperer/views/securityPanelViewProvider'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import * as diagnosticsProvider from '../../../codewhisperer/service/diagnosticsProvider'
-import { getTestWorkspaceFolder } from '../../../testInteg/integrationTestsUtilities'
-import { join } from 'path'
+// import { getTestWorkspaceFolder } from '../../../testInteg/integrationTestsUtilities'
+import * as fs from 'fs'
+import * as os from 'os'
+import * as path from 'path'
+// import { join } from 'path'
 import { assertTelemetry, closeAllEditors } from '../../testUtil'
 import { stub } from '../../utilities/stubber'
 import { AWSError, HttpResponse } from 'aws-sdk'
@@ -128,18 +132,35 @@ const mockListCodeScanFindingsResponse = {
 
 let extensionContext: FakeExtensionContext
 let mockSecurityPanelViewProvider: SecurityPanelViewProvider
-let appRoot: string
+// let appRoot: string
 let appCodePath: string
 let editor: vscode.TextEditor
 
 describe('startSecurityScan', function () {
-    const workspaceFolder = getTestWorkspaceFolder()
+    // const workspaceFolder = getTestWorkspaceFolder()
 
     beforeEach(async function () {
         extensionContext = await FakeExtensionContext.create()
         mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
-        appRoot = join(workspaceFolder, 'python3.7-plain-sam-app')
-        appCodePath = join(appRoot, 'hello_world', 'app.py')
+        // appRoot = join(workspaceFolder, 'python3.7-plain-sam-app')
+
+        // Create a temporary directory
+        const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mock-'))
+
+        // Create a dummy 200KB file as app.py in the temporary directory
+        const dummyFilePath = path.join(tempDir, 'hello_world', 'app.py')
+        await fs.promises.mkdir(path.dirname(dummyFilePath), { recursive: true })
+
+        // Create a sample text content with 199 KB size
+        const sampleContent = 'print("Hello, World!")'.repeat((199 * 1024) / 22)
+        await fs.promises.writeFile(dummyFilePath, sampleContent)
+
+        appCodePath = dummyFilePath
+        //To get the size of payload
+        const fileContents = await fs.promises.readFile(appCodePath, 'utf8')
+        const payloadSizeBytes = Buffer.byteLength(fileContents, 'utf8')
+        const payloadSizeKB = (payloadSizeBytes / 1024).toFixed(2)
+        console.log(`Payload Size is ${payloadSizeKB}`)
         editor = await openTestFile(appCodePath)
         await model.CodeScansState.instance.setScansEnabled(false)
         sinon.stub(timeoutUtils, 'sleep')
@@ -191,6 +212,13 @@ describe('startSecurityScan', function () {
         const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
 
         await model.CodeScansState.instance.setScansEnabled(true)
+        const stage1Start = process.cpuUsage()
+        // Convert stage1Start to a more readable format
+        const stage1StartUser = stage1Start.user / 1000000 // Convert microseconds to seconds
+        const stage1StartSystem = stage1Start.system / 1000000 // Convert microseconds to seconds
+
+        // console.log(`Stage 1 Start CPU Usage: User - ${stage1StartUser} seconds, System - ${stage1StartSystem} seconds`)
+
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
@@ -198,6 +226,30 @@ describe('startSecurityScan', function () {
             extensionContext,
             CodeAnalysisScope.FILE
         )
+
+        const stage1End = process.cpuUsage(stage1Start)
+        const stage1EndUser = stage1End.user / 1000000 // Convert microseconds to seconds
+        const stage1EndSystem = stage1End.system / 1000000 // Convert microseconds to seconds
+
+        // console.log(`Stage 1 End CPU Usage: User - ${stage1EndUser} seconds, System - ${stage1EndSystem} seconds`)
+
+        const stage1MemEnd = process.memoryUsage().heapTotal
+        const stage1MemEndMB = stage1MemEnd / (1024 * 1024) // Convert bytes to megabytes
+        console.log(`Stage 1 Memory Usage at end: ${stage1MemEndMB} MB`)
+        console.log(`Scan Start User CPU Usage: ${stage1StartUser} and System CPU Usage: ${stage1StartSystem}`)
+        console.log(`Scan end User CPU Usage: ${stage1EndUser} and System CPU Usage: ${stage1EndSystem}`)
+/**
+ * 
+Payload Size is 198.99
+Stage 1 Memory Usage at end: 192.40625 MB
+Scan Start User CPU Usage: 21.446874 and System CPU Usage: 7.044477
+Scan end User CPU Usage: 0.058255 and System CPU Usage: 0.004867
+ */
+        // Assert CPU and memory usage
+        assert(stage1EndUser - stage1StartUser > 0, 'Stage 1 user CPU usage should be greater than 0')
+        // assert(stage1EndSystem - stage1StartSystem > 0, 'Stage 1 system CPU usage should be greater than 0')
+        assert(stage1MemEndMB < 200, 'Stage 1 memory usage should not be greater than 200 MB')
+
         assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
         assert.ok(securityScanRenderSpy.calledOnce)
         const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
