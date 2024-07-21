@@ -1,0 +1,22 @@
+#app {
+    font-family: sans-serif;
+}
+
+.header-section {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+}
+
+.header-left,
+.header-right {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: auto;
+    margin-top: 10px;
+}
+
+.table-name {
+    font-size: 2em;
+    font-weight: bold;
+}
