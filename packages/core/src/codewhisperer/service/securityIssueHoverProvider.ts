@@ -25,30 +25,34 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
     ): vscode.Hover {
         const contents: vscode.MarkdownString[] = []
 
-        const fileIssues = this.issues.find((group) => group.filePath === document.fileName)?.issues || []
+        for (const group of this.issues) {
+            if (document.fileName !== group.filePath) {
+                continue
+            }
 
-        for (const issue of fileIssues) {
-            const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
-            if (range.contains(position)) {
-                contents.push(this._getContent(document.fileName, issue))
-                telemetry.codewhisperer_codeScanIssueHover.emit({
-                    findingId: issue.findingId,
-                    detectorId: issue.detectorId,
-                    ruleId: issue.ruleId,
-                    includesFix: !!issue.suggestedFixes.length,
-                    credentialStartUrl: AuthUtil.instance.startUrl,
-                })
-                TelemetryHelper.instance.sendCodeScanRemediationsEvent(
-                    document.languageId,
-                    'CODESCAN_ISSUE_HOVER',
-                    issue.detectorId,
-                    issue.findingId,
-                    issue.ruleId,
-                    undefined,
-                    undefined,
-                    undefined,
-                    !!issue.suggestedFixes.length
-                )
+            for (const issue of group.issues) {
+                const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
+                if (range.contains(position)) {
+                    contents.push(this._getContent(group.filePath, issue))
+                    telemetry.codewhisperer_codeScanIssueHover.emit({
+                        findingId: issue.findingId,
+                        detectorId: issue.detectorId,
+                        ruleId: issue.ruleId,
+                        includesFix: !!issue.suggestedFixes.length,
+                        credentialStartUrl: AuthUtil.instance.startUrl,
+                    })
+                    TelemetryHelper.instance.sendCodeScanRemediationsEvent(
+                        document.languageId,
+                        'CODESCAN_ISSUE_HOVER',
+                        issue.detectorId,
+                        issue.findingId,
+                        issue.ruleId,
+                        undefined,
+                        undefined,
+                        undefined,
+                        !!issue.suggestedFixes.length
+                    )
+                }
             }
         }
 
