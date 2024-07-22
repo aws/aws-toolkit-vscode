@@ -9,3 +9,9 @@
     /* Alignment */
     --auth-container-top: 15%;
 }
+
+@media (max-width: 260px) {
+    body {
+        scale: 0.6;
+    }
+}
