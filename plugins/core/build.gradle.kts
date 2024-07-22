@@ -5,6 +5,7 @@ plugins {
     id("toolkit-publishing-conventions")
     id("toolkit-publish-root-conventions")
     id("toolkit-jvm-conventions")
+    id("toolkit-testing")
 }
 
 dependencies {

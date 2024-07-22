@@ -11,6 +11,7 @@ plugins {
     id("toolkit-publishing-conventions")
     id("toolkit-publish-root-conventions")
     id("toolkit-jvm-conventions")
+    id("toolkit-testing")
 }
 
 val changelog = tasks.register<GeneratePluginChangeLog>("pluginChangeLog") {
@@ -35,6 +36,8 @@ dependencies {
     implementation(project(":plugin-amazonq:codewhisperer"))
     implementation(project(":plugin-amazonq:mynah-ui"))
     implementation(project(":plugin-amazonq:shared"))
+
+    testImplementation(project(":plugin-core"))
 }
 
 tasks.check {
