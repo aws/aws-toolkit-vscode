@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "AccessAnalyzer: error when running CheckNoPublicAccess with only role trust policy in template"
+}
