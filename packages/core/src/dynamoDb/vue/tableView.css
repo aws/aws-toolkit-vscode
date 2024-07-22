@@ -5,6 +5,7 @@
 .panel-content {
     display: flex;
     flex-direction: column;
+    height: 100vh;
 }
 
 .header-section {
@@ -33,6 +34,7 @@
 }
 
 .table-section {
-    top: 100px;
-    position: relative;
+    margin-top: 100px;
+    overflow-y: auto;
+    flex-grow: 1;
 }
