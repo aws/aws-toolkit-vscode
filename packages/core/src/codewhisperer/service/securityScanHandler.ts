@@ -306,7 +306,7 @@ export async function uploadArtifactToS3(
             `Amazon Q is unable to upload workspace artifacts to Amazon S3 for security scans. For more information, see the Amazon Q documentation or contact your network or organization administrator.`
         )
         const errorMessage = getTelemetryReasonDesc(error)?.includes(`"PUT" request failed with code "403"`)
-            ? `UploadArtifactToS3Exception: "PUT" request failed with code "403"`
+            ? `"PUT" request failed with code "403"`
             : getTelemetryReasonDesc(error) ?? 'Security scan failed.'
 
         throw new UploadArtifactToS3Error(errorMessage)
