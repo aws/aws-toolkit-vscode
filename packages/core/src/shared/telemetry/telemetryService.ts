@@ -49,12 +49,11 @@ export class DefaultTelemetryService {
      * Use {@link create}() to create an instance of this class.
      */
     protected constructor(
-        private readonly context: ExtensionContext,
         private readonly awsContext: AwsContext,
         private readonly computeRegion?: string,
         publisher?: TelemetryPublisher
     ) {
-        this.persistFilePath = path.join(context.globalStorageUri.fsPath, 'telemetryCache')
+        this.persistFilePath = path.join(globals.context.globalStorageUri.fsPath, 'telemetryCache')
 
         this.startTime = new globals.clock.Date()
 
@@ -70,14 +69,9 @@ export class DefaultTelemetryService {
      * This exists since we need to first ensure the global storage
      * path exists before creating the instance.
      */
-    static async create(
-        context: ExtensionContext,
-        awsContext: AwsContext,
-        computeRegion?: string,
-        publisher?: TelemetryPublisher
-    ) {
-        await DefaultTelemetryService.ensureGlobalStorageExists(context)
-        return new DefaultTelemetryService(context, awsContext, computeRegion, publisher)
+    static async create(awsContext: AwsContext, computeRegion?: string, publisher?: TelemetryPublisher) {
+        await DefaultTelemetryService.ensureGlobalStorageExists(globals.context)
+        return new DefaultTelemetryService(awsContext, computeRegion, publisher)
     }
 
     public get logger(): TelemetryLogger {
@@ -219,8 +213,9 @@ export class DefaultTelemetryService {
             const clientId = getClientId(globals.globalState)
             // grab our Cognito identityId
             const poolId = DefaultTelemetryClient.config.identityPool
-            const identityMapJson = this.context.globalState.get<string>(
+            const identityMapJson = globals.globalState.tryGet(
                 DefaultTelemetryService.telemetryCognitoIdKey,
+                String,
                 '[]'
             )
             // Maps don't cleanly de/serialize with JSON.parse/stringify so we need to do it ourselves
@@ -234,7 +229,7 @@ export class DefaultTelemetryService {
 
                 // save it
                 identityMap.set(poolId, identityPublisherTuple.cognitoIdentityId)
-                await this.context.globalState.update(
+                await globals.globalState.update(
                     DefaultTelemetryService.telemetryCognitoIdKey,
                     JSON.stringify(Array.from(identityMap.entries()))
                 )
