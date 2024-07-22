@@ -9,12 +9,12 @@ import * as path from 'path'
 import * as utils from 'util'
 import { existsSync, mkdirSync, promises as nodefs, readFileSync, rmSync } from 'fs'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
-import fs from '../../../shared/fs/fs'
+import fs, { renameTimeoutOpts } from '../../../shared/fs/fs'
 import * as os from 'os'
 import { isMinVscode, isWin } from '../../../shared/vscode/env'
 import Sinon from 'sinon'
 import * as extensionUtilities from '../../../shared/extensionUtilities'
-import { PermissionsError, formatError, isFileNotFoundError } from '../../../shared/errors'
+import { PermissionsError, formatError, isFileNotFoundError, scrubNames } from '../../../shared/errors'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import * as testutil from '../../testUtil'
 import globals from '../../../shared/extensionGlobals'
@@ -67,10 +67,14 @@ describe('FileSystem', function () {
     })
 
     describe('writeFile()', function () {
-        it('writes a file', async function () {
-            const filePath = createTestPath('myFileName')
-            await fs.writeFile(filePath, 'MyContent')
-            assert.strictEqual(readFileSync(filePath, 'utf-8'), 'MyContent')
+        const opts: { atomic: boolean }[] = [{ atomic: false }, { atomic: true }]
+
+        opts.forEach((opt) => {
+            it(`writes a file (atomic: ${opt.atomic})`, async function () {
+                const filePath = createTestPath('myFileName')
+                await fs.writeFile(filePath, 'MyContent', opt)
+                assert.strictEqual(readFileSync(filePath, 'utf-8'), 'MyContent')
+            })
         })
 
         it('writes a file with encoded text', async function () {
@@ -340,6 +344,7 @@ describe('FileSystem', function () {
 
             assert.strictEqual(await fs.readFileAsString(newPath), 'hello world')
             assert(!existsSync(oldPath))
+            assert.deepStrictEqual(testutil.getMetrics('ide_fileSystem').length, 0)
         })
 
         it('renames a folder', async () => {
@@ -362,6 +367,43 @@ describe('FileSystem', function () {
 
             assert.strictEqual(await fs.readFileAsString(newPath), 'hello world')
             assert(!existsSync(oldPath))
+        })
+
+        it('throws if source does not exist', async () => {
+            const clock = testutil.installFakeClock()
+            try {
+                const oldPath = createTestPath('oldFile.txt')
+                const newPath = createTestPath('newFile.txt')
+
+                const result = fs.rename(oldPath, newPath)
+                await clock.tickAsync(renameTimeoutOpts.timeout)
+                await assert.rejects(result)
+
+                testutil.assertTelemetry('ide_fileSystem', {
+                    action: 'rename',
+                    result: 'Failed',
+                    reason: 'SourceNotExists',
+                    reasonDesc: `After ${renameTimeoutOpts.timeout}ms the source path did not exist: ${scrubNames(oldPath)}`,
+                })
+            } finally {
+                clock.uninstall()
+            }
+        })
+
+        it('source file does not exist at first, but eventually appears', async () => {
+            const oldPath = createTestPath('oldFile.txt')
+            const newPath = createTestPath('newFile.txt')
+
+            const result = fs.rename(oldPath, newPath)
+            // create file after rename() is called
+            void testutil.toFile('hello world', oldPath)
+            await result
+
+            testutil.assertTelemetry('ide_fileSystem', {
+                action: 'rename',
+                result: 'Succeeded',
+                reason: 'RenameRaceCondition',
+            })
         })
     })
 

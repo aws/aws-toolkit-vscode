@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { dirname } from 'path'
 import { ToolkitError, isFileNotFoundError } from '../errors'
 import fs from '../../shared/fs/fs'
-import crypto from 'crypto'
 import { isWeb } from '../extensionGlobals'
 import type { MapSync } from './map'
 
@@ -131,17 +130,16 @@ export function createDiskCache<T, K>(
                 await fs.mkdir(dirname(target))
                 if (isWeb()) {
                     // There is no web-compatible rename() method. So do a regular write.
-                    await fs.writeFile(target, JSON.stringify(data), { mode: 0o600 })
+                    await fs.writeFile(target, JSON.stringify(data))
                 } else {
                     // With SSO cache we noticed malformed JSON on read. A guess is that multiple writes
                     // are occuring at the same time. The following is a bandaid that ensures an all-or-nothing
                     // write, though there can still be race conditions with which version remains after overwrites.
-                    const tempFile = `${target}.tmp-${crypto.randomBytes(4).toString('hex')}`
-                    await fs.writeFile(tempFile, JSON.stringify(data), { mode: 0o600 })
-                    await fs.rename(tempFile, target)
+                    await fs.writeFile(target, JSON.stringify(data), { mode: 0o600, atomic: true })
                 }
             } catch (error) {
-                throw ToolkitError.chain(error, `Failed to save "${target}"`, {
+                const message = error instanceof Error ? error.message : 'NoMessage'
+                throw ToolkitError.chain(error, `Failed to save "${target}" with message: ${message}`, {
                     code: 'FSWriteFailed',
                     details: { key },
                 })
