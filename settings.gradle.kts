@@ -49,7 +49,7 @@ if (regionEnv.isPresent && bucketEnv.isPresent && prefixEnv.isPresent) {
 }
 
 plugins {
-    id("com.gradle.enterprise").version("3.17.5")
+    id("com.gradle.develocity").version("3.17.5")
     id("com.github.burrunan.s3-build-cache").version("1.5")
 }
 
