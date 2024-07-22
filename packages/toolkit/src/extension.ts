@@ -18,6 +18,50 @@ import { pipeline } from 'node:stream'
 import { promisify } from 'node:util'
 import * as child_process from 'child_process'
 
+interface IDownloadUrl {
+    page: string
+    arm?: string
+    x86?: string
+}
+
+var downloadUrls: { [id: string]: IDownloadUrl } = {
+    'docker-windows': {
+        page: 'https://docs.docker.com/desktop/install/windows-install/',
+        x86: 'https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe',
+        arm: 'https://desktop.docker.com/win/main/arm64/Docker%20Desktop%20Installer.exe',
+    },
+    'docker-mac': {
+        page: 'https://docs.docker.com/desktop/install/mac-install/',
+        x86: 'https://desktop.docker.com/mac/main/amd64/Docker.dmg',
+        arm: 'https://desktop.docker.com/mac/main/arm64/Docker.dmg',
+    },
+    'docker-ubuntu': { page: 'https://docs.docker.com/desktop/install/ubuntu/' },
+    'docker-debian': { page: 'https://docs.docker.com/desktop/install/debian/' },
+    'docker-redhat': { page: 'https://docs.docker.com/desktop/install/rhel/' },
+    'docker-fedora': { page: 'https://docs.docker.com/desktop/install/fedora/' },
+    'docker-linux': { page: 'https://docs.docker.com/desktop/install/linux-install/' },
+
+    'sam-mac': {
+        page: 'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html',
+        x86: 'https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-macos-x86_64.pkg',
+        arm: 'https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-macos-arm64.pkg',
+    },
+    'sam-windows': {
+        page: 'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html',
+        x86: 'https://github.com/aws/aws-sam-cli/releases/latest/download/AWS_SAM_CLI_64_PY3.msi',
+    },
+    'sam-linux': {
+        page: 'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html',
+    },
+
+    'aws-linux': { page: 'https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html' },
+    'aws-mac': {
+        page: '',
+        x86: 'https://awscli.amazonaws.com/AWSCLIV2.pkg',
+        arm: 'https://awscli.amazonaws.com/AWSCLIV2.pkg',
+    },
+}
+
 const serverlessLandUrl = 'https://serverlessland.com/'
 
 const localize = nls.loadMessageBundle()

@@ -3676,8 +3676,8 @@
                     },
                     {
                         "id": "3",
-                        "title": "Install Docker",
-                        "description": "Docker enables local emulation of the Lambda environment that supports local testing and debugging. Docker also enables buidling project with all Lambda supported Runtimes, instead of the Runtimes configured on your local machine. \n[Install Docker](https://docs.docker.com/engine/install/)",
+                        "title": "Install Docker (Optional)",
+                        "description": "Docker is optional, however it enables local emulation of the Lambda environment that supports local testing and debugging. Docker also enables buidling project with all Lambda supported Runtimes, instead of the Runtimes configured on your local machine. \n[Install Docker](https://docs.docker.com/engine/install/)",
                         "media": {
                             "markdown": "./resources/walkthrough/setup-toolchain.md"
                         }
