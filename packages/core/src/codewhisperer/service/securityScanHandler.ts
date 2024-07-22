@@ -118,17 +118,17 @@ export function mapToAggregatedList(
     scope: CodeWhispererConstants.CodeAnalysisScope
 ) {
     const codeScanIssues: RawCodeScanIssue[] = JSON.parse(json)
-    const filteredIssues = codeScanIssues.flatMap((issue) => {
+    const filteredIssues = codeScanIssues.filter((issue) => {
         if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE && editor) {
-            const isValidIssue = issue.codeSnippet.every((codeIssue, index) => {
-                const lineNumber = issue.startLine + index
+            for (let lineNumber = issue.startLine; lineNumber <= issue.endLine; lineNumber++) {
                 const line = editor.document.lineAt(lineNumber - 1)?.text
-                const codeContent = codeIssue.content
-                return line === codeContent
-            })
-            return isValidIssue ? [issue] : []
+                const codeContent = issue.codeSnippet.find((codeIssue) => codeIssue.number === lineNumber)?.content
+                if (line !== codeContent) {
+                    return false
+                }
+            }
         }
-        return [issue]
+        return true
     })
 
     filteredIssues.forEach((issue) => {
