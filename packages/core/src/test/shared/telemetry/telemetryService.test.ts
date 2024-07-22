@@ -9,7 +9,6 @@ import * as sinon from 'sinon'
 import * as fs from 'fs-extra'
 import { DefaultTelemetryService } from '../../../shared/telemetry/telemetryService'
 import { AccountStatus } from '../../../shared/telemetry/telemetryClient'
-import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 import {
     defaultTestAccountId,
@@ -39,13 +38,12 @@ describe('TelemetryService', function () {
     const testFlushPeriod = 10
     let clock: FakeTimers.InstalledClock
     let sandbox: sinon.SinonSandbox
-    let mockContext: FakeExtensionContext
     let mockPublisher: FakeTelemetryPublisher
     let service: DefaultTelemetryService
     let logger: TelemetryLogger
 
     async function initService(awsContext = new FakeAwsContext()): Promise<DefaultTelemetryService> {
-        const newService = await DefaultTelemetryService.create(mockContext, awsContext, undefined, mockPublisher)
+        const newService = await DefaultTelemetryService.create(awsContext, undefined, mockPublisher)
         newService.flushPeriod = testFlushPeriod
         await newService.setTelemetryEnabled(true)
 
@@ -62,7 +60,6 @@ describe('TelemetryService', function () {
     })
 
     beforeEach(async function () {
-        mockContext = await FakeExtensionContext.create()
         mockPublisher = new FakeTelemetryPublisher()
         service = await initService()
         logger = service.logger
