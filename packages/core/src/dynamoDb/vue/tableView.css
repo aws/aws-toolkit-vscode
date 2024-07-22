@@ -52,3 +52,8 @@ vscode-link {
 vscode-divider {
     margin-top: 100px;
 }
+
+.disabled {
+    pointer-events: none;
+    color: gray;
+}

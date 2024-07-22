@@ -10,9 +10,9 @@
             <div class="header-right">
                 <vscode-button class="refresh-button" @click="refreshTable">Refresh</vscode-button>
                 <div class="pagination">
-                    <vscode-link @click="prevPage" href="#" :disabled="isFirstPage">&lt;</vscode-link>
+                    <vscode-link :class="{ disabled: isFirstPage }" @click="prevPage">&lt;</vscode-link>
                     <vscode-link href="#">{{ this.dynamoDbTableData.currentPage }}</vscode-link>
-                    <vscode-link @click="nextPage" href="#" :disabled="isLastPage">&gt;</vscode-link>
+                    <vscode-link :class="{ disabled: isLastPage }" @click="nextPage">&gt;</vscode-link>
                 </div>
             </div>
         </div>
@@ -59,7 +59,7 @@ export default defineComponent({
             return this.dynamoDbTableData.currentPage === 1
         },
         isLastPage() {
-            return this.dynamoDbTableData.lastEvaluatedKey === undefined
+            return this.dynamoDbTableData.lastEvaluatedKey == null
         },
     },
     methods: {
