@@ -10,6 +10,7 @@ import { FakeSecretStorage } from '../fakeExtensionContext'
 import { createBuilderIdProfile, createSsoProfile, createTestAuth } from '../credentials/testUtil'
 import Sinon from 'sinon'
 import { isAnySsoConnection } from '../../auth/connection'
+import globals from '../../shared/extensionGlobals'
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
 
@@ -18,7 +19,7 @@ describe('CodeCatalystAuthenticationProvider', async function () {
     let codecatalystAuth: CodeCatalystAuthenticationProvider
 
     beforeEach(async function () {
-        auth = createTestAuth()
+        auth = createTestAuth(globals.globalState)
         codecatalystAuth = new CodeCatalystAuthenticationProvider(
             new CodeCatalystAuthStorage(new FakeSecretStorage()),
             auth
