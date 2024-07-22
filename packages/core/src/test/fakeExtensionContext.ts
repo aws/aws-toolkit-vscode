@@ -74,6 +74,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
      */
     private constructor(preload?: FakeExtensionState) {
         if (preload) {
+            // eslint-disable-next-line aws-toolkits/no-banned-usages
             this.globalState = new FakeMemento(preload.globalState)
             this.workspaceState = new FakeMemento(preload.workspaceState)
         }
@@ -129,12 +130,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
         const regionProvider = createTestRegionProvider({ awsContext })
         const outputChannel = new MockOutputChannel()
         const fakeTelemetryPublisher = new FakeTelemetryPublisher()
-        const telemetryService = await DefaultTelemetryService.create(
-            ctx,
-            awsContext,
-            undefined,
-            fakeTelemetryPublisher
-        )
+        const telemetryService = await DefaultTelemetryService.create(awsContext, undefined, fakeTelemetryPublisher)
 
         return {
             extensionContext: ctx,

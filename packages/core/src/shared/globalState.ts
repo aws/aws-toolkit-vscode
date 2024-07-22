@@ -27,6 +27,7 @@ type globalKey =
     | stepFunctionsKey
     | ToolIdStateKey
     | JsonSchemasKey
+    | 'amazonq.telemetry.migrated'
     | 'aws.amazonq.codewhisperer.newCustomizations'
     | 'aws.amazonq.hasShownWalkthrough'
     | 'aws.amazonq.showTryChatCodeLens'
@@ -61,6 +62,8 @@ type globalKey =
     | 'region'
     // TODO: implement this via `PromptSettings` instead of globalState.
     | 'sam.sync.updateMessage'
+    | 'telemetryClientId'
+    | 'telemetryId'
 
 /**
  * Extension-local (not visible to other vscode extensions) shared state which persists after IDE
@@ -75,7 +78,7 @@ type globalKey =
  * - garbage collection
  */
 export class GlobalState implements vscode.Memento {
-    constructor(private readonly memento: vscode.Memento) {}
+    constructor(protected readonly memento: vscode.Memento) {}
 
     keys(): readonly string[] {
         return this.memento.keys()
@@ -93,9 +96,9 @@ export class GlobalState implements vscode.Memento {
      * {@link String}, {@link Boolean}, etc.
      * @param defaultVal Value returned if `key` has no value.
      */
-    getStrict<T>(key: globalKey, type: TypeConstructor<T>, defaulVal?: T) {
+    getStrict<T>(key: globalKey, type: TypeConstructor<T>, defaultVal?: T) {
         try {
-            const val = this.memento.get<T>(key) ?? defaulVal
+            const val = this.memento.get<T>(key) ?? defaultVal
             return !type || val === undefined ? val : cast(val, type)
         } catch (e) {
             const msg = `GlobalState: invalid state (or read failed) for key: "${key}"`
@@ -117,13 +120,13 @@ export class GlobalState implements vscode.Memento {
      * @param key Key name
      * @param defaultVal Value returned if `key` has no value.
      */
-    get<T>(key: globalKey, defaulVal?: T): T | undefined {
+    get<T>(key: globalKey, defaultVal?: T): T | undefined {
         const skip = (o: any) => o as T // Don't type check.
-        return this.getStrict(key, skip, defaulVal)
+        return this.getStrict(key, skip, defaultVal)
     }
 
     /**
-     * Gets the value for `key` if it satisfies the `type` specification, else logs an error and returns `defaulVal`.
+     * Gets the value for `key` if it satisfies the `type` specification, else logs an error and returns `defaultVal`.
      *
      * @param key Key name
      * @param type Type validator function, or primitive type constructor such as {@link Object},
@@ -131,13 +134,13 @@ export class GlobalState implements vscode.Memento {
      * @param defaultVal Value returned if `key` has no value.
      */
     tryGet<T>(key: globalKey, type: TypeConstructor<T>): T | undefined
-    tryGet<T>(key: globalKey, type: TypeConstructor<T>, defaulVal: T): T
-    tryGet<T>(key: globalKey, type: TypeConstructor<T>, defaulVal?: T): T | undefined {
+    tryGet<T>(key: globalKey, type: TypeConstructor<T>, defaultVal: T): T
+    tryGet<T>(key: globalKey, type: TypeConstructor<T>, defaultVal?: T): T | undefined {
         try {
-            return this.getStrict(key, type, defaulVal)
+            return this.getStrict(key, type, defaultVal)
         } catch (e) {
             getLogger().error('%s', (e as Error).message)
-            return defaulVal
+            return defaultVal
         }
     }
 

@@ -28,7 +28,7 @@ describe('Auth', function () {
     let auth: ReturnType<typeof createTestAuth>
 
     beforeEach(function () {
-        auth = createTestAuth()
+        auth = createTestAuth(globals.globalState)
     })
 
     it('can create a new sso connection', async function () {

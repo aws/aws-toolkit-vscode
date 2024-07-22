@@ -46,7 +46,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         public readonly existingProfileNames: string[],
         protected context: vscode.ExtensionContext
     ) {
-        this._credentialsMru = new CredentialsProfileMru(context)
+        this._credentialsMru = new CredentialsProfileMru()
     }
 
     public async pickCredentialProfile(
