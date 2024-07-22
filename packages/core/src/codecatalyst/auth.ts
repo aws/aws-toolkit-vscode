@@ -9,6 +9,7 @@ import { Auth } from '../auth/auth'
 import * as localizedText from '../shared/localizedText'
 import { getSecondaryAuth, setScopes } from '../auth/secondaryAuth'
 import { getLogger } from '../shared/logger'
+import globals from '../shared/extensionGlobals'
 import { ToolkitError, isAwsError } from '../shared/errors'
 import { MetricName, MetricShapes, telemetry } from '../shared/telemetry/telemetry'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
@@ -70,12 +71,8 @@ export class CodeCatalystAuthenticationProvider {
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChange = this.onDidChangeEmitter.event
 
-    private readonly mementoKey = 'codecatalyst.connections'
-
     public constructor(
         protected readonly storage: CodeCatalystAuthStorage,
-        protected readonly memento: vscode.Memento,
-
         public readonly auth = Auth.instance,
         public readonly secondaryAuth = getSecondaryAuth(
             auth,
@@ -364,7 +361,7 @@ export class CodeCatalystAuthenticationProvider {
     }
 
     private getStates(): Record<string, ConnectionState> {
-        return this.memento.get(this.mementoKey, {} as Record<string, ConnectionState>)
+        return globals.globalState.tryGet<Record<string, ConnectionState>>('codecatalyst.connections', Object, {})
     }
 
     public tryGetConnectionState(conn: SsoConnection): ConnectionState | undefined {
@@ -380,7 +377,7 @@ export class CodeCatalystAuthenticationProvider {
     }
 
     private async setConnectionState(conn: SsoConnection, state: ConnectionState) {
-        await this.memento.update(this.mementoKey, {
+        await globals.globalState.update('codecatalyst.connections', {
             ...this.getStates(),
             [conn.id]: state,
         })
@@ -424,7 +421,7 @@ export class CodeCatalystAuthenticationProvider {
         return CodeCatalystAuthenticationProvider.#instance
     }
 
-    public static fromContext(ctx: Pick<vscode.ExtensionContext, 'secrets' | 'globalState'>) {
-        return (this.#instance ??= new this(new CodeCatalystAuthStorage(ctx.secrets), ctx.globalState))
+    public static fromContext(ctx: Pick<vscode.ExtensionContext, 'secrets'>) {
+        return (this.#instance ??= new this(new CodeCatalystAuthStorage(ctx.secrets)))
     }
 }

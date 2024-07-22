@@ -11,7 +11,6 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { getLogger } from '../logger'
 import { Endpoints, loadEndpoints, Region } from './endpoints'
-import { regionSettingKey } from '../constants'
 import { AwsContext } from '../awsContext'
 import { getIdeProperties, isAmazonQ, isCloud9 } from '../extensionUtilities'
 import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
@@ -38,7 +37,6 @@ export class RegionProvider {
 
     public constructor(
         endpoints: Endpoints = { partitions: [] },
-        private readonly globalState = globals.context.globalState,
         private readonly awsContext: Pick<AwsContext, 'getCredentialDefaultRegion'> = globals.awsContext
     ) {
         this.loadFromEndpoints(endpoints)
@@ -83,11 +81,11 @@ export class RegionProvider {
     }
 
     public getExplorerRegions(): string[] {
-        return this.globalState.get<string[]>(regionSettingKey, [])
+        return globals.globalState.tryGet<string[]>('region', Object, [])
     }
 
     public async updateExplorerRegions(regions: string[]): Promise<void> {
-        return this.globalState.update(regionSettingKey, Array.from(new Set(regions)))
+        return globals.globalState.update('region', Array.from(new Set(regions)))
     }
 
     /**
@@ -114,7 +112,7 @@ export class RegionProvider {
             return this.lastTouchedRegion
         }
 
-        const lastWizardResponse = this.globalState.get<Region>('lastSelectedRegion')
+        const lastWizardResponse = globals.globalState.tryGet<Region>('lastSelectedRegion', Object)
         if (lastWizardResponse && lastWizardResponse.id) {
             return lastWizardResponse.id
         }

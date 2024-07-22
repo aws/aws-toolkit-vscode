@@ -8,6 +8,7 @@ import { SecondaryAuth, getSecondaryAuth } from '../../auth/secondaryAuth'
 import { createBuilderIdProfile, createTestAuth } from './testUtil'
 import { Connection, createSsoProfile, hasScopes, isSsoConnection } from '../../auth/connection'
 import assert from 'assert'
+import globals from '../../shared/extensionGlobals'
 
 describe('SecondaryAuth', function () {
     let auth: ReturnType<typeof createTestAuth>
@@ -29,6 +30,7 @@ describe('SecondaryAuth', function () {
         secondaryAuth = getSecondaryAuth(auth, 'testId', 'testLabel', isValid)
         onDidChangeActiveConnection = sandbox.stub()
         secondaryAuth.onDidChangeActiveConnection(onDidChangeActiveConnection)
+        await globals.globalState.clear()
     })
 
     afterEach(async function () {
