@@ -91,7 +91,6 @@ object LambdaSampleEventJsonValidator : RemoteResolveParser {
     private val LOG = LoggerFactory.getLogger(LambdaSampleEventJsonValidator::class.java)
 
     private val mapper = jacksonObjectMapper()
-        .disable(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS)
         .disable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS)
         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         .enable(JsonParser.Feature.ALLOW_COMMENTS)
