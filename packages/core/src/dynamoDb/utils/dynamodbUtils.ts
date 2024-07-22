@@ -4,19 +4,33 @@
  */
 
 import { DynamoDB } from 'aws-sdk'
-import { AttributeValue } from 'aws-sdk/clients/dynamodb'
-import { DynamoDbTableNode } from '../explorer/dynamoDbTableNode'
+import { AttributeValue, Key, ScanInput } from 'aws-sdk/clients/dynamodb'
 import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
 
 export interface RowData {
     [key: string]: string
 }
+export interface TableData {
+    tableHeader: RowData[]
+    tableContent: RowData[]
+    lastEvaluatedKey?: Key
+}
 
-export async function getTableContent(node: DynamoDbTableNode, client = new DynamoDbClient(node.regionCode)) {
-    const items = await client.scanTable({ TableName: node.dynamoDbtable })
-    const tableColumnsNames = getTableColumnsNames(items)
-    const tableData = getTableItems(tableColumnsNames[0], items)
-    return [tableColumnsNames[1], tableData]
+export async function getTableContent(
+    tableRequest: ScanInput,
+    regionCode: string,
+    client = new DynamoDbClient(regionCode)
+) {
+    const response = await client.scanTable(tableRequest)
+    const tableColumnsNames = getTableColumnsNames(response)
+    const tableItems = getTableItems(tableColumnsNames[0], response)
+
+    const tableData: TableData = {
+        tableHeader: tableColumnsNames[1],
+        tableContent: tableItems,
+        lastEvaluatedKey: response.LastEvaluatedKey,
+    }
+    return tableData
 }
 
 export function getTableColumnsNames(items: DynamoDB.Types.ScanOutput): [Set<string>, RowData[]] {

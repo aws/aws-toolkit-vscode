@@ -8,12 +8,18 @@
                 }}</span>
             </div>
             <div class="header-right">
-                <vscode-button class="refresh-button">Refresh</vscode-button>
+                <vscode-button class="refresh-button" @click="refreshTable">Refresh</vscode-button>
+                <div class="pagination">
+                    <vscode-link @click="prevPage" href="#" :disabled="isFirstPage">&lt;</vscode-link>
+                    <vscode-link href="#">{{ this.dynamoDbTableData.currentPage }}</vscode-link>
+                    <vscode-link @click="nextPage" href="#" :disabled="isLastPage">&gt;</vscode-link>
+                </div>
             </div>
         </div>
+        <vscode-divider></vscode-divider>
         <div class="table-section">
             <vscode-data-grid id="datagrid" generate-header="sticky" aria-label="Sticky Header">
-                {{ getTableHeader() }}
+                {{ updateTableSection() }}
             </vscode-data-grid>
         </div>
     </div>
@@ -27,9 +33,9 @@ provideVSCodeDesignSystem().register(allComponents)
 
 <script lang="ts">
 import { defineComponent } from 'vue'
+import { RowData } from '../utils/dynamodbUtils'
 import { DynamoDbTableWebview } from './tableView'
 import { WebviewClientFactory } from '../../webviews/client'
-import { RowData } from '../utils/dynamodbUtils'
 
 const client = WebviewClientFactory.create<DynamoDbTableWebview>()
 export default defineComponent({
@@ -38,22 +44,58 @@ export default defineComponent({
             dynamoDbTableData: {
                 TableName: '',
                 Region: '',
+                currentPage: 1,
                 tableHeader: [] as RowData[],
                 tableContent: [] as RowData[],
             },
         }
     },
     async created() {
-        this.dynamoDbTableData = (await client.init()) ?? this.dynamoDbTableData
+        console.log('I am created')
+        this.dynamoDbTableData = await client.init() //) ?? this.dynamoDbTableData
+    },
+    computed: {
+        isFirstPage() {
+            return this.dynamoDbTableData.currentPage === 1
+        },
+        isLastPage() {
+            return this.dynamoDbTableData.lastEvaluatedKey === undefined
+        },
     },
     methods: {
-        getTableHeader() {
+        updateTableSection() {
             const basicGrid = document.getElementById('datagrid')
 
             if (basicGrid) {
                 // (basicGrid as any).columnDefinitions = this.dynamoDbTableData.tableHeader;
                 ;(basicGrid as any).rowsData = this.dynamoDbTableData.tableContent
             }
+            console.log(this.dynamoDbTableData.lastEvaluatedKey)
+        },
+
+        async refreshTable() {
+            this.dynamoDbTableData = await client.fetchPageData()
+            this.updateTableSection()
+        },
+
+        async prevPage() {
+            if (this.dynamoDbTableData.currentPage > 1) {
+                this.dynamoDbTableData = await client.fetchPageData(
+                    this.dynamoDbTableData.currentPage,
+                    this.dynamoDbTableData.lastEvaluatedKey
+                )
+                this.dynamoDbTableData.currentPage -= 1
+                this.updateTableSection()
+            }
+        },
+
+        async nextPage() {
+            this.dynamoDbTableData = await client.fetchPageData(
+                this.dynamoDbTableData.currentPage,
+                this.dynamoDbTableData.lastEvaluatedKey
+            )
+            this.dynamoDbTableData.currentPage += 1
+            this.updateTableSection()
         },
     },
 })
