@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
+import globals from '../extensionGlobals'
 
 /**
  * Tracks the credentials selected by the user, ordered by most recent.
@@ -11,15 +11,13 @@ import * as vscode from 'vscode'
 export class CredentialsProfileMru {
     public static readonly maxCredentialMruSize = 5
 
-    private static readonly configurationStateName: string = 'recentCredentials'
-
-    public constructor(private readonly _context: vscode.ExtensionContext) {}
+    public constructor() {}
 
     /**
      * @description Returns the most recently used credentials names
      */
     public getMruList(): string[] {
-        return this._context.globalState.get<string[]>(CredentialsProfileMru.configurationStateName, [])
+        return globals.globalState.tryGet<string[]>('recentCredentials', Object, [])
     }
 
     /**
@@ -38,6 +36,6 @@ export class CredentialsProfileMru {
 
         mru.splice(CredentialsProfileMru.maxCredentialMruSize)
 
-        await this._context.globalState.update(CredentialsProfileMru.configurationStateName, mru)
+        await globals.globalState.update('recentCredentials', mru)
     }
 }

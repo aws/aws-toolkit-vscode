@@ -21,7 +21,7 @@ import {
     createTestAuth,
 } from 'aws-core-vscode/test'
 import { Auth, Connection, isAnySsoConnection, isBuilderIdConnection } from 'aws-core-vscode/auth'
-import { vscodeComponent } from 'aws-core-vscode/shared'
+import { globals, vscodeComponent } from 'aws-core-vscode/shared'
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
 
@@ -30,7 +30,7 @@ describe('AuthUtil', async function () {
     let authUtil: AuthUtil
 
     beforeEach(async function () {
-        auth = createTestAuth()
+        auth = createTestAuth(globals.globalState)
         authUtil = new AuthUtil(auth)
     })
 
@@ -286,7 +286,7 @@ describe('getChatAuthState()', function () {
     let laterDate: Date
 
     beforeEach(async function () {
-        auth = createTestAuth()
+        auth = createTestAuth(globals.globalState)
         authUtil = new AuthUtil(auth)
 
         laterDate = new Date(Date.now() + 10_000_000)
