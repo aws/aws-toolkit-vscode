@@ -54,7 +54,7 @@ export async function viewDynamoDbTable(context: ExtContext, node: DynamoDbTable
     const logger: Logger = getLogger()
 
     try {
-        const response = await getDynamoDbTableData({ TableName: node.dynamoDbtable }, node.regionCode)
+        const response = await getDynamoDbTableData({ TableName: node.dynamoDbtable, Limit: 5 }, node.regionCode)
         const wv = new Panel(context.extensionContext, response)
         await wv.show({
             title: localize('AWS.dynamoDb.viewTable.title', node.dynamoDbtable),

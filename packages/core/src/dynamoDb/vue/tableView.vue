@@ -36,6 +36,7 @@ import { defineComponent } from 'vue'
 import { RowData } from '../utils/dynamodbUtils'
 import { DynamoDbTableWebview } from './tableView'
 import { WebviewClientFactory } from '../../webviews/client'
+import { Key } from 'aws-sdk/clients/dynamodb'
 
 const client = WebviewClientFactory.create<DynamoDbTableWebview>()
 export default defineComponent({
@@ -48,11 +49,13 @@ export default defineComponent({
                 tableHeader: [] as RowData[],
                 tableContent: [] as RowData[],
             },
+            pageKeys: [] as (Key | null)[],
         }
     },
     async created() {
         console.log('I am created')
-        this.dynamoDbTableData = await client.init() //) ?? this.dynamoDbTableData
+        this.dynamoDbTableData = await client.init()
+        this.pageKeys = [null, this.dynamoDbTableData.lastEvaluatedKey]
     },
     computed: {
         isFirstPage() {
@@ -70,20 +73,18 @@ export default defineComponent({
                 // (basicGrid as any).columnDefinitions = this.dynamoDbTableData.tableHeader;
                 ;(basicGrid as any).rowsData = this.dynamoDbTableData.tableContent
             }
-            console.log(this.dynamoDbTableData.lastEvaluatedKey)
         },
 
         async refreshTable() {
             this.dynamoDbTableData = await client.fetchPageData()
+            this.pageKeys = [null, this.dynamoDbTableData.lastEvaluatedKey]
             this.updateTableSection()
         },
 
         async prevPage() {
             if (this.dynamoDbTableData.currentPage > 1) {
-                this.dynamoDbTableData = await client.fetchPageData(
-                    this.dynamoDbTableData.currentPage,
-                    this.dynamoDbTableData.lastEvaluatedKey
-                )
+                const previousKey = this.pageKeys[this.dynamoDbTableData.currentPage - 2]
+                this.dynamoDbTableData = await client.fetchPageData(this.dynamoDbTableData.currentPage, previousKey)
                 this.dynamoDbTableData.currentPage -= 1
                 this.updateTableSection()
             }
@@ -94,6 +95,9 @@ export default defineComponent({
                 this.dynamoDbTableData.currentPage,
                 this.dynamoDbTableData.lastEvaluatedKey
             )
+            if (this.dynamoDbTableData.lastEvaluatedKey) {
+                this.pageKeys.push(this.dynamoDbTableData.lastEvaluatedKey)
+            }
             this.dynamoDbTableData.currentPage += 1
             this.updateTableSection()
         },
