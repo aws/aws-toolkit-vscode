@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "refactor error message and include backfill for error name"
+	"description": "Amazon Q /dev: update error message for code gen timeout and include backfill for error name"
 }
