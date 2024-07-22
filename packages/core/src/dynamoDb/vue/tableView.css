@@ -2,10 +2,20 @@
     font-family: sans-serif;
 }
 
+.panel-content {
+    display: flex;
+    flex-direction: column;
+}
+
 .header-section {
+    position: fixed;
     width: 100%;
     display: flex;
     justify-content: space-between;
+    padding: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+    border-bottom: 3px solid #4588ba;
 }
 
 .header-left,
@@ -14,9 +24,15 @@
     flex-direction: column;
     margin-bottom: auto;
     margin-top: 10px;
+    margin-right: 50px;
 }
 
 .table-name {
     font-size: 2em;
     font-weight: bold;
+}
+
+.table-section {
+    top: 100px;
+    position: relative;
 }

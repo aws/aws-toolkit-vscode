@@ -9,12 +9,15 @@ import { VueWebview } from '../../webviews/main'
 import { getLogger, Logger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { DynamoDbTableNode } from '../explorer/dynamoDbTableNode'
+import { getTableContent, RowData } from '../utils/dynamodbUtils'
 
 const localize = nls.loadMessageBundle()
 
 interface DynamoDbTableData {
     TableName: string
     Region: string
+    tableContent: RowData[]
+    tableHeader: RowData[]
 }
 
 export class DynamoDbTableWebview extends VueWebview {
@@ -37,9 +40,12 @@ export async function viewDynamoDbTable(context: ExtContext, node: DynamoDbTable
     const logger: Logger = getLogger()
 
     try {
+        const tableData = await getTableContent(node)
         const wv = new Panel(context.extensionContext, {
             TableName: node.dynamoDbtable,
             Region: node.regionCode,
+            tableHeader: tableData[0],
+            tableContent: tableData[1],
         })
         await wv.show({
             title: localize('AWS.dynamoDb.viewTable.title', node.dynamoDbtable),
