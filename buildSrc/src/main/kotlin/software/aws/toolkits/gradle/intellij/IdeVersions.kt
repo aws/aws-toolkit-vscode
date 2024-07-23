@@ -145,7 +145,7 @@ object IdeVersions {
             ),
             community = ProductProfile(
                 sdkFlavor = IdeFlavor.IC,
-                sdkVersion = "242.20224-EAP-CANDIDATE-SNAPSHOT",
+                sdkVersion = "242.20224.38-EAP-SNAPSHOT",
                 bundledPlugins = commonPlugins + listOf(
                     "com.intellij.java",
                     "com.intellij.gradle",
@@ -159,7 +159,7 @@ object IdeVersions {
             ),
             ultimate = ProductProfile(
                 sdkFlavor = IdeFlavor.IU,
-                sdkVersion = "242.20224-EAP-CANDIDATE-SNAPSHOT",
+                sdkVersion = "242.20224.38-EAP-SNAPSHOT",
                 bundledPlugins = commonPlugins + listOf(
                     "JavaScript",
                     "JavaScriptDebugger",
