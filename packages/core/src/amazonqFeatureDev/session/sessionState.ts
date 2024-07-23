@@ -326,7 +326,7 @@ abstract class CodeGenBase {
         }
         if (!this.tokenSource.token.isCancellationRequested) {
             // still in progress
-            const errorMessage = 'Code generation did not finish withing the expected time'
+            const errorMessage = 'Code generation did not finish within the expected time'
             throw new ToolkitError(errorMessage, { code: 'CodeGenTimeout' })
         }
         return {
