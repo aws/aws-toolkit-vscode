@@ -188,7 +188,8 @@ class CodeWhispererAutoTriggerService : CodeWhispererAutoTriggerHandler, Disposa
         }
 
         val keywordCoefficient = CodeWhispererClassifierConstants.coefficientsMap[keyword] ?: 0.0
-        val languageCoefficient = CodeWhispererClassifierConstants.languageMap[language] ?: 0.0
+        val averageLanguageCoefficient = CodeWhispererClassifierConstants.languageMap.values.average()
+        val languageCoefficient = CodeWhispererClassifierConstants.languageMap[language] ?: averageLanguageCoefficient
         val ideCoefficient = 0.0
 
         var previousOneAccept: Double = 0.0
