@@ -34,6 +34,7 @@ import { isAwsError } from '../../../shared/errors'
 import { ChatMessageInteractionType } from '../../../codewhisperer/client/codewhispereruserclient'
 import { supportedLanguagesList } from '../chat/chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { activeCustomizationOrNull } from '../../../codewhisperer/util/customizationUtil'
 
 export function logSendTelemetryEventFailure(error: any) {
     let requestId: string | undefined
@@ -258,6 +259,7 @@ export class CWCTelemetryHelper {
                         acceptedLineCount: event.cwsprChatAcceptedNumberOfLines,
                         acceptedSnippetHasReference: false,
                         hasProjectLevelContext: this.responseWithProjectContext.get(event.cwsprChatMessageId),
+                        customizationArn: activeCustomizationOrNull()?.arn,
                     },
                 },
             })
@@ -381,6 +383,7 @@ export class CWCTelemetryHelper {
                         hasProjectLevelContext: triggerPayload.relevantTextDocuments
                             ? triggerPayload.relevantTextDocuments.length > 0
                             : false,
+                        customizationArn: activeCustomizationOrNull()?.arn,
                     },
                 },
             })

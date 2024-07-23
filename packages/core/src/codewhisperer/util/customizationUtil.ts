@@ -122,6 +122,16 @@ export const getSelectedCustomization = (): Customization => {
     }
 }
 
+// codewhisperer service will throw validation exception if arn is empty string, thus we need to specifically pass undefined if it's base customization
+export function activeCustomizationOrNull(): Customization | undefined {
+    const customization = getSelectedCustomization()
+    if (customization === baseCustomization) {
+        return undefined
+    }
+
+    return customization
+}
+
 export const setSelectedCustomization = async (customization: Customization) => {
     if (!AuthUtil.instance.isValidEnterpriseSsoInUse() || !AuthUtil.instance.conn) {
         return
