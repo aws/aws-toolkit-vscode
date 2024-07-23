@@ -55,6 +55,9 @@ plugins {
 
 develocity {
     buildScan {
+        // only publish with `--scan` argument
+        publishing.onlyIf { false }
+
         if (System.getenv("CI") == "true") {
             termsOfUseUrl = "https://gradle.com/help/legal-terms-of-use"
             termsOfUseAgree = "yes"
