@@ -20,7 +20,7 @@ import { activate as activateCWChat } from './app/chat/activation'
 export async function activate(context: vscode.ExtensionContext) {
     // IMPORTANT: No other code should be added to this function. Place it in one of the following 2 functions where appropriate.
     await activateAmazonQCommon(context, false)
-    await activateAmazonQNonCommon(context)
+    await activateAmazonQNode(context)
 
     return api
 }
@@ -30,7 +30,7 @@ export async function activate(context: vscode.ExtensionContext) {
  * The goal should be for this to not exist and that all code is "common". So if possible make
  * the code compatible with web and move it to {@link activateAmazonQCommon}.
  */
-async function activateAmazonQNonCommon(context: vscode.ExtensionContext) {
+async function activateAmazonQNode(context: vscode.ExtensionContext) {
     const extContext = {
         extensionContext: context,
     }
