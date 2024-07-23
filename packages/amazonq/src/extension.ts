@@ -28,6 +28,7 @@ import {
     initialize,
     initializeComputeRegion,
     messages,
+    placeholder,
     setContext,
 } from 'aws-core-vscode/shared'
 import { ExtStartUpSources, telemetry } from 'aws-core-vscode/telemetry'
@@ -36,6 +37,7 @@ import { join } from 'path'
 import * as semver from 'semver'
 import * as vscode from 'vscode'
 import { registerCommands } from './commands'
+import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
 
 export const amazonQContextPrefix = 'amazonq'
 
@@ -125,8 +127,11 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     await vscode.commands.executeCommand('workbench.action.webview.reloadWebviewAction')
 
     if (AuthUtils.ExtensionUse.instance.isFirstUse()) {
-        CommonAuthWebview.authSource = ExtStartUpSources.firstStartUp
-        await vscode.commands.executeCommand('workbench.view.extension.amazonq')
+        // Give time for the extension to finish initializing.
+        globals.clock.setTimeout(async () => {
+            CommonAuthWebview.authSource = ExtStartUpSources.firstStartUp
+            void focusAmazonQPanel.execute(placeholder, 'firstStartUp')
+        }, 1000)
     }
 
     await telemetry.auth_userState.run(async () => {
