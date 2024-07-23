@@ -247,18 +247,17 @@ export class ToolkitError extends Error implements ErrorInformation {
  * Derives an error message from the given error object.
  * Depending on the Error, the property used to derive the message can vary.
  *
- * @param withCause If the error is a ToolkitError, the message of the cause will
- *                  be appended and delimited by a '::'. Eg: msg1::causeMsg1:causeMsg2
+ * @param withCause Append the message(s) from the cause chain, recursively.
+ *                  The message(s) are delimited by ' | '. Eg: msg1 | causeMsg1 | causeMsg2
  */
 export function getErrorMsg(err: Error | undefined, withCause = false): string | undefined {
     if (err === undefined) {
         return undefined
     }
 
-    if (withCause && err instanceof ToolkitError) {
-        // append the message of the cause, recursively
-        // output eg: "ToolkitError Message::Cause Message::Nested Cause Message::Nested Nested Cause Message"
-        return `${err.message}${err.cause ? '::' + getErrorMsg(err.cause, true) : ''}`
+    const cause = (err as any).cause
+    if (withCause && cause) {
+        return `${err.message}${cause ? ' | ' + getErrorMsg(cause, true) : ''}`
     }
 
     // Non-standard SDK fields added by the OIDC service, to conform to the OAuth spec

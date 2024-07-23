@@ -452,7 +452,7 @@ describe('util', function () {
             'unauthorized message'
         )
         assert.deepStrictEqual(getErrorMsg(undefined), undefined)
-        const awsErr = new TestAwsError('ValidationException', 'aws validation msg 1', new Date())
+        let awsErr = new TestAwsError('ValidationException', 'aws validation msg 1', new Date())
         assert.deepStrictEqual(getErrorMsg(awsErr), 'aws validation msg 1')
         ;(awsErr as any).error_description = ''
         assert.deepStrictEqual(getErrorMsg(awsErr), 'aws validation msg 1')
@@ -461,24 +461,24 @@ describe('util', function () {
         ;(awsErr as any).error_description = 'aws error desc 1'
         assert.deepStrictEqual(getErrorMsg(awsErr), 'aws error desc 1')
 
-        // -- start -- With 'composite' arg as as true
+        // Arg withCause=true
+        awsErr = new TestAwsError('ValidationException', 'aws validation msg 1', new Date())
         let toolkitError = new ToolkitError('ToolkitError Message')
         assert.deepStrictEqual(getErrorMsg(toolkitError, true), 'ToolkitError Message')
 
         toolkitError = new ToolkitError('ToolkitError Message', { cause: awsErr })
-        assert.deepStrictEqual(getErrorMsg(toolkitError, true), `ToolkitError Message::aws validation msg 1`)
+        assert.deepStrictEqual(getErrorMsg(toolkitError, true), `ToolkitError Message | aws validation msg 1`)
 
         const nestedNestedToolkitError = new ToolkitError('C')
         const nestedToolkitError = new ToolkitError('B', { cause: nestedNestedToolkitError })
         toolkitError = new ToolkitError('A', { cause: nestedToolkitError })
-        assert.deepStrictEqual(getErrorMsg(toolkitError, true), `A::B::C`)
-        // -- end -- With 'composite' arg as as true
+        assert.deepStrictEqual(getErrorMsg(toolkitError, true), `A | B | C`)
     })
 
     it('getTelemetryReasonDesc()', () => {
         const err = new Error('Cause Message a/b/c/d.txt')
         const toolkitError = new ToolkitError('ToolkitError Message', { cause: err })
-        assert.deepStrictEqual(getTelemetryReasonDesc(toolkitError), 'ToolkitError Message::Cause Message x/x/x/x.txt')
+        assert.deepStrictEqual(getTelemetryReasonDesc(toolkitError), 'ToolkitError Message | Cause Message x/x/x/x.txt')
     })
 
     it('isNetworkError()', function () {
