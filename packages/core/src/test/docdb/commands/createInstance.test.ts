@@ -12,6 +12,7 @@ import { DBClusterNode } from '../../../docdb/explorer/dbClusterNode'
 import { createInstance } from '../../../docdb/commands/createInstance'
 import { CreateDBInstanceMessage, DBCluster } from '@aws-sdk/client-docdb'
 import { DocumentDBNode } from '../../../docdb/explorer/docdbNode'
+import { assertTelemetry } from '../../testUtil'
 
 describe('createInstanceCommand', function () {
     const clusterName = 'docdb-1234'
@@ -79,6 +80,10 @@ describe('createInstanceCommand', function () {
         assert(stub.calledOnceWithExactly(expectedArgs))
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
         assert((docdb.listInstances as sinon.SinonSpy).calledOnce)
+
+        assertTelemetry('docdb_createInstance', {
+            result: 'Succeeded',
+        })
     })
 
     it('does nothing when prompt is cancelled', async function () {
@@ -88,10 +93,14 @@ describe('createInstanceCommand', function () {
         getTestWindow().onDidShowInputBox((input) => input.hide())
 
         // act
-        await createInstance(node)
+        await assert.rejects(createInstance(node))
 
         // assert
         assert(stub.notCalled)
+
+        assertTelemetry('docdb_createInstance', {
+            result: 'Cancelled',
+        })
     })
 
     it('shows a warning when the cluster has the max number of instances', async function () {
@@ -102,12 +111,16 @@ describe('createInstanceCommand', function () {
         setupWizard()
 
         // act
-        await createInstance(node)
+        await assert.rejects(createInstance(node))
 
         // assert
         getTestWindow()
             .getFirstMessage()
             .assertMessage(/Max instances in use/)
+
+        assertTelemetry('docdb_createInstance', {
+            result: 'Failed',
+        })
     })
 
     it('shows an error when instance creation fails', async function () {
@@ -117,11 +130,15 @@ describe('createInstanceCommand', function () {
         setupWizard()
 
         // act
-        await createInstance(node)
+        await assert.rejects(createInstance(node))
 
         // assert
         getTestWindow()
             .getFirstMessage()
             .assertError(/Failed to create instance: test-instance/)
+
+        assertTelemetry('docdb_createInstance', {
+            result: 'Failed',
+        })
     })
 })

@@ -16,6 +16,7 @@ import { DBInstanceNode } from './dbInstanceNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { DBInstance, DocumentDBClient } from '../../shared/clients/docdbClient'
 import { DocDBContext, DocDBNodeContext } from './docdbContext'
+import { telemetry } from '../../shared/telemetry'
 
 /**
  * An AWS Explorer node representing DocumentDB clusters.
@@ -42,25 +43,27 @@ export class DBClusterNode extends AWSTreeNodeBase implements AWSResourceNode {
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
-        return await makeChildrenNodes({
-            getChildNodes: async () => {
-                const instances: DBInstance[] = (await this.client.listInstances([this.arn])).map((i) => {
-                    const member = this.cluster.DBClusterMembers?.find(
-                        (m) => m.DBInstanceIdentifier === i.DBInstanceIdentifier
-                    )
-                    return { ...i, ...member }
-                })
-                const nodes = instances.map((instance) => new DBInstanceNode(this, instance))
-                return nodes
-            },
-            getNoChildrenPlaceholderNode: async () => {
-                const title = localize('AWS.explorerNode.docdb.addInstance', 'Add instance...')
-                const placeholder = new PlaceholderNode(this, title)
-                placeholder.contextValue = 'awsDocDB.placeholder'
-                placeholder.command = { title, command: 'aws.docdb.createInstance', arguments: [this] }
-                return placeholder
-            },
-            sort: (item1, item2) => item1.name.localeCompare(item2.name),
+        return telemetry.docdb_listInstances.run(async () => {
+            return await makeChildrenNodes({
+                getChildNodes: async () => {
+                    const instances: DBInstance[] = (await this.client.listInstances([this.arn])).map((i) => {
+                        const member = this.cluster.DBClusterMembers?.find(
+                            (m) => m.DBInstanceIdentifier === i.DBInstanceIdentifier
+                        )
+                        return { ...i, ...member }
+                    })
+                    const nodes = instances.map((instance) => new DBInstanceNode(this, instance))
+                    return nodes
+                },
+                getNoChildrenPlaceholderNode: async () => {
+                    const title = localize('AWS.explorerNode.docdb.addInstance', 'Add instance...')
+                    const placeholder = new PlaceholderNode(this, title)
+                    placeholder.contextValue = 'awsDocDB.placeholder'
+                    placeholder.command = { title, command: 'aws.docdb.createInstance', arguments: [this] }
+                    return placeholder
+                },
+                sort: (item1, item2) => item1.name.localeCompare(item2.name),
+            })
         })
     }
 

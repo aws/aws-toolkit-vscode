@@ -13,6 +13,7 @@ import { DBClusterNode } from '../../../docdb/explorer/dbClusterNode'
 import { DBInstanceNode } from '../../../docdb/explorer/dbInstanceNode'
 import { DocumentDBNode } from '../../../docdb/explorer/docdbNode'
 import { renameInstance } from '../../../docdb/commands/renameInstance'
+import { assertTelemetry } from '../../testUtil'
 
 describe('renameInstanceCommand', function () {
     const clusterName = 'docdb-1234'
@@ -75,6 +76,10 @@ describe('renameInstanceCommand', function () {
 
         assert(stub.calledOnceWithExactly(expectedArgs))
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
+
+        assertTelemetry('docdb_renameInstance', {
+            result: 'Succeeded',
+        })
     })
 
     it('does nothing when prompt is cancelled', async function () {
@@ -84,10 +89,14 @@ describe('renameInstanceCommand', function () {
         getTestWindow().onDidShowInputBox((input) => input.hide())
 
         // act
-        await renameInstance(node)
+        await assert.rejects(renameInstance(node))
 
         // assert
         assert(stub.notCalled)
+
+        assertTelemetry('docdb_renameInstance', {
+            result: 'Cancelled',
+        })
     })
 
     it('shows a warning when the instance is not available', async function () {
@@ -98,12 +107,16 @@ describe('renameInstanceCommand', function () {
         setupWizard()
 
         // act
-        await renameInstance(node)
+        await assert.rejects(renameInstance(node))
 
         // assert
         getTestWindow()
             .getFirstMessage()
             .assertMessage(/Instance must be running/)
+
+        assertTelemetry('docdb_renameInstance', {
+            result: 'Cancelled',
+        })
     })
 
     it('shows an error when instance creation fails', async function () {
@@ -113,11 +126,15 @@ describe('renameInstanceCommand', function () {
         setupWizard()
 
         // act
-        await renameInstance(node)
+        await assert.rejects(renameInstance(node))
 
         // assert
         getTestWindow()
             .getFirstMessage()
             .assertError(/Failed to rename instance: test-instance/)
+
+        assertTelemetry('docdb_renameInstance', {
+            result: 'Failed',
+        })
     })
 })
