@@ -12,6 +12,7 @@ import { DBClusterNode } from '../../../docdb/explorer/dbClusterNode'
 import { DBInstanceNode } from '../../../docdb/explorer/dbInstanceNode'
 import { DocumentDBNode } from '../../../docdb/explorer/docdbNode'
 import { rebootInstance } from '../../../docdb/commands/rebootInstance'
+import { assertTelemetry } from '../../testUtil'
 
 describe('rebootInstanceCommand', function () {
     const instanceName = 'test-instance'
@@ -57,6 +58,10 @@ describe('rebootInstanceCommand', function () {
 
         assert(stub.calledOnceWithExactly(instanceName))
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node.parent)
+
+        assertTelemetry('docdb_rebootInstance', {
+            result: 'Succeeded',
+        })
     })
 
     it('shows an error when api returns failure', async function () {
@@ -65,12 +70,16 @@ describe('rebootInstanceCommand', function () {
         docdb.rebootInstance = stub
 
         // act
-        await rebootInstance(node)
+        await assert.rejects(rebootInstance(node))
 
         // assert
         getTestWindow()
             .getFirstMessage()
             .assertError(/Failed to reboot instance: test-instance/)
+
+        assertTelemetry('docdb_rebootInstance', {
+            result: 'Failed',
+        })
     })
 
     it('shows a warning when the instance is not available', async function () {
@@ -80,11 +89,15 @@ describe('rebootInstanceCommand', function () {
         docdb.rebootInstance = stub
 
         // act
-        await rebootInstance(node)
+        await assert.rejects(rebootInstance(node))
 
         // assert
         getTestWindow()
             .getFirstMessage()
             .assertMessage(/Instance must be running/)
+
+        assertTelemetry('docdb_rebootInstance', {
+            result: 'Cancelled',
+        })
     })
 })

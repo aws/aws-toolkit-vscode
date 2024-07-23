@@ -13,6 +13,7 @@ import { modifyInstance } from '../../../docdb/commands/modifyInstance'
 import { ModifyDBInstanceMessage, DBCluster } from '@aws-sdk/client-docdb'
 import { DocumentDBNode } from '../../../docdb/explorer/docdbNode'
 import { DBInstanceNode } from '../../../docdb/explorer/dbInstanceNode'
+import { assertTelemetry } from '../../testUtil'
 
 describe('modifyInstanceCommand', function () {
     const clusterName = 'docdb-1234'
@@ -80,6 +81,10 @@ describe('modifyInstanceCommand', function () {
 
         assert(stub.calledOnceWithExactly(expectedArgs))
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node.parent)
+
+        assertTelemetry('docdb_resizeInstance', {
+            result: 'Succeeded',
+        })
     })
 
     it('does nothing when prompt is cancelled', async function () {
@@ -89,10 +94,14 @@ describe('modifyInstanceCommand', function () {
         getTestWindow().onDidShowQuickPick((picker) => picker.hide())
 
         // act
-        await modifyInstance(node)
+        await assert.rejects(modifyInstance(node))
 
         // assert
         assert(stub.notCalled)
+
+        assertTelemetry('docdb_resizeInstance', {
+            result: 'Cancelled',
+        })
     })
 
     it('shows a warning when the instance is not available', async function () {
@@ -103,12 +112,16 @@ describe('modifyInstanceCommand', function () {
         setupWizard()
 
         // act
-        await modifyInstance(node)
+        await assert.rejects(modifyInstance(node))
 
         // assert
         getTestWindow()
             .getFirstMessage()
             .assertMessage(/Instance must be running/)
+
+        assertTelemetry('docdb_resizeInstance', {
+            result: 'Cancelled',
+        })
     })
 
     it('shows an error when instance creation fails', async function () {
@@ -118,11 +131,15 @@ describe('modifyInstanceCommand', function () {
         setupWizard()
 
         // act
-        await modifyInstance(node)
+        await assert.rejects(modifyInstance(node))
 
         // assert
         getTestWindow()
             .getFirstMessage()
             .assertError(/Failed to modify instance: test-instance/)
+
+        assertTelemetry('docdb_resizeInstance', {
+            result: 'Failed',
+        })
     })
 })

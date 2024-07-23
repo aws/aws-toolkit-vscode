@@ -14,6 +14,7 @@ import { DBClusterNode } from './dbClusterNode'
 import { DBElasticClusterNode } from './dbElasticClusterNode'
 import { DBInstanceNode } from './dbInstanceNode'
 import { CreateDBClusterMessage, DBCluster } from '@aws-sdk/client-docdb'
+import { telemetry } from '../../shared/telemetry'
 
 export type DBNode = DBClusterNode | DBElasticClusterNode | DBInstanceNode
 
@@ -32,19 +33,23 @@ export class DocumentDBNode extends AWSTreeNodeBase {
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
-        return await makeChildrenNodes({
-            getChildNodes: async () => {
-                const nodes = []
-                const clusters = await this.client.listClusters()
-                nodes.push(...clusters.map((cluster) => new DBClusterNode(this, cluster, this.client)))
+        return telemetry.docdb_listClusters.run(async () => {
+            return await makeChildrenNodes({
+                getChildNodes: async () => {
+                    const nodes = []
+                    const clusters = await this.client.listClusters()
+                    nodes.push(...clusters.map((cluster) => new DBClusterNode(this, cluster, this.client)))
 
-                const elasticClusters = await this.client.listElasticClusters()
-                nodes.push(...elasticClusters.map((cluster) => new DBElasticClusterNode(this, cluster, this.client)))
+                    const elasticClusters = await this.client.listElasticClusters()
+                    nodes.push(
+                        ...elasticClusters.map((cluster) => new DBElasticClusterNode(this, cluster, this.client))
+                    )
 
-                return nodes
-            },
-            getNoChildrenPlaceholderNode: async () =>
-                new PlaceholderNode(this, localize('AWS.explorerNode.docdb.noClusters', '[No Clusters found]')),
+                    return nodes
+                },
+                getNoChildrenPlaceholderNode: async () =>
+                    new PlaceholderNode(this, localize('AWS.explorerNode.docdb.noClusters', '[No Clusters found]')),
+            })
         })
     }
 

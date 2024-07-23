@@ -6,6 +6,7 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
+import { assertTelemetry } from '../../testUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { DocumentDBNode } from '../../../docdb/explorer/docdbNode'
 import { DBStorageType, DocumentDBClient } from '../../../shared/clients/docdbClient'
@@ -107,6 +108,11 @@ describe('createClusterCommand', function () {
         )
 
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
+
+        assertTelemetry('docdb_createCluster', {
+            awsRegion: docdb.regionCode,
+            result: 'Succeeded',
+        })
     })
 
     it('does nothing when prompt is cancelled', async function () {
@@ -116,10 +122,14 @@ describe('createClusterCommand', function () {
         getTestWindow().onDidShowInputBox((input) => input.hide())
 
         // act
-        await createCluster(node)
+        await assert.rejects(createCluster(node))
 
         // assert
         assert(stub.notCalled)
+
+        assertTelemetry('docdb_createCluster', {
+            result: 'Cancelled',
+        })
     })
 
     it('shows an error when cluster creation fails', async function () {
@@ -129,12 +139,16 @@ describe('createClusterCommand', function () {
         setupWizard()
 
         // act
-        await createCluster(node)
+        await assert.rejects(createCluster(node))
 
         // assert
         getTestWindow()
             .getFirstMessage()
             .assertError(/Failed to create cluster: docdb-1234/)
+
+        assertTelemetry('docdb_createCluster', {
+            result: 'Failed',
+        })
     })
 
     it('shows an error when instance creation fails', async function () {
@@ -144,11 +158,15 @@ describe('createClusterCommand', function () {
         setupWizard()
 
         // act
-        await createCluster(node)
+        await assert.rejects(createCluster(node))
 
         // assert
         getTestWindow()
             .getFirstMessage()
             .assertError(/Failed to create cluster: docdb-1234/)
+
+        assertTelemetry('docdb_createCluster', {
+            result: 'Failed',
+        })
     })
 })

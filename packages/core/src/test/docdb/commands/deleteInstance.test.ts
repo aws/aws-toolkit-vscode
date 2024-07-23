@@ -12,6 +12,7 @@ import { DBClusterNode } from '../../../docdb/explorer/dbClusterNode'
 import { DBInstanceNode } from '../../../docdb/explorer/dbInstanceNode'
 import { deleteInstance } from '../../../docdb/commands/deleteInstance'
 import { DBCluster, DBInstance } from '@aws-sdk/client-docdb'
+import { assertTelemetry } from '../../testUtil'
 
 describe('deleteInstanceCommand', function () {
     const instanceName = 'test-instance'
@@ -68,6 +69,10 @@ describe('deleteInstanceCommand', function () {
 
         assert(stub.calledOnceWithExactly({ DBInstanceIdentifier: instanceName }))
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
+
+        assertTelemetry('docdb_deleteInstance', {
+            result: 'Succeeded',
+        })
     })
 
     it('does nothing when prompt is cancelled', async function () {
@@ -77,10 +82,14 @@ describe('deleteInstanceCommand', function () {
         getTestWindow().onDidShowInputBox((input) => input.hide())
 
         // act
-        await deleteInstance(node)
+        await assert.rejects(deleteInstance(node))
 
         // assert
         assert(stub.notCalled)
+
+        assertTelemetry('docdb_deleteInstance', {
+            result: 'Cancelled',
+        })
     })
 
     it('shows a warning when the cluster is stopped', async function () {
@@ -91,12 +100,16 @@ describe('deleteInstanceCommand', function () {
         setupWizard()
 
         // act
-        await deleteInstance(node)
+        await assert.rejects(deleteInstance(node))
 
         // assert
         getTestWindow()
             .getFirstMessage()
             .assertMessage(/Cluster must be started to delete instances/)
+
+        assertTelemetry('docdb_deleteInstance', {
+            result: 'Cancelled',
+        })
     })
 
     it('shows an error when instance deletion fails', async function () {
@@ -106,11 +119,15 @@ describe('deleteInstanceCommand', function () {
         setupWizard()
 
         // act
-        await deleteInstance(node)
+        await assert.rejects(deleteInstance(node))
 
         // assert
         getTestWindow()
             .getFirstMessage()
             .assertError(/Failed to delete instance: test-instance/)
+
+        assertTelemetry('docdb_deleteInstance', {
+            result: 'Failed',
+        })
     })
 })

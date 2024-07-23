@@ -181,5 +181,7 @@ module.exports = {
             //         'Avoid fs-extra, use shared/fs/fs.ts. Notify the Toolkit team if your required functionality is not available.',
             // },
         ],
+
+        'prettier/prettier': ['error', { endOfLine: 'auto' }],
     },
 }

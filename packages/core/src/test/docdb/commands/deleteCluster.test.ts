@@ -6,6 +6,7 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
+import { assertTelemetry } from '../../testUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { DocumentDBClient } from '../../../shared/clients/docdbClient'
 import { DBClusterNode } from '../../../docdb/explorer/dbClusterNode'
@@ -80,6 +81,10 @@ describe('deleteClusterCommand', function () {
         assert(deleteClusterStub.calledOnceWithExactly(sinon.match({ DBClusterIdentifier: clusterName })))
         assert(deleteInstanceStub.calledTwice)
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node.parent)
+
+        assertTelemetry('docdb_deleteCluster', {
+            result: 'Succeeded',
+        })
     })
 
     it('does nothing when prompt is cancelled', async function () {
@@ -90,10 +95,14 @@ describe('deleteClusterCommand', function () {
         getTestWindow().onDidShowInputBox((input) => input.hide())
 
         // act
-        await deleteCluster(node)
+        await assert.rejects(deleteCluster(node))
 
         // assert
         assert(deleteClusterStub.notCalled)
+
+        assertTelemetry('docdb_deleteCluster', {
+            result: 'Cancelled',
+        })
     })
 
     it('shows a warning when the cluster is stopped', async function () {
@@ -104,12 +113,16 @@ describe('deleteClusterCommand', function () {
         setupWizard()
 
         // act
-        await deleteCluster(node)
+        await assert.rejects(deleteCluster(node))
 
         // assert
         getTestWindow()
             .getFirstMessage()
             .assertMessage(/Cluster must be running/)
+
+        assertTelemetry('docdb_deleteCluster', {
+            result: 'Cancelled',
+        })
     })
 
     it('shows an error when cluster deletion fails', async function () {
@@ -119,11 +132,15 @@ describe('deleteClusterCommand', function () {
         setupWizard()
 
         // act
-        await deleteCluster(node)
+        await assert.rejects(deleteCluster(node))
 
         // assert
         getTestWindow()
             .getFirstMessage()
             .assertError(/Failed to delete cluster: test-cluster/)
+
+        assertTelemetry('docdb_deleteCluster', {
+            result: 'Failed',
+        })
     })
 })
