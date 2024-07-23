@@ -220,7 +220,7 @@ export class FeatureDevController {
         const isDenyListedError = denyListedErrors.some((err) => errorMessage.includes(err))
 
         switch (err.code) {
-            case ContentLengthError.name:
+            case ContentLengthError.errorName:
                 this.messenger.sendAnswer({
                     type: 'answer',
                     tabID: message.tabID,
@@ -238,11 +238,11 @@ export class FeatureDevController {
                     ],
                 })
                 break
-            case MonthlyConversationLimitError.name:
+            case MonthlyConversationLimitError.errorName:
                 this.messenger.sendMonthlyLimitError(message.tabID)
                 break
 
-            case PlanIterationLimitError.name:
+            case PlanIterationLimitError.errorName:
                 this.messenger.sendAnswer({
                     type: 'answer',
                     tabID: message.tabID,
@@ -266,11 +266,11 @@ export class FeatureDevController {
                 })
                 break
 
-            case FeatureDevServiceError.name:
-            case UploadCodeError.name:
-            case UserMessageNotFoundError.name:
-            case TabIdNotFoundError.name:
-            case PrepareRepoFailedError.name:
+            case FeatureDevServiceError.errorName:
+            case UploadCodeError.errorName:
+            case UserMessageNotFoundError.errorName:
+            case TabIdNotFoundError.errorName:
+            case PrepareRepoFailedError.errorName:
                 this.messenger.sendErrorMessage(
                     errorMessage,
                     message.tabID,
@@ -278,11 +278,11 @@ export class FeatureDevController {
                     session?.conversationIdUnsafe
                 )
                 break
-            case PromptRefusalException.name:
-            case ZipFileError.name:
+            case PromptRefusalException.errorName:
+            case ZipFileError.errorName:
                 this.messenger.sendErrorMessage(errorMessage, message.tabID, 0, session?.conversationIdUnsafe, true)
                 break
-            case CodeIterationLimitError.name:
+            case CodeIterationLimitError.errorName:
                 this.messenger.sendAnswer({
                     type: 'answer',
                     tabID: message.tabID,
