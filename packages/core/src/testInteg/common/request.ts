@@ -4,7 +4,7 @@
  */
 
 import { endpointsFileUrl } from '../../shared/constants'
-import request from '../../common/request'
+import request from '../../shared/request'
 import assert from 'assert'
 
 describe('fetch()', function () {

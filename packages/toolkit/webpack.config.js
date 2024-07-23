@@ -13,7 +13,7 @@ module.exports = (env, argv) => {
     const config = {
         ...baseConfigFactory(env, argv),
         entry: {
-            'src/extension': './src/extension.ts',
+            'src/extensionNode': './src/extensionNode.ts',
         },
     }
 

@@ -6,7 +6,7 @@ import assert from 'assert'
 import sinon from 'sinon'
 import fs from 'fs-extra'
 import os from 'os'
-import { DiffModel, AddedChangeNode, ModifiedChangeNode } from 'aws-core-vscode/codewhisperer'
+import { DiffModel, AddedChangeNode, ModifiedChangeNode } from 'aws-core-vscode/codewhisperer/node'
 import path from 'path'
 import { getTestResourceFilePath } from './amazonQGumbyUtil'
 

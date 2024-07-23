@@ -18,7 +18,7 @@ import { MetricDatum } from './clienttelemetry'
 import { isValidationExemptMetric } from './exemptMetrics'
 import { isAmazonQ, isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { isExtensionInstalled, VSCODE_EXTENSION_ID } from '../utilities'
-import { randomUUID } from '../../common/crypto'
+import { randomUUID } from '../crypto'
 import { activateExtension } from '../utilities/vsCodeUtils'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
