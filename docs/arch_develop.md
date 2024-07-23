@@ -83,18 +83,18 @@ Using this file tree as reference, here are the rules:
 ```
 src/
 ├── myTopic/
-│   ├── myCommon.ts
+│   ├── {file}.ts
 │   ├── node/
-│   │   └── myNode.ts
+│   │   └── {file}.ts
 │   └── web/
-│       └── myWeb.ts
+│       └── {file}.ts
 └── shared/
 ```
 
 -   `myTopic/` is the general name of the folder, eg `request` for http requests.
--   `myComon.ts` is for code that works in any environment, we refer to this as `"common"` code.
--   `node/myNode.ts` is for code that works exclusively in Node.js.
--   `web/myWeb.ts` is for code that works exclusively in Web mode.
+-   `myTopic/{file}.ts` is for code that works in any environment, we refer to this as `"common"` code.
+-   `node/{file}.ts` is for code that works exclusively in Node.js.
+-   `web/{file}.ts` is for code that works exclusively in Web mode.
 -   `shared/` is for code that is intended to be reused, i.e general purpose utils.
     -   Note environment specific code should be place in to a `web/` or `node/` subfolder.
     -   If the code is not in a subfolder then it is considered `shared common` code.
