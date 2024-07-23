@@ -4,7 +4,7 @@
  */
 
 import type { ExtensionContext } from 'vscode'
-import { activate as activateCore, deactivate as deactivateCore } from 'aws-core-vscode'
+import { activate as activateCore, deactivate as deactivateCore } from 'aws-core-vscode/node'
 import { awsToolkitApi } from './api'
 import { Commands } from 'aws-core-vscode/shared'
 

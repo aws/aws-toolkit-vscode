@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import assert from 'assert'
-import { parseVersionsListFromPomFile } from 'aws-core-vscode/codewhisperer'
+import { parseVersionsListFromPomFile } from 'aws-core-vscode/codewhisperer/node'
 
 describe('Amazon Q Transform - transformFileHandler tests', function () {
     describe('parseXmlDependenciesReport', function () {

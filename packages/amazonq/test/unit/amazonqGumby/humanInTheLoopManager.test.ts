@@ -5,7 +5,7 @@
 import * as vscode from 'vscode'
 import assert from 'assert'
 import path from 'path'
-import { HumanInTheLoopManager } from 'aws-core-vscode/codewhisperer'
+import { HumanInTheLoopManager } from 'aws-core-vscode/codewhisperer/node'
 import { getTestResourceFilePath, stripStringWhitespace } from './amazonQGumbyUtil'
 import { fs } from 'aws-core-vscode/shared'
 import { assertEqualPaths } from 'aws-core-vscode/test'
