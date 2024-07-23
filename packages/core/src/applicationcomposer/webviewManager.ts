@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import request from '../common/request'
+import request from '../shared/request'
 import { ApplicationComposer } from './composerWebview'
 import { getLogger } from '../shared/logger'
 

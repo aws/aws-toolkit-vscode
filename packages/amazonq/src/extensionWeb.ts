@@ -5,7 +5,7 @@
 
 import type { ExtensionContext } from 'vscode'
 import { activateWebShared } from 'aws-core-vscode/webShared'
-import { activateAmazonQCommon, deactivateCommon } from './extensionCommon'
+import { activateAmazonQCommon, deactivateCommon } from './extension'
 
 export async function activate(context: ExtensionContext) {
     await activateWebShared(context)
