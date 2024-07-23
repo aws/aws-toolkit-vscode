@@ -14,7 +14,7 @@ import { Key, ScanInput } from 'aws-sdk/clients/dynamodb'
 
 const localize = nls.loadMessageBundle()
 
-interface DynamoDbTableData {
+export interface DynamoDbTableData {
     TableName: string
     Region: string
     currentPage: number
@@ -36,7 +36,7 @@ export class DynamoDbTableWebview extends VueWebview {
         return this.data
     }
 
-    public async fetchPageData(currentPage = 1, lastEvaluatedKey = undefined) {
+    public async fetchPageData(lastEvaluatedKey?: Key, currentPage = 1) {
         const tableRequest: ScanInput = {
             TableName: this.data.TableName,
             Limit: 5,

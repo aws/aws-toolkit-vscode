@@ -11,15 +11,15 @@
                 <vscode-button class="refresh-button" @click="refreshTable">Refresh</vscode-button>
                 <div class="pagination">
                     <vscode-link :class="{ disabled: isFirstPage }" @click="prevPage">&lt;</vscode-link>
-                    <vscode-link href="#">{{ this.dynamoDbTableData.currentPage }}</vscode-link>
+                    <vscode-link href="#">{{ dynamoDbTableData.currentPage }}</vscode-link>
                     <vscode-link :class="{ disabled: isLastPage }" @click="nextPage">&gt;</vscode-link>
                 </div>
             </div>
         </div>
         <vscode-divider></vscode-divider>
         <div class="table-section">
-            <vscode-data-grid id="datagrid" generate-header="sticky" aria-label="Sticky Header">
-                {{ updateTableSection() }}
+            <vscode-data-grid id="datagrid" generate-header="sticky" aria-label="Sticky Header" :key="pageNumber">
+                {{ updateTableSection(dynamoDbTableData) }}
             </vscode-data-grid>
         </div>
     </div>
@@ -34,7 +34,7 @@ provideVSCodeDesignSystem().register(allComponents)
 <script lang="ts">
 import { defineComponent } from 'vue'
 import { RowData } from '../utils/dynamodbUtils'
-import { DynamoDbTableWebview } from './tableView'
+import { DynamoDbTableWebview, DynamoDbTableData } from './tableView'
 import { WebviewClientFactory } from '../../webviews/client'
 import { Key } from 'aws-sdk/clients/dynamodb'
 
@@ -48,14 +48,14 @@ export default defineComponent({
                 currentPage: 1,
                 tableHeader: [] as RowData[],
                 tableContent: [] as RowData[],
-            },
-            pageKeys: [] as (Key | null)[],
+            } as DynamoDbTableData,
+            pageKeys: [] as (Key | undefined)[],
+            pageNumber: 0,
         }
     },
     async created() {
-        console.log('I am created')
         this.dynamoDbTableData = await client.init()
-        this.pageKeys = [null, this.dynamoDbTableData.lastEvaluatedKey]
+        this.pageKeys = [undefined, this.dynamoDbTableData.lastEvaluatedKey]
     },
     computed: {
         isFirstPage() {
@@ -66,40 +66,42 @@ export default defineComponent({
         },
     },
     methods: {
-        updateTableSection() {
+        updateTableSection(dynamoDbTableData: Pick<DynamoDbTableData, 'tableContent'>) {
             const basicGrid = document.getElementById('datagrid')
-
             if (basicGrid) {
-                // (basicGrid as any).columnDefinitions = this.dynamoDbTableData.tableHeader;
-                ;(basicGrid as any).rowsData = this.dynamoDbTableData.tableContent
+                ;(basicGrid as any).rowsData = dynamoDbTableData.tableContent
             }
         },
 
         async refreshTable() {
-            this.dynamoDbTableData = await client.fetchPageData()
-            this.pageKeys = [null, this.dynamoDbTableData.lastEvaluatedKey]
-            this.updateTableSection()
+            this.updatePageNumber()
+            this.dynamoDbTableData = await client.fetchPageData(undefined)
+            this.pageKeys = [undefined, this.dynamoDbTableData.lastEvaluatedKey]
         },
 
         async prevPage() {
+            this.updatePageNumber()
             if (this.dynamoDbTableData.currentPage > 1) {
                 const previousKey = this.pageKeys[this.dynamoDbTableData.currentPage - 2]
-                this.dynamoDbTableData = await client.fetchPageData(this.dynamoDbTableData.currentPage, previousKey)
+                this.dynamoDbTableData = await client.fetchPageData(previousKey, this.dynamoDbTableData.currentPage)
                 this.dynamoDbTableData.currentPage -= 1
-                this.updateTableSection()
             }
         },
 
         async nextPage() {
+            this.updatePageNumber()
             this.dynamoDbTableData = await client.fetchPageData(
-                this.dynamoDbTableData.currentPage,
-                this.dynamoDbTableData.lastEvaluatedKey
+                this.dynamoDbTableData.lastEvaluatedKey,
+                this.dynamoDbTableData.currentPage
             )
             if (this.dynamoDbTableData.lastEvaluatedKey) {
                 this.pageKeys.push(this.dynamoDbTableData.lastEvaluatedKey)
             }
             this.dynamoDbTableData.currentPage += 1
-            this.updateTableSection()
+        },
+
+        updatePageNumber() {
+            this.pageNumber += 1
         },
     },
 })
