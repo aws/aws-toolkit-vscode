@@ -42,17 +42,9 @@ import { placeholder } from '../../../shared/vscode/commands2'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { getPathsFromZipFilePath } from '../../util/files'
-import {
-    examples,
-    newTaskChanges,
-    approachCreation,
-    sessionClosed,
-    updateCode,
-    logWithConversationId,
-    messageWithConversationId,
-} from '../../userFacingText'
+import { examples, logWithConversationId, messageWithConversationId } from '../../userFacingText'
 import { getWorkspaceFoldersByPrefixes } from '../../../shared/utilities/workspaceUtils'
-import { ErrorMessages } from './messenger/constants'
+import { i18n } from '../../util/i18n-helper'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -231,7 +223,7 @@ export class FeatureDevController {
                     tabID: message.tabID,
                     followUps: [
                         {
-                            pillText: 'Choose another folder in your workspace',
+                            pillText: i18n('AWS.amazonq.featureDev.pillText.modifyDefaultSourceFolder'),
                             type: 'ModifyDefaultSourceFolder',
                             status: 'info',
                         },
@@ -253,12 +245,12 @@ export class FeatureDevController {
                     tabID: message.tabID,
                     followUps: [
                         {
-                            pillText: 'Discuss a new plan',
+                            pillText: i18n('AWS.amazonq.featureDev.pillText.newPlan'),
                             type: FollowUpTypes.NewTask,
                             status: 'info',
                         },
                         {
-                            pillText: 'Generate code',
+                            pillText: i18n('AWS.amazonq.featureDev.pillText.generateCode'),
                             type: FollowUpTypes.GenerateCode,
                             status: 'info',
                         },
@@ -293,7 +285,7 @@ export class FeatureDevController {
                     tabID: message.tabID,
                     followUps: [
                         {
-                            pillText: 'Insert code',
+                            pillText: i18n('AWS.amazonq.featureDev.pillText.insertCode'),
                             type: FollowUpTypes.InsertCode,
                             icon: 'ok' as MynahIcons,
                             status: 'success',
@@ -305,16 +297,16 @@ export class FeatureDevController {
                 switch (session?.state.phase) {
                     case DevPhase.APPROACH:
                         if (isDenyListedError) {
-                            defaultMessage = ErrorMessages.approachPhase.denyListedError
+                            defaultMessage = i18n('AWS.amazonq.featureDev.error.approachPhase.denyListedError')
                         } else {
-                            defaultMessage = ErrorMessages.approachPhase.default
+                            defaultMessage = i18n('AWS.amazonq.featureDev.error.approachPhase.default')
                         }
                         break
                     case DevPhase.CODEGEN:
                         if (this.retriesRemaining(session) === 0) {
-                            defaultMessage = ErrorMessages.codeGen.denyListedError
+                            defaultMessage = i18n('AWS.amazonq.featureDev.error.codeGen.denyListedError')
                         } else {
-                            defaultMessage = ErrorMessages.codeGen.default
+                            defaultMessage = i18n('AWS.amazonq.featureDev.error.codeGen.default')
                         }
                         break
                 }
@@ -388,13 +380,13 @@ export class FeatureDevController {
         this.messenger.sendAnswer({
             type: 'answer-stream',
             tabID,
-            message: approachCreation,
+            message: i18n('AWS.amazonq.featureDev.answer.approachCreation'),
         })
 
-        this.messenger.sendUpdatePlaceholder(tabID, 'Generating plan ...')
+        this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.generatingPlan'))
 
         const interactions = await session.send(message)
-        this.messenger.sendUpdatePlaceholder(tabID, 'How can this plan be improved?')
+        this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.answer.howPlanCanBeImproved'))
 
         // This is were we get the plan fully and add it to the chat.
         this.messenger.sendAnswer({
@@ -409,7 +401,7 @@ export class FeatureDevController {
             this.messenger.sendAnswer({
                 type: 'answer',
                 tabID,
-                message: `Would you like to generate a suggestion for this? You’ll review a file diff before inserting into your project.`,
+                message: i18n('AWS.amazonq.featureDev.answer.generateSuggestion'),
             })
 
             // Follow up with action items and complete the request stream
@@ -567,7 +559,7 @@ export class FeatureDevController {
             this.messenger.sendAnswer({
                 type: 'answer',
                 tabID: message.tabID,
-                message: updateCode,
+                message: i18n('AWS.amazonq.featureDev.answer.updateCode'),
             })
 
             this.messenger.sendAnswer({
@@ -575,12 +567,12 @@ export class FeatureDevController {
                 tabID: message.tabID,
                 followUps: [
                     {
-                        pillText: 'Work on new task',
+                        pillText: i18n('AWS.amazonq.featureDev.pillText.newTask'),
                         type: FollowUpTypes.NewTask,
                         status: 'info',
                     },
                     {
-                        pillText: 'Close session',
+                        pillText: i18n('AWS.amazonq.featureDev.pillText.closeSession'),
                         type: FollowUpTypes.CloseSession,
                         status: 'info',
                     },
@@ -589,7 +581,10 @@ export class FeatureDevController {
 
             // Ensure that chat input is enabled so that they can provide additional iterations if they choose
             this.messenger.sendChatInputEnabled(message.tabID, true)
-            this.messenger.sendUpdatePlaceholder(message.tabID, 'Provide input on additional improvements')
+            this.messenger.sendUpdatePlaceholder(
+                message.tabID,
+                i18n('AWS.amazonq.featureDev.placeholder.additionalImprovements')
+            )
         } catch (err: any) {
             this.messenger.sendErrorMessage(
                 createUserFacingErrorMessage(`Failed to insert code changes: ${err.message}`),
@@ -614,10 +609,10 @@ export class FeatureDevController {
         this.messenger.sendAnswer({
             type: 'answer',
             tabID: message.tabID,
-            message: 'How can the code be improved?',
+            message: i18n('AWS.amazonq.featureDev.answer.howCodeCanBeImproved'),
         })
 
-        this.messenger.sendUpdatePlaceholder(message.tabID, 'Feedback, comments ...')
+        this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.featureDev.placeholder.feedback'))
     }
 
     private async retryRequest(message: any) {
@@ -653,7 +648,7 @@ export class FeatureDevController {
             case DevPhase.APPROACH:
                 return [
                     {
-                        pillText: 'Generate code',
+                        pillText: i18n('AWS.amazonq.featureDev.pillText.generateCode'),
                         type: FollowUpTypes.GenerateCode,
                         status: 'info',
                     },
@@ -661,13 +656,13 @@ export class FeatureDevController {
             case DevPhase.CODEGEN:
                 return [
                     {
-                        pillText: 'Insert code',
+                        pillText: i18n('AWS.amazonq.featureDev.pillText.insertCode'),
                         type: FollowUpTypes.InsertCode,
                         icon: 'ok' as MynahIcons,
                         status: 'success',
                     },
                     {
-                        pillText: 'Provide feedback to regenerate',
+                        pillText: i18n('AWS.amazonq.featureDev.pillText.provideFeedback'),
                         type: FollowUpTypes.ProvideFeedbackAndRegenerateCode,
                         icon: 'refresh' as MynahIcons,
                         status: 'info',
@@ -694,7 +689,7 @@ export class FeatureDevController {
                 type: 'system-prompt',
                 followUps: [
                     {
-                        pillText: 'Select files for context',
+                        pillText: i18n('AWS.amazonq.featureDev.pillText.selectFiles'),
                         type: 'ModifyDefaultSourceFolder',
                         status: 'info',
                     },
@@ -712,7 +707,7 @@ export class FeatureDevController {
                 type: 'system-prompt',
                 followUps: [
                     {
-                        pillText: 'Select files for context',
+                        pillText: i18n('AWS.amazonq.featureDev.pillText.selectFiles'),
                         type: 'ModifyDefaultSourceFolder',
                         status: 'info',
                     },
@@ -855,7 +850,7 @@ export class FeatureDevController {
         this.messenger.sendAnswer({
             type: 'answer',
             tabID: message.tabID,
-            message: 'Follow instructions to re-authenticate ...',
+            message: i18n('AWS.amazonq.featureDev.pillText.reauthenticate'),
         })
 
         // Explicitly ensure the user goes through the re-authenticate flow
@@ -877,18 +872,18 @@ export class FeatureDevController {
         this.messenger.sendAnswer({
             type: 'answer',
             tabID: message.tabID,
-            message: newTaskChanges,
+            message: i18n('AWS.amazonq.featureDev.answer.newTaskChanges'),
         })
-        this.messenger.sendUpdatePlaceholder(message.tabID, 'Describe your task or issue in as much detail as possible')
+        this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.featureDev.placeholder.describe'))
     }
 
     private async closeSession(message: any) {
         this.messenger.sendAnswer({
             type: 'answer',
             tabID: message.tabID,
-            message: sessionClosed,
+            message: i18n('AWS.amazonq.featureDev.answer.sessionClosed'),
         })
-        this.messenger.sendUpdatePlaceholder(message.tabID, sessionClosed)
+        this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.featureDev.answer.sessionClosed'))
         this.messenger.sendChatInputEnabled(message.tabID, false)
 
         const session = await this.sessionStorage.getSession(message.tabID)

@@ -14,7 +14,6 @@ import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { featureDevScheme } from '../constants'
 import {
-    CodeGenerationDefaultError,
     FeatureDevServiceError,
     IllegalStateTransition,
     PromptRefusalException,
@@ -43,6 +42,7 @@ import { encodeHTML } from '../../shared/utilities/textUtilities'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { randomUUID } from '../../common/crypto'
 import { collectFiles, getWorkspaceFoldersByPrefixes } from '../../shared/utilities/workspaceUtils'
+import { i18n } from '../util/i18n-helper'
 
 export class ConversationNotStartedState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
@@ -142,10 +142,7 @@ export class RefinementState implements SessionState {
                     action.msg
                 )
 
-                this.approach = encodeHTML(
-                    approach ??
-                        'There has been a problem generating an approach. Please open a conversation in a new tab'
-                )
+                this.approach = encodeHTML(approach ?? i18n('AWS.amazonq.featureDev.error.approachNewTab'))
 
                 action.telemetry.recordUserApproachTelemetry(span, this.conversationId, responseType)
                 return {
@@ -299,22 +296,30 @@ abstract class CodeGenBase {
                 case CodeGenerationStatus.FAILED: {
                     switch (true) {
                         case codegenResult.codeGenerationStatusDetail?.includes('Guardrails'): {
-                            throw new FeatureDevServiceError(CodeGenerationDefaultError, 'GuardrailsException')
+                            throw new FeatureDevServiceError(
+                                i18n('AWS.amazonq.featureDev.error.codeGen.default'),
+                                'GuardrailsException'
+                            )
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('PromptRefusal'): {
                             throw new PromptRefusalException()
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('EmptyPatch'): {
-                            throw new FeatureDevServiceError(CodeGenerationDefaultError, 'EmptyPatchException')
+                            throw new FeatureDevServiceError(
+                                i18n('AWS.amazonq.featureDev.error.codeGen.default'),
+                                'EmptyPatchException'
+                            )
                         }
                         case codegenResult.codeGenerationStatusDetail?.includes('Throttling'): {
                             throw new FeatureDevServiceError(
-                                "I'm sorry, I'm experiencing high demand at the moment and can't generate your code. This attempt won't count toward usage limits. Please try again.",
+                                i18n('AWS.amazonq.featureDev.error.throttling'),
                                 'ThrottlingException'
                             )
                         }
                         default: {
-                            throw new ToolkitError('Code generation failed', { code: 'CodeGenFailed' })
+                            throw new ToolkitError(i18n('AWS.amazonq.featureDev.error.codeGen.default'), {
+                                code: 'CodeGenFailed',
+                            })
                         }
                     }
                 }
@@ -326,7 +331,7 @@ abstract class CodeGenBase {
         }
         if (!this.tokenSource.token.isCancellationRequested) {
             // still in progress
-            const errorMessage = 'Code generation did not finish within the expected time'
+            const errorMessage = i18n('AWS.amazonq.featureDev.error.codeGen.timeout')
             throw new ToolkitError(errorMessage, { code: 'CodeGenTimeout' })
         }
         return {
@@ -370,7 +375,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                 )
 
                 action.messenger.sendAnswer({
-                    message: 'Generating code ...',
+                    message: i18n('AWS.amazonq.featureDev.pillText.generatingCode'),
                     type: 'answer-part',
                     tabID: this.tabID,
                 })
@@ -472,13 +477,13 @@ export class MockCodeGenState implements SessionState {
                 type: 'system-prompt',
                 followUps: [
                     {
-                        pillText: 'Insert code',
+                        pillText: i18n('AWS.amazonq.featureDev.pillText.insertCode'),
                         type: FollowUpTypes.InsertCode,
                         icon: 'ok' as MynahIcons,
                         status: 'success',
                     },
                     {
-                        pillText: 'Provide feedback to regenerate',
+                        pillText: i18n('AWS.amazonq.featureDev.pillText.provideFeedback'),
                         type: FollowUpTypes.ProvideFeedbackAndRegenerateCode,
                         icon: 'refresh' as MynahIcons,
                         status: 'info',

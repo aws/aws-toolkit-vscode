@@ -19,9 +19,10 @@ import {
 import { AppToWebViewMessageDispatcher } from '../../../views/connector/connector'
 import { ChatItemAction } from '@aws/mynah-ui'
 import { messageWithConversationId } from '../../../userFacingText'
-import { MessengerTypes, ErrorMessages, Placeholders } from './constants'
+import { MessengerTypes } from './constants'
 import { FeatureAuthState } from '../../../../codewhisperer'
 import { CodeReference } from '../../../../codewhispererChat/view/connector/connector'
+import { i18n } from '../../../util/i18n-helper'
 export class Messenger {
     public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}
 
@@ -54,7 +55,7 @@ export class Messenger {
             type: 'system-prompt',
             followUps: [
                 {
-                    pillText: 'Send feedback',
+                    pillText: i18n('AWS.amazonq.featureDev.pillText.sendFeedback'),
                     type: FollowUpTypes.SendFeedback,
                     status: 'info',
                 },
@@ -67,9 +68,9 @@ export class Messenger {
         this.sendAnswer({
             type: 'answer',
             tabID: tabID,
-            message: ErrorMessages.monthlyLimitReached,
+            message: i18n('AWS.amazonq.featureDev.error.monthlyLimitReached'),
         })
-        this.sendUpdatePlaceholder(tabID, Placeholders.chatInputDisabled)
+        this.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.placeholder.chatInputDisabled'))
     }
 
     public sendErrorMessage(
@@ -83,7 +84,7 @@ export class Messenger {
             this.sendAnswer({
                 type: 'answer',
                 tabID: tabID,
-                message: showDefaultMessage ? errorMessage : ErrorMessages.technicalDifficulties,
+                message: showDefaultMessage ? errorMessage : i18n('AWS.amazonq.featureDev.error.technicalDifficulties'),
             })
             this.sendFeedback(tabID)
             return
@@ -100,7 +101,7 @@ export class Messenger {
             type: 'system-prompt',
             followUps: [
                 {
-                    pillText: 'Retry',
+                    pillText: i18n('AWS.amazonq.featureDev.pillText.retry'),
                     type: FollowUpTypes.Retry,
                     status: 'warning',
                 },
