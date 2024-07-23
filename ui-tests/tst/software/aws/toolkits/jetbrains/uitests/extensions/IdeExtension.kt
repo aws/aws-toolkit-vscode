@@ -41,7 +41,7 @@ class Ide : BeforeAllCallback, AfterAllCallback {
     private val gradleProcess = GradleProcess()
 
     override fun beforeAll(context: ExtensionContext) {
-        gradleProcess.startGradleTasks(":$gradleProject:runIdeForUiTests")
+        gradleProcess.startGradleTasks(":$gradleProject:testIdeUi")
         log.info("Gradle process started, trying to connect to IDE")
         waitForIde()
         log.info("Connected to IDE")
