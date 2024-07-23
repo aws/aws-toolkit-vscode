@@ -525,7 +525,10 @@ export class ClassifierTrigger {
 
         const previousDecision = TelemetryHelper.instance.getLastTriggerDecisionForClassifier()
         const languageCoefficients = Object.values(this.languageCoefficientMap)
-        const avrgCoefficient = languageCoefficients.length > 0 ? (languageCoefficients.reduce((a, b) => a + b) / languageCoefficients.length) : 0
+        const avrgCoefficient =
+            languageCoefficients.length > 0
+                ? languageCoefficients.reduce((a, b) => a + b) / languageCoefficients.length
+                : 0
         const languageCoefficient = this.languageCoefficientMap[language.languageName] ?? avrgCoefficient
 
         let previousDecisionCoefficient = 0
