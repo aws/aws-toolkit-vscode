@@ -6,7 +6,7 @@
 import assert from 'assert'
 import { ICodeTransformMetaData } from '../../../amazonqGumby/telemetry/codeTransformMetadata'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { randomUUID } from '../../../common/crypto'
+import { randomUUID } from '../../../shared/crypto'
 
 describe('CodeTransformTelemetryState', () => {
     it('Does get singleton instance', () => {
