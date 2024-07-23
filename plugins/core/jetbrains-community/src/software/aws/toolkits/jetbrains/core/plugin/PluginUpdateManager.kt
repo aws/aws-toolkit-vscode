@@ -128,7 +128,8 @@ class PluginUpdateManager : Disposable {
                         result = Result.Succeeded,
                         id = "autoUpdateActionRestart",
                         source = SOURCE_AUTO_UPDATE_FINISH_NOTIFY,
-                        component = Component.Filesystem
+                        component = Component.Filesystem,
+                        action = "restart"
                     )
                     ApplicationManager.getApplication().restart()
                 },
@@ -139,7 +140,8 @@ class PluginUpdateManager : Disposable {
                         result = Result.Succeeded,
                         id = "autoUpdateActionNotNow",
                         source = SOURCE_AUTO_UPDATE_FINISH_NOTIFY,
-                        component = Component.Filesystem
+                        component = Component.Filesystem,
+                        action = "notNow"
                     )
                 },
                 NotificationAction.createSimple(message("aws.notification.auto_update.settings.title")) {
@@ -149,7 +151,8 @@ class PluginUpdateManager : Disposable {
                         result = Result.Succeeded,
                         id = ID_ACTION_AUTO_UPDATE_SETTINGS,
                         source = SOURCE_AUTO_UPDATE_FINISH_NOTIFY,
-                        component = Component.Filesystem
+                        component = Component.Filesystem,
+                        action = "showSettingsDialog"
                     )
                     ShowSettingsUtil.getInstance().showSettingsDialog(null, AwsSettingsSharedConfigurable::class.java)
                 }
@@ -169,7 +172,8 @@ class PluginUpdateManager : Disposable {
                         result = Result.Succeeded,
                         id = ID_ACTION_AUTO_UPDATE_SETTINGS,
                         source = SOURCE_AUTO_UPDATE_FEATURE_INTRO_NOTIFY,
-                        component = Component.Filesystem
+                        component = Component.Filesystem,
+                        action = "showSettingsDialog"
                     )
                     ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsSharedConfigurable::class.java)
                 }
