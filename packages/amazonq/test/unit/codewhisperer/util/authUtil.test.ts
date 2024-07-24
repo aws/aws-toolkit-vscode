@@ -278,6 +278,26 @@ describe('AuthUtil', async function () {
         assert.strictEqual(authUtil.reformatStartUrl(expected + '/#/'), expected)
         assert.strictEqual(authUtil.reformatStartUrl(expected + '####'), expected)
     })
+
+    it(`clearExtraConnections()`, async function () {
+        const conn1 = await auth.createConnection(createBuilderIdProfile())
+        const conn2 = await auth.createConnection(createSsoProfile({ startUrl: enterpriseSsoStartUrl }))
+        const conn3 = await auth.createConnection(createSsoProfile({ startUrl: enterpriseSsoStartUrl + 1 }))
+        // validate listConnections shows all connections
+        assert.deepStrictEqual(
+            (await authUtil.auth.listConnections()).map((conn) => conn.id).sort((a, b) => a.localeCompare(b)),
+            [conn1, conn2, conn3].map((conn) => conn.id).sort((a, b) => a.localeCompare(b))
+        )
+        await authUtil.secondaryAuth.useNewConnection(conn3)
+
+        await authUtil.clearExtraConnections() // method under test
+
+        // Only the conn that AuthUtil is using is remaining
+        assert.deepStrictEqual(
+            (await authUtil.auth.listConnections()).map((conn) => conn.id),
+            [conn3.id]
+        )
+    })
 })
 
 describe('getChatAuthState()', function () {
