@@ -9,13 +9,7 @@ import * as path from 'path'
 import sinon from 'sinon'
 import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import { ControllerSetup, createController, createSession, generateVirtualMemoryUri } from '../../utils'
-import {
-    CurrentWsFolders,
-    FollowUpTypes,
-    createUri,
-    NewFileInfo,
-    DeletedFileInfo,
-} from '../../../../amazonqFeatureDev/types'
+import { CurrentWsFolders, FollowUpTypes, NewFileInfo, DeletedFileInfo } from '../../../../amazonqFeatureDev/types'
 import { Session } from '../../../../amazonqFeatureDev/session/session'
 import { Prompter } from '../../../../shared/ui/prompter'
 import { assertTelemetry, toFile } from '../../../testUtil'
@@ -26,6 +20,7 @@ import {
     PrepareRefinementState,
 } from '../../../../amazonqFeatureDev/session/sessionState'
 import { FeatureDevClient } from '../../../../amazonqFeatureDev/client/featureDev'
+import { createAmazonQUri } from '../../../../amazonq/commons/diff'
 
 let mockGetCodeGeneration: sinon.SinonStub
 describe('Controller', () => {
@@ -102,8 +97,8 @@ describe('Controller', () => {
             assert.strictEqual(
                 executedDiff.calledWith(
                     'vscode.diff',
-                    createUri('empty', tabID),
-                    createUri(path.join(uploadID, 'src', 'mynewfile.js'), tabID)
+                    createAmazonQUri('empty', tabID),
+                    createAmazonQUri(path.join(uploadID, 'src', 'mynewfile.js'), tabID)
                 ),
                 true
             )
@@ -120,7 +115,7 @@ describe('Controller', () => {
                 executedDiff.calledWith(
                     'vscode.diff',
                     vscode.Uri.file(newFileLocation),
-                    createUri(path.join(uploadID, 'mynewfile.js'), tabID)
+                    createAmazonQUri(path.join(uploadID, 'mynewfile.js'), tabID)
                 ),
                 true
             )
@@ -137,7 +132,7 @@ describe('Controller', () => {
                 executedDiff.calledWith(
                     'vscode.diff',
                     vscode.Uri.file(newFileLocation),
-                    createUri(path.join(uploadID, 'src', 'mynewfile.js'), tabID)
+                    createAmazonQUri(path.join(uploadID, 'src', 'mynewfile.js'), tabID)
                 ),
                 true
             )
@@ -156,7 +151,7 @@ describe('Controller', () => {
                 executedDiff.calledWith(
                     'vscode.diff',
                     vscode.Uri.file(newFileLocation),
-                    createUri(path.join(uploadID, 'foo', 'fi', 'mynewfile.js'), tabID)
+                    createAmazonQUri(path.join(uploadID, 'foo', 'fi', 'mynewfile.js'), tabID)
                 ),
                 true
             )
