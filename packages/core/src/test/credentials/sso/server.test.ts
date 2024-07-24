@@ -13,8 +13,7 @@ import {
 } from '../../../auth/sso/server'
 import request from '../../../shared/request'
 import { URLSearchParams } from 'url'
-import { isUserCancelledError, ToolkitError } from '../../../shared/errors'
-import { sleep } from '../../../shared/utilities/timeoutUtils'
+import { ToolkitError } from '../../../shared/errors'
 
 describe('AuthSSOServer', function () {
     const code = 'zfhgaiufgsbdfigsdfg'
@@ -25,7 +24,7 @@ describe('AuthSSOServer', function () {
     let server: AuthSSOServer
 
     beforeEach(async function () {
-        server = AuthSSOServer.init(state)
+        server = AuthSSOServer.instance
         await server.start()
     })
 
@@ -122,22 +121,5 @@ describe('AuthSSOServer', function () {
             return
         }
         assert.fail('Expected address 127.0.0.1')
-    })
-
-    it('can be cancelled while waiting for auth', async function () {
-        const promise = server.waitForAuthorization().catch((e) => {
-            return e
-        })
-        server.cancelCurrentFlow()
-
-        const err = await promise
-        assert.ok(isUserCancelledError(err.inner), 'CancellationError not thrown.')
-    })
-
-    it('initializes and closes instances', async function () {
-        const newServer = AuthSSOServer.init('1234')
-        assert.equal(AuthSSOServer.lastInstance, newServer)
-        await sleep(100)
-        assert.ok(server.closed)
     })
 })

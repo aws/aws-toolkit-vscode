@@ -141,7 +141,6 @@ export default defineComponent({
         },
         async cancel() {
             void client.emitUiClick('auth_reauthCancelButton')
-            await client.cancelAuthFlow()
         },
     },
 })

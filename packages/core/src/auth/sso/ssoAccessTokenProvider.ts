@@ -499,13 +499,9 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
         registration: ClientRegistration,
         args?: CreateTokenArgs
     ): Promise<{ token: SsoToken; registration: ClientRegistration; region: string; startUrl: string }> {
-        const state = randomUUID()
-        const authServer = AuthSSOServer.init(state)
-
         try {
-            await authServer.start()
-
             const token = await this.withBrowserLoginTelemetry(async () => {
+                const authServer = AuthSSOServer.instance
                 const redirectUri = authServer.redirectUri
 
                 const codeVerifier = randomBytes(32).toString('base64url')
@@ -514,9 +510,9 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
                 const location = await this.oidc.authorize({
                     responseType: 'code',
                     clientId: registration.clientId,
-                    redirectUri: redirectUri,
+                    redirectUri,
                     scopes: this.profile.scopes ?? [],
-                    state,
+                    state: authServer.state,
                     codeChallenge,
                     codeChallengeMethod: 'S256',
                 })
@@ -546,7 +542,7 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
             // Temporary delay to make sure the auth ui was displayed to the user before closing
             // inspired by https://github.com/microsoft/vscode/blob/a49c81edea6647684eee87d204e50feed9c455f6/extensions/github-authentication/src/flows.ts#L262
             setTimeout(() => {
-                authServer.close().catch((e) => {
+                AuthSSOServer.instance.close().catch((e) => {
                     getLogger().error(
                         'AuthFlowAuthorization: AuthSSOServer.close() failed: %s: %s',
                         (e as Error).name,
