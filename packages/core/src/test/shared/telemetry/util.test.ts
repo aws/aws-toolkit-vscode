@@ -6,10 +6,18 @@
 import assert from 'assert'
 import { Memento, ConfigurationTarget } from 'vscode'
 import { Settings } from '../../../shared/settings'
-import { convertLegacy, getClientId, getUserAgent, platformPair, TelemetryConfig } from '../../../shared/telemetry/util'
+import {
+    convertLegacy,
+    getClientId,
+    getUserAgent,
+    platformPair,
+    telemetryClientIdEnvKey,
+    TelemetryConfig,
+} from '../../../shared/telemetry/util'
 import { extensionVersion } from '../../../shared/vscode/env'
 import { FakeMemento } from '../../fakeExtensionContext'
 import { GlobalState } from '../../../shared/globalState'
+import { randomUUID } from 'crypto'
 
 describe('TelemetryConfig', function () {
     const settingKey = 'aws.telemetry'
@@ -100,16 +108,48 @@ describe('TelemetryConfig', function () {
 })
 
 describe('getClientId', function () {
-    it('should generate a unique id', async function () {
-        const c1 = getClientId(new GlobalState(new FakeMemento()), true, false, 'x1')
-        const c2 = getClientId(new GlobalState(new FakeMemento()), true, false, 'x2')
+    before(function () {
+        delete process.env[telemetryClientIdEnvKey]
+    })
+
+    afterEach(function () {
+        delete process.env[telemetryClientIdEnvKey]
+    })
+
+    function testGetClientId(globalState: GlobalState) {
+        return getClientId(globalState, true, false, randomUUID())
+    }
+
+    it('generates a unique id if no other id is available', function () {
+        const c1 = testGetClientId(new GlobalState(new FakeMemento()))
+        delete process.env[telemetryClientIdEnvKey]
+        const c2 = testGetClientId(new GlobalState(new FakeMemento()))
         assert.notStrictEqual(c1, c2)
+    })
+
+    it('uses id stored in global state if an id is not found in process.env', async function () {
+        const expectedClientId = 'myId'
+
+        const memento = new GlobalState(new FakeMemento())
+        await memento.update('telemetryClientId', expectedClientId)
+
+        assert.strictEqual(testGetClientId(memento), expectedClientId)
+    })
+
+    it('uses the id stored in process.env if available', async function () {
+        const expectedClientId = 'myId'
+
+        const e = new GlobalState(new FakeMemento())
+        await e.update('telemetryClientId', randomUUID())
+        process.env[telemetryClientIdEnvKey] = expectedClientId
+
+        assert.strictEqual(testGetClientId(new GlobalState(new FakeMemento())), expectedClientId)
     })
 
     it('returns the same value across the calls sequentially', async function () {
         const memento = new GlobalState(new FakeMemento())
-        const c1 = getClientId(memento, true, false, 'y1')
-        const c2 = getClientId(memento, true, false, 'y2')
+        const c1 = testGetClientId(memento)
+        const c2 = testGetClientId(memento)
         assert.strictEqual(c1, c2)
     })
 
@@ -123,7 +163,7 @@ describe('getClientId', function () {
                 throw new Error()
             },
         }
-        const clientId = getClientId(new GlobalState(memento), true, false, 'x3')
+        const clientId = testGetClientId(new GlobalState(memento))
         // XXX: `notStrictEqual` since getClientId() is now synchronous. Because memento.update() is async.
         assert.notStrictEqual(clientId, '00000000-0000-0000-0000-000000000000')
     })
@@ -141,7 +181,7 @@ describe('getClientId', function () {
                 return this.memento.get(key)
             }
         }
-        const clientId = getClientId(new FakeGlobalState(memento), true, false, 'x4')
+        const clientId = testGetClientId(new FakeGlobalState(memento))
         assert.strictEqual(clientId, '00000000-0000-0000-0000-000000000000')
     })
 
