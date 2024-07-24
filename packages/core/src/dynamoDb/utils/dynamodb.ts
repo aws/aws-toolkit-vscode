@@ -57,7 +57,7 @@ export function getTableColumnsNames(items: DynamoDB.Types.ScanOutput): {
 export function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Types.ScanOutput) {
     const tableItems = []
     for (const item of items.Items ?? []) {
-        var curItem: RowData = {}
+        const curItem: RowData = {}
         for (const columnName of tableColumnsNames) {
             const columnValue = item[columnName] || undefined
             if (columnValue === undefined) {

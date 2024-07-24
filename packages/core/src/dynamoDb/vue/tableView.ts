@@ -48,14 +48,14 @@ export class DynamoDbTableWebview extends VueWebview {
 }
 
 const Panel = VueWebview.compilePanel(DynamoDbTableWebview)
-let activePanels = new Map<string, InstanceType<typeof Panel>>()
+const activePanels = new Map<string, InstanceType<typeof Panel>>()
 
 export async function viewDynamoDbTable(context: ExtContext, node: DynamoDbTableNode) {
     const logger: Logger = getLogger()
 
     try {
         const response = await getDynamoDbTableData({ TableName: node.dynamoDbtable, Limit: 5 }, node.regionCode)
-        let webViewPanel = activePanels.get(node.dynamoDbtable) ?? new Panel(context.extensionContext, response)
+        const webViewPanel = activePanels.get(node.dynamoDbtable) ?? new Panel(context.extensionContext, response)
         if (!activePanels.has(node.dynamoDbtable)) {
             activePanels.set(node.dynamoDbtable, webViewPanel)
         }
