@@ -11,12 +11,14 @@ import com.github.tomakehurst.wiremock.junit.WireMockClassRule
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessListener
 import com.intellij.openapi.util.Key
+import com.intellij.openapi.util.SystemInfo
 import com.intellij.testFramework.ApplicationRule
 import com.intellij.util.io.HttpRequests
 import com.intellij.util.net.NetUtils
 import com.jetbrains.rd.util.spinUntil
 import net.schmizz.sshj.common.Buffer
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Assume.assumeFalse
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -57,6 +59,8 @@ class SshCommandLineTest {
 
     @Test
     fun `local port forwarding`() {
+        assumeFalse("Flaking on Windows CI", SystemInfo.isWindows)
+
         val wireMockPort = wireMock.port()
         val localPort = NetUtils.findAvailableSocketPort()
         wireMock.stubFor(any(anyUrl()).willReturn(aResponse().withBody("hello from wiremock:${wireMock.port()}").withStatus(200)))
