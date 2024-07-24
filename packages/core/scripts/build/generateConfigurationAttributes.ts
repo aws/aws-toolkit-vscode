@@ -7,7 +7,7 @@ import * as fs from 'fs'
 import { JSONSchema4 } from 'json-schema'
 import { compile } from 'json-schema-to-typescript'
 import packageJson from '../../package.json'
-import * as nlsJson from '../../src/shared/i18n/package.nls.json'
+import * as nlsJson from '../../package.nls.json'
 
 const config = [
     {

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import translations from '../../../src/shared/i18n/package.nls.json'
+import translations from '../../../package.nls.json'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 
 export const i18n = (code: string) => {
