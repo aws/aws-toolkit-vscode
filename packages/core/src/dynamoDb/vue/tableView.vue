@@ -94,7 +94,6 @@ export default defineComponent({
                 this.dynamoDbTableData.lastEvaluatedKey,
                 this.dynamoDbTableData.currentPage
             )
-            console.log(this.dynamoDbTableData.tableContent.length)
             if (this.dynamoDbTableData.lastEvaluatedKey) {
                 this.pageKeys.push(this.dynamoDbTableData.lastEvaluatedKey)
             }

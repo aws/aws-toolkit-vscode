@@ -22,18 +22,21 @@ export async function getTableContent(
     client = new DynamoDbClient(regionCode)
 ) {
     const response = await client.scanTable(tableRequest)
-    const tableColumnsNames = getTableColumnsNames(response)
-    const tableItems = getTableItems(tableColumnsNames[0], response)
+    const { columnNames, tableHeader } = getTableColumnsNames(response)
+    const tableItems = getTableItems(columnNames, response)
 
     const tableData: TableData = {
-        tableHeader: tableColumnsNames[1],
+        tableHeader: tableHeader,
         tableContent: tableItems,
         lastEvaluatedKey: response.LastEvaluatedKey,
     }
     return tableData
 }
 
-export function getTableColumnsNames(items: DynamoDB.Types.ScanOutput): [Set<string>, RowData[]] {
+export function getTableColumnsNames(items: DynamoDB.Types.ScanOutput): {
+    columnNames: Set<string>
+    tableHeader: RowData[]
+} {
     const tableColumnsNames = new Set<string>()
     const tableHeader = [] as RowData[]
     for (const item of items.Items ?? []) {
@@ -45,7 +48,10 @@ export function getTableColumnsNames(items: DynamoDB.Types.ScanOutput): [Set<str
         tableHeader.push({ columnDataKey: columnName, title: columnName })
     }
 
-    return [tableColumnsNames, tableHeader]
+    return {
+        columnNames: tableColumnsNames,
+        tableHeader: tableHeader,
+    }
 }
 
 export function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Types.ScanOutput) {
