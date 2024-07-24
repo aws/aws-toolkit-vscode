@@ -57,3 +57,11 @@ vscode-divider {
     pointer-events: none;
     color: gray;
 }
+
+vscode-data-grid-cell {
+    width: 250px;
+    white-space: nowrap;
+    overflow: hidden;
+    min-height: 35px;
+    text-align: left;
+}
