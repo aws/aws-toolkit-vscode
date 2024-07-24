@@ -56,7 +56,7 @@ import { focusAmazonQPanel } from '../../../codewhispererChat/commands/registerC
 import * as diagnosticsProvider from '../../../codewhisperer/service/diagnosticsProvider'
 import { SecurityIssueHoverProvider } from '../../../codewhisperer/service/securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from '../../../codewhisperer/service/securityIssueCodeActionProvider'
-import { randomUUID } from '../../../common/crypto'
+import { randomUUID } from '../../../shared/crypto'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable

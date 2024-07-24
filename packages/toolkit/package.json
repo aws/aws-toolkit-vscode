@@ -49,7 +49,7 @@
         "onFileSystem:s3",
         "onFileSystem:s3-readonly"
     ],
-    "main": "./dist/src/extension",
+    "main": "./dist/src/extensionNode",
     "browser": "./dist/src/extensionWeb",
     "engines": "This field will be autopopulated from the core module during debugging and packaging.",
     "contributes": "This field will be autopopulated from the core module during debugging and packaging.",

@@ -41,7 +41,7 @@ import { CodeReference } from '../../amazonq/webview/ui/connector'
 import { isPresent } from '../../shared/utilities/collectionUtils'
 import { encodeHTML } from '../../shared/utilities/textUtilities'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
-import { randomUUID } from '../../common/crypto'
+import { randomUUID } from '../../shared/crypto'
 import { collectFiles, getWorkspaceFoldersByPrefixes } from '../../shared/utilities/workspaceUtils'
 
 export class ConversationNotStartedState implements Omit<SessionState, 'uploadId'> {
@@ -326,7 +326,7 @@ abstract class CodeGenBase {
         }
         if (!this.tokenSource.token.isCancellationRequested) {
             // still in progress
-            const errorMessage = 'Code generation did not finish withing the expected time'
+            const errorMessage = 'Code generation did not finish within the expected time'
             throw new ToolkitError(errorMessage, { code: 'CodeGenTimeout' })
         }
         return {
