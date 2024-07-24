@@ -24,6 +24,7 @@ describe('generateResourceHandler', function () {
             {
                 command: Command.GENERATE_RESOURCE,
                 messageType: MessageType.REQUEST,
+                cfnType: '',
                 prompt: '',
                 traceId: '0',
             },

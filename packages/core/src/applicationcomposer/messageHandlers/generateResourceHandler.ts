@@ -2,7 +2,12 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { GenerateAssistantResponseRequest, SupplementaryWebLink, Reference } from '@amzn/codewhisperer-streaming'
+import {
+    GenerateAssistantResponseRequest,
+    SupplementaryWebLink,
+    Reference,
+    UserIntent,
+} from '@amzn/codewhisperer-streaming'
 
 import {
     GenerateResourceRequestMessage,
@@ -19,7 +24,7 @@ const TIMEOUT = 30_000
 
 export async function generateResourceHandler(request: GenerateResourceRequestMessage, context: WebviewContext) {
     try {
-        const { chatResponse, references, metadata, isSuccess } = await generateResource(request.prompt)
+        const { chatResponse, references, metadata, isSuccess } = await generateResource(request.cfnType)
 
         const responseMessage: GenerateResourceResponseMessage = {
             command: Command.GENERATE_RESOURCE,
@@ -49,7 +54,7 @@ export async function generateResourceHandler(request: GenerateResourceRequestMe
     }
 }
 
-async function generateResource(prompt: string) {
+async function generateResource(cfnType: string) {
     let startTime = globals.clock.Date.now()
 
     try {
@@ -61,7 +66,8 @@ async function generateResource(prompt: string) {
             conversationState: {
                 currentMessage: {
                     userInputMessage: {
-                        content: prompt,
+                        content: cfnType,
+                        userIntent: UserIntent.GENERATE_CLOUDFORMATION_TEMPLATE,
                     },
                 },
                 chatTriggerType: 'MANUAL',
@@ -99,7 +105,6 @@ async function generateResource(prompt: string) {
                     throw new Error('Invalid model response')
                 }
             }
-
             if (value?.messageMetadataEvent?.conversationId) {
                 conversationId = value.messageMetadataEvent.conversationId
             }
@@ -134,7 +139,7 @@ async function generateResource(prompt: string) {
 
         getLogger().debug(
             `CW Chat Debug message:
-             prompt = "${prompt}",
+             cfnType = "${cfnType}",
              conversationId = ${conversationId},
              metadata = \n${JSON.stringify(metadata, undefined, 2)},
              supplementaryWebLinks = \n${JSON.stringify(supplementaryWebLinks, undefined, 2)},
