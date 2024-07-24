@@ -265,6 +265,8 @@ export class DefaultCodeWhispererClient {
         }
         const response = await (await this.createUserSdkClient()).sendTelemetryEvent(requestWithCommonFields).promise()
         getLogger().debug(`codewhisperer: sendTelemetryEvent requestID: ${response.$response.requestId}`)
+
+        return response
     }
 
     public async listFeatureEvaluations(): Promise<ListFeatureEvaluationsResponse> {
