@@ -1,0 +1,67 @@
+#app {
+    font-family: sans-serif;
+}
+
+.panel-content {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.header-section {
+    position: fixed;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+    /* border-bottom: 3px solid #4588ba; */
+}
+
+.header-left,
+.header-right {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: auto;
+    margin-top: 10px;
+    margin-right: 50px;
+}
+
+.pagination {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    margin-top: 10px;
+}
+
+.table-name {
+    font-size: 2em;
+    font-weight: bold;
+}
+
+.table-section {
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+vscode-link {
+    font-size: 1.5em;
+}
+
+vscode-divider {
+    margin-top: 100px;
+}
+
+.disabled {
+    pointer-events: none;
+    color: gray;
+}
+
+vscode-data-grid-cell {
+    width: 250px;
+    white-space: nowrap;
+    overflow: hidden;
+    min-height: 35px;
+    text-align: left;
+}

@@ -1216,6 +1216,10 @@
                 {
                     "command": "aws.dynamoDb.refreshExplorer",
                     "when": "false"
+                },
+                {
+                    "command": "aws.dynamoDb.viewTable",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -2021,6 +2025,11 @@
                     "command": "aws.dynamoDb.refreshExplorer",
                     "group": "inline@1",
                     "when": "view == aws.explorer && viewItem =~ /^awsDynamoDbRootNode$/"
+                },
+                {
+                    "command": "aws.dynamoDb.viewTable",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem == awsDynamoDbTableNode"
                 }
             ],
             "aws.toolkit.auth": [
@@ -3594,6 +3603,16 @@
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(refresh)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.dynamoDb.viewTable",
+                "title": "%AWS.command.dynamoDb.viewTable%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

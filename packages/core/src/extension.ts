@@ -168,7 +168,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateS3(extContext)
 
-        await activateDynamoDb(context)
+        await activateDynamoDb(extContext)
 
         await activateEc2(extContext)
 
