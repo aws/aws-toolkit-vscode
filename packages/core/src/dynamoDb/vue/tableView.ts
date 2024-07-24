@@ -7,16 +7,16 @@ import * as nls from 'vscode-nls'
 import { ExtContext } from '../../shared'
 import { VueWebview } from '../../webviews/main'
 import { getLogger, Logger } from '../../shared/logger'
-import { telemetry } from '../../shared/telemetry/telemetry'
-import { DynamoDbTableNode } from '../explorer/dynamoDbTableNode'
-import { getTableContent, RowData, TableData } from '../utils/dynamodbUtils'
 import { Key, ScanInput } from 'aws-sdk/clients/dynamodb'
+import { DynamoDbTarget, telemetry } from '../../shared/telemetry/telemetry'
+import { DynamoDbTableNode } from '../explorer/dynamoDbTableNode'
+import { getTableContent, RowData, TableData } from '../utils/dynamodb'
 
 const localize = nls.loadMessageBundle()
 
 export interface DynamoDbTableData {
-    TableName: string
-    Region: string
+    tableName: string
+    region: string
     currentPage: number
     tableContent: RowData[]
     tableHeader: RowData[]
@@ -32,21 +32,21 @@ export class DynamoDbTableWebview extends VueWebview {
     }
 
     public init() {
-        telemetry.schemas_view.emit({ result: 'Succeeded' })
+        telemetry.dynamodb_view.emit({ dynamoDbTarget: this.data.tableName as DynamoDbTarget })
         return this.data
     }
 
     public async fetchPageData(lastEvaluatedKey?: Key, currentPage = 1) {
         const tableRequest: ScanInput = {
-            TableName: this.data.TableName,
+            TableName: this.data.tableName,
             Limit: 5,
             ExclusiveStartKey: lastEvaluatedKey,
         }
-        const response = await getDynamoDbTableData(tableRequest, this.data.Region)
-        response.currentPage = currentPage
+        const response = await getDynamoDbTableData(tableRequest, this.data.region, currentPage)
         return response
     }
 }
+
 const Panel = VueWebview.compilePanel(DynamoDbTableWebview)
 let activePanels = new Map<string, InstanceType<typeof Panel>>()
 
@@ -59,9 +59,12 @@ export async function viewDynamoDbTable(context: ExtContext, node: DynamoDbTable
         if (!activePanels.has(node.dynamoDbtable)) {
             activePanels.set(node.dynamoDbtable, webViewPanel)
         }
-        await webViewPanel.show({
+        const webview = await webViewPanel.show({
             title: localize('AWS.dynamoDb.viewTable.title', node.dynamoDbtable),
             retainContextWhenHidden: true,
+        })
+        webview.onDidDispose(() => {
+            activePanels.delete(node.dynamoDbtable)
         })
     } catch (err) {
         const error = err as Error
@@ -69,12 +72,12 @@ export async function viewDynamoDbTable(context: ExtContext, node: DynamoDbTable
     }
 }
 
-export async function getDynamoDbTableData(tableRequest: ScanInput, regionCode: string) {
+export async function getDynamoDbTableData(tableRequest: ScanInput, regionCode: string, currentPage: number = 1) {
     const tableData: TableData = await getTableContent(tableRequest, regionCode)
     const response: DynamoDbTableData = {
-        TableName: tableRequest.TableName,
-        Region: regionCode,
-        currentPage: 1,
+        tableName: tableRequest.TableName,
+        region: regionCode,
+        currentPage: currentPage,
         tableHeader: tableData.tableHeader,
         tableContent: tableData.tableContent,
         lastEvaluatedKey: tableData.lastEvaluatedKey,

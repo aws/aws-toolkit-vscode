@@ -70,6 +70,9 @@ function getAttributeValue(attribute: AttributeValue): { key: string; value: any
     const keys = Object.keys(attribute) as (keyof AttributeValue)[]
     for (const key of keys) {
         if (attribute[key] !== undefined) {
+            if (key === 'B' && Buffer.isBuffer(attribute[key])) {
+                return { key, value: attribute[key].toString('base64') }
+            }
             return { key, value: attribute[key] }
         }
     }

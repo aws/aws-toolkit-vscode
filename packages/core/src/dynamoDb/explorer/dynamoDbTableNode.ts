@@ -21,8 +21,8 @@ export class DynamoDbTableNode extends AWSTreeNodeBase implements AWSResourceNod
         this.label = this.dynamoDbtable || 'Failed to fetch table details'
         this.command = {
             command: 'aws.dynamoDb.viewTable',
-            title: 'Scan Table',
-            tooltip: 'Scan Table',
+            title: 'View Table',
+            tooltip: 'View Table',
             arguments: [this],
         }
     }

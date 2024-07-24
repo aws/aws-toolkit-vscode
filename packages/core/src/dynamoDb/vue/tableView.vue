@@ -2,7 +2,7 @@
     <div class="panel-content">
         <div class="header-section">
             <div class="header-left">
-                <span class="table-name">{{ dynamoDbTableData.TableName }}</span>
+                <span class="table-name">{{ dynamoDbTableData.tableName }}</span>
                 <span class="last-refreshed-info" style="width: 100%">{{
                     'Refreshed on: ' + new Date().toLocaleString()
                 }}</span>
@@ -33,7 +33,7 @@ provideVSCodeDesignSystem().register(allComponents)
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { RowData } from '../utils/dynamodbUtils'
+import { RowData } from '../utils/dynamodb'
 import { DynamoDbTableWebview, DynamoDbTableData } from './tableView'
 import { WebviewClientFactory } from '../../webviews/client'
 import { Key } from 'aws-sdk/clients/dynamodb'
@@ -43,8 +43,8 @@ export default defineComponent({
     data() {
         return {
             dynamoDbTableData: {
-                TableName: '',
-                Region: '',
+                tableName: '',
+                region: '',
                 currentPage: 1,
                 tableHeader: [] as RowData[],
                 tableContent: [] as RowData[],
@@ -94,6 +94,7 @@ export default defineComponent({
                 this.dynamoDbTableData.lastEvaluatedKey,
                 this.dynamoDbTableData.currentPage
             )
+            console.log(this.dynamoDbTableData.tableContent.length)
             if (this.dynamoDbTableData.lastEvaluatedKey) {
                 this.pageKeys.push(this.dynamoDbTableData.lastEvaluatedKey)
             }
