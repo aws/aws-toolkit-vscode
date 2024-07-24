@@ -286,8 +286,6 @@
     "AWS.amazonq.featureDev.error.monthlyLimitReached": "You've reached the monthly quota for the Amazon Q agent for software development. You can try again next month. For more information on usage limits, see the <a href=\"https://aws.amazon.com/q/developer/pricing/\" target=\"_blank\">Amazon Q Developer pricing page</a>.",
     "AWS.amazonq.featureDev.error.technicalDifficulties": "I'm sorry, I'm having technical difficulties and can't continue at the moment. Please try again later, and share feedback to help me improve.",
     "AWS.amazonq.featureDev.error.throttling": "I'm sorry, I'm experiencing high demand at the moment and can't generate your code. This attempt won't count toward usage limits. Please try again.",
-    "AWS.amazonq.featureDev.error.deserialization": "Deserialization error",
-    "AWS.amazonq.featureDev.error.inaccessibleHost": "Inaccessible host",
     "AWS.amazonq.featureDev.error.submitFeedback": "'submitFeedback' command was called programmatically, but its not registered.",
     "AWS.amazonq.featureDev.error.approachNewTab": "There has been a problem generating an approach. Please open a conversation in a new tab",
     "AWS.amazonq.featureDev.pillText.modifyDefaultSourceFolder": "Choose another folder in your workspace",

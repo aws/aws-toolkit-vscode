@@ -31,7 +31,10 @@ const tasks: CopyTask[] = [
     }),
 
     { target: path.join('../core', 'resources'), destination: path.join('..', 'resources') },
-    { target: path.join('../core', 'package.nls.json'), destination: path.join('..', 'package.nls.json') },
+    {
+        target: path.join('../core/src/shared/i18n/', 'package.nls.json'),
+        destination: path.join('..', 'package.nls.json'),
+    },
     { target: 'test/unit/amazonqGumby/resources' },
 
     // Vue

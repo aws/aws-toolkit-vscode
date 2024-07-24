@@ -142,10 +142,7 @@ export class ApiError extends ToolkitError {
     }
 }
 
-export const denyListedErrors: string[] = [
-    i18n('AWS.amazonq.featureDev.error.deserialization'),
-    i18n('AWS.amazonq.featureDev.error.inaccessibleHost'),
-]
+export const denyListedErrors: string[] = ['Deserialization error', 'Inaccessible host']
 
 export function createUserFacingErrorMessage(message: string) {
     if (denyListedErrors.some((err) => message.includes(err))) {
