@@ -69,7 +69,6 @@ class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
             object : BearerTokenProviderListener {
                 override fun onChange(providerId: String, newScopes: List<String>?) {
                     if (ToolkitConnectionManager.getInstance(project).connectionStateForFeature(QConnection.getInstance()) == BearerTokenAuthState.AUTHORIZED) {
-                        contentManager.removeAllContents(true)
                         val content = contentManager.factory.createContent(AmazonQToolWindow.getInstance(project).component, null, false).also {
                             it.isCloseable = true
                             it.isPinnable = true

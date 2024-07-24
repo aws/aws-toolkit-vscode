@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix Q window reauthenticate button not functioning due to illegal function call outisde of EDT"
+}
