@@ -75,11 +75,12 @@ export function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Ty
 function getAttributeValue(attribute: AttributeValue): { key: string; value: any } | undefined {
     const keys = Object.keys(attribute) as (keyof AttributeValue)[]
     for (const key of keys) {
-        if (attribute[key] !== undefined) {
-            if (key === 'B' && Buffer.isBuffer(attribute[key])) {
-                return { key, value: attribute[key].toString('base64') }
+        const value = attribute[key]
+        if (value !== undefined) {
+            if (key === 'B' && Buffer.isBuffer(value)) {
+                return { key, value: value.toString('base64') }
             }
-            return { key, value: attribute[key] }
+            return { key, value: value }
         }
     }
     return undefined
