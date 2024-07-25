@@ -243,9 +243,21 @@ export class ToolkitError extends Error implements ErrorInformation {
     }
 }
 
-export function getErrorMsg(err: Error | undefined): string | undefined {
+/**
+ * Derives an error message from the given error object.
+ * Depending on the Error, the property used to derive the message can vary.
+ *
+ * @param withCause Append the message(s) from the cause chain, recursively.
+ *                  The message(s) are delimited by ' | '. Eg: msg1 | causeMsg1 | causeMsg2
+ */
+export function getErrorMsg(err: Error | undefined, withCause = false): string | undefined {
     if (err === undefined) {
         return undefined
+    }
+
+    const cause = (err as any).cause
+    if (withCause && cause) {
+        return `${err.message}${cause ? ' | ' + getErrorMsg(cause, true) : ''}`
     }
 
     // Non-standard SDK fields added by the OIDC service, to conform to the OAuth spec
@@ -404,7 +416,7 @@ export function scrubNames(s: string, username?: string) {
  * @param err Error object, or message text
  */
 export function getTelemetryReasonDesc(err: unknown | undefined): string | undefined {
-    const m = typeof err === 'string' ? err : getErrorMsg(err as Error) ?? ''
+    const m = typeof err === 'string' ? err : getErrorMsg(err as Error, true) ?? ''
     const msg = scrubNames(m, _username)
 
     // Truncate to 200 chars.

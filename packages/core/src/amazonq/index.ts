@@ -27,6 +27,7 @@ export { amazonQHelpUrl } from '../shared/constants'
 export { listCodeWhispererCommandsWalkthrough } from '../codewhisperer/ui/statusBarMenu'
 export { focusAmazonQPanel, focusAmazonQPanelKeybinding } from '../codewhispererChat/commands/registerCommands'
 export { TryChatCodeLensProvider, tryChatCodeLensCommand } from '../codewhispererChat/editor/codelens'
+export { createAmazonQUri, openDiff, openDeletedDiff, getOriginalFileUri, getFileDiffUris } from './commons/diff'
 
 /**
  * main from createMynahUI is a purely browser dependency. Due to this
