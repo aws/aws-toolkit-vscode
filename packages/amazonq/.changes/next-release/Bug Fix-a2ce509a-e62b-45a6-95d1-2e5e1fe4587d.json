@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Sign-in page may fail to render in rare circumstances."
-}
