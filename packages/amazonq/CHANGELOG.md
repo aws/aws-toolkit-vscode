@@ -1,3 +1,9 @@
+## 1.17.0 2024-07-25
+
+- **Bug Fix** Amazon Q Dev and Transform introduction text formatted incorrectly
+- **Bug Fix** Amazon Q /dev: update error message for code gen timeout and include backfill for error name
+- **Bug Fix** Sign-in page may fail to render in rare circumstances.
+
 ## 1.16.0 2024-07-18
 
 - **Bug Fix** Amazon q /dev: include granular error handling for code generation failed state
