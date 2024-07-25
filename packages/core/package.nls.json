@@ -266,5 +266,6 @@
     "AWS.amazonq.codewhisperer.title": "Amazon Q",
     "AWS.amazonq.toggleCodeSuggestion": "Toggle Auto-Suggestions",
     "AWS.amazonq.toggleCodeScan": "Toggle Auto-Scans",
-    "AWS.command.dynamoDb.searchTables": "Search Tables"
+    "AWS.command.dynamoDb.searchTables": "Search Tables",
+    "AWS.command.dynamoDb.viewTable": "View Table"
 }
