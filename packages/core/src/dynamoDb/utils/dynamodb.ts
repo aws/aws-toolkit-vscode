@@ -18,6 +18,13 @@ export interface TableData {
     lastEvaluatedKey?: Key
 }
 
+/**
+ * Fetches the content of a DynamoDB table, including column names, headers, and items.
+ * @param {ScanInput} tableRequest - The request object for scanning the DynamoDB table.
+ * @param {string} regionCode - The AWS region code where the DynamoDB table is located.
+ * @param {DynamoDbClient} [client=new DynamoDbClient(regionCode)] - An optional DynamoDbClient instance.
+ * @returns {Promise<TableData>} The table data, including headers, items, and the last evaluated key.
+ */
 export async function getTableContent(
     tableRequest: ScanInput,
     regionCode: string,
@@ -35,7 +42,10 @@ export async function getTableContent(
     return tableData
 }
 
-export function getTableColumnsNames(items: DynamoDB.Types.ScanOutput): {
+/**
+ * Extracts the column names and table headers from a DynamoDB scan response.
+ */
+function getTableColumnsNames(items: DynamoDB.Types.ScanOutput): {
     columnNames: Set<string>
     tableHeader: RowData[]
 } {
@@ -56,7 +66,10 @@ export function getTableColumnsNames(items: DynamoDB.Types.ScanOutput): {
     }
 }
 
-export function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Types.ScanOutput) {
+/**
+ * Extracts the items from a DynamoDB scan response, using the provided column names.
+ */
+function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Types.ScanOutput) {
     const tableItems = []
     for (const item of items.Items ?? []) {
         const curItem: RowData = {}
@@ -74,6 +87,10 @@ export function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Ty
     return tableItems
 }
 
+/**
+ * Copies the ARN of a DynamoDB table to the clipboard.
+ * @param {DynamoDbTableNode} node - The DynamoDB table node containing table and region information.
+ */
 export async function copyDynamoDbArn(node: DynamoDbTableNode) {
     const response = await new DynamoDbClient(node.regionCode).getTableInformation({ TableName: node.dynamoDbtable })
     if (response.TableArn !== undefined) {
@@ -81,6 +98,9 @@ export async function copyDynamoDbArn(node: DynamoDbTableNode) {
     }
 }
 
+/**
+ * Extracts the value from a DynamoDB attribute.
+ */
 function getAttributeValue(attribute: AttributeValue): { key: string; value: any } | undefined {
     const keys = Object.keys(attribute) as (keyof AttributeValue)[]
     for (const key of keys) {

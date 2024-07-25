@@ -17,8 +17,7 @@ import { viewDynamoDbTable } from '../vue/tableView'
 const localize = nls.loadMessageBundle()
 
 /**
- * "Search DynamoDb Tables Command"
- *
+ * Search wizard for DynamoDB tables from command palette.
  */
 export async function searchDynamoDbTables(
     context: ExtContext,
@@ -44,6 +43,9 @@ export interface SearchDynamoDbTablesWizardResponse {
     filterPattern: string
 }
 
+/**
+ * Creates a submenu for selecting a DynamoDB table from a region.
+ */
 export function createRegionSubmenu() {
     return new RegionSubmenu(
         getTablesFromRegion,
@@ -53,6 +55,9 @@ export function createRegionSubmenu() {
     )
 }
 
+/**
+ * Retrieves a list of DynamoDB tables from a specific region.
+ */
 async function getTablesFromRegion(regionCode: string): Promise<DataQuickPickItem<string>[]> {
     const client = new DynamoDbClient(regionCode)
     const dynamoDbTables = await dynamoDbTablesToArray(client.getTables())
@@ -63,6 +68,9 @@ async function getTablesFromRegion(regionCode: string): Promise<DataQuickPickIte
     return options
 }
 
+/**
+ * Converts an asynchronous iterable of DynamoDB table names to an array.
+ */
 async function dynamoDbTablesToArray(dynamoDbTables: AsyncIterableIterator<string>): Promise<string[]> {
     const tablesArray = []
     const tables = await toArrayAsync(dynamoDbTables)
