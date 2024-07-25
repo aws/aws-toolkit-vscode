@@ -22,6 +22,7 @@ import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.jetbrains.core.coroutines.EDT
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineBgContext
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.AmazonqTelemetry
 import java.io.File
 import java.io.FileInputStream
 import java.nio.file.Files
@@ -97,17 +98,38 @@ class FeatureDevSessionContext(val project: Project, val maxProjectSizeBytes: Lo
         deferredResults.any { it.await() }
     }
 
+    fun isFileExtensionAllowed(file: VirtualFile): Boolean {
+        // if it is a directory, it is allowed
+        if (file.isDirectory) return true
+
+        val extension = file.extension ?: return false
+        return FeatureDevBundleConfig.ALLOWED_CODE_EXTENSIONS.contains(extension)
+    }
+
+    private fun ignoreFileByExtension(file: VirtualFile, scope: CoroutineScope): Boolean = with(scope) {
+        return !isFileExtensionAllowed(file)
+    }
+
     suspend fun ignoreFile(file: VirtualFile, scope: CoroutineScope): Boolean = ignoreFile(File(file.path), scope)
 
     suspend fun zipFiles(projectRoot: VirtualFile): File = withContext(getCoroutineBgContext()) {
         val files = mutableListOf<VirtualFile>()
+        val ignoredExtensionMap = mutableMapOf<String, Int>().withDefault { 0 }
         var totalSize: Long = 0
 
         VfsUtil.visitChildrenRecursively(
             projectRoot,
             object : VirtualFileVisitor<Unit>() {
                 override fun visitFile(file: VirtualFile): Boolean {
-                    val isFileIgnored = runBlocking { ignoreFile(file, this) }
+                    val isFileIgnoredByPattern = runBlocking { ignoreFile(file, this) }
+                    val isFileIgnoredByExtension = runBlocking { ignoreFileByExtension(file, this) }
+                    val isFileIgnored = isFileIgnoredByExtension || isFileIgnoredByPattern
+
+                    if (isFileIgnoredByExtension) {
+                        val extension = file.extension.orEmpty()
+                        ignoredExtensionMap[extension] = (ignoredExtensionMap[extension] ?: 0) + 1
+                    }
+
                     if (file.isFile && !isFileIgnored) {
                         totalSize += file.length
                         files.add(file)
@@ -122,6 +144,13 @@ class FeatureDevSessionContext(val project: Project, val maxProjectSizeBytes: Lo
                 }
             }
         )
+
+        for ((key, value) in ignoredExtensionMap) {
+            AmazonqTelemetry.bundleExtensionIgnored(
+                count = value,
+                filenameExt = key
+            )
+        }
 
         // Process files in parallel
         val filesToIncludeFlow = channelFlow {
