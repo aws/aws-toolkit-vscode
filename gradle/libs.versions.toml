@@ -16,12 +16,13 @@ junit4 = "4.13.2"
 junit5 = "5.10.3"
 # https://plugins.jetbrains.com/docs/intellij/kotlin.html#adding-kotlin-support
 # https://kotlinlang.org/docs/releases.html#release-details
-kotlin = "1.9.23"
+kotlin = "2.0.0"
 # set in <root>/settings.gradle.kts
 kotlinCoroutines = "1.8.0"
 mockito = "5.12.0"
 mockitoKotlin = "5.4.0"
 mockk = "1.13.10"
+nimbus-jose-jwt = "9.40"
 node-gradle = "7.0.2"
 telemetryGenerator = "1.0.230"
 testLogger = "4.0.0"
@@ -29,10 +30,9 @@ testRetry = "1.5.10"
 # test-only; platform provides slf4j transitively at runtime. <233, 1.7.36; >=233, 2.0.9
 slf4j = "2.0.9"
 sshd = "2.12.1"
-wiremock = "3.9.0"
 undercouch-download = "5.2.1"
+wiremock = "3.9.0"
 zjsonpatch = "0.4.16"
-nimbus-jose-jwt = "9.40"
 
 [libraries]
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
@@ -101,6 +101,7 @@ kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref =
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
 mockk = { module = "io.mockk:mockk", version.ref="mockk" }
+nimbus-jose-jwt = {module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbus-jose-jwt"}
 telemetryGenerator = { module = "software.aws.toolkits:telemetry-generator", version.ref = "telemetryGenerator" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-jdk14 = { module = "org.slf4j:slf4j-jdk14", version.ref = "slf4j" }
@@ -109,7 +110,6 @@ sshd-scp = { module = "org.apache.sshd:sshd-scp", version.ref = "sshd" }
 sshd-sftp = { module = "org.apache.sshd:sshd-sftp", version.ref = "sshd" }
 wiremock = { module = "org.wiremock:wiremock", version.ref = "wiremock" }
 zjsonpatch = { module = "com.flipkart.zjsonpatch:zjsonpatch", version.ref = "zjsonpatch" }
-nimbus-jose-jwt = {module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbus-jose-jwt"}
 
 [bundles]
 jackson = ["jackson-datetime", "jackson-kotlin", "jackson-yaml", "jackson-xml"]
