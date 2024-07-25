@@ -422,25 +422,21 @@ export class FeatureDevController {
         getLogger().info(logWithConversationId(session.conversationId))
 
         // lock the UI/show loading bubbles
-        this.messenger.sendAsyncEventProgress(
-            tabID,
-            true,
-            `This may take a few minutes. I will send a notification when it's complete if you navigate away from this panel, but please keep the tab open.`
-        )
+        this.messenger.sendAsyncEventProgress(tabID, true, i18n('AWS.amazonq.featureDev.pillText.awaitMessage'))
 
         try {
             this.messenger.sendAnswer({
-                message: 'Requesting changes ...',
+                message: i18n('AWS.amazonq.featureDev.pillText.requestingChanges'),
                 type: 'answer-stream',
                 tabID,
             })
-            this.messenger.sendUpdatePlaceholder(tabID, 'Generating code ...')
+            this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.generatingCode'))
             await session.send(message)
             const filePaths = session.state.filePaths ?? []
             const deletedFiles = session.state.deletedFiles ?? []
             if (filePaths.length === 0 && deletedFiles.length === 0) {
                 this.messenger.sendAnswer({
-                    message: 'Unable to generate any file changes',
+                    message: i18n('AWS.amazonq.featureDev.pillText.unableGenerateChanges'),
                     type: 'answer',
                     tabID: tabID,
                 })
@@ -451,7 +447,7 @@ export class FeatureDevController {
                         this.retriesRemaining(session) > 0
                             ? [
                                   {
-                                      pillText: 'Retry',
+                                      pillText: i18n('AWS.amazonq.featureDev.pillText.retry'),
                                       type: FollowUpTypes.Retry,
                                       status: 'warning',
                                   },
@@ -493,7 +489,7 @@ export class FeatureDevController {
                 followUps: this.getFollowUpOptions(session?.state.phase),
                 tabID: tabID,
             })
-            this.messenger.sendUpdatePlaceholder(tabID, 'Select an option above to proceed')
+            this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
         } finally {
             // Finish processing the event
             this.messenger.sendAsyncEventProgress(tabID, false, undefined)
@@ -504,7 +500,7 @@ export class FeatureDevController {
             if (!this.isAmazonQVisible) {
                 const open = 'Open chat'
                 const resp = await vscode.window.showInformationMessage(
-                    'The Amazon Q Developer Agent for software development has generated code for you to review',
+                    i18n('AWS.amazonq.featureDev.answer.qGeneratedCode'),
                     open
                 )
                 if (resp === open) {
