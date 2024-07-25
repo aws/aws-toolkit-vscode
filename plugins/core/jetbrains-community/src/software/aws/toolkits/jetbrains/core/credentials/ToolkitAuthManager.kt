@@ -26,6 +26,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenPr
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBearerTokenProvider
 import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CredentialSourceId
 import software.aws.toolkits.telemetry.CredentialType
 import software.aws.toolkits.telemetry.Result
 import java.time.Instant
@@ -130,14 +131,16 @@ fun loginSso(
                 )
                 recordLoginWithBrowser(
                     credentialStartUrl = transientConnection.startUrl,
-                    credentialSourceId = metadata?.sourceId,
+                    credentialSourceId = CredentialSourceId.AwsId,
                     isReAuth = true,
-                    result = Result.Succeeded
+                    result = Result.Succeeded,
+                    source = metadata?.sourceId
                 )
                 recordAddConnection(
-                    credentialSourceId = metadata?.sourceId,
+                    credentialSourceId = CredentialSourceId.AwsId,
                     isReAuth = true,
-                    result = Result.Failed
+                    result = Result.Failed,
+                    source = metadata?.sourceId
                 )
             }
         } catch (e: Exception) {
@@ -303,10 +306,11 @@ private fun getSsoSessionProfileNameFromCredentials(connection: CredentialIdenti
 
 private fun recordLoginWithBrowser(
     credentialStartUrl: String? = null,
-    credentialSourceId: String? = null,
+    credentialSourceId: CredentialSourceId? = null,
     reason: String? = null,
     isReAuth: Boolean,
-    result: Result
+    result: Result,
+    source: String? = null
 ) {
     TelemetryService.getInstance().record(null as Project?) {
         datum("aws_loginWithBrowser") {
@@ -314,21 +318,23 @@ private fun recordLoginWithBrowser(
             unit(software.amazon.awssdk.services.toolkittelemetry.model.Unit.NONE)
             value(1.0)
             passive(false)
-            credentialSourceId?.let { metadata("credentialSourceId", it) }
+            credentialSourceId?.let { metadata("credentialSourceId", it.toString()) }
             credentialStartUrl?.let { metadata("credentialStartUrl", it) }
             metadata("credentialType", CredentialType.BearerToken.toString())
             metadata("isReAuth", isReAuth.toString())
             reason?.let { metadata("reason", it) }
             metadata("result", result.toString())
+            source?.let { metadata("source", it) }
         }
     }
 }
 
 private fun recordAddConnection(
-    credentialSourceId: String? = null,
+    credentialSourceId: CredentialSourceId? = null,
     reason: String? = null,
     isReAuth: Boolean,
-    result: Result
+    result: Result,
+    source: String? = null
 ) {
     TelemetryService.getInstance().record(null as Project?) {
         datum("auth_addConnection") {
@@ -336,10 +342,11 @@ private fun recordAddConnection(
             unit(software.amazon.awssdk.services.toolkittelemetry.model.Unit.NONE)
             value(1.0)
             passive(false)
-            credentialSourceId?.let { metadata("credentialSourceId", it) }
+            credentialSourceId?.let { metadata("credentialSourceId", it.toString()) }
             metadata("isReAuth", isReAuth.toString())
             reason?.let { metadata("reason", it) }
             metadata("result", result.toString())
+            source?.let { metadata("source", it) }
         }
     }
 }

@@ -443,26 +443,39 @@ class DefaultToolkitAuthManagerTest {
             requestedScopes = listOf("scopes")
         )
         val metricCaptor = argumentCaptor<MetricEvent>()
-        assertMetricEventsContains(metricCaptor.allValues, "awsId")
+        assertThat(metricCaptor.allValues).allSatisfy { event ->
+            assertThat(event.data.all { it.metadata["credentialSourceId"] == "awsId" }).isTrue()
+        }
     }
 
     @Test
-    fun `loginSso telemetry contains provided source ID`() {
+    fun `loginSso telemetry contains no source by default`() {
+        AwsSettings.getInstance().isTelemetryEnabled = true
+        loginSso(
+            project = projectRule.project,
+            startUrl = "foo",
+            region = "us-east-1",
+            requestedScopes = listOf("scopes")
+        )
+        val metricCaptor = argumentCaptor<MetricEvent>()
+        assertThat(metricCaptor.allValues).allSatisfy { event ->
+            assertThat(event.data.all { it.metadata["source"] == null }).isTrue()
+        }
+    }
+
+    @Test
+    fun `loginSso telemetry contains provided source`() {
         AwsSettings.getInstance().isTelemetryEnabled = true
         loginSso(
             project = projectRule.project,
             startUrl = "foo",
             region = "us-east-1",
             requestedScopes = listOf("scopes"),
-            metadata = ConnectionMetadata("fooSourceId")
+            metadata = ConnectionMetadata("fooSource")
         )
         val metricCaptor = argumentCaptor<MetricEvent>()
-        assertMetricEventsContains(metricCaptor.allValues, "fooSourceId")
-    }
-
-    private fun assertMetricEventsContains(events: Collection<MetricEvent>, credentialSourceId: String) {
-        assertThat(events).allSatisfy { event ->
-            assertThat(event.data.all { it.metadata["credentialSourceId"] == credentialSourceId }).isTrue()
+        assertThat(metricCaptor.allValues).allSatisfy { event ->
+            assertThat(event.data.all { it.metadata["source"] == "fooSourceId" }).isTrue()
         }
     }
 
