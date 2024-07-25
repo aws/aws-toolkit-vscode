@@ -1,3 +1,7 @@
+## 3.16.0 2024-07-25
+
+- **Bug Fix** AccessAnalyzer: error when running CheckNoPublicAccess with only role trust policy in template
+
 ## 3.15.0 2024-07-18
 
 - **Bug Fix** Unexpected SSO expiration on Windows due to EPERM
