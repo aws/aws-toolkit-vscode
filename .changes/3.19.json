@@ -1,0 +1,20 @@
+{
+  "date" : "2024-07-25",
+  "version" : "3.19",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Q feature dev: Use common code extensions to filter relevant files"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Chat: Fixes a bug where multiline user input appears like a code block instead of a paragraph"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Chat: Fixes a bug when the prompt input exceeds the width of the chat box it's not always wrapped correctly."
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix 'ContainerDisposedException' when attempting to sign-in to Amazon Q"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix Q window reauthenticate button not functioning due to illegal function call outisde of EDT"
+  } ]
+}

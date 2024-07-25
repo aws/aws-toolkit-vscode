@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix 'ContainerDisposedException' when attempting to sign-in to Amazon Q"
-}

@@ -1,3 +1,10 @@
+# _3.19_ (2024-07-25)
+- **(Feature)** Q feature dev: Use common code extensions to filter relevant files
+- **(Bug Fix)** Amazon Q Chat: Fixes a bug where multiline user input appears like a code block instead of a paragraph
+- **(Bug Fix)** Amazon Q Chat: Fixes a bug when the prompt input exceeds the width of the chat box it's not always wrapped correctly.
+- **(Bug Fix)** Fix 'ContainerDisposedException' when attempting to sign-in to Amazon Q
+- **(Bug Fix)** Fix Q window reauthenticate button not functioning due to illegal function call outisde of EDT
+
 # _3.18_ (2024-07-19)
 - **(Feature)** Add support for 2024.2
 - **(Bug Fix)** Fix bug when workspace index cache is not loaded
