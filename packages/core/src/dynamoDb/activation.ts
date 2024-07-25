@@ -19,7 +19,7 @@ export async function activate(context: ExtContext): Promise<void> {
                     ? { regionName: node.regionCode, groupName: node.regionCode! }
                     : undefined
             const source = node ? (dynamoDbtableInfo ? 'ExplorerDynamoDbTableNode' : 'ExplorerServiceNode') : 'Command'
-            await searchDynamoDbTables(source, dynamoDbtableInfo)
+            await searchDynamoDbTables(context, source)
         }),
 
         Commands.register('aws.dynamoDb.copyArn', async (node: DynamoDbTableNode) => await copyDynamoDbArn(node)),

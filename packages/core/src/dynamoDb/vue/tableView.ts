@@ -9,7 +9,6 @@ import { VueWebview } from '../../webviews/main'
 import { getLogger, Logger } from '../../shared/logger'
 import { Key, ScanInput } from 'aws-sdk/clients/dynamodb'
 import { DynamoDbTarget, telemetry } from '../../shared/telemetry/telemetry'
-import { DynamoDbTableNode } from '../explorer/dynamoDbTableNode'
 import { getTableContent, RowData, TableData } from '../utils/dynamodb'
 
 const localize = nls.loadMessageBundle()
@@ -50,7 +49,7 @@ export class DynamoDbTableWebview extends VueWebview {
 const Panel = VueWebview.compilePanel(DynamoDbTableWebview)
 const activePanels = new Map<string, InstanceType<typeof Panel>>()
 
-export async function viewDynamoDbTable(context: ExtContext, node: DynamoDbTableNode) {
+export async function viewDynamoDbTable(context: ExtContext, node: { dynamoDbtable: string; regionCode: string }) {
     const logger: Logger = getLogger()
 
     try {

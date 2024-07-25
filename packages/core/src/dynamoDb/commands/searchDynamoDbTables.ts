@@ -3,10 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import fs from '../../shared/fs/fs'
-import DynamoDB from 'aws-sdk/clients/dynamodb'
 import { Wizard } from '../../shared/wizards/wizard'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
@@ -14,6 +11,8 @@ import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
+import { ExtContext } from '../../shared/extensions'
+import { viewDynamoDbTable } from '../vue/tableView'
 
 const localize = nls.loadMessageBundle()
 
@@ -21,7 +20,11 @@ const localize = nls.loadMessageBundle()
  * "Search DynamoDb Tables Command"
  *
  */
-export async function searchDynamoDbTables(source: string, dbData?: { regionName: string }): Promise<void> {
+export async function searchDynamoDbTables(
+    context: ExtContext,
+    source: string,
+    dbData?: { regionName: string }
+): Promise<void> {
     await telemetry.dynamodb_openTable.run(async (span) => {
         const wizard = new SearchDynamoDbTablesWizard(dbData)
         span.record({ dynamoDbResourceType: 'table', source: source })
@@ -29,27 +32,11 @@ export async function searchDynamoDbTables(source: string, dbData?: { regionName
         if (!response) {
             throw new CancellationError('user')
         }
-        const tableOutput = await getItemsFromTable(response.submenuResponse.region, response.submenuResponse.data)
-
-        // This is a temporary change
-        const output = `${JSON.stringify(tableOutput.Items, undefined, 4)}\n`
-        const filePath = process.env['HOME'] + '/Documents/dynamoDbItems.json'
-        await fs.writeFile(filePath, output)
-        const uri = vscode.Uri.parse(filePath)
-        await prepareDocument(uri)
+        await viewDynamoDbTable(context, {
+            dynamoDbtable: response.submenuResponse.data,
+            regionCode: response.submenuResponse.region,
+        })
     })
-}
-
-export async function prepareDocument(uri: vscode.Uri) {
-    try {
-        const doc = await vscode.workspace.openTextDocument(uri)
-        await vscode.window.showTextDocument(doc, { preview: false })
-        await vscode.languages.setTextDocumentLanguage(doc, 'json')
-    } catch (err) {
-        if (CancellationError.isUserCancelled(err)) {
-            throw err
-        }
-    }
 }
 
 export interface SearchDynamoDbTablesWizardResponse {
@@ -85,12 +72,6 @@ async function dynamoDbTablesToArray(dynamoDbTables: AsyncIterableIterator<strin
         tableObject && tablesArray.push(tableObject)
     }
     return tablesArray
-}
-
-async function getItemsFromTable(regionCode: string, tableName: string): Promise<DynamoDB.ScanOutput> {
-    const client = new DynamoDbClient(regionCode)
-    const tableInfo = await client.scanTable({ TableName: tableName })
-    return tableInfo
 }
 
 export class SearchDynamoDbTablesWizard extends Wizard<SearchDynamoDbTablesWizardResponse> {
