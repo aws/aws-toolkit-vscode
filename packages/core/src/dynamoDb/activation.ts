@@ -4,9 +4,9 @@
  */
 
 import { ExtContext } from '../shared/extensions'
+import { copyDynamoDbArn } from './utils/dynamodb'
 import { viewDynamoDbTable } from './vue/tableView'
 import { Commands } from '../shared/vscode/commands2'
-import { copyDynamoDbArn } from './commands/sortDynamoDbTables'
 import { DynamoDbTableNode } from './explorer/dynamoDbTableNode'
 import { searchDynamoDbTables } from './commands/searchDynamoDbTables'
 import { DynamoDbInstanceNode } from './explorer/dynamoDbInstanceNode'

@@ -4,8 +4,10 @@
  */
 
 import { DynamoDB } from 'aws-sdk'
-import { AttributeValue, Key, ScanInput } from 'aws-sdk/clients/dynamodb'
+import { copyToClipboard } from '../../shared/utilities/messages'
+import { DynamoDbTableNode } from '../explorer/dynamoDbTableNode'
 import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
+import { AttributeValue, Key, ScanInput } from 'aws-sdk/clients/dynamodb'
 
 export interface RowData {
     [key: string]: string
@@ -70,6 +72,13 @@ export function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Ty
         tableItems.push(curItem)
     }
     return tableItems
+}
+
+export async function copyDynamoDbArn(node: DynamoDbTableNode) {
+    const response = await new DynamoDbClient(node.regionCode).getTableInformation({ TableName: node.dynamoDbtable })
+    if (response.TableArn !== undefined) {
+        await copyToClipboard(response.TableArn, 'ARN')
+    }
 }
 
 function getAttributeValue(attribute: AttributeValue): { key: string; value: any } | undefined {
