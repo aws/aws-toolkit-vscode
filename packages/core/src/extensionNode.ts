@@ -27,7 +27,7 @@ import { activate as activateEcr } from './awsService/ecr/activation'
 import { activate as activateEc2 } from './awsService/ec2/activation'
 import { activate as activateSam } from './shared/sam/activation'
 import { activate as activateS3 } from './awsService/s3/activation'
-import * as awsFiletypes from './shared/awsFiletypes'
+import * as filetypes from './shared/filetypes'
 import { activate as activateApiGateway } from './awsService/apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
@@ -103,7 +103,7 @@ export async function activate(context: vscode.ExtensionContext) {
         })
 
         await globals.schemaService.start()
-        awsFiletypes.activate()
+        filetypes.activate()
 
         try {
             await activateDev(context)

@@ -989,6 +989,17 @@
             ]
         },
         {
+            "name": "ide_editCodeFile",
+            "description": "User opened a code file with the given file extension. Client should DEDUPLICATE this metric (ideally hourly/daily). AWS-specific files should (also) emit `file_editAwsFile`.",
+            "passive": true,
+            "metadata": [
+                {
+                    "type": "filenameExt",
+                    "required": false
+                }
+            ]
+        },
+        {
             "name": "codewhisperer_codePercentage",
             "description": "Percentage of user tokens against suggestions until 5 mins of time",
             "metadata": [
