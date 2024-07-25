@@ -22,7 +22,7 @@ import { messageWithConversationId } from '../../../userFacingText'
 import { MessengerTypes } from './constants'
 import { FeatureAuthState } from '../../../../codewhisperer'
 import { CodeReference } from '../../../../codewhispererChat/view/connector/connector'
-import { i18n } from '../../../util/i18n-helper'
+import { i18n } from '../../../../shared/i18n-helper'
 export class Messenger {
     public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}
 

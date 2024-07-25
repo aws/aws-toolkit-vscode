@@ -42,7 +42,7 @@ import { encodeHTML } from '../../shared/utilities/textUtilities'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { randomUUID } from '../../shared/crypto'
 import { collectFiles, getWorkspaceFoldersByPrefixes } from '../../shared/utilities/workspaceUtils'
-import { i18n } from '../util/i18n-helper'
+import { i18n } from '../../shared/i18n-helper'
 
 export class ConversationNotStartedState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource

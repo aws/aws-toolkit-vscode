@@ -6,7 +6,7 @@
 import { ToolkitError } from '../shared/errors'
 import { featureName } from './constants'
 import { uploadCodeError } from './userFacingText'
-import { i18n } from './util/i18n-helper'
+import { i18n } from '../shared/i18n-helper'
 
 export class ConversationIdNotFoundError extends ToolkitError {
     constructor() {

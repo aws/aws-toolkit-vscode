@@ -11,7 +11,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { VueWebview, VueWebviewPanel } from '../../webviews/main'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { Commands, RegisteredCommand, VsCodeCommandArg, placeholder } from '../../shared/vscode/commands2'
-import { i18n } from '../../amazonqFeatureDev/util/i18n-helper'
+import { i18n } from '../../shared/i18n-helper'
 
 export interface FeedbackMessage {
     comment: string

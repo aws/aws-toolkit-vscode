@@ -42,8 +42,8 @@ import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { getPathsFromZipFilePath } from '../../util/files'
 import { examples, logWithConversationId, messageWithConversationId } from '../../userFacingText'
 import { getWorkspaceFoldersByPrefixes } from '../../../shared/utilities/workspaceUtils'
-import { i18n } from '../../util/i18n-helper'
 import { openDeletedDiff, openDiff } from '../../../amazonq/commons/diff'
+import { i18n } from '../../../shared/i18n-helper'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
