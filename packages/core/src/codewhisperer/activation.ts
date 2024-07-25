@@ -70,7 +70,6 @@ import { securityScanLanguageContext } from './util/securityScanLanguageContext'
 import { registerWebviewErrorHandler } from '../webviews/server'
 import { logAndShowError, logAndShowWebviewError } from '../shared/utilities/logAndShowUtils'
 import { openSettings } from '../shared/settings'
-import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 
 let localize: nls.LocalizeFunc
 
@@ -296,16 +295,7 @@ export async function activate(context: ExtContext): Promise<void> {
     )
 
     await auth.restore()
-
-    // Amazon Q may have code catalyst only credentials stored because it used to import the credentials stored on disk in the environment.
-    if (getCodeCatalystDevEnvId() !== undefined) {
-        for (const conn of await auth.auth.listConnections()) {
-            if (conn.id !== auth.conn?.id) {
-                getLogger().debug('forgetting extra amazon q connection in CoCa dev env: %O', conn)
-                await auth.auth.forgetConnection(conn)
-            }
-        }
-    }
+    await auth.clearExtraConnections()
 
     if (auth.isConnectionExpired()) {
         auth.showReauthenticatePrompt().catch((e) => {
