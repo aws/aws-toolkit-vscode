@@ -2045,6 +2045,10 @@
                     "command": "aws.docdb.deleteInstance",
                     "when": "viewItem == awsDocDB.instance.available",
                     "group": "0@2"
+                },
+                {
+                    "command": "aws.docdb.listTags",
+                    "when": "viewItem =~ /^awsDocDB\\./"
                 }
             ],
             "aws.toolkit.auth": [
@@ -3688,6 +3692,17 @@
                 "title": "%AWS.generic.promptDelete%",
                 "category": "%AWS.title%",
                 "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB.cluster.running/",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.listTags",
+                "title": "%AWS.command.docdb.tags%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB/",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

@@ -272,5 +272,6 @@
     "AWS.command.docdb.modifyInstance": "Modify Class...",
     "AWS.command.docdb.rebootInstance": "Reboot Instance",
     "AWS.command.docdb.startCluster": "Start Cluster",
-    "AWS.command.docdb.stopCluster": "Stop Cluster"
+    "AWS.command.docdb.stopCluster": "Stop Cluster",
+    "AWS.command.docdb.tags": "Tags..."
 }

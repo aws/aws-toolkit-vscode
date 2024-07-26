@@ -12,11 +12,8 @@ import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { DocumentDBClient } from '../../shared/clients/docdbClient'
 import { DBClusterNode } from './dbClusterNode'
 import { DBElasticClusterNode } from './dbElasticClusterNode'
-import { DBInstanceNode } from './dbInstanceNode'
 import { CreateDBClusterMessage, DBCluster } from '@aws-sdk/client-docdb'
 import { telemetry } from '../../shared/telemetry'
-
-export type DBNode = DBClusterNode | DBElasticClusterNode | DBInstanceNode
 
 /**
  * An AWS Explorer node representing DocumentDB.

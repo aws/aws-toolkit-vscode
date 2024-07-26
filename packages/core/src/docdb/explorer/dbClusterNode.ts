@@ -11,7 +11,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { waitUntil } from '../../shared'
 import { CreateDBInstanceMessage, DBCluster, ModifyDBClusterMessage } from '@aws-sdk/client-docdb'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
+import { DBResourceNode } from './dbResourceNode'
 import { DBInstanceNode } from './dbInstanceNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { DBInstance, DocumentDBClient } from '../../shared/clients/docdbClient'
@@ -23,19 +23,19 @@ import { telemetry } from '../../shared/telemetry'
  *
  * Contains instances for a specific cluster as child nodes.
  */
-export class DBClusterNode extends AWSTreeNodeBase implements AWSResourceNode {
-    public override readonly regionCode: string
-    name: string = this.cluster.DBClusterIdentifier ?? ''
-    arn: string = this.cluster.DBClusterArn ?? ''
+export class DBClusterNode extends DBResourceNode {
+    override name = this.cluster.DBClusterIdentifier!
+    override arn = this.cluster.DBClusterArn!
 
     constructor(
         public readonly parent: AWSTreeNodeBase,
         readonly cluster: DBCluster,
-        readonly client: DocumentDBClient
+        client: DocumentDBClient
     ) {
-        super(cluster.DBClusterIdentifier ?? '[Cluster]', vscode.TreeItemCollapsibleState.Collapsed)
+        super(client, cluster.DBClusterIdentifier ?? '[Cluster]', vscode.TreeItemCollapsibleState.Collapsed)
         this.id = cluster.DBClusterIdentifier
-        this.regionCode = client.regionCode
+        this.arn = cluster.DBClusterArn ?? ''
+        this.name = cluster.DBClusterIdentifier ?? ''
         this.contextValue = this.getContext()
         this.iconPath = undefined //TODO: determine icon for regional cluster
         this.description = this.getDescription()

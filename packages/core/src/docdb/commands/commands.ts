@@ -7,31 +7,28 @@ import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { DBNode } from '../explorer/docdbNode'
-import { DefaultDocumentDBClient } from '../../shared/clients/docdbClient'
+import { DBClusterNode } from '../explorer/dbClusterNode'
 
-export function startCluster(node?: DBNode): Promise<void> {
+export function startCluster(node?: DBClusterNode): Promise<void> {
     return telemetry.docdb_startCluster.run(async () => {
-        if (node?.id && node?.regionCode) {
-            const client = new DefaultDocumentDBClient(node.regionCode)
-            await client.startCluster(node.id)
-            getLogger().info('Start cluster: %O', node.id)
+        if (node?.arn && node?.regionCode) {
+            await node.client.startCluster(node.arn)
+            getLogger().info('Start cluster: %O', node.name)
             void vscode.window.showInformationMessage(
-                localize('AWS.docdb.startCluster.success', 'Starting cluster: {0}', node.id)
+                localize('AWS.docdb.startCluster.success', 'Starting cluster: {0}', node.name)
             )
             node?.parent.refresh()
         }
     })
 }
 
-export function stopCluster(node?: DBNode): Promise<void> {
+export function stopCluster(node?: DBClusterNode): Promise<void> {
     return telemetry.docdb_stopCluster.run(async () => {
-        if (node?.id && node?.regionCode) {
-            const client = new DefaultDocumentDBClient(node.regionCode)
-            await client.stopCluster(node.id)
-            getLogger().info('Stop cluster: %O', node.id)
+        if (node?.arn && node?.regionCode) {
+            await node.client.stopCluster(node.arn)
+            getLogger().info('Stop cluster: %O', node.name)
             void vscode.window.showInformationMessage(
-                localize('AWS.docdb.stopCluster.success', 'Stopping cluster: {0}', node.id)
+                localize('AWS.docdb.stopCluster.success', 'Stopping cluster: {0}', node.name)
             )
             node?.parent.refresh()
         }

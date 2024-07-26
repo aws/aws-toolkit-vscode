@@ -5,9 +5,9 @@
 
 import * as vscode from 'vscode'
 import { inspect } from 'util'
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { DBInstance } from '../../shared/clients/docdbClient'
 import { DocDBContext, DocDBNodeContext } from './docdbContext'
+import { DBResourceNode } from './dbResourceNode'
 import { DBClusterNode } from './dbClusterNode'
 import { ModifyDBInstanceMessage } from '@aws-sdk/client-docdb'
 import { waitUntil } from '../../shared'
@@ -15,14 +15,15 @@ import { waitUntil } from '../../shared'
 /**
  * An AWS Explorer node representing a DocumentDB instance.
  */
-export class DBInstanceNode extends AWSTreeNodeBase {
-    public name: string = this.instance.DBInstanceIdentifier ?? ''
+export class DBInstanceNode extends DBResourceNode {
+    override name = this.instance.DBInstanceIdentifier!
+    override arn = this.instance.DBInstanceArn!
 
     constructor(
         public readonly parent: DBClusterNode,
         readonly instance: DBInstance
     ) {
-        super(instance.DBInstanceIdentifier ?? '[Instance]', vscode.TreeItemCollapsibleState.None)
+        super(parent.client, instance.DBInstanceIdentifier ?? '[Instance]', vscode.TreeItemCollapsibleState.None)
         this.id = instance.DBInstanceArn
         this.description = this.makeDescription()
         this.contextValue = this.getContext()

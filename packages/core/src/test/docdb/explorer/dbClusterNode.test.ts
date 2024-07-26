@@ -11,7 +11,6 @@ import { DBCluster } from '@aws-sdk/client-docdb'
 import { DBClusterNode } from '../../../docdb/explorer/dbClusterNode'
 import { DBInstanceNode } from '../../../docdb/explorer/dbInstanceNode'
 import { DBInstance, DocumentDBClient } from '../../../shared/clients/docdbClient'
-import { DocumentDBNode } from '../../../docdb/explorer/docdbNode'
 
 describe('DBClusterNode', function () {
     let mockClient: DocumentDBClient
@@ -19,7 +18,7 @@ describe('DBClusterNode', function () {
         mockClient = {} as DocumentDBClient
     })
 
-    const parentNode = {} as DocumentDBNode
+    const parentNode = {} as AWSTreeNodeBase
     const cluster: DBCluster = { DBClusterIdentifier: 'Cluster-1' }
     const instanceA: DBInstance = { DBInstanceIdentifier: 'Instance-A' }
     const instanceB: DBInstance = { DBInstanceIdentifier: 'Instance-B' }

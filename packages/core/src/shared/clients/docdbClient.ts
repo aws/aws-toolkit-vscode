@@ -302,4 +302,47 @@ export class DefaultDocumentDBClient {
             client.destroy()
         }
     }
+
+    public async listResourceTags(arn: string): Promise<DocDB.Tag[]> {
+        getLogger().debug('ListResourceTags called')
+        const client = await this.getClient()
+
+        try {
+            const command = new DocDB.ListTagsForResourceCommand({ ResourceName: arn })
+            const response = await client.send(command)
+            return response.TagList ?? []
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to get resource tags')
+        } finally {
+            client.destroy()
+        }
+    }
+
+    public async addResourceTags(input: DocDB.AddTagsToResourceCommandInput): Promise<void> {
+        getLogger().debug('AddResourceTags called')
+        const client = await this.getClient()
+
+        try {
+            const command = new DocDB.AddTagsToResourceCommand(input)
+            await client.send(command)
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to add resource tags')
+        } finally {
+            client.destroy()
+        }
+    }
+
+    public async removeResourceTags(input: DocDB.RemoveTagsFromResourceCommandInput): Promise<void> {
+        getLogger().debug('RemoveResourceTags called')
+        const client = await this.getClient()
+
+        try {
+            const command = new DocDB.RemoveTagsFromResourceCommand(input)
+            await client.send(command)
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to remove resource tags')
+        } finally {
+            client.destroy()
+        }
+    }
 }
