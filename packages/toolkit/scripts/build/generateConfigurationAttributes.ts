@@ -7,7 +7,6 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { JSONSchema4 } from 'json-schema'
 import { compile } from 'json-schema-to-typescript'
-import packageJson from '../../package.json'
 import * as nlsJson from '../../package.nls.json'
 
 const config = [
@@ -31,6 +30,7 @@ function addBaseClass(generated: string, topLevelClass: string): string {
 }
 
 async function generateConfigurationAttributes(): Promise<void> {
+    const packageJson = JSON.parse(fs.readFileSync('./package.json', { encoding: 'utf-8' }))
     for (const debugConfiguration of packageJson.contributes.debuggers) {
         const debuggerConfig = config.find((cfg) => {
             return cfg.debugger === debugConfiguration.type

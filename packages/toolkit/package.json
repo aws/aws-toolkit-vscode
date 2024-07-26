@@ -266,9 +266,7 @@
                     "scope": "machine-overridable"
                 }
             }
-        }
-    },
-    "contributes": {
+        },
         "debuggers": [
             {
                 "type": "aws-sam",
