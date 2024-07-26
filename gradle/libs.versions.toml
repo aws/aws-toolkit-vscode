@@ -4,7 +4,7 @@ apache-commons-io = "2.16.0"
 assertJ = "3.26.0"
 # match with <root>/settings.gradle.kts
 awsSdk = "2.26.25"
-commonmark = "0.17.1"
+commonmark = "0.22.0"
 detekt = "1.23.6"
 intellijExt = "1.1.8"
 intellijGradle = "2.0.0-beta9"
