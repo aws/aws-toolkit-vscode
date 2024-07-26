@@ -30,6 +30,7 @@ export interface ZipMetadata {
 export const ZipConstants = {
     newlineRegex: /\r?\n/,
     gitignoreFilename: '.gitignore',
+    knownBinaryFileExts: ['.class'],
 }
 
 export class ZipUtil {
@@ -149,10 +150,15 @@ export class ZipUtil {
             this.getProjectScanPayloadSizeLimitInBytes()
         )
         for (const file of sourceFiles) {
-            const isFileOpenAndDirty = this.isFileOpenAndDirty(file.fileUri)
-            const fileContent = isFileOpenAndDirty ? await this.getTextContent(file.fileUri) : file.fileContent
             const zipEntryPath = this.getZipEntryPath(file.workspaceFolder.name, file.zipFilePath)
-            this.processFile(zip, file.fileUri, fileContent, languageCount, zipEntryPath)
+
+            if (ZipConstants.knownBinaryFileExts.includes(path.extname(file.fileUri.fsPath))) {
+                await this.processBinaryFile(zip, file.fileUri, zipEntryPath)
+            } else {
+                const isFileOpenAndDirty = this.isFileOpenAndDirty(file.fileUri)
+                const fileContent = isFileOpenAndDirty ? await this.getTextContent(file.fileUri) : file.fileContent
+                this.processTextFile(zip, file.fileUri, fileContent, languageCount, zipEntryPath)
+            }
         }
     }
 
@@ -161,11 +167,11 @@ export class ZipUtil {
             .filter((document) => document.uri.scheme === 'file')
             .filter((document) => vscode.workspace.getWorkspaceFolder(document.uri) === undefined)
             .forEach((document) =>
-                this.processFile(zip, document.uri, document.getText(), languageCount, document.uri.fsPath)
+                this.processTextFile(zip, document.uri, document.getText(), languageCount, document.uri.fsPath)
             )
     }
 
-    protected processFile(
+    protected processTextFile(
         zip: admZip,
         uri: vscode.Uri,
         fileContent: string,
@@ -186,6 +192,21 @@ export class ZipUtil {
 
         this.incrementCountForLanguage(uri, languageCount)
         zip.addFile(zipEntryPath, Buffer.from(fileContent, 'utf-8'))
+    }
+
+    protected async processBinaryFile(zip: admZip, uri: vscode.Uri, zipEntryPath: string) {
+        const fileSize = (await fs.stat(uri.fsPath)).size
+
+        if (
+            this.reachSizeLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.PROJECT) ||
+            this.willReachSizeLimit(this._totalSize, fileSize)
+        ) {
+            throw new ProjectSizeExceededError()
+        }
+        this._pickedSourceFiles.add(uri.fsPath)
+        this._totalSize += fileSize
+
+        zip.addLocalFile(uri.fsPath, path.dirname(zipEntryPath))
     }
 
     protected incrementCountForLanguage(uri: vscode.Uri, languageCount: Map<CodewhispererLanguage, number>) {
