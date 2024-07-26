@@ -41,25 +41,28 @@ export async function listTags(node: DBResourceNode): Promise<void> {
 
 export async function addTag(node: DBResourceNode): Promise<void> {
     return telemetry.docdb_addTag.run(async () => {
-        const Key = await vscode.window.showInputBox({
+        const key = await vscode.window.showInputBox({
             title: 'Add Tag',
             prompt: localize('AWS.docdb.tags.add.keyPrompt', 'Enter a key for the new tag'),
+            validateInput: (input) => validateTag(input, 1, 'key'),
         })
-        if (Key === undefined) {
+        if (key === undefined) {
             getLogger().info('AddTag cancelled')
             throw new ToolkitError('User cancelled', { cancelled: true })
         }
 
-        const Value = await vscode.window.showInputBox({
+        const value = await vscode.window.showInputBox({
             title: 'Add Tag',
-            prompt: localize('AWS.docdb.tags.add.valuePrompt', 'Enter the value for the new tag'),
+            prompt: localize('AWS.docdb.tags.add.valuePrompt', 'Enter the value for the new tag (optional)'),
+            validateInput: (input) => validateTag(input, 0, 'value'),
         })
-        if (Value === undefined) {
+        if (value === undefined) {
             getLogger().info('AddTag cancelled')
             throw new ToolkitError('User cancelled', { cancelled: true })
         }
 
-        await node.client.addResourceTags({ ResourceName: node.arn, Tags: [{ Key, Value }] })
+        const tag = { Key: key.trim(), Value: value.trim() }
+        await node.client.addResourceTags({ ResourceName: node.arn, Tags: [tag] })
         getLogger().info('Added resource tag for: %O', node.name)
         void vscode.window.showInformationMessage(localize('AWS.docdb.tags.add.success', 'Tag added'))
     })
@@ -92,4 +95,19 @@ export async function removeTag(node: DBResourceNode): Promise<void> {
         getLogger().info('Removed resource tag for: %O', node.name)
         void vscode.window.showInformationMessage(localize('AWS.docdb.tags.remove.success', 'Tag removed'))
     })
+}
+
+export function validateTag(input: string, minLength: number, name: string): string | undefined {
+    if (input.trim().length < minLength) {
+        return localize('AWS.docdb.validateTag.error.invalidLength', `Tag ${name} cannot be blank`)
+    }
+
+    if (!/^([\p{L}\p{Z}\p{N}\._:/=+\-@]*)$/u.test(input)) {
+        return localize(
+            'AWS.docdb.validateTag.error.invalidCharacters',
+            `Tag ${name} may only contain unicode letters, digits, whitespace, or one of these symbols: _ . : / = + - @`
+        )
+    }
+
+    return undefined
 }
