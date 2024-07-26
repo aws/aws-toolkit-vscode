@@ -45,8 +45,9 @@ export class AppNode implements TreeNode {
                       invoker: getSamCliContext().invoker,
                   })
                 : undefined
-
-            resources.push(...generateResourceNodes(this.location, templateResources, deployedResources))
+            resources.push(
+                ...generateResourceNodes(this.location, templateResources, this.stackName, region, deployedResources)
+            )
 
             // indicate that App exists, but it is empty
             if (resources.length === 0) {

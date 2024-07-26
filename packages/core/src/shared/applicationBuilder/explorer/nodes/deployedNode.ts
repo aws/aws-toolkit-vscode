@@ -16,8 +16,11 @@ import { localize } from 'vscode-nls'
 export class DeployedLambdaNode implements TreeNode {
     public readonly id = this.key
     public readonly resource = this.value
+    public readonly functionName = this._functionName
+
     public constructor(
         private readonly key: string,
+        private readonly _functionName: any,
         private readonly value: unknown
     ) {}
 
@@ -30,7 +33,7 @@ export class DeployedLambdaNode implements TreeNode {
     }
 
     public getTreeItem() {
-        const item = new vscode.TreeItem(this.key)
+        const item = new vscode.TreeItem(this.functionName)
 
         item.contextValue = 'awsApplicationBuilderDeployedNode'
         item.iconPath = getIcon('vscode-cloud')
@@ -47,12 +50,13 @@ export class DeployedLambdaNode implements TreeNode {
 export async function generateDeployedLocalNode(
     app: SamAppLocation,
     resource: ResourceTreeEntity,
-    deployedResource: any
+    deployedResource: any,
+    regionCode: any
 ): Promise<TreeNode[]> {
     let lambdaFunction: Lambda.GetFunctionResponse | undefined
 
     try {
-        lambdaFunction = await new DefaultLambdaClient('us-west-2').getFunction(deployedResource.PhysicalResourceId)
+        lambdaFunction = await new DefaultLambdaClient(regionCode).getFunction(deployedResource.PhysicalResourceId)
         console.log('Lambda function details:', lambdaFunction)
     } catch (error: any) {
         console.error('Failed to fetch Lambda function details:', error)
@@ -74,5 +78,6 @@ export async function generateDeployedLocalNode(
     }
 
     const functionArn = lambdaFunction.Configuration.FunctionArn
-    return [new DeployedLambdaNode(functionArn, resource.Id)]
+    const functionName = lambdaFunction.Configuration.FunctionName
+    return [new DeployedLambdaNode(functionArn, functionName, resource.Id)]
 }

@@ -20,10 +20,14 @@ enum ResourceTypeId {
 export class ResourceNode implements TreeNode {
     public readonly id = this.resourceTreeEntity.Id
     private readonly type = this.resourceTreeEntity.Type
+    public readonly regionCode = this.region
+    public readonly _stackName = this.stackName
 
     public constructor(
         private readonly location: SamAppLocation,
         private readonly resourceTreeEntity: ResourceTreeEntity,
+        private readonly stackName?: string,
+        private readonly region?: string,
         private readonly deployedResource?: StackResource
     ) {}
 
@@ -42,7 +46,8 @@ export class ResourceNode implements TreeNode {
             deployedNode = await generateDeployedLocalNode(
                 this.location,
                 this.resourceTreeEntity,
-                this.deployedResource
+                this.deployedResource,
+                this.region
             )
         }
         return [...generatePropertyNodes(this.resourceTreeEntity), ...deployedNode]
@@ -74,10 +79,12 @@ export class ResourceNode implements TreeNode {
 export function generateResourceNodes(
     app: SamAppLocation,
     resources: NonNullable<ResourceTreeEntity[]>,
+    stackName?: string,
+    region?: string,
     deployedResources?: StackResource[]
 ): ResourceNode[] {
     if (!deployedResources) {
-        return resources.map(resource => new ResourceNode(app, resource))
+        return resources.map(resource => new ResourceNode(app, resource, stackName, region))
     }
 
     return resources.map(resource => {
@@ -85,9 +92,9 @@ export function generateResourceNodes(
             const deployedResource = deployedResources.find(
                 deployedResource => resource.Id === deployedResource.LogicalResourceId
             )
-            return new ResourceNode(app, resource, deployedResource)
+            return new ResourceNode(app, resource, stackName, region, deployedResource)
         } else {
-            return new ResourceNode(app, resource)
+            return new ResourceNode(app, resource, stackName, region)
         }
     })
 }
