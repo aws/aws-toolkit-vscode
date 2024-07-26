@@ -54,3 +54,6 @@ flags:
     stepFunctions:
         paths:
             - packages/core/src/stepFunctions/
+    threatComposer:
+        paths:
+            - packages/core/src/threatComposer/
