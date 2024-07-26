@@ -10,12 +10,11 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { SamAppLocation } from '../../shared/applicationBuilder/explorer/samProject'
+import { getAmazonqApi } from '../../amazonq/extApi'
 
 export const openTemplateInComposerCommand = Commands.declare(
     'aws.openInApplicationComposer',
     (manager: ApplicationComposerManager) => async (arg?: vscode.TextEditor | vscode.Uri | TreeNode) => {
-        const authState = await AuthUtil.instance.getChatAuthState()
-
         let result: vscode.WebviewPanel | undefined
         await telemetry.appcomposer_openTemplate.run(async (span) => {
             const amazonqApi = await getAmazonqApi()

@@ -31,6 +31,7 @@ import { AmazonQNode, refreshAmazonQ, refreshAmazonQRootNode } from '../amazonq/
 import { activateViewsShared, registerToolView } from './activationShared'
 import { isExtensionInstalled } from '../shared/utilities'
 import { CommonAuthViewProvider } from '../login/webview'
+import { setContext } from '../shared'
 import { ApplicationBuilderRootNode } from '../shared/applicationBuilder/explorer/nodes/rootNode'
 
 /**
