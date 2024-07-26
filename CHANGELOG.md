@@ -1,3 +1,6 @@
+# _3.20_ (2024-07-26)
+- **(Bug Fix)** Fix Q chat not responding in 2023.2 and 2023.3
+
 # _3.19_ (2024-07-25)
 - **(Feature)** Q feature dev: Use common code extensions to filter relevant files
 - **(Bug Fix)** Amazon Q Chat: Fixes a bug where multiline user input appears like a code block instead of a paragraph
