@@ -8,6 +8,11 @@ import { getLogger } from './logger/logger'
 import * as redshift from '../awsService/redshift/models/models'
 import { TypeConstructor, cast } from './utilities/typeConstructors'
 
+type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId'
+export type ToolIdStateKey = `${ToolId}.savedConnectionId`
+
+export type JsonSchemasKey = 'devfileSchemaVersion' | 'samAndCfnSchemaVersion'
+
 type samInitStateKey =
     | 'ACTIVATION_TEMPLATE_PATH_KEY'
     | 'ACTIVATION_LAUNCH_PATH_KEY'
@@ -15,18 +20,27 @@ type samInitStateKey =
     | 'SAM_INIT_IMAGE_BOOLEAN_KEY'
     | 'SAM_INIT_ARCH_KEY'
 
+type stepFunctionsKey = 'SCRIPT_LAST_DOWNLOADED_URL' | 'CSS_LAST_DOWNLOADED_URL'
+
 type globalKey =
     | samInitStateKey
+    | stepFunctionsKey
+    | ToolIdStateKey
+    | JsonSchemasKey
+    | 'amazonq.telemetry.migrated'
+    | 'aws.amazonq.codewhisperer.newCustomizations'
+    | 'aws.amazonq.hasShownWalkthrough'
+    | 'aws.amazonq.showTryChatCodeLens'
     | 'aws.downloadPath'
     | 'aws.lastTouchedS3Folder'
     | 'aws.lastUploadedToS3Folder'
     | 'aws.redshift.connections'
     | 'aws.toolkit.amazonq.dismissed'
     | 'aws.toolkit.amazonqInstall.dismissed'
-    | 'aws.toolkit.separationPromptDismissed'
     | 'aws.toolkit.separationPromptCommand'
-    | 'aws.amazonq.codewhisperer.newCustomizations'
+    | 'aws.toolkit.separationPromptDismissed'
     // Deprecated/legacy names. New keys should start with "aws.".
+    | '#sessionCreationDates' // Legacy name from `ssoAccessTokenProvider.ts`.
     | 'CODECATALYST_RECONNECT'
     | 'CODEWHISPERER_AUTO_SCANS_ENABLED'
     | 'CODEWHISPERER_AUTO_TRIGGER_ENABLED'
@@ -34,10 +48,22 @@ type globalKey =
     | 'CODEWHISPERER_PERSISTED_CUSTOMIZATIONS'
     | 'CODEWHISPERER_SELECTED_CUSTOMIZATION'
     | 'CODEWHISPERER_USER_GROUP'
+    | 'awsTelemetryNoticeVersionAck'
+    | 'codecatalyst.connections'
+    | 'dev.beta'
+    | 'globalsMostRecentVersion'
     | 'gumby.wasQCodeTransformationUsed'
     | 'hasAlreadyOpenedAmazonQ'
-    // Legacy name from `ssoAccessTokenProvider.ts`.
-    | '#sessionCreationDates'
+    | 'isExtensionFirstUse'
+    | 'lastExtensionVersion'
+    | 'lastSelectedRegion'
+    | 'recentCredentials'
+    // List of regions enabled in AWS Explorer.
+    | 'region'
+    // TODO: implement this via `PromptSettings` instead of globalState.
+    | 'sam.sync.updateMessage'
+    | 'telemetryClientId'
+    | 'telemetryId'
 
 /**
  * Extension-local (not visible to other vscode extensions) shared state which persists after IDE
@@ -52,7 +78,7 @@ type globalKey =
  * - garbage collection
  */
 export class GlobalState implements vscode.Memento {
-    constructor(private readonly memento: vscode.Memento) {}
+    constructor(protected readonly memento: vscode.Memento) {}
 
     keys(): readonly string[] {
         return this.memento.keys()
@@ -70,9 +96,9 @@ export class GlobalState implements vscode.Memento {
      * {@link String}, {@link Boolean}, etc.
      * @param defaultVal Value returned if `key` has no value.
      */
-    getStrict<T>(key: globalKey, type: TypeConstructor<T>, defaulVal?: T) {
+    getStrict<T>(key: globalKey, type: TypeConstructor<T>, defaultVal?: T) {
         try {
-            const val = this.memento.get<T>(key) ?? defaulVal
+            const val = this.memento.get<T>(key) ?? defaultVal
             return !type || val === undefined ? val : cast(val, type)
         } catch (e) {
             const msg = `GlobalState: invalid state (or read failed) for key: "${key}"`
@@ -94,13 +120,13 @@ export class GlobalState implements vscode.Memento {
      * @param key Key name
      * @param defaultVal Value returned if `key` has no value.
      */
-    get<T>(key: globalKey, defaulVal?: T): T | undefined {
+    get<T>(key: globalKey, defaultVal?: T): T | undefined {
         const skip = (o: any) => o as T // Don't type check.
-        return this.getStrict(key, skip, defaulVal)
+        return this.getStrict(key, skip, defaultVal)
     }
 
     /**
-     * Gets the value for `key` if it satisfies the `type` specification, else logs an error and returns `defaulVal`.
+     * Gets the value for `key` if it satisfies the `type` specification, else logs an error and returns `defaultVal`.
      *
      * @param key Key name
      * @param type Type validator function, or primitive type constructor such as {@link Object},
@@ -108,13 +134,13 @@ export class GlobalState implements vscode.Memento {
      * @param defaultVal Value returned if `key` has no value.
      */
     tryGet<T>(key: globalKey, type: TypeConstructor<T>): T | undefined
-    tryGet<T>(key: globalKey, type: TypeConstructor<T>, defaulVal: T): T
-    tryGet<T>(key: globalKey, type: TypeConstructor<T>, defaulVal?: T): T | undefined {
+    tryGet<T>(key: globalKey, type: TypeConstructor<T>, defaultVal: T): T
+    tryGet<T>(key: globalKey, type: TypeConstructor<T>, defaultVal?: T): T | undefined {
         try {
-            return this.getStrict(key, type, defaulVal)
+            return this.getStrict(key, type, defaultVal)
         } catch (e) {
             getLogger().error('%s', (e as Error).message)
-            return defaulVal
+            return defaultVal
         }
     }
 

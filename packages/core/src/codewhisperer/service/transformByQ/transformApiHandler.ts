@@ -37,7 +37,7 @@ import { CredentialSourceId, telemetry } from '../../../shared/telemetry/telemet
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
-import request from '../../../common/request'
+import request from '../../../shared/request'
 import { JobStoppedError, ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import { writeLogs } from './transformFileHandler'
 import { AuthUtil } from '../../util/authUtil'

@@ -13,7 +13,6 @@ import {
     mapToAggregatedList,
     DefaultCodeWhispererClient,
     ListCodeScanFindingsResponse,
-    CodeWhispererConstants,
 } from 'aws-core-vscode/codewhisperer'
 import assert from 'assert'
 import sinon from 'sinon'
@@ -155,7 +154,7 @@ describe('securityScanHandler', function () {
                 { filePath: 'file2.ts', startLine: 1, endLine: 1, codeSnippet: [{ number: 1, content: 'line 1' }] },
             ])
 
-            mapToAggregatedList(codeScanIssueMap, json, editor, CodeWhispererConstants.CodeAnalysisScope.FILE)
+            mapToAggregatedList(codeScanIssueMap, json, editor, CodeAnalysisScope.FILE)
 
             assert.equal(codeScanIssueMap.size, 2)
             assert.equal(codeScanIssueMap.get('file1.ts')?.length, 1)
@@ -176,7 +175,7 @@ describe('securityScanHandler', function () {
                 { filePath: 'file1.ts', startLine: 3, endLine: 3, codeSnippet: [{ number: 3, content: 'line 3' }] },
             ])
 
-            mapToAggregatedList(codeScanIssueMap, json, editor, CodeWhispererConstants.CodeAnalysisScope.FILE)
+            mapToAggregatedList(codeScanIssueMap, json, editor, CodeAnalysisScope.FILE)
 
             assert.equal(codeScanIssueMap.size, 1)
             assert.equal(codeScanIssueMap.get('file1.ts')?.length, 2)

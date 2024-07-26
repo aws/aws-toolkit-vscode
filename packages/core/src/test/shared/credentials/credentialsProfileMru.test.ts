@@ -5,11 +5,10 @@
 
 import assert from 'assert'
 import { CredentialsProfileMru } from '../../../shared/credentials/credentialsProfileMru'
-import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 describe('CredentialsProfileMru', function () {
     it('lists no profile when none exist', async function () {
-        const credentialsMru = new CredentialsProfileMru(await FakeExtensionContext.create())
+        const credentialsMru = new CredentialsProfileMru()
 
         const mru = credentialsMru.getMruList()
 
@@ -18,7 +17,7 @@ describe('CredentialsProfileMru', function () {
     })
 
     it('lists single profile when only one exists', async function () {
-        const credentialsMru = new CredentialsProfileMru(await FakeExtensionContext.create())
+        const credentialsMru = new CredentialsProfileMru()
 
         await credentialsMru.setMostRecentlyUsedProfile('apples')
 
@@ -30,7 +29,7 @@ describe('CredentialsProfileMru', function () {
     })
 
     it('lists multiple profiles when multiple exist', async function () {
-        const credentialsMru = new CredentialsProfileMru(await FakeExtensionContext.create())
+        const credentialsMru = new CredentialsProfileMru()
 
         await credentialsMru.setMostRecentlyUsedProfile('dogs')
         await credentialsMru.setMostRecentlyUsedProfile('cats')
@@ -44,7 +43,7 @@ describe('CredentialsProfileMru', function () {
     })
 
     it('does not list duplicate profiles', async function () {
-        const credentialsMru = new CredentialsProfileMru(await FakeExtensionContext.create())
+        const credentialsMru = new CredentialsProfileMru()
 
         await credentialsMru.setMostRecentlyUsedProfile('bbq')
         await credentialsMru.setMostRecentlyUsedProfile('dill')
@@ -61,7 +60,7 @@ describe('CredentialsProfileMru', function () {
     })
 
     it('does not list more than MAX_CRENDTIAL_MRU_SIZE profiles', async function () {
-        const credentialsMru = new CredentialsProfileMru(await FakeExtensionContext.create())
+        const credentialsMru = new CredentialsProfileMru()
 
         for (let i = 0; i < CredentialsProfileMru.maxCredentialMruSize + 1; i++) {
             await credentialsMru.setMostRecentlyUsedProfile(`entry${i}`)

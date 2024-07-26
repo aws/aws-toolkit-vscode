@@ -7,8 +7,8 @@ import * as vscode from 'vscode'
 import { dirname } from 'path'
 import { ToolkitError, isFileNotFoundError } from '../errors'
 import fs from '../../shared/fs/fs'
-import crypto from 'crypto'
 import { isWeb } from '../extensionGlobals'
+import type { MapSync } from './map'
 
 // TODO(sijaden): further generalize this concept over async references (maybe create a library?)
 // It's pretty clear that this interface (and VSC's `Memento`) reduce down to what is essentially
@@ -16,6 +16,8 @@ import { isWeb } from '../extensionGlobals'
 
 /**
  * A general, basic interface for a cache with key associativity.
+ *
+ * Look to use {@link MapSync} instead if you need atomicity.
  */
 export interface KeyedCache<T, K = string> {
     /**
@@ -128,14 +130,12 @@ export function createDiskCache<T, K>(
                 await fs.mkdir(dirname(target))
                 if (isWeb()) {
                     // There is no web-compatible rename() method. So do a regular write.
-                    await fs.writeFile(target, JSON.stringify(data), { mode: 0o600 })
+                    await fs.writeFile(target, JSON.stringify(data))
                 } else {
                     // With SSO cache we noticed malformed JSON on read. A guess is that multiple writes
                     // are occuring at the same time. The following is a bandaid that ensures an all-or-nothing
                     // write, though there can still be race conditions with which version remains after overwrites.
-                    const tempFile = `${target}.tmp-${crypto.randomBytes(4).toString('hex')}`
-                    await fs.writeFile(tempFile, JSON.stringify(data), { mode: 0o600 })
-                    await fs.rename(tempFile, target)
+                    await fs.writeFile(target, JSON.stringify(data), { mode: 0o600, atomic: true })
                 }
             } catch (error) {
                 throw ToolkitError.chain(error, `Failed to save "${target}"`, {

@@ -11,8 +11,11 @@ import { cast, Optional } from '../shared/utilities/typeConstructors'
 import { Auth } from './auth'
 import { once, onceChanged } from '../shared/utilities/functionUtils'
 import { isNonNullable } from '../shared/utilities/tsUtils'
+import { ToolIdStateKey } from '../shared/globalState'
 import { Connection, SsoConnection, StatefulConnection } from './connection'
 import { indent } from '../shared/utilities/textUtilities'
+
+export type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId'
 
 let currentConn: Auth['activeConnection']
 const auths = new Map<string, SecondaryAuth>()
@@ -36,7 +39,7 @@ const registerAuthListener = (auth: Auth) => {
 
 export function getSecondaryAuth<T extends Connection>(
     auth: Auth,
-    toolId: string,
+    toolId: ToolId,
     toolLabel: string,
     isValid: (conn: Connection) => conn is T
 ): SecondaryAuth<T> {
@@ -87,16 +90,15 @@ export class SecondaryAuth<T extends Connection = Connection> {
     #savedConnection: T | undefined
     protected static readonly logIfChanged = onceChanged((s: string) => getLogger().info(s))
 
-    private readonly key = `${this.toolId}.savedConnectionId`
+    private readonly key: ToolIdStateKey = `${this.toolId}.savedConnectionId`
     readonly #onDidChangeActiveConnection = new vscode.EventEmitter<T | undefined>()
     public readonly onDidChangeActiveConnection = this.#onDidChangeActiveConnection.event
 
     public constructor(
-        public readonly toolId: string,
+        public readonly toolId: ToolId,
         public readonly toolLabel: string,
         public readonly isUsable: (conn: Connection) => conn is T,
-        private readonly auth: Auth,
-        private readonly memento = globals.context.globalState
+        private readonly auth: Auth
     ) {
         const handleConnectionChanged = async (newActiveConn?: Connection) => {
             if (newActiveConn === undefined && this.#activeConnection?.id) {
@@ -173,7 +175,9 @@ export class SecondaryAuth<T extends Connection = Connection> {
     }
 
     public async saveConnection(conn: T) {
-        await this.memento.update(this.key, conn.id)
+        // TODO: fix this
+        // eslint-disable-next-line aws-toolkits/no-banned-usages
+        await globals.context.globalState.update(this.key, conn.id)
         this.#savedConnection = conn
         this.#onDidChangeActiveConnection.fire(this.activeConnection)
     }
@@ -204,7 +208,9 @@ export class SecondaryAuth<T extends Connection = Connection> {
 
     /** Stop using the saved connection and fallback to using the active connection, if it is usable. */
     public async clearSavedConnection() {
-        await this.memento.update(this.key, undefined)
+        // TODO: fix this
+        // eslint-disable-next-line aws-toolkits/no-banned-usages
+        await globals.context.globalState.update(this.key, undefined)
         this.#savedConnection = undefined
         this.#onDidChangeActiveConnection.fire(this.activeConnection)
     }
@@ -249,7 +255,10 @@ export class SecondaryAuth<T extends Connection = Connection> {
     })
 
     private async loadSavedConnection() {
-        const id = cast(this.memento.get(this.key), Optional(String))
+        // TODO: fix this
+        // eslint-disable-next-line aws-toolkits/no-banned-usages
+        const globalState = globals.context.globalState
+        const id = cast(globalState.get(this.key), Optional(String))
         if (id === undefined) {
             return
         }
@@ -257,10 +266,10 @@ export class SecondaryAuth<T extends Connection = Connection> {
         const conn = await this.auth.getConnection({ id })
         if (conn === undefined) {
             getLogger().warn(`auth (${this.toolId}): removing saved connection "${this.key}" as it no longer exists`)
-            await this.memento.update(this.key, undefined)
+            await globalState.update(this.key, undefined)
         } else if (!this.isUsable(conn)) {
             getLogger().warn(`auth (${this.toolId}): saved connection "${this.key}" is not valid`)
-            await this.memento.update(this.key, undefined)
+            await globalState.update(this.key, undefined)
         } else {
             await this.auth.refreshConnectionState(conn)
             return conn

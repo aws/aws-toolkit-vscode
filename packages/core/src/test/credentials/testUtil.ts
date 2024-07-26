@@ -10,7 +10,6 @@ import { CredentialsProviderManager } from '../../auth/providers/credentialsProv
 import { SsoClient } from '../../auth/sso/clients'
 import { builderIdStartUrl, SsoToken } from '../../auth/sso/model'
 import { DeviceFlowAuthorization, SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
-import { FakeMemento } from '../fakeExtensionContext'
 import { captureEvent, EventCapturer } from '../testUtil'
 import { stub } from '../utilities/stubber'
 import globals from '../../shared/extensionGlobals'
@@ -29,8 +28,17 @@ export const ssoConnection: SsoConnection = {
     startUrl: 'https://nkomonen.awsapps.com/start',
     getToken: sinon.stub(),
 }
-export const builderIdConnection: SsoConnection = { ...ssoConnection, startUrl: builderIdStartUrl, label: 'builderId' }
-export const iamConnection: IamConnection = { type: 'iam', id: '0', label: 'iam', getCredentials: sinon.stub() }
+export const builderIdConnection: SsoConnection = {
+    ...ssoConnection,
+    startUrl: builderIdStartUrl,
+    label: 'builderId',
+}
+export const iamConnection: IamConnection = {
+    type: 'iam',
+    id: '0',
+    label: 'iam',
+    getCredentials: sinon.stub(),
+}
 
 export function createSsoProfile(props?: Partial<Omit<SsoProfile, 'type'>>): SsoProfile {
     return {
@@ -80,7 +88,7 @@ type TestAuth = Auth & {
     getTestTokenProvider(connection: Pick<Connection, 'id'>): ReturnType<typeof createTestTokenProvider>
 }
 
-export function createTestAuth(): TestAuth {
+export function createTestAuth(globalState: vscode.Memento): TestAuth {
     const tokenProviders = new Map<string, ReturnType<typeof createTestTokenProvider>>()
 
     function getTokenProvider(...[profile]: ConstructorParameters<typeof SsoAccessTokenProvider>) {
@@ -99,7 +107,7 @@ export function createTestAuth(): TestAuth {
     async function invalidateCachedCredentials(conn: Connection) {
         if (conn.type === 'sso') {
             const provider = tokenProviders.get(conn.id)
-            await provider?.invalidate()
+            await provider?.invalidate('test')
         } else {
             globals.loginManager.store.invalidateCredentials(fromString(conn.id))
         }
@@ -108,7 +116,7 @@ export function createTestAuth(): TestAuth {
     const ssoClient = stub(SsoClient, { region: 'not set' })
     ssoClient.logout.resolves()
 
-    const store = new ProfileStore(new FakeMemento())
+    const store = new ProfileStore(globalState)
     const credentialsManager = new CredentialsProviderManager()
     const auth = new Auth(store, credentialsManager, () => ssoClient, getTokenProvider)
 

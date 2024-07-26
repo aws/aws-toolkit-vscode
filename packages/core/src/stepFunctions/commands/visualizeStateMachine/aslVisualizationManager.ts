@@ -17,7 +17,6 @@ export class AslVisualizationManager extends AbstractAslVisualizationManager {
     }
 
     public async visualizeStateMachine(
-        globalState: vscode.Memento,
         target: vscode.TextDocument | vscode.Uri
     ): Promise<vscode.WebviewPanel | undefined> {
         const logger: Logger = getLogger()
@@ -33,7 +32,7 @@ export class AslVisualizationManager extends AbstractAslVisualizationManager {
 
         // Existing visualization does not exist, construct new visualization
         try {
-            await this.updateCache(globalState, logger)
+            await this.updateCache(logger)
             const newVisualization = new AslVisualization(document)
             this.handleNewVisualization(document.uri.fsPath, newVisualization)
 

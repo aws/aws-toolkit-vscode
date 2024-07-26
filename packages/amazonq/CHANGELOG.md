@@ -1,3 +1,15 @@
+## 1.17.0 2024-07-25
+
+- **Bug Fix** Amazon Q Dev and Transform introduction text formatted incorrectly
+- **Bug Fix** Amazon Q /dev: update error message for code gen timeout and include backfill for error name
+- **Bug Fix** Sign-in page may fail to render in rare circumstances.
+
+## 1.16.0 2024-07-18
+
+- **Bug Fix** Amazon q /dev: include granular error handling for code generation failed state
+- **Bug Fix** Amazon Q Code Transformation: always show build logs from last job run
+- **Bug Fix** Unexpected SSO expiration on Windows due to EPERM
+
 ## 1.15.0 2024-07-15
 
 - **Bug Fix** Amazon Q Chat: Fixes a bug when the prompt input exceeds the width of the chat box it's not always wrapped correctly.
