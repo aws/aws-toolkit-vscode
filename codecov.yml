@@ -42,3 +42,15 @@ flags:
     amazonqFeatureDev:
         paths:
             - packages/core/src/amazonqFeatureDev/
+    amazonqGumby:
+        paths:
+            - packages/core/src/amazonqGumby/
+    codewhispererChat:
+        paths:
+            - packages/core/src/codewhispererChat/
+    applicationcomposer:
+        paths:
+            - packages/core/src/applicationcomposer/
+    stepFunctions:
+        paths:
+            - packages/core/src/stepFunctions/
