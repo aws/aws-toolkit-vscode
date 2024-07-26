@@ -73,39 +73,35 @@ Some components of the core library depend on the `package.json`s of the extensi
 
 If you are modifying or registering new debuggers in VS Code via the `debuggers` contribution point, you may need to regenerate the [definitions file](../packages/core/src/shared/sam/debugger/awsSamDebugConfiguration.gen.ts). After updating ['toolkit/package.json'](../packages/toolkit/package.json), run `npm run generateConfigurationAttributes -w packages/toolkit`
 
-## Shared vs Common names
+## `web`, `node`, `common`, `shared` naming conventions
 
-In this repo, the keywords **"shared"** and **"common"** have specific meanings in the context of file/folder names.
+This project can run in different environments, eg Web mode (in the browser with no compute backend), or in Node.js on your desktop (the most common way).
+A problem arises when we use code that is exclusive to one environment, an example being Node.js' Filesystem module which will fail in Web mode.
 
-### "common"
+To ensure developers use compatible code for their environment we have subfolders in each topic which contains environment specific code in a single place.
 
-Code within a folder/file that has the "common" keyword implies that it can run in any environment. Examples of environments are: Web mode, or Node.js (local desktop)
+Using this file tree as reference, here are the rules:
 
-We need this distinction since not all code can run in any environment. A common example is filesystem code, where the actual implementation used could work in Node.js but not in Web mode.
+```
+src/
+├── myTopic/
+│   ├── {file}.ts
+│   ├── node/
+│   │   └── {file}.ts
+│   └── web/
+│       └── {file}.ts
+└── shared/
+```
 
-### "shared"
+-   `myTopic/` is the general name of the folder, eg `request` for http requests.
+-   `myTopic/{file}.ts` is for code that works in any environment, we refer to this as `"common"` code.
+-   `node/{file}.ts` is for code that works exclusively in Node.js.
+-   `web/{file}.ts` is for code that works exclusively in Web mode.
+-   `shared/` is for code that is intended to be reused, i.e general purpose utils.
+    -   Note environment specific code should be place in to a `web/` or `node/` subfolder.
+    -   If the code is not in a subfolder then it is considered `shared common` code.
 
-Code within a folder/file that has the "shared" keyword implies that it is intended to be reused wherever it can be. This is generalized code that "Feature A" or "Feature B" could use if it works for their use case.
-
-An example is the `waitUntil()` function which continuously invokes an arbitrary callback function until it succeeds.
-
-> NOTE: Something that is "shared" does not mean it is "common", as it could be reused in different places but only work in Node.js for example.
-
-### How to apply this
-
--   Aim to make code compatible with "common" from the beginning.
--   In a "topic" folder, if you have common code, create a subfolder named "common" and add your common code to there.
-    ```
-    src/
-      |
-      myTopic/
-        |
-        common/
-        nonCommon.ts
-    ```
--   See if yours, or existing code can be moved in to a "shared" folder. Maybe it can be easily modified to become "shared".
--   If there is no "shared" or "common" naming used for the file/folder, then assume it only works in Node.js.
--   In the rare case your code only works in Web mode, create a `web` subfolder for that code.
+> IMPORTANT: The current codebase does not fully follow this convention yet, the transition is being done incrementally. Due to this, code that is `"common"` may not actually be common yet. If you run in to this, please move that code to the appropriate subfolder.
 
 ## Commands
 

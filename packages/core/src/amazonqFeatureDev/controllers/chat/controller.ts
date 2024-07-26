@@ -4,13 +4,11 @@
  */
 
 import { ChatItemAction, MynahIcons } from '@aws/mynah-ui'
-import { existsSync } from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { EventEmitter } from 'vscode'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { createSingleFileDialog } from '../../../shared/ui/common/openDialog'
-import { featureDevScheme } from '../../constants'
 import {
     CodeIterationLimitError,
     ContentLengthError,
@@ -53,6 +51,7 @@ import {
 } from '../../userFacingText'
 import { getWorkspaceFoldersByPrefixes } from '../../../shared/utilities/workspaceUtils'
 import { ErrorMessages } from './messenger/constants'
+import { openDeletedDiff, openDiff } from '../../../amazonq/commons/diff'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -220,7 +219,7 @@ export class FeatureDevController {
         const isDenyListedError = denyListedErrors.some((err) => errorMessage.includes(err))
 
         switch (err.code) {
-            case ContentLengthError.name:
+            case ContentLengthError.errorName:
                 this.messenger.sendAnswer({
                     type: 'answer',
                     tabID: message.tabID,
@@ -238,11 +237,11 @@ export class FeatureDevController {
                     ],
                 })
                 break
-            case MonthlyConversationLimitError.name:
+            case MonthlyConversationLimitError.errorName:
                 this.messenger.sendMonthlyLimitError(message.tabID)
                 break
 
-            case PlanIterationLimitError.name:
+            case PlanIterationLimitError.errorName:
                 this.messenger.sendAnswer({
                     type: 'answer',
                     tabID: message.tabID,
@@ -266,11 +265,11 @@ export class FeatureDevController {
                 })
                 break
 
-            case FeatureDevServiceError.name:
-            case UploadCodeError.name:
-            case UserMessageNotFoundError.name:
-            case TabIdNotFoundError.name:
-            case PrepareRepoFailedError.name:
+            case FeatureDevServiceError.errorName:
+            case UploadCodeError.errorName:
+            case UserMessageNotFoundError.errorName:
+            case TabIdNotFoundError.errorName:
+            case PrepareRepoFailedError.errorName:
                 this.messenger.sendErrorMessage(
                     errorMessage,
                     message.tabID,
@@ -278,11 +277,11 @@ export class FeatureDevController {
                     session?.conversationIdUnsafe
                 )
                 break
-            case PromptRefusalException.name:
-            case ZipFileError.name:
+            case PromptRefusalException.errorName:
+            case ZipFileError.errorName:
                 this.messenger.sendErrorMessage(errorMessage, message.tabID, 0, session?.conversationIdUnsafe, true)
                 break
-            case CodeIterationLimitError.name:
+            case CodeIterationLimitError.errorName:
                 this.messenger.sendAnswer({
                     type: 'answer',
                     tabID: message.tabID,
@@ -744,24 +743,6 @@ export class FeatureDevController {
         })
     }
 
-    private getOriginalFileUri(fullPath: string, tabID: string) {
-        const originalPath = fullPath
-        return existsSync(originalPath)
-            ? vscode.Uri.file(originalPath)
-            : vscode.Uri.from({ scheme: featureDevScheme, path: 'empty', query: `tabID=${tabID}` })
-    }
-
-    private getFileDiffUris(zipFilePath: string, fullFilePath: string, tabId: string, session: Session) {
-        const left = this.getOriginalFileUri(fullFilePath, tabId)
-        const right = vscode.Uri.from({
-            scheme: featureDevScheme,
-            path: path.join(session.uploadId, zipFilePath),
-            query: `tabID=${tabId}`,
-        })
-
-        return { left, right }
-    }
-
     private async fileClicked(message: fileClickedMessage) {
         // TODO: add Telemetry here
         const tabId: string = message.tabID
@@ -804,12 +785,11 @@ export class FeatureDevController {
         const pathInfos = getPathsFromZipFilePath(zipFilePath, workspacePrefixMapping, session.config.workspaceFolders)
 
         if (message.deleted) {
-            const fileUri = this.getOriginalFileUri(pathInfos.absolutePath, tabId)
-            const basename = path.basename(pathInfos.relativePath)
-            await vscode.commands.executeCommand('vscode.open', fileUri, {}, `${basename} (Deleted)`)
+            const name = path.basename(pathInfos.relativePath)
+            await openDeletedDiff(pathInfos.absolutePath, name, tabId)
         } else {
-            const { left, right } = this.getFileDiffUris(zipFilePath, pathInfos.absolutePath, tabId, session)
-            await vscode.commands.executeCommand('vscode.diff', left, right)
+            const rightPath = path.join(session.uploadId, zipFilePath)
+            await openDiff(pathInfos.absolutePath, rightPath, tabId)
         }
     }
 

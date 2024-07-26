@@ -274,6 +274,20 @@
     ],
     "metrics": [
         {
+            "name": "ide_fileSystem",
+            "description": "File System event on execution",
+            "metadata": [
+                {
+                    "type": "action",
+                    "required": true
+                },
+                {
+                    "type": "attempts",
+                    "required": false
+                }
+            ]
+        },
+        {
             "name": "vscode_executeCommand",
             "description": "Emitted whenever a registered Toolkit command is executed",
             "passive": true,
@@ -970,6 +984,17 @@
                 { "type": "amazonqRepositorySize", "required": false },
                 {
                     "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "ide_editCodeFile",
+            "description": "User opened a code file with the given file extension. Client should DEDUPLICATE this metric (ideally hourly/daily). AWS-specific files should (also) emit `file_editAwsFile`.",
+            "passive": true,
+            "metadata": [
+                {
+                    "type": "filenameExt",
                     "required": false
                 }
             ]

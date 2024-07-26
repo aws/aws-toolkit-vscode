@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import fs from '../shared/fs/fs'
-import request from '../common/request'
+import request from '../shared/request'
 import { getLogger } from '../shared/logger'
 import { ThreatComposerEditor } from './threatComposerEditor'
 import { ToolkitError } from '../shared/errors'
@@ -130,7 +130,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
             }
 
             if (clientId === '') {
-                clientId = getClientId(globals.context.globalState)
+                clientId = getClientId(globals.globalState)
             }
             // Attempt to retrieve existing visualization if it exists.
             const existingVisualization = this.getExistingVisualization(document.uri.fsPath)

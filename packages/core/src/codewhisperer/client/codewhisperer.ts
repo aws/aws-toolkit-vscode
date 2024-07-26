@@ -256,7 +256,7 @@ export class DefaultCodeWhispererClient {
                 ideCategory: 'VSCODE',
                 operatingSystem: getOperatingSystem(),
                 product: 'CodeWhisperer', // TODO: update this?
-                clientId: getClientId(globals.context.globalState),
+                clientId: getClientId(globals.globalState),
                 ideVersion: extensionVersion,
             },
         }
@@ -273,7 +273,7 @@ export class DefaultCodeWhispererClient {
                 ideCategory: 'VSCODE',
                 operatingSystem: getOperatingSystem(),
                 product: 'CodeWhisperer', // TODO: update this?
-                clientId: getClientId(globals.context.globalState),
+                clientId: getClientId(globals.globalState),
                 ideVersion: extensionVersion,
             },
         }
