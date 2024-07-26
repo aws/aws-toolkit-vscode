@@ -24,7 +24,6 @@ import software.amazon.awssdk.core.interceptor.SdkInternalExecutionAttribute
 import software.amazon.awssdk.core.internal.http.pipeline.stages.ApplyUserAgentStage
 import software.amazon.awssdk.core.internal.http.pipeline.stages.ApplyUserAgentStage.HEADER_USER_AGENT
 import software.amazon.awssdk.core.retry.RetryMode
-import software.amazon.awssdk.core.retry.RetryPolicy
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.utils.SdkAutoCloseable
@@ -208,8 +207,7 @@ abstract class ToolkitClientManager {
                         val clientType = executionAttributes.getAttribute(AwsExecutionAttribute.CLIENT_TYPE)
                         val sdkClient = executionAttributes.getAttribute(SdkInternalExecutionAttribute.SDK_CLIENT)
                         val serviceClientConfiguration = sdkClient.serviceClientConfiguration()
-                        val retryPolicy: RetryPolicy =
-                            serviceClientConfiguration.overrideConfiguration().retryPolicy().orElse(RetryPolicy.defaultRetryPolicy())
+                        val retryMode = serviceClientConfiguration.overrideConfiguration().retryMode().orElse(RetryMode.defaultRetryMode())
                         val toolkitUserAgent = userAgent()
 
                         val requestUserAgent = ApplyUserAgentStage.resolveClientUserAgent(
@@ -218,7 +216,7 @@ abstract class ToolkitClientManager {
                             clientType,
                             null,
                             null,
-                            retryPolicy
+                            retryMode.toString().lowercase()
                         )
 
                         val overrideConfiguration = request.overrideConfiguration()
@@ -240,7 +238,7 @@ abstract class ToolkitClientManager {
                 })
 
                 clientOverrideConfig.let { configuration ->
-                    configuration.retryPolicy(RetryMode.STANDARD)
+                    configuration.retryStrategy(RetryMode.STANDARD)
                 }
 
                 endpointOverride?.let {
