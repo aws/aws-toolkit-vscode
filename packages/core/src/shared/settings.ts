@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import * as codecatalyst from './clients/codecatalystClient'
 import * as codewhisperer from '../codewhisperer/client/codewhisperer'
-import packageJson from '../../package.json'
 import { getLogger } from './logger'
 import {
     cast,
@@ -22,6 +21,8 @@ import { once, onceChanged } from './utilities/functionUtils'
 import { ToolkitError } from './errors'
 import { telemetry } from './telemetry/telemetry'
 import globals from './extensionGlobals'
+import toolkitSettings from './settings-toolkit.gen'
+import amazonQSettings from './settings-amazonq.gen'
 
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
 
@@ -484,7 +485,7 @@ export interface ResetableMemento extends vscode.Memento {
 // from implementations. Using types requires basically no logic but lacks
 // precision. We still need to manually specify what type something should be,
 // at least for anything beyond primitive types.
-const settingsProps = packageJson.contributes.configuration.properties
+const settingsProps = { ...toolkitSettings, ...amazonQSettings }
 
 type SettingsProps = typeof settingsProps
 
@@ -617,7 +618,7 @@ export function fromExtensionManifest<T extends TypeDescriptor & Partial<Section
  * TODO: Settings should be defined in individual extensions, and passed to the
  * core lib as necessary.
  */
-export const toolkitPrompts = settingsProps['aws.suppressPrompts'].properties
+export const toolkitPrompts = settingsProps['aws.suppressPrompts']
 type toolkitPromptName = keyof typeof toolkitPrompts
 export class ToolkitPromptSettings extends Settings.define(
     'aws.suppressPrompts',
@@ -647,7 +648,7 @@ export class ToolkitPromptSettings extends Settings.define(
     }
 }
 
-export const amazonQPrompts = settingsProps['amazonQ.suppressPrompts'].properties
+export const amazonQPrompts = settingsProps['amazonQ.suppressPrompts']
 type amazonQPromptName = keyof typeof amazonQPrompts
 export class AmazonQPromptSettings extends Settings.define(
     'amazonQ.suppressPrompts',
@@ -677,7 +678,7 @@ export class AmazonQPromptSettings extends Settings.define(
     }
 }
 
-const experiments = settingsProps['aws.experiments'].properties
+const experiments = settingsProps['aws.experiments']
 type ExperimentName = keyof typeof experiments
 
 /**
