@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix Q chat not responding in 2023.2 and 2023.3"
+}
