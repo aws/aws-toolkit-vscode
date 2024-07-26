@@ -41,7 +41,10 @@ import { SamCliSettings } from './cli/samCliSettings'
 import { Commands } from '../vscode/commands2'
 import { registerSync } from './sync'
 import { showExtensionPage } from '../utilities/vsCodeUtils'
-
+import { TreeNode } from '../treeview/resourceTreeDataProvider'
+import { SamAppLocation } from '../applicationBuilder/explorer/samProject'
+import { ResourceNode } from '../applicationBuilder/explorer/nodes/resourceNode'
+import { ToolkitError } from '../errors'
 const sharedDetectSamCli = shared(detectSamCli)
 
 const supportedLanguages: {
@@ -158,6 +161,25 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
         Commands.register({ id: 'aws.toggleSamCodeLenses', autoconnect: false }, async () => {
             const toggled = !settings.get('enableCodeLenses', false)
             await settings.update('enableCodeLenses', toggled)
+        }),
+        Commands.register({ id: 'aws.appBuilder.openTemplate', autoconnect: false }, async (arg: TreeNode) => {
+            if (arg) {
+                const uri = ((arg as TreeNode).resource as SamAppLocation).samTemplateUri
+                const document = await vscode.workspace.openTextDocument(uri)
+                await vscode.window.showTextDocument(document)
+            }
+        }),
+        Commands.register({ id: 'aws.appBuilder.openHandler', autoconnect: false }, async (arg: TreeNode) => {
+            const folderUri = (arg as ResourceNode).resource.workspaceFolder.uri
+            const handler = (arg as ResourceNode).resource.resource.Handler?.split('.')[0]
+            const handlerFile = (
+                await vscode.workspace.findFiles(new vscode.RelativePattern(folderUri, `**/${handler}.*`))
+            )[0]
+            if (!handlerFile) {
+                throw new ToolkitError(`No handler file found with name "${handler}"`)
+            }
+            const document = await vscode.workspace.openTextDocument(handlerFile)
+            await vscode.window.showTextDocument(document)
         })
     )
 }

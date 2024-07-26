@@ -31,7 +31,7 @@ import { AmazonQNode, refreshAmazonQ, refreshAmazonQRootNode } from '../amazonq/
 import { activateViewsShared, registerToolView } from './activationShared'
 import { isExtensionInstalled } from '../shared/utilities'
 import { CommonAuthViewProvider } from '../login/webview'
-import { setContext } from '../shared'
+import { ApplicationBuilderRootNode } from '../shared/applicationBuilder/explorer/nodes/rootNode'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -121,9 +121,22 @@ export async function activate(args: {
             refreshCommands: [refreshAmazonQ, refreshAmazonQRootNode],
         })
     }
+    const applicationBuilderNode: ToolView[] = [
+        {
+            nodes: [ApplicationBuilderRootNode.instance],
+            view: 'aws.applicationBuilder',
+            refreshCommands: [ApplicationBuilderRootNode.instance.refreshApplicationBuilderExplorer],
+        },
+        {
+            nodes: [ApplicationBuilderRootNode.instance],
+            view: 'aws.appBuilderForFileExplorer',
+            refreshCommands: [ApplicationBuilderRootNode.instance.refreshAppBuilderForFileExplorer],
+        },
+    ]
     const viewNodes: ToolView[] = [
         ...amazonQViewNode,
         ...codecatalystViewNode,
+        ...applicationBuilderNode,
         { nodes: [CdkRootNode.instance], view: 'aws.cdk', refreshCommands: [CdkRootNode.instance.refreshCdkExplorer] },
     ]
     for (const viewNode of viewNodes) {

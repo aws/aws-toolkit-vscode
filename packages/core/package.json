@@ -22,7 +22,8 @@
         "onLanguage:csharp",
         "onLanguage:yaml",
         "onFileSystem:s3",
-        "onFileSystem:s3-readonly"
+        "onFileSystem:s3-readonly",
+        "onView:applicationBuilder"
     ],
     "main": "./dist/src/extensionNode.js",
     "browser": "./dist/src/extensionWebCore.js",
@@ -728,6 +729,17 @@
             ]
         },
         "views": {
+            "explorer": [
+                {
+                    "id": "aws.appBuilderForFileExplorer",
+                    "name": "%AWS.applicationBuilder.explorerTitle%",
+                    "when": "!aws.applicationBuilder.hide",
+                    "contextualTitle": "Application Builder",
+                    "widget": {
+                        "type": "inspector"
+                    }
+                }
+            ],
             "aws-explorer": [
                 {
                     "id": "aws.amazonq.codewhisperer",
@@ -742,6 +754,11 @@
                 {
                     "id": "aws.cdk",
                     "name": "%AWS.cdk.explorerTitle%",
+                    "when": "!aws.explorer.showAuthView"
+                },
+                {
+                    "id": "aws.applicationBuilder",
+                    "name": "%AWS.applicationBuilder.explorerTitle%",
                     "when": "!aws.explorer.showAuthView"
                 },
                 {
@@ -875,6 +892,18 @@
                 },
                 {
                     "command": "aws.cdk.viewDocs",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.applicationBuilder.refresh",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.appBuilderForFileExplorer.refresh",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.applicationBuilder.viewDocs",
                     "when": "false"
                 },
                 {
@@ -1285,6 +1314,16 @@
                     "group": "navigation@1"
                 },
                 {
+                    "command": "aws.applicationBuilder.refresh",
+                    "when": "view == aws.applicationBuilder",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "aws.appBuilderForFileExplorer.refresh",
+                    "when": "view == aws.appBuilderForFileExplorer",
+                    "group": "navigation@1"
+                },
+                {
                     "command": "aws.toolkit.login",
                     "when": "view == aws.explorer",
                     "group": "1_account@1"
@@ -1570,27 +1609,27 @@
                 },
                 {
                     "command": "aws.invokeLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode)$/ || viewItem == awsApplicationBuilderDeployedNode",
                     "group": "0@1"
                 },
                 {
                     "command": "aws.downloadLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/ || viewItem == awsApplicationBuilderDeployedNode",
                     "group": "0@2"
                 },
                 {
                     "command": "aws.uploadLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/ || viewItem == awsApplicationBuilderDeployedNode",
                     "group": "1@1"
                 },
                 {
                     "command": "aws.deleteLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/ || viewItem == awsApplicationBuilderDeployedNode",
                     "group": "4@1"
                 },
                 {
                     "command": "aws.copyLambdaUrl",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/ || viewItem == awsApplicationBuilderDeployedNode",
                     "group": "2@0"
                 },
                 {
@@ -1954,6 +1993,11 @@
                     "when": "view == aws.explorer && viewItem == awsCloudFormationRootNode"
                 },
                 {
+                    "command": "aws.applicationBuilder.viewDocs",
+                    "when": "viewItem == awsApplicationBuilderRootNode",
+                    "group": "0@2"
+                },
+                {
                     "command": "aws.cdk.viewDocs",
                     "when": "viewItem == awsCdkRootNode",
                     "group": "0@2"
@@ -1979,6 +2023,36 @@
                     "group": "inline@1"
                 },
                 {
+                    "command": "aws.openInApplicationComposer",
+                    "when": "viewItem == awsApplicationBuilderAppNode",
+                    "group": "inline@2"
+                },
+                {
+                    "command": "aws.launchConfigForm",
+                    "when": "viewItem == awsApplicationBuilderResourceNode.function",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.appBuilder.deploy",
+                    "when": "viewItem == awsApplicationBuilderAppNode",
+                    "group": "inline@4"
+                },
+                {
+                    "command": "aws.appBuilder.build",
+                    "when": "viewItem == awsApplicationBuilderAppNode",
+                    "group": "inline@3"
+                },
+                {
+                    "command": "aws.appBuilder.openTemplate",
+                    "when": "viewItem == awsApplicationBuilderAppNode",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.appBuilder.openHandler",
+                    "when": "viewItem == awsApplicationBuilderResourceNode.function",
+                    "group": "inline@1"
+                },
+                {
                     "submenu": "aws.toolkit.auth",
                     "when": "viewItem == awsAuthNode",
                     "group": "inline@2"
@@ -1997,6 +2071,31 @@
                     "command": "aws.codecatalyst.signout",
                     "when": "viewItem =~ /^awsCodeCatalystNode/&& !isCloud9 && aws.codecatalyst.connected",
                     "group": "0@2"
+                },
+                {
+                    "command": "aws.appBuilder.build",
+                    "when": "viewItem == awsApplicationBuilderAppNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.launchConfigForm",
+                    "when": "viewItem == awsApplicationBuilderAppNode || viewItem == awsApplicationBuilderResourceNode.function",
+                    "group": "1@1"
+                },
+                {
+                    "command": "aws.appBuilder.deploy",
+                    "when": "viewItem == awsApplicationBuilderAppNode",
+                    "group": "2@1"
+                },
+                {
+                    "command": "aws.openInApplicationComposer",
+                    "when": "viewItem == awsApplicationBuilderAppNode",
+                    "group": "3@1"
+                },
+                {
+                    "command": "aws.deleteLambda",
+                    "when": "viewItem == awsApplicationBuilderAppNode",
+                    "group": "4@1"
                 }
             ],
             "aws.toolkit.auth": [
@@ -2064,7 +2163,7 @@
                 "command": "aws.launchConfigForm",
                 "title": "%AWS.command.launchConfigForm.title%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": "$(play)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2970,6 +3069,42 @@
                 "enablement": "isCloud9 || !aws.isWebExtHost"
             },
             {
+                "command": "aws.applicationBuilder.refresh",
+                "title": "%AWS.command.refreshApplicationBuilderExplorer%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": {
+                    "dark": "resources/icons/vscode/dark/refresh.svg",
+                    "light": "resources/icons/vscode/light/refresh.svg"
+                },
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.appBuilderForFileExplorer.refresh",
+                "title": "%AWS.command.refreshApplicationBuilderExplorer%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": {
+                    "dark": "resources/icons/vscode/dark/refresh.svg",
+                    "light": "resources/icons/vscode/light/refresh.svg"
+                },
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.applicationBuilder.viewDocs",
+                "title": "%AWS.generic.viewDocs%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost"
+            },
+            {
                 "command": "aws.stepfunctions.createStateMachineFromTemplate",
                 "title": "%AWS.command.stepFunctions.createStateMachineFromTemplate%",
                 "category": "%AWS.title%",
@@ -3475,6 +3610,30 @@
                 "title": "%AWS.command.samcli.sync%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost"
+            },
+            {
+                "command": "aws.appBuilder.deploy",
+                "title": "%AWS.command.appBuilder.deploy%",
+                "category": "%AWS.title%",
+                "icon": "$(cloud-upload)"
+            },
+            {
+                "command": "aws.appBuilder.build",
+                "title": "%AWS.command.appBuilder.build%",
+                "category": "%AWS.title%",
+                "icon": "$(symbol-method)"
+            },
+            {
+                "command": "aws.appBuilder.openTemplate",
+                "title": "%AWS.command.appBuilder.openTemplate%",
+                "category": "%AWS.title%",
+                "icon": "$(code)"
+            },
+            {
+                "command": "aws.appBuilder.openHandler",
+                "title": "%AWS.command.appBuilder.openHandler%",
+                "category": "%AWS.title%",
+                "icon": "$(code)"
             },
             {
                 "command": "aws.toolkit.amazonq.learnMore",
