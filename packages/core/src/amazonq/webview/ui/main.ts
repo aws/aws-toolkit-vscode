@@ -373,6 +373,18 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
                 return
             }
 
+            // If feature dev is not started correctly, force trigger /dev session
+            if (prompt.escapedPrompt?.startsWith('/dev')) {
+                const featureDevPrompt: ChatPrompt = {
+                    ...prompt,
+                    escapedPrompt: prompt.escapedPrompt.replace('/dev', ''),
+                    command: '/dev',
+                }
+
+                quickActionHandler.handle(featureDevPrompt, tabID, eventId)
+                return
+            }
+
             textMessageHandler.handle(prompt, tabID)
         },
         onVote: connector.onChatItemVoted,
