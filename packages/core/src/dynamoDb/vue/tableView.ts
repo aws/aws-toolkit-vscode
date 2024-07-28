@@ -10,7 +10,7 @@ import { getLogger, Logger } from '../../shared/logger'
 import { Key, ScanInput } from 'aws-sdk/clients/dynamodb'
 import { DynamoDbTarget, telemetry } from '../../shared/telemetry/telemetry'
 import { DynamoDbTableNode } from '../explorer/dynamoDbTableNode'
-import { getTableContent, queryTableContent, RowData, TableData } from '../utils/dynamodb'
+import { getTableContent, queryTableContent, RowData, TableData, getTableKeySchema } from '../utils/dynamodb'
 
 const localize = nls.loadMessageBundle()
 
@@ -57,6 +57,10 @@ export class DynamoDbTableWebview extends VueWebview {
             lastEvaluatedKey: tableData.lastEvaluatedKey,
         }
         return response
+    }
+
+    public async getTableSchema() {
+        return await getTableKeySchema(this.data.tableName, this.data.region)
     }
 }
 

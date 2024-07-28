@@ -23,14 +23,14 @@
                 <vscode-panel-view id="view-2">
                     <div class="query-section">
                         <vscode-text-field id="partitionKey" type="text" placeholder="Enter partition key value"
-                            >Partition key:
+                            >Partition key: {{ partitionKey }}
                         </vscode-text-field>
                         <vscode-text-field
                             id="sortKey"
-                            v-if="isFirstPage"
+                            v-if="isSortKeyPresent"
                             type="text"
                             placeholder="Enter sort key value"
-                            >Sort key:
+                            >Sort key: {{ sortKey }}
                         </vscode-text-field>
                         <div class="run-section">
                             <vscode-button style="background: round" @click="resetFields">Reset</vscode-button>
@@ -79,11 +79,16 @@ export default defineComponent({
             pageKeys: [] as (Key | undefined)[],
             pageNumber: 0,
             isLoading: true,
+            partitionKey: '',
+            sortKey: '',
         }
     },
     async created() {
         this.isLoading = true
         this.dynamoDbTableData = await client.init()
+        const tableSchema = await client.getTableSchema()
+        this.partitionKey = tableSchema.partitionKey.name
+        this.sortKey = tableSchema.sortKey?.name
         this.pageKeys = [undefined, this.dynamoDbTableData.lastEvaluatedKey]
         this.isLoading = false
     },
@@ -93,6 +98,12 @@ export default defineComponent({
         },
         isLastPage() {
             return this.dynamoDbTableData.lastEvaluatedKey == null
+        },
+        isSortKeyPresent() {
+            if (this.sortKey) {
+                return true
+            }
+            return false
         },
     },
     methods: {
@@ -142,13 +153,20 @@ export default defineComponent({
 
         resetFields() {
             document.getElementById('partitionKey').value = ''
-            document.getElementById('sortKey').value = ''
+            if (document.getElementById('sortKey')) {
+                document.getElementById('sortKey').value = ''
+            }
         },
 
         async executeQuery() {
+            let sortKeyValue = ''
+            if (document.getElementById('sortKey')) {
+                sortKeyValue = document.getElementById('sortKey').value
+            }
+
             const queryRequest = {
                 partitionKey: document.getElementById('partitionKey').value,
-                sortKey: document.getElementById('sortKey').value,
+                sortKey: sortKeyValue,
             }
             this.updatePageNumber()
             this.dynamoDbTableData = await client.queryData(queryRequest)

@@ -88,7 +88,7 @@ export async function queryTableContent(
     tableName: string,
     client = new DynamoDbClient(regionCode)
 ) {
-    const queryRequestObject = await prepareQueryRequestObject(client, tableName, queryRequest)
+    const queryRequestObject = await prepareQueryRequestObject(tableName, regionCode, client, queryRequest)
     const queryResponse = await client.queryTable(queryRequestObject)
     const { columnNames, tableHeader } = getTableColumnsNames(queryResponse)
     const tableItems = getTableItems(columnNames, queryResponse)
@@ -102,11 +102,12 @@ export async function queryTableContent(
 }
 
 async function prepareQueryRequestObject(
-    client: DynamoDbClient,
     tableName: string,
+    region: string,
+    client: DynamoDbClient,
     request: { partitionKey: string; sortKey: string }
 ) {
-    const tableSchema = await getTableKeySchema(client, tableName)
+    const tableSchema = await getTableKeySchema(tableName, region, client)
     validateQueryRequest(request, tableSchema)
     const queryRequestObject: DynamoDB.DocumentClient.QueryInput = {
         ExpressionAttributeNames: {
@@ -127,30 +128,6 @@ async function prepareQueryRequestObject(
         )
         queryRequestObject.KeyConditionExpression += ' AND #kn1 = :kv1'
     }
-    // let queryRequestObject = {
-    //     ExpressionAttributeNames: {
-    //         '#kn0': tableSchema.partitionKey.name,
-    //     },
-    //     ExpressionAttributeValues: {
-    //         ':kv0': { N: '100' },
-    //     },
-    //     KeyConditionExpression: '#kn0 = :kv0',
-    //     TableName: tableName,
-    // }
-    // if (request.sortKey && request.sortKey.length > 0 && tableSchema.sortKey) {
-    //     queryRequestObject = {
-    //         ExpressionAttributeNames: {
-    //             '#kn0': tableSchema.partitionKey.name,
-    //             '#kn1': tableSchema.sortKey.name,
-    //         },
-    //         ExpressionAttributeValues: {
-    //             ':kv0': { N: '100' },
-    //             ':kv1': { N: request.sortKey },
-    //         },
-    //         KeyConditionExpression: '#kn0 = :kv0 AND #kn1 = :kv1',
-    //         TableName: tableName,
-    //     }
-    // }
     return queryRequestObject
 }
 
@@ -170,15 +147,19 @@ function validateQueryRequest(queryRequest: { partitionKey: string; sortKey: str
     }
     if (
         (tableSchema.partitionKey.dataType === 'S' && typeof queryRequest.partitionKey !== 'string') ||
-        (tableSchema.partitionKey.dataType === 'N' && typeof queryRequest.partitionKey !== 'number') ||
+        (tableSchema.partitionKey.dataType === 'N' && isNaN(Number(queryRequest.partitionKey))) ||
         (tableSchema.sortKey?.dataType === 'S' && typeof queryRequest.sortKey !== 'string') ||
-        (tableSchema.sortKey?.dataType === 'N' && typeof queryRequest.partitionKey !== 'number')
+        (tableSchema.sortKey?.dataType === 'N' && isNaN(Number(queryRequest.sortKey)))
     ) {
         throw new Error('Data type of query input does not match with table schema.')
     }
 }
 
-async function getTableKeySchema(client: DynamoDbClient, tableName: string) {
+export async function getTableKeySchema(
+    tableName: string,
+    regionCode: string,
+    client = new DynamoDbClient(regionCode)
+) {
     const tableSchema: TableSchema = {
         partitionKey: { name: '', dataType: '' },
     }
