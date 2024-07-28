@@ -37,4 +37,9 @@ export class DynamoDbClient {
         const sdkClient = await this.createSdkClient()
         return sdkClient.scan(request).promise()
     }
+
+    public async queryTable(request: DynamoDB.Types.QueryInput) {
+        const sdkClient = await this.createSdkClient()
+        return sdkClient.query(request).promise()
+    }
 }
