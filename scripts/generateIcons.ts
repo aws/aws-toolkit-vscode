@@ -6,7 +6,6 @@
 import webfont from 'webfont'
 import * as path from 'path'
 import * as fs from 'fs-extra'
-import packageJson from '../../package.json'
 
 const fontId = 'aws-toolkit-icons'
 const projectDir = process.cwd() // root/packages/toolkit
@@ -14,6 +13,7 @@ const rootDir = path.join(projectDir, '../..') // root/
 const iconsDir = path.join(projectDir, 'resources', 'icons')
 const fontsDir = path.join(projectDir, 'resources', 'fonts')
 const stylesheetsDir = path.join(projectDir, 'resources', 'css')
+const packageJson = JSON.parse(fs.readFileSync(path.join(projectDir, 'package.json'), { encoding: 'utf-8' }))
 const iconSources = [
     // Paths relative to packages/toolkit
     `resources/icons/**/*.svg`,
