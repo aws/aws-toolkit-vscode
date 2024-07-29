@@ -518,12 +518,17 @@ describe('util', function () {
             scrubNames('user: jdoe123 file: C:/Users/user1/.aws/sso/cache/abc123.json (regex: /foo/)', fakeUser),
             'user: x file: C:/Users/x/.aws/sso/cache/x.json (regex: /x/)'
         )
-        assert.deepStrictEqual(scrubNames('/Users/user1/foo.jso (?)', fakeUser), '/Users/x/x.jso (?)')
-        assert.deepStrictEqual(scrubNames('/Users/user1/foo.js (?)', fakeUser), '/Users/x/x.js (?)')
-        assert.deepStrictEqual(scrubNames('/Users/user1/foo.longextension (?)', fakeUser), '/Users/x/x (?)')
-        assert.deepStrictEqual(scrubNames('/Users/user1/foo.ext1.ext2.ext3', fakeUser), '/Users/x/x.ext3')
-        assert.deepStrictEqual(scrubNames('/Users/user1/extMaxLength.1234', fakeUser), '/Users/x/x.1234')
-        assert.deepStrictEqual(scrubNames('/Users/user1/extExceedsMaxLength.12345', fakeUser), '/Users/x/x')
+        assert.deepStrictEqual(scrubNames('/Users/user1/foo.jso', fakeUser), '/Users/x/x.jso')
+        assert.deepStrictEqual(scrubNames('/Users/user1/foo.js', fakeUser), '/Users/x/x.js')
+        assert.deepStrictEqual(scrubNames('/Users/user1/noFileExtension', fakeUser), '/Users/x/x')
+        assert.deepStrictEqual(scrubNames('/Users/user1/minExtLength.a', fakeUser), '/Users/x/x.a')
+        assert.deepStrictEqual(scrubNames('/Users/user1/extIsNum.123456', fakeUser), '/Users/x/x.123456')
+        assert.deepStrictEqual(
+            scrubNames('/Users/user1/foo.looooooooongextension', fakeUser),
+            '/Users/x/x.looooooooongextension'
+        )
+        assert.deepStrictEqual(scrubNames('/Users/user1/multipleExts.ext1.ext2.ext3', fakeUser), '/Users/x/x.ext3')
+
         assert.deepStrictEqual(scrubNames('c:\\fooß\\bar\\baz.txt', fakeUser), 'c:/xß/x/x.txt')
         assert.deepStrictEqual(
             scrubNames('uhh c:\\path with\\ spaces \\baz.. hmm...', fakeUser),
