@@ -59,6 +59,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.toolwindow.CodeMo
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.STATES_WHERE_PLAN_EXIST
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.createFileCopy
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.findLineNumberByString
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getMavenVersion
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getModuleOrProjectNameForFile
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getPathToHilArtifactPomFile
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getPathToHilDependencyReport
@@ -77,8 +78,10 @@ import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
 import software.aws.toolkits.jetbrains.utils.notifyStickyError
 import software.aws.toolkits.jetbrains.utils.notifyStickyInfo
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CodeTransformBuildSystem
 import software.aws.toolkits.telemetry.CodeTransformCancelSrcComponents
 import software.aws.toolkits.telemetry.CodeTransformPreValidationError
+import software.aws.toolkits.telemetry.CodeTransformVCSViewerSrcComponents
 import java.io.File
 import java.nio.file.Path
 import java.time.Instant
@@ -172,22 +175,35 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             }
             val validatedBuildFiles = project.getSupportedBuildFilesWithSupportedJdk(supportedBuildFileNames, supportedJavaMappings)
             return if (validatedBuildFiles.isNotEmpty()) {
-                ValidationResult(true, validatedBuildFiles = validatedBuildFiles, validatedProjectJdkName = projectJdk?.description.orEmpty())
+                ValidationResult(
+                    true,
+                    validatedBuildFiles = validatedBuildFiles,
+                    validatedProjectJdkName = projectJdk?.description.orEmpty(),
+                    buildSystem = CodeTransformBuildSystem.Maven,
+                    buildSystemVersion = getMavenVersion(project)
+                )
             } else {
                 ValidationResult(
                     false,
-                    message("codemodernizer.notification.warn.invalid_project.description.reason.no_valid_files", supportedBuildFileNames.joinToString()),
-                    InvalidTelemetryReason(
+                    invalidReason = message(
+                        "codemodernizer.notification.warn.invalid_project.description.reason.no_valid_files",
+                        supportedBuildFileNames.joinToString()
+                    ),
+                    invalidTelemetryReason = InvalidTelemetryReason(
                         CodeTransformPreValidationError.NonMavenProject,
                         if (isGradleProject(project)) "Gradle build" else "other build"
-                    )
+                    ),
+                    buildSystem = if (isGradleProject(project)) CodeTransformBuildSystem.Gradle else CodeTransformBuildSystem.Unknown
                 )
             }
         }
 
         val result = validateCore(project)
 
+        // TODO: deprecated metric - remove after BI started using new metric
         telemetry.sendValidationResult(result)
+
+        telemetry.validateProject(result)
 
         return result
     }
@@ -363,6 +379,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
     }
 
     fun runLocalMavenBuild(project: Project, customerSelection: CustomerSelection) {
+        // TODO: deprecated metric - remove after BI started using new metric
         telemetry.jobStartedCompleteFromPopupDialog(customerSelection)
 
         // Create and set a session
@@ -490,6 +507,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             if (!managerState.flags.getOrDefault(StateFlags.IS_ONGOING, false)) return@launch
 
             // Gather project details
+            // TODO: deprecated metric - remove after BI started using new metric
             if (onProjectFirstOpen) {
                 val validationResult = validate(project)
                 telemetry.sendValidationResult(validationResult, onProjectFirstOpen)
@@ -553,7 +571,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
     private fun displayDiffNotificationAction(jobId: JobId): NotificationAction = NotificationAction.createSimple(
         message("codemodernizer.notification.info.modernize_complete.view_diff")
     ) {
-        artifactHandler.displayDiffAction(jobId)
+        artifactHandler.displayDiffAction(jobId, CodeTransformVCSViewerSrcComponents.ToastNotification)
     }
 
     private fun displaySummaryNotificationAction(jobId: JobId) =
@@ -746,7 +764,8 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
 
     fun showDiff() {
         val job = codeTransformationSession?.getActiveJobId() ?: return
-        artifactHandler.displayDiffAction(job)
+        // Use "TreeViewHeader" for Hub
+        artifactHandler.displayDiffAction(job, CodeTransformVCSViewerSrcComponents.TreeViewHeader)
     }
 
     fun handleCredentialsChanged() {

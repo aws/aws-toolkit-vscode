@@ -76,6 +76,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.utils.toVirtualFi
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.tryGetJdk
 import software.aws.toolkits.jetbrains.services.cwc.messages.ChatMessageType
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CodeTransformVCSViewerSrcComponents
 
 class CodeTransformChatController(
     private val context: AmazonQAppInitContext,
@@ -90,7 +91,9 @@ class CodeTransformChatController(
 
     override suspend fun processTransformQuickAction(message: IncomingCodeTransformMessage.Transform) {
         telemetry.prepareForNewJobSubmission()
+
         if (!checkForAuth(message.tabId)) {
+            telemetry.initiateTransform("User is not authenticated")
             return
         }
 
@@ -101,6 +104,9 @@ class CodeTransformChatController(
                 return
             }
         }
+
+        // Publish a metric when transform is first initiated from chat prompt.
+        telemetry.initiateTransform()
 
         codeTransformChatHelper.addNewMessage(
             buildCheckingValidProjectChatContent()
@@ -117,7 +123,6 @@ class CodeTransformChatController(
             codeTransformChatHelper.addNewMessage(
                 buildStartNewTransformFollowup()
             )
-
             return
         }
 
@@ -127,6 +132,7 @@ class CodeTransformChatController(
 
         codeTransformChatHelper.chatDelayShort()
 
+        // TODO: deprecated metric - remove after BI started using new metric
         telemetry.jobIsStartedFromChatPrompt()
 
         codeTransformChatHelper.addNewMessage(
@@ -178,8 +184,12 @@ class CodeTransformChatController(
 
     override suspend fun processCodeTransformCancelAction(message: IncomingCodeTransformMessage.CodeTransformCancel) {
         if (!checkForAuth(message.tabId)) {
+            telemetry.submitSelection("Cancel", null, "User is not authenticated")
             return
         }
+
+        // Publish metric for user selection
+        telemetry.submitSelection("Cancel")
 
         codeTransformChatHelper.run {
             addNewMessage(buildUserCancelledChatContent())
@@ -189,6 +199,7 @@ class CodeTransformChatController(
 
     override suspend fun processCodeTransformStartAction(message: IncomingCodeTransformMessage.CodeTransformStart) {
         if (!checkForAuth(message.tabId)) {
+            telemetry.submitSelection("Confirm", null, "User is not authenticated")
             return
         }
 
@@ -199,7 +210,6 @@ class CodeTransformChatController(
 
         codeTransformChatHelper.run {
             addNewMessage(buildUserSelectionSummaryChatContent(moduleName))
-
             addNewMessage(buildCompileLocalInProgressChatContent())
         }
 
@@ -212,6 +222,9 @@ class CodeTransformChatController(
             sourceJdk,
             JavaSdkVersion.JDK_17
         )
+
+        // Publish metric to capture user selection before local build starts
+        telemetry.submitSelection("Confirm", selection)
 
         codeModernizerManager.runLocalMavenBuild(context.project, selection)
     }
@@ -267,7 +280,10 @@ class CodeTransformChatController(
     }
 
     override suspend fun processCodeTransformViewDiff(message: IncomingCodeTransformMessage.CodeTransformViewDiff) {
-        artifactHandler.displayDiffAction(CodeModernizerSessionState.getInstance(context.project).currentJobId as JobId)
+        artifactHandler.displayDiffAction(
+            CodeModernizerSessionState.getInstance(context.project).currentJobId as JobId,
+            CodeTransformVCSViewerSrcComponents.Chat
+        )
     }
 
     override suspend fun processCodeTransformViewSummary(message: IncomingCodeTransformMessage.CodeTransformViewSummary) {

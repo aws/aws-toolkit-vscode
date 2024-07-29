@@ -32,6 +32,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.utils.filterOnlyP
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.unzipFile
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodeTransformPreValidationError
+import software.aws.toolkits.telemetry.CodeTransformVCSViewerSrcComponents
 import kotlin.io.path.Path
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.exists
@@ -51,7 +52,7 @@ class CodeWhispererCodeModernizerTest : CodeWhispererCodeModernizerTestBase() {
         doNothing().whenever(handler).notifyUnableToApplyPatch(any())
         val result = DownloadArtifactResult.ParseZipFailure(expectedError)
         doReturn(result).whenever(handler).downloadArtifact(any(), eq(TransformationDownloadArtifactType.CLIENT_INSTRUCTIONS), eq(false))
-        handler.displayDiff(jobId)
+        handler.displayDiff(jobId, CodeTransformVCSViewerSrcComponents.ToastNotification)
         verify(handler, times(1)).notifyUnableToApplyPatch(any())
     }
 
@@ -127,10 +128,10 @@ class CodeWhispererCodeModernizerTest : CodeWhispererCodeModernizerTestBase() {
         val path = testCodeModernizerArtifact.zipPath
         val result = DownloadArtifactResult.Success(testCodeModernizerArtifact, path)
         doReturn(result).whenever(handler).downloadArtifact(any(), eq(TransformationDownloadArtifactType.CLIENT_INSTRUCTIONS), eq(false))
-        doNothing().whenever(handler).displayDiffUsingPatch(any(), any())
-        handler.displayDiff(jobId)
+        doNothing().whenever(handler).displayDiffUsingPatch(any(), any(), any())
+        handler.displayDiff(jobId, CodeTransformVCSViewerSrcComponents.Chat)
         verify(handler, never()).notifyUnableToApplyPatch(any())
-        verify(handler, times(1)).displayDiffUsingPatch(testCodeModernizerArtifact.patch, jobId)
+        verify(handler, times(1)).displayDiffUsingPatch(testCodeModernizerArtifact.patch, jobId, CodeTransformVCSViewerSrcComponents.Chat)
     }
 
     @Test
