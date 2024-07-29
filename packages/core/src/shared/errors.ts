@@ -345,7 +345,7 @@ export function getTelemetryResult(error: unknown | undefined): Result {
  */
 export function scrubNames(s: string, username?: string) {
     let r = ''
-    const fileExtRe = /\.[^.\/]{1,4}$/
+    const fileExtRe = /\.[^.\/]+$/
     const slashdot = /^[~.]*[\/\\]*/
 
     /** Allowlisted filepath segments. */
