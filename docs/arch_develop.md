@@ -71,6 +71,8 @@ Some components of the core library depend on the `package.json`s of the extensi
     -   Does not restore, it is a superset of what exists in `packages/core` for `configuration.properties`.
     -   To develop for the Amazon Q extension: add all changes to `packages/amazonq/package.json`, EXCEPT for settings that are references by code in the core library, or settings that already exist in the core `package.json`
 
+If you are modifying or registering new debuggers in VS Code via the `debuggers` contribution point, you may need to regenerate the [definitions file](../packages/core/src/shared/sam/debugger/awsSamDebugConfiguration.gen.ts). After updating ['toolkit/package.json'](../packages/toolkit/package.json), run `npm run generateConfigurationAttributes -w packages/toolkit`
+
 ## `web`, `node`, `common`, `shared` naming conventions
 
 This project can run in different environments, eg Web mode (in the browser with no compute backend), or in Node.js on your desktop (the most common way).

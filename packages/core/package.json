@@ -4014,8 +4014,7 @@
         }
     },
     "scripts": {
-        "postinstall": "npm run generateTelemetry && npm run generateConfigurationAttributes && npm run compile",
-        "generateConfigurationAttributes": "ts-node ./scripts/build/generateConfigurationAttributes.ts",
+        "postinstall": "npm run generateTelemetry && npm run compile",
         "clean": "ts-node ../../scripts/clean.ts dist/",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "buildScripts": "npm run generateClients && npm run generateIcons && npm run copyFiles",
