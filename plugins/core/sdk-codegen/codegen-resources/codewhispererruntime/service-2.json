@@ -384,6 +384,7 @@
             "members": {
                 "conversationId": { "shape": "ConversationId" },
                 "messageId": { "shape": "MessageId" },
+                "customizationArn":{ "shape":"CustomizationArn" },
                 "userIntent": { "shape": "UserIntent" },
                 "hasCodeSnippet": { "shape": "Boolean" },
                 "programmingLanguage": { "shape": "ProgrammingLanguage" },
@@ -409,6 +410,7 @@
             "members": {
                 "conversationId": { "shape": "ConversationId" },
                 "messageId": { "shape": "MessageId" },
+                "customizationArn":{ "shape":"CustomizationArn" },
                 "interactionType": { "shape": "ChatMessageInteractionType" },
                 "interactionTarget": { "shape": "String" },
                 "acceptedCharacterCount": { "shape": "Integer" },
@@ -470,6 +472,7 @@
             "required": ["conversationId", "messageId", "modificationPercentage"],
             "members": {
                 "conversationId": { "shape": "ConversationId" },
+                "customizationArn":{"shape":"CustomizationArn"},
                 "messageId": { "shape": "MessageId" },
                 "programmingLanguage": { "shape": "ProgrammingLanguage" },
                 "modificationPercentage": { "shape": "Double" },

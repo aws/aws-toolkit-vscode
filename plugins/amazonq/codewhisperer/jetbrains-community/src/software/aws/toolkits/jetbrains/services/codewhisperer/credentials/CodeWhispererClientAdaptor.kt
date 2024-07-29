@@ -152,6 +152,7 @@ interface CodeWhispererClientAdaptor : Disposable {
         responseLength: Int?,
         numberOfCodeBlocks: Int?,
         hasProjectLevelContext: Boolean?,
+        customization: CodeWhispererCustomization?
     ): SendTelemetryEventResponse
 
     fun sendChatInteractWithMessageTelemetry(
@@ -172,6 +173,7 @@ interface CodeWhispererClientAdaptor : Disposable {
         language: CodeWhispererProgrammingLanguage,
         modificationPercentage: Double,
         hasProjectLevelContext: Boolean?,
+        customization: CodeWhispererCustomization?
     ): SendTelemetryEventResponse
 
     companion object {
@@ -457,6 +459,7 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
         responseLength: Int?,
         numberOfCodeBlocks: Int?,
         hasProjectLevelContext: Boolean?,
+        customization: CodeWhispererCustomization?
     ): SendTelemetryEventResponse = bearerClient().sendTelemetryEvent { requestBuilder ->
         requestBuilder.telemetryEvent { telemetryEventBuilder ->
             telemetryEventBuilder.chatAddMessageEvent {
@@ -473,6 +476,9 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
                 it.responseLength(responseLength)
                 it.numberOfCodeBlocks(numberOfCodeBlocks)
                 it.hasProjectLevelContext(hasProjectLevelContext)
+                customization?.arn?.let { arn ->
+                    it.customizationArn(arn)
+                }
             }
         }
         requestBuilder.optOutPreference(getTelemetryOptOutPreference())
@@ -513,7 +519,8 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
         requestId: String,
         language: CodeWhispererProgrammingLanguage,
         modificationPercentage: Double,
-        hasProjectLevelContext: Boolean?
+        hasProjectLevelContext: Boolean?,
+        customization: CodeWhispererCustomization?
     ): SendTelemetryEventResponse = bearerClient().sendTelemetryEvent { requestBuilder ->
         requestBuilder.telemetryEvent { telemetryEventBuilder ->
             telemetryEventBuilder.chatUserModificationEvent {
@@ -524,6 +531,9 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
                 }
                 it.modificationPercentage(modificationPercentage)
                 it.hasProjectLevelContext(hasProjectLevelContext)
+                customization?.arn?.let { arn ->
+                    it.customizationArn(arn)
+                }
             }
         }
         requestBuilder.optOutPreference(getTelemetryOptOutPreference())

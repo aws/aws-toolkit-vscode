@@ -3,15 +3,19 @@
 
 package software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry
 
+import org.jetbrains.annotations.VisibleForTesting
 import software.amazon.awssdk.services.codewhispererruntime.model.ChatInteractWithMessageEvent
 import software.amazon.awssdk.services.codewhispererruntime.model.ChatMessageInteractionType
 import software.amazon.awssdk.services.codewhispererstreaming.model.UserIntent
 import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment
+import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppInitContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
+import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererCustomization
+import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
 import software.aws.toolkits.jetbrains.services.cwc.clients.chat.model.ChatRequestData
 import software.aws.toolkits.jetbrains.services.cwc.clients.chat.model.TriggerType
@@ -36,10 +40,12 @@ import java.time.Instant
 import software.amazon.awssdk.services.codewhispererruntime.model.UserIntent as CWClientUserIntent
 
 class TelemetryHelper(private val context: AmazonQAppInitContext, private val sessionStorage: ChatSessionStorage) {
-
     private val responseStreamStartTime: MutableMap<String, Instant> = mutableMapOf()
     private val responseStreamTotalTime: MutableMap<String, Int> = mutableMapOf()
     private val responseStreamTimeForChunks: MutableMap<String, MutableList<Instant>> = mutableMapOf()
+
+    private val customization: CodeWhispererCustomization?
+        get() = CodeWhispererModelConfigurator.getInstance().activeCustomization(context.project)
 
     fun getConversationId(tabId: String): String? = sessionStorage.getSession(tabId)?.session?.conversationId
 
@@ -129,8 +135,13 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
             data.message.length,
             responseLength,
             numberOfCodeBlocks,
-            getIsProjectContextEnabled()
-        )
+            getIsProjectContextEnabled(),
+            data.customization
+        ).also {
+            logger.debug {
+                "Successfully sendTelemetryEvent for ChatAddMessage with requestId=${it.responseMetadata().requestId()}"
+            }
+        }
     }
 
     fun recordMessageResponseError(data: ChatRequestData, tabId: String, responseCode: Int) {
@@ -276,9 +287,21 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
             }
 
             else -> null
+        }?.let {
+            // override request and add customizationArn if it's not null, else return itself
+            customization?.let { myCustomization ->
+                it.toBuilder()
+                    .customizationArn(myCustomization.arn)
+                    .build()
+            } ?: it
         }
 
-        event?.let { CodeWhispererClientAdaptor.getInstance(context.project).sendChatInteractWithMessageTelemetry(it) }
+        event?.let {
+            val steResponse = CodeWhispererClientAdaptor.getInstance(context.project).sendChatInteractWithMessageTelemetry(it)
+            logger.debug {
+                "Successfully sendTelemetryEvent for ChatInteractWithMessage with requestId=${steResponse.responseMetadata().requestId()}"
+            }
+        }
     }
 
     private suspend fun recordFeedback(message: IncomingCwcMessage.ChatItemFeedback) {
@@ -341,13 +364,15 @@ class TelemetryHelper(private val context: AmazonQAppInitContext, private val se
         responseStreamTotalTime[tabId] = totalTime
     }
 
-    private fun getResponseStreamTimeToFirstChunk(tabId: String): Double {
+    @VisibleForTesting
+    fun getResponseStreamTimeToFirstChunk(tabId: String): Double {
         val chunkTimes = responseStreamTimeForChunks[tabId] ?: return 0.0
         if (chunkTimes.size == 1) return Duration.between(chunkTimes[0], Instant.now()).toMillis().toDouble()
         return Duration.between(chunkTimes[0], chunkTimes[1]).toMillis().toDouble()
     }
 
-    private fun getResponseStreamTimeBetweenChunks(tabId: String): List<Double> = try {
+    @VisibleForTesting
+    fun getResponseStreamTimeBetweenChunks(tabId: String): List<Double> = try {
         val chunkDeltaTimes = mutableListOf<Double>()
         val chunkTimes = responseStreamTimeForChunks[tabId] ?: listOf(Instant.now())
         for (idx in 0 until (chunkTimes.size - 1)) {

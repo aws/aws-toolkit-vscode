@@ -15,10 +15,12 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.Alarm
 import com.intellij.util.AlarmFactory
 import info.debatty.java.stringsimilarity.Levenshtein
+import org.assertj.core.util.VisibleForTesting
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
+import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererUnknownLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
@@ -165,7 +167,8 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
      * Use Levenshtein distance to check how
      * Levenshtein distance was preferred over Jaro–Winkler distance for simplicity
      */
-    private fun checkDiff(currString: String?, acceptedString: String?): Double {
+    @VisibleForTesting
+    internal fun checkDiff(currString: String?, acceptedString: String?): Double {
         if (currString == null || acceptedString == null || acceptedString.isEmpty() || currString.isEmpty()) {
             return 1.0
         }
@@ -211,8 +214,11 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
             insertedCode.messageId,
             lang,
             percentage,
-            CodeWhispererSettings.getInstance().isProjectContextEnabled()
-        )
+            CodeWhispererSettings.getInstance().isProjectContextEnabled(),
+            CodeWhispererModelConfigurator.getInstance().activeCustomization(project)
+        ).also {
+            LOG.debug { "Successfully sendTelemetryEvent for ChatModificationWithChat with requestId: ${it.responseMetadata().requestId()}" }
+        }
     }
 
 // temp disable user modfication event for further discussion on metric calculation

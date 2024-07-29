@@ -23,7 +23,7 @@ import software.aws.toolkits.jetbrains.services.telemetry.TelemetryListener
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import java.util.concurrent.atomic.AtomicBoolean
 
-abstract class TelemetryService(private val publisher: TelemetryPublisher, private val batcher: TelemetryBatcher) : Disposable {
+abstract class TelemetryService(private val publisher: TelemetryPublisher, protected val batcher: TelemetryBatcher) : Disposable {
     private val isDisposing = AtomicBoolean(false)
     private val listeners = mutableSetOf<TelemetryListener>()
 

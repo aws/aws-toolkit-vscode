@@ -23,9 +23,7 @@ interface TelemetryListener {
     fun onTelemetryEvent(event: MetricEvent)
 }
 
-class DefaultTelemetryService : TelemetryService {
-    constructor() : super(publisher, batcher)
-
+class DefaultTelemetryService : TelemetryService(publisher, batcher) {
     private companion object {
         private val publisher: TelemetryPublisher by lazy { DefaultTelemetryPublisher() }
         private val batcher: TelemetryBatcher by lazy { DefaultTelemetryBatcher(publisher) }
