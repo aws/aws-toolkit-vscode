@@ -1,3 +1,8 @@
+## 1.18.0 2024-07-29
+
+- **Bug Fix** Security Scan: Fixed an issue scans were not able to succeed on Java projects with .class files
+- **Bug Fix** FileNotFound error causing early SSO expiration
+
 ## 1.17.0 2024-07-25
 
 - **Bug Fix** Amazon Q Dev and Transform introduction text formatted incorrectly
