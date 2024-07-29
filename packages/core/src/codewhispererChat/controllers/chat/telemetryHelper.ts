@@ -15,6 +15,7 @@ import {
 } from '../../../shared/telemetry/telemetry'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import {
+    AcceptDiff,
     ChatItemFeedbackMessage,
     ChatItemVotedMessage,
     CopyCodeToClipboard,
@@ -147,6 +148,7 @@ export class CWCTelemetryHelper {
             | SourceLinkClickMessage
             | ResponseBodyLinkClickMessage
             | FooterInfoLinkClick
+            | AcceptDiff
     ) {
         const conversationId = this.getConversationId(message.tabID)
         let event: AmazonqInteractWithMessage | undefined
@@ -179,6 +181,22 @@ export class CWCTelemetryHelper {
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatInteractionTarget: message.insertionTargetType,
                     cwsprChatHasReference: message.codeReference && message.codeReference.length > 0,
+                    cwsprChatCodeBlockIndex: message.codeBlockIndex,
+                    cwsprChatTotalCodeBlocks: message.totalCodeBlocks,
+                    cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
+                }
+                break
+            case 'accept_diff':
+                message = message as AcceptDiff
+                event = {
+                    result: 'Succeeded',
+                    cwsprChatConversationId: conversationId ?? '',
+                    cwsprChatMessageId: message.messageId,
+                    cwsprChatInteractionType: 'acceptDiff',
+                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    cwsprChatAcceptedCharactersLength: message.code.length,
+                    cwsprChatHasReference:
+                        message.referenceTrackerInformation && message.referenceTrackerInformation.length > 0,
                     cwsprChatCodeBlockIndex: message.codeBlockIndex,
                     cwsprChatTotalCodeBlocks: message.totalCodeBlocks,
                     cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
