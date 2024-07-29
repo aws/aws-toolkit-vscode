@@ -20,6 +20,7 @@ import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import * as testutil from '../../testUtil'
 import globals from '../../../shared/extensionGlobals'
 import { driveLetterRegex } from '../../../shared/utilities/pathUtils'
+import { IdeFileSystem } from '../../../shared/telemetry/telemetry.gen'
 
 describe('FileSystem', function () {
     let fakeContext: vscode.ExtensionContext
@@ -104,15 +105,36 @@ describe('FileSystem', function () {
         throwCombinations.forEach((throws) => {
             it(`still writes a file if one of the atomic write methods fails: ${JSON.stringify(throws)}`, async function () {
                 if (throws.vsc) {
-                    sandbox.stub(fs, 'rename').throws()
+                    sandbox.stub(fs, 'rename').throws(new Error('Test Error Message VSC'))
                 }
                 if (throws.node) {
-                    sandbox.stub(nodeFs.promises, 'rename').throws()
+                    sandbox.stub(nodeFs.promises, 'rename').throws(new Error('Test Error Message Node'))
                 }
-
                 const filePath = createTestPath('myFileName')
+
                 await fs.writeFile(filePath, 'MyContent', { atomic: true })
+
                 assert.strictEqual(readFileSync(filePath, 'utf-8'), 'MyContent')
+                const expectedTelemetry: IdeFileSystem[] = []
+                if (throws.vsc) {
+                    expectedTelemetry.push({
+                        action: 'writeFile',
+                        result: 'Failed',
+                        reason: 'writeFileAtomicVscRename',
+                        reasonDesc: 'Test Error Message VSC',
+                    })
+                }
+                if (throws.node) {
+                    expectedTelemetry.push({
+                        action: 'writeFile',
+                        result: 'Failed',
+                        reason: 'writeFileAtomicNodeRename',
+                        reasonDesc: 'Test Error Message Node',
+                    })
+                }
+                if (expectedTelemetry.length > 0) {
+                    testutil.assertTelemetry('ide_fileSystem', expectedTelemetry)
+                }
             })
         })
 

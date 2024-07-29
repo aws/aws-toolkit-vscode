@@ -22,6 +22,7 @@ import { resolvePath } from '../utilities/pathUtils'
 import crypto from 'crypto'
 import { waitUntil } from '../utilities/timeoutUtils'
 import { telemetry } from '../telemetry/telemetry'
+import { getLogger } from '../logger/logger'
 
 const vfs = vscode.workspace.fs
 type Uri = vscode.Uri
@@ -260,6 +261,7 @@ export class FileSystem {
                     reason: 'writeFileAtomicVscRename',
                     reasonDesc: getTelemetryReasonDesc(e),
                 })
+                getLogger().warn(`writeFile atomic VSC failed for, ${uri.fsPath}, with %O`, e)
                 // Atomic write with VSC rename() failed, so try with Node rename()
                 try {
                     await write(tempFile)
@@ -272,6 +274,7 @@ export class FileSystem {
                         reason: 'writeFileAtomicNodeRename',
                         reasonDesc: getTelemetryReasonDesc(e),
                     })
+                    getLogger().warn(`writeFile atomic Node failed for, ${uri.fsPath}, with %O`, e)
                     // The atomic rename techniques were not successful, so we will
                     // just resort to regular a non-atomic write
                 }
