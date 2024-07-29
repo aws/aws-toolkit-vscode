@@ -6,7 +6,9 @@
 import { runTests } from './testRunner'
 
 export function run(): Promise<void> {
-    return runTests(process.env.TEST_DIR ?? 'src/test', ['src/test/globalSetup.test.ts'])
+    return runTests(process.env.TEST_DIR ?? 'src/test', 'amazonwebservices.aws-toolkit-vscode', [
+        'src/test/globalSetup.test.ts',
+    ])
 }
 
 export { registerAuthHook, using } from './setupUtil'

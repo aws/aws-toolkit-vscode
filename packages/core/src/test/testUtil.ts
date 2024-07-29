@@ -373,7 +373,7 @@ export async function closeAllEditors(): Promise<void> {
     //  - `vscode.OutputChannel` name prefixed with "extension-output". https://github.com/microsoft/vscode/issues/148993#issuecomment-1167654358
     //  - `vscode.LogOutputChannel` name (created with `vscode.window.createOutputChannel(…,{log:true})`
     // Maybe we can close these with a command?
-    const ignorePatterns = [/extension-output/, /tasks/, /amazonwebservices\.aws-core-vscode\./]
+    const ignorePatterns = [/extension-output/, /tasks/, /nullExtensionDescription\./]
     const editors: vscode.TextEditor[] = []
 
     const noVisibleEditor: boolean | undefined = await waitUntil(

@@ -6,5 +6,7 @@
 import { runTests } from '../test/testRunner'
 
 export function run(): Promise<void> {
-    return runTests(process.env.TEST_DIR ?? 'src/testE2E', ['src/testInteg/globalSetup.test.ts'])
+    return runTests(process.env.TEST_DIR ?? 'src/testE2E', 'amazonwebservices.aws-toolkit-vscode', [
+        'src/testInteg/globalSetup.test.ts',
+    ])
 }

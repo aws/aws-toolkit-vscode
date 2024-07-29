@@ -4,6 +4,7 @@
  */
 
 import * as proc from 'child_process'
+import * as path from 'path'
 import packageJson from '../../package.json'
 import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath } from '@vscode/test-electron'
 import { join, resolve } from 'path'
@@ -67,6 +68,7 @@ async function getVSCodeCliArgs(params: {
     env?: Record<string, string>
 }): Promise<TestOptions> {
     const projectRootDir = process.cwd()
+    const extensionRootDir = path.resolve(process.cwd(), '../toolkit')
 
     let disableExtensionsArgs: string[] = []
     let disableWorkspaceTrustArg: string[] = []
@@ -101,7 +103,7 @@ async function getVSCodeCliArgs(params: {
 
     return {
         vscodeExecutablePath: params.vsCodeExecutablePath,
-        extensionDevelopmentPath: projectRootDir,
+        extensionDevelopmentPath: extensionRootDir,
 
         extensionTestsPath: resolve(projectRootDir, params.relativeTestEntryPoint),
         // For verbose VSCode logs, add "--verbose --log debug". c2165cf48e62c
