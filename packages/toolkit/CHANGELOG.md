@@ -1,3 +1,7 @@
+## 3.17.0 2024-07-29
+
+- **Bug Fix** FileNotFound error causing early SSO expiration
+
 ## 3.16.0 2024-07-25
 
 - **Bug Fix** AccessAnalyzer: error when running CheckNoPublicAccess with only role trust policy in template
