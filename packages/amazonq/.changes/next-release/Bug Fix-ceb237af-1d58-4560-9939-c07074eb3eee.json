@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "FileNotFound error causing early SSO expiration"
-}
