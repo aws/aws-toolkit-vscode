@@ -132,7 +132,7 @@ You can also use these NPM tasks (see `npm run` for the full list):
 
     1. Declare a global unhandledRejection handler.
         ```ts
-        process.on('unhandledRejection', e => {
+        process.on('unhandledRejection', (e) => {
             getLogger('channel').error(
                 localize(
                     'AWS.channel.aws.toolkit.activation.error',
@@ -549,7 +549,7 @@ For extensions to contribute their own codicons, VSCode requires a font file as 
 As a simple example, let's say I wanted to add a new icon for CloudWatch log streams. I would do the following:
 
 1. Place the icon in `resources/icons/aws/cloudwatch`. I'l name the icon `log-stream.svg`.
-1. Use `npm run generatePackage` to update `package.json`. Commit this change with the new icon.
+1. Use `npm run generateIcons` to update `package.json`. Commit this change with the new icon.
 1. You can now use the icon in the Toolkit:
 
     ```ts
