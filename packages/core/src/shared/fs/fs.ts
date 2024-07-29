@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as vscode from 'vscode'
+import vscode from 'vscode'
 import os from 'os'
 import { promises as nodefs, constants as nodeConstants, WriteFileOptions } from 'fs'
 import { isCloud9 } from '../extensionUtilities'
@@ -11,6 +11,7 @@ import {
     PermissionsError,
     PermissionsTriplet,
     ToolkitError,
+    getTelemetryReasonDesc,
     isFileNotFoundError,
     isPermissionsError,
     scrubNames,
@@ -236,13 +237,53 @@ export class FileSystem {
         await fs.mkdir(_path.dirname(uri.fsPath))
 
         if (opts?.atomic) {
+            // Background: As part of an "atomic write" we write to a temp file, then rename
+            // to the target file. The problem was that each `rename()` implementation doesn't always
+            // work. The solution is to try each implementation and then fallback to a regular write if none of them work.
+            // 1. Atomic write with VSC rename(), but may throw `FileNotFound` errors
+            //    - Looks to be this error from what we see in telemetry: https://github.com/microsoft/vscode/blob/09d5f4efc5089ce2fc5c8f6aeb51d728d7f4e758/src/vs/platform/files/common/fileService.ts#L1029-L1030
+            // 2. Atomic write with Node rename(), but may throw `EPERM` errors on Windows
+            //    - This is explained in https://github.com/aws/aws-toolkit-vscode/pull/5335
+            //    - Step 1 is supposed to address the EPERM issue
+            // 3. Finally, do a regular file write, but may result in invalid file content
+            //
+            // For telemetry, we will only report failures as to not overload with succeed events.
             const tempFile = this.#toUri(`${uri.fsPath}.${crypto.randomBytes(8).toString('hex')}.tmp`)
-            await write(tempFile)
-            await fs.rename(tempFile, uri)
-            return
-        } else {
-            await write(uri)
+            try {
+                await write(tempFile)
+                await fs.rename(tempFile, uri)
+                return
+            } catch (e) {
+                telemetry.ide_fileSystem.emit({
+                    action: 'writeFile',
+                    result: 'Failed',
+                    reason: 'writeFileAtomicVscRename',
+                    reasonDesc: getTelemetryReasonDesc(e),
+                })
+                // Atomic write with VSC rename() failed, so try with Node rename()
+                try {
+                    await write(tempFile)
+                    await nodefs.rename(tempFile.fsPath, uri.fsPath)
+                    return
+                } catch (e) {
+                    telemetry.ide_fileSystem.emit({
+                        action: 'writeFile',
+                        result: 'Failed',
+                        reason: 'writeFileAtomicNodeRename',
+                        reasonDesc: getTelemetryReasonDesc(e),
+                    })
+                    // The atomic rename techniques were not successful, so we will
+                    // just resort to regular a non-atomic write
+                }
+            } finally {
+                // clean up temp file since it possibly remains
+                if (await fs.exists(tempFile)) {
+                    await fs.delete(tempFile)
+                }
+            }
         }
+
+        await write(uri)
     }
 
     async rename(oldPath: vscode.Uri | string, newPath: vscode.Uri | string) {

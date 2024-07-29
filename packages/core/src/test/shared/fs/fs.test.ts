@@ -4,10 +4,11 @@
  */
 
 import assert from 'assert'
-import * as vscode from 'vscode'
+import vscode from 'vscode'
 import * as path from 'path'
 import * as utils from 'util'
 import { existsSync, mkdirSync, promises as nodefs, readFileSync, rmSync } from 'fs'
+import nodeFs from 'fs'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import fs, { FileSystem } from '../../../shared/fs/fs'
 import * as os from 'os'
@@ -91,6 +92,28 @@ describe('FileSystem', function () {
             const filePath = createTestPath('dirA/dirB/myFileName.txt')
             await fs.writeFile(filePath, 'MyContent')
             assert.strictEqual(readFileSync(filePath, 'utf-8'), 'MyContent')
+        })
+
+        // We try multiple methods to do an atomic write, but if one fails we want to fallback
+        // to the next method. The following are the different combinations of this when a method throws.
+        const throwCombinations = [
+            { vsc: false, node: false },
+            { vsc: true, node: false },
+            { vsc: true, node: true },
+        ]
+        throwCombinations.forEach((throws) => {
+            it(`still writes a file if one of the atomic write methods fails: ${JSON.stringify(throws)}`, async function () {
+                if (throws.vsc) {
+                    sandbox.stub(fs, 'rename').throws()
+                }
+                if (throws.node) {
+                    sandbox.stub(nodeFs.promises, 'rename').throws()
+                }
+
+                const filePath = createTestPath('myFileName')
+                await fs.writeFile(filePath, 'MyContent', { atomic: true })
+                assert.strictEqual(readFileSync(filePath, 'utf-8'), 'MyContent')
+            })
         })
 
         it('throws when existing file + no permission', async function () {
