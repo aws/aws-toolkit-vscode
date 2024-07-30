@@ -1,4 +1,11 @@
-version: "1.0"
-linter: jetbrains/qodana-jvm:2023.1-eap
+version: 1.0
+linter: jetbrains/qodana-jvm-community:latest
+projectJDK: "21"
+profile:
+  name: qodana.recommended
+exclude:
+  - name: All
+    paths:
+      - .qodana
 dot-net:
   solution: ReSharper.AWS.sln
