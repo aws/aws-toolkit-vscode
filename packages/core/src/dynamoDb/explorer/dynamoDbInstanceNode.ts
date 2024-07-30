@@ -39,7 +39,7 @@ export class DynamoDbInstanceNode extends AWSTreeNodeBase {
             this.dynamoDbTableNodes,
             sortedTablesByName.keys(),
             (key) => this.dynamoDbTableNodes.get(key)!,
-            (key) => new DynamoDbTableNode(this.regionCode, key)
+            (key) => new DynamoDbTableNode(this.regionCode, key, this)
         )
     }
 }

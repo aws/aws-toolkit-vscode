@@ -4,8 +4,10 @@
  */
 
 import { DynamoDB } from 'aws-sdk'
-import { AttributeValue, Key, ScanInput } from 'aws-sdk/clients/dynamodb'
+import { copyToClipboard } from '../../shared/utilities/messages'
+import { DynamoDbTableNode } from '../explorer/dynamoDbTableNode'
 import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
+import { AttributeValue, Key, ScanInput } from 'aws-sdk/clients/dynamodb'
 
 export interface RowData {
     [key: string]: string
@@ -43,7 +45,7 @@ export async function getTableContent(
     return tableData
 }
 
-export function getTableColumnsNames(items: DynamoDB.Types.ScanOutput): {
+function getTableColumnsNames(items: DynamoDB.Types.ScanOutput): {
     columnNames: Set<string>
     tableHeader: RowData[]
 } {
@@ -64,7 +66,7 @@ export function getTableColumnsNames(items: DynamoDB.Types.ScanOutput): {
     }
 }
 
-export function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Types.ScanOutput) {
+function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Types.ScanOutput) {
     const tableItems = []
     for (const item of items.Items ?? []) {
         const curItem: RowData = {}
@@ -80,6 +82,17 @@ export function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Ty
         tableItems.push(curItem)
     }
     return tableItems
+}
+
+/**
+ * Copies the ARN of a DynamoDB table to the clipboard.
+ * @param {DynamoDbTableNode} node - The DynamoDB table node containing table and region information.
+ */
+export async function copyDynamoDbArn(node: DynamoDbTableNode) {
+    const response = await new DynamoDbClient(node.regionCode).getTableInformation({ TableName: node.dynamoDbtable })
+    if (response.TableArn !== undefined) {
+        await copyToClipboard(response.TableArn, 'ARN')
+    }
 }
 
 export async function queryTableContent(

@@ -9,7 +9,6 @@ import { VueWebview } from '../../webviews/main'
 import { getLogger, Logger } from '../../shared/logger'
 import { Key, ScanInput } from 'aws-sdk/clients/dynamodb'
 import { DynamoDbTarget, telemetry } from '../../shared/telemetry/telemetry'
-import { DynamoDbTableNode } from '../explorer/dynamoDbTableNode'
 import { getTableContent, queryTableContent, RowData, TableData, getTableKeySchema } from '../utils/dynamodb'
 
 const localize = nls.loadMessageBundle()
@@ -23,6 +22,10 @@ export interface DynamoDbTableData {
     lastEvaluatedKey?: Key
 }
 
+/**
+ * The DynamoDbTableWebview class extends the VueWebview class to create a web view for displaying and interacting with a DynamoDB table in a Vue.js application.
+ * This class binds the JavaScript and service methods for handling DynamoDB operations.
+ */
 export class DynamoDbTableWebview extends VueWebview {
     public static readonly sourcePath: string = 'src/dynamoDb/vue/index.js'
     public readonly id = 'dynamoDbTableView'
@@ -36,6 +39,12 @@ export class DynamoDbTableWebview extends VueWebview {
         return this.data
     }
 
+    /**
+     * Fetches a page of data from the DynamoDB table.
+     * @param {Key} [lastEvaluatedKey] - The key to start scanning from.
+     * @param {number} [currentPage=1] - The current page number.
+     * @returns {DynamoDbTableData} The response object containing the scanned data.
+     */
     public async fetchPageData(lastEvaluatedKey?: Key, currentPage = 1) {
         const tableRequest: ScanInput = {
             TableName: this.data.tableName,
@@ -67,7 +76,10 @@ export class DynamoDbTableWebview extends VueWebview {
 const Panel = VueWebview.compilePanel(DynamoDbTableWebview)
 const activePanels = new Map<string, InstanceType<typeof Panel>>()
 
-export async function viewDynamoDbTable(context: ExtContext, node: DynamoDbTableNode) {
+/**
+ * Takes extension-scoped, dynamodb table name and region code. It fetches the dynamodb table items and create a new vscode web view panel. If the panel already exists it will return that panel.
+ */
+export async function viewDynamoDbTable(context: ExtContext, node: { dynamoDbtable: string; regionCode: string }) {
     const logger: Logger = getLogger()
 
     try {
