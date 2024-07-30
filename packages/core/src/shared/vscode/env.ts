@@ -5,11 +5,10 @@
 
 import * as semver from 'semver'
 import * as vscode from 'vscode'
-import * as packageJson from '../../../package.json'
 import { getLogger } from '../logger'
 import { onceChanged } from '../utilities/functionUtils'
 import { ChildProcess } from '../utilities/childProcess'
-import { isWeb } from '../extensionGlobals'
+import globals, { isWeb } from '../extensionGlobals'
 
 /**
  * Returns true if the current build is running on CI (build server).
@@ -68,15 +67,15 @@ export function isMinVscode(throwWhen?: string): boolean {
 /**
  * Returns the minimum vscode "engine" version declared in `package.json`.
  */
-export function getMinVscodeVersion(): string {
-    return packageJson.engines.vscode.replace(/[^~]/, '')
+export function getMinVscodeVersion(pkgJson?: { [key: string]: any }): string {
+    return (pkgJson ?? globals.context.extension.packageJSON).engines.vscode.replace(/[^~]/, '')
 }
 
 /**
  * Returns the minimum nodejs version declared in `package.json`.
  */
-export function getMinNodejsVersion(): string {
-    return packageJson.devDependencies['@types/node'].replace(/[^~]/, '')
+export function getMinNodejsVersion(pkgJson?: { [key: string]: any }): string {
+    return (pkgJson ?? globals.context.extension.packageJSON).devDependencies['@types/node'].replace(/[^~]/, '')
 }
 
 export function getCodeCatalystDevEnvId(): string | undefined {

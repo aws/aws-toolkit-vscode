@@ -21,8 +21,8 @@ process.env.TZ = 'US/Pacific'
  */
 export async function runTests(
     testFolder: string,
+    extensionId: (typeof VSCODE_EXTENSION_ID)[keyof typeof VSCODE_EXTENSION_ID],
     initTests: string[] = [],
-    extensionId: string = VSCODE_EXTENSION_ID.awstoolkitcore,
     testFiles?: string[]
 ): Promise<void> {
     if (!process.env['AWS_TOOLKIT_AUTOMATION']) {
@@ -62,7 +62,8 @@ export async function runTests(
         return rest.length === 0
             ? abs
             : [
-                  extensionId === VSCODE_EXTENSION_ID.awstoolkitcore ? drive.toLowerCase() : drive.toUpperCase(),
+                  // The above still applies, but 'core' tests are run under toolkit extension activation.
+                  extensionId === VSCODE_EXTENSION_ID.awstoolkit ? drive.toLowerCase() : drive.toUpperCase(),
                   ...rest,
               ].join(':')
     }
