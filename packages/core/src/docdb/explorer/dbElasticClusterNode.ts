@@ -32,15 +32,15 @@ export class DBElasticClusterNode extends DBResourceNode {
 
     private getContext(): DocDBNodeContext {
         if (this.status === 'active') {
-            return DocDBContext.ClusterRunning
+            return DocDBContext.ElasticClusterRunning
         } else if (this.status === 'stopped') {
-            return DocDBContext.ClusterStopped
+            return DocDBContext.ElasticClusterStopped
         }
         return DocDBContext.Cluster
     }
 
     public getDescription(): string | boolean {
-        if (this.contextValue !== (DocDBContext.ClusterRunning as string)) {
+        if (this.contextValue !== (DocDBContext.ElasticClusterRunning as string)) {
             return this.status!
         }
         return false

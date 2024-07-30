@@ -10,6 +10,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { DocumentDBNode } from '../explorer/docdbNode'
 import { CreateClusterWizard } from '../wizards/createClusterWizard'
+import { CreateClusterInput } from '@aws-sdk/client-docdb-elastic'
 
 /**
  * Creates a DocumentDB cluster.
@@ -35,33 +36,38 @@ export async function createCluster(node?: DocumentDBNode) {
             throw new ToolkitError('User cancelled wizard', { cancelled: true })
         }
 
-        const clusterName = result.DBClusterIdentifier
+        const clusterName = result.ClusterName
         getLogger().info(`Creating cluster: ${clusterName}`)
+        let cluster
 
         try {
-            const cluster = await node?.createCluster(result)
+            if (result.ClusterType === 'elastic') {
+                cluster = await node.client.createElasticCluster(result.ElasticCluster as CreateClusterInput)
+            } else {
+                cluster = await node.client.createCluster(result.RegionalCluster)
 
-            // create instances for cluster
-            if (cluster && result.DBInstanceCount) {
-                const tasks = []
+                // create instances for cluster
+                if (cluster && result.RegionalCluster.DBInstanceCount) {
+                    const tasks = []
 
-                for (let index = 0; index < result.DBInstanceCount; index++) {
-                    tasks.push(
-                        node.client.createInstance({
-                            Engine: 'docdb',
-                            DBClusterIdentifier: clusterName,
-                            DBInstanceIdentifier: index === 0 ? clusterName : `${clusterName}${index + 1}`,
-                            DBInstanceClass: result.DBInstanceClass ?? 'db.t3.medium',
+                    for (let index = 0; index < result.RegionalCluster.DBInstanceCount; index++) {
+                        tasks.push(
+                            node.client.createInstance({
+                                Engine: 'docdb',
+                                DBClusterIdentifier: clusterName,
+                                DBInstanceIdentifier: index === 0 ? clusterName : `${clusterName}${index + 1}`,
+                                DBInstanceClass: result.RegionalCluster.DBInstanceClass ?? 'db.t3.medium',
+                            })
+                        )
+                    }
+
+                    try {
+                        await Promise.all(tasks)
+                    } catch (e) {
+                        throw ToolkitError.chain(e, `Failed to create instance for cluster ${clusterName}`, {
+                            code: 'FailureCreatingInstanceForCluster',
                         })
-                    )
-                }
-
-                try {
-                    await Promise.all(tasks)
-                } catch (e) {
-                    throw ToolkitError.chain(e, `Failed to create instance for cluster ${clusterName}`, {
-                        code: 'FailureCreatingInstanceForCluster',
-                    })
+                    }
                 }
             }
 

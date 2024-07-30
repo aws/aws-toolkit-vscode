@@ -230,4 +230,18 @@ export class DefaultDocumentDBClient {
             throw ToolkitError.chain(e, 'Failed to stop DocumentDB cluster')
         }
     }
+
+    public async createElasticCluster(
+        input: DocDBElastic.CreateClusterInput
+    ): Promise<DocDBElastic.Cluster | undefined> {
+        getLogger().debug('CreateElasticCluster called')
+        try {
+            const client = await this.getElasticClient()
+            const command = new DocDBElastic.CreateClusterCommand(input)
+            const response = await client.send(command)
+            return response.cluster
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to create DocumentDB cluster')
+        }
+    }
 }

@@ -12,7 +12,6 @@ import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { DocumentDBClient } from '../../shared/clients/docdbClient'
 import { DBClusterNode } from './dbClusterNode'
 import { DBElasticClusterNode } from './dbElasticClusterNode'
-import { CreateDBClusterMessage, DBCluster } from '@aws-sdk/client-docdb'
 import { telemetry } from '../../shared/telemetry'
 
 /**
@@ -48,10 +47,6 @@ export class DocumentDBNode extends AWSTreeNodeBase {
                     new PlaceholderNode(this, localize('AWS.explorerNode.docdb.noClusters', '[No Clusters found]')),
             })
         })
-    }
-
-    public async createCluster(request: CreateDBClusterMessage): Promise<DBCluster | undefined> {
-        return await this.client.createCluster(request)
     }
 
     public [inspect.custom](): string {

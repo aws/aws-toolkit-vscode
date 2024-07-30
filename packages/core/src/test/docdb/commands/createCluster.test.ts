@@ -42,19 +42,14 @@ describe('createClusterCommand', function () {
     function setupWizard() {
         getTestWindow().onDidShowInputBox((input) => {
             let value: string
-            switch (input.step) {
-                case 1:
-                    value = clusterName
-                    break
-                case 3:
-                    value = username
-                    break
-                case 4:
-                    value = password
-                    break
-                default:
-                    value = ''
-                    break
+            if (input.prompt?.includes('username')) {
+                value = username
+            } else if (input.prompt?.includes('password')) {
+                value = password
+            } else if (input.prompt?.includes('cluster name')) {
+                value = clusterName
+            } else {
+                value = ''
             }
             input.acceptValue(value)
         })
