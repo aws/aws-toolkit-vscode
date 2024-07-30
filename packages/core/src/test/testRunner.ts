@@ -59,7 +59,13 @@ export async function runTests(
          * lower case module ids (since the tests live inside of core itself)
          */
         const [drive, ...rest] = abs.split(':')
-        return rest.length === 0 ? abs : [drive.toLowerCase(), ...rest].join(':')
+        return rest.length === 0
+            ? abs
+            : [
+                  // The above still applies, but 'core' tests are run under toolkit extension activation.
+                  extensionId === VSCODE_EXTENSION_ID.awstoolkit ? drive.toLowerCase() : drive.toUpperCase(),
+                  ...rest,
+              ].join(':')
     }
 
     const root = getRoot()
