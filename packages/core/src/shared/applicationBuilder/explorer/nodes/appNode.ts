@@ -7,14 +7,14 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../../../shared/logger'
+import { getLogger } from '../../../logger'
 import { ResourceTreeEntity, SamAppLocation, getApp, getStackName } from '../samProject'
 import { ResourceNode, generateResourceNodes } from './resourceNode'
-import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
-import { createPlaceholderItem } from '../../../../shared/treeview/utils'
-import { getIcon } from '../../../../shared/icons'
-import { getSamCliContext } from '../../../../shared/sam/cli/samCliContext'
-import { SamCliListResourcesParameters } from '../../../../shared/sam/cli/samCliListResources'
+import { TreeNode } from '../../../treeview/resourceTreeDataProvider'
+import { createPlaceholderItem } from '../../../treeview/utils'
+import { getIcon } from '../../../icons'
+import { getSamCliContext } from '../../../sam/cli/samCliContext'
+import { SamCliListResourcesParameters } from '../../../sam/cli/samCliListResources'
 import { getDeployedResources, StackResource } from '../../../../lambda/commands/listSamResources'
 
 export class AppNode implements TreeNode {
@@ -54,7 +54,7 @@ export class AppNode implements TreeNode {
                 return [
                     createPlaceholderItem(
                         localize(
-                            'AWS.applicationBuilder.explorerNode.app.noTemplate',
+                            'AWS.appBuilder.explorerNode.app.noTemplate',
                             '[No Resource found in this SAM Template]'
                         )
                     ),
@@ -66,7 +66,7 @@ export class AppNode implements TreeNode {
             return [
                 createPlaceholderItem(
                     localize(
-                        'AWS.applicationBuilder.explorerNode.app.noResourceTree',
+                        'AWS.appBuilder.explorerNode.app.noResourceTree',
                         '[Unable to load Resource tree for this App. Update SAM template]'
                     )
                 ),
@@ -77,7 +77,7 @@ export class AppNode implements TreeNode {
     public getTreeItem() {
         const item = new vscode.TreeItem(this.label, vscode.TreeItemCollapsibleState.Collapsed)
 
-        item.contextValue = 'awsApplicationBuilderAppNode'
+        item.contextValue = 'awsAppBuilderAppNode'
         item.iconPath = getIcon('vscode-folder')
         item.resourceUri = this.location.samTemplateUri
         item.tooltip = this.location.samTemplateUri.path

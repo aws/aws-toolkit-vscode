@@ -5,9 +5,10 @@
 
 import * as vscode from 'vscode'
 import { SamAppLocation } from './samProject'
+import { getLogger } from '../../logger/logger'
 
 export async function detectSamProjects(): Promise<SamAppLocation[]> {
-    let workspaceFolders = vscode.workspace.workspaceFolders
+    const workspaceFolders = vscode.workspace.workspaceFolders
 
     if (!workspaceFolders) {
         return []
@@ -54,7 +55,7 @@ export async function getFiles(
 
         return await vscode.workspace.findFiles(globPattern, excludePattern)
     } catch (error) {
-        console.error(`Failed to get files with pattern ${pattern}:`, error)
+        getLogger().error(`Failed to get files with pattern ${pattern}:`, error)
         return []
     }
 }

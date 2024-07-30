@@ -4,13 +4,13 @@
  */
 
 import * as vscode from 'vscode'
-import { getIcon } from '../../../../shared/icons'
-import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
+import { getIcon } from '../../../icons'
+import { TreeNode } from '../../../treeview/resourceTreeDataProvider'
 import { generatePropertyNodes } from './propertyNode'
 import { ResourceTreeEntity, SamAppLocation } from '../samProject'
 import { Lambda } from 'aws-sdk'
-import { DefaultLambdaClient } from '../../../../shared/clients/lambdaClient'
-import { createPlaceholderItem } from '../../../../shared/treeview/utils'
+import { DefaultLambdaClient } from '../../../clients/lambdaClient'
+import { createPlaceholderItem } from '../../../treeview/utils'
 import { localize } from 'vscode-nls'
 import { getLogger } from '../../../logger/logger'
 
@@ -36,7 +36,7 @@ export class DeployedLambdaNode implements TreeNode {
     public getTreeItem() {
         const item = new vscode.TreeItem(this.functionName)
 
-        item.contextValue = 'awsApplicationBuilderDeployedNode'
+        item.contextValue = 'awsAppBuilderDeployedNode'
         item.iconPath = getIcon('vscode-cloud')
 
         if (this.value instanceof Array || this.value instanceof Object) {
@@ -60,20 +60,20 @@ export async function generateDeployedLocalNode(
         lambdaFunction = await new DefaultLambdaClient(regionCode).getFunction(deployedResource.PhysicalResourceId)
         getLogger().debug('Lambda function details:', lambdaFunction)
     } catch (error: any) {
-        console.error('Failed to fetch Lambda function details:', error)
+        getLogger().error('Failed to fetch Lambda function details:', error)
         void vscode.window.showErrorMessage(`Failed to get the deployed function: ${error.message}`)
         return [
             createPlaceholderItem(
-                localize('AWS.applicationBuilder.explorerNode.noApps', '[Function resource is yet to be deployed]')
+                localize('AWS.appBuilder.explorerNode.noApps', '[Function resource is yet to be deployed]')
             ),
         ]
     }
 
     if (!lambdaFunction || !lambdaFunction.Configuration || !lambdaFunction.Configuration.FunctionArn) {
-        console.error('Lambda function details are missing or incomplete:', lambdaFunction)
+        getLogger().error('Lambda function details are missing or incomplete:', lambdaFunction)
         return [
             createPlaceholderItem(
-                localize('AWS.applicationBuilder.explorerNode.noApps', '[Function resource is yet to be deployed]')
+                localize('AWS.appBuilder.explorerNode.noApps', '[Function resource is yet to be deployed]')
             ),
         ]
     }

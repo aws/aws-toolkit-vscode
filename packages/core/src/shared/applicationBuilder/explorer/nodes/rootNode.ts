@@ -18,38 +18,36 @@ export async function getAppNodes(): Promise<TreeNode[]> {
 
     if (appsFound.length === 0) {
         return [
-            createPlaceholderItem(
-                localize('AWS.applicationBuilder.explorerNode.noApps', '[No SAM Apps found in Workspaces]')
-            ),
+            createPlaceholderItem(localize('AWS.appBuilder.explorerNode.noApps', '[No SAM Apps found in Workspaces]')),
         ]
     }
 
     return appsFound.map((appLocation) => new AppNode(appLocation)).sort((a, b) => a.label.localeCompare(b.label) ?? 0)
 }
 
-export class ApplicationBuilderRootNode implements TreeNode {
-    public readonly id = 'applicationBuilder'
+export class AppBuilderRootNode implements TreeNode {
+    public readonly id = 'appBuilder'
     public readonly resource = this
     private readonly onDidChangeChildrenEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeChildren = this.onDidChangeChildrenEmitter.event
-    private readonly _refreshApplicationBuilderExplorer
-    private readonly _refreshapplicationBuilderForFileExplorer
+    private readonly _refreshAppBuilderExplorer
+    private readonly _refreshAppBuilderForFileExplorer
 
     constructor() {
-        Commands.register('aws.applicationBuilder.viewDocs', () => {
+        Commands.register('aws.appBuilder.viewDocs', () => {
             void openUrl(vscode.Uri.parse(debugNewSamAppUrl))
-            telemetry.aws_help.emit({ name: 'applicationBuilder' })
+            telemetry.aws_help.emit({ name: 'appBuilder' })
         })
-        this._refreshApplicationBuilderExplorer = (provider?: ResourceTreeDataProvider) =>
-            Commands.register('aws.applicationBuilder.refresh', () => {
+        this._refreshAppBuilderExplorer = (provider?: ResourceTreeDataProvider) =>
+            Commands.register('aws.appBuilder.refresh', () => {
                 this.refresh()
                 if (provider) {
                     provider.refresh()
                 }
             })
 
-        this._refreshapplicationBuilderForFileExplorer = (provider?: ResourceTreeDataProvider) =>
-            Commands.register('aws.applicationBuilderForFileExplorer.refresh', () => {
+        this._refreshAppBuilderForFileExplorer = (provider?: ResourceTreeDataProvider) =>
+            Commands.register('aws.appBuilderForFileExplorer.refresh', () => {
                 this.refresh()
                 if (provider) {
                     provider.refresh()
@@ -57,12 +55,12 @@ export class ApplicationBuilderRootNode implements TreeNode {
             })
     }
 
-    public get refreshApplicationBuilderExplorer() {
-        return this._refreshApplicationBuilderExplorer
+    public get refreshAppBuilderExplorer() {
+        return this._refreshAppBuilderExplorer
     }
 
-    public get refreshapplicationBuilderForFileExplorer() {
-        return this._refreshapplicationBuilderForFileExplorer
+    public get refreshAppBuilderForFileExplorer() {
+        return this._refreshAppBuilderForFileExplorer
     }
 
     public getChildren() {
@@ -76,14 +74,14 @@ export class ApplicationBuilderRootNode implements TreeNode {
     public getTreeItem() {
         const item = new vscode.TreeItem('APPLICATION BUILDER')
         item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
-        item.contextValue = 'awsApplicationBuilderRootNode'
+        item.contextValue = 'awsAppBuilderRootNode'
 
         return item
     }
 
-    static #instance: ApplicationBuilderRootNode
+    static #instance: AppBuilderRootNode
 
-    static get instance(): ApplicationBuilderRootNode {
-        return (this.#instance ??= new ApplicationBuilderRootNode())
+    static get instance(): AppBuilderRootNode {
+        return (this.#instance ??= new AppBuilderRootNode())
     }
 }

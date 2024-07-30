@@ -4,10 +4,10 @@
  */
 
 import * as vscode from 'vscode'
-import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
-import { SamConfig } from '../../../shared/sam/config'
-import { getFiles } from './detectSamProjects'
+import * as CloudFormation from '../../cloudformation/cloudformation'
+import { SamConfig } from '../../sam/config'
 import { getLogger } from '../../logger/logger'
+import { getFiles } from './detectSamProjects'
 
 export interface SamApp {
     location: SamAppLocation

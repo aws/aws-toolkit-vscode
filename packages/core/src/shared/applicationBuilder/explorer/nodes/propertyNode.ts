@@ -4,14 +4,17 @@
  */
 
 import * as vscode from 'vscode'
-import { getIcon } from '../../../../shared/icons'
-import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
+import { getIcon } from '../../../icons'
+import { TreeNode } from '../../../treeview/resourceTreeDataProvider'
 
 export class PropertyNode implements TreeNode {
     public readonly id = this.key
     public readonly resource = this.value
 
-    public constructor(private readonly key: string, private readonly value: unknown) {}
+    public constructor(
+        private readonly key: string,
+        private readonly value: unknown
+    ) {}
 
     public async getChildren(): Promise<TreeNode[]> {
         if (this.value instanceof Array || this.value instanceof Object) {
@@ -24,7 +27,7 @@ export class PropertyNode implements TreeNode {
     public getTreeItem() {
         const item = new vscode.TreeItem(`${this.key}: ${this.value}`)
 
-        item.contextValue = 'awsApplicationBuilderPropertyNode'
+        item.contextValue = 'awsAppBuilderPropertyNode'
         item.iconPath = getIcon('vscode-gear')
 
         if (this.value instanceof Array || this.value instanceof Object) {

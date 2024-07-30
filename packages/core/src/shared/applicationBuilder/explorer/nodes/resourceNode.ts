@@ -4,10 +4,10 @@
  */
 
 import * as vscode from 'vscode'
-import { getIcon } from '../../../../shared/icons'
-import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
+import { getIcon } from '../../../icons'
+import { TreeNode } from '../../../treeview/resourceTreeDataProvider'
 import { ResourceTreeEntity, SamAppLocation } from '../samProject'
-import { SERVERLESS_FUNCTION_TYPE } from '../../../../shared/cloudformation/cloudformation'
+import { SERVERLESS_FUNCTION_TYPE } from '../../../cloudformation/cloudformation'
 import { generatePropertyNodes } from './propertyNode'
 import { generateDeployedLocalNode } from './deployedNode'
 import { StackResource } from '../../../../lambda/commands/listSamResources'
@@ -62,7 +62,7 @@ export class ResourceNode implements TreeNode {
         item.iconPath =
             this.type === SERVERLESS_FUNCTION_TYPE ? getIcon('aws-lambda-function') : getIcon('vscode-symbol-event')
         item.resourceUri = this.location.samTemplateUri
-        item.contextValue = `awsApplicationBuilderResourceNode.${this.getResourceId()}`
+        item.contextValue = `awsaAppBuilderResourceNode.${this.getResourceId()}`
         return item
     }
 
@@ -84,13 +84,13 @@ export function generateResourceNodes(
     deployedResources?: StackResource[]
 ): ResourceNode[] {
     if (!deployedResources) {
-        return resources.map(resource => new ResourceNode(app, resource, stackName, region))
+        return resources.map((resource) => new ResourceNode(app, resource, stackName, region))
     }
 
-    return resources.map(resource => {
+    return resources.map((resource) => {
         if (resource.Type === SERVERLESS_FUNCTION_TYPE) {
             const deployedResource = deployedResources.find(
-                deployedResource => resource.Id === deployedResource.LogicalResourceId
+                (deployedResource) => resource.Id === deployedResource.LogicalResourceId
             )
             return new ResourceNode(app, resource, stackName, region, deployedResource)
         } else {
