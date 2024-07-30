@@ -223,20 +223,6 @@ export class AuthUtil {
         return this.secondaryAuth.useNewConnection(conn)
     }
 
-    /**
-     * HACK: Use the connection, but then mark it as expired.
-     * We currently only need this to handle an edge case with the transition
-     * from the old to new standalone extension. This should eventually be removed.
-     */
-    public async useConnectionButExpire(conn: Connection) {
-        await this.secondaryAuth.useNewConnection(conn)
-        if (conn.type !== 'sso') {
-            return
-        }
-        await this.auth.expireConnection(conn)
-        await this.notifyReauthenticate()
-    }
-
     public static get instance() {
         if (this.#instance !== undefined) {
             return this.#instance
