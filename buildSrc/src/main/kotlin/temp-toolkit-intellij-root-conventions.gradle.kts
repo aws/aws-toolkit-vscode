@@ -73,7 +73,6 @@ dependencies {
         create(type, version, useInstaller = false)
     }
 
-    implementation(project(":plugin-toolkit:jetbrains-core"))
     implementation(project(":plugin-toolkit:jetbrains-ultimate"))
     project.findProject(":plugin-toolkit:jetbrains-gateway")?.let {
         // does this need to be the instrumented variant?
@@ -83,11 +82,6 @@ dependencies {
 
     implementation(project(":plugin-toolkit:jetbrains-rider"))
     resharperDlls(project(":plugin-toolkit:jetbrains-rider", configuration = "resharperDlls"))
-}
-
-// Enable coverage for the UI test target IDE
-ciOnly {
-    extensions.getByType<JacocoPluginExtension>().applyTo(tasks.withType<TestIdeUiTask>())
 }
 
 tasks.withType<TestIdeUiTask>().configureEach {

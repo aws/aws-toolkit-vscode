@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
-import org.jetbrains.intellij.platform.gradle.tasks.aware.TestableAware
+import org.jetbrains.intellij.platform.gradle.tasks.aware.SandboxAware
 import software.aws.toolkits.gradle.ciOnly
 import software.aws.toolkits.gradle.intellij.ToolkitIntelliJExtension
 
@@ -34,10 +34,10 @@ dependencies {
 ciOnly {
     abstract class NoopBuildService : BuildService<BuildServiceParameters.None> {}
     val noopService = gradle.sharedServices.registerIfAbsent("noopService", NoopBuildService::class.java) {
-        maxParallelUsages = 4
+        maxParallelUsages = 2
     }
 
-    tasks.matching { it is TestableAware }.configureEach {
+    tasks.matching { it is Test || it is SandboxAware }.configureEach {
         usesService(noopService)
     }
 }

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import org.jetbrains.intellij.platform.gradle.Constants.Configurations.Attributes
+import org.jetbrains.intellij.platform.gradle.extensions.IntelliJPlatformTestingExtension
 import software.aws.toolkits.gradle.ciOnly
 import software.aws.toolkits.gradle.findFolders
 import software.aws.toolkits.gradle.intellij.IdeVersions
@@ -58,12 +59,11 @@ idea {
         testResourceDirs = testResourceDirs + integrationTests.resources.srcDirs
     }
 }
-
-val integTestTask = tasks.register<Test>("integrationTest") {
+val integrationTestConfiguration: Test.() -> Unit = {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs the integration tests."
     testClassesDirs = integrationTests.output.classesDirs
-    classpath = integrationTests.runtimeClasspath
+    classpath += integrationTests.runtimeClasspath
 
     ciOnly {
         environment.remove("AWS_ACCESS_KEY_ID")
@@ -74,15 +74,16 @@ val integTestTask = tasks.register<Test>("integrationTest") {
     mustRunAfter(tasks.test)
 }
 
-tasks.check {
-    dependsOn(integrationTests.compileJavaTaskName, integrationTests.getCompileTaskName("kotlin"))
-}
-
-afterEvaluate {
-    plugins.withType<ToolkitIntellijSubpluginPlugin>().configureEach {
-        // intellij plugin overrides with instrumented classes that we don't want or need
-        integTestTask.configure {
-            testClassesDirs = integrationTests.output.classesDirs
+extensions.findByType<IntelliJPlatformTestingExtension>()?.let {
+    val integrationTest by it.testIde.registering {
+        task {
+            integrationTestConfiguration(this)
         }
     }
+} ?: run {
+    val integrationTest by tasks.registering(Test::class, integrationTestConfiguration)
+}
+
+tasks.check {
+    dependsOn(integrationTests.compileJavaTaskName, integrationTests.getCompileTaskName("kotlin"))
 }

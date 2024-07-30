@@ -4,7 +4,6 @@
 
 import net.bytebuddy.utility.RandomString
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
-import org.jetbrains.intellij.platform.gradle.tasks.PatchPluginXmlTask
 import org.jetbrains.intellij.platform.gradle.tasks.PrepareSandboxTask
 import org.jetbrains.kotlin.gradle.internal.ensureParentDirsCreated
 import software.aws.toolkits.gradle.intellij.IdeFlavor
@@ -51,6 +50,7 @@ val gatewayOnlyResourcesJar by tasks.registering(Jar::class) {
 
 listOf(
     "intellijPlatformDependency",
+    "intellijPlatformDependency_integrationTest",
     "intellijPluginVerifierIdesDependency",
 ).forEach { configurationName ->
     configurations[configurationName].dependencies.addLater(
@@ -66,14 +66,15 @@ listOf(
 
 dependencies {
     intellijPlatform {
+        pluginModule(project(":plugin-toolkit:jetbrains-core", "gatewayArtifacts"))
+
         pluginVerifier()
 
         testFramework(TestFrameworkType.Bundled)
     }
 
-    // link against :j-c: and rely on :intellij:buildPlugin to pull in :j-c:instrumentedJar, but gateway variant when runIde/buildPlugin from :jetbrains-gateway
+    // link against :j-c: and rely on :intellij-standalone:composeJar to pull in :j-c:instrumentedJar, but gateway variant when from :jetbrains-gateway
     compileOnly(project(":plugin-toolkit:jetbrains-core"))
-    gatewayOnlyRuntimeOnly(project(":plugin-toolkit:jetbrains-core", "gatewayArtifacts"))
     // delete when fully split
     gatewayOnlyRuntimeOnly(project(":plugin-core:core"))
     gatewayOnlyRuntimeOnly(project(":plugin-core:jetbrains-community"))
@@ -160,12 +161,6 @@ listOf(
         intoChild(intellijPlatform.projectName.map { "$it/lib" })
             .from(gatewayOnlyResourcesJar)
     }
-}
-
-tasks.jarSearchableOptions {
-    dependsOn(":plugin-toolkit:jetbrains-core:pluginXmlForGateway")
-
-    pluginXml.set(project(":plugin-toolkit:jetbrains-core").tasks.maybeCreate<PatchPluginXmlTask>("pluginXmlForGateway").outputFile)
 }
 
 tasks.buildPlugin {
