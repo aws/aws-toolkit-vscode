@@ -18,6 +18,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import software.amazon.awssdk.services.codewhispererruntime.model.Completion
 import software.amazon.awssdk.services.codewhispererruntime.model.OptOutPreference
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
@@ -183,15 +185,20 @@ object CodeWhispererUtil {
     fun promptReAuth(project: Project, isPluginStarting: Boolean = false): Boolean {
         if (!isQExpired(project)) return false
         val tokenProvider = tokenProvider(project) ?: return false
-        return maybeReauthProviderIfNeeded(project, tokenProvider) {
-            runInEdt {
-                if (!CodeWhispererService.hasReAuthPromptBeenShown()) {
-                    notifyConnectionExpiredRequestReauth(project)
-                }
-                if (!isPluginStarting) {
-                    CodeWhispererService.markReAuthPromptShown()
+        return try {
+            maybeReauthProviderIfNeeded(project, tokenProvider) {
+                runInEdt {
+                    if (!CodeWhispererService.hasReAuthPromptBeenShown()) {
+                        notifyConnectionExpiredRequestReauth(project)
+                    }
+                    if (!isPluginStarting) {
+                        CodeWhispererService.markReAuthPromptShown()
+                    }
                 }
             }
+        } catch (e: Exception) {
+            getLogger<CodeWhispererService>().warn(e) { "prompt reauth failed with unexpected error" }
+            true
         }
     }
 
