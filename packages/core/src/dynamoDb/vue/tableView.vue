@@ -88,7 +88,7 @@ export default defineComponent({
         this.dynamoDbTableData = await client.init()
         const tableSchema = await client.getTableSchema()
         this.partitionKey = tableSchema.partitionKey.name
-        this.sortKey = tableSchema.sortKey?.name
+        this.sortKey = tableSchema.sortKey?.name ?? ''
         this.pageKeys = [undefined, this.dynamoDbTableData.lastEvaluatedKey]
         this.isLoading = false
     },
@@ -152,21 +152,23 @@ export default defineComponent({
         },
 
         resetFields() {
-            document.getElementById('partitionKey').value = ''
-            if (document.getElementById('sortKey')) {
-                document.getElementById('sortKey').value = ''
+            let partitionKeyElement = document.getElementById('partitionKey')
+            let sortKeyElement = document.getElementById('sortKey')
+            if (sortKeyElement) {
+                ;(sortKeyElement as any).value = ''
+            }
+            if (partitionKeyElement) {
+                ;(partitionKeyElement as any).value = ''
             }
         },
 
         async executeQuery() {
-            let sortKeyValue = ''
-            if (document.getElementById('sortKey')) {
-                sortKeyValue = document.getElementById('sortKey').value
-            }
+            let sortKeyElement = document.getElementById('sortKey')
+            let partitionKeyElement = document.getElementById('partitionKey')
 
             const queryRequest = {
-                partitionKey: document.getElementById('partitionKey').value,
-                sortKey: sortKeyValue,
+                partitionKey: (partitionKeyElement as any).value,
+                sortKey: (sortKeyElement as any).value,
             }
             this.updatePageNumber()
             this.dynamoDbTableData = await client.queryData(queryRequest)
