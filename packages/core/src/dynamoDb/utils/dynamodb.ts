@@ -42,9 +42,6 @@ export async function getTableContent(
     return tableData
 }
 
-/**
- * Extracts the column names and table headers from a DynamoDB scan response.
- */
 function getTableColumnsNames(items: DynamoDB.Types.ScanOutput): {
     columnNames: Set<string>
     tableHeader: RowData[]
@@ -66,9 +63,6 @@ function getTableColumnsNames(items: DynamoDB.Types.ScanOutput): {
     }
 }
 
-/**
- * Extracts the items from a DynamoDB scan response, using the provided column names.
- */
 function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Types.ScanOutput) {
     const tableItems = []
     for (const item of items.Items ?? []) {
@@ -98,9 +92,6 @@ export async function copyDynamoDbArn(node: DynamoDbTableNode) {
     }
 }
 
-/**
- * Extracts the value from a DynamoDB attribute.
- */
 function getAttributeValue(attribute: AttributeValue): { key: string; value: any } | undefined {
     const keys = Object.keys(attribute) as (keyof AttributeValue)[]
     for (const key of keys) {

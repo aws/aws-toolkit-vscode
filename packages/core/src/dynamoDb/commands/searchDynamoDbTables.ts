@@ -55,9 +55,6 @@ export function createRegionSubmenu() {
     )
 }
 
-/**
- * Retrieves a list of DynamoDB tables from a specific region.
- */
 async function getTablesFromRegion(regionCode: string): Promise<DataQuickPickItem<string>[]> {
     const client = new DynamoDbClient(regionCode)
     const dynamoDbTables = await dynamoDbTablesToArray(client.getTables())
@@ -68,9 +65,6 @@ async function getTablesFromRegion(regionCode: string): Promise<DataQuickPickIte
     return options
 }
 
-/**
- * Converts an asynchronous iterable of DynamoDB table names to an array.
- */
 async function dynamoDbTablesToArray(dynamoDbTables: AsyncIterableIterator<string>): Promise<string[]> {
     const tablesArray = []
     const tables = await toArrayAsync(dynamoDbTables)

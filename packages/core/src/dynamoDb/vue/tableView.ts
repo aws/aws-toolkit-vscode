@@ -61,9 +61,7 @@ const Panel = VueWebview.compilePanel(DynamoDbTableWebview)
 const activePanels = new Map<string, InstanceType<typeof Panel>>()
 
 /**
- * Takes extension-scoped, dynamodb table name and region code.
- * It fetches the dynamodb table items and create a new vscode web view panel.
- * It the panel already exists it will return that panel.
+ * Takes extension-scoped, dynamodb table name and region code. It fetches the dynamodb table items and create a new vscode web view panel. If the panel already exists it will return that panel.
  */
 export async function viewDynamoDbTable(context: ExtContext, node: { dynamoDbtable: string; regionCode: string }) {
     const logger: Logger = getLogger()
@@ -87,10 +85,6 @@ export async function viewDynamoDbTable(context: ExtContext, node: { dynamoDbtab
     }
 }
 
-/**
- * Private function responsible for fetching the dynamodb table content by taking scan input,
- * regioncode and current page number. It returns the response object of dynamodb table data type.
- */
 async function getDynamoDbTableData(tableRequest: ScanInput, regionCode: string, currentPage: number = 1) {
     const tableData: TableData = await getTableContent(tableRequest, regionCode)
     const response: DynamoDbTableData = {
