@@ -4,10 +4,11 @@
  */
 
 import { ExtContext } from '../shared/extensions'
+import { copyDynamoDbArn } from './utils/dynamodb'
 import { viewDynamoDbTable } from './vue/tableView'
 import { Commands } from '../shared/vscode/commands2'
-import { copyDynamoDbArn } from './commands/sortDynamoDbTables'
 import { DynamoDbTableNode } from './explorer/dynamoDbTableNode'
+import { deleteDynamoDbTable } from './commands/deleteDynamoDbTable'
 import { searchDynamoDbTables } from './commands/searchDynamoDbTables'
 import { DynamoDbInstanceNode } from './explorer/dynamoDbInstanceNode'
 
@@ -19,7 +20,7 @@ export async function activate(context: ExtContext): Promise<void> {
                     ? { regionName: node.regionCode, groupName: node.regionCode! }
                     : undefined
             const source = node ? (dynamoDbtableInfo ? 'ExplorerDynamoDbTableNode' : 'ExplorerServiceNode') : 'Command'
-            await searchDynamoDbTables(source, dynamoDbtableInfo)
+            await searchDynamoDbTables(context, source)
         }),
 
         Commands.register('aws.dynamoDb.copyArn', async (node: DynamoDbTableNode) => await copyDynamoDbArn(node)),
@@ -29,6 +30,10 @@ export async function activate(context: ExtContext): Promise<void> {
         Commands.register(
             'aws.dynamoDb.viewTable',
             async (node: DynamoDbTableNode) => await viewDynamoDbTable(context, node)
-        )
+        ),
+
+        Commands.register('aws.dynamoDb.deleteTable', async (node: DynamoDbTableNode) => {
+            await deleteDynamoDbTable(node)
+        })
     )
 }
