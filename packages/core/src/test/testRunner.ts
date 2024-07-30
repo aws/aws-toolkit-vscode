@@ -22,7 +22,7 @@ process.env.TZ = 'US/Pacific'
 export async function runTests(
     testFolder: string,
     initTests: string[] = [],
-    extensionId: string = VSCODE_EXTENSION_ID.awstoolkitcore,
+    extensionId: string = VSCODE_EXTENSION_ID.awstoolkit,
     testFiles?: string[]
 ): Promise<void> {
     if (!process.env['AWS_TOOLKIT_AUTOMATION']) {
@@ -36,6 +36,9 @@ export async function runTests(
         }
 
         /**
+         * Retaining this because it may be relevant in the future for lib-only tests. For now,
+         * all tests are ran from a subproject/extension.
+         *
          * Node's `require` caches modules by case-sensitive paths, regardless of the underlying
          * file system. This is normally not a problem, but VS Code also happens to normalize paths
          * on Windows to use lowercase drive letters when using its bootstrap loader. This means
@@ -59,12 +62,7 @@ export async function runTests(
          * lower case module ids (since the tests live inside of core itself)
          */
         const [drive, ...rest] = abs.split(':')
-        return rest.length === 0
-            ? abs
-            : [
-                  extensionId === VSCODE_EXTENSION_ID.awstoolkitcore ? drive.toLowerCase() : drive.toUpperCase(),
-                  ...rest,
-              ].join(':')
+        return rest.length === 0 ? abs : [drive.toUpperCase(), ...rest].join(':')
     }
 
     const root = getRoot()
@@ -115,7 +113,7 @@ export async function runTests(
     })
 
     function runMocha(files: string[]): Promise<void> {
-        files.forEach((f) => mocha.addFile(path.resolve(dist, f)))
+        files.forEach((f) => mocha.addFile(path.resolve(process.cwd(), f)))
         return new Promise<void>((resolve, reject) => {
             mocha.run((failures) => {
                 if (failures > 0) {
@@ -139,7 +137,8 @@ export async function runTests(
             console.log('No test coverage found')
         }
     }
-    const files = testFiles ?? (await glob(testFilePath ?? `**/${testFolder}/**/**.test.js`, { cwd: dist }))
+    const files = testFiles ?? (await glob(testFilePath ?? `**/${testFolder}/**/**.test.js`))
+    console.log(`@@@ files: ${files}`)
 
     await runMocha(files)
     await writeCoverage()

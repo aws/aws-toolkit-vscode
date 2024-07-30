@@ -5,5 +5,8 @@
 
 import { runToolkitTests } from './launchTestUtilities'
 void (async () => {
-    await runToolkitTests('web', 'dist/src/testWeb/testRunnerWebCore.js')
+    const relativeWorkspaceFolder = process.argv[2]
+
+    // Should be executed from a subproject/extension
+    await runToolkitTests('web', '../core/dist/src/testWeb/testRunnerWebCore.js', relativeWorkspaceFolder)
 })()
