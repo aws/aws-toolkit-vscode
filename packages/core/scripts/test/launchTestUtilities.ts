@@ -68,7 +68,7 @@ async function getVSCodeCliArgs(params: {
     env?: Record<string, string>
 }): Promise<TestOptions> {
     const projectRootDir = process.cwd()
-    const extensionRootDir = path.resolve(process.cwd(), '../toolkit')
+    const extensionRootDir = process.cwd().includes('core') ? path.resolve(process.cwd(), '../toolkit') : process.cwd()
 
     let disableExtensionsArgs: string[] = []
     let disableWorkspaceTrustArg: string[] = []
