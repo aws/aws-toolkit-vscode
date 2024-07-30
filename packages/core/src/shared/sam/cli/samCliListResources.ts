@@ -36,7 +36,6 @@ export async function runSamCliListResource(
             arguments: args,
             spawnOptions: {},
         })
-        console.log(childProcessResult.stderr)
 
         logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
 

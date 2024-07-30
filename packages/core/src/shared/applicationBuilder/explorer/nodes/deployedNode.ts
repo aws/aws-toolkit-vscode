@@ -12,6 +12,7 @@ import { Lambda } from 'aws-sdk'
 import { DefaultLambdaClient } from '../../../../shared/clients/lambdaClient'
 import { createPlaceholderItem } from '../../../../shared/treeview/utils'
 import { localize } from 'vscode-nls'
+import { getLogger } from '../../../logger/logger'
 
 export class DeployedLambdaNode implements TreeNode {
     public readonly id = this.key
@@ -57,7 +58,7 @@ export async function generateDeployedLocalNode(
 
     try {
         lambdaFunction = await new DefaultLambdaClient(regionCode).getFunction(deployedResource.PhysicalResourceId)
-        console.log('Lambda function details:', lambdaFunction)
+        getLogger().debug('Lambda function details:', lambdaFunction)
     } catch (error: any) {
         console.error('Failed to fetch Lambda function details:', error)
         void vscode.window.showErrorMessage(`Failed to get the deployed function: ${error.message}`)

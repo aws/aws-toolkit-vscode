@@ -6,9 +6,9 @@
 import * as vscode from 'vscode'
 import { SamAppLocation } from './samProject'
 
-export async function detectSamProjects(
-    workspaceFolders: readonly vscode.WorkspaceFolder[] | undefined = vscode.workspace.workspaceFolders
-): Promise<SamAppLocation[]> {
+export async function detectSamProjects(): Promise<SamAppLocation[]> {
+    let workspaceFolders = vscode.workspace.workspaceFolders
+
     if (!workspaceFolders) {
         return []
     }
@@ -19,7 +19,7 @@ export async function detectSamProjects(
         []
     )
 
-    projects.forEach(p => results.set(p.samTemplateUri.toString(), p))
+    projects.forEach((p) => results.set(p.samTemplateUri.toString(), p))
 
     return Array.from(results.values())
 }

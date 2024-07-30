@@ -14,7 +14,7 @@ import { AppNode } from './appNode'
 import { detectSamProjects } from '../detectSamProjects'
 
 export async function getAppNodes(): Promise<TreeNode[]> {
-    const appsFound = await detectSamProjects(vscode.workspace.workspaceFolders)
+    const appsFound = await detectSamProjects()
 
     if (appsFound.length === 0) {
         return [
@@ -24,7 +24,7 @@ export async function getAppNodes(): Promise<TreeNode[]> {
         ]
     }
 
-    return appsFound.map(appLocation => new AppNode(appLocation)).sort((a, b) => a.label.localeCompare(b.label) ?? 0)
+    return appsFound.map((appLocation) => new AppNode(appLocation)).sort((a, b) => a.label.localeCompare(b.label) ?? 0)
 }
 
 export class ApplicationBuilderRootNode implements TreeNode {
@@ -33,7 +33,7 @@ export class ApplicationBuilderRootNode implements TreeNode {
     private readonly onDidChangeChildrenEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeChildren = this.onDidChangeChildrenEmitter.event
     private readonly _refreshApplicationBuilderExplorer
-    private readonly _refreshAppBuilderForFileExplorer
+    private readonly _refreshapplicationBuilderForFileExplorer
 
     constructor() {
         Commands.register('aws.applicationBuilder.viewDocs', () => {
@@ -48,8 +48,8 @@ export class ApplicationBuilderRootNode implements TreeNode {
                 }
             })
 
-        this._refreshAppBuilderForFileExplorer = (provider?: ResourceTreeDataProvider) =>
-            Commands.register('aws.appBuilderForFileExplorer.refresh', () => {
+        this._refreshapplicationBuilderForFileExplorer = (provider?: ResourceTreeDataProvider) =>
+            Commands.register('aws.applicationBuilderForFileExplorer.refresh', () => {
                 this.refresh()
                 if (provider) {
                     provider.refresh()
@@ -61,8 +61,8 @@ export class ApplicationBuilderRootNode implements TreeNode {
         return this._refreshApplicationBuilderExplorer
     }
 
-    public get refreshAppBuilderForFileExplorer() {
-        return this._refreshAppBuilderForFileExplorer
+    public get refreshapplicationBuilderForFileExplorer() {
+        return this._refreshapplicationBuilderForFileExplorer
     }
 
     public getChildren() {

@@ -130,8 +130,8 @@ export async function activate(args: {
         },
         {
             nodes: [ApplicationBuilderRootNode.instance],
-            view: 'aws.appBuilderForFileExplorer',
-            refreshCommands: [ApplicationBuilderRootNode.instance.refreshAppBuilderForFileExplorer],
+            view: 'aws.applicationBuilderForFileExplorer',
+            refreshCommands: [ApplicationBuilderRootNode.instance.refreshapplicationBuilderForFileExplorer],
         },
     ]
     const viewNodes: ToolView[] = [

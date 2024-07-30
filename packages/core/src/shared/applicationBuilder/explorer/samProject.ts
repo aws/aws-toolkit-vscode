@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 import { SamConfig } from '../../../shared/sam/config'
 import { getFiles } from './detectSamProjects'
+import { getLogger } from '../../logger/logger'
 
 export interface SamApp {
     location: SamAppLocation
@@ -51,7 +52,7 @@ export async function getStackName(workspaceFolder: vscode.WorkspaceFolder): Pro
 
         return { stackName, region }
     } catch (error) {
-        console.error(error)
+        getLogger().debug('samProject: %s', error)
         throw error
     }
 }

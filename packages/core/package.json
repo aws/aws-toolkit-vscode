@@ -731,7 +731,7 @@
         "views": {
             "explorer": [
                 {
-                    "id": "aws.appBuilderForFileExplorer",
+                    "id": "aws.applicationBuilderForFileExplorer",
                     "name": "%AWS.applicationBuilder.explorerTitle%",
                     "when": "!aws.applicationBuilder.hide",
                     "contextualTitle": "Application Builder",
@@ -899,7 +899,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.appBuilderForFileExplorer.refresh",
+                    "command": "aws.applicationBuilderForFileExplorer.refresh",
                     "when": "false"
                 },
                 {
@@ -1319,8 +1319,8 @@
                     "group": "navigation@1"
                 },
                 {
-                    "command": "aws.appBuilderForFileExplorer.refresh",
-                    "when": "view == aws.appBuilderForFileExplorer",
+                    "command": "aws.applicationBuilderForFileExplorer.refresh",
+                    "when": "view == aws.applicationBuilderForFileExplorer",
                     "group": "navigation@1"
                 },
                 {
@@ -2033,22 +2033,22 @@
                     "group": "inline@1"
                 },
                 {
-                    "command": "aws.appBuilder.deploy",
+                    "command": "aws.applicationBuilder.deploy",
                     "when": "viewItem == awsApplicationBuilderAppNode",
                     "group": "inline@4"
                 },
                 {
-                    "command": "aws.appBuilder.build",
+                    "command": "aws.applicationBuilder.build",
                     "when": "viewItem == awsApplicationBuilderAppNode",
                     "group": "inline@3"
                 },
                 {
-                    "command": "aws.appBuilder.openTemplate",
+                    "command": "aws.applicationBuilder.openTemplate",
                     "when": "viewItem == awsApplicationBuilderAppNode",
                     "group": "inline@1"
                 },
                 {
-                    "command": "aws.appBuilder.openHandler",
+                    "command": "aws.applicationBuilder.openHandler",
                     "when": "viewItem == awsApplicationBuilderResourceNode.function",
                     "group": "inline@1"
                 },
@@ -2073,17 +2073,22 @@
                     "group": "0@2"
                 },
                 {
-                    "command": "aws.appBuilder.build",
+                    "command": "aws.applicationBuilder.build",
                     "when": "viewItem == awsApplicationBuilderAppNode",
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.launchConfigForm",
-                    "when": "viewItem == awsApplicationBuilderAppNode || viewItem == awsApplicationBuilderResourceNode.function",
+                    "command": "aws.applicationBuilder.openHandler",
+                    "when": "viewItem == awsApplicationBuilderResourceNode.function",
                     "group": "1@1"
                 },
                 {
-                    "command": "aws.appBuilder.deploy",
+                    "command": "aws.launchConfigForm",
+                    "when": "viewItem == awsApplicationBuilderAppNode || viewItem == awsApplicationBuilderResourceNode.function",
+                    "group": "1@2"
+                },
+                {
+                    "command": "aws.applicationBuilder.deploy",
                     "when": "viewItem == awsApplicationBuilderAppNode",
                     "group": "2@1"
                 },
@@ -3084,7 +3089,7 @@
                 }
             },
             {
-                "command": "aws.appBuilderForFileExplorer.refresh",
+                "command": "aws.applicationBuilderForFileExplorer.refresh",
                 "title": "%AWS.command.refreshApplicationBuilderExplorer%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
@@ -3612,26 +3617,26 @@
                 "enablement": "isCloud9 || !aws.isWebExtHost"
             },
             {
-                "command": "aws.appBuilder.deploy",
-                "title": "%AWS.command.appBuilder.deploy%",
+                "command": "aws.applicationBuilder.deploy",
+                "title": "%AWS.command.applicationBuilder.deploy%",
                 "category": "%AWS.title%",
                 "icon": "$(cloud-upload)"
             },
             {
-                "command": "aws.appBuilder.build",
-                "title": "%AWS.command.appBuilder.build%",
+                "command": "aws.applicationBuilder.build",
+                "title": "%AWS.command.applicationBuilder.build%",
                 "category": "%AWS.title%",
                 "icon": "$(symbol-method)"
             },
             {
-                "command": "aws.appBuilder.openTemplate",
-                "title": "%AWS.command.appBuilder.openTemplate%",
+                "command": "aws.applicationBuilder.openTemplate",
+                "title": "%AWS.command.applicationBuilder.openTemplate%",
                 "category": "%AWS.title%",
                 "icon": "$(code)"
             },
             {
-                "command": "aws.appBuilder.openHandler",
-                "title": "%AWS.command.appBuilder.openHandler%",
+                "command": "aws.applicationBuilder.openHandler",
+                "title": "%AWS.command.applicationBuilder.openHandler%",
                 "category": "%AWS.title%",
                 "icon": "$(code)"
             },

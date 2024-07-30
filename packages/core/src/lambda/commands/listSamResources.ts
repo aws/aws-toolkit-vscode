@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { globals } from '../../shared'
 import { getLogger } from '../../shared/logger'
 import { runSamCliListResource } from '../../shared/sam/cli/samCliListResources'
 export interface StackResource {
@@ -14,13 +13,12 @@ export interface StackResource {
 
 export async function getDeployedResources(params: any) {
     try {
-        return await runSamCliListResource(params.listResourcesParams, params.invoker).then(output =>
+        return await runSamCliListResource(params.listResourcesParams, params.invoker).then((output) =>
             parseSamListResourceOutput(output)
         )
     } catch (err) {
         const error = err as Error
         getLogger().error(error)
-        globals.outputChannel.appendLine(String(err))
     }
 }
 

@@ -162,14 +162,12 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
             const toggled = !settings.get('enableCodeLenses', false)
             await settings.update('enableCodeLenses', toggled)
         }),
-        Commands.register({ id: 'aws.appBuilder.openTemplate', autoconnect: false }, async (arg: TreeNode) => {
-            if (arg) {
-                const uri = ((arg as TreeNode).resource as SamAppLocation).samTemplateUri
-                const document = await vscode.workspace.openTextDocument(uri)
-                await vscode.window.showTextDocument(document)
-            }
+        Commands.register({ id: 'aws.applicationBuilder.openTemplate', autoconnect: false }, async (arg: TreeNode) => {
+            const uri = (arg.resource as SamAppLocation).samTemplateUri
+            const document = await vscode.workspace.openTextDocument(uri)
+            await vscode.window.showTextDocument(document)
         }),
-        Commands.register({ id: 'aws.appBuilder.openHandler', autoconnect: false }, async (arg: TreeNode) => {
+        Commands.register({ id: 'aws.applicationBuilder.openHandler', autoconnect: false }, async (arg: TreeNode) => {
             const folderUri = (arg as ResourceNode).resource.workspaceFolder.uri
             const handler = (arg as ResourceNode).resource.resource.Handler?.split('.')[0]
             const handlerFile = (
