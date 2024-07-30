@@ -16,7 +16,6 @@
     padding: 10px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     z-index: 1;
-    /* border-bottom: 3px solid #4588ba; */
 }
 
 .header-left,
@@ -50,7 +49,7 @@ vscode-link {
 }
 
 vscode-divider {
-    margin-top: 100px;
+    margin-top: 200px;
 }
 
 .disabled {
@@ -64,4 +63,40 @@ vscode-data-grid-cell {
     overflow: hidden;
     min-height: 35px;
     text-align: left;
+}
+
+vscode-panels {
+    width: 100%;
+}
+
+vscode-panel-view#view-1 {
+    width: 100%;
+    justify-content: space-between;
+}
+
+vscode-panel-view#view-2 {
+    flex-direction: column;
+    width: 90%;
+}
+
+.query-section {
+    display: flex;
+    justify-content: space-evenly;
+    flex-direction: column;
+    width: 50%;
+    row-gap: 15px;
+}
+
+.run-section {
+    display: flex;
+    justify-content: flex-end;
+    flex-direction: row;
+    column-gap: 15px;
+}
+
+.progress-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
 }

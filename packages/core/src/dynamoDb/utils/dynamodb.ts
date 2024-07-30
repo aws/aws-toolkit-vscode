@@ -16,6 +16,16 @@ export interface TableData {
     lastEvaluatedKey?: Key
 }
 
+export interface ColumnAttribute {
+    name: string
+    dataType: 'S' | 'N' | 'B' | string
+}
+
+export interface TableSchema {
+    partitionKey: ColumnAttribute
+    sortKey?: ColumnAttribute
+}
+
 export async function getTableContent(
     tableRequest: ScanInput,
     regionCode: string,
@@ -70,6 +80,114 @@ export function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Ty
         tableItems.push(curItem)
     }
     return tableItems
+}
+
+export async function queryTableContent(
+    queryRequest: { partitionKey: string; sortKey: string },
+    regionCode: string,
+    tableName: string,
+    client = new DynamoDbClient(regionCode)
+) {
+    const queryRequestObject = await prepareQueryRequestObject(tableName, regionCode, client, queryRequest)
+    const queryResponse = await client.queryTable(queryRequestObject)
+    const { columnNames, tableHeader } = getTableColumnsNames(queryResponse)
+    const tableItems = getTableItems(columnNames, queryResponse)
+
+    const tableData: TableData = {
+        tableHeader: tableHeader,
+        tableContent: tableItems,
+        lastEvaluatedKey: queryResponse.LastEvaluatedKey,
+    }
+    return tableData
+}
+
+async function prepareQueryRequestObject(
+    tableName: string,
+    region: string,
+    client: DynamoDbClient,
+    request: { partitionKey: string; sortKey: string }
+) {
+    const tableSchema = await getTableKeySchema(tableName, region, client)
+    validateQueryRequest(request, tableSchema)
+    const queryRequestObject: DynamoDB.DocumentClient.QueryInput = {
+        ExpressionAttributeNames: {
+            '#kn0': tableSchema.partitionKey.name,
+        },
+        ExpressionAttributeValues: {
+            ':kv0': getExpressionAttributeValue(request.partitionKey, tableSchema),
+        },
+        KeyConditionExpression: '#kn0 = :kv0',
+        TableName: tableName,
+    }
+
+    if (request.sortKey && request.sortKey.length > 0 && tableSchema.sortKey) {
+        ;(queryRequestObject.ExpressionAttributeNames as any)['#kn1'] = tableSchema.sortKey.name
+        ;(queryRequestObject.ExpressionAttributeValues as any)[':kv1'] = getExpressionAttributeValue(
+            request.sortKey,
+            tableSchema
+        )
+        queryRequestObject.KeyConditionExpression += ' AND #kn1 = :kv1'
+    }
+    return queryRequestObject
+}
+
+function getExpressionAttributeValue(value: string, tableSchema: TableSchema) {
+    if (tableSchema.partitionKey.dataType === 'S') {
+        return { S: value }
+    }
+    if (tableSchema.partitionKey.dataType === 'N') {
+        return { N: value }
+    }
+    throw new Error('Unsupported data type')
+}
+
+function validateQueryRequest(queryRequest: { partitionKey: string; sortKey: string }, tableSchema: TableSchema) {
+    if (!queryRequest.partitionKey || queryRequest.partitionKey.length === 0) {
+        throw new Error('Partition key cannot be emmpty for query')
+    }
+    if (
+        (tableSchema.partitionKey.dataType === 'S' && typeof queryRequest.partitionKey !== 'string') ||
+        (tableSchema.partitionKey.dataType === 'N' && isNaN(Number(queryRequest.partitionKey))) ||
+        (tableSchema.sortKey?.dataType === 'S' && typeof queryRequest.sortKey !== 'string') ||
+        (tableSchema.sortKey?.dataType === 'N' && isNaN(Number(queryRequest.sortKey)))
+    ) {
+        throw new Error('Data type of query input does not match with table schema.')
+    }
+}
+
+export async function getTableKeySchema(
+    tableName: string,
+    regionCode: string,
+    client = new DynamoDbClient(regionCode)
+) {
+    const tableSchema: TableSchema = {
+        partitionKey: { name: '', dataType: '' },
+    }
+    const tableInformation = await client.getTableInformation({ TableName: tableName })
+    const keySchema = tableInformation.KeySchema
+    const attributeDefinitions = tableInformation.AttributeDefinitions
+    if (keySchema === undefined || attributeDefinitions === undefined) {
+        return tableSchema
+    }
+    keySchema.forEach((key) => {
+        const attributeName = key.AttributeName
+        const keyType = key.KeyType // HASH or RANGE
+        const attribute = attributeDefinitions.find((attr) => attr.AttributeName === attributeName)
+        const attributeType = attribute ? attribute.AttributeType : 'Unknown'
+
+        if (keyType === 'HASH') {
+            tableSchema.partitionKey = {
+                name: attributeName,
+                dataType: attributeType,
+            }
+        } else if (keyType === 'RANGE') {
+            tableSchema.sortKey = {
+                name: attributeName,
+                dataType: attributeType,
+            }
+        }
+    })
+    return tableSchema
 }
 
 function getAttributeValue(attribute: AttributeValue): { key: string; value: any } | undefined {
