@@ -3,29 +3,31 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Java, Python } from '@aws/fully-qualified-names'
+// import { Java, Python } from '@aws/fully-qualified-names'
 import { extractContextFromJavaImports } from './javaImportReader'
 
 export async function readImports(text: string, languageId: string): Promise<string[]> {
-    let names: any = {}
-    switch (languageId) {
-        case 'java':
-            names = await Java.findNames(text)
-            break
-        case 'javascript':
-        case 'javascriptreact':
-        case 'typescriptreact':
-            // Disable Tsx.findNames because promise Tsx.findNames
-            // may not resolve and can cause chat to hang
-            //names = await Tsx.findNames(text)
-            return []
-        case 'python':
-            names = await Python.findNames(text)
-            break
-        case 'typescript':
-            //names = await TypeScript.findNames(text)
-            return []
-    }
+    const names: any = {}
+    //  Disable findNames calls temporarily because
+    //  the promise may not resolve and can cause chat to hang
+    //  TODO: enable it back after root-cause and fix in the dependency
+
+    // switch (languageId) {
+    //     case 'java':
+    //         names = await Java.findNames(text)
+    //         break
+    //     case 'javascript':
+    //     case 'javascriptreact':
+    //     case 'typescriptreact':
+    //         //names = await Tsx.findNames(text)
+    //         return []
+    //     case 'python':
+    //         names = await Python.findNames(text)
+    //         break
+    //     case 'typescript':
+    //         //names = await TypeScript.findNames(text)
+    //         return []
+    // }
     if (names.fullyQualified === undefined) {
         return []
     }
