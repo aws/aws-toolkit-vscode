@@ -364,6 +364,10 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
             const sourceFiles = getFilesRecursively(modulePath, false)
             let sourceFilesSize = 0
             for (const file of sourceFiles) {
+                if ((await fs.stat(file)).isDirectory()) {
+                    getLogger().info('CodeTransformation: Skipping directory, likely a symlink')
+                    continue
+                }
                 const relativePath = path.relative(modulePath, file)
                 const paddedPath = path.join('sources', relativePath)
                 zip.addLocalFile(file, path.dirname(paddedPath))
