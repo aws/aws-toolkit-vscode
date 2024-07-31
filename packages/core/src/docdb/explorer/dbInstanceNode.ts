@@ -78,6 +78,13 @@ export class DBInstanceNode extends DBResourceNode {
         return false
     }
 
+    public override getConsoleUrl() {
+        const region = this.regionCode
+        return vscode.Uri.parse(
+            `https://${region}.console.aws.amazon.com/docdb/home?region=${region}#instance-details/${this.name}`
+        )
+    }
+
     public [inspect.custom](): string {
         return 'DBInstanceNode'
     }

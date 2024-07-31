@@ -76,6 +76,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
         Commands.register('aws.docdb.removeTag', async (node: DBResourceNode) => {
             await removeTag(node)
+        }),
+
+        Commands.register('aws.docdb.openBrowser', async (node?: DBResourceNode) => {
+            await node?.openInBrowser()
         })
     )
 }

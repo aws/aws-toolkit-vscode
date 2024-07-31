@@ -50,6 +50,13 @@ export class DBElasticClusterNode extends DBResourceNode {
         return this.cluster.status?.toLowerCase()
     }
 
+    public override getConsoleUrl() {
+        const region = this.regionCode
+        return vscode.Uri.parse(
+            `https://${region}.console.aws.amazon.com/docdb/home?region=${region}#elastic-cluster-details/${this.arn}`
+        )
+    }
+
     public [inspect.custom](): string {
         return 'DBElasticClusterNode'
     }

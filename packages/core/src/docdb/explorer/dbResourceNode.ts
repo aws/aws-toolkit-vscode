@@ -32,4 +32,10 @@ export abstract class DBResourceNode extends AWSTreeNodeBase implements AWSResou
     public async listTags(): Promise<Tag[]> {
         return await this.client.listResourceTags(this.arn)
     }
+
+    public abstract getConsoleUrl(): vscode.Uri
+
+    public openInBrowser() {
+        return vscode.env.openExternal(this.getConsoleUrl())
+    }
 }

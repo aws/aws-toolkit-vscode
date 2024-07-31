@@ -2049,6 +2049,10 @@
                 {
                     "command": "aws.docdb.listTags",
                     "when": "viewItem =~ /^awsDocDB-/"
+                },
+                {
+                    "command": "aws.docdb.openBrowser",
+                    "when": "viewItem =~ /^awsDocDB-/"
                 }
             ],
             "aws.toolkit.auth": [
@@ -3701,6 +3705,17 @@
             {
                 "command": "aws.docdb.listTags",
                 "title": "%AWS.command.docdb.tags%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB/",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.openBrowser",
+                "title": "%AWS.command.docdb.open%",
                 "category": "%AWS.title%",
                 "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB/",
                 "cloud9": {
