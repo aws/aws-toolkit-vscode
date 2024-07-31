@@ -235,14 +235,14 @@ export async function finalizeTransformByQ(status: string) {
 }
 
 export async function parseBuildFile() {
-    let absolutePaths = ['Users/', 'System/', 'Volumes/', 'C:', 'D:']
+    const absolutePaths = ['Users/', 'System/', 'Volumes/', 'C:', 'D:']
     const alias = path.basename(os.homedir())
     absolutePaths.push(alias)
     const buildFilePath = path.join(transformByQState.getProjectPath(), 'pom.xml')
     if (fs.existsSync(buildFilePath)) {
         const buildFileContents = fs.readFileSync(buildFilePath).toString()
         if (absolutePaths.some((path) => buildFileContents.includes(path))) {
-            await vscode.window.showWarningMessage(
+            void vscode.window.showWarningMessage(
                 `We detected what may be an absolute path in this file: ${path.basename(buildFilePath)}, which may cause issues during our backend build. You will see error logs if this happens.`
             )
             getLogger().info('CodeTransformation: absolute path potentially in build file')
