@@ -8,41 +8,22 @@ import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { assertTelemetry } from '../../testUtil'
 import { getTestWindow } from '../../shared/vscode/window'
-import { DocumentDBClient } from '../../../shared/clients/docdbClient'
-import { DBClusterNode } from '../../../docdb/explorer/dbClusterNode'
 import { DBCluster, DBInstance } from '@aws-sdk/client-docdb'
-import { deleteCluster } from '../../../docdb/commands/deleteCluster'
+import { DBElasticCluster, DocumentDBClient } from '../../../shared/clients/docdbClient'
 import { DocumentDBNode } from '../../../docdb/explorer/docdbNode'
+import { DBElasticClusterNode } from '../../../docdb/explorer/dbElasticClusterNode'
+import { DBClusterNode } from '../../../docdb/explorer/dbClusterNode'
+import { deleteCluster } from '../../../docdb/commands/deleteCluster'
 
 describe('deleteClusterCommand', function () {
     const clusterName = 'test-cluster'
     let docdb: DocumentDBClient
-    let cluster: DBCluster
-    let instances: DBInstance[]
-    let node: DBClusterNode
     let sandbox: sinon.SinonSandbox
     let spyExecuteCommand: sinon.SinonSpy
-    let deleteInstanceStub: sinon.SinonStub
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
         spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
-
-        cluster = { DBClusterIdentifier: clusterName, Status: 'available' }
-        instances = [
-            { DBClusterIdentifier: clusterName, DBInstanceIdentifier: 'instance-1' },
-            { DBClusterIdentifier: clusterName, DBInstanceIdentifier: 'instance-2' },
-        ]
-
-        docdb = { regionCode: 'us-east-1' } as DocumentDBClient
-        docdb.listClusters = sinon.stub().resolves([cluster])
-        docdb.listInstances = sinon.stub().resolves(instances)
-        deleteInstanceStub = sinon.stub().onFirstCall().resolves(instances[0]).onSecondCall().resolves(instances[1])
-        docdb.deleteInstance = deleteInstanceStub
-
-        const parentNode = new DocumentDBNode(docdb)
-        node = new DBClusterNode(parentNode, cluster, docdb)
-        node.waitUntilStatusChanged = sinon.stub().resolves(true)
     })
 
     afterEach(function () {
@@ -61,86 +42,213 @@ describe('deleteClusterCommand', function () {
         })
     }
 
-    it('prompts for snapshot and confirmation, deletes all instances, deletes cluster, and refreshes node', async function () {
-        // arrange
-        const deleteClusterStub = sinon.stub().resolves({
-            DBClusterIdentifier: clusterName,
-            Status: 'backing up',
+    describe('regional cluster', function () {
+        let cluster: DBCluster
+        let instances: DBInstance[]
+        let node: DBClusterNode
+        let deleteInstanceStub: sinon.SinonStub
+
+        beforeEach(function () {
+            cluster = { DBClusterIdentifier: clusterName, Status: 'available' }
+            instances = [
+                { DBClusterIdentifier: clusterName, DBInstanceIdentifier: 'instance-1' },
+                { DBClusterIdentifier: clusterName, DBInstanceIdentifier: 'instance-2' },
+            ]
+
+            docdb = { regionCode: 'us-east-1' } as DocumentDBClient
+            docdb.listClusters = sinon.stub().resolves([cluster])
+            docdb.listInstances = sinon.stub().resolves(instances)
+            deleteInstanceStub = sinon.stub().onFirstCall().resolves(instances[0]).onSecondCall().resolves(instances[1])
+            docdb.deleteInstance = deleteInstanceStub
+
+            const parentNode = new DocumentDBNode(docdb)
+            node = new DBClusterNode(parentNode, cluster, docdb)
+            node.waitUntilStatusChanged = sinon.stub().resolves(true)
         })
-        docdb.deleteCluster = deleteClusterStub
-        setupWizard()
 
-        // act
-        await deleteCluster(node)
+        it('prompts for snapshot and confirmation, deletes all instances, deletes cluster, and refreshes node', async function () {
+            // arrange
+            const deleteClusterStub = sinon.stub().resolves({
+                DBClusterIdentifier: clusterName,
+                Status: 'backing up',
+            })
+            docdb.deleteCluster = deleteClusterStub
+            setupWizard()
 
-        // assert
-        getTestWindow()
-            .getFirstMessage()
-            .assertInfo(/Deleting cluster: test-cluster/)
+            // act
+            await deleteCluster(node)
 
-        assert(deleteClusterStub.calledOnceWithExactly(sinon.match({ DBClusterIdentifier: clusterName })))
-        assert(deleteInstanceStub.calledTwice)
-        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node.parent)
+            // assert
+            getTestWindow()
+                .getFirstMessage()
+                .assertInfo(/Deleting cluster: test-cluster/)
 
-        assertTelemetry('docdb_deleteCluster', {
-            result: 'Succeeded',
+            assert(deleteClusterStub.calledOnceWithExactly(sinon.match({ DBClusterIdentifier: clusterName })))
+            assert(deleteInstanceStub.calledTwice)
+            sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node.parent)
+
+            assertTelemetry('docdb_deleteCluster', {
+                result: 'Succeeded',
+            })
+        })
+
+        it('does nothing when prompt is cancelled', async function () {
+            // arrange
+            const deleteClusterStub = sinon.stub()
+            docdb.deleteCluster = deleteClusterStub
+            getTestWindow().onDidShowQuickPick((picker) => picker.hide())
+            getTestWindow().onDidShowInputBox((input) => input.hide())
+
+            // act
+            await assert.rejects(deleteCluster(node))
+
+            // assert
+            assert(deleteClusterStub.notCalled)
+
+            assertTelemetry('docdb_deleteCluster', {
+                result: 'Cancelled',
+            })
+        })
+
+        it('shows a warning when the cluster is stopped', async function () {
+            // arrange
+            cluster.Status = 'stopped'
+            const deleteClusterStub = sinon.stub()
+            docdb.deleteCluster = deleteClusterStub
+            setupWizard()
+
+            // act
+            await assert.rejects(deleteCluster(node))
+
+            // assert
+            getTestWindow()
+                .getFirstMessage()
+                .assertMessage(/Cluster must be running/)
+
+            assertTelemetry('docdb_deleteCluster', {
+                result: 'Cancelled',
+            })
+        })
+
+        it('shows an error when cluster deletion fails', async function () {
+            // arrange
+            const deleteClusterStub = sinon.stub().rejects()
+            docdb.deleteCluster = deleteClusterStub
+            setupWizard()
+
+            // act
+            await assert.rejects(deleteCluster(node))
+
+            // assert
+            getTestWindow()
+                .getFirstMessage()
+                .assertError(/Failed to delete cluster: test-cluster/)
+
+            assertTelemetry('docdb_deleteCluster', {
+                result: 'Failed',
+            })
         })
     })
 
-    it('does nothing when prompt is cancelled', async function () {
-        // arrange
-        const deleteClusterStub = sinon.stub()
-        docdb.deleteCluster = deleteClusterStub
-        getTestWindow().onDidShowQuickPick((picker) => picker.hide())
-        getTestWindow().onDidShowInputBox((input) => input.hide())
+    describe('elastic cluster', function () {
+        let cluster: DBElasticCluster
+        let node: DBElasticClusterNode
 
-        // act
-        await assert.rejects(deleteCluster(node))
+        beforeEach(function () {
+            cluster = { clusterName, clusterArn: 'arn:test-cluster', status: 'ACTIVE' }
 
-        // assert
-        assert(deleteClusterStub.notCalled)
+            docdb = { regionCode: 'us-east-1' } as DocumentDBClient
+            docdb.listElasticClusters = sinon.stub().resolves([cluster])
 
-        assertTelemetry('docdb_deleteCluster', {
-            result: 'Cancelled',
+            const parentNode = new DocumentDBNode(docdb)
+            node = new DBElasticClusterNode(parentNode, cluster, docdb)
+            node.waitUntilStatusChanged = sinon.stub().resolves(true)
         })
-    })
 
-    it('shows a warning when the cluster is stopped', async function () {
-        // arrange
-        cluster.Status = 'stopped'
-        const deleteClusterStub = sinon.stub()
-        docdb.deleteCluster = deleteClusterStub
-        setupWizard()
+        it('prompts for snapshot and confirmation, creates snapshot, deletes cluster, and refreshes node', async function () {
+            // arrange
+            const createSnapshotStub = sinon.stub().resolves()
+            const deleteClusterStub = sinon.stub().resolves()
+            docdb.createClusterSnapshot = createSnapshotStub
+            docdb.deleteElasticCluster = deleteClusterStub
+            setupWizard()
 
-        // act
-        await assert.rejects(deleteCluster(node))
+            // act
+            await deleteCluster(node)
 
-        // assert
-        getTestWindow()
-            .getFirstMessage()
-            .assertMessage(/Cluster must be running/)
+            // assert
+            getTestWindow()
+                .getFirstMessage()
+                .assertInfo(/Taking snapshot of cluster: test-cluster/)
 
-        assertTelemetry('docdb_deleteCluster', {
-            result: 'Cancelled',
+            getTestWindow()
+                .getSecondMessage()
+                .assertInfo(/Deleting cluster: test-cluster/)
+
+            assert(createSnapshotStub.calledOnceWithExactly(sinon.match({ clusterArn: cluster.clusterArn })))
+            assert(deleteClusterStub.calledOnceWithExactly(cluster.clusterArn))
+            sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node.parent)
+
+            assertTelemetry('docdb_deleteCluster', {
+                result: 'Succeeded',
+            })
         })
-    })
 
-    it('shows an error when cluster deletion fails', async function () {
-        // arrange
-        const deleteClusterStub = sinon.stub().rejects()
-        docdb.deleteCluster = deleteClusterStub
-        setupWizard()
+        it('does nothing when prompt is cancelled', async function () {
+            // arrange
+            const deleteClusterStub = sinon.stub()
+            docdb.deleteElasticCluster = deleteClusterStub
+            getTestWindow().onDidShowQuickPick((picker) => picker.hide())
+            getTestWindow().onDidShowInputBox((input) => input.hide())
 
-        // act
-        await assert.rejects(deleteCluster(node))
+            // act
+            await assert.rejects(deleteCluster(node))
 
-        // assert
-        getTestWindow()
-            .getFirstMessage()
-            .assertError(/Failed to delete cluster: test-cluster/)
+            // assert
+            assert(deleteClusterStub.notCalled)
 
-        assertTelemetry('docdb_deleteCluster', {
-            result: 'Failed',
+            assertTelemetry('docdb_deleteCluster', {
+                result: 'Cancelled',
+            })
+        })
+
+        it('shows a warning when the cluster is stopped', async function () {
+            // arrange
+            cluster.status = 'STOPPED'
+            const deleteClusterStub = sinon.stub()
+            docdb.deleteElasticCluster = deleteClusterStub
+            setupWizard()
+
+            // act
+            await assert.rejects(deleteCluster(node))
+
+            // assert
+            getTestWindow()
+                .getFirstMessage()
+                .assertMessage(/Cluster must be running/)
+
+            assertTelemetry('docdb_deleteCluster', {
+                result: 'Cancelled',
+            })
+        })
+
+        it('shows an error when cluster deletion fails', async function () {
+            // arrange
+            docdb.createClusterSnapshot = sinon.stub().resolves()
+            docdb.deleteElasticCluster = sinon.stub().rejects()
+            setupWizard()
+
+            // act
+            await assert.rejects(deleteCluster(node))
+
+            // assert
+            getTestWindow()
+                .getSecondMessage()
+                .assertError(/Failed to delete cluster: test-cluster/)
+
+            assertTelemetry('docdb_deleteCluster', {
+                result: 'Failed',
+            })
         })
     })
 })

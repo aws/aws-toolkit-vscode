@@ -62,6 +62,20 @@ export class DefaultDocumentDBClient {
         }
     }
 
+    private async executeElasticCommand<TOutput extends DocDBElastic.ServiceOutputTypes>(
+        command: any
+    ): Promise<TOutput> {
+        getLogger().debug(`${command.constructor.name} called`)
+        const client = await this.getElasticClient()
+        try {
+            return await client.send(command)
+        } catch (e) {
+            throw ToolkitError.chain(e, `Failed to execute command: ${command.constructor.name}`)
+        } finally {
+            client.destroy()
+        }
+    }
+
     // Ideally, we would return AsyncCollection or iterator
     public async listInstanceClassOptions(
         engineVersion: string | undefined,
@@ -96,18 +110,9 @@ export class DefaultDocumentDBClient {
     }
 
     public async listElasticClusters(): Promise<DBElasticCluster[]> {
-        getLogger().debug('ListElasticClusters called')
-        const client = await this.getElasticClient()
-
-        try {
-            const command = new DocDBElastic.ListClustersCommand()
-            const response = await client.send(command)
-            return response.clusters ?? []
-        } catch (e) {
-            throw ToolkitError.chain(e, 'Failed to get DocumentDB elastic clusters')
-        } finally {
-            client.destroy()
-        }
+        const command = new DocDBElastic.ListClustersCommand()
+        const response = await this.executeElasticCommand<DocDBElastic.ListClustersCommandOutput>(command)
+        return response.clusters ?? []
     }
 
     public async listClusters(clusterId: string | undefined = undefined): Promise<DocDB.DBCluster[]> {
@@ -130,10 +135,32 @@ export class DefaultDocumentDBClient {
         return response.DBInstances ?? []
     }
 
+    public async getElasticCluster(clusterArn: string): Promise<DBElasticCluster | undefined> {
+        const command = new DocDBElastic.GetClusterCommand({ clusterArn })
+        const response = await this.executeElasticCommand<DocDBElastic.GetClusterCommandOutput>(command)
+        return response.cluster
+    }
+
     public async createCluster(input: DocDB.CreateDBClusterMessage): Promise<DocDB.DBCluster | undefined> {
         const command = new DocDB.CreateDBClusterCommand(input)
         const response = await this.executeCommand<DocDB.CreateDBClusterCommandOutput>(command)
         return response.DBCluster
+    }
+
+    public async createElasticCluster(
+        input: DocDBElastic.CreateClusterInput
+    ): Promise<DocDBElastic.Cluster | undefined> {
+        const command = new DocDBElastic.CreateClusterCommand(input)
+        const response = await this.executeElasticCommand<DocDBElastic.CreateClusterCommandOutput>(command)
+        return response.cluster
+    }
+
+    public async createClusterSnapshot(
+        input: DocDBElastic.CreateClusterSnapshotInput
+    ): Promise<DocDBElastic.ClusterSnapshot | undefined> {
+        const command = new DocDBElastic.CreateClusterSnapshotCommand(input)
+        const response = await this.executeElasticCommand<DocDBElastic.CreateClusterSnapshotCommandOutput>(command)
+        return response.snapshot
     }
 
     public async modifyCluster(input: DocDB.ModifyDBClusterMessage): Promise<DocDB.DBCluster | undefined> {
@@ -146,6 +173,12 @@ export class DefaultDocumentDBClient {
         const command = new DocDB.DeleteDBClusterCommand(input)
         const response = await this.executeCommand<DocDB.DeleteDBClusterCommandOutput>(command)
         return response.DBCluster
+    }
+
+    public async deleteElasticCluster(clusterArn: string): Promise<DocDBElastic.Cluster | undefined> {
+        const command = new DocDBElastic.DeleteClusterCommand({ clusterArn })
+        const response = await this.executeElasticCommand<DocDBElastic.DeleteClusterCommandOutput>(command)
+        return response.cluster
     }
 
     public async getInstance(instanceId: string): Promise<DBInstance | undefined> {
@@ -198,50 +231,22 @@ export class DefaultDocumentDBClient {
     }
 
     public async startCluster(clusterId: string) {
-        getLogger().debug('StartCluster called')
-        try {
-            if (isElasticCluster(clusterId)) {
-                const client = await this.getElasticClient()
-                const command = new DocDBElastic.StartClusterCommand({ clusterArn: clusterId })
-                await client.send(command)
-            } else {
-                const client = await this.getClient()
-                const command = new DocDB.StartDBClusterCommand({ DBClusterIdentifier: clusterId })
-                await client.send(command)
-            }
-        } catch (e) {
-            throw ToolkitError.chain(e, 'Failed to start DocumentDB cluster')
+        if (isElasticCluster(clusterId)) {
+            const command = new DocDBElastic.StartClusterCommand({ clusterArn: clusterId })
+            await this.executeElasticCommand(command)
+        } else {
+            const command = new DocDB.StartDBClusterCommand({ DBClusterIdentifier: clusterId })
+            await this.executeCommand(command)
         }
     }
 
     public async stopCluster(clusterId: string) {
-        getLogger().debug('StopCluster called')
-        try {
-            if (isElasticCluster(clusterId)) {
-                const client = await this.getElasticClient()
-                const command = new DocDBElastic.StopClusterCommand({ clusterArn: clusterId })
-                await client.send(command)
-            } else {
-                const client = await this.getClient()
-                const command = new DocDB.StopDBClusterCommand({ DBClusterIdentifier: clusterId })
-                await client.send(command)
-            }
-        } catch (e) {
-            throw ToolkitError.chain(e, 'Failed to stop DocumentDB cluster')
-        }
-    }
-
-    public async createElasticCluster(
-        input: DocDBElastic.CreateClusterInput
-    ): Promise<DocDBElastic.Cluster | undefined> {
-        getLogger().debug('CreateElasticCluster called')
-        try {
-            const client = await this.getElasticClient()
-            const command = new DocDBElastic.CreateClusterCommand(input)
-            const response = await client.send(command)
-            return response.cluster
-        } catch (e) {
-            throw ToolkitError.chain(e, 'Failed to create DocumentDB cluster')
+        if (isElasticCluster(clusterId)) {
+            const command = new DocDBElastic.StopClusterCommand({ clusterArn: clusterId })
+            await this.executeElasticCommand(command)
+        } else {
+            const command = new DocDB.StopDBClusterCommand({ DBClusterIdentifier: clusterId })
+            await this.executeCommand(command)
         }
     }
 }

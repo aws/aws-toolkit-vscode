@@ -11,6 +11,7 @@ import { DBClusterNode } from '../explorer/dbClusterNode'
 import { showQuickPick } from '../../shared/ui/pickerPrompter'
 import { formatDate, formatTime } from '../utils'
 import { telemetry } from '../../shared/telemetry'
+import { DBElasticClusterNode } from '../explorer/dbElasticClusterNode'
 
 /**
  * Deletes a DocumentDB cluster.
@@ -19,7 +20,7 @@ import { telemetry } from '../../shared/telemetry'
  * Deletes the cluster and all instances.
  * Refreshes the cluster node.
  */
-export async function deleteCluster(node: DBClusterNode) {
+export async function deleteCluster(node: DBClusterNode | DBElasticClusterNode) {
     getLogger().debug('DeleteCluster called for: %O', node)
 
     await telemetry.docdb_deleteCluster.run(async (span) => {
@@ -27,9 +28,10 @@ export async function deleteCluster(node: DBClusterNode) {
             throw new ToolkitError('No node specified for DeleteCluster')
         }
 
-        const clusterName = node.cluster.DBClusterIdentifier!
+        const clusterName = node.name
+        const isRegionalCluster = node instanceof DBClusterNode
 
-        if (node.cluster.DeletionProtection) {
+        if (isRegionalCluster && node.cluster.DeletionProtection) {
             void vscode.window.showErrorMessage(
                 localize(
                     'AWS.docdb.deleteCluster.protected',
@@ -39,7 +41,7 @@ export async function deleteCluster(node: DBClusterNode) {
             throw new ToolkitError('Deletion protection is active', { cancelled: true })
         }
 
-        if (node.status !== 'available') {
+        if (!['available', 'active'].includes(node.status!)) {
             void vscode.window.showErrorMessage(
                 localize('AWS.docdb.deleteCluster.clusterStopped', 'Cluster must be running')
             )
