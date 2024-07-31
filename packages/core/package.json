@@ -35,6 +35,7 @@
         "./codewhisperer": "./dist/src/codewhisperer/index.js",
         "./codewhisperer/node": "./dist/src/codewhisperer/indexNode.js",
         "./shared": "./dist/src/shared/index.js",
+        "./sharedNode": "./dist/src/shared/indexNode.js",
         "./auth": "./dist/src/auth/index.js",
         "./amazonqGumby": "./dist/src/amazonqGumby/index.js",
         "./amazonqFeatureDev": "./dist/src/amazonqFeatureDev/index.js",
