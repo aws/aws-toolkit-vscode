@@ -7,7 +7,8 @@ import * as vscode from 'vscode'
 import { activateAmazonQCommon, amazonQContextPrefix, deactivateCommon } from './extension'
 import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
 import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
-import { ExtContext } from 'aws-core-vscode/shared'
+import { ExtContext, globals } from 'aws-core-vscode/shared'
+import { filetypes, SchemaService } from 'aws-core-vscode/sharedNode'
 import { updateDevMode } from 'aws-core-vscode/dev'
 import { CommonAuthViewProvider } from 'aws-core-vscode/login'
 import { isExtensionActive, VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
@@ -50,6 +51,9 @@ async function activateAmazonQNode(context: vscode.ExtensionContext) {
         }),
         registerSubmitFeedback(context, 'Amazon Q', amazonQContextPrefix)
     )
+
+    globals.schemaService = new SchemaService()
+    filetypes.activate()
 
     await setupDevMode(context)
 }
