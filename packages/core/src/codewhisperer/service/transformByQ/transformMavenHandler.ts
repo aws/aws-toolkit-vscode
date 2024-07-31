@@ -7,7 +7,11 @@ import { FolderInfo, transformByQState } from '../../models/model'
 import { getLogger } from '../../../shared/logger'
 import * as CodeWhispererConstants from '../../models/constants'
 import { spawnSync } from 'child_process' // Consider using ChildProcess once we finalize all spawnSync calls
-import { CodeTransformMavenBuildCommand, telemetry } from '../../../shared/telemetry/telemetry'
+import {
+    CodeTransformBuildCommand,
+    CodeTransformMavenBuildCommand,
+    telemetry,
+} from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import { ToolkitError } from '../../../shared/errors'
@@ -38,6 +42,14 @@ function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: 
         maxBuffer: CodeWhispererConstants.maxBufferSize,
     })
 
+    let mavenBuildCommand = transformByQState.getMavenName()
+    // slashes not allowed in telemetry
+    if (mavenBuildCommand === './mvnw') {
+        mavenBuildCommand = 'mvnw'
+    } else if (mavenBuildCommand === '.\\mvnw.cmd') {
+        mavenBuildCommand = 'mvnw.cmd'
+    }
+
     if (spawnResult.status !== 0) {
         let errorLog = ''
         errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
@@ -64,22 +76,30 @@ function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: 
             const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
             errorReason += `-${errorCode}`
         }
-        let mavenBuildCommand = transformByQState.getMavenName()
-        // slashes not allowed in telemetry
-        if (mavenBuildCommand === './mvnw') {
-            mavenBuildCommand = 'mvnw'
-        } else if (mavenBuildCommand === '.\\mvnw.cmd') {
-            mavenBuildCommand = 'mvnw.cmd'
-        }
+        // TODO: remove deprecated metric once BI started using new metrics
         telemetry.codeTransform_mvnBuildFailed.emit({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformMavenBuildCommand: mavenBuildCommand as CodeTransformMavenBuildCommand,
             result: MetadataResult.Fail,
             reason: errorReason,
         })
+
+        telemetry.codeTransform_localBuildProject.emit({
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformBuildCommand: mavenBuildCommand as CodeTransformBuildCommand,
+            result: MetadataResult.Fail,
+            reason: errorReason,
+        })
+
         throw new ToolkitError(`Maven ${argString} error`, { code: 'MavenExecutionError' })
     } else {
         transformByQState.appendToErrorLog(`${baseCommand} ${argString} succeeded`)
+
+        telemetry.codeTransform_localBuildProject.emit({
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformBuildCommand: mavenBuildCommand as CodeTransformBuildCommand,
+            result: MetadataResult.Pass,
+        })
     }
 }
 
@@ -137,6 +157,7 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
         } else if (mavenBuildCommand === '.\\mvnw.cmd') {
             mavenBuildCommand = 'mvnw.cmd'
         }
+        // TODO: remove deprecated metric once BI started using new metrics
         telemetry.codeTransform_mvnBuildFailed.emit({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformMavenBuildCommand: mavenBuildCommand as CodeTransformMavenBuildCommand,

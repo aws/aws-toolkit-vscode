@@ -179,23 +179,29 @@ export class GumbyController {
     }
 
     private async transformInitiated(message: any) {
-        // check that a project is open
-        const workspaceFolders = vscode.workspace.workspaceFolders
-        if (workspaceFolders === undefined || workspaceFolders.length === 0) {
-            this.messenger.sendUnrecoverableErrorResponse('no-project-found', message.tabID)
-            return
-        }
-
-        // check that the session is authenticated
+        // Start /transform chat flow
         const session: Session = this.sessionStorage.getSession()
+        CodeTransformTelemetryState.instance.setSessionId()
+        let errorMessage
         try {
+            // check that a project is open
+            const workspaceFolders = vscode.workspace.workspaceFolders
+            if (workspaceFolders === undefined || workspaceFolders.length === 0) {
+                this.messenger.sendUnrecoverableErrorResponse('no-project-found', message.tabID)
+                errorMessage = 'no-project-found'
+                return
+            }
+
+            // check that the session is authenticated
             const authState = await AuthUtil.instance.getChatAuthState()
             if (authState.amazonQ !== 'connected') {
                 void this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
                 session.isAuthenticating = true
+                errorMessage = 'auth-failed'
                 return
             }
 
+            // If previous transformation was already running
             switch (this.sessionStorage.getSession().conversationState) {
                 case ConversationState.JOB_SUBMITTED:
                     this.messenger.sendAsyncEventProgress(
@@ -216,10 +222,23 @@ export class GumbyController {
                     this.messenger.sendCompilationInProgress(message.tabID)
                     return
             }
-            CodeTransformTelemetryState.instance.setSessionId()
             this.messenger.sendTransformationIntroduction(message.tabID)
+        } catch (e: any) {
+            // if there was an issue getting the list of valid projects, the error message will be shown here
+            this.messenger.sendErrorMessage(e.message, message.tabID)
+            errorMessage = e.code
+        } finally {
+            // Emit initial metric for /transform
+            const authType = await getAuthType()
+            telemetry.codeTransform_initiateTransform.emit({
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                credentialSourceId: authType,
+                result: errorMessage ? MetadataResult.Fail : MetadataResult.Pass,
+                reason: errorMessage,
+            })
+        }
 
-            // start /transform chat flow
+        try {
             const validProjects = await this.validateProjectsWithReplyOnError(message)
             if (validProjects.length > 0) {
                 this.sessionStorage.getSession().updateCandidateProjects(validProjects)
@@ -252,11 +271,23 @@ export class GumbyController {
             }
             err = e
         } finally {
-            // New projectDetails metric should always be fired whether the project was valid or invalid
+            // TODO: remove deprecated metric once BI started using new metrics
             telemetry.codeTransform_projectDetails.emit({
                 passive: true,
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformLocalJavaVersion: telemetryJavaVersion,
+                result: err?.code ? MetadataResult.Fail : MetadataResult.Pass,
+                reason: err?.code,
+                reasonDesc: getTelemetryReasonDesc(err),
+            })
+
+            // TODO: if build system version is available at this stage, include buildSystemVersion field.
+            telemetry.codeTransform_validateProject.emit({
+                // TODO: set buildSystem to "unknown" if project is not identified as Maven
+                codeTransformBuildSystem: 'Maven',
+                codeTransformLocalJavaVersion: telemetryJavaVersion,
+                codeTransformPreValidationError: err?.code,
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 result: err?.code ? MetadataResult.Fail : MetadataResult.Pass,
                 reason: err?.code,
                 reasonDesc: getTelemetryReasonDesc(err),
@@ -269,9 +300,14 @@ export class GumbyController {
         const typedAction = MessengerUtils.stringToEnumValue(ButtonActions, message.action as any)
         switch (typedAction) {
             case ButtonActions.CONFIRM_TRANSFORMATION_FORM:
-                await this.initiateTransformationOnProject(message)
+                await this.handleUserProjectSelection(message)
                 break
             case ButtonActions.CANCEL_TRANSFORMATION_FORM:
+                telemetry.codeTransform_submitSelection.emit({
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                    userChoice: 'Cancel',
+                    result: MetadataResult.Pass,
+                })
                 this.messenger.sendJobFinishedMessage(message.tabID, CodeWhispererConstants.jobCancelledChatMessage)
                 break
             case ButtonActions.VIEW_TRANSFORMATION_HUB:
@@ -306,13 +342,7 @@ export class GumbyController {
     }
 
     // prompt user to pick project and specify source JDK version
-    private async initiateTransformationOnProject(message: any) {
-        const authType = await getAuthType()
-        telemetry.codeTransform_jobStart.emit({
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            credentialSourceId: authType,
-            result: MetadataResult.Pass,
-        })
+    private async handleUserProjectSelection(message: any) {
         const pathToProject: string = message.formSelectedValues['GumbyTransformProjectForm']
         const toJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkToForm']
         const fromJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkFromForm']
@@ -325,8 +355,40 @@ export class GumbyController {
             return
         }
 
-        await processTransformFormInput(pathToProject, fromJDKVersion, toJDKVersion)
-        await this.validateBuildWithPromptOnError(message)
+        try {
+            await processTransformFormInput(pathToProject, fromJDKVersion, toJDKVersion)
+            await this.validateBuildWithPromptOnError(message)
+
+            // Emit 'Confirm' selection metric with form input
+            telemetry.codeTransform_submitSelection.emit({
+                codeTransformJavaSourceVersionsAllowed: JDKToTelemetryValue(
+                    fromJDKVersion
+                ) as CodeTransformJavaSourceVersionsAllowed,
+                codeTransformJavaTargetVersionsAllowed: JDKToTelemetryValue(
+                    toJDKVersion
+                ) as CodeTransformJavaTargetVersionsAllowed,
+                codeTransformProjectId: pathToProject === undefined ? telemetryUndefined : getStringHash(pathToProject),
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                userChoice: 'Confirm',
+                result: MetadataResult.Pass,
+            })
+        } catch (err: any) {
+            // Emit metric when user encountered error after selecting 'Confirm'
+            telemetry.codeTransform_submitSelection.emit({
+                codeTransformJavaSourceVersionsAllowed: JDKToTelemetryValue(
+                    fromJDKVersion
+                ) as CodeTransformJavaSourceVersionsAllowed,
+                codeTransformJavaTargetVersionsAllowed: JDKToTelemetryValue(
+                    toJDKVersion
+                ) as CodeTransformJavaTargetVersionsAllowed,
+                codeTransformProjectId: pathToProject === undefined ? telemetryUndefined : getStringHash(pathToProject),
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                userChoice: 'Confirm',
+                result: MetadataResult.Fail,
+                reason: err.message,
+            })
+            throw err
+        }
     }
 
     private async prepareProjectForSubmission(message: { pathToJavaHome: string; tabID: string }): Promise<void> {
@@ -338,6 +400,7 @@ export class GumbyController {
         }
 
         const projectPath = transformByQState.getProjectPath()
+        // TODO: remove deprecated metric once BI started using new metrics
         telemetry.codeTransform_jobStartedCompleteFromPopupDialog.emit({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformJavaSourceVersionsAllowed: JDKToTelemetryValue(
@@ -349,6 +412,8 @@ export class GumbyController {
             codeTransformProjectId: projectPath === undefined ? telemetryUndefined : getStringHash(projectPath),
             result: MetadataResult.Pass,
         })
+
+        // Pre-build project locally
         try {
             this.sessionStorage.getSession().conversationState = ConversationState.COMPILING
             this.messenger.sendCompilationInProgress(message.tabID)
@@ -382,6 +447,7 @@ export class GumbyController {
 
     private async validateBuildWithPromptOnError(message: any | undefined = undefined): Promise<void> {
         try {
+            // Check Java Home is set (not yet prebuilding)
             await validateCanCompileProject()
         } catch (err: any) {
             if (err instanceof JavaHomeNotSetError) {

@@ -245,8 +245,8 @@ describe('transformByQ', function () {
             humanInTheLoopFlag: false,
             modulePath: tempDir,
             zipManifest: new ZipManifest(),
-        }).then((zipFile) => {
-            const zip = new AdmZip(zipFile)
+        }).then((zipCodeResult) => {
+            const zip = new AdmZip(zipCodeResult.tempFilePath)
             const dependenciesToUpload = zip.getEntries().filter((entry) => entry.entryName.startsWith('dependencies'))
             // Each dependency version folder contains each expected file, thus we multiply
             const expectedNumberOfDependencyFiles = m2Folders.length * expectedFilesAfterClean.length

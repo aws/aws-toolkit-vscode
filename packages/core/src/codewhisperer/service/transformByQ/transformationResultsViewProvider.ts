@@ -320,8 +320,9 @@ export class ProposedTransformationExplorer {
                 transformByQState.getJobId(),
                 'ExportResultsArchive.zip'
             )
-
+            let exportResultsArchiveSize = 0
             let downloadErrorMessage = undefined
+            let downloadStartTime = Date.now()
 
             const cwStreamingClient = await createCodeWhispererChatStreamingClient()
             try {
@@ -333,6 +334,9 @@ export class ProposedTransformationExplorer {
                     },
                     pathToArchive
                 )
+
+                // Update downloaded artifact size
+                exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
             } catch (e: any) {
                 // user can retry the download
                 downloadErrorMessage = (e as Error).message
@@ -348,18 +352,21 @@ export class ProposedTransformationExplorer {
                 })
                 await setContext('gumby.reviewState', TransformByQReviewStatus.NotStarted)
                 getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
-                telemetry.codeTransform_logApiError.emit({
-                    codeTransformApiNames: 'ExportResultArchive',
-                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformJobId: transformByQState.getJobId(),
-                    codeTransformApiErrorMessage: downloadErrorMessage,
-                    codeTransformRequestId: e.requestId ?? '',
-                    result: MetadataResult.Fail,
-                    reason: 'ExportResultArchiveFailed',
-                })
                 throw new Error('Error downloading diff')
             } finally {
+                telemetry.codeTransform_downloadArtifact.emit({
+                    codeTransformArtifactType: 'ClientInstructions',
+                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                    codeTransformJobId: transformByQState.getJobId(),
+                    codeTransformRuntimeError: downloadErrorMessage,
+                    codeTransformRunTimeLatency: calculateTotalLatency(downloadStartTime),
+                    codeTransformTotalByteSize: exportResultsArchiveSize,
+                    result: downloadErrorMessage ? MetadataResult.Fail : MetadataResult.Pass,
+                    reason: downloadErrorMessage,
+                })
+
                 // This metric is emitted when user clicks Download Proposed Changes button
+                // TODO: remove deprecated metric once BI started using new metrics
                 telemetry.codeTransform_vcsViewerClicked.emit({
                     codeTransformVCSViewerSrcComponents: 'toastNotification',
                     codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
@@ -369,8 +376,6 @@ export class ProposedTransformationExplorer {
                 })
                 cwStreamingClient.destroy()
             }
-
-            const exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
 
             let deserializeErrorMessage = undefined
             const deserializeArchiveStartTime = Date.now()
@@ -393,6 +398,7 @@ export class ProposedTransformationExplorer {
                 await setContext('gumby.isSummaryAvailable', true)
 
                 // This metric is only emitted when placed before showInformationMessage
+                // TODO: remove deprecated metric once BI started using new metrics
                 telemetry.codeTransform_vcsDiffViewerVisible.emit({
                     codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                     codeTransformJobId: transformByQState.getJobId(),
@@ -417,6 +423,7 @@ export class ProposedTransformationExplorer {
                     `${CodeWhispererConstants.errorDeserializingDiffNotification} ${deserializeErrorMessage}`
                 )
             } finally {
+                // TODO: remove deprecated metric once BI started using new metrics
                 telemetry.codeTransform_jobArtifactDownloadAndDeserializeTime.emit({
                     codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                     codeTransformJobId: transformByQState.getJobId(),
@@ -438,6 +445,18 @@ export class ProposedTransformationExplorer {
                 tabID: ChatSessionManager.Instance.getSession().tabID,
             })
             await reset()
+
+            telemetry.codeTransform_viewArtifact.emit({
+                codeTransformArtifactType: 'ClientInstructions',
+                codeTransformVCSViewerSrcComponents: 'chat',
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                codeTransformJobId: transformByQState.getJobId(),
+                codeTransformStatus: transformByQState.getStatus(),
+                userChoice: 'Submit',
+                result: MetadataResult.Pass,
+            })
+
+            // TODO: remove deprecated metric once BI started using new metrics
             telemetry.codeTransform_vcsViewerSubmitted.emit({
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),
@@ -450,6 +469,18 @@ export class ProposedTransformationExplorer {
             diffModel.rejectChanges()
             await reset()
             telemetry.ui_click.emit({ elementId: 'transformationHub_rejectChanges' })
+
+            telemetry.codeTransform_viewArtifact.emit({
+                codeTransformArtifactType: 'ClientInstructions',
+                codeTransformVCSViewerSrcComponents: 'chat',
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                codeTransformJobId: transformByQState.getJobId(),
+                codeTransformStatus: transformByQState.getStatus(),
+                userChoice: 'Cancel',
+                result: MetadataResult.Pass,
+            })
+
+            // TODO: remove deprecated metric once BI started using new metrics
             telemetry.codeTransform_vcsViewerCanceled.emit({
                 // eslint-disable-next-line id-length
                 codeTransformPatchViewerCancelSrcComponents: 'cancelButton',

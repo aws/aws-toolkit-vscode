@@ -33,7 +33,7 @@ describe('transformByQ', async function () {
         tempFilePath = path.join(tempDir, tempFileName)
         fs.writeFileSync(tempFilePath, 'sample content for the test file')
         transformByQState.setProjectPath(tempDir)
-        zippedCodePath = await zipCode({
+        const zipCodeResult = await zipCode({
             dependenciesFolder: {
                 path: tempFilePath,
                 name: tempFileName,
@@ -41,6 +41,7 @@ describe('transformByQ', async function () {
             modulePath: tempDir,
             zipManifest: new ZipManifest(),
         })
+        zippedCodePath = zipCodeResult.tempFilePath
     })
 
     after(async function () {
