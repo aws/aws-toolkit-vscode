@@ -182,12 +182,12 @@ export function createEnvironmentPrompter(config: SamConfig, environments = conf
     })
 }
 
-interface TemplateItem {
+export interface TemplateItem {
     readonly uri: vscode.Uri
     readonly data: CloudFormation.Template
 }
 
-function createTemplatePrompter(registry: CloudFormationTemplateRegistry) {
+export function createTemplatePrompter(registry: CloudFormationTemplateRegistry) {
     const folders = new Set<string>()
     const recentTemplatePath = getRecentResponse('global', 'templatePath')
     const items = registry.items.map(({ item, path: filePath }) => {
@@ -252,7 +252,7 @@ export class SyncWizard extends Wizard<SyncParams> {
 }
 
 type BindableData = Record<string, string | boolean | undefined>
-function bindDataToParams<T extends BindableData>(data: T, bindings: { [P in keyof T]-?: string }): string[] {
+export function bindDataToParams<T extends BindableData>(data: T, bindings: { [P in keyof T]-?: string }): string[] {
     const params = [] as string[]
 
     for (const [k, v] of Object.entries(data)) {
@@ -330,7 +330,7 @@ async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boundArgs: 
     return { boundArgs }
 }
 
-async function getSamCliPathAndVersion() {
+export async function getSamCliPathAndVersion() {
     const { path: samCliPath } = await SamCliSettings.instance.getOrDetectSamCli()
     if (samCliPath === undefined) {
         throw new ToolkitError('SAM CLI could not be found', { code: 'MissingExecutable' })
@@ -348,10 +348,10 @@ async function getSamCliPathAndVersion() {
 }
 
 let oldTerminal: ProcessTerminal | undefined
-async function runSyncInTerminal(proc: ChildProcess) {
+export async function runInTerminal(proc: ChildProcess, cmd: string) {
     const handleResult = (result?: ChildProcessResult) => {
         if (result && result.exitCode !== 0) {
-            const message = `sam sync exited with a non-zero exit code: ${result.exitCode}`
+            const message = `sam ${cmd} exited with a non-zero exit code: ${result.exitCode}`
             throw ToolkitError.chain(result.error, message, {
                 code: 'NonZeroExitCode',
             })
@@ -376,7 +376,7 @@ async function runSyncInTerminal(proc: ChildProcess) {
         oldTerminal.close()
     }
     const pty = (oldTerminal = new ProcessTerminal(proc))
-    const terminal = vscode.window.createTerminal({ pty, name: 'SAM Sync' })
+    const terminal = vscode.window.createTerminal({ pty, name: `SAM ${cmd}` })
     terminal.sendText('\n')
     terminal.show()
 
@@ -445,10 +445,10 @@ export async function runSamSync(args: SyncParams) {
         }),
     })
 
-    await runSyncInTerminal(sam)
+    await runInTerminal(sam, 'sync')
 }
 
-const getWorkspaceUri = (template: TemplateItem) => vscode.workspace.getWorkspaceFolder(template.uri)?.uri
+export const getWorkspaceUri = (template: TemplateItem) => vscode.workspace.getWorkspaceFolder(template.uri)?.uri
 const getStringParam = (config: SamConfig, key: string) => {
     try {
         return cast(config.getParam('sync', key), Optional(String))
