@@ -45,6 +45,7 @@ import { TreeNode } from '../treeview/resourceTreeDataProvider'
 import { SamAppLocation } from '../applicationBuilder/explorer/samProject'
 import { ResourceNode } from '../applicationBuilder/explorer/nodes/resourceNode'
 import { ToolkitError } from '../errors'
+import { registerBuild } from './build'
 const sharedDetectSamCli = shared(detectSamCli)
 
 const supportedLanguages: {
@@ -119,6 +120,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         await resumeCreateNewSamApp(ctx)
     }
 
+    registerBuild()
     registerSync()
 }
 

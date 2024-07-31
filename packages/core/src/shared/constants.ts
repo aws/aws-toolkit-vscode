@@ -64,6 +64,11 @@ export const samSyncUrl = vscode.Uri.parse(
     'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/accelerate-getting-started.html'
 )
 
+//URLs for "sam build" wizard.
+export const samBuildUrl = vscode.Uri.parse(
+    'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-building.html'
+)
+
 // URLs for CDK
 export const cdkProvideFeedbackUrl: string = `${githubUrl}/issues/new/choose`
 export const cdkDocumentationUrl: string = 'https://docs.aws.amazon.com/console/toolkit-for-vscode/aws-cdk-apps'
