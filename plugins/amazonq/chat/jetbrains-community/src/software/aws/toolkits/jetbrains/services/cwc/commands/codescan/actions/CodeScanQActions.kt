@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.cwc.commands.codescan.actions
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataKey
 import com.intellij.openapi.project.DumbAware
 import software.aws.toolkits.jetbrains.services.cwc.commands.ActionRegistrar
@@ -15,9 +16,10 @@ open class CodeScanQActions(private val command: EditorContextCommand) : AnActio
     override fun actionPerformed(e: AnActionEvent) {
         val issueDataKey = DataKey.create<MutableMap<String, String>>("amazonq.codescan.explainissue")
         val issueContext = e.getData(issueDataKey) ?: return
+        val project = e.getData(CommonDataKeys.PROJECT) ?: return
 
         ActionManager.getInstance().getAction("q.openchat").actionPerformed(e)
 
-        ActionRegistrar.instance.reportMessageClick(command, issueContext)
+        ActionRegistrar.instance.reportMessageClick(command, issueContext, project)
     }
 }

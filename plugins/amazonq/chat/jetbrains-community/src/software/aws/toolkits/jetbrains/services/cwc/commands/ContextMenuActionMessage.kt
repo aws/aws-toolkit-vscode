@@ -3,9 +3,10 @@
 
 package software.aws.toolkits.jetbrains.services.cwc.commands
 
+import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.services.amazonq.messages.AmazonQMessage
 
 /**
  * Event emitted for context menu editor actions
  */
-data class ContextMenuActionMessage(val command: EditorContextCommand) : AmazonQMessage
+data class ContextMenuActionMessage(val command: EditorContextCommand, val project: Project) : AmazonQMessage

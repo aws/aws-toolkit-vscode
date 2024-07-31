@@ -299,12 +299,15 @@ class ChatController private constructor(
             "Description:    ${message.issue["description"]} \n" +
             "Code:    $codeSelection"
 
-        processPromptActions(prompt, ContextMenuActionMessage(message.command), triggerId, fileContext, modelPrompt)
+        processPromptActions(prompt, ContextMenuActionMessage(message.command, message.project), triggerId, fileContext, modelPrompt)
     }
 
     // JB specific (not in vscode)
     override suspend fun processContextMenuCommand(message: ContextMenuActionMessage) {
         // Extract context
+        if (message.project != context.project) {
+            return
+        }
         val fileContext = contextExtractor.extractContextForTrigger(ExtractionTriggerType.ContextMenu)
         val triggerId = UUID.randomUUID().toString()
         val codeSelection = "\n```\n${fileContext.focusAreaContext?.codeSelection?.trimIndent()?.trim()}\n```\n"

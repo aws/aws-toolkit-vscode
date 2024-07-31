@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.cwc.commands
 
+import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.services.amazonq.messages.AmazonQMessage
 
-data class CodeScanIssueActionMessage(val command: EditorContextCommand, val issue: MutableMap<String, String>) : AmazonQMessage
+data class CodeScanIssueActionMessage(val command: EditorContextCommand, val issue: MutableMap<String, String>, val project: Project) : AmazonQMessage

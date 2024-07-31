@@ -27,6 +27,6 @@ open class CustomAction(private val command: EditorContextCommand) : AnAction(),
             else -> TriggerType.ContextMenu
         }
 
-        ActionRegistrar.instance.reportMessageClick(command)
+        ActionRegistrar.instance.reportMessageClick(command, project)
     }
 }
