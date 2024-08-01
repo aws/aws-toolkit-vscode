@@ -729,6 +729,11 @@ export class FeatureDevController {
                 ],
                 tabID: message.tabID,
             })
+            this.messenger.sendChatInputEnabled(message.tabID, true)
+            this.messenger.sendUpdatePlaceholder(
+                message.tabID,
+                i18n('AWS.amazonq.featureDev.pillText.retryOrAddNewPrompt')
+            )
         }
 
         telemetry.amazonq_modifySourceFolder.emit({
