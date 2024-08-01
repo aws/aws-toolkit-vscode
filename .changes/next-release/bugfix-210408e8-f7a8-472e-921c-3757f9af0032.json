@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix NullPointerException that may happen when re-authenticating to Amazon Q"
-}

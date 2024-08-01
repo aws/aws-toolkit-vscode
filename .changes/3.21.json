@@ -1,0 +1,20 @@
+{
+  "date" : "2024-08-01",
+  "version" : "3.21",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Fix NullPointerException that may happen when re-authenticating to Amazon Q"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Chat: Fixing issue with the max tabs notification not being dismissible"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix Amazon Q chat context menu actions show up in all chat windows"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Chat: Fixing issue with an incorrect input cursor position in the prompt text box"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Chat: Showing/hiding the scrollbars is now controlled by the OS settings"
+  } ]
+}

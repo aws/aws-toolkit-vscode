@@ -1,3 +1,10 @@
+# _3.21_ (2024-08-01)
+- **(Bug Fix)** Fix NullPointerException that may happen when re-authenticating to Amazon Q
+- **(Bug Fix)** Amazon Q Chat: Fixing issue with the max tabs notification not being dismissible
+- **(Bug Fix)** Fix Amazon Q chat context menu actions show up in all chat windows
+- **(Bug Fix)** Amazon Q Chat: Fixing issue with an incorrect input cursor position in the prompt text box
+- **(Bug Fix)** Amazon Q Chat: Showing/hiding the scrollbars is now controlled by the OS settings
+
 # _3.20_ (2024-07-26)
 - **(Bug Fix)** Fix Q chat not responding in 2023.2 and 2023.3
 

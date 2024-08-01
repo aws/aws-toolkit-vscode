@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Amazon Q Chat: Fixing issue with an incorrect input cursor position in the prompt text box"
-}
