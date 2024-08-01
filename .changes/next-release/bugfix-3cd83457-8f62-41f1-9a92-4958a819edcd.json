@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Amazon Q Chat: Fixing issue with the max tabs notification not being dismissible"
+}
