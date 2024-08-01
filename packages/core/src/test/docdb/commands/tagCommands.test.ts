@@ -43,7 +43,7 @@ describe('Tags', function () {
     describe('listTagsCommand', function () {
         it('displays a list of resource tags', async function () {
             // arrange
-            const stub = sinon.stub().resolves([])
+            const stub = sinon.stub().resolves({})
             docdb.listResourceTags = stub
             getTestWindow().onDidShowMessage((message) => {
                 assert.equal(message.message, 'Tags for test-instance:')
@@ -118,8 +118,8 @@ describe('Tags', function () {
     describe('removeTagCommand', function () {
         it('prompts with a list of tags and removes the selected tag', async function () {
             // arrange
-            const tag = { Key: 'test-key', Value: 'test-value ' }
-            docdb.listResourceTags = sinon.stub().resolves([tag])
+            const tag = { ['test-key']: 'test-value ' }
+            docdb.listResourceTags = sinon.stub().resolves(tag)
             const stub = sinon.stub().resolves()
             docdb.removeResourceTags = stub
             getTestWindow().onDidShowQuickPick((picker) => picker.acceptItem(picker.items[0]))
@@ -135,8 +135,8 @@ describe('Tags', function () {
 
         it('does nothing when prompt is cancelled', async function () {
             // arrange
-            const tag = { Key: 'test-key', Value: 'test-value ' }
-            docdb.listResourceTags = sinon.stub().resolves([tag])
+            const tag = { ['test-key']: 'test-value ' }
+            docdb.listResourceTags = sinon.stub().resolves(tag)
             const stub = sinon.stub().resolves()
             docdb.removeResourceTags = stub
             getTestWindow().onDidShowQuickPick((picker) => picker.hide())

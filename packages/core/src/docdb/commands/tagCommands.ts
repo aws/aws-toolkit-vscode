@@ -13,10 +13,9 @@ import { ToolkitError } from '../../shared'
 
 export async function listTags(node: DBResourceNode): Promise<void> {
     return telemetry.docdb_listTags.run(async () => {
-        const tags = await node.listTags()
-        const detail = tags.length
-            ? tags.map((tag) => `• ${tag.Key} = ${tag.Value}`).join('\r\n')
-            : '[No tags assigned]'
+        const tagMap = await node.listTags()
+        const tags = Object.entries(tagMap ?? {}).map(([key, value]) => `• ${key} = ${value}`)
+        const detail = tags.length ? tags.join('\r\n') : '[No tags assigned]'
 
         const addCommandText = localize('AWS.docdb.tags.add', 'Add tag...')
         const removeCommandText = tags.length ? localize('AWS.docdb.tags.remove', 'Remove...') : ''
@@ -61,8 +60,8 @@ export async function addTag(node: DBResourceNode): Promise<void> {
             throw new ToolkitError('User cancelled', { cancelled: true })
         }
 
-        const tag = { Key: key.trim(), Value: value.trim() }
-        await node.client.addResourceTags({ ResourceName: node.arn, Tags: [tag] })
+        const tag = { [key.trim()]: value.trim() }
+        await node.client.addResourceTags({ resourceArn: node.arn, tags: tag })
         getLogger().info('Added resource tag for: %O', node.name)
         void vscode.window.showInformationMessage(localize('AWS.docdb.tags.add.success', 'Tag added'))
     })
@@ -70,12 +69,12 @@ export async function addTag(node: DBResourceNode): Promise<void> {
 
 export async function removeTag(node: DBResourceNode): Promise<void> {
     return telemetry.docdb_removeTag.run(async () => {
-        const tags = await node.listTags()
-        const items = tags.map<DataQuickPickItem<string>>((tag) => {
+        const tagMap = await node.listTags()
+        const items = Object.entries(tagMap ?? {}).map<DataQuickPickItem<string>>(([key, value]) => {
             return {
-                data: tag.Key,
-                label: tag.Key!,
-                description: tag.Value,
+                data: key,
+                label: key,
+                description: value,
             }
         })
         if (items.length === 0) {
@@ -91,7 +90,7 @@ export async function removeTag(node: DBResourceNode): Promise<void> {
             throw new ToolkitError('User cancelled', { cancelled: true })
         }
 
-        await node.client.removeResourceTags({ ResourceName: node.arn, TagKeys: [resp] })
+        await node.client.removeResourceTags({ resourceArn: node.arn, tagKeys: [resp] })
         getLogger().info('Removed resource tag for: %O', node.name)
         void vscode.window.showInformationMessage(localize('AWS.docdb.tags.remove.success', 'Tag removed'))
     })

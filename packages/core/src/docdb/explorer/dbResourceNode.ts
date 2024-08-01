@@ -8,7 +8,6 @@ import { inspect } from 'util'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { DocumentDBClient } from '../../shared/clients/docdbClient'
-import { Tag } from '@aws-sdk/client-docdb'
 
 /** An AWS Explorer node representing a DocumentDB resource. */
 export abstract class DBResourceNode extends AWSTreeNodeBase implements AWSResourceNode {
@@ -29,7 +28,7 @@ export abstract class DBResourceNode extends AWSTreeNodeBase implements AWSResou
         return 'DBResourceNode'
     }
 
-    public async listTags(): Promise<Tag[]> {
+    public async listTags() {
         return await this.client.listResourceTags(this.arn)
     }
 

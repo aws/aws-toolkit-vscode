@@ -13,7 +13,7 @@ import * as DocDBElastic from '@aws-sdk/client-docdb-elastic'
 
 const DocDBEngine = 'docdb'
 
-function isElasticCluster(clusterId: string): boolean {
+function isElasticCluster(clusterId: string | undefined): boolean | undefined {
     return clusterId?.includes(':docdb-elastic:')
 }
 
@@ -214,20 +214,49 @@ export class DefaultDocumentDBClient {
         return !!response.DBInstance
     }
 
-    public async listResourceTags(arn: string): Promise<DocDB.Tag[]> {
-        const command = new DocDB.ListTagsForResourceCommand({ ResourceName: arn })
-        const response = await this.executeCommand<DocDB.ListTagsForResourceCommandOutput>(command)
-        return response.TagList ?? []
+    public async listResourceTags(arn: string): Promise<Record<string, string | undefined> | undefined> {
+        if (isElasticCluster(arn)) {
+            const command = new DocDBElastic.ListTagsForResourceCommand({ resourceArn: arn })
+            const response = await this.executeElasticCommand<DocDBElastic.ListTagsForResourceCommandOutput>(command)
+            return response.tags
+        } else {
+            const command = new DocDB.ListTagsForResourceCommand({ ResourceName: arn })
+            const response = await this.executeCommand<DocDB.ListTagsForResourceCommandOutput>(command)
+            const tagMap = response.TagList?.reduce(
+                (map, tag) => {
+                    map[tag.Key!] = tag.Value
+                    return map
+                },
+                {} as Record<string, string | undefined>
+            )
+            return tagMap
+        }
     }
 
-    public async addResourceTags(input: DocDB.AddTagsToResourceCommandInput): Promise<void> {
-        const command = new DocDB.AddTagsToResourceCommand(input)
-        await this.executeCommand(command)
+    public async addResourceTags(input: DocDBElastic.TagResourceCommandInput): Promise<void> {
+        if (isElasticCluster(input.resourceArn)) {
+            const command = new DocDBElastic.TagResourceCommand(input)
+            await this.executeElasticCommand(command)
+        } else {
+            const command = new DocDB.AddTagsToResourceCommand({
+                ResourceName: input.resourceArn,
+                Tags: Object.entries(input.tags ?? {}).map(([Key, Value]) => ({ Key, Value })),
+            })
+            await this.executeCommand(command)
+        }
     }
 
-    public async removeResourceTags(input: DocDB.RemoveTagsFromResourceCommandInput): Promise<void> {
-        const command = new DocDB.RemoveTagsFromResourceCommand(input)
-        await this.executeCommand(command)
+    public async removeResourceTags(input: DocDBElastic.UntagResourceCommandInput): Promise<void> {
+        if (isElasticCluster(input.resourceArn)) {
+            const command = new DocDBElastic.UntagResourceCommand(input)
+            await this.executeElasticCommand(command)
+        } else {
+            const command = new DocDB.RemoveTagsFromResourceCommand({
+                ResourceName: input.resourceArn,
+                TagKeys: input.tagKeys,
+            })
+            await this.executeCommand(command)
+        }
     }
 
     public async startCluster(clusterId: string) {
