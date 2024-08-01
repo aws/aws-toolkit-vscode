@@ -18,7 +18,7 @@ dependencies {
     api(libs.aws.lambda)
     api(libs.aws.s3)
     api(libs.aws.sso)
-//    api(libs.aws.ssooidc)
+    api(libs.aws.ssooidc)
     api(libs.aws.sts)
     api(libs.bundles.jackson)
     implementation(libs.commonmark)
