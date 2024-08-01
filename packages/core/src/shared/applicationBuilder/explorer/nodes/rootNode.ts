@@ -14,6 +14,10 @@ import { AppNode } from './appNode'
 import { detectSamProjects } from '../detectSamProjects'
 
 export async function getAppNodes(): Promise<TreeNode[]> {
+    // no active workspace
+    if (!vscode.workspace.workspaceFolders) {
+        return []
+    }
     const appsFound = await detectSamProjects()
 
     if (appsFound.length === 0) {
