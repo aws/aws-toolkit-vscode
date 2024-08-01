@@ -5,7 +5,6 @@
 
 import { TextEditor, Selection, TextDocument, Range } from 'vscode'
 
-// import { Extent, Java, Python, Location } from '@aws/fully-qualified-names'
 import { FocusAreaContext, FullyQualifiedName } from './model'
 
 const focusAreaCharLimit = 9_000
