@@ -9,7 +9,7 @@ import { ServiceException } from '@aws-sdk/smithy-client'
 import { isThrottlingError, isTransientError } from '@smithy/service-error-classification'
 import { Result } from './telemetry/telemetry'
 import { CancellationError } from './utilities/timeoutUtils'
-import { isNonNullable } from './utilities/tsUtils'
+import { hasKey, isNonNullable } from './utilities/tsUtils'
 import type * as nodefs from 'fs'
 import type * as os from 'os'
 import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
@@ -829,4 +829,28 @@ function isVSCodeProxyError(err: Error): boolean {
  */
 function isSocketTimeoutError(err: Error): boolean {
     return err.name === 'TimeoutError' && err.message.includes('Connection timed out after')
+}
+
+/**
+ * AWS SDK clients may rarely make requests that results in something other than JSON data
+ * being returned (e.g html). This will cause the client to throw a SyntaxError as a result
+ * of attempt to deserialize the non-JSON data.
+ * While the contents of the response may contain sensitive information, there may be a reason
+ * for failure embedded. This function attempts to extract that reason.
+ *
+ * If the reason cannot be found or the error is not a SyntaxError, return undefined.
+ */
+export function getReasonFromSyntaxError(err: Error): string | undefined {
+    if (!(err instanceof SyntaxError)) {
+        return undefined
+    }
+
+    if (hasKey(err, '$response')) {
+        const response = err['$response']
+        if (response && hasKey(response, 'reason')) {
+            return response['reason'] as string
+        }
+    }
+
+    return undefined
 }
