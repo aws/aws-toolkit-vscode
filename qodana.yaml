@@ -1,6 +1,7 @@
 version: 1.0
 linter: jetbrains/qodana-jvm-community:latest
 projectJDK: "21"
+bootstrap: ./gradlew :plugin-core:sdk-codegen:generateSdks :plugin-core:jetbrains-community:generateTelemetry
 profile:
   name: qodana.recommended
 exclude:
@@ -9,3 +10,54 @@ exclude:
       - .qodana
 dot-net:
   solution: ReSharper.AWS.sln
+include:
+  - name: DevKitPropertiesMessageValidation
+  - name: KotlinObjectExtensionRegistration
+  - name: LightServiceMigrationXML
+  - name: IncorrectProcessCanceledExceptionHandling
+  - name: LightServiceMigrationCode
+  - name: MissingActionUpdateThread
+  - name: ApplicationServiceAsStaticFinalFieldOrProperty
+  - name: CallingMethodShouldBeRequiresBlockingContext
+  - name: CancellationCheckInLoops
+  - name: CompanionObjectInExtension
+  - name: ComponentRegistrationProblems
+  - name: ComponentNotRegistered
+  - name: ActionPresentationInstantiatedInCtor
+  - name: ExtensionClassShouldBeFinalAndNonPublic
+  - name: ExtensionRegisteredAsServiceOrComponent
+  - name: ActionIsNotPreviewFriendly
+  - name: FileEqualsUsage
+  - name: ForbiddenInSuspectContextMethod
+  - name: IncorrectParentDisposable
+  - name: IncorrectServiceRetrieving
+  - name: PresentationAnnotation
+  - name: KotlinObjectRegisteredAsExtension
+  - name: LightServiceMustBeFinal
+  - name: ListenerImplementationMustNotBeDisposable
+  - name: LeakableMapKey
+  - name: MigrateToOptControl
+  - name: MismatchedLightServiceLevelAndCtor
+  - name: SerializableCtor
+  - name: NonDefaultConstructor
+  - name: InspectionUsingGrayColors
+  - name: PsiElementConcatenation
+  - name: UseDPIAwareInsets
+  - name: UseDPIAwareBorders
+  - name: UseJBColor
+  - name: UseVirtualFileEquals
+  - name: UsePrimitiveTypes
+  - name: UsePluginIdEquals
+  - name: UsePlatformProcessAwaitExit
+  - name: UnspecifiedActionsPlace
+  - name: UnsafeVfsRecursion
+  - name: UnsafeReturnStatementVisitor
+  - name: UnresolvedPluginConfigReference
+  - name: UndesirableClassUsage
+  - name: UElementAsPsi
+  - name: ThreadingConcurrency
+  - name: StaticInitializationInExtensions
+  - name: StatefulEp
+  - name: SimplifiableServiceRetrieving
+  - name: QuickFixGetFamilyNameViolation
+  - name: TokenSetInParserDefinition

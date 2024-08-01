@@ -14,9 +14,12 @@ concurrency:
 jobs:
   qodana:
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
       - name: Maximize Build Space
         if: runner.os == 'Linux'
