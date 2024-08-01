@@ -30,6 +30,7 @@ import {
     messages,
     placeholder,
     setContext,
+    handleUninstall,
 } from 'aws-core-vscode/shared'
 import { ExtStartUpSources, telemetry } from 'aws-core-vscode/telemetry'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
@@ -119,6 +120,9 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
 
     // Amazon Q specific commands
     registerCommands(context)
+
+    // Watch Uninstall
+    handleUninstall(context)
 
     // Hide the Amazon Q tree in toolkit explorer
     await setContext('aws.toolkit.amazonq.dismissed', true)
