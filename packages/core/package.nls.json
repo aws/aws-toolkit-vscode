@@ -274,5 +274,6 @@
     "AWS.command.docdb.startCluster": "Start Cluster",
     "AWS.command.docdb.stopCluster": "Stop Cluster",
     "AWS.command.docdb.tags": "Tags...",
-    "AWS.command.docdb.open": "Open in Browser"
+    "AWS.command.docdb.open": "Open in Browser",
+    "AWS.command.docdb.copyEndpoint": "Copy Endpoint..."
 }

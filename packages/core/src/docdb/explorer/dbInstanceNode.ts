@@ -10,6 +10,7 @@ import { DocDBContext, DocDBNodeContext } from './docdbContext'
 import { DBResourceNode } from './dbResourceNode'
 import { DBClusterNode } from './dbClusterNode'
 import { ModifyDBInstanceMessage } from '@aws-sdk/client-docdb'
+import { copyToClipboard } from '../../shared/utilities/messages'
 import { waitUntil } from '../../shared'
 
 /**
@@ -83,6 +84,10 @@ export class DBInstanceNode extends DBResourceNode {
         return vscode.Uri.parse(
             `https://${region}.console.aws.amazon.com/docdb/home?region=${region}#instance-details/${this.name}`
         )
+    }
+
+    override copyEndpoint() {
+        return copyToClipboard(this.instance.Endpoint?.Address ?? '', this.name)
     }
 
     public [inspect.custom](): string {

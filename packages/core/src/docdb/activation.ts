@@ -80,6 +80,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
         Commands.register('aws.docdb.openBrowser', async (node?: DBResourceNode) => {
             await node?.openInBrowser()
+        }),
+
+        Commands.register('aws.docdb.copyEndpoint', async (node?: DBResourceNode) => {
+            await node?.copyEndpoint()
         })
     )
 }

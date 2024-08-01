@@ -6,8 +6,10 @@
 import * as os from 'os'
 import * as vscode from 'vscode'
 import { inspect } from 'util'
+import { copyToClipboard } from '../../shared/utilities/messages'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { telemetry } from '../../shared/telemetry'
 import { waitUntil } from '../../shared'
 import { CreateDBInstanceMessage, DBCluster, ModifyDBClusterMessage } from '@aws-sdk/client-docdb'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
@@ -16,7 +18,6 @@ import { DBInstanceNode } from './dbInstanceNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { DBInstance, DocumentDBClient } from '../../shared/clients/docdbClient'
 import { DocDBContext, DocDBNodeContext } from './docdbContext'
-import { telemetry } from '../../shared/telemetry'
 
 /**
  * An AWS Explorer node representing DocumentDB clusters.
@@ -139,6 +140,10 @@ export class DBClusterNode extends DBResourceNode {
         return vscode.Uri.parse(
             `https://${region}.console.aws.amazon.com/docdb/home?region=${region}#cluster-details/${this.name}`
         )
+    }
+
+    override copyEndpoint() {
+        return copyToClipboard(this.cluster.Endpoint!, this.name)
     }
 
     public [inspect.custom](): string {

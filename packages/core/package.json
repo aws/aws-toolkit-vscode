@@ -2056,6 +2056,11 @@
                     "command": "aws.docdb.openBrowser",
                     "when": "viewItem =~ /^awsDocDB-/",
                     "group": "0@1"
+                },
+                {
+                    "command": "aws.docdb.copyEndpoint",
+                    "when": "viewItem =~ /^awsDocDB-/",
+                    "group": "0@1"
                 }
             ],
             "aws.toolkit.auth": [
@@ -3719,6 +3724,17 @@
             {
                 "command": "aws.docdb.openBrowser",
                 "title": "%AWS.command.docdb.open%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB/",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.copyEndpoint",
+                "title": "%AWS.command.docdb.copyEndpoint%",
                 "category": "%AWS.title%",
                 "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB/",
                 "cloud9": {

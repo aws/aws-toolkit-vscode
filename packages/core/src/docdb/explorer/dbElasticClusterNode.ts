@@ -9,6 +9,7 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { DBResourceNode } from './dbResourceNode'
 import { DBElasticCluster, DocumentDBClient } from '../../shared/clients/docdbClient'
 import { DocDBContext, DocDBNodeContext } from './docdbContext'
+import { copyToClipboard } from '../../shared/utilities/messages'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { waitUntil } from '../../shared'
 
@@ -21,7 +22,7 @@ export class DBElasticClusterNode extends DBResourceNode {
 
     constructor(
         public readonly parent: AWSTreeNodeBase,
-        readonly cluster: DBElasticCluster,
+        public cluster: DBElasticCluster,
         client: DocumentDBClient
     ) {
         super(client, cluster.clusterName ?? '[Cluster]', vscode.TreeItemCollapsibleState.None)
@@ -85,6 +86,14 @@ export class DBElasticClusterNode extends DBResourceNode {
         return vscode.Uri.parse(
             `https://${region}.console.aws.amazon.com/docdb/home?region=${region}#elastic-cluster-details/${this.arn}`
         )
+    }
+
+    override async copyEndpoint() {
+        // get the full cluster record if we don't have it already
+        if (this.cluster.clusterEndpoint === undefined) {
+            this.cluster = (await this.client.getElasticCluster(this.arn)) ?? this.cluster
+        }
+        await copyToClipboard(this.cluster.clusterEndpoint!, this.name)
     }
 
     public [inspect.custom](): string {

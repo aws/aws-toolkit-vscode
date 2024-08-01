@@ -20,7 +20,7 @@ function isElasticCluster(clusterId: string | undefined): boolean | undefined {
 export const DBStorageType = { Standard: 'standard', IOpt1: 'iopt1' } as const
 
 /** A list of Amazon DocumentDB clusters. */
-export interface DBElasticCluster extends DocDBElastic.ClusterInList {}
+export interface DBElasticCluster extends DocDBElastic.Cluster {}
 
 export interface DBInstance extends DocDB.DBInstance {
     IsClusterWriter?: boolean
