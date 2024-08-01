@@ -15,6 +15,7 @@ import { debounce } from 'lodash'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { showTransformationHub } from './commands'
 import { transformByQState } from '../codewhisperer/models/model'
+import { ChatSessionManager } from './chat/storages/chatSession'
 
 export function init(appContext: AmazonQAppInitContext) {
     const gumbyChatControllerEventEmitters: ChatControllerEventEmitters = {
@@ -55,7 +56,7 @@ export function init(appContext: AmazonQAppInitContext) {
         let authenticatingSessionID = ''
 
         if (authenticated) {
-            const session = sessionStorage.getSession()
+            const session = ChatSessionManager.Instance.getSession()
 
             if (session.isTabOpen() && session.isAuthenticating) {
                 authenticatingSessionID = session.tabID!
