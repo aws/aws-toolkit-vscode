@@ -40,9 +40,8 @@ export class FocusAreaContextExtractor {
             importantRange = editor.document.lineAt(importantRange.start.line).range
         }
 
-        // Temporarily disable findNamesWithInExtent because the promise
-        // may not resolve and can cause chat to hang
-        // const names = await this.findNamesInRange(editor.document.getText(), importantRange, editor.document.languageId)
+        //  TODO: call findNamesWithInExtent from @aws/fully-qualified-names
+        //  after promise not resolving issue is fixed
         const names = {}
         const [simpleNames] = this.prepareSimpleNames(names)
         const [usedFullyQualifiedNames] = this.prepareFqns(names)
@@ -223,37 +222,6 @@ export class FocusAreaContextExtractor {
     private getRangeText(document: TextDocument, range: Range): string {
         return document.getText(range)
     }
-
-    // private async findNamesInRange(fileText: string, selection: Range, languageId: string) {
-    //     fileText.replace(/([\uE000-\uF8FF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDDFF])/g, '')
-    //     const startLocation: Location = new Location(selection.start.line, selection.start.character)
-    //     const endLocation: Location = new Location(selection.end.line, selection.end.character)
-    //     const extent: Extent = new Extent(startLocation, endLocation)
-
-    //     let names: any = {}
-    //     switch (languageId) {
-    //         case 'java':
-    //             names = await Java.findNamesWithInExtent(fileText, extent)
-    //             break
-    //         case 'javascript':
-    //         case 'javascriptreact':
-    //         case 'typescriptreact':
-    //             // Disable Tsx.findNamesWithInExtent because promise Tsx.findNamesWithInExtent
-    //             // may not resolve and can cause chat to hang
-    //             //names = await Tsx.findNamesWithInExtent(fileText, extent)
-    //             names = undefined
-    //             break
-    //         case 'python':
-    //             names = await Python.findNamesWithInExtent(fileText, extent)
-    //             break
-    //         case 'typescript':
-    //             //names = await TypeScript.findNamesWithInExtent(fileText, extent)
-    //             names = undefined
-    //             break
-    //     }
-
-    //     return names
-    // }
 
     private prepareFqns(names: any): [FullyQualifiedName[], boolean] {
         if (names === undefined || !names.fullyQualified) {
