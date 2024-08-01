@@ -13,22 +13,6 @@ plugins {
 }
 
 allprojects {
-    repositories {
-        val codeArtifactUrl: Provider<String> = providers.environmentVariable("CODEARTIFACT_URL")
-        val codeArtifactToken: Provider<String> = providers.environmentVariable("CODEARTIFACT_AUTH_TOKEN")
-        if (codeArtifactUrl.isPresent && codeArtifactToken.isPresent) {
-            maven {
-                url = uri(codeArtifactUrl.get())
-                credentials {
-                    username = "aws"
-                    password = codeArtifactToken.get()
-                }
-            }
-        }
-        mavenCentral()
-        gradlePluginPortal()
-    }
-
     configurations.configureEach {
         resolutionStrategy {
             // need to figure out how to fail only on non-platform dependencies

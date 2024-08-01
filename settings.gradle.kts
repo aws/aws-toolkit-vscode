@@ -1,22 +1,47 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 import kotlin.collections.ArrayDeque
+import org.jetbrains.intellij.platform.gradle.extensions.intellijPlatform
 
-pluginManagement {
-    repositories {
-        val codeArtifactUrl: Provider<String> = providers.environmentVariable("CODEARTIFACT_URL")
-        val codeArtifactToken: Provider<String> = providers.environmentVariable("CODEARTIFACT_AUTH_TOKEN")
-        if (codeArtifactUrl.isPresent && codeArtifactToken.isPresent) {
-            println("Using CodeArtifact proxy: ${codeArtifactUrl.get()}")
-            maven {
-                url = uri(codeArtifactUrl.get())
-                credentials {
-                    username = "aws"
-                    password = codeArtifactToken.get()
-                }
+val codeArtifactMavenRepo = fun RepositoryHandler.(): MavenArtifactRepository? {
+    val codeArtifactUrl: Provider<String> = providers.environmentVariable("CODEARTIFACT_URL")
+    val codeArtifactToken: Provider<String> = providers.environmentVariable("CODEARTIFACT_AUTH_TOKEN")
+    return if (codeArtifactUrl.isPresent && codeArtifactToken.isPresent) {
+        maven {
+            url = uri(codeArtifactUrl.get())
+            credentials {
+                username = "aws"
+                password = codeArtifactToken.get()
             }
         }
-        gradlePluginPortal()
+    } else {
+        null
+    }
+}.also {
+    pluginManagement {
+        repositories {
+            it()
+            gradlePluginPortal()
+        }
+    }
+}
+
+plugins {
+    id("com.github.burrunan.s3-build-cache") version "1.5"
+    id("com.gradle.develocity") version "3.17.5"
+    id("org.jetbrains.intellij.platform.settings") version "2.0.0"
+}
+
+dependencyResolutionManagement {
+    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+    repositories {
+        codeArtifactMavenRepo()
+        mavenCentral()
+
+        intellijPlatform {
+            defaultRepositories()
+            jetbrainsRuntime()
+        }
     }
 }
 
@@ -46,11 +71,6 @@ if (regionEnv.isPresent && bucketEnv.isPresent && prefixEnv.isPresent) {
             lookupDefaultAwsCredentials = true
         }
     }
-}
-
-plugins {
-    id("com.gradle.develocity").version("3.17.5")
-    id("com.github.burrunan.s3-build-cache").version("1.5")
 }
 
 develocity {

@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.gradle.intellij
 
-import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider

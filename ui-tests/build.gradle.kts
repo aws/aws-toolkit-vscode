@@ -7,10 +7,6 @@ import software.aws.toolkits.gradle.jacoco.RemoteCoverage.Companion.enableRemote
 val remoteRobotPort: String by project
 val ideProfileName: String by project
 
-repositories {
-    maven { url = uri("https://cache-redirector.jetbrains.com/intellij-dependencies") }
-}
-
 plugins {
     id("toolkit-kotlin-conventions")
     id("toolkit-testing")
