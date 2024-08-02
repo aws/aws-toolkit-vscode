@@ -218,20 +218,12 @@ class CodeTransformTelemetryManager(private val project: Project) {
     }
 
     // Replace the input as needed to support Gradle and other transformation types.
-    fun localBuildProject(buildCommand: CodeTransformBuildCommand, telemetryErrorMessage: String?, isCanceled: Boolean = false) {
-        val result: Result = if (telemetryErrorMessage.isNullOrEmpty()) {
-            Result.Succeeded
-        } else if (isCanceled) {
-            Result.Cancelled
-        } else {
-            Result.Failed
-        }
-
+    fun localBuildProject(buildCommand: CodeTransformBuildCommand, localBuildResult: Result, telemetryErrorMessage: String?) {
         CodetransformTelemetry.localBuildProject(
             codeTransformBuildCommand = buildCommand,
             codeTransformSessionId = sessionId,
-            result = result,
-            reason = telemetryErrorMessage,
+            result = localBuildResult,
+            reason = if (telemetryErrorMessage.isNullOrEmpty()) null else telemetryErrorMessage,
         )
     }
 

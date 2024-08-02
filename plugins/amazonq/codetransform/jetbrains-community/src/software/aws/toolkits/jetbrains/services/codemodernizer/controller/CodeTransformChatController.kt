@@ -13,6 +13,7 @@ import kotlinx.coroutines.runBlocking
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppInitContext
 import software.aws.toolkits.jetbrains.services.amazonq.auth.AuthController
 import software.aws.toolkits.jetbrains.services.amazonq.auth.AuthFollowUpType
@@ -214,8 +215,9 @@ class CodeTransformChatController(
         }
 
         // this should never throw the RuntimeException since invalid JDK case is already handled in previous validation step
-        val sourceJdk = ModuleUtil.findModuleForFile(moduleVirtualFile, context.project)?.tryGetJdk(context.project) ?: context.project.tryGetJdk()
-            ?: throw RuntimeException("Unable to determine source JDK version")
+        val moduleJdkVersion = ModuleUtil.findModuleForFile(moduleVirtualFile, context.project)?.tryGetJdk(context.project)
+        logger.info { "Found project JDK version: ${context.project.tryGetJdk()}, module JDK version: $moduleJdkVersion. Module JDK version prioritized." }
+        val sourceJdk = moduleJdkVersion ?: context.project.tryGetJdk() ?: throw RuntimeException("Unable to determine source JDK version")
 
         val selection = CustomerSelection(
             moduleVirtualFile,
