@@ -118,7 +118,7 @@ export async function uploadArtifactToS3(
             Math.round(uploadFileByteSize / 1000)
         )
 
-        const apiStartTime = Date.now()
+        const apiStartTime = globals.clock.Date.now()
         const response = await request.fetch('PUT', resp.uploadUrl, {
             body: buffer,
             headers: getHeadersObj(sha256, resp.kmsKeyArn),
@@ -149,7 +149,7 @@ export async function uploadArtifactToS3(
 
 export async function resumeTransformationJob(jobId: string, userActionStatus: TransformationUserActionStatus) {
     try {
-        const apiStartTime = Date.now()
+        const apiStartTime = globals.clock.Date.now()
         const response = await codeWhisperer.codeWhispererClient.codeModernizerResumeTransformation({
             transformationJobId: jobId,
             userActionStatus, // can be "COMPLETED" or "REJECTED"
@@ -180,7 +180,7 @@ export async function stopJob(jobId: string) {
     }
 
     try {
-        const apiStartTime = Date.now()
+        const apiStartTime = globals.clock.Date.now()
         const response = await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
             transformationJobId: jobId,
         })
@@ -213,7 +213,7 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
     throwIfCancelled()
     let response = undefined
     try {
-        const apiStartTime = Date.now()
+        const apiStartTime = globals.clock.Date.now()
         response = await codeWhisperer.codeWhispererClient.createUploadUrl({
             contentChecksum: sha256,
             contentChecksumType: CodeWhispererConstants.contentChecksumType,
@@ -334,7 +334,7 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
     let dependenciesCopied = false
     try {
         throwIfCancelled()
-        zipStartTime = Date.now()
+        zipStartTime = globals.clock.Date.now()
         const zip = new AdmZip()
 
         // If no modulePath is passed in, we are not uploaded the source folder
@@ -447,7 +447,7 @@ export async function startJob(uploadId: string) {
     const sourceLanguageVersion = `JAVA_${transformByQState.getSourceJDKVersion()}`
     const targetLanguageVersion = `JAVA_${transformByQState.getTargetJDKVersion()}`
     try {
-        const apiStartTime = Date.now()
+        const apiStartTime = globals.clock.Date.now()
         const response = await codeWhisperer.codeWhispererClient.codeModernizerStartCodeTransformation({
             workspaceState: {
                 uploadId: uploadId,
@@ -587,7 +587,7 @@ export async function getTransformationPlan(jobId: string) {
         response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
         })
-        const apiStartTime = Date.now()
+        const apiStartTime = globals.clock.Date.now()
         if (response.$response.requestId) {
             transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
         }
@@ -651,7 +651,7 @@ export async function getTransformationSteps(jobId: string, handleThrottleFlag: 
         if (handleThrottleFlag) {
             await sleep(2000)
         }
-        const apiStartTime = Date.now()
+        const apiStartTime = globals.clock.Date.now()
         const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
         })
@@ -681,7 +681,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
     while (true) {
         throwIfCancelled()
         try {
-            const apiStartTime = Date.now()
+            const apiStartTime = globals.clock.Date.now()
             const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformation({
                 transformationJobId: jobId,
             })

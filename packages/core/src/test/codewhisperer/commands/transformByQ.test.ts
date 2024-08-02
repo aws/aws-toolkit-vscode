@@ -36,6 +36,7 @@ import {
     getOpenProjects,
 } from '../../../codewhisperer/service/transformByQ/transformProjectValidationHandler'
 import { TransformationCandidateProject, ZipManifest } from '../../../codewhisperer/models/model'
+import globals from '../../../shared/extensionGlobals'
 
 describe('transformByQ', function () {
     let tempDir: string
@@ -235,7 +236,7 @@ describe('transformByQ', function () {
             })
         })
 
-        const tempFileName = `testfile-${Date.now()}.zip`
+        const tempFileName = `testfile-${globals.clock.Date.now()}.zip`
         transformByQState.setProjectPath(tempDir)
         return zipCode({
             dependenciesFolder: {

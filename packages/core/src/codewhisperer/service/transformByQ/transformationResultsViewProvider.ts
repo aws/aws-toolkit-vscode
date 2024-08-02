@@ -21,6 +21,7 @@ import * as CodeWhispererConstants from '../../models/constants'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { setContext } from '../../../shared/vscode/setContext'
+import globals from '../../../shared/extensionGlobals'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -322,7 +323,7 @@ export class ProposedTransformationExplorer {
             )
             let exportResultsArchiveSize = 0
             let downloadErrorMessage = undefined
-            let downloadStartTime = Date.now()
+            const downloadStartTime = globals.clock.Date.now()
 
             const cwStreamingClient = await createCodeWhispererChatStreamingClient()
             try {
@@ -378,7 +379,7 @@ export class ProposedTransformationExplorer {
             }
 
             let deserializeErrorMessage = undefined
-            const deserializeArchiveStartTime = Date.now()
+            const deserializeArchiveStartTime = globals.clock.Date.now()
             let pathContainingArchive = ''
             try {
                 // Download and deserialize the zip
@@ -448,7 +449,7 @@ export class ProposedTransformationExplorer {
 
             telemetry.codeTransform_viewArtifact.emit({
                 codeTransformArtifactType: 'ClientInstructions',
-                codeTransformVCSViewerSrcComponents: 'chat',
+                codeTransformVCSViewerSrcComponents: 'toastNotification',
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),
                 codeTransformStatus: transformByQState.getStatus(),
@@ -472,7 +473,7 @@ export class ProposedTransformationExplorer {
 
             telemetry.codeTransform_viewArtifact.emit({
                 codeTransformArtifactType: 'ClientInstructions',
-                codeTransformVCSViewerSrcComponents: 'chat',
+                codeTransformVCSViewerSrcComponents: 'toastNotification',
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),
                 codeTransformStatus: transformByQState.getStatus(),

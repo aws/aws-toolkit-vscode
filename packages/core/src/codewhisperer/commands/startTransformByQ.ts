@@ -72,6 +72,7 @@ import { dependencyNoAvailableVersions } from '../../amazonqGumby/models/constan
 import { HumanInTheLoopManager } from '../service/transformByQ/humanInTheLoopManager'
 import { setContext } from '../../shared/vscode/setContext'
 import { makeTemporaryToolkitFolder } from '../../shared'
+import globals from '../../shared/extensionGlobals'
 
 function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
@@ -169,7 +170,7 @@ export function startInterval() {
 
 export async function startTransformByQ() {
     // Set the default state variables for our store and the UI
-    const transformStartTime = Date.now()
+    const transformStartTime = globals.clock.Date.now()
     await setTransformationToRunningState()
 
     try {
@@ -244,7 +245,7 @@ export async function preTransformationUploadCode() {
     let zipSize = 0
     let dependenciesCopied = false
     let errorMessage = undefined
-    const zipStartTime = Date.now()
+    const zipStartTime = globals.clock.Date.now()
     throwIfCancelled()
     try {
         const zipCodeResult = await zipCode({
