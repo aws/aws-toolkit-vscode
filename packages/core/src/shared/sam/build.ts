@@ -17,6 +17,7 @@ import { samBuildUrl } from '../constants'
 import { CancellationError } from '../utilities/timeoutUtils'
 import { ToolkitError } from '../errors'
 import globals from '../extensionGlobals'
+import { TreeNode } from '../treeview/resourceTreeDataProvider'
 
 export interface BuildParams {
     readonly template: TemplateItem
@@ -123,25 +124,37 @@ export type SamBuildResult = {
 }
 
 export class BuildWizard extends Wizard<BuildParams> {
-    public constructor(state: Partial<BuildParams>, registry: CloudFormationTemplateRegistry) {
+    public constructor(
+        state: Partial<BuildParams>,
+        registry: CloudFormationTemplateRegistry,
+        arg?: TreeNode | undefined
+    ) {
         super({ initState: state, exitPrompterProvider: createExitPrompter })
 
-        this.form.template.bindPrompter(() => createTemplatePrompter(registry))
-        this.form.paramsSource.bindPrompter(() => createParamsSourcePrompter())
         const getProjectRoot = (template: TemplateItem | undefined) =>
             template ? getWorkspaceUri(template) : undefined
 
-        this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
+        if (arg === undefined) {
+            this.form.template.bindPrompter(() => createTemplatePrompter(registry))
+            this.form.paramsSource.bindPrompter(() => createParamsSourcePrompter())
+            this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
+        } else {
+            const templateUri = (arg.getTreeItem() as vscode.TreeItem).resourceUri
+            const templateItem = { uri: templateUri, data: {} } as TemplateItem
+            this.form.template.setDefault(templateItem)
+            this.form.paramsSource.bindPrompter(() => createParamsSourcePrompter())
+            this.form.projectRoot.setDefault(() => getProjectRoot(templateItem))
+        }
     }
 }
 
 export function registerBuild() {
-    async function runBuild(): Promise<SamBuildResult> {
+    async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
         // Prepare Build params
         const buildParams: Partial<BuildParams> = {}
 
         const registry = await globals.templateRegistry
-        const params = await new BuildWizard(buildParams, registry).run()
+        const params = await new BuildWizard(buildParams, registry, arg).run()
         if (params === undefined) {
             throw new CancellationError('user')
         }
@@ -202,8 +215,8 @@ export function registerBuild() {
             id: 'aws.appBuilder.build',
             autoconnect: false,
         },
-        async () => {
-            await runBuild()
+        async (arg?: TreeNode | undefined) => {
+            await runBuild(arg)
         }
     )
 }
