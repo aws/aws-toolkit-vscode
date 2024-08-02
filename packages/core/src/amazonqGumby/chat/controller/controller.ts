@@ -53,6 +53,7 @@ import { getAuthType } from '../../../codewhisperer/service/transformByQ/transfo
 import DependencyVersions from '../../models/dependencies'
 import { getStringHash } from '../../../shared/utilities/textUtilities'
 import { getTelemetryReasonDesc } from '../../../shared/errors'
+
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
 export interface ChatControllerEventEmitters {
@@ -281,9 +282,8 @@ export class GumbyController {
                 reasonDesc: getTelemetryReasonDesc(err),
             })
 
-            // TODO: if build system version is available at this stage, include buildSystemVersion field.
+            // TODO: detect build system version if project is validated
             telemetry.codeTransform_validateProject.emit({
-                // TODO: set buildSystem to "unknown" if project is not identified as Maven
                 codeTransformBuildSystem: 'Maven',
                 codeTransformLocalJavaVersion: telemetryJavaVersion,
                 codeTransformPreValidationError: err?.code,
