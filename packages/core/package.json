@@ -35,6 +35,7 @@
         "./codewhisperer": "./dist/src/codewhisperer/index.js",
         "./codewhisperer/node": "./dist/src/codewhisperer/indexNode.js",
         "./shared": "./dist/src/shared/index.js",
+        "./sharedNode": "./dist/src/shared/indexNode.js",
         "./auth": "./dist/src/auth/index.js",
         "./amazonqGumby": "./dist/src/amazonqGumby/index.js",
         "./amazonqFeatureDev": "./dist/src/amazonqFeatureDev/index.js",
@@ -4014,11 +4015,10 @@
         }
     },
     "scripts": {
-        "postinstall": "npm run generateTelemetry && npm run generateConfigurationAttributes && npm run compile",
-        "generateConfigurationAttributes": "ts-node ./scripts/build/generateConfigurationAttributes.ts",
+        "postinstall": "npm run generateTelemetry && npm run compile",
         "clean": "ts-node ../../scripts/clean.ts dist/",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
-        "buildScripts": "npm run generateClients && npm run generatePackage && npm run copyFiles",
+        "buildScripts": "npm run generateClients && npm run generateIcons && npm run copyFiles",
         "compile": "npm run testCompile && webpack",
         "compileOnly": "tsc -p ./",
         "compileDev": "npm run compile -- --mode development",
@@ -4032,7 +4032,7 @@
         "testInteg": "npm run testCompile && c8 ts-node ./scripts/test/testInteg.ts",
         "lint": "ts-node ./scripts/lint/testLint.ts",
         "generateClients": "ts-node ./scripts/build/generateServiceClient.ts ",
-        "generatePackage": "ts-node ./scripts/build/generateIcons.ts",
+        "generateIcons": "ts-node ../../scripts/generateIcons.ts",
         "generateTelemetry": "node ../../node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts"
     },
     "scriptsComments": {
@@ -4112,7 +4112,7 @@
         "@aws-sdk/property-provider": "3.46.0",
         "@aws-sdk/smithy-client": "^3.46.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
-        "@aws/mynah-ui": "^4.15.2",
+        "@aws/mynah-ui": "^4.15.5",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
         "@smithy/middleware-retry": "^2.3.1",

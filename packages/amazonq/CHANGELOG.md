@@ -1,3 +1,16 @@
+## 1.19.0 2024-08-01
+
+- **Bug Fix** Amazon Q Chat: Fixing issue with an incorrect input cursor position in the prompt text box
+- **Bug Fix** Amazon Q Chat: Fixing issue with the max tabs notification not being dismissible.
+- **Bug Fix** Amazon Q Chat: Showing/hiding the scrollbars is now controlled by the OS settings
+- **Bug Fix** Q chat may stop responding after processing Python/Java code
+- **Feature** Amazon q /dev: i18n support for messaging
+
+## 1.18.0 2024-07-29
+
+- **Bug Fix** Security Scan: Fixed an issue scans were not able to succeed on Java projects with .class files
+- **Bug Fix** FileNotFound error causing early SSO expiration
+
 ## 1.17.0 2024-07-25
 
 - **Bug Fix** Amazon Q Dev and Transform introduction text formatted incorrectly

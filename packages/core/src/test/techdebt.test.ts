@@ -40,13 +40,9 @@ describe('tech debt', function () {
         )
     })
 
-    it('remove missing Amazon Q scopes edge case handling', async function () {
-        fixByDate('2024-07-30', 'Remove the edge case code from the commit that this test is a part of.')
-    })
-
     it('remove separate sessions login edge cases', async function () {
         // src/auth/auth.ts:SessionSeparationPrompt
         // forgetConnection() function and calls
-        fixByDate('2024-07-30', 'Remove the edge case code from the commit that this test is a part of.')
+        fixByDate('2024-08-30', 'Remove the edge case code from the commit that this test is a part of.')
     })
 })
