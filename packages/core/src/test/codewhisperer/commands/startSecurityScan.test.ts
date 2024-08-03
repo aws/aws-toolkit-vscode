@@ -201,7 +201,6 @@ describe('startSecurityScan', function () {
             extensionContext,
             CodeAnalysisScope.FILE
         )
-
         assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
         assert.ok(securityScanRenderSpy.calledOnce)
         const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
@@ -468,7 +467,7 @@ describe('startSecurityScanPerformanceTest', function () {
 
         // Create a sample text content with 199 KB size
         const mockContent = 'print("Hello, World!")'.repeat((199 * 1024) / 22)
-        await fileSystem.writeFile(mockFilePath, mockContent) //fs.promises.writeFile(mockFilePath, mockContent) //TODO: We can use await fs.writeFile(dest, contents.join('\n'))
+        await fileSystem.writeFile(mockFilePath, mockContent)
 
         appCodePath = mockFilePath
         editor = await openTestFile(appCodePath)
@@ -513,11 +512,11 @@ describe('startSecurityScanPerformanceTest', function () {
             extensionContext,
             CodeAnalysisScope.FILE
         )
-        //
 
         // EndScanCpuUsageByUser is the difference of CPU Usage from start of a scan to end of a scan.
         const EndScanCpuUsage = process.cpuUsage(startScanCpuUsage)
         const EndScanCpuUsageByUser = EndScanCpuUsage.user / 1000000 // Convert microseconds to seconds
+
         /**
          * CPU Usage at start of a scan
          * const startScanCpuUsageByUser = startScanCpuUsage.user / 1000000
@@ -530,22 +529,22 @@ describe('startSecurityScanPerformanceTest', function () {
         const EndScanMemoryUsageInMB = EndScanMemoryUsage / (1024 * 1024) // Converting bytes to MB
 
         /**
-         * 
-        Input:-
-        Payload Size is 198.99
-        Result:-
-        Scan Memory Usage at end: 203.75390625 MB
-        Start of a Scan:
-            User CPU Usage: 21.446874 sec and System CPU Usage: 7.044477 sec
-        Difference at End of a Scan:
-            User CPU Usage: 0.058255 sec and System CPU Usage: 0.004867 sec
+            Input:-
+            Payload Size is 198.99
+            Result:-
+            Scan Memory Usage at end: 203.75390625 MB
+            Start of a Scan:
+                User CPU Usage: 21.446874 sec and System CPU Usage: 7.044477 sec
+            Difference at End of a Scan:
+                User CPU Usage: 0.058255 sec and System CPU Usage: 0.004867 sec
          */
 
         assert(EndScanCpuUsageByUser > 0, 'User CPU usage difference should be greater than 0')
+        // These limits are considered from local mac but may vary with machine to machine.
         assert(
             EndScanMemoryUsageInMB < 205,
             'System memory usage for performing a file scan should not be greater than 205 MB'
-        ) // these limits are considered from mac but may vary with machine to machine.
+        )
 
         assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
         assert.ok(securityScanRenderSpy.calledOnce)
