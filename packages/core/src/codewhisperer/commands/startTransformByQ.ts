@@ -235,19 +235,26 @@ export async function finalizeTransformByQ(status: string) {
 }
 
 export async function parseBuildFile() {
-    const absolutePaths = ['users/', 'system/', 'volumes/', 'c:', 'd:']
-    const alias = path.basename(os.homedir())
-    absolutePaths.push(alias)
-    const buildFilePath = path.join(transformByQState.getProjectPath(), 'pom.xml')
-    if (fs.existsSync(buildFilePath)) {
-        const buildFileContents = fs.readFileSync(buildFilePath).toString().toLowerCase()
-        if (absolutePaths.some((path) => buildFileContents.includes(path))) {
-            void vscode.window.showWarningMessage(
-                `We detected what may be an absolute path in this file: ${path.basename(buildFilePath)}, which may cause issues during our backend build. You will see error logs open if this happens.`
-            )
-            getLogger().info('CodeTransformation: absolute path potentially in build file')
+    let containsAbsolutePath = false
+    try {
+        const absolutePaths = ['users/', 'system/', 'volumes/', 'c:', 'd:']
+        const alias = path.basename(os.homedir())
+        absolutePaths.push(alias)
+        const buildFilePath = path.join(transformByQState.getProjectPath(), 'pom.xml')
+        if (fs.existsSync(buildFilePath)) {
+            const buildFileContents = fs.readFileSync(buildFilePath).toString().toLowerCase()
+            if (absolutePaths.some((path) => buildFileContents.includes(path))) {
+                void vscode.window.showWarningMessage(
+                    `We detected what may be an absolute path in this file: ${path.basename(buildFilePath)}, which may cause issues during our backend build. You will see error logs open if this happens.`
+                )
+                getLogger().info('CodeTransformation: absolute path potentially in build file')
+                containsAbsolutePath = true
+            }
         }
+    } catch (err: any) {
+        // swallow error
     }
+    return containsAbsolutePath
 }
 
 export async function preTransformationUploadCode() {
