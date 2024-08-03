@@ -14,12 +14,11 @@ import { DefaultTelemetryService } from './telemetryService'
 import { getLogger } from '../logger'
 import { getComputeRegion, isAmazonQ, isCloud9, productName } from '../extensionUtilities'
 import { openSettingsId, Settings } from '../settings'
-import { TelemetryConfig, setupTelemetryId } from './util'
+import { TelemetryConfig } from './util'
 import { isAutomation, isReleaseVersion } from '../vscode/env'
 import { AWSProduct } from './clienttelemetry'
 import { DefaultTelemetryClient } from './telemetryClient'
 import { telemetry } from './telemetry'
-import { Commands } from '../vscode/commands2'
 
 export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'Settings')
 export const noticeResponseOk = localize('AWS.telemetry.notificationOk', 'OK')
@@ -44,7 +43,7 @@ export async function activate(
     await config.initAmazonQSetting() // TODO: Remove after a few releases.
 
     DefaultTelemetryClient.productName = productName
-    globals.telemetry = await DefaultTelemetryService.create(extensionContext, awsContext, getComputeRegion())
+    globals.telemetry = await DefaultTelemetryService.create(awsContext, getComputeRegion())
 
     const isAmazonQExt = isAmazonQ()
     try {
@@ -71,19 +70,11 @@ export async function activate(
             })
         )
 
-        if (isAmazonQExt) {
-            extensionContext.subscriptions.push(
-                Commands.register('aws.amazonq.setupTelemetryId', async () => {
-                    await setupTelemetryId(extensionContext)
-                })
-            )
-        }
-
         // Prompt user about telemetry if they haven't been
         if (!isCloud9() && !hasUserSeenTelemetryNotice()) {
             showTelemetryNotice()
         }
-        await setupTelemetryId(extensionContext)
+
         await globals.telemetry.start()
     } catch (e) {
         // Only throw in a production build because:

@@ -61,7 +61,7 @@ import {
 } from './connection'
 import { isSageMaker, isCloud9, isAmazonQ } from '../shared/extensionUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { randomUUID } from '../common/crypto'
+import { randomUUID } from '../shared/crypto'
 
 interface AuthService {
     /**

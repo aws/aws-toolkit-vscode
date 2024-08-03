@@ -17,7 +17,7 @@ import { ToolkitError } from '../../shared/errors'
 import { AmazonqCreateUpload, Metric, telemetry as amznTelemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from './telemetryHelper'
 import { maxRepoSizeBytes } from '../constants'
-import { isCodeRelatedFile } from './fileExtension'
+import { isCodeFile } from '../../shared/filetypes'
 
 const getSha256 = (file: Buffer) => createHash('sha256').update(file).digest('base64')
 
@@ -39,10 +39,10 @@ export async function prepareRepoData(
 
         for (const file of files) {
             const fileSize = (await vscode.workspace.fs.stat(file.fileUri)).size
-            const isCodeFile = isCodeRelatedFile(file.relativeFilePath)
+            const isCodeFile_ = isCodeFile(file.relativeFilePath)
 
-            if (fileSize >= maxFileSizeBytes || !isCodeFile) {
-                if (!isCodeFile) {
+            if (fileSize >= maxFileSizeBytes || !isCodeFile_) {
+                if (!isCodeFile_) {
                     const re = /(?:\.([^.]+))?$/
                     const extensionArray = re.exec(file.relativeFilePath)
                     const extension = extensionArray?.length ? extensionArray[1] : undefined

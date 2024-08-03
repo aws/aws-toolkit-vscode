@@ -37,7 +37,7 @@ import { CredentialSourceId, telemetry } from '../../../shared/telemetry/telemet
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
-import request from '../../../common/request'
+import request from '../../../shared/request'
 import { JobStoppedError, ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import { writeLogs } from './transformFileHandler'
 import { AuthUtil } from '../../util/authUtil'
@@ -364,6 +364,10 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
             const sourceFiles = getFilesRecursively(modulePath, false)
             let sourceFilesSize = 0
             for (const file of sourceFiles) {
+                if ((await fs.stat(file)).isDirectory()) {
+                    getLogger().info('CodeTransformation: Skipping directory, likely a symlink')
+                    continue
+                }
                 const relativePath = path.relative(modulePath, file)
                 const paddedPath = path.join('sources', relativePath)
                 zip.addLocalFile(file, path.dirname(paddedPath))

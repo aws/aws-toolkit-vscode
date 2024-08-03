@@ -9,7 +9,7 @@ import { ServiceException } from '@aws-sdk/smithy-client'
 import { isThrottlingError, isTransientError } from '@smithy/service-error-classification'
 import { Result } from './telemetry/telemetry'
 import { CancellationError } from './utilities/timeoutUtils'
-import { isNonNullable } from './utilities/tsUtils'
+import { hasKey, isNonNullable } from './utilities/tsUtils'
 import type * as nodefs from 'fs'
 import type * as os from 'os'
 import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
@@ -243,9 +243,21 @@ export class ToolkitError extends Error implements ErrorInformation {
     }
 }
 
-export function getErrorMsg(err: Error | undefined): string | undefined {
+/**
+ * Derives an error message from the given error object.
+ * Depending on the Error, the property used to derive the message can vary.
+ *
+ * @param withCause Append the message(s) from the cause chain, recursively.
+ *                  The message(s) are delimited by ' | '. Eg: msg1 | causeMsg1 | causeMsg2
+ */
+export function getErrorMsg(err: Error | undefined, withCause = false): string | undefined {
     if (err === undefined) {
         return undefined
+    }
+
+    const cause = (err as any).cause
+    if (withCause && cause) {
+        return `${err.message}${cause ? ' | ' + getErrorMsg(cause, true) : ''}`
     }
 
     // Non-standard SDK fields added by the OIDC service, to conform to the OAuth spec
@@ -333,7 +345,7 @@ export function getTelemetryResult(error: unknown | undefined): Result {
  */
 export function scrubNames(s: string, username?: string) {
     let r = ''
-    const fileExtRe = /\.[^.\/]{1,4}$/
+    const fileExtRe = /\.[^.\/]+$/
     const slashdot = /^[~.]*[\/\\]*/
 
     /** Allowlisted filepath segments. */
@@ -404,7 +416,7 @@ export function scrubNames(s: string, username?: string) {
  * @param err Error object, or message text
  */
 export function getTelemetryReasonDesc(err: unknown | undefined): string | undefined {
-    const m = typeof err === 'string' ? err : getErrorMsg(err as Error) ?? ''
+    const m = typeof err === 'string' ? err : getErrorMsg(err as Error, true) ?? ''
     const msg = scrubNames(m, _username)
 
     // Truncate to 200 chars.
@@ -817,4 +829,28 @@ function isVSCodeProxyError(err: Error): boolean {
  */
 function isSocketTimeoutError(err: Error): boolean {
     return err.name === 'TimeoutError' && err.message.includes('Connection timed out after')
+}
+
+/**
+ * AWS SDK clients may rarely make requests that results in something other than JSON data
+ * being returned (e.g html). This will cause the client to throw a SyntaxError as a result
+ * of attempt to deserialize the non-JSON data.
+ * While the contents of the response may contain sensitive information, there may be a reason
+ * for failure embedded. This function attempts to extract that reason.
+ *
+ * If the reason cannot be found or the error is not a SyntaxError, return undefined.
+ */
+export function getReasonFromSyntaxError(err: Error): string | undefined {
+    if (!(err instanceof SyntaxError)) {
+        return undefined
+    }
+
+    if (hasKey(err, '$response')) {
+        const response = err['$response']
+        if (response && hasKey(response, 'reason')) {
+            return response['reason'] as string
+        }
+    }
+
+    return undefined
 }

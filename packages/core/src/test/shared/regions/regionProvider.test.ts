@@ -11,6 +11,7 @@ import { createSsoProfile, createTestAuth } from '../../credentials/testUtil'
 import { Auth } from '../../../auth/auth'
 import * as extUtils from '../../../shared/extensionUtilities'
 import sinon from 'sinon'
+import globals from '../../../shared/extensionGlobals'
 
 const regionCode = 'someRegion'
 const serviceId = 'someService'
@@ -224,7 +225,7 @@ describe('RegionProvider', async function () {
         it('returns connection region with active amazon Q connection', async function () {
             const region = 'us-west-2'
             const regionProvider = new RegionProvider(endpoints)
-            const auth = createTestAuth()
+            const auth = createTestAuth(globals.globalState)
             await auth.useConnection(await auth.createConnection(createSsoProfile({ ssoRegion: region })))
 
             sinon.stub(Auth, 'instance').value(auth)
