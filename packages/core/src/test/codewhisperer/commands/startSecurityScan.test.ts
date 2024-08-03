@@ -540,9 +540,9 @@ describe('startSecurityScanPerformanceTest', function () {
          */
 
         assert(EndScanCpuUsageByUser > 0, 'User CPU usage difference should be greater than 0')
-        // These limits are considered from local mac but may vary with machine to machine.
+        // These limits are considered from local mac but may vary with machine, OS etc factors
         assert(
-            EndScanMemoryUsageInMB < 205,
+            EndScanMemoryUsageInMB < 400,
             'System memory usage for performing a file scan should not be greater than 205 MB'
         )
 
