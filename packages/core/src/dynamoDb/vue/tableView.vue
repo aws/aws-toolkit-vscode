@@ -45,8 +45,24 @@
             <div v-if="isLoading" class="progress-container">
                 <vscode-progress-ring></vscode-progress-ring>
             </div>
-            <vscode-data-grid id="datagrid" generate-header="sticky" aria-label="Sticky Header" :key="pageNumber">
-                {{ updateTableSection(dynamoDbTableData) }}
+            <vscode-data-grid id="datagrid" aria-label="Sticky Header" :key="pageNumber">
+                <vscode-data-grid-row row-type="sticky-header">
+                    <vscode-data-grid-cell
+                        cell-type="columnheader"
+                        v-for="(column, index) in dynamoDbTableData.tableHeader"
+                        :grid-column="index + 1"
+                        >{{ column.title }}</vscode-data-grid-cell
+                    >
+                </vscode-data-grid-row>
+                <vscode-data-grid-row
+                    v-for="row in dynamoDbTableData.tableContent"
+                    @contextmenu.prevent="showContextMenu($event, row)"
+                >
+                    <vscode-data-grid-cell v-for="(key, index) in Object.keys(row)" :grid-column="index + 1">{{
+                        row[key]
+                    }}</vscode-data-grid-cell>
+                </vscode-data-grid-row>
+                <!-- {{ updateTableSection(dynamoDbTableData) }} -->
             </vscode-data-grid>
         </div>
     </div>
@@ -172,6 +188,11 @@ export default defineComponent({
             }
             this.updatePageNumber()
             this.dynamoDbTableData = await client.queryData(queryRequest)
+        },
+
+        showContextMenu(event: any, row: any) {
+            console.log(event)
+            console.log(row)
         },
     },
 })

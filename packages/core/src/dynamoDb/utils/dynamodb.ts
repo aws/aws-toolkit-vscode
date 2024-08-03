@@ -88,8 +88,8 @@ function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Types.Sca
  * Copies the ARN of a DynamoDB table to the clipboard.
  * @param {DynamoDbTableNode} node - The DynamoDB table node containing table and region information.
  */
-export async function copyDynamoDbArn(node: DynamoDbTableNode) {
-    const response = await new DynamoDbClient(node.regionCode).getTableInformation({ TableName: node.dynamoDbtable })
+export async function copyDynamoDbArn(node: DynamoDbTableNode, client = new DynamoDbClient(node.regionCode)) {
+    const response = await client.getTableInformation({ TableName: node.dynamoDbtable })
     if (response.TableArn !== undefined) {
         await copyToClipboard(response.TableArn, 'ARN')
     }
