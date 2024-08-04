@@ -8,8 +8,17 @@ import { ExtContext } from '../../shared'
 import { VueWebview } from '../../webviews/main'
 import { getLogger, Logger } from '../../shared/logger'
 import { Key, ScanInput } from 'aws-sdk/clients/dynamodb'
+import { copyToClipboard } from '../../shared/utilities/messages'
 import { DynamoDbTarget, telemetry } from '../../shared/telemetry/telemetry'
-import { getTableContent, queryTableContent, RowData, TableData, getTableKeySchema } from '../utils/dynamodb'
+import {
+    getTableContent,
+    queryTableContent,
+    RowData,
+    TableData,
+    getTableKeySchema,
+    deleteItem,
+    TableSchema,
+} from '../utils/dynamodb'
 
 const localize = nls.loadMessageBundle()
 
@@ -70,6 +79,19 @@ export class DynamoDbTableWebview extends VueWebview {
 
     public async getTableSchema() {
         return await getTableKeySchema(this.data.tableName, this.data.region)
+    }
+
+    public async copyRow(selectedRow: RowData) {
+        if (selectedRow !== undefined) {
+            await copyToClipboard(JSON.stringify(selectedRow), 'TableItem')
+        }
+    }
+
+    public async deleteItem(selectedRow: RowData, tableSchema: TableSchema) {
+        if (selectedRow === undefined || tableSchema === undefined) {
+            throw new Error('Invalid row, failed to delete the item.')
+        }
+        await deleteItem(this.data.tableName, selectedRow, tableSchema, this.data.region)
     }
 }
 

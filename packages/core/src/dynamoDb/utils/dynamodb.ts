@@ -4,6 +4,7 @@
  */
 
 import { DynamoDB } from 'aws-sdk'
+import { getLogger } from 'aws-core-vscode/shared'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { DynamoDbTableNode } from '../explorer/dynamoDbTableNode'
 import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
@@ -215,4 +216,37 @@ function getAttributeValue(attribute: AttributeValue): { key: string; value: any
         }
     }
     return undefined
+}
+
+export async function deleteItem(
+    tableName: string,
+    selectedRow: RowData,
+    tableSchema: TableSchema,
+    regionCode: string,
+    client = new DynamoDbClient(regionCode)
+) {
+    const partitionKeyName = tableSchema.partitionKey.name
+    const partitionKeyValue = selectedRow[partitionKeyName]
+
+    const deleteRequest: DynamoDB.DocumentClient.DeleteItemInput = {
+        TableName: tableName,
+        Key: {
+            partitionKeyName: {
+                S: partitionKeyValue,
+            } as any,
+        },
+    }
+    if (tableSchema.sortKey) {
+        const sortKeyName = tableSchema.sortKey.name
+        const sortKeyValue = selectedRow[sortKeyName]
+        deleteRequest.Key[sortKeyName] = { S: sortKeyValue } as any
+    }
+
+    try {
+        const response = await client.deleteItem(deleteRequest)
+        return response
+    } catch (e) {
+        getLogger().error(`Failed to delete the item. Failed with error: ${e}`)
+        throw new Error('Item deletion failed.')
+    }
 }
