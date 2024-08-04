@@ -45,17 +45,60 @@
             <div v-if="isLoading" class="progress-container">
                 <vscode-progress-ring></vscode-progress-ring>
             </div>
-            <vscode-data-grid id="datagrid" generate-header="sticky" aria-label="Sticky Header" :key="pageNumber">
-                {{ updateTableSection(dynamoDbTableData) }}
+            <vscode-data-grid id="datagrid" aria-label="Sticky Header" :key="pageNumber">
+                <vscode-data-grid-row row-type="sticky-header">
+                    <vscode-data-grid-cell
+                        cell-type="columnheader"
+                        v-for="(column, index) in dynamoDbTableData.tableHeader"
+                        :grid-column="index + 1"
+                        >{{ column.title }}</vscode-data-grid-cell
+                    >
+                </vscode-data-grid-row>
+                <vscode-data-grid-row
+                    v-for="row in dynamoDbTableData.tableContent"
+                    @contextmenu.prevent="showContextMenu($event, row)"
+                >
+                    <vscode-data-grid-cell v-for="(key, index) in Object.keys(row)" :grid-column="index + 1">
+                        {{ row[key] }}
+                    </vscode-data-grid-cell>
+                </vscode-data-grid-row>
             </vscode-data-grid>
+
+            <!-- Context Menu -->
+            <ContextMenu
+                v-if="contextMenuVisible"
+                :position="contextMenuPosition"
+                :visible="contextMenuVisible"
+                @copy="handleCopy"
+                @delete="handleDelete"
+                @edit="handleEdit"
+                @close="contextMenuVisible = false"
+            />
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
 import { allComponents, provideVSCodeDesignSystem } from '@vscode/webview-ui-toolkit'
+import { ref, onMounted, onUnmounted } from 'vue'
+import ContextMenu from './contextMenu.vue'
 
 provideVSCodeDesignSystem().register(allComponents)
+
+onMounted(() => {
+    document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+    document.removeEventListener('click', handleClickOutside)
+})
+
+function handleClickOutside(event: MouseEvent) {
+    const contextMenuElement = document.querySelector('.context-menu')
+    if (contextMenuElement && !contextMenuElement.contains(event.target as Node)) {
+        contextMenuVisible.value = false
+    }
+}
 </script>
 
 <script lang="ts">
@@ -66,6 +109,9 @@ import { WebviewClientFactory } from '../../webviews/client'
 import { Key } from 'aws-sdk/clients/dynamodb'
 
 const client = WebviewClientFactory.create<DynamoDbTableWebview>()
+const contextMenuVisible = ref(false)
+const contextMenuPosition = ref({ top: 0, left: 0 })
+
 export default defineComponent({
     data() {
         return {
@@ -107,13 +153,6 @@ export default defineComponent({
         },
     },
     methods: {
-        updateTableSection(dynamoDbTableData: Pick<DynamoDbTableData, 'tableContent'>) {
-            const basicGrid = document.getElementById('datagrid')
-            if (basicGrid) {
-                ;(basicGrid as any).rowsData = dynamoDbTableData.tableContent
-            }
-        },
-
         async refreshTable() {
             this.updatePageNumber()
             this.isLoading = true
@@ -172,6 +211,27 @@ export default defineComponent({
             }
             this.updatePageNumber()
             this.dynamoDbTableData = await client.queryData(queryRequest)
+        },
+
+        showContextMenu(event: MouseEvent, row: any) {
+            event.preventDefault()
+            contextMenuPosition.value = { top: event.clientY, left: event.clientX }
+            contextMenuVisible.value = true
+        },
+
+        handleCopy() {
+            // Handle copy logic
+            console.log('Copy clicked')
+        },
+
+        handleDelete() {
+            // Handle delete logic
+            console.log('Delete clicked')
+        },
+
+        handleEdit() {
+            // Handle edit logic
+            console.log('Edit clicked')
         },
     },
 })
