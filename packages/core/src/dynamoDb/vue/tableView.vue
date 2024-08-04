@@ -103,7 +103,7 @@ function handleClickOutside(event: MouseEvent) {
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { RowData } from '../utils/dynamodb'
+import { RowData, TableSchema } from '../utils/dynamodb'
 import { DynamoDbTableWebview, DynamoDbTableData } from './tableView'
 import { WebviewClientFactory } from '../../webviews/client'
 import { Key } from 'aws-sdk/clients/dynamodb'
@@ -111,6 +111,8 @@ import { Key } from 'aws-sdk/clients/dynamodb'
 const client = WebviewClientFactory.create<DynamoDbTableWebview>()
 const contextMenuVisible = ref(false)
 const contextMenuPosition = ref({ top: 0, left: 0 })
+let selectedRow = ref<RowData>()
+let tableSchema: TableSchema
 
 export default defineComponent({
     data() {
@@ -132,7 +134,7 @@ export default defineComponent({
     async created() {
         this.isLoading = true
         this.dynamoDbTableData = await client.init()
-        const tableSchema = await client.getTableSchema()
+        tableSchema = await client.getTableSchema()
         this.partitionKey = tableSchema.partitionKey.name
         this.sortKey = tableSchema.sortKey?.name ?? ''
         this.pageKeys = [undefined, this.dynamoDbTableData.lastEvaluatedKey]
@@ -217,16 +219,21 @@ export default defineComponent({
             event.preventDefault()
             contextMenuPosition.value = { top: event.clientY, left: event.clientX }
             contextMenuVisible.value = true
+            selectedRow.value = row
         },
 
         handleCopy() {
-            // Handle copy logic
-            console.log('Copy clicked')
+            if (selectedRow.value === undefined) {
+                return
+            }
+            client.copyRow(selectedRow.value)
         },
 
         handleDelete() {
-            // Handle delete logic
-            console.log('Delete clicked')
+            if (selectedRow.value === undefined) {
+                return
+            }
+            client.deleteItem(selectedRow.value, tableSchema)
         },
 
         handleEdit() {
