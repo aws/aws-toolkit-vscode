@@ -244,7 +244,7 @@ export async function parseBuildFile() {
         if (fs.existsSync(buildFilePath)) {
             const buildFileContents = fs.readFileSync(buildFilePath).toString().toLowerCase()
             const detectedPaths = []
-            for (var absolutePath of absolutePaths) {
+            for (const absolutePath of absolutePaths) {
                 if (buildFileContents.includes(absolutePath)) {
                     detectedPaths.push(absolutePath)
                 }
