@@ -528,11 +528,11 @@ describe('startSecurityScanPerformanceTest', function () {
                 User CPU Usage: 0.058255 sec and System CPU Usage: 0.004867 sec
          */
 
-        assert(EndScanCpuUsageByUser > 0, 'User CPU usage difference should be greater than 0')
+        assert(EndScanCpuUsageByUser > 0, `User CPU usage difference should be greater than 0 but actual is ${EndScanCpuUsageByUser}`)
         // These limits are considered from local mac but may vary with machine, OS etc factors
         assert(
             EndScanMemoryUsageInMB < 400,
-            'System memory usage for performing a file scan should not be greater than 205 MB'
+            'System memory usage for performing a file scan should not be greater than 400 MB'
         )
 
         assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
