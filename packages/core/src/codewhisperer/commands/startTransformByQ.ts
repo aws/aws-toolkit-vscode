@@ -243,10 +243,15 @@ export async function parseBuildFile() {
         const buildFilePath = path.join(transformByQState.getProjectPath(), 'pom.xml')
         if (fs.existsSync(buildFilePath)) {
             const buildFileContents = fs.readFileSync(buildFilePath).toString().toLowerCase()
-            if (absolutePaths.some((path) => buildFileContents.includes(path))) {
-                void vscode.window.showWarningMessage(
-                    `We detected what may be an absolute path in this file: ${path.basename(buildFilePath)}, which may cause issues during our backend build. You will see error logs open if this happens.`
-                )
+            const detectedPaths = []
+            for (var absolutePath of absolutePaths) {
+                if (buildFileContents.includes(absolutePath)) {
+                    detectedPaths.push(absolutePath)
+                }
+            }
+            if (detectedPaths.length > 0) {
+                const warningMessage = `We detected ${detectedPaths.length} absolute ${detectedPaths.length === 1 ? 'path' : 'paths'} (${detectedPaths.join(', ')}) in this file: ${path.basename(buildFilePath)}, which may cause issues during our backend build. You will see error logs open if this happens.`
+                void vscode.window.showWarningMessage(warningMessage)
                 getLogger().info('CodeTransformation: absolute path potentially in build file')
                 containsAbsolutePath = true
             }
