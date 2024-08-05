@@ -24,6 +24,9 @@ packages/*/src/**/*.gen.ts
 !packages/core/src/shared/settings-*.gen.ts
 src.gen/*
 
+# Telemetry definition for testing adding telemetry
+packages/core/src/shared/telemetry/vscodeTelemetry.json
+
 # Test reports
 .test-reports
 
