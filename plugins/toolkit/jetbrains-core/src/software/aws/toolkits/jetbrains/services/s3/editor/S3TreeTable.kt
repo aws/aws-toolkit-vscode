@@ -155,7 +155,7 @@ class S3TreeTable(
         // Do not set up Drag and Drop when in test mode since AWT is not enabled
         if (!ApplicationManager.getApplication().isUnitTestMode) {
             // Associate the drop target listener with this instance which will allow uploading by drag and drop
-            DropTarget(this, dropTargetListener)
+            DropTarget(tree, dropTargetListener)
         }
         TreeSpeedSearch.installOn(
             tree,
@@ -170,9 +170,9 @@ class S3TreeTable(
                 }
             }
         )
-        loadMoreListener.installOn(this)
-        openFileListener.installOn(this)
-        super.addKeyListener(keyListener)
+        loadMoreListener.installOn(tree)
+        openFileListener.installOn(tree)
+        tree.addKeyListener(keyListener)
     }
 
     fun refresh() {

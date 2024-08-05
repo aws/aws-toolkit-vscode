@@ -115,7 +115,6 @@ class S3ViewerPanel(private val disposable: Disposable, private val project: Pro
         treeTable.tree.setCellRenderer(treeRenderer)
         val tableRenderer = DefaultTableCellRenderer().also { it.horizontalAlignment = SwingConstants.LEFT }
         treeTable.setDefaultRenderer(Any::class.java, tableRenderer)
-
         return treeTable
     }
 
@@ -131,11 +130,7 @@ class S3ViewerPanel(private val disposable: Disposable, private val project: Pro
         val actionManager = ActionManager.getInstance()
         val group = actionManager.getAction("aws.toolkit.s3viewer.contextMenu") as ActionGroup
 
-        PopupHandler.installPopupHandler(
-            treeTable,
-            group,
-            ACTION_PLACE,
-        )
+        PopupHandler.installPopupMenu(treeTable.tree, group, ACTION_PLACE)
     }
 
     private companion object {
