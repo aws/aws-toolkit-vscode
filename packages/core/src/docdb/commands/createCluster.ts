@@ -28,7 +28,7 @@ export async function createCluster(node?: DocumentDBNode) {
         }
 
         span.record({ awsRegion: node?.client.regionCode })
-        const wizard = new CreateClusterWizard(node?.regionCode ?? '', {}, node?.client)
+        const wizard = new CreateClusterWizard(node?.client, {})
         const result = await wizard.run()
 
         if (!result) {
@@ -36,7 +36,7 @@ export async function createCluster(node?: DocumentDBNode) {
             throw new ToolkitError('User cancelled wizard', { cancelled: true })
         }
 
-        const clusterName = result.ClusterName
+        const clusterName = result.RegionalCluster.DBClusterIdentifier ?? result.ElasticCluster.clusterName
         getLogger().info(`Creating cluster: ${clusterName}`)
         let cluster
 
