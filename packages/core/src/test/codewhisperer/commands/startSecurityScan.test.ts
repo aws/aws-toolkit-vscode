@@ -14,7 +14,7 @@ import { SecurityPanelViewProvider } from '../../../codewhisperer/views/security
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import * as diagnosticsProvider from '../../../codewhisperer/service/diagnosticsProvider'
 import { getTestWorkspaceFolder } from '../../../testInteg/integrationTestsUtilities'
-import * as path from 'path'
+import { join } from 'path'
 import { assertTelemetry, closeAllEditors, createTestWorkspaceFolder, toFile } from '../../testUtil'
 import { stub } from '../../utilities/stubber'
 import { AWSError, HttpResponse } from 'aws-sdk'
@@ -138,8 +138,8 @@ describe('startSecurityScan', function () {
     beforeEach(async function () {
         extensionContext = await FakeExtensionContext.create()
         mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
-        appRoot = path.join(workspaceFolder, 'python3.7-plain-sam-app')
-        appCodePath = path.join(appRoot, 'hello_world', 'app.py')
+        appRoot = join(workspaceFolder, 'python3.7-plain-sam-app')
+        appCodePath = join(appRoot, 'hello_world', 'app.py')
         editor = await openTestFile(appCodePath)
         await model.CodeScansState.instance.setScansEnabled(false)
         sinon.stub(timeoutUtils, 'sleep')
@@ -456,7 +456,7 @@ describe('startSecurityScanPerformanceTest', function () {
         mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
 
         const folder = await createTestWorkspaceFolder()
-        const mockFilePath = path.join(folder.uri.fsPath, 'app.py')
+        const mockFilePath = join(folder.uri.fsPath, 'app.py')
         await toFile('hello_world', mockFilePath)
         appCodePath = mockFilePath
         editor = await openTestFile(appCodePath)
