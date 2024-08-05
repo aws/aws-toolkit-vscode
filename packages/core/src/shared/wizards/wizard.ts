@@ -92,7 +92,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     private assertReady() {
         // Check for `false` explicity so that the base-class constructor can access `this._form`.
         // We want to guard against confusion when implementing a subclass, not this base-class.
-        if (this._ready === false && this.init) {
+        if (this._ready === false) {
             throw Error('run() (or init()) must be called immediately after creating the Wizard')
         }
     }
@@ -111,7 +111,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         return this._stepOffset[1] + this.stateController.totalSteps
     }
 
-    public get _form() {
+    protected get _form() {
         this.assertReady()
         return this.__form
     }
@@ -142,6 +142,15 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
 
         // Subclass constructor logic should live in `init()`, if it exists.
         this._ready = !this.init
+
+        if (typeof this.init === 'function') {
+            // eslint-disable-next-line @typescript-eslint/unbound-method
+            const _init = this.init
+            this.init = () => {
+                this._ready = true
+                return _init.apply(this)
+            }
+        }
     }
 
     /**
@@ -164,7 +173,6 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         if (!this._ready && this.init) {
             this._ready = true // Let init() use `this._form`.
             await this.init()
-            delete this.init
         }
 
         this.assignSteps()
