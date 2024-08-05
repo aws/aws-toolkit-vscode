@@ -229,11 +229,15 @@ export default defineComponent({
             client.copyRow(selectedRow.value)
         },
 
-        handleDelete() {
+        async handleDelete() {
             if (selectedRow.value === undefined) {
                 return
             }
-            client.deleteItem(selectedRow.value, tableSchema)
+            const response = await client.deleteItem(selectedRow.value, tableSchema)
+            if (response) {
+                this.dynamoDbTableData = response
+                this.updatePageNumber()
+            }
         },
 
         handleEdit() {

@@ -91,7 +91,11 @@ export class DynamoDbTableWebview extends VueWebview {
         if (selectedRow === undefined || tableSchema === undefined) {
             throw new Error('Invalid row, failed to delete the item.')
         }
-        await deleteItem(this.data.tableName, selectedRow, tableSchema, this.data.region)
+        const isDeleteSuccess = await deleteItem(this.data.tableName, selectedRow, tableSchema, this.data.region)
+        if (isDeleteSuccess) {
+            return await this.fetchPageData(this.data.lastEvaluatedKey, this.data.currentPage)
+        }
+        return undefined
     }
 }
 

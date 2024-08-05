@@ -231,7 +231,7 @@ export async function deleteItem(
     const deleteRequest: DynamoDB.DocumentClient.DeleteItemInput = {
         TableName: tableName,
         Key: {
-            partitionKeyName: {
+            [partitionKeyName]: {
                 S: partitionKeyValue,
             } as any,
         },
@@ -241,12 +241,9 @@ export async function deleteItem(
         const sortKeyValue = selectedRow[sortKeyName]
         deleteRequest.Key[sortKeyName] = { S: sortKeyValue } as any
     }
-
-    try {
-        const response = await client.deleteItem(deleteRequest)
-        return response
-    } catch (e) {
-        getLogger().error(`Failed to delete the item. Failed with error: ${e}`)
-        throw new Error('Item deletion failed.')
+    const response = await client.deleteItem(deleteRequest)
+    if (response.$response.error) {
+        return false
     }
+    return true
 }
