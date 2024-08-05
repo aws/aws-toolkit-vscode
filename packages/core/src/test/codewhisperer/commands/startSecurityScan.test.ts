@@ -14,9 +14,6 @@ import { SecurityPanelViewProvider } from '../../../codewhisperer/views/security
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import * as diagnosticsProvider from '../../../codewhisperer/service/diagnosticsProvider'
 import { getTestWorkspaceFolder } from '../../../testInteg/integrationTestsUtilities'
-import * as fs from 'fs'
-import fileSystem from '../../../shared/fs/fs'
-import * as os from 'os'
 import * as path from 'path'
 import { assertTelemetry, closeAllEditors, createTestWorkspaceFolder, toFile } from '../../testUtil'
 import { stub } from '../../utilities/stubber'
@@ -461,18 +458,6 @@ describe('startSecurityScanPerformanceTest', function () {
         const folder = await createTestWorkspaceFolder()
         const mockFilePath = path.join(folder.uri.fsPath, 'app.py')
         await toFile('hello_world', mockFilePath)
-        /*
-        // Create a temp directory
-        const tempDirectory = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'temp-'))
-       
-        // Create a dummy 200KB file as app.py in the temp directory
-        const mockFilePath = path.join(tempDirectory, 'hello_world', 'app.py')
-        await fs.promises.mkdir(path.dirname(mockFilePath), { recursive: true })
-
-        // Create a sample text content with 199 KB size
-        const mockContent = 'print("Hello, World!")'.repeat((199 * 1024) / 22)
-        await fileSystem.writeFile(mockFilePath, mockContent)
-*/
         appCodePath = mockFilePath
         editor = await openTestFile(appCodePath)
         await model.CodeScansState.instance.setScansEnabled(false)
