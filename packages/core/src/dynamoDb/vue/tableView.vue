@@ -40,7 +40,6 @@
                 </vscode-panel-view>
             </vscode-panels>
         </div>
-        <vscode-divider></vscode-divider>
         <div class="table-section">
             <div v-if="isLoading" class="progress-container">
                 <vscode-progress-ring></vscode-progress-ring>
