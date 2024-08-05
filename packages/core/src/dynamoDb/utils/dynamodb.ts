@@ -156,7 +156,7 @@ function getExpressionAttributeValue(value: string, tableSchema: TableSchema) {
 
 function validateQueryRequest(queryRequest: { partitionKey: string; sortKey: string }, tableSchema: TableSchema) {
     if (!queryRequest.partitionKey || queryRequest.partitionKey.length === 0) {
-        throw new Error('Partition key cannot be emmpty for query')
+        throw new Error('Partition key cannot be empty for query')
     }
     if (
         (tableSchema.partitionKey.dataType === 'S' && typeof queryRequest.partitionKey !== 'string') ||

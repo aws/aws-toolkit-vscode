@@ -22,19 +22,24 @@
                 </vscode-panel-view>
                 <vscode-panel-view id="view-2">
                     <div class="query-section">
-                        <vscode-text-field id="partitionKey" type="text" placeholder="Enter partition key value"
-                            >Partition key: {{ partitionKey }}
+                        <vscode-text-field
+                            id="partitionKey"
+                            type="text"
+                            placeholder="Enter partition key value"
+                            :value="partitionKeyValue"
+                            @input="(event: any) => (partitionKeyValue = event.target.value)"
+                            ><i>Partition key: </i><b>{{ partitionKey }}</b>
                         </vscode-text-field>
                         <vscode-text-field
                             id="sortKey"
                             v-if="isSortKeyPresent"
                             type="text"
                             placeholder="Enter sort key value"
-                            >Sort key: {{ sortKey }}
+                            ><i>Sort key: </i><b>{{ sortKey }}</b>
                         </vscode-text-field>
                         <div class="run-section">
                             <vscode-button style="background: round" @click="resetFields">Reset</vscode-button>
-                            <vscode-button @click="executeQuery">Run</vscode-button>
+                            <vscode-button :disabled="!partitionKeyValue" @click="executeQuery">Run</vscode-button>
                         </div>
                     </div>
                 </vscode-panel-view>
@@ -96,6 +101,7 @@ export default defineComponent({
             isLoading: true,
             partitionKey: '',
             sortKey: '',
+            partitionKeyValue: '',
         }
     },
     async created() {
@@ -180,10 +186,13 @@ export default defineComponent({
         async executeQuery() {
             let sortKeyElement = document.getElementById('sortKey')
             let partitionKeyElement = document.getElementById('partitionKey')
-
+            let sortKeyValue = ''
+            if (sortKeyElement) {
+                sortKeyValue = (sortKeyElement as any).value
+            }
             const queryRequest = {
                 partitionKey: (partitionKeyElement as any).value,
-                sortKey: (sortKeyElement as any).value,
+                sortKey: sortKeyValue,
             }
             this.updatePageNumber()
             this.dynamoDbTableData = await client.queryData(queryRequest)
