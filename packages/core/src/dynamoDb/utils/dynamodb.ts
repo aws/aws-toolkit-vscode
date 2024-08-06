@@ -4,7 +4,6 @@
  */
 
 import { DynamoDB } from 'aws-sdk'
-import { getLogger } from 'aws-core-vscode/shared'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { DynamoDbTableNode } from '../explorer/dynamoDbTableNode'
 import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'

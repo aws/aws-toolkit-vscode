@@ -8,7 +8,8 @@ import { ExtContext } from '../../shared'
 import { VueWebview } from '../../webviews/main'
 import { getLogger, Logger } from '../../shared/logger'
 import { Key, ScanInput } from 'aws-sdk/clients/dynamodb'
-import { copyToClipboard } from '../../shared/utilities/messages'
+import * as localizedText from '../../shared/localizedText'
+import { copyToClipboard, showConfirmationMessage } from '../../shared/utilities/messages'
 import { DynamoDbTarget, telemetry } from '../../shared/telemetry/telemetry'
 import {
     getTableContent,
@@ -88,6 +89,21 @@ export class DynamoDbTableWebview extends VueWebview {
     }
 
     public async deleteItem(selectedRow: RowData, tableSchema: TableSchema) {
+        const isConfirmed = await showConfirmationMessage({
+            prompt: localize(
+                'AWS.dynamoDb.deleteItem.prompt',
+                'Are you sure you want to delete the item with partition key: {0}?',
+                selectedRow[tableSchema.partitionKey.name]
+            ),
+            confirm: localizedText.localizedDelete,
+            cancel: localizedText.cancel,
+        })
+
+        if (!isConfirmed) {
+            getLogger().debug(`Delete action cancelled on DynamoDB Item`)
+            return
+        }
+
         if (selectedRow === undefined || tableSchema === undefined) {
             throw new Error('Invalid row, failed to delete the item.')
         }
