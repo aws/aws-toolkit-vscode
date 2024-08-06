@@ -96,15 +96,11 @@ describe('TableView', () => {
     })
 
     describe('getDynamoDbTableData', function () {
-        beforeEach(() => {
-            sandbox = sinon.createSandbox()
-        })
-
         afterEach(() => {
             sinon.restore()
         })
 
-        it('should get the table schema', async () => {
+        it('should get the table data', async () => {
             sinon.stub(dynamoDbUtils, 'getTableContent').resolves(getExpectedResponse())
 
             const actualResult = await getDynamoDbTableData({ TableName: 'test-table', Limit: 5 }, 'west-us-2')
@@ -113,7 +109,7 @@ describe('TableView', () => {
     })
 
     describe('viewDynamoDbTable', function () {
-        it('should get the table schema', async () => {
+        it('should view the table', async () => {
             const context = sinon.stub(extContext)
             const node = { dynamoDbtable: 'test-table', regionCode: 'west-us-2' }
 

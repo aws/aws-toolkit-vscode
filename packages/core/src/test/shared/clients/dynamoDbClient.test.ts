@@ -28,7 +28,7 @@ describe('DynamoDbClient', () => {
     })
 
     describe('getTables', function () {
-        it('should retrieve a list of table names', async () => {
+        it('should retrieve list of table names', async () => {
             async function* getTablesGenerator() {
                 yield 'Table1'
             }
@@ -57,7 +57,7 @@ describe('DynamoDbClient', () => {
     })
 
     describe('getTableInformation', function () {
-        it('should retrieve a information about a table', async () => {
+        it('should retrieve information of a table', async () => {
             const request = { TableName: 'Table1' }
             const expectedResult = { TableName: 'Table1' } as unknown as TableDescription
 
@@ -66,7 +66,7 @@ describe('DynamoDbClient', () => {
             assert.deepStrictEqual(expectedResult, actualResult)
         })
 
-        it('should handle an AWSError correctly', async () => {
+        it('should handle an AWSError', async () => {
             const request = { TableName: 'Table1' }
 
             sinon.stub(dynamoDbClient, 'getTableInformation').rejects()
@@ -81,7 +81,7 @@ describe('DynamoDbClient', () => {
     })
 
     describe('scanTable', function () {
-        it('should retrieve the items from a table', async () => {
+        it('should retrieve items from a table', async () => {
             const request = { TableName: 'Table1' }
             const expectedResult = { Items: { data: 'value' } } as unknown as ScanOutput
 
@@ -90,7 +90,7 @@ describe('DynamoDbClient', () => {
             assert.deepStrictEqual(expectedResult, actualResult)
         })
 
-        it('should handle an AWSError correctly', async () => {
+        it('should handle an AWSError', async () => {
             const request = { TableName: 'Table1' }
 
             sinon.stub(dynamoDbClient, 'scanTable').rejects()
@@ -105,7 +105,7 @@ describe('DynamoDbClient', () => {
     })
 
     describe('deleteTable', function () {
-        it('should be able to delete a table', async () => {
+        it('should delete a table', async () => {
             const request = { TableName: 'Table1' }
             const expectedResult = { TableDescription: { TableName: 'Table1' } } as unknown as DeleteTableOutput
 
@@ -114,7 +114,7 @@ describe('DynamoDbClient', () => {
             assert.deepStrictEqual(expectedResult, actualResult)
         })
 
-        it('should handle an AWSError correctly', async () => {
+        it('should handle an AWSError', async () => {
             const request = { TableName: 'Table1' }
 
             sinon.stub(dynamoDbClient, 'deleteTable').rejects()
@@ -129,7 +129,7 @@ describe('DynamoDbClient', () => {
     })
 
     describe('queryTable', function () {
-        it('should be able to query data from a table', async () => {
+        it('should query data', async () => {
             const request = { TableName: 'Table1' }
             const expectedResult = { Items: { data: 'value' } } as unknown as QueryOutput
 
@@ -138,7 +138,7 @@ describe('DynamoDbClient', () => {
             assert.deepStrictEqual(expectedResult, actualResult)
         })
 
-        it('should handle an AWSError correctly', async () => {
+        it('should handle an AWSError', async () => {
             const request = { TableName: 'Table1' }
 
             sinon.stub(dynamoDbClient, 'queryTable').rejects()
