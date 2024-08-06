@@ -297,7 +297,7 @@ describe('transformByQ', function () {
         assert.deepStrictEqual(actual, expected)
     })
 
-    it.only(`WHEN parseBuildFile on pom.xml with absolute path THEN absolute path detected`, async function () {
+    it(`WHEN parseBuildFile on pom.xml with absolute path THEN absolute path detected`, async function () {
         const dirPath = await createTestWorkspaceFolder()
         transformByQState.setProjectPath(dirPath.uri.fsPath)
         const pomPath = path.join(dirPath.uri.fsPath, 'pom.xml')
