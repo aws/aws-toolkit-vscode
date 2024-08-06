@@ -410,6 +410,11 @@ export const codeTransformTroubleshootDownloadError =
 export const codeTransformPrereqDoc =
     'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites'
 
+export const codeTransformBillingText =
+    "<p>LOC lines of code submitted for transformation, maximum charge of this transformation is LOC * $BILLING_RATE = $ROUNDED_COST (for latest pricing, see https://aws.amazon.com/q/developer/pricing/). This charge applies only after the free limit in your organization's subscriptions is exhausted. To prevent the charge, you can stop the job before the transformation completes.</p>"
+
+export const codeTransformBillingRate = 0.003
+
 export const jobStartedChatMessage =
     'I am starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub. If I run into any issues, I might pause the transformation to get input from you on how to proceed.'
 

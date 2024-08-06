@@ -603,6 +603,14 @@ export function getJobStatisticsHtml(jobStatistics: any) {
     return htmlString
 }
 
+export function getBillingString(linesOfCode: number) {
+    const roundedCost = (linesOfCode * CodeWhispererConstants.codeTransformBillingRate).toFixed(2)
+    return CodeWhispererConstants.codeTransformBillingText
+        .replaceAll('LOC', linesOfCode.toString())
+        .replace('BILLING_RATE', CodeWhispererConstants.codeTransformBillingRate.toString())
+        .replace('ROUNDED_COST', roundedCost)
+}
+
 export async function getTransformationPlan(jobId: string) {
     let response = undefined
     try {
@@ -641,11 +649,11 @@ export async function getTransformationPlan(jobId: string) {
 
         let plan = `<style>table {border: 1px solid #424750;}</style>\n\n<a id="top"></a><br><p style="font-size: 24px;"><img src="${logoIcon}" style="margin-right: 15px; vertical-align: middle;"></img><b>${CodeWhispererConstants.planTitle}</b></p><br>`
         const authType = await getAuthType()
-        const linesOfCode = jobStatistics.find(
-            (stat: { name: string; value: number }) => stat.name === 'linesOfCode'
-        ).value
+        const linesOfCode = Number(
+            jobStatistics.find((stat: { name: string; value: string }) => stat.name === 'linesOfCode').value
+        )
         if (authType === 'iamIdentityCenter' && linesOfCode > 100000) {
-            plan += `<p>${linesOfCode} lines of code submitted for transformation, maximum charge of this transformation is $${(linesOfCode * 0.003).toFixed(2)} (this charge applies only after the free limit in your organization's subscriptions is exhausted). To prevent the charge, you can stop the job before the transformation completes.</p>`
+            plan += getBillingString(linesOfCode)
         }
         plan += `<div style="display: flex;"><div style="flex: 1; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p>${
             CodeWhispererConstants.planIntroductionMessage
