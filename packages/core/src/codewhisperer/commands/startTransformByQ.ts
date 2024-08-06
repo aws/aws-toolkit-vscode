@@ -233,7 +233,6 @@ export async function finalizeTransformByQ(status: string) {
 }
 
 export async function parseBuildFile() {
-    let containsAbsolutePath = false
     try {
         const absolutePaths = ['users/', 'system/', 'volumes/', 'c:', 'd:']
         const alias = path.basename(os.homedir())
@@ -257,13 +256,13 @@ export async function parseBuildFile() {
                     tabID: ChatSessionManager.Instance.getSession().tabID,
                 })
                 getLogger().info('CodeTransformation: absolute path potentially in build file')
-                containsAbsolutePath = true
+                return warningMessage
             }
         }
     } catch (err: any) {
         // swallow error
     }
-    return containsAbsolutePath
+    return undefined
 }
 
 export async function preTransformationUploadCode() {

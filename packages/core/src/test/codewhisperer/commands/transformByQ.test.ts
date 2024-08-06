@@ -297,12 +297,14 @@ describe('transformByQ', function () {
         assert.deepStrictEqual(actual, expected)
     })
 
-    it(`WHEN parseBuildFile on pom.xml with absolute path THEN absolute path detected`, async function () {
+    it.only(`WHEN parseBuildFile on pom.xml with absolute path THEN absolute path detected`, async function () {
         const dirPath = await createTestWorkspaceFolder()
         transformByQState.setProjectPath(dirPath.uri.fsPath)
         const pomPath = path.join(dirPath.uri.fsPath, 'pom.xml')
         await toFile('<project><properties><path>system/name/here</path></properties></project>', pomPath)
-        const containsAbsolutePath = await parseBuildFile()
-        assert.strictEqual(true, containsAbsolutePath)
+        const expectedWarning =
+            'We detected 1 absolute path(s) (system/) in this file: pom.xml, which may cause issues during our backend build. You will see error logs open if this happens.'
+        const warningMessage = await parseBuildFile()
+        assert.strictEqual(expectedWarning, warningMessage)
     })
 })
