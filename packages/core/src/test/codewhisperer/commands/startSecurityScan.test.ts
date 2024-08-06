@@ -518,7 +518,8 @@ describe('startSecurityScanPerformanceTest', function () {
         const cpuUsagePercentage = ((EndScanCpuUsageByUser + EndScanCpuUsageBySystem) / elapsedSeconds) * 100
 
         // These limits are considered from local mac but may vary with machine, OS etc factors
-        assert(cpuUsagePercentage < 50,
+        assert(
+            cpuUsagePercentage < 50,
             `Expected CPU usage should be less than 50% of total CPU%, actual CPU usage is ${cpuUsagePercentage}`
         )
 
