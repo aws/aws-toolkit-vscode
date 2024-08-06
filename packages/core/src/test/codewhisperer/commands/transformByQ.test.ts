@@ -303,7 +303,7 @@ describe('transformByQ', function () {
         const pomPath = path.join(dirPath.uri.fsPath, 'pom.xml')
         await toFile('<project><properties><path>system/name/here</path></properties></project>', pomPath)
         const expectedWarning =
-            'We detected 1 absolute path(s) (system/) in this file: pom.xml, which may cause issues during our backend build. You will see error logs open if this happens.'
+            'I detected 1 absolute file path(s) in your pom.xml file: **system/**. Absolute file paths might cause issues when I build your code. Any errors will show up in the build log.'
         const warningMessage = await parseBuildFile()
         assert.strictEqual(expectedWarning, warningMessage)
     })
