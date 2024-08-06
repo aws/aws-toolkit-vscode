@@ -464,6 +464,9 @@ export const buildSucceededChatMessage = 'I was able to build your project and w
 export const buildSucceededNotification =
     'Amazon Q was able to build your project and will start transforming your code soon.'
 
+export const absolutePathDetectedMessage =
+    'We detected NUM_PATHS absolute path(s) (LIST_OF_PATHS) in this file: BUILD_FILE, which may cause issues during our backend build. You will see error logs open if this happens.'
+
 export const unsupportedJavaVersionChatMessage = `Sorry, currently I can only upgrade Java 8 or Java 11 projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
 export const failedToStartJobChatMessage =

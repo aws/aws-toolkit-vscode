@@ -248,7 +248,10 @@ export async function parseBuildFile() {
                 }
             }
             if (detectedPaths.length > 0) {
-                const warningMessage = `We detected ${detectedPaths.length} absolute ${detectedPaths.length === 1 ? 'path' : 'paths'} (${detectedPaths.join(', ')}) in this file: ${path.basename(buildFilePath)}, which may cause issues during our backend build. You will see error logs open if this happens.`
+                const warningMessage = CodeWhispererConstants.absolutePathDetectedMessage
+                    .replace('NUM_PATHS', detectedPaths.length.toString())
+                    .replace('LIST_OF_PATHS', detectedPaths.join(', '))
+                    .replace('BUILD_FILE', path.basename(buildFilePath))
                 transformByQState.getChatControllers()?.errorThrown.fire({
                     error: new AbsolutePathDetectedError(warningMessage),
                     tabID: ChatSessionManager.Instance.getSession().tabID,
