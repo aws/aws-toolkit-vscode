@@ -30,6 +30,7 @@ import {
     updateJobHistory,
     zipCode,
     getTableMapping,
+    getBillingString,
 } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
 import {
     validateOpenProjects,
@@ -295,6 +296,13 @@ describe('transformByQ', function () {
             '-1': '{"columnNames":["relativePath","action"],"rows":[{"relativePath":"pom.xml","action":"Update"}, {"relativePath":"src/main/java/com/bhoruka/bloodbank/BloodbankApplication.java","action":"Update"}]}',
         }
         assert.deepStrictEqual(actual, expected)
+    })
+
+    it(`WHEN getBillingString on small project THEN correct string returned`, async function () {
+        const expected =
+            "<p>376 lines of code submitted for transformation, maximum charge of this transformation is 376 * $0.003 = $1.13 (for latest pricing, see https://aws.amazon.com/q/developer/pricing/). This charge applies only after the free limit in your organization's subscriptions is exhausted. To prevent the charge, you can stop the job before the transformation completes.</p>"
+        const actual = getBillingString(376)
+        assert.strictEqual(actual, expected)
     })
 })
 
