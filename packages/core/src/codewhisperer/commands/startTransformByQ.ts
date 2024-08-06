@@ -50,6 +50,7 @@ import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
 import {
+    AbsolutePathDetectedError,
     AlternateDependencyVersionsNotFoundError,
     JavaHomeNotSetError,
     JobStartError,
@@ -173,9 +174,6 @@ export async function startTransformByQ() {
         // Set webview UI to poll for progress
         startInterval()
 
-        // step 0: give user a non-blocking warning if build file appears to contain absolute paths
-        await parseBuildFile()
-
         // step 1: CreateUploadUrl and upload code
         const uploadId = await preTransformationUploadCode()
 
@@ -251,7 +249,10 @@ export async function parseBuildFile() {
             }
             if (detectedPaths.length > 0) {
                 const warningMessage = `We detected ${detectedPaths.length} absolute ${detectedPaths.length === 1 ? 'path' : 'paths'} (${detectedPaths.join(', ')}) in this file: ${path.basename(buildFilePath)}, which may cause issues during our backend build. You will see error logs open if this happens.`
-                void vscode.window.showWarningMessage(warningMessage)
+                transformByQState.getChatControllers()?.errorThrown.fire({
+                    error: new AbsolutePathDetectedError(warningMessage),
+                    tabID: ChatSessionManager.Instance.getSession().tabID,
+                })
                 getLogger().info('CodeTransformation: absolute path potentially in build file')
                 containsAbsolutePath = true
             }

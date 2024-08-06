@@ -538,6 +538,9 @@ export const noPomXmlFoundNotification = `None of your open projects are support
 
 export const noJavaHomeFoundChatMessage = `Sorry, I couldn\'t locate your Java installation. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
+export const dependencyVersionsErrorMessage =
+    'I could not find any other versions of this dependency in your local Maven repository. Try transforming the dependency to make it compatible with Java 17, and then try transforming this module again.'
+
 export const errorUploadingWithExpiredUrl = `The upload error may have been caused by the expiration of the S3 pre-signed URL that was used to upload code artifacts to Q Code Transformation. The S3 pre-signed URL expires in 30 minutes. This could be caused by any delays introduced by intermediate services in your network infrastructure. Please investigate your network configuration and consider allowlisting 'amazonq-code-transformation-us-east-1-c6160f047e0.s3.amazonaws.com' to skip any scanning that might delay the upload. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootAllowS3Access}).`
 
 export const socketConnectionFailed =

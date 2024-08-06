@@ -22,6 +22,7 @@ import {
     getValidCandidateProjects,
     openBuildLogFile,
     openHilPomFile,
+    parseBuildFile,
     postTransformationJob,
     processTransformFormInput,
     resetDebugArtifacts,
@@ -31,6 +32,7 @@ import {
 } from '../../../codewhisperer/commands/startTransformByQ'
 import { JDKVersion, TransformationCandidateProject, transformByQState } from '../../../codewhisperer/models/model'
 import {
+    AbsolutePathDetectedError,
     AlternateDependencyVersionsNotFoundError,
     JavaHomeNotSetError,
     JobStartError,
@@ -371,6 +373,9 @@ export class GumbyController {
             return
         }
 
+        // give user a non-blocking warning if build file appears to contain absolute paths
+        await parseBuildFile()
+
         this.messenger.sendAsyncEventProgress(
             message.tabID,
             true,
@@ -459,7 +464,7 @@ export class GumbyController {
 
     private async handleError(message: { error: Error; tabID: string }) {
         if (message.error instanceof AlternateDependencyVersionsNotFoundError) {
-            this.messenger.sendKnownErrorResponse('no-alternate-dependencies-found', message.tabID)
+            this.messenger.sendKnownErrorResponse(message.tabID, CodeWhispererConstants.dependencyVersionsErrorMessage)
             await this.continueTransformationWithoutHIL(message)
         } else if (message.error instanceof ModuleUploadError) {
             this.resetTransformationChatFlow()
@@ -474,6 +479,8 @@ export class GumbyController {
                 GumbyNamedMessages.JOB_FAILED_IN_PRE_BUILD
             )
             this.messenger.sendViewBuildLog(message.tabID)
+        } else if (message.error instanceof AbsolutePathDetectedError) {
+            this.messenger.sendKnownErrorResponse(message.tabID, message.error.message)
         }
     }
 
