@@ -300,7 +300,7 @@ describe('transformByQ', function () {
 
     it(`WHEN getBillingString on small project THEN correct string returned`, async function () {
         const expected =
-            "<p>376 lines of code submitted for transformation, maximum charge of this transformation is 376 * $0.003 = $1.13 (for latest pricing, see https://aws.amazon.com/q/developer/pricing/). This charge applies only after the free limit in your organization's subscriptions is exhausted. To prevent the charge, you can stop the job before the transformation completes.</p>"
+            '<p>376 lines of code were submitted for transformation. If you reach the quota for lines of code included in your subscription, you will be charged $0.003 for each additional line of code. You might be charged up to $1.13 for this transformation. To avoid being charged, stop the transformation job before it completes. For more information on pricing and quotas, see [Amazon Q Developer pricing](https://aws.amazon.com/q/developer/pricing/).</p>'
         const actual = getBillingString(376)
         assert.strictEqual(actual, expected)
     })

@@ -411,7 +411,7 @@ export const codeTransformPrereqDoc =
     'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites'
 
 export const codeTransformBillingText =
-    "<p>LOC lines of code submitted for transformation, maximum charge of this transformation is LOC * $BILLING_RATE = $ROUNDED_COST (for latest pricing, see https://aws.amazon.com/q/developer/pricing/). This charge applies only after the free limit in your organization's subscriptions is exhausted. To prevent the charge, you can stop the job before the transformation completes.</p>"
+    '<p>LOC lines of code were submitted for transformation. If you reach the quota for lines of code included in your subscription, you will be charged $BILLING_RATE for each additional line of code. You might be charged up to $ROUNDED_COST for this transformation. To avoid being charged, stop the transformation job before it completes. For more information on pricing and quotas, see [Amazon Q Developer pricing](https://aws.amazon.com/q/developer/pricing/).</p>'
 
 export const codeTransformBillingRate = 0.003
 
