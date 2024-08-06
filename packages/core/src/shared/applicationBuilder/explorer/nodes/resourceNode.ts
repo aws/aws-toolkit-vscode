@@ -62,7 +62,7 @@ export class ResourceNode implements TreeNode {
         item.iconPath =
             this.type === SERVERLESS_FUNCTION_TYPE ? getIcon('aws-lambda-function') : getIcon('vscode-symbol-event')
         item.resourceUri = this.location.samTemplateUri
-        item.contextValue = `awsaAppBuilderResourceNode.${this.getResourceId()}`
+        item.contextValue = `awsAppBuilderResourceNode.${this.getResourceId()}`
         return item
     }
 

@@ -2033,7 +2033,7 @@
                 },
                 {
                     "command": "aws.launchConfigForm",
-                    "when": "viewItem == awsaAppBuilderResourceNode.function",
+                    "when": "viewItem == awsAppBuilderResourceNode.function",
                     "group": "inline@1"
                 },
                 {
@@ -2053,7 +2053,7 @@
                 },
                 {
                     "command": "aws.appBuilder.openHandler",
-                    "when": "viewItem == awsaAppBuilderResourceNode.function",
+                    "when": "viewItem == awsAppBuilderResourceNode.function",
                     "group": "inline@1"
                 },
                 {
@@ -2083,12 +2083,12 @@
                 },
                 {
                     "command": "aws.appBuilder.openHandler",
-                    "when": "viewItem == awsaAppBuilderResourceNode.function",
+                    "when": "viewItem == awsAppBuilderResourceNode.function",
                     "group": "1@1"
                 },
                 {
                     "command": "aws.launchConfigForm",
-                    "when": "viewItem == awsAppBuilderAppNode || viewItem == awsaAppBuilderResourceNode.function",
+                    "when": "viewItem == awsAppBuilderAppNode || viewItem == awsAppBuilderResourceNode.function",
                     "group": "1@2"
                 },
                 {
