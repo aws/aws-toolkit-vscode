@@ -492,8 +492,11 @@ describe('startSecurityScanPerformanceTest', function () {
         const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
 
         await model.CodeScansState.instance.setScansEnabled(true)
+        const startTime = process.hrtime()
         const startScanCpuUsage = process.cpuUsage()
-
+        const startScanCpuUsageByUser = startScanCpuUsage.user / 1000000
+        const startScanCpuUsageBySystem = startScanCpuUsage.system / 1000000
+        console.log(`Start CPU Usage User: ${startScanCpuUsageByUser}, System: ${startScanCpuUsageBySystem}`)
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
             editor,
@@ -504,8 +507,13 @@ describe('startSecurityScanPerformanceTest', function () {
 
         // EndScanCpuUsageByUser is the difference of CPU Usage from start of a scan to end of a scan.
         const EndScanCpuUsage = process.cpuUsage(startScanCpuUsage)
+        const elapsedTime = process.hrtime(startTime)
+        const elapsedSeconds = elapsedTime[0] + elapsedTime[1] / 1e9
         const EndScanCpuUsageByUser = EndScanCpuUsage.user / 1000000 // Convert microseconds to seconds
-
+        const EndScanCpuUsageBySystem = EndScanCpuUsage.system / 1000000
+        console.log(
+            `End CPU Usage: ${EndScanCpuUsage}, User: ${EndScanCpuUsageByUser}, System: ${EndScanCpuUsageBySystem}`
+        )
         /**
          * CPU Usage at start of a scan
          * const startScanCpuUsageByUser = startScanCpuUsage.user / 1000000
@@ -517,6 +525,13 @@ describe('startSecurityScanPerformanceTest', function () {
         const EndScanMemoryUsage = process.memoryUsage().heapTotal
         const EndScanMemoryUsageInMB = EndScanMemoryUsage / (1024 * 1024) // Converting bytes to MB
 
+        const cpuUsagePercentage = ((EndScanCpuUsageByUser + EndScanCpuUsageBySystem) / elapsedSeconds) * 100
+        console.log(
+            `userUsageDiff: ${EndScanCpuUsageByUser}, systemUsageDiff: ${EndScanCpuUsageBySystem}, elapsedTime: ${elapsedTime}, startTime: ${startTime}, elapsedSeconds: ${elapsedSeconds}`
+        )
+        console.log(`Memory Usage: ${EndScanMemoryUsageInMB}`)
+        console.log(`-------------------------------------------------`)
+        console.log(`CPU usage: ${cpuUsagePercentage}%`)
         /**
             Input:-
             Payload Size is 198.99
@@ -526,14 +541,20 @@ describe('startSecurityScanPerformanceTest', function () {
                 User CPU Usage: 21.446874 sec and System CPU Usage: 7.044477 sec
             Difference at End of a Scan:
                 User CPU Usage: 0.058255 sec and System CPU Usage: 0.004867 sec
+
+            CPU Cores: 12 and start CPU Usage: [object Object]
+            End CPU Usage: [object Object]
+            CPU used: 10200%
+            CPU usage at start: 3.5391326024333396%
+            CPU Total time: 665138231.4360001%
+            CPU usage at end: 0.001533515819407751%
          */
 
-        assert(
-            EndScanCpuUsageByUser > 0,
-            `User CPU usage difference should be greater than 0 but actual is ${EndScanCpuUsageByUser}`
-        )
-
         // These limits are considered from local mac but may vary with machine, OS etc factors
+        assert(
+            EndScanCpuUsageByUser < 0, //Intentionally setting <0
+            `User CPU usage difference should be greater than 0 but actual values is startScanCpuUsageByUser:${startScanCpuUsageByUser}, startScanCpuUsageBySystem: ${startScanCpuUsageBySystem}, EndScanCpuUsageByUser:${EndScanCpuUsageByUser}, EndScanCpuUsageBySystem:${EndScanCpuUsageBySystem},  cpuUsagePercentage: ${cpuUsagePercentage}, EndScanMemoryUsageInMB:${EndScanMemoryUsageInMB}`
+        )
 
         assert(
             EndScanMemoryUsageInMB < 400,
