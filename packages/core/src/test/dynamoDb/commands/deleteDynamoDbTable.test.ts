@@ -27,7 +27,7 @@ describe('deleteDynamoDbTable', () => {
         sinon.restore()
     })
 
-    it('should successfully delete a DynamoDB table', async () => {
+    it('should delete a DynamoDB table', async () => {
         const expectedResult = { TableDescription: { TableName: 'Table1' } } as unknown as DeleteTableOutput
         const parentNode = { refresh: sinon.stub() }
 

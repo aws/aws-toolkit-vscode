@@ -8,6 +8,7 @@ import * as assert from 'assert'
 import { ExtContext } from '../../../shared'
 import * as tableView from '../../../dynamoDb/vue/tableView'
 import { searchDynamoDbTables } from '../../../dynamoDb/commands/searchDynamoDbTables'
+import { assertTelemetry } from '../../testUtil'
 
 describe('SearchDynamoDbTables', () => {
     let sandbox: sinon.SinonSandbox
@@ -23,10 +24,11 @@ describe('SearchDynamoDbTables', () => {
     })
 
     describe('searchDynamoDbTables', function () {
-        it('should be able to search tables', async () => {
+        it('should search tables', async () => {
             const viewDynamoDbTableStub = sinon.stub(tableView, 'viewDynamoDbTable')
             await searchDynamoDbTables(extContext, 'test', { regionName: 'us-west-2' })
             assert.ok(viewDynamoDbTableStub.calledOnce)
+            assertTelemetry('dynamodb_openTable', { result: 'Succeeded' })
         })
     })
 })

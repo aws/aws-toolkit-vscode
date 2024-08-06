@@ -102,7 +102,7 @@ describe('DynamoDbUtils', () => {
     })
 
     describe('copyDynamoDbArn', function () {
-        it('should retrieve the items from table and create tableData interface', async () => {
+        it('should copy ARN', async () => {
             const expectedResult = { TableName: 'Table1', TableArn: 'tablearn' } as unknown as TableDescription
 
             const dynamoDbTableNode = sinon.stub() as unknown as DynamoDbTableNode
@@ -128,7 +128,7 @@ describe('DynamoDbUtils', () => {
     })
 
     describe('queryTableContent', function () {
-        it('should be able to query the table and return the response', async () => {
+        it('should query the table', async () => {
             const expectedQueryResult = {
                 Items: [{ age: { N: '25' }, ID: { S: '2' }, name: { S: 'Jane' } }],
             } as unknown as ScanOutput
@@ -147,7 +147,7 @@ describe('DynamoDbUtils', () => {
     })
 
     describe('getTableKeySchema', function () {
-        it('should be able to extract key schema from the table', async () => {
+        it('should extract key schema', async () => {
             sinon.stub(dynamoDbClient, 'getTableInformation').resolves(getTableDescriptionResponse())
             const actualResult = await dynamoDbUtils.getTableKeySchema('regionCode', 'ableName', dynamoDbClient)
 
