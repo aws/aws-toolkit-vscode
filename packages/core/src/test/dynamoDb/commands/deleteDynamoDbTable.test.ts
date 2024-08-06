@@ -13,6 +13,7 @@ import { DeleteTableOutput } from 'aws-sdk/clients/dynamodb'
 import { PromiseResult } from 'aws-sdk/lib/request'
 import * as utilities from '../../../shared/utilities/messages'
 import { DynamoDbInstanceNode } from '../../../dynamoDb/explorer/dynamoDbInstanceNode'
+import { assertTelemetry } from '../../testUtil'
 
 describe('deleteDynamoDbTable', () => {
     let dynamoDbClient: DynamoDbClient
@@ -26,32 +27,61 @@ describe('deleteDynamoDbTable', () => {
     afterEach(() => {
         sinon.restore()
     })
-
-    it('should delete a DynamoDB table', async () => {
+    async function testDeleteDynamoDB(confirmed: boolean) {
         const expectedResult = { TableDescription: { TableName: 'Table1' } } as unknown as DeleteTableOutput
+        const parentNode = { refresh: sinon.stub() }
+
+        const showConfirmationMessageStub = sinon.stub(utilities, 'showConfirmationMessage').resolves(confirmed)
+        dynamoDbTableNode.parentNode = parentNode as unknown as DynamoDbInstanceNode
+
+        sinon
+            .stub(dynamoDbClient, 'deleteTable')
+            .resolves(Promise.resolve(expectedResult) as unknown as PromiseResult<DeleteTableOutput, AWSError>)
+        await deleteDynamoDbTable(dynamoDbTableNode, dynamoDbClient)
+        assert.ok(showConfirmationMessageStub.called)
+    }
+    it('Yes confirmation should delete a DynamoDB table', async () => {
+        await testDeleteDynamoDB(true)
+    })
+
+    it('No confirmation should not delete a DynamoDB table', async () => {
+        await testDeleteDynamoDB(false)
+    })
+
+    it('Delete failed after confirmation', async () => {
         const parentNode = { refresh: sinon.stub() }
 
         const showConfirmationMessageStub = sinon.stub(utilities, 'showConfirmationMessage').resolves(true)
         dynamoDbTableNode.parentNode = parentNode as unknown as DynamoDbInstanceNode
+        dynamoDbTableNode.dynamoDbtable = 'table1'
 
-        sinon
-            .stub(dynamoDbClient, 'deleteTable')
-            .resolves(Promise.resolve(expectedResult) as unknown as PromiseResult<DeleteTableOutput, AWSError>)
-        await deleteDynamoDbTable(dynamoDbTableNode, dynamoDbClient)
+        try {
+            sinon
+                .stub(dynamoDbClient, 'deleteTable')
+                .resolves(Promise.resolve({}) as unknown as PromiseResult<DeleteTableOutput, AWSError>)
+            await deleteDynamoDbTable(dynamoDbTableNode, dynamoDbClient)
+        } catch (e) {
+            assert.equal((e as any).message, 'Failed to delete DynamoDB table: table1')
+        }
+
         assert.ok(showConfirmationMessageStub.called)
+        assertTelemetry('dynamodb_deleteTable', { result: 'Failed' })
     })
 
-    it('should not delete a DynamoDB table', async () => {
-        const expectedResult = { TableDescription: { TableName: 'Table1' } } as unknown as DeleteTableOutput
+    it('Delete success after confirmation', async () => {
         const parentNode = { refresh: sinon.stub() }
+        const expectedResult = { TableDescription: { TableName: 'Table1' } } as unknown as DeleteTableOutput
 
-        const showConfirmationMessageStub = sinon.stub(utilities, 'showConfirmationMessage').resolves(false)
+        const showConfirmationMessageStub = sinon.stub(utilities, 'showConfirmationMessage').resolves(true)
         dynamoDbTableNode.parentNode = parentNode as unknown as DynamoDbInstanceNode
+        dynamoDbTableNode.dynamoDbtable = 'table1'
 
         sinon
             .stub(dynamoDbClient, 'deleteTable')
             .resolves(Promise.resolve(expectedResult) as unknown as PromiseResult<DeleteTableOutput, AWSError>)
         await deleteDynamoDbTable(dynamoDbTableNode, dynamoDbClient)
+
         assert.ok(showConfirmationMessageStub.called)
+        assertTelemetry('dynamodb_deleteTable', { result: 'Succeeded' })
     })
 })
