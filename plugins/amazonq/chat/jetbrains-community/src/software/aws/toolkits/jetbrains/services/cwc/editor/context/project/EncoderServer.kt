@@ -118,10 +118,12 @@ class EncoderServer(val project: Project) : Disposable {
         val map = mutableMapOf<String, String>(
             "PORT" to port.toString(),
             "START_AMAZONQ_LSP" to "true",
-            "Q_WORKER_THREADS" to threadCount.toString(),
             "CACHE_DIR" to cachePath.toString(),
             "MODEL_DIR" to cachePath.resolve("qserver").toString()
         )
+        if (threadCount > 0) {
+            map["Q_WORKER_THREADS"] = threadCount.toString()
+        }
         if (isGpuEnabled) {
             map["Q_ENABLE_GPU"] = "true"
         }
