@@ -12,9 +12,10 @@ import { existsSync, writeFileSync } from 'fs'
 import { BuildSystem, FolderInfo, transformByQState } from '../../models/model'
 import { IManifestFile } from '../../../amazonqFeatureDev/models'
 import fs from '../../../shared/fs/fs'
+import globals from '../../../shared/extensionGlobals'
 
 export function getDependenciesFolderInfo(): FolderInfo {
-    const dependencyFolderName = `${CodeWhispererConstants.dependencyFolderName}${Date.now()}`
+    const dependencyFolderName = `${CodeWhispererConstants.dependencyFolderName}${globals.clock.Date.now()}`
     const dependencyFolderPath = path.join(os.tmpdir(), dependencyFolderName)
     return {
         name: dependencyFolderName,

@@ -11,6 +11,7 @@ import {
     CodeTransformJavaTargetVersionsAllowed,
 } from '../../shared/telemetry/telemetry'
 import { JDKVersion } from '../../codewhisperer/models/model'
+import globals from '../../shared/extensionGlobals'
 
 export const telemetryUndefined = 'undefined'
 
@@ -89,4 +90,4 @@ export const javapOutputToTelemetryValue = (javapCommandLineOutput: string) => {
     }
 }
 
-export const calculateTotalLatency = (startTime: number): number => Date.now() - startTime
+export const calculateTotalLatency = (startTime: number): number => globals.clock.Date.now() - startTime
