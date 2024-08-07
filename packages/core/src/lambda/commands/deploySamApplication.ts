@@ -295,7 +295,7 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
     if (params === undefined) {
         throw new CancellationError('user')
     }
-    const deployFlags: string[] = []
+    const deployFlags: string[] = ['--no-confirm-changeset']
     const buildFlags: string[] = ['--cached']
 
     if (params.paramsSource === ParamsSource.SamConfig) {
