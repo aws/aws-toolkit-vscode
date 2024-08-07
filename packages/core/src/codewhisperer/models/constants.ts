@@ -400,6 +400,13 @@ export const codeTransformTroubleshootDownloadError =
 export const codeTransformPrereqDoc =
     'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites'
 
+export const codeTransformBillingText = (linesOfCode: number) =>
+    `<p>${linesOfCode} lines of code were submitted for transformation. If you reach the quota for lines of code included in your subscription, you will be charged $${codeTransformBillingRate} for each additional line of code. You might be charged up to $${(linesOfCode * codeTransformBillingRate).toFixed(2)} for this transformation. To avoid being charged, stop the transformation job before it completes. For more information on pricing and quotas, see [Amazon Q Developer pricing](${linkToBillingInfo}).</p>`
+
+export const codeTransformBillingRate = 0.003
+
+export const codeTransformLocThreshold = 100000
+
 export const jobStartedChatMessage =
     'I am starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub. If I run into any issues, I might pause the transformation to get input from you on how to proceed.'
 
@@ -571,9 +578,7 @@ export const noJavaProjectsFoundChatMessage = `Sorry, I couldn\'t find a project
 
 export const linkToDocsHome = 'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html'
 
-export const linkToPrerequisites = ''
-
-export const linkToMavenTroubleshooting = ''
+export const linkToBillingInfo = 'https://aws.amazon.com/q/developer/pricing/'
 
 export const linkToUploadZipTooLarge =
     'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#project-size-limit'
