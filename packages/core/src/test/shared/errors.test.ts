@@ -492,9 +492,13 @@ describe('util', function () {
             false,
             'Incorrectly indicated as network error'
         )
-        const err = new Error("Unexpected token '<'")
+        let err = new Error("Unexpected token '<'")
         err.name = 'SyntaxError'
         assert.deepStrictEqual(isNetworkError(err), false, 'Incorrectly indicated as network error')
+
+        err = new Error('getaddrinfo ENOENT oidc.us-east-1.amazonaws.com')
+        ;(err as any).code = 'ENOENT'
+        assert.deepStrictEqual(isNetworkError(err), true, 'Did not indicate ENOENT error as network error')
     })
 
     it('scrubNames()', async function () {

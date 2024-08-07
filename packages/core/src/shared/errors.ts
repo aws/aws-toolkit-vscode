@@ -785,7 +785,7 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
         return false
     }
 
-    if (isVSCodeProxyError(err) || isSocketTimeoutError(err) || isNonJsonHttpResponse(err)) {
+    if (isVSCodeProxyError(err) || isSocketTimeoutError(err) || isNonJsonHttpResponse(err) || isEnoentError(err)) {
         return true
     }
 
@@ -839,6 +839,14 @@ function isSocketTimeoutError(err: Error): boolean {
  */
 function isNonJsonHttpResponse(err: Error): boolean {
     return (err.name === 'SyntaxError' || err.name === 'SyntaxError') && err.message.includes('Unexpected token')
+}
+
+/**
+ * We were seeing errors of ENOENT for the oidc FQDN (eg: oidc.us-east-1.amazonaws.com) during the SSO flow.
+ * Our assumption is that this is an intermittent error.
+ */
+function isEnoentError(err: Error): boolean {
+    return (err.name === 'ENOENT' || (err as any).code === 'ENOENT') && err.message.includes('getaddrinfo ENOENT')
 }
 
 /**
