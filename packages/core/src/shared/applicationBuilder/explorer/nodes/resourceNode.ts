@@ -20,8 +20,7 @@ enum ResourceTypeId {
 export class ResourceNode implements TreeNode {
     public readonly id = this.resourceTreeEntity.Id
     private readonly type = this.resourceTreeEntity.Type
-    public readonly regionCode = this.region
-    public readonly _stackName = this.stackName
+    public readonly functionName = this.deployedResource?.LogicalResourceId
 
     public constructor(
         private readonly location: SamAppLocation,
@@ -36,19 +35,16 @@ export class ResourceNode implements TreeNode {
             resource: this.resourceTreeEntity,
             location: this.location.samTemplateUri,
             workspaceFolder: this.location.workspaceFolder,
+            region: this.region,
+            stackName: this.stackName,
         }
     }
 
     public async getChildren() {
         let deployedNode: TreeNode[] = []
 
-        if (this.deployedResource) {
-            deployedNode = await generateDeployedLocalNode(
-                this.location,
-                this.resourceTreeEntity,
-                this.deployedResource,
-                this.region
-            )
+        if (this.deployedResource && this.region && this.stackName) {
+            deployedNode = await generateDeployedLocalNode(this.deployedResource, this.region, this.stackName)
         }
         return [...generatePropertyNodes(this.resourceTreeEntity), ...deployedNode]
     }

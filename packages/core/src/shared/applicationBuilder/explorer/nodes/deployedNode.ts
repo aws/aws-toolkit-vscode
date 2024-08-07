@@ -6,54 +6,45 @@
 import * as vscode from 'vscode'
 import { getIcon } from '../../../icons'
 import { TreeNode } from '../../../treeview/resourceTreeDataProvider'
-import { generatePropertyNodes } from './propertyNode'
-import { ResourceTreeEntity, SamAppLocation } from '../samProject'
 import { Lambda } from 'aws-sdk'
 import { DefaultLambdaClient } from '../../../clients/lambdaClient'
 import { createPlaceholderItem } from '../../../treeview/utils'
 import { localize } from 'vscode-nls'
 import { getLogger } from '../../../logger/logger'
 
-export class DeployedLambdaNode implements TreeNode {
-    public readonly id = this.key
-    public readonly resource = this.value
-    public readonly functionName = this._functionName
+export interface DeployedResource {
+    stackName: string
+    regionCode: string
+    configuration: Lambda.FunctionConfiguration
+}
 
-    public constructor(
-        private readonly key: string,
-        private readonly _functionName: any,
-        private readonly value: unknown
-    ) {}
+// TODO:: Add doc strings to all TreeNodes
+export class DeployedLambdaNode implements TreeNode<DeployedResource> {
+    public readonly id: any = this.resource.configuration.FunctionName
+    public readonly label: any = this.resource.configuration.FunctionArn
+    public constructor(public readonly resource: DeployedResource) {}
 
-    public async getChildren(): Promise<TreeNode[]> {
-        if (this.value instanceof Array || this.value instanceof Object) {
-            return generatePropertyNodes(this.value)
-        } else {
-            return []
-        }
+    public async getChildren(): Promise<DeployedLambdaNode[]> {
+        return []
     }
 
     public getTreeItem() {
-        const item = new vscode.TreeItem(this.functionName)
+        const item = new vscode.TreeItem(this.id)
 
         item.contextValue = 'awsAppBuilderDeployedNode'
         item.iconPath = getIcon('vscode-cloud')
-
-        if (this.value instanceof Array || this.value instanceof Object) {
-            item.label = this.key
-            item.collapsibleState = vscode.TreeItemCollapsibleState.None
-        }
+        item.label = this.id
+        item.collapsibleState = vscode.TreeItemCollapsibleState.None
 
         return item
     }
 }
 
 export async function generateDeployedLocalNode(
-    app: SamAppLocation,
-    resource: ResourceTreeEntity,
     deployedResource: any,
-    regionCode: any
-): Promise<TreeNode[]> {
+    regionCode: string,
+    stackName: string
+): Promise<any[]> {
     let lambdaFunction: Lambda.GetFunctionResponse | undefined
 
     try {
@@ -77,8 +68,10 @@ export async function generateDeployedLocalNode(
             ),
         ]
     }
-
-    const functionArn = lambdaFunction.Configuration.FunctionArn
-    const functionName = lambdaFunction.Configuration.FunctionName
-    return [new DeployedLambdaNode(functionArn, functionName, resource.Id)]
+    const _deployedResource: DeployedResource = {
+        stackName: stackName,
+        regionCode: regionCode,
+        configuration: lambdaFunction.Configuration as Lambda.FunctionConfiguration,
+    }
+    return [new DeployedLambdaNode(_deployedResource)]
 }

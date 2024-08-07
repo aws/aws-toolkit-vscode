@@ -33,6 +33,10 @@ export async function runSamCliRemoteTestEvents(
         remoteTestEventsParameters.stackName,
     ]
 
+    if (remoteTestEventsParameters.region) {
+        args.push('--region', remoteTestEventsParameters.region)
+    }
+
     if (remoteTestEventsParameters.name) {
         args.push('--name', remoteTestEventsParameters.name)
     }
