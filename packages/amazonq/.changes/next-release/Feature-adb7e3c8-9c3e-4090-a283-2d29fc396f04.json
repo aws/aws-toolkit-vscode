@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "feat(Amazon Q Code Transformation): warn user if absolute path found in pom.xml"
+	"description": "Amazon Q Code Transformation: warn user if absolute file paths are found in the pom.xml"
 }
