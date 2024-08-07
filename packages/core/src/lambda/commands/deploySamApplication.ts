@@ -252,16 +252,16 @@ async function getAuthOrPrompt() {
                 'Authentication through Builder ID or IAM Identity Center detected. '
             ) + errorMessage
     }
-    const acceptMessage = localize('aws.appBuilder.deploy.authModal.accept', 'Authenticate with IAM credentials')
+    const authPrompt = localize('aws.appBuilder.deploy.authModal.accept', 'Authenticate with IAM credentials')
     const modalResponse = await showMessageWithUrl(
         errorMessage,
         credentialHelpUrl,
         localizedText.viewDocs,
         'info',
-        [acceptMessage],
+        [authPrompt],
         true
     )
-    if (modalResponse !== acceptMessage) {
+    if (modalResponse !== authPrompt) {
         return
     }
     await promptAndUseConnection(Auth.instance, 'iam-only')
