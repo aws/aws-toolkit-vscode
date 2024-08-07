@@ -603,9 +603,6 @@ export function getJobStatisticsHtml(jobStatistics: any) {
     return htmlString
 }
 
-export const getBillingString = (linesOfCode: number): string =>
-    CodeWhispererConstants.codeTransformBillingText(linesOfCode)
-
 export async function getTransformationPlan(jobId: string) {
     let response = undefined
     try {
@@ -648,7 +645,7 @@ export async function getTransformationPlan(jobId: string) {
             jobStatistics.find((stat: { name: string; value: string }) => stat.name === 'linesOfCode').value
         )
         if (authType === 'iamIdentityCenter' && linesOfCode > CodeWhispererConstants.codeTransformLocThreshold) {
-            plan += getBillingString(linesOfCode)
+            plan += CodeWhispererConstants.codeTransformBillingText(linesOfCode)
         }
         plan += `<div style="display: flex;"><div style="flex: 1; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p>${
             CodeWhispererConstants.planIntroductionMessage
