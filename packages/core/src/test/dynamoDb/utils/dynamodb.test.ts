@@ -77,7 +77,7 @@ describe('DynamoDbUtils', () => {
             )
 
             assert.ok(scanTableStub.called)
-            assert.deepEqual(actualResult, getExpectedResult())
+            assert.deepStrictEqual(actualResult, getExpectedResult())
         })
 
         it('Empty result should be handled', async () => {
@@ -97,7 +97,7 @@ describe('DynamoDbUtils', () => {
                 tableContent: [],
                 tableHeader: [],
             }
-            assert.deepEqual(actualResult, expectedResult)
+            assert.deepStrictEqual(actualResult, expectedResult)
         })
     })
 
@@ -142,7 +142,7 @@ describe('DynamoDbUtils', () => {
                 dynamoDbClient
             )
 
-            assert.deepEqual(actualResult, getExpectedResult())
+            assert.deepStrictEqual(actualResult, getExpectedResult())
         })
     })
 
@@ -155,7 +155,7 @@ describe('DynamoDbUtils', () => {
                 partitionKey: { name: 'PK', dataType: 'S' },
                 sortKey: { name: 'SK', dataType: 'S' },
             }
-            assert.deepEqual(actualResult, expectedResult)
+            assert.deepStrictEqual(actualResult, expectedResult)
         })
     })
 })
