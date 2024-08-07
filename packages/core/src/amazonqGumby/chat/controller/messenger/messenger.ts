@@ -9,7 +9,6 @@
  */
 
 import { AuthFollowUpType, AuthMessageDataMap } from '../../../../amazonq/auth/model'
-import { ChatItemType } from '../../../../amazonqFeatureDev/models'
 import { JDKVersion, TransformationCandidateProject, transformByQState } from '../../../../codewhisperer/models/model'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import * as CodeWhispererConstants from '../../../../codewhisperer/models/constants'
@@ -28,6 +27,7 @@ import {
 import { ChatItemButton, ChatItemFormItem } from '@aws/mynah-ui/dist/static'
 import MessengerUtils, { ButtonActions } from './messengerUtils'
 import DependencyVersions from '../../../models/dependencies'
+import { ChatItemType } from '../../../../amazonq/commons/model'
 
 export type StaticTextResponseType =
     | 'transform'

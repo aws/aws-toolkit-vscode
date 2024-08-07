@@ -39,17 +39,14 @@ export function init(appContext: AmazonQAppInitContext) {
 
     new GumbyController(gumbyChatControllerEventEmitters, messenger, appContext.onDidChangeAmazonQVisibility.event)
 
-    const featureDevChatUIInputEventEmitter = new vscode.EventEmitter<any>()
+    const gumbyChatUIInputEventEmitter = new vscode.EventEmitter<any>()
 
     new UIMessageListener({
         chatControllerEventEmitters: gumbyChatControllerEventEmitters,
-        webViewMessageListener: new MessageListener<any>(featureDevChatUIInputEventEmitter),
+        webViewMessageListener: new MessageListener<any>(gumbyChatUIInputEventEmitter),
     })
 
-    appContext.registerWebViewToAppMessagePublisher(
-        new MessagePublisher<any>(featureDevChatUIInputEventEmitter),
-        'gumby'
-    )
+    appContext.registerWebViewToAppMessagePublisher(new MessagePublisher<any>(gumbyChatUIInputEventEmitter), 'gumby')
 
     const debouncedEvent = debounce(async () => {
         const authenticated = (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'
