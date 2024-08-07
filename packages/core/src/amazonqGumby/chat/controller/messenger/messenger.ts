@@ -9,7 +9,6 @@
  */
 
 import { AuthFollowUpType, AuthMessageDataMap } from '../../../../amazonq/auth/model'
-import { ChatItemType } from '../../../../amazonqFeatureDev/models'
 import { JDKVersion, TransformationCandidateProject, transformByQState } from '../../../../codewhisperer/models/model'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import * as CodeWhispererConstants from '../../../../codewhisperer/models/constants'
@@ -28,6 +27,7 @@ import {
 import { ChatItemButton, ChatItemFormItem } from '@aws/mynah-ui/dist/static'
 import MessengerUtils, { ButtonActions } from './messengerUtils'
 import DependencyVersions from '../../../models/dependencies'
+import { ChatItemType } from '../../../../amazonq/commons/model'
 
 export type StaticTextResponseType =
     | 'transform'
@@ -45,8 +45,6 @@ export type UnrecoverableErrorType =
     | 'unsupported-source-jdk-version'
     | 'upload-to-s3-failed'
     | 'job-start-failed'
-
-export type ErrorResponseType = 'no-alternate-dependencies-found'
 
 export enum GumbyNamedMessages {
     COMPILATION_PROGRESS_MESSAGE = 'gumbyProjectCompilationMessage',
@@ -356,15 +354,7 @@ export class Messenger {
      * informational purposes, or some other error workflow is meant to contribute a
      * follow-up with a user action.
      */
-    public sendKnownErrorResponse(type: ErrorResponseType, tabID: string) {
-        let message = '...'
-
-        switch (type) {
-            case 'no-alternate-dependencies-found':
-                message = `I could not find any other versions of this dependency in your local Maven repository. Try transforming the dependency to make it compatible with Java 17, and then try transforming this module again.`
-                break
-        }
-
+    public sendKnownErrorResponse(tabID: string, message: string) {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {

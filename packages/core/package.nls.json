@@ -306,6 +306,7 @@
     "AWS.amazonq.featureDev.pillText.sendFeedback": "Send feedback",
     "AWS.amazonq.featureDev.pillText.selectFiles": "Select files for context",
     "AWS.amazonq.featureDev.pillText.retry": "Retry",
+    "AWS.amazonq.featureDev.pillText.writeNewPrompt": "Write a new prompt",
     "AWS.amazonq.featureDev.pillText.reauthenticate": "Follow instructions to re-authenticate ...",
     "AWS.amazonq.featureDev.pillText.closeSession": "Close session",
     "AWS.amazonq.featureDev.pillText.selectOption": "Select an option above to proceed",
