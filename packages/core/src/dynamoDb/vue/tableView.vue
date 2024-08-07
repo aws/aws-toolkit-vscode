@@ -22,31 +22,51 @@
                 </vscode-panel-view>
                 <vscode-panel-view id="view-2">
                     <div class="query-section">
-                        <vscode-text-field id="partitionKey" type="text" placeholder="Enter partition key value"
-                            >Partition key: {{ partitionKey }}
+                        <vscode-text-field
+                            id="partitionKey"
+                            type="text"
+                            placeholder="Enter partition key value"
+                            :value="partitionKeyValue"
+                            @input="(event: any) => (partitionKeyValue = event.target.value)"
+                            ><i>Partition key: </i><b>{{ partitionKey }}</b>
                         </vscode-text-field>
                         <vscode-text-field
                             id="sortKey"
                             v-if="isSortKeyPresent"
                             type="text"
                             placeholder="Enter sort key value"
-                            >Sort key: {{ sortKey }}
+                            ><i>Sort key: </i><b>{{ sortKey }}</b>
                         </vscode-text-field>
                         <div class="run-section">
                             <vscode-button style="background: round" @click="resetFields">Reset</vscode-button>
-                            <vscode-button @click="executeQuery">Run</vscode-button>
+                            <vscode-button :disabled="!partitionKeyValue" @click="executeQuery">Run</vscode-button>
                         </div>
                     </div>
                 </vscode-panel-view>
             </vscode-panels>
         </div>
-        <vscode-divider></vscode-divider>
         <div class="table-section">
             <div v-if="isLoading" class="progress-container">
                 <vscode-progress-ring></vscode-progress-ring>
             </div>
-            <vscode-data-grid id="datagrid" generate-header="sticky" aria-label="Sticky Header" :key="pageNumber">
-                {{ updateTableSection(dynamoDbTableData) }}
+            <vscode-data-grid id="datagrid" aria-label="Sticky Header" :key="pageNumber">
+                <vscode-data-grid-row row-type="sticky-header">
+                    <vscode-data-grid-cell
+                        cell-type="columnheader"
+                        v-for="(column, index) in dynamoDbTableData.tableHeader"
+                        :grid-column="index + 1"
+                        >{{ column.title }}</vscode-data-grid-cell
+                    >
+                </vscode-data-grid-row>
+                <vscode-data-grid-row
+                    v-for="row in dynamoDbTableData.tableContent"
+                    @contextmenu.prevent="showContextMenu($event, row)"
+                >
+                    <vscode-data-grid-cell v-for="(key, index) in Object.keys(row)" :grid-column="index + 1">{{
+                        row[key]
+                    }}</vscode-data-grid-cell>
+                </vscode-data-grid-row>
+                <!-- {{ updateTableSection(dynamoDbTableData) }} -->
             </vscode-data-grid>
         </div>
     </div>
@@ -81,6 +101,7 @@ export default defineComponent({
             isLoading: true,
             partitionKey: '',
             sortKey: '',
+            partitionKeyValue: '',
         }
     },
     async created() {
@@ -165,13 +186,21 @@ export default defineComponent({
         async executeQuery() {
             let sortKeyElement = document.getElementById('sortKey')
             let partitionKeyElement = document.getElementById('partitionKey')
-
+            let sortKeyValue = ''
+            if (sortKeyElement) {
+                sortKeyValue = (sortKeyElement as any).value
+            }
             const queryRequest = {
                 partitionKey: (partitionKeyElement as any).value,
-                sortKey: (sortKeyElement as any).value,
+                sortKey: sortKeyValue,
             }
             this.updatePageNumber()
             this.dynamoDbTableData = await client.queryData(queryRequest)
+        },
+
+        showContextMenu(event: any, row: any) {
+            console.log(event)
+            console.log(row)
         },
     },
 })
