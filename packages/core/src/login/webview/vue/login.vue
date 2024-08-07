@@ -484,7 +484,7 @@ export default defineComponent({
             if (this.startUrl && !validateSsoUrlFormat(this.startUrl)) {
                 this.startUrlError =
                     'URLs must start with http:// or https://. Example: https://d-xxxxxxxxxx.awsapps.com/start'
-            } else if (this.startUrl && this.existingStartUrls.some((url) => url === this.startUrl)) {
+            } else if (this.startUrl && this.existingStartUrls.some(url => url === this.startUrl)) {
                 this.startUrlError =
                     'A connection for this start URL already exists. Sign out before creating a new one.'
             } else {
@@ -520,7 +520,7 @@ export default defineComponent({
             // to reuse connections in AWS Toolkit & Amazon Q
             const sharedConnections = await client.fetchConnections()
             sharedConnections
-                ?.filter((c) => !this.existingStartUrls.includes(c.startUrl))
+                ?.filter(c => !this.existingStartUrls.includes(c.startUrl))
                 .forEach((connection, index) => {
                     this.importedLogins.push({
                         id: LoginOption.IMPORTED_LOGINS + index,
@@ -535,7 +535,7 @@ export default defineComponent({
             this.$forceUpdate()
         },
         async updateExistingStartUrls() {
-            this.existingStartUrls = (await client.listSsoConnections()).map((conn) => conn.startUrl)
+            this.existingStartUrls = (await client.listSsoConnections()).map(conn => conn.startUrl)
         },
         async getDefaultStartUrl() {
             return await client.getDefaultStartUrl()
