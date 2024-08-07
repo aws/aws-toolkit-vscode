@@ -785,7 +785,7 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
         return false
     }
 
-    if (isVSCodeProxyError(err) || isSocketTimeoutError(err)) {
+    if (isVSCodeProxyError(err) || isSocketTimeoutError(err) || isNonJsonHttpResponse(err)) {
         return true
     }
 
@@ -829,6 +829,16 @@ function isVSCodeProxyError(err: Error): boolean {
  */
 function isSocketTimeoutError(err: Error): boolean {
     return err.name === 'TimeoutError' && err.message.includes('Connection timed out after')
+}
+
+/**
+ * Expected JSON response from HTTP request, but got an error HTML error page instead.
+ *
+ * Example error message:
+ * "Unexpected token '<', "<html><bod"... is not valid JSON Deserialization error: to see the raw response, inspect the hidden field {error}.$response on this object."
+ */
+function isNonJsonHttpResponse(err: Error): boolean {
+    return (err.name === 'SyntaxError' || err.name === 'SyntaxError') && err.message.includes('Unexpected token')
 }
 
 /**

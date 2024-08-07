@@ -492,6 +492,9 @@ describe('util', function () {
             false,
             'Incorrectly indicated as network error'
         )
+        const err = new Error("Unexpected token '<'")
+        err.name = 'SyntaxError'
+        assert.deepStrictEqual(isNetworkError(err), false, 'Incorrectly indicated as network error')
     })
 
     it('scrubNames()', async function () {
