@@ -29,7 +29,7 @@ import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import { isWeb } from '../../shared/extensionGlobals'
 
-export function createAutoSuggestions(pause: boolean): DataQuickPickItem<'autoSuggestions'> {
+export function createAutoSuggestions(running: boolean): DataQuickPickItem<'autoSuggestions'> {
     const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Auto-Suggestions')
     const iconResume = getIcon('vscode-debug-start')
     const labelPause = localize('AWS.codewhisperer.pauseCodeWhispererNode.label', 'Pause Auto-Suggestions')
@@ -37,13 +37,13 @@ export function createAutoSuggestions(pause: boolean): DataQuickPickItem<'autoSu
 
     return {
         data: 'autoSuggestions',
-        label: pause ? codicon`${iconPause} ${labelPause}` : codicon`${iconResume} ${labelResume}`,
-        description: pause ? 'Currently RUNNING' : 'Currently PAUSED',
+        label: running ? codicon`${iconPause} ${labelPause}` : codicon`${iconResume} ${labelResume}`,
+        description: running ? 'Currently RUNNING' : 'Currently PAUSED',
         onClick: () => toggleCodeSuggestions.execute(placeholder, cwQuickPickSource),
     } as DataQuickPickItem<'autoSuggestions'>
 }
 
-export function createAutoScans(pause: boolean): DataQuickPickItem<'autoScans'> {
+export function createAutoScans(running: boolean): DataQuickPickItem<'autoScans'> {
     const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Auto-Scans')
     const iconResume = getIcon('vscode-debug-alt')
     const labelPause = localize('AWS.codewhisperer.pauseCodeWhispererNode.label', 'Pause Auto-Scans')
@@ -52,8 +52,8 @@ export function createAutoScans(pause: boolean): DataQuickPickItem<'autoScans'> 
 
     return {
         data: 'autoScans',
-        label: pause ? codicon`${iconPause} ${labelPause}` : codicon`${iconResume} ${labelResume}`,
-        description: monthlyQuotaExceeded ? 'Monthly quota exceeded' : pause ? 'RUNNING' : 'PAUSED',
+        label: running ? codicon`${iconPause} ${labelPause}` : codicon`${iconResume} ${labelResume}`,
+        description: monthlyQuotaExceeded ? 'Monthly quota exceeded' : running ? 'RUNNING' : 'PAUSED',
         onClick: () => toggleCodeScans.execute(placeholder, cwQuickPickSource),
     } as DataQuickPickItem<'autoScans'>
 }

@@ -85,7 +85,7 @@ VS Code window, in the background it is running in a Browser context.
 
 ## Adding Web mode specific npm modules
 
-If you need to manage npm modules required for Web mode, such as a [browserfied module](https://www.npmjs.com/package/os-browserify), see [the documentation here](../packages/core/src/web/README.md).
+If you need to manage npm modules required for Web mode, such as a [browserfied module](https://www.npmjs.com/package/os-browserify), see [the documentation here](../packages/core/src/web/README.md#packagejson).
 
 ## Finding incompatible transitive dependencies
 

@@ -34,6 +34,8 @@ import { isAwsError } from '../../../shared/errors'
 import { ChatMessageInteractionType } from '../../../codewhisperer/client/codewhispereruserclient'
 import { supportedLanguagesList } from '../chat/chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
+import { undefinedIfEmpty } from '../../../shared'
 
 export function logSendTelemetryEventFailure(error: any) {
     let requestId: string | undefined
@@ -258,6 +260,7 @@ export class CWCTelemetryHelper {
                         acceptedLineCount: event.cwsprChatAcceptedNumberOfLines,
                         acceptedSnippetHasReference: false,
                         hasProjectLevelContext: this.responseWithProjectContext.get(event.cwsprChatMessageId),
+                        customizationArn: undefinedIfEmpty(getSelectedCustomization().arn),
                     },
                 },
             })
@@ -359,6 +362,9 @@ export class CWCTelemetryHelper {
         }
 
         telemetry.amazonq_addMessage.emit(event)
+        const language = this.isProgrammingLanguageSupported(triggerPayload.fileLanguage)
+            ? { languageName: triggerPayload.fileLanguage as string }
+            : undefined
         codeWhispererClient
             .sendTelemetryEvent({
                 telemetryEvent: {
@@ -367,9 +373,7 @@ export class CWCTelemetryHelper {
                         messageId: event.cwsprChatMessageId,
                         userIntent: triggerPayload.userIntent,
                         hasCodeSnippet: event.cwsprChatHasCodeSnippet,
-                        programmingLanguage: this.isProgrammingLanguageSupported(triggerPayload.fileLanguage)
-                            ? { languageName: triggerPayload.fileLanguage as string }
-                            : undefined,
+                        ...(language !== undefined ? { programmingLanguage: language } : {}),
                         activeEditorTotalCharacters: event.cwsprChatActiveEditorTotalCharacters,
                         timeToFirstChunkMilliseconds: event.cwsprChatTimeToFirstChunk,
                         timeBetweenChunks: this.getResponseStreamTimeBetweenChunks(message.tabID),
@@ -380,6 +384,7 @@ export class CWCTelemetryHelper {
                         hasProjectLevelContext: triggerPayload.relevantTextDocuments
                             ? triggerPayload.relevantTextDocuments.length > 0
                             : false,
+                        customizationArn: undefinedIfEmpty(getSelectedCustomization().arn),
                     },
                 },
             })

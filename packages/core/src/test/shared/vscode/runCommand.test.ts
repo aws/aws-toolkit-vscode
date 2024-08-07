@@ -110,13 +110,10 @@ describe('runCommand', function () {
 
             const pat = (() => {
                 switch (os.platform()) {
-                    case 'linux':
-                        // vscode error not raised on linux? 💩
-                        return /EISDIR: illegal operation on a directory/
                     case 'win32':
                         return /EPERM: operation not permitted/
                     default:
-                        return /EEXIST: file already exists/
+                        return /EISDIR: illegal operation on a directory/
                 }
             })()
             await runAndWaitForMessage(pat, async () => {

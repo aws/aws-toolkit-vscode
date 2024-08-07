@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import request, { RequestError } from '../../common/request'
+import request, { RequestError } from '../../shared/request'
 import { getLogger } from '../../shared/logger/logger'
 import { featureName } from '../constants'
 

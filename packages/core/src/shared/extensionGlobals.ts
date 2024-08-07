@@ -134,6 +134,8 @@ function proxyGlobals(globals_: ToolkitGlobals): ToolkitGlobals {
 let globals = proxyGlobals(resolveGlobalsObject())
 
 export function checkDidReload(context: ExtensionContext): boolean {
+    // TODO: fix this
+    // eslint-disable-next-line aws-toolkits/no-banned-usages
     return !!context.globalState.get<string>('ACTIVATION_LAUNCH_PATH_KEY')
 }
 
@@ -147,6 +149,7 @@ export function initialize(context: ExtensionContext, isWeb: boolean = false): T
         context,
         clock: copyClock(),
         didReload: checkDidReload(context),
+        // eslint-disable-next-line aws-toolkits/no-banned-usages
         globalState: new GlobalState(context.globalState),
         manifestPaths: {} as ToolkitGlobals['manifestPaths'],
         visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],

@@ -43,11 +43,11 @@ import { getLogger } from '../../../shared/logger/logger'
 import { triggerPayloadToChatRequest } from './chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
-import { randomUUID } from '../../../common/crypto'
+import { randomUUID } from '../../../shared/crypto'
 import { LspController } from '../../../amazonq/lsp/lspController'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
-import { getHttpStatusCode } from '../../../shared/errors'
+import { getHttpStatusCode, getReasonFromSyntaxError } from '../../../shared/errors'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -298,24 +298,7 @@ export class ChatController {
             errorMessage = e.toUpperCase()
         } else if (e instanceof SyntaxError) {
             // Workaround to handle case when LB returns web-page with error and our client doesn't return proper exception
-            // eslint-disable-next-line no-prototype-builtins
-            if (e.hasOwnProperty('$response')) {
-                type exceptionKeyType = keyof typeof e
-                const responseKey = '$response' as exceptionKeyType
-                const response = e[responseKey]
-
-                let reason
-
-                if (response) {
-                    type responseKeyType = keyof typeof response
-                    const reasonKey = 'reason' as responseKeyType
-                    reason = response[reasonKey]
-                }
-
-                errorMessage = reason ? (reason as string) : defaultMessage
-            } else {
-                errorMessage = defaultMessage
-            }
+            errorMessage = getReasonFromSyntaxError(e) ?? defaultMessage
         } else if (e instanceof CodeWhispererStreamingServiceException) {
             errorMessage = e.message
             requestID = e.$metadata.requestId

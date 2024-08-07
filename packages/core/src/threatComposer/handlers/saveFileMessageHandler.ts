@@ -57,7 +57,7 @@ export async function saveFileMessageHandler(request: SaveFileRequestMessage, co
                         throw new Error('Document has been modified externally')
                     }
 
-                    void vscode.window.showInformationMessage('Threat Composer JSON has bees saved')
+                    void vscode.window.showInformationMessage('Threat Composer JSON has been saved')
 
                     saveCompleteSubType = SaveCompleteSubType.SAVED
                 } else {

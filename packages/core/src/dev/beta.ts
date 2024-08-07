@@ -22,7 +22,6 @@ import { CancellationError } from '../shared/utilities/timeoutUtils'
 const localize = nls.loadMessageBundle()
 
 const downloadIntervalMs = 1000 * 60 * 60 * 24 // A day in milliseconds
-const betaToolkitKey = 'dev.beta'
 
 interface BetaToolkit {
     readonly needUpdate: boolean
@@ -30,12 +29,12 @@ interface BetaToolkit {
 }
 
 function getBetaToolkitData(vsixUrl: string): BetaToolkit | undefined {
-    return globals.context.globalState.get<Record<string, BetaToolkit>>(betaToolkitKey, {})[vsixUrl]
+    return globals.globalState.tryGet<Record<string, BetaToolkit>>('dev.beta', Object, {})[vsixUrl]
 }
 
 async function updateBetaToolkitData(vsixUrl: string, data: BetaToolkit) {
-    await globals.context.globalState.update(betaToolkitKey, {
-        ...globals.context.globalState.get<Record<string, BetaToolkit>>(betaToolkitKey, {}),
+    await globals.globalState.update('dev.beta', {
+        ...globals.globalState.get<Record<string, BetaToolkit>>('dev.beta', {}),
         [vsixUrl]: data,
     })
 }

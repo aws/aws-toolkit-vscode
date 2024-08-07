@@ -10,7 +10,7 @@ import * as crypto from 'crypto'
 import { getLogger } from '../../shared/logger/logger'
 import { CurrentWsFolders, collectFilesForIndex } from '../../shared/utilities/workspaceUtils'
 import fetch from 'node-fetch'
-import request from '../../common/request'
+import request from '../../shared/request'
 import { LspClient } from './lspClient'
 import AdmZip from 'adm-zip'
 import { RelevantTextDocument } from '@amzn/codewhisperer-streaming'
@@ -67,7 +67,7 @@ export interface Manifest {
 }
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = ['0.1.2']
+const supportedLspServerVersions = ['0.1.3']
 
 const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
 /*

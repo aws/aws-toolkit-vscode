@@ -70,7 +70,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         if (this.lastClickedButton === 'job history') {
             this._view!.webview.html = this.showJobHistory()
         } else {
-            this.showPlanProgress(Date.now())
+            this.showPlanProgress(globals.clock.Date.now())
                 .then((jobPlanProgress) => {
                     this._view!.webview.html = jobPlanProgress
                 })

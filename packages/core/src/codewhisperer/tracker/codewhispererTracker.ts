@@ -15,6 +15,8 @@ import { InsertedCode } from '../../codewhispererChat/controllers/chat/model'
 import { codeWhispererClient } from '../client/codewhisperer'
 import { logSendTelemetryEventFailure } from '../../codewhispererChat/controllers/chat/telemetryHelper'
 import { Timeout } from '../../shared/utilities/timeoutUtils'
+import { getSelectedCustomization } from '../util/customizationUtil'
+import { undefinedIfEmpty } from '../../shared'
 
 /**
  * This singleton class is mainly used for calculating the percentage of user modification.
@@ -88,6 +90,7 @@ export class CodeWhispererTracker {
 
     public async emitTelemetryOnSuggestion(suggestion: AcceptedSuggestionEntry | InsertedCode) {
         let percentage = 1.0
+
         try {
             if (suggestion.fileUrl?.scheme !== '') {
                 const document = await vscode.workspace.openTextDocument(suggestion.fileUrl)
@@ -118,6 +121,7 @@ export class CodeWhispererTracker {
                                 conversationId: event.cwsprChatConversationId,
                                 messageId: event.cwsprChatMessageId,
                                 modificationPercentage: event.cwsprChatModificationPercentage,
+                                customizationArn: undefinedIfEmpty(getSelectedCustomization().arn),
                             },
                         },
                     })

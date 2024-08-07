@@ -18,15 +18,30 @@ coverage:
             codewhisperer:
                 target: 70%
                 paths:
-                    - src/codewhisperer/*
+                    - packages/core/src/codewhisperer/*
                 flags:
                     - 'codewhisperer'
             amazonqFeatureDev:
                 target: 70%
                 paths:
-                    - src/amazonqFeatureDev/*
+                    - packages/core/src/amazonqFeatureDev/*
                 flags:
                     - 'amazonqFeatureDev'
+            amazonqGumby:
+                paths:
+                    - packages/core/src/amazonqGumby/*
+            codewhispererChat:
+                paths:
+                    - packages/core/src/codewhispererChat/*
+            applicationcomposer:
+                paths:
+                    - packages/core/src/applicationcomposer/*
+            stepFunctions:
+                paths:
+                    - packages/core/src/stepFunctions/*
+            threatComposer:
+                paths:
+                    - packages/core/src/threatComposer/*
         patch: no
         changes: no
 

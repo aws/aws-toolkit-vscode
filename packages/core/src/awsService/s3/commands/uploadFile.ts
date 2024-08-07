@@ -437,7 +437,7 @@ export async function promptUserForBucket(
         }
     })
 
-    const lastTouchedFolder = globals.context.globalState.get<SavedFolder | undefined>('aws.lastTouchedS3Folder')
+    const lastTouchedFolder = globals.globalState.tryGet<SavedFolder>('aws.lastTouchedS3Folder', Object)
     let lastFolderItem: BucketQuickPickItem | undefined = undefined
     if (lastTouchedFolder) {
         lastFolderItem = {
@@ -448,7 +448,7 @@ export async function promptUserForBucket(
         }
     }
 
-    const lastUploadedToFolder = globals.context.globalState.get<SavedFolder | undefined>('aws.lastUploadedToS3Folder')
+    const lastUploadedToFolder = globals.globalState.tryGet<SavedFolder>('aws.lastUploadedToS3Folder', Object)
     let lastUploadedFolderItem: BucketQuickPickItem | undefined = undefined
     if (lastUploadedToFolder) {
         lastUploadedFolderItem = {

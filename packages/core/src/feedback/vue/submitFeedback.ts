@@ -11,6 +11,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { VueWebview, VueWebviewPanel } from '../../webviews/main'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { Commands, RegisteredCommand, VsCodeCommandArg, placeholder } from '../../shared/vscode/commands2'
+import { i18n } from '../../shared/i18n-helper'
 
 export interface FeedbackMessage {
     comment: string
@@ -87,7 +88,7 @@ export function submitFeedback(_: VsCodeCommandArg, id: FeedbackId, commentData?
             'Attempted to access "submitFeedback" command, but it was never initialized.' +
                 '\nThis should be initialized during extension activation.'
         )
-        throw new Error("'submitFeedback' command was called programmitically, but its not registered.")
+        throw new Error(i18n('AWS.amazonq.featureDev.error.submitFeedback'))
     }
     return _submitFeedback.execute(_, id, commentData)
 }

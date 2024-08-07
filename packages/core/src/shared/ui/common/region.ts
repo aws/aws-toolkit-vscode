@@ -27,13 +27,12 @@ export function createRegionPrompter(
     regions = globals.regionProvider.getRegions(),
     options: RegionPrompterOptions = {}
 ): QuickPickPrompter<Region> {
-    const lastRegionKey = 'lastSelectedRegion'
     const defaultRegion = options.defaultRegion ?? globals.regionProvider.defaultRegionId
     const filteredRegions = regions.filter(
         (r) => !options.serviceFilter || globals.regionProvider.isServiceInRegion(options.serviceFilter, r.id)
     )
 
-    const lastRegion = globals.context.globalState.get<Region>(lastRegionKey)
+    const lastRegion = globals.globalState.tryGet<Region>('lastSelectedRegion', Object)
     const items = filteredRegions.map((region) => ({
         label: region.name,
         detail: region.id,
@@ -60,9 +59,7 @@ export function createRegionPrompter(
 
     return prompter.transform((item) => {
         getLogger().debug('createRegionPrompter: selected %O', item)
-        globals.context.globalState.update(lastRegionKey, item).then(undefined, (e) => {
-            getLogger().error('globalState.update() failed: %s', (e as Error).message)
-        })
+        globals.globalState.tryUpdate('lastSelectedRegion', item)
         return item
     })
 }

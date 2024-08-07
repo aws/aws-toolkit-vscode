@@ -9,7 +9,7 @@ import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
-import { resetDebugArtifacts, stopTransformByQ } from '../../../codewhisperer/commands/startTransformByQ'
+import { parseBuildFile, stopTransformByQ } from '../../../codewhisperer/commands/startTransformByQ'
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
@@ -36,6 +36,7 @@ import {
     getOpenProjects,
 } from '../../../codewhisperer/service/transformByQ/transformProjectValidationHandler'
 import { TransformationCandidateProject, ZipManifest } from '../../../codewhisperer/models/model'
+import globals from '../../../shared/extensionGlobals'
 
 describe('transformByQ', function () {
     let tempDir: string
@@ -235,7 +236,7 @@ describe('transformByQ', function () {
             })
         })
 
-        const tempFileName = `testfile-${Date.now()}.zip`
+        const tempFileName = `testfile-${globals.clock.Date.now()}.zip`
         transformByQState.setProjectPath(tempDir)
         return zipCode({
             dependenciesFolder: {
@@ -245,8 +246,8 @@ describe('transformByQ', function () {
             humanInTheLoopFlag: false,
             modulePath: tempDir,
             zipManifest: new ZipManifest(),
-        }).then((zipFile) => {
-            const zip = new AdmZip(zipFile)
+        }).then((zipCodeResult) => {
+            const zip = new AdmZip(zipCodeResult.tempFilePath)
             const dependenciesToUpload = zip.getEntries().filter((entry) => entry.entryName.startsWith('dependencies'))
             // Each dependency version folder contains each expected file, thus we multiply
             const expectedNumberOfDependencyFiles = m2Folders.length * expectedFilesAfterClean.length
@@ -303,35 +304,15 @@ describe('transformByQ', function () {
         const actual = CodeWhispererConstants.codeTransformBillingText(376)
         assert.strictEqual(actual, expected)
     })
-})
 
-describe('resetDebugArtifacts', () => {
-    it('should remove the directory containing the pre-build log file if it exists', async () => {
+    it(`WHEN parseBuildFile on pom.xml with absolute path THEN absolute path detected`, async function () {
         const dirPath = await createTestWorkspaceFolder()
-        const preBuildLogFilePath = path.join(dirPath.uri.fsPath, 'DummyLog.log')
-        await toFile('', preBuildLogFilePath)
-        transformByQState.setPreBuildLogFilePath(preBuildLogFilePath)
-
-        await resetDebugArtifacts()
-
-        assert.strictEqual(fs.existsSync(preBuildLogFilePath), false)
-        assert.strictEqual(transformByQState.getPreBuildLogFilePath(), '')
-    })
-
-    it('should not remove any directory if the pre-build log file path is not set', async () => {
-        transformByQState.setPreBuildLogFilePath('')
-
-        await resetDebugArtifacts()
-
-        assert.strictEqual(transformByQState.getPreBuildLogFilePath(), '')
-    })
-
-    it('should not remove any directory if the pre-build log file does not exist', async () => {
-        const preBuildLogFilePath = 'non/existent/path/to/pre-build.log'
-        transformByQState.setPreBuildLogFilePath(preBuildLogFilePath)
-
-        await resetDebugArtifacts()
-
-        assert.strictEqual(transformByQState.getPreBuildLogFilePath(), '')
+        transformByQState.setProjectPath(dirPath.uri.fsPath)
+        const pomPath = path.join(dirPath.uri.fsPath, 'pom.xml')
+        await toFile('<project><properties><path>system/name/here</path></properties></project>', pomPath)
+        const expectedWarning =
+            'I detected 1 potential absolute file path(s) in your pom.xml file: **system/**. Absolute file paths might cause issues when I build your code. Any errors will show up in the build log.'
+        const warningMessage = await parseBuildFile()
+        assert.strictEqual(expectedWarning, warningMessage)
     })
 })

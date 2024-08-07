@@ -4,21 +4,23 @@
  */
 
 import assert from 'assert'
-import * as vscode from 'vscode'
+import vscode from 'vscode'
 import * as path from 'path'
 import * as utils from 'util'
 import { existsSync, mkdirSync, promises as nodefs, readFileSync, rmSync } from 'fs'
+import nodeFs from 'fs'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
-import fs from '../../../shared/fs/fs'
+import fs, { FileSystem } from '../../../shared/fs/fs'
 import * as os from 'os'
 import { isMinVscode, isWin } from '../../../shared/vscode/env'
 import Sinon from 'sinon'
 import * as extensionUtilities from '../../../shared/extensionUtilities'
-import { PermissionsError, formatError, isFileNotFoundError } from '../../../shared/errors'
+import { PermissionsError, formatError, isFileNotFoundError, scrubNames } from '../../../shared/errors'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import * as testutil from '../../testUtil'
 import globals from '../../../shared/extensionGlobals'
 import { driveLetterRegex } from '../../../shared/utilities/pathUtils'
+import { IdeFileSystem } from '../../../shared/telemetry/telemetry.gen'
 
 describe('FileSystem', function () {
     let fakeContext: vscode.ExtensionContext
@@ -67,10 +69,14 @@ describe('FileSystem', function () {
     })
 
     describe('writeFile()', function () {
-        it('writes a file', async function () {
-            const filePath = createTestPath('myFileName')
-            await fs.writeFile(filePath, 'MyContent')
-            assert.strictEqual(readFileSync(filePath, 'utf-8'), 'MyContent')
+        const opts: { atomic: boolean }[] = [{ atomic: false }, { atomic: true }]
+
+        opts.forEach((opt) => {
+            it(`writes a file (atomic: ${opt.atomic})`, async function () {
+                const filePath = createTestPath('myFileName')
+                await fs.writeFile(filePath, 'MyContent', opt)
+                assert.strictEqual(readFileSync(filePath, 'utf-8'), 'MyContent')
+            })
         })
 
         it('writes a file with encoded text', async function () {
@@ -87,6 +93,49 @@ describe('FileSystem', function () {
             const filePath = createTestPath('dirA/dirB/myFileName.txt')
             await fs.writeFile(filePath, 'MyContent')
             assert.strictEqual(readFileSync(filePath, 'utf-8'), 'MyContent')
+        })
+
+        // We try multiple methods to do an atomic write, but if one fails we want to fallback
+        // to the next method. The following are the different combinations of this when a method throws.
+        const throwCombinations = [
+            { vsc: false, node: false },
+            { vsc: true, node: false },
+            { vsc: true, node: true },
+        ]
+        throwCombinations.forEach((throws) => {
+            it(`still writes a file if one of the atomic write methods fails: ${JSON.stringify(throws)}`, async function () {
+                if (throws.vsc) {
+                    sandbox.stub(fs, 'rename').throws(new Error('Test Error Message VSC'))
+                }
+                if (throws.node) {
+                    sandbox.stub(nodeFs.promises, 'rename').throws(new Error('Test Error Message Node'))
+                }
+                const filePath = createTestPath('myFileName')
+
+                await fs.writeFile(filePath, 'MyContent', { atomic: true })
+
+                assert.strictEqual(readFileSync(filePath, 'utf-8'), 'MyContent')
+                const expectedTelemetry: IdeFileSystem[] = []
+                if (throws.vsc) {
+                    expectedTelemetry.push({
+                        action: 'writeFile',
+                        result: 'Failed',
+                        reason: 'writeFileAtomicVscRename',
+                        reasonDesc: 'Test Error Message VSC',
+                    })
+                }
+                if (throws.node) {
+                    expectedTelemetry.push({
+                        action: 'writeFile',
+                        result: 'Failed',
+                        reason: 'writeFileAtomicNodeRename',
+                        reasonDesc: 'Test Error Message Node',
+                    })
+                }
+                if (expectedTelemetry.length > 0) {
+                    testutil.assertTelemetry('ide_fileSystem', expectedTelemetry)
+                }
+            })
         })
 
         it('throws when existing file + no permission', async function () {
@@ -328,6 +377,78 @@ describe('FileSystem', function () {
         it('throws if no file exists', async function () {
             const filePath = createTestPath('thisDoesNotExist.txt')
             await assert.rejects(() => fs.stat(filePath))
+        })
+    })
+
+    describe('rename()', async () => {
+        it('renames a file', async () => {
+            const oldPath = await makeFile('oldFile.txt', 'hello world')
+            const newPath = path.join(path.dirname(oldPath), 'newFile.txt')
+
+            await fs.rename(oldPath, newPath)
+
+            assert.strictEqual(await fs.readFileAsString(newPath), 'hello world')
+            assert(!existsSync(oldPath))
+            assert.deepStrictEqual(testutil.getMetrics('ide_fileSystem').length, 0)
+        })
+
+        it('renames a folder', async () => {
+            const oldPath = mkTestDir('test')
+            await fs.writeFile(path.join(oldPath, 'file.txt'), 'test text')
+            const newPath = path.join(path.dirname(oldPath), 'newName')
+
+            await fs.rename(oldPath, newPath)
+
+            assert(existsSync(newPath))
+            assert.deepStrictEqual(await fs.readFileAsString(path.join(newPath, 'file.txt')), 'test text')
+            assert(!existsSync(oldPath))
+        })
+
+        it('overwrites if destination exists', async () => {
+            const oldPath = await makeFile('oldFile.txt', 'hello world')
+            const newPath = await makeFile('newFile.txt', 'some content')
+
+            await fs.rename(oldPath, newPath)
+
+            assert.strictEqual(await fs.readFileAsString(newPath), 'hello world')
+            assert(!existsSync(oldPath))
+        })
+
+        it('throws if source does not exist', async () => {
+            const clock = testutil.installFakeClock()
+            try {
+                const oldPath = createTestPath('oldFile.txt')
+                const newPath = createTestPath('newFile.txt')
+
+                const result = fs.rename(oldPath, newPath)
+                await clock.tickAsync(FileSystem.renameTimeoutOpts.timeout)
+                await assert.rejects(result)
+
+                testutil.assertTelemetry('ide_fileSystem', {
+                    action: 'rename',
+                    result: 'Failed',
+                    reason: 'SourceNotExists',
+                    reasonDesc: `After ${FileSystem.renameTimeoutOpts.timeout}ms the source path did not exist: ${scrubNames(oldPath)}`,
+                })
+            } finally {
+                clock.uninstall()
+            }
+        })
+
+        it('source file does not exist at first, but eventually appears', async () => {
+            const oldPath = createTestPath('oldFile.txt')
+            const newPath = createTestPath('newFile.txt')
+
+            const result = fs.rename(oldPath, newPath)
+            // this file is created after the first "exists" check fails, the following check should pass
+            void testutil.toFile('hello world', oldPath)
+            await result
+
+            testutil.assertTelemetry('ide_fileSystem', {
+                action: 'rename',
+                result: 'Succeeded',
+                reason: 'RenameRaceCondition',
+            })
         })
     })
 

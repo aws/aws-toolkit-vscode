@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export * from './indexCommon'
-
+export { activate, shutdown } from './activation'
+export * from './util/authUtil'
 export * from './models/model'
-export * as model from './models/model'
-export * as CodeWhispererConstants from './models/constants'
+export * from './models/constants'
 export * from './commands/basicCommands'
 export * from './commands/types'
 export {
@@ -28,17 +27,8 @@ export type {
     TelemetryEvent,
 } from './client/codewhispereruserclient.d.ts'
 export type { default as CodeWhispererUserClient } from './client/codewhispereruserclient.d.ts'
-export { HumanInTheLoopManager } from './service/transformByQ/humanInTheLoopManager'
-export * from './service/transformByQ/transformApiHandler'
-export {
-    DiffModel,
-    AddedChangeNode,
-    ModifiedChangeNode,
-} from './service/transformByQ/transformationResultsViewProvider'
-export { parseVersionsListFromPomFile } from './service/transformByQ/transformFileHandler'
 export { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
-export { get, set, isInlineCompletionEnabled } from './util/commonUtil'
-export { validateOpenProjects, getOpenProjects } from './service/transformByQ/transformProjectValidationHandler'
+export { isInlineCompletionEnabled } from './util/commonUtil'
 export {
     DefaultCodeWhispererClient,
     Recommendation,
@@ -92,6 +82,7 @@ export * from './util/zipUtil'
 export * from './util/commonUtil'
 export * from './util/supplementalContext/codeParsingUtil'
 export * from './util/supplementalContext/supplementalContextUtil'
+export * from './util/codewhispererSettings'
 export * as supplementalContextUtil from './util/supplementalContext/supplementalContextUtil'
 export * from './service/diagnosticsProvider'
 export * as diagnosticsProvider from './service/diagnosticsProvider'
