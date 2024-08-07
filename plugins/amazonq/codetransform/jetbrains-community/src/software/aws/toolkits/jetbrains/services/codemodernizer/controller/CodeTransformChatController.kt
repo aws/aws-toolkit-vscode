@@ -26,6 +26,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClien
 import software.aws.toolkits.jetbrains.services.codemodernizer.commands.CodeTransformActionMessage
 import software.aws.toolkits.jetbrains.services.codemodernizer.commands.CodeTransformCommand
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.FEATURE_NAME
+import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildAbsolutePathWarning
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildCheckingValidProjectChatContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildCompileHilAlternativeVersionContent
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.buildCompileLocalFailedChatContent
@@ -246,6 +247,16 @@ class CodeTransformChatController(
             updateLastPendingMessage(buildCompileLocalSuccessChatContent())
         }
 
+        // show user a non-blocking warning if their build file contains an absolute path
+        try {
+            val warningMessage = codeModernizerManager.parseBuildFile()
+            if (warningMessage != null) {
+                handleAbsolutePathDetected(warningMessage)
+            }
+        } catch (e: Exception) {
+            // swallow error and move on
+        }
+
         runInEdt {
             codeModernizerManager.runModernize(mavenBuildResult)
         }
@@ -442,6 +453,9 @@ class CodeTransformChatController(
     override suspend fun processBodyLinkClicked(message: IncomingCodeTransformMessage.BodyLinkClicked) {
         BrowserUtil.browse(message.link)
     }
+
+    private suspend fun handleAbsolutePathDetected(warning: String) =
+        codeTransformChatHelper.addNewMessage(buildAbsolutePathWarning(warning))
 
     private suspend fun handleCodeTransformUploadCompleted() {
         codeTransformChatHelper.addNewMessage(buildTransformBeginChatContent())

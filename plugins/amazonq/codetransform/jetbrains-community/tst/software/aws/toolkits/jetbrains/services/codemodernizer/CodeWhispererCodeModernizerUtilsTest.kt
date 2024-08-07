@@ -21,8 +21,10 @@ import software.amazon.awssdk.services.codewhispererruntime.model.Transformation
 import software.amazon.awssdk.services.ssooidc.model.InvalidGrantException
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getBillingText
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getTableMapping
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.parseBuildFile
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.pollTransformationStatusAndPlan
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.refreshToken
+import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
 import java.util.concurrent.atomic.AtomicBoolean
 
 class CodeWhispererCodeModernizerUtilsTest : CodeWhispererCodeModernizerTestBase() {
@@ -204,6 +206,16 @@ class CodeWhispererCodeModernizerUtilsTest : CodeWhispererCodeModernizerTestBase
         val actual = getTableMapping(listOf(step0Update0, step0Update1, step0Update2, step0Update3))
         val expected = mapOf("0" to jobStats, "1" to depChanges, "2" to apiChanges, "-1" to fileChanges)
         assertThat(expected).isEqualTo(actual)
+    }
+
+    @Test
+    fun `parseBuildFile can detect absolute paths in build file`() {
+        val module = projectRule.module
+        val fileText = "<project><properties><path>system/name/here</path></properties></project>"
+        val file = projectRule.fixture.addFileToModule(module, "pom.xml", fileText)
+        val expectedWarning = "I detected 1 potential absolute file path(s) in your pom.xml file: **system/**. " +
+            "Absolute file paths might cause issues when I build your code. Any errors will show up in the build log."
+        assertThat(parseBuildFile(file.virtualFile)).isEqualTo(expectedWarning)
     }
 
     @Test

@@ -10,6 +10,8 @@ import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VirtualFile
 import software.aws.toolkits.core.utils.createParentDirectories
 import software.aws.toolkits.core.utils.exists
+import software.aws.toolkits.core.utils.info
+import software.aws.toolkits.jetbrains.services.codemodernizer.CodeModernizerManager.Companion.LOG
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.HIL_ARTIFACT_DIR_NAME
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.HIL_ARTIFACT_POMFOLDER_DIR_NAME
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.HIL_DEPENDENCY_REPORT_DIR_NAME
@@ -20,6 +22,8 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.constants.HIL_POM
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.HIL_UPLOAD_ZIP_NAME
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.DependencyUpdatesReport
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.MAVEN_CONFIGURATION_FILE_NAME
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.content
+import software.aws.toolkits.resources.message
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.file.Path
@@ -68,6 +72,33 @@ fun findBuildFiles(sourceFolder: File, supportedBuildFileNames: List<String>): L
             // noop, collects the sequence
         }
     return buildFiles
+}
+
+fun parseBuildFile(buildFile: VirtualFile?): String? {
+    val absolutePaths = mutableListOf("users/", "system/", "volumes/", "c:\\", "d:\\")
+    val alias = System.getProperty("user.home").substringAfterLast(File.separator)
+    absolutePaths.add(alias)
+    if (buildFile != null && buildFile.exists()) {
+        val buildFileContents = buildFile.content().lowercase()
+        val detectedPaths: MutableList<String> = mutableListOf()
+        for (path in absolutePaths) {
+            if (buildFileContents.contains(path)) {
+                detectedPaths.add(path)
+            }
+        }
+        if (detectedPaths.size > 0) {
+            val warningMessage =
+                message(
+                    "codemodernizer.chat.message.absolute_path_detected",
+                    detectedPaths.size,
+                    buildFile.name,
+                    detectedPaths.joinToString(", "),
+                )
+            LOG.info { "CodeTransformation: absolute path potentially in build file" }
+            return warningMessage
+        }
+    }
+    return null
 }
 
 /**

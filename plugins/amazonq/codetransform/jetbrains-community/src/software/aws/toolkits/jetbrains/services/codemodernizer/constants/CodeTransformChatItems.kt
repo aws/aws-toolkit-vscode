@@ -290,9 +290,9 @@ fun buildZipUploadFailedChatMessage(failureReason: UploadFailureReason): String 
     return resultMessage
 }
 
-fun buildAuthRestoredMessage() = CodeTransformChatMessageContent(
+fun buildAbsolutePathWarning(warning: String) = CodeTransformChatMessageContent(
     type = CodeTransformChatMessageType.FinalizedAnswer,
-    message = message("codemodernizer.chat.message.reauth_success"),
+    message = warning,
 )
 
 fun buildCompileLocalSuccessChatContent() = CodeTransformChatMessageContent(

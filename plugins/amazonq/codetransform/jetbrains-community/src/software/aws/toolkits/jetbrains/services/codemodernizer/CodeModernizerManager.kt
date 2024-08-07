@@ -70,6 +70,7 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getSupporte
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.isCodeTransformAvailable
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.isGradleProject
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.openTroubleshootingGuideNotificationAction
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.parseBuildFile
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.parseXmlDependenciesReport
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.setDependencyVersionInPom
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.tryGetJdk
@@ -394,6 +395,8 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             handleLocalMavenBuildResult(result)
         }
     }
+
+    fun parseBuildFile(): String? = parseBuildFile(codeTransformationSession?.sessionContext?.configurationFile)
 
     internal suspend fun initModernizationJob(session: CodeModernizerSession, copyResult: MavenCopyCommandsResult): CodeModernizerJobCompletedResult =
         when (val result = session.createModernizationJob(copyResult)) {
