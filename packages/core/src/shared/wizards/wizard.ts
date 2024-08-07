@@ -134,7 +134,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         this._estimator = estimator
     }
 
-    public constructor(private readonly options: WizardOptions<TState> = {}) {
+    public constructor(protected readonly options: WizardOptions<TState> = {}) {
         this.stateController = new StateMachineController(options.initState as TState)
         this.__form = options.initForm ?? new WizardForm()
         this._exitStep =
