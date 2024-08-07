@@ -17,7 +17,7 @@ import { intersection, toMap, updateInPlace } from '../shared/utilities/collecti
 import { once } from '../shared/utilities/functionUtils'
 import { localize } from '../shared/utilities/vsCodeUtils'
 import { RegionNode } from './regionNode'
-import { AuthNode, WalkthroughNode } from '../auth/utils'
+import { AuthNode } from '../auth/utils'
 import { Commands } from '../shared/vscode/commands2'
 
 export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
@@ -103,7 +103,6 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
     }
 
     private readonly getAuthNode = once(() => new TreeShim(new AuthNode(this.auth)))
-    private readonly getWN = once(() => new TreeShim(new WalkthroughNode(this.auth)))
     private async getRootNodes(): Promise<AWSTreeNodeBase[]> {
         const conn = this.auth.activeConnection
         if (conn !== undefined && conn.type !== 'iam') {
@@ -138,7 +137,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
         }
 
         return await makeChildrenNodes({
-            getChildNodes: async () => [this.getAuthNode(), this.getWN(), ...this.regionNodes.values()],
+            getChildNodes: async () => [this.getAuthNode(), ...this.regionNodes.values()],
             sort: (a, b) =>
                 a instanceof TreeShim ? -1 : b instanceof TreeShim ? 1 : a.regionName.localeCompare(b.regionName),
         })

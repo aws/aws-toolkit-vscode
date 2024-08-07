@@ -9,6 +9,16 @@
 			S3
 		</checkbox>
 	</div>
+	<div class="theme-picker-row">
+		<checkbox when-checked="command:aws.toolkit.setWalkthroughToVisual" checked-on="walkthroughSelected == 'Visual'">
+			<img width="200" src="./AppComposer.png"/>
+			New template with visual builder
+		</checkbox>
+		<checkbox when-checked="command:aws.toolkit.setWalkthroughToCustomTemplate" checked-on="walkthroughSelected == 'CustomTemplate'">
+			<img width="200" src="./CustomTemplate.png"/>
+			Use template in workspace
+		</checkbox>
+	</div>
 </checklist>
 <checkbox class="theme-picker-link" when-checked="command:aws.lambda.createNewSamApp" checked-on="false">
 	See more application example...

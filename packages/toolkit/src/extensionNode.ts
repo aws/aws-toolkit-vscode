@@ -18,50 +18,6 @@ import { pipeline } from 'node:stream'
 import { promisify } from 'node:util'
 import * as child_process from 'child_process'
 
-interface IDownloadUrl {
-    page: string
-    arm?: string
-    x86?: string
-}
-
-var downloadUrls: { [id: string]: IDownloadUrl } = {
-    'docker-windows': {
-        page: 'https://docs.docker.com/desktop/install/windows-install/',
-        x86: 'https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe',
-        arm: 'https://desktop.docker.com/win/main/arm64/Docker%20Desktop%20Installer.exe',
-    },
-    'docker-mac': {
-        page: 'https://docs.docker.com/desktop/install/mac-install/',
-        x86: 'https://desktop.docker.com/mac/main/amd64/Docker.dmg',
-        arm: 'https://desktop.docker.com/mac/main/arm64/Docker.dmg',
-    },
-    'docker-ubuntu': { page: 'https://docs.docker.com/desktop/install/ubuntu/' },
-    'docker-debian': { page: 'https://docs.docker.com/desktop/install/debian/' },
-    'docker-redhat': { page: 'https://docs.docker.com/desktop/install/rhel/' },
-    'docker-fedora': { page: 'https://docs.docker.com/desktop/install/fedora/' },
-    'docker-linux': { page: 'https://docs.docker.com/desktop/install/linux-install/' },
-
-    'sam-mac': {
-        page: 'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html',
-        x86: 'https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-macos-x86_64.pkg',
-        arm: 'https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-macos-arm64.pkg',
-    },
-    'sam-windows': {
-        page: 'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html',
-        x86: 'https://github.com/aws/aws-sam-cli/releases/latest/download/AWS_SAM_CLI_64_PY3.msi',
-    },
-    'sam-linux': {
-        page: 'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html',
-    },
-
-    'aws-linux': { page: 'https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html' },
-    'aws-mac': {
-        page: '',
-        x86: 'https://awscli.amazonaws.com/AWSCLIV2.pkg',
-        arm: 'https://awscli.amazonaws.com/AWSCLIV2.pkg',
-    },
-}
-
 const serverlessLandUrl = 'https://serverlessland.com/'
 
 const localize = nls.loadMessageBundle()
@@ -72,57 +28,44 @@ export async function activate(context: ExtensionContext) {
     // after toolkit is activated, ask Amazon Q to register toolkit api callbacks
     await Commands.tryExecute('aws.amazonq.refreshConnectionCallback', awsToolkitApi)
 
-    // Update to global state when selecting
-    Commands.register('aws.toolkit.setWalkthroughToS3', () => () => {
-        vscode.commands.executeCommand('setContext', 'walkthroughSelected', 'S3')
-        context.globalState.update('walkthroughSelected', 'S3')
+    const setWalkthrough = (name: string = 'S3') => {
+        vscode.commands.executeCommand('setContext', 'walkthroughSelected', name)
+        context.globalState.update('walkthroughSelected', name)
+    }
+
+    Commands.register('aws.toolkit.setWalkthroughToAPI', async () => {
+        setWalkthrough('API')
     })
 
-    Commands.register('aws.toolkit.setWalkthroughToAPI', () => () => {
-        vscode.commands.executeCommand('setContext', 'walkthroughSelected', 'API')
-        context.globalState.update('walkthroughSelected', 'API')
+    Commands.register('aws.toolkit.setWalkthroughToS3', async () => {
+        setWalkthrough('S3')
     })
 
-    Commands.register('aws.toolkit.setWalkthroughRuntimeToPython', () => () => {
-        vscode.commands.executeCommand('setContext', 'walkthroughRuntime', 'Python')
-        context.globalState.update('walkthroughRuntime', 'Python')
+    Commands.register('aws.toolkit.setWalkthroughToVisual', async () => {
+        setWalkthrough('Visual')
     })
 
-    Commands.register('aws.toolkit.setWalkthroughRuntimeToNode', () => () => {
-        vscode.commands.executeCommand('setContext', 'walkthroughRuntime', 'Node')
-        context.globalState.update('walkthroughRuntime', 'Node')
+    Commands.register('aws.toolkit.setWalkthroughToCustomTemplate', async () => {
+        setWalkthrough('CustomTemplate')
     })
 
-    Commands.register('aws.toolkit.getWalkthrough', () => () => {
+    Commands.register('aws.toolkit.getWalkthrough', (async) => {
         const walkthroughSelected = context.globalState.get('walkthroughSelected')
         return walkthroughSelected
     })
 
-    Commands.register('aws.toolkit.getRuntime', () => () => {
+    Commands.register('aws.toolkit.getRuntime', (async) => {
         const walkthroughRuntime = context.globalState.get('walkthroughRuntime')
         return walkthroughRuntime
     })
-
-    const installOnMac = async (downloadUrl: URL, packageName: string) => {
-        let date = new Date()
-        const installer_path = `/private/tmp/${packageName}-${date.toISOString().split('T')[0]}.pkg`
-        // const download_url = 'https://awscli.amazonaws.com/AWSCLIV2.pkg'
-
-        const streamPipeline = promisify(pipeline)
-        const response = await fetch(downloadUrl)
-
-        if (!response.ok) throw new Error(`unexpected response ${response.statusText}`)
-
-        await streamPipeline(response.body, createWriteStream(installer_path))
-        child_process.exec(`open ${installer_path}`)
-    }
 
     Commands.register('aws.toolkit.installAWSCLI', async () => {
         // get arch/sys => support win/mac
         //const installer_path = `/private/tmp/AWSCLIV2-${date.toISOString().split('T')[0]}.pkg`;
         // if mac
         const downloadUrl = new URL('https://awscli.amazonaws.com/AWSCLIV2.pkg')
-        await installOnMac(downloadUrl, 'awscli')
+        // To update with installer PR
+        // await installOnMac(downloadUrl, 'awscli')
     })
 
     Commands.register('aws.toolkit.installSAMCLI', async () => {
@@ -131,10 +74,11 @@ export async function activate(context: ExtensionContext) {
         const downloadUrl = new URL(
             'https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-macos-x86_64.pkg'
         )
-        await installOnMac(downloadUrl, 'samcli')
+        // To update with installer PR
+        // await installOnMac(downloadUrl, 'samcli')
     })
 
-    Commands.register('aws.toolkit.getRuntimeQP', async () => {
+    Commands.register('aws.toolkit.getRuntimeQuickPick', async () => {
         const wizard = new (class ExampleWizard extends Wizard<{
             runtime: string
             dir: string

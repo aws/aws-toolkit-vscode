@@ -525,27 +525,6 @@ export class AuthNode implements TreeNode<Auth> {
     }
 }
 
-export class WalkthroughNode implements TreeNode<Auth> {
-    public readonly id = 'walkthrough'
-    public readonly onDidChangeTreeItem = mapEventType(this.resource.onDidChangeActiveConnection)
-
-    public constructor(public readonly resource: Auth) {}
-
-    public getTreeItem() {
-        const itemLabel = 'Learn more with Walkthrough'
-
-        const item = new vscode.TreeItem(itemLabel)
-        item.contextValue = 'awsWalkthroughNode'
-        item.command = {
-            title: 'Open Walkthrough',
-            command: 'workbench.action.openWalkthrough',
-            arguments: ['amazonwebservices.aws-toolkit-vscode#lambdaWelcome'],
-        }
-
-        return item
-    }
-}
-
 export async function hasIamCredentials(
     allConnections = () => Auth.instance.listAndTraverseConnections().promise()
 ): Promise<boolean> {

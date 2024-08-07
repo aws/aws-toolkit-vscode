@@ -3835,235 +3835,53 @@
         ],
         "walkthroughs": [
             {
-                "id": "lambdaWelcome",
+                "id": "aws.gettingStarted.walkthrough",
                 "title": "Build an application with Lambda",
                 "description": "Your quick guide to get you building AWS application visually, iterating locally, and deploying to AWS!",
                 "when": "workspacePlatform != webworker",
                 "steps": [
                     {
-                        "id": "aws-cli",
-                        "title": "Install AWS Cli",
-                        "description": "AWS CLI is a prerequisite for installing SAM CLI \n[Install AWS CLI](command:aws.toolkit.installAWSCLI)\n If installation failed please go to [Installation Page](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)\n Follow [Configure the AWS CLI](https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html) to setup profile required for AWS CLI",
+                        "id": "tool-install",
+                        "title": "Installation",
+                        "description": "AWS CLI is used for... \n\n[Install AWS CLI](command:aws.toolkit.installAWSCLI)\n\n SAM CLI is used for...\n\n[Install SAM CLI](command:aws.toolkit.installSAMCLI)\n\n Docker is optional however if you want to invoke your function locally it is required so that Lambda can locally emulate the execution environment\n\n[Install Docker (optional)](command:aws.toolkit.installinstallDocker)",
                         "media": {
-                            "markdown": "./resources/walkthrough/setup-connect.md"
+                            "image": "./resources/walkthrough/app_builder/install.png",
+                            "altText": "Showing GUI installer"
                         }
                     },
                     {
-                        "id": "1",
-                        "title": "Setup AWS Profile",
-                        "description": "[Connect to AWS](command:aws.toolkit.login)\nTo open the configuration wizard to connect to AWS.\n If you haven't registered an AWS account or having trouble authenticating, please refer to the [User Guide](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/connect.html)\nIf you wish to add more region to AWS toolkit, you can [add more region](command:aws.showRegion)",
-                        "media": {
-                            "markdown": "./resources/walkthrough/setup-connect.md"
-                        },
-                        "completionEvents": [],
-                        "command": "workbench.action.terminal.new"
-                    },
-                    {
-                        "id": "2",
-                        "title": "Install SAM Cli",
-                        "description": "SAM CLI is required to enable working locally with your function (buidling, invoking, deploying) \n[Install SAM CLI](command:aws.toolkit.installSAMCLI)\n If installation failed please go to [Installation Page](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html)",
-                        "media": {
-                            "markdown": "./resources/walkthrough/setup-toolchain.md"
-                        }
-                    },
-                    {
-                        "id": "3",
-                        "title": "Install Docker (Optional)",
-                        "description": "Docker is optional, however it enables local emulation of the Lambda environment that supports local testing and debugging. Docker also enables buidling project with all Lambda supported Runtimes, instead of the Runtimes configured on your local machine. \n[Install Docker](https://docs.docker.com/engine/install/)",
-                        "media": {
-                            "markdown": "./resources/walkthrough/setup-toolchain.md"
-                        }
-                    },
-                    {
-                        "id": "4",
+                        "id": "choose template",
                         "title": "Choose your application template",
-                        "description": "Select an application template, build visually from scratch, open and existing template, or browse more application examples \n[Initialize your project](command:aws.toolkit.getRuntimeQP)",
+                        "description": "Select an application template, visually compose an application from scratch, open an existing template, or browse more application examples \n\n[Initialize your project](command:aws.toolkit.getRuntimeQuickPick)",
                         "media": {
-                            "markdown": "./resources/walkthrough/images/images-lambda/theme_picker.md"
-                        },
-                        "command": "1.[REST API Microservice](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D) \n2.[Image Resizing with S3](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23lambdaWelcome223%22%7D)"
+                            "markdown": "./resources/walkthrough/app_builder/App_picker.md"
+                        }
                     },
                     {
-                        "id": "api1",
-                        "title": "%AWS.toolkit.walkthrough.appComposer.title%",
-                        "when": "walkthroughSelected == 'API'",
-                        "description": "%AWS.toolkit.walkthrough.api.placeholder%",
+                        "id": "step1",
+                        "title": "Iterate locally",
+                        "description": "Build your code changes, invoke/ debug locally, and view your execution results",
                         "media": {
-                            "image": "media/image.png",
+                            "image": "./resources/walkthrough/app_builder/inner-loop.gif",
                             "altText": "Empty image"
                         }
                     },
                     {
-                        "id": "api2",
-                        "title": "%AWS.toolkit.walkthrough.appBuilder.title%",
-                        "when": "walkthroughSelected == 'API'",
-                        "description": "%AWS.toolkit.walkthrough.api.placeholder%",
+                        "id": "step2",
+                        "title": "Deploy to AWS",
+                        "description": "Deploy your template to test your application on AWS. You can remotely invoke your function from within VS Code.",
                         "media": {
-                            "image": "media/image.png",
+                            "image": "./resources/walkthrough/app_builder/outer2.gif",
                             "altText": "Empty image"
                         }
                     },
                     {
-                        "id": "api3",
-                        "title": "%AWS.toolkit.walkthrough.build.title%",
-                        "when": "walkthroughSelected == 'API'",
-                        "description": "%AWS.toolkit.walkthrough.api.placeholder%",
+                        "id": "step3",
+                        "title": "New command palette additions",
+                        "description": "We've added commands for building your template, invoking locally, invoking remotedly, viewing your template in Application Composer, and opending the Getting started Walkthrough.",
                         "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "api4",
-                        "title": "%AWS.toolkit.walkthrough.test.title%",
-                        "when": "walkthroughSelected == 'API'",
-                        "description": "%AWS.toolkit.walkthrough.api.placeholder%",
-                        "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "api5",
-                        "title": "%AWS.toolkit.walkthrough.debug.title%",
-                        "when": "walkthroughSelected == 'API'",
-                        "description": "%AWS.toolkit.walkthrough.api.placeholder%",
-                        "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "api6",
-                        "title": "%AWS.toolkit.walkthrough.deploy.title%",
-                        "when": "walkthroughSelected == 'API'",
-                        "description": "%AWS.toolkit.walkthrough.api.placeholder%",
-                        "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "api7",
-                        "title": "%AWS.toolkit.walkthrough.remoteInovke.title%",
-                        "when": "walkthroughSelected == 'API'",
-                        "description": "%AWS.toolkit.walkthrough.api.placeholder%",
-                        "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "S3-1",
-                        "title": "%AWS.toolkit.walkthrough.appComposer.title%",
-                        "when": "walkthroughSelected == 'S3'",
-                        "description": "%AWS.toolkit.walkthrough.s3.placeholder%",
-                        "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "S3-2",
-                        "title": "%AWS.toolkit.walkthrough.appBuilder.title%",
-                        "when": "walkthroughSelected == 'S3'",
-                        "description": "%AWS.toolkit.walkthrough.s3.placeholder%",
-                        "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "S3-3",
-                        "title": "%AWS.toolkit.walkthrough.build.title%",
-                        "when": "walkthroughSelected == 'S3'",
-                        "description": "%AWS.toolkit.walkthrough.s3.placeholder%",
-                        "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "S3-4",
-                        "title": "%AWS.toolkit.walkthrough.test.title%",
-                        "when": "walkthroughSelected == 'S3'",
-                        "description": "%AWS.toolkit.walkthrough.s3.placeholder%",
-                        "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "S3-5",
-                        "title": "%AWS.toolkit.walkthrough.debug.title%",
-                        "when": "walkthroughSelected == 'S3'",
-                        "description": "%AWS.toolkit.walkthrough.s3.placeholder%",
-                        "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "S3-6",
-                        "title": "%AWS.toolkit.walkthrough.deploy.title%",
-                        "when": "walkthroughSelected == 'S3'",
-                        "description": "%AWS.toolkit.walkthrough.s3.placeholder%",
-                        "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
-                    },
-                    {
-                        "id": "S3-7",
-                        "title": "%AWS.toolkit.walkthrough.remoteInovke.title%",
-                        "when": "walkthroughSelected == 'S3'",
-                        "description": "%AWS.toolkit.walkthrough.s3.placeholder%",
-                        "media": {
-                            "image": "media/image.png",
-                            "altText": "Empty image"
-                        }
-                    }
-                ]
-            },
-            {
-                "id": "lambdaWelcome223",
-                "title": "Lambda Toolkit walkthrough223",
-                "description": "walkthrough toolkit for Lambda, including create stack with applicationComposer, Add Lmabda function, test, build, deploy and debug your Lambda function",
-                "when": "workspacePlatform != webworker",
-                "steps": [
-                    {
-                        "id": "1",
-                        "title": "Setup AWS Profile",
-                        "description": "Click Toolkit extension button on the left bottom, choose to sign in with your AWS credentials\n If you haven't registered an AWS account or having trouble authenticating, please refer to the [User Guide](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/connect.html), [open](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.amazon-q-vscode%23aws.amazonq.walkthrough%22%7D)",
-                        "media": {
-                            "svg": "resources/aws-logo.svg",
-                            "altText": "test"
-                        }
-                    },
-                    {
-                        "id": "2",
-                        "title": "Setup SAM Cli",
-                        "description": "SAM CLI need to be installed to enable working locally with your function and deploying \n[Install SAM CLI](command:toSide:workbench.action.files.newUntitledFile?%7B%22languageId%22%3A%22python%22%7D)",
-                        "media": {
-                            "svg": "resources/amazonq-logo.svg",
-                            "altText": "test2"
-                        }
-                    },
-                    {
-                        "id": "3",
-                        "title": "Setup Docker for Mac",
-                        "description": "SAM CLI need to be installed to enable working locally with your function and deploying \n[Install Docker](command:toSide:workbench.action.files.newUntitledFile?%7B%22languageId%22%3A%22python%22%7D)",
-                        "media": {
-                            "markdown": "resources/walkthrough/install-python-windows-8.md"
-                        }
-                    },
-                    {
-                        "id": "4",
-                        "title": "Learn more",
-                        "description": "Choose one of the following walkthrough to continue learning how to deploy your local project to AWS: \n[]",
-                        "media": {
-                            "svg": "resources/amazonq-logo.svg",
-                            "altText": "test2"
+                            "image": "./resources/walkthrough/app_builder/Quickpick.png",
+                            "altText": "Showing Quickpick options"
                         }
                     }
                 ]
