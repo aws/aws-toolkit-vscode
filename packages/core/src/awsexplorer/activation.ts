@@ -33,6 +33,13 @@ import { isExtensionInstalled } from '../shared/utilities'
 import { CommonAuthViewProvider } from '../login/webview'
 import { setContext } from '../shared'
 import { AppBuilderRootNode } from '../shared/applicationBuilder/explorer/nodes/rootNode'
+import { Wizard } from '../shared/wizards/wizard'
+import { createQuickPick } from '../shared/ui/pickerPrompter'
+import { createCommonButtons } from '../shared/ui/buttons'
+import * as nls from 'vscode-nls'
+
+const localize = nls.loadMessageBundle()
+const serverlessLandUrl = 'https://serverlessland.com/'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -65,6 +72,7 @@ export async function activate(args: {
     globals.context.subscriptions.push(view)
 
     await registerAwsExplorerCommands(args.context, awsExplorer, args.toolkitOutputChannel)
+    await registerAppBuilderCommands(args.context, args.toolkitOutputChannel)
 
     telemetry.vscode_activeRegions.emit({ value: args.regionProvider.getExplorerRegions().length })
 
@@ -216,5 +224,175 @@ async function registerAwsExplorerCommands(
             awsExplorer.refresh(element)
         }),
         loadMoreChildrenCommand.register(awsExplorer)
+    )
+}
+
+/**
+ *
+ * @param context VScode Context
+ * @param toolkitOutputChannel Output channel for logging
+ */
+async function registerAppBuilderCommands(
+    context: ExtContext,
+    toolkitOutputChannel: vscode.OutputChannel
+): Promise<void> {
+    const setWalkthrough = (name: string = 'S3') => {
+        vscode.commands.executeCommand('setContext', 'walkthroughSelected', name)
+        context.extensionContext.globalState.update('walkthroughSelected', name)
+    }
+
+    // recover context variables from global state when activate
+    const walkthroughSelected = context.extensionContext.globalState.get('walkthroughSelected')
+    if (walkthroughSelected != undefined) {
+        vscode.commands.executeCommand('setContext', 'walkthroughSelected', walkthroughSelected)
+    } else {
+        vscode.commands.executeCommand('setContext', 'walkthroughSelected', 'None')
+    }
+
+    context.extensionContext.subscriptions.push(
+        Commands.register('aws.toolkit.setWalkthroughToAPI', async () => {
+            setWalkthrough('API')
+        }),
+        Commands.register('aws.toolkit.setWalkthroughToS3', async () => {
+            setWalkthrough('S3')
+        }),
+        Commands.register('aws.toolkit.setWalkthroughToVisual', async () => {
+            setWalkthrough('Visual')
+        }),
+        Commands.register('aws.toolkit.setWalkthroughToCustomTemplate', async () => {
+            setWalkthrough('CustomTemplate')
+        }),
+        Commands.register('aws.toolkit.getWalkthrough', (async) => {
+            const walkthroughSelected = context.extensionContext.globalState.get('walkthroughSelected')
+            return walkthroughSelected
+        }),
+        Commands.register('aws.toolkit.getRuntime', (async) => {
+            const walkthroughRuntime = context.extensionContext.globalState.get('walkthroughRuntime')
+            return walkthroughRuntime
+        }),
+        Commands.register('aws.toolkit.installAWSCLI', async () => {
+            // get arch/sys => support win/mac
+            //const installer_path = `/private/tmp/AWSCLIV2-${date.toISOString().split('T')[0]}.pkg`;
+            // if mac
+            // const downloadUrl = new URL('https://awscli.amazonaws.com/AWSCLIV2.pkg')
+            // To update with installer PR
+            // await installOnMac(downloadUrl, 'awscli')
+        }),
+        Commands.register('aws.toolkit.installSAMCLI', async () => {
+            // get arch/sys => support win/mac
+            //if mac
+            // const downloadUrl = new URL(
+            //     'https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-macos-x86_64.pkg'
+            // )
+            // To update with installer PR
+            // await installOnMac(downloadUrl, 'samcli')
+        }),
+        Commands.register('aws.toolkit.getRuntimeQuickPick', async () => {
+            const wizard = new (class ExampleWizard extends Wizard<{
+                runtime: string
+                dir: string
+            }> {
+                public constructor() {
+                    super()
+                    const form = this.form
+
+                    // step1: choose runtime
+                    const items = [
+                        { label: 'Python', data: 'python' },
+                        { label: 'Node JS', data: 'node' },
+                        { label: 'Java', data: 'java' },
+                        { label: 'Dot Net', data: 'dotnet' },
+                    ]
+                    form.runtime.bindPrompter(() => {
+                        return createQuickPick(items, {
+                            title: localize('AWS.toolkit.walkthrough.selectruntime', 'Select a runtime'),
+                            buttons: createCommonButtons(serverlessLandUrl),
+                        })
+                    })
+
+                    // step2: choose location for project
+                    const wsFolders = vscode.workspace.workspaceFolders
+                    const items2 = [
+                        {
+                            label: localize('AWS.toolkit.walkthrough.openexplorer', 'Open file explorer'),
+                            data: 'file-selector',
+                        },
+                    ]
+
+                    // if at least one open workspace, add all opened workspace as options
+                    if (wsFolders) {
+                        for (var wsFolder of wsFolders) {
+                            items2.push({ label: wsFolder.uri.fsPath, data: wsFolder.uri.fsPath })
+                        }
+                    }
+
+                    form.dir.bindPrompter(() => {
+                        return createQuickPick(items2, {
+                            title: localize('AWS.toolkit.walkthrough.projectlocation', 'Select a location for project'),
+                            buttons: createCommonButtons(serverlessLandUrl),
+                        })
+                    })
+                }
+            })()
+            const result = await wizard.run()
+            // {foo:'abcddd',bar:1}
+            // return if undefined
+            console.log(result)
+            if (!result) {
+                return undefined
+            }
+            // select folder and create project here
+            const getProjectUri = () => {
+                const wsFolders = vscode.workspace.workspaceFolders
+                if (result.dir == 'file-selector') {
+                    let options: vscode.OpenDialogOptions = {
+                        canSelectMany: false,
+                        openLabel: 'Create Project',
+                        canSelectFiles: false,
+                        canSelectFolders: true,
+                    }
+                    if (wsFolders) {
+                        options.defaultUri = wsFolders[0]?.uri
+                    }
+
+                    return vscode.window.showOpenDialog(options).then((fileUri) => {
+                        if (fileUri && fileUri[0]) {
+                            console.log('file choose')
+                            return Promise.resolve(fileUri[0])
+                        }
+                        return Promise.resolve(undefined)
+                    })
+                }
+                // option2:workspce filepath returned
+                return vscode.Uri.parse(result.dir)
+            }
+
+            let projectUri = await getProjectUri()
+            if (!projectUri) {
+                // exit for non-vaild uri
+                console.log('exit')
+                return undefined
+            }
+            // create project here
+            // TODO update with file fetching from serverless land
+            const walkthroughSelected = context.extensionContext.globalState.get('walkthroughSelected')
+
+            const lambdaUri = vscode.Uri.joinPath(projectUri, 'src/handler.py')
+            const contents = Buffer.from(`tester handler for ${walkthroughSelected}:${result.runtime}`, 'utf8')
+            vscode.workspace.fs.writeFile(lambdaUri, contents)
+            const templateUri = vscode.Uri.joinPath(projectUri, 'template2.yaml')
+            const contents2 = Buffer.from(`tester template ${walkthroughSelected}:${result.runtime}`, 'utf8')
+            vscode.workspace.fs.writeFile(templateUri, contents2)
+            vscode.commands.executeCommand('explorer.openToSide', lambdaUri)
+            vscode.commands.executeCommand('vscode.open', templateUri)
+
+            console.log(result)
+        }),
+        Commands.register(`aws.toolkit.walkthrough`, async () => {
+            vscode.commands.executeCommand(
+                'workbench.action.openWalkthrough',
+                'amazonwebservices.aws-toolkit-vscode#lambdaWelcome'
+            )
+        })
     )
 }
