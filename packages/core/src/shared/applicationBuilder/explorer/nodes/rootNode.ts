@@ -24,7 +24,9 @@ export async function getAppNodes(): Promise<TreeNode[]> {
     if (appsFound.length === 0) {
         return [
             new WalkthroughNode(),
-            createPlaceholderItem(localize('AWS.appBuilder.explorerNode.noApps', '[No SAM Apps found in Workspaces]')),
+            createPlaceholderItem(
+                localize('AWS.appBuilder.explorerNode.noApps', '[No IaC templates found in Workspaces]')
+            ),
         ]
     }
 
@@ -49,12 +51,12 @@ export class WalkthroughNode implements TreeNode {
     public constructor() {}
 
     public getTreeItem() {
-        const itemLabel = 'Learn more with Walkthrough'
+        const itemLabel = localize('AWS.appBuilder.openWalkthroughTitle', 'Walkthrough of Application Builder')
 
         const item = new vscode.TreeItem(itemLabel)
         item.contextValue = 'awsWalkthroughNode'
         item.command = {
-            title: 'Open Walkthrough',
+            title: localize('AWS.appBuilder.openWalkthroughTitle', 'Walkthrough of Application Builder'),
             command: 'workbench.action.openWalkthrough',
             arguments: ['amazonwebservices.aws-toolkit-vscode#aws.gettingStarted.walkthrough'],
         }
