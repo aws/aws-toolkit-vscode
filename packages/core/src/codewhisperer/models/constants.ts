@@ -454,6 +454,9 @@ export const buildSucceededChatMessage = 'I was able to build your project and w
 export const buildSucceededNotification =
     'Amazon Q was able to build your project and will start transforming your code soon.'
 
+export const absolutePathDetectedMessage = (numPaths: number, buildFile: string, listOfPaths: string) =>
+    `I detected ${numPaths} potential absolute file path(s) in your ${buildFile} file: **${listOfPaths}**. Absolute file paths might cause issues when I build your code. Any errors will show up in the build log.`
+
 export const unsupportedJavaVersionChatMessage = `Sorry, currently I can only upgrade Java 8 or Java 11 projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
 export const failedToStartJobChatMessage =
@@ -527,6 +530,9 @@ export const noPomXmlFoundChatMessage = `Sorry, I couldn\'t find a project that 
 export const noPomXmlFoundNotification = `None of your open projects are supported by Amazon Q Code Transformation. Amazon Q could not find a pom.xml file in any of your open projects. Currently, Amazon Q can only upgrade Java 8 or Java 11 projects built on Maven. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
 export const noJavaHomeFoundChatMessage = `Sorry, I couldn\'t locate your Java installation. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
+
+export const dependencyVersionsErrorMessage =
+    'I could not find any other versions of this dependency in your local Maven repository. Try transforming the dependency to make it compatible with Java 17, and then try transforming this module again.'
 
 export const errorUploadingWithExpiredUrl = `The upload error may have been caused by the expiration of the S3 pre-signed URL that was used to upload code artifacts to Q Code Transformation. The S3 pre-signed URL expires in 30 minutes. This could be caused by any delays introduced by intermediate services in your network infrastructure. Please investigate your network configuration and consider allowlisting 'amazonq-code-transformation-us-east-1-c6160f047e0.s3.amazonaws.com' to skip any scanning that might delay the upload. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootAllowS3Access}).`
 

@@ -71,3 +71,9 @@ export class PollJobError extends Error {
         super('Poll job failed')
     }
 }
+
+export class AbsolutePathDetectedError extends Error {
+    constructor(message: string) {
+        super(message)
+    }
+}

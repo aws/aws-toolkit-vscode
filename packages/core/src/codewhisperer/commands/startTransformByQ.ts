@@ -50,6 +50,7 @@ import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
 import {
+    AbsolutePathDetectedError,
     AlternateDependencyVersionsNotFoundError,
     JavaHomeNotSetError,
     JobStartError,
@@ -233,6 +234,41 @@ export async function finalizeTransformByQ(status: string) {
     } catch (error: any) {
         await transformationJobErrorHandler(error)
     }
+}
+
+export async function parseBuildFile() {
+    try {
+        const absolutePaths = ['users/', 'system/', 'volumes/', 'c:\\', 'd:\\']
+        const alias = path.basename(os.homedir())
+        absolutePaths.push(alias)
+        const buildFilePath = path.join(transformByQState.getProjectPath(), 'pom.xml')
+        if (fs.existsSync(buildFilePath)) {
+            const buildFileContents = fs.readFileSync(buildFilePath).toString().toLowerCase()
+            const detectedPaths = []
+            for (const absolutePath of absolutePaths) {
+                if (buildFileContents.includes(absolutePath)) {
+                    detectedPaths.push(absolutePath)
+                }
+            }
+            if (detectedPaths.length > 0) {
+                const warningMessage = CodeWhispererConstants.absolutePathDetectedMessage(
+                    detectedPaths.length,
+                    path.basename(buildFilePath),
+                    detectedPaths.join(', ')
+                )
+                transformByQState.getChatControllers()?.errorThrown.fire({
+                    error: new AbsolutePathDetectedError(warningMessage),
+                    tabID: ChatSessionManager.Instance.getSession().tabID,
+                })
+                getLogger().info('CodeTransformation: absolute path potentially in build file')
+                return warningMessage
+            }
+        }
+    } catch (err: any) {
+        // swallow error
+        getLogger().error(`CodeTransformation: error scanning for absolute paths, tranformation continuing: ${err}`)
+    }
+    return undefined
 }
 
 export async function preTransformationUploadCode() {
