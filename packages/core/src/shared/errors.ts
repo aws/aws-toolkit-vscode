@@ -785,7 +785,13 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
         return false
     }
 
-    if (isVSCodeProxyError(err) || isSocketTimeoutError(err) || isNonJsonHttpResponse(err) || isEnoentError(err)) {
+    if (
+        isVSCodeProxyError(err) ||
+        isSocketTimeoutError(err) ||
+        isNonJsonHttpResponse(err) ||
+        isEnoentError(err) ||
+        isEaccesError(err)
+    ) {
         return true
     }
 
@@ -816,7 +822,7 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
  * Setting ID: http.proxy
  */
 function isVSCodeProxyError(err: Error): boolean {
-    return err.name === 'Error' && err.message.startsWith('Failed to establish a socket connection to proxies')
+    return isError(err, 'Error', 'Failed to establish a socket connection to proxies')
 }
 
 /**
@@ -828,7 +834,7 @@ function isVSCodeProxyError(err: Error): boolean {
  * https://github.com/aws/aws-sdk-js-v3/issues/6271
  */
 function isSocketTimeoutError(err: Error): boolean {
-    return err.name === 'TimeoutError' && err.message.includes('Connection timed out after')
+    return isError(err, 'TimeoutError', 'Connection timed out after')
 }
 
 /**
@@ -838,7 +844,7 @@ function isSocketTimeoutError(err: Error): boolean {
  * "Unexpected token '<', "<html><bod"... is not valid JSON Deserialization error: to see the raw response, inspect the hidden field {error}.$response on this object."
  */
 function isNonJsonHttpResponse(err: Error): boolean {
-    return (err.name === 'SyntaxError' || err.name === 'SyntaxError') && err.message.includes('Unexpected token')
+    return isError(err, 'SyntaxError', 'Unexpected token')
 }
 
 /**
@@ -846,7 +852,18 @@ function isNonJsonHttpResponse(err: Error): boolean {
  * Our assumption is that this is an intermittent error.
  */
 function isEnoentError(err: Error): boolean {
-    return (err.name === 'ENOENT' || (err as any).code === 'ENOENT') && err.message.includes('getaddrinfo ENOENT')
+    return isError(err, 'ENOENT', 'getaddrinfo ENOENT')
+}
+
+function isEaccesError(err: Error): boolean {
+    return isError(err, 'EACCES', 'connect EACCES')
+}
+
+/** Helper function to assert given error has the expected properties */
+function isError(err: Error, id: string, messageIncludes: string) {
+    // It is not always clear if the error has the expected value in the `name` or `code` field
+    // so this checks both.
+    return (err.name === id || (err as any).code === id) && err.message.includes(messageIncludes)
 }
 
 /**
