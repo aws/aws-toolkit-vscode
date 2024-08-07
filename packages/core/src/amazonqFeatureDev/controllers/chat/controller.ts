@@ -717,6 +717,20 @@ export class FeatureDevController {
                 type: 'answer',
                 tabID: message.tabID,
             })
+            this.messenger.sendAnswer({
+                message: undefined,
+                type: 'system-prompt',
+                followUps: [
+                    {
+                        pillText: i18n('AWS.amazonq.featureDev.pillText.retry'),
+                        type: FollowUpTypes.Retry,
+                        status: 'warning',
+                    },
+                ],
+                tabID: message.tabID,
+            })
+            this.messenger.sendChatInputEnabled(message.tabID, true)
+            this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.featureDev.pillText.writeNewPrompt'))
         }
 
         telemetry.amazonq_modifySourceFolder.emit({
