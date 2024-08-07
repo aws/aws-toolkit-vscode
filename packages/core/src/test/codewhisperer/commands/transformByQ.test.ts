@@ -298,6 +298,13 @@ describe('transformByQ', function () {
         assert.deepStrictEqual(actual, expected)
     })
 
+    it(`WHEN codeTransformBillingText on small project THEN correct string returned`, async function () {
+        const expected =
+            '<p>376 lines of code were submitted for transformation. If you reach the quota for lines of code included in your subscription, you will be charged $0.003 for each additional line of code. You might be charged up to $1.13 for this transformation. To avoid being charged, stop the transformation job before it completes. For more information on pricing and quotas, see [Amazon Q Developer pricing](https://aws.amazon.com/q/developer/pricing/).</p>'
+        const actual = CodeWhispererConstants.codeTransformBillingText(376)
+        assert.strictEqual(actual, expected)
+    })
+
     it(`WHEN parseBuildFile on pom.xml with absolute path THEN absolute path detected`, async function () {
         const dirPath = await createTestWorkspaceFolder()
         transformByQState.setProjectPath(dirPath.uri.fsPath)
