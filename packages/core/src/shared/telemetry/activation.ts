@@ -14,18 +14,14 @@ import { DefaultTelemetryService } from './telemetryService'
 import { getLogger } from '../logger'
 import { getComputeRegion, isAmazonQ, isCloud9, productName } from '../extensionUtilities'
 import { openSettingsId, Settings } from '../settings'
-import { TelemetryConfig, setupTelemetryId } from './util'
+import { TelemetryConfig } from './util'
 import { isAutomation, isReleaseVersion } from '../vscode/env'
 import { AWSProduct } from './clienttelemetry'
 import { DefaultTelemetryClient } from './telemetryClient'
 import { telemetry } from './telemetry'
-import { Commands } from '../vscode/commands2'
 
 export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'Settings')
 export const noticeResponseOk = localize('AWS.telemetry.notificationOk', 'OK')
-
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export const TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED = 'awsTelemetryNoticeVersionAck'
 
 // Telemetry Notice Versions
 // Versioning the users' notice acknowledgement is forward looking, and allows us to better
@@ -47,7 +43,7 @@ export async function activate(
     await config.initAmazonQSetting() // TODO: Remove after a few releases.
 
     DefaultTelemetryClient.productName = productName
-    globals.telemetry = await DefaultTelemetryService.create(extensionContext, awsContext, getComputeRegion())
+    globals.telemetry = await DefaultTelemetryService.create(awsContext, getComputeRegion())
 
     const isAmazonQExt = isAmazonQ()
     try {
@@ -74,19 +70,11 @@ export async function activate(
             })
         )
 
-        if (isAmazonQExt) {
-            extensionContext.subscriptions.push(
-                Commands.register('aws.amazonq.setupTelemetryId', async () => {
-                    await setupTelemetryId(extensionContext)
-                })
-            )
+        // Prompt user about telemetry if they haven't been
+        if (!isCloud9() && !hasUserSeenTelemetryNotice()) {
+            showTelemetryNotice()
         }
 
-        // Prompt user about telemetry if they haven't been
-        if (!isCloud9() && !hasUserSeenTelemetryNotice(extensionContext)) {
-            showTelemetryNotice(extensionContext)
-        }
-        await setupTelemetryId(extensionContext)
         await globals.telemetry.start()
     } catch (e) {
         // Only throw in a production build because:
@@ -100,15 +88,12 @@ export async function activate(
     }
 }
 
-export function hasUserSeenTelemetryNotice(extensionContext: vscode.ExtensionContext): boolean {
-    return (
-        extensionContext.globalState.get<number>(TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED, 0) >=
-        CURRENT_TELEMETRY_NOTICE_VERSION
-    )
+export function hasUserSeenTelemetryNotice(): boolean {
+    return globals.globalState.tryGet('awsTelemetryNoticeVersionAck', Number, 0) >= CURRENT_TELEMETRY_NOTICE_VERSION
 }
 
-export async function setHasUserSeenTelemetryNotice(extensionContext: vscode.ExtensionContext): Promise<void> {
-    await extensionContext.globalState.update(TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED, CURRENT_TELEMETRY_NOTICE_VERSION)
+export async function setHasUserSeenTelemetryNotice(): Promise<void> {
+    await globals.globalState.update('awsTelemetryNoticeVersionAck', CURRENT_TELEMETRY_NOTICE_VERSION)
     getLogger().verbose('Telemetry notice has been shown')
 }
 
@@ -116,7 +101,7 @@ export async function setHasUserSeenTelemetryNotice(extensionContext: vscode.Ext
  * Prompts user to Enable/Disable/Defer on Telemetry, then
  * handles the response appropriately.
  */
-function showTelemetryNotice(extensionContext: vscode.ExtensionContext) {
+function showTelemetryNotice() {
     getLogger().verbose('Showing telemetry notice')
 
     const telemetryNoticeText: string = localize(
@@ -128,13 +113,10 @@ function showTelemetryNotice(extensionContext: vscode.ExtensionContext) {
     // Don't wait for a response
     void vscode.window
         .showInformationMessage(telemetryNoticeText, noticeResponseViewSettings, noticeResponseOk)
-        .then(async (response) => handleTelemetryNoticeResponse(response, extensionContext))
+        .then(async (response) => handleTelemetryNoticeResponse(response))
 }
 
-export async function handleTelemetryNoticeResponse(
-    response: string | undefined,
-    extensionContext: vscode.ExtensionContext
-) {
+export async function handleTelemetryNoticeResponse(response: string | undefined) {
     try {
         getLogger().verbose(`Telemetry notice response: ${response}`)
 
@@ -143,7 +125,7 @@ export async function handleTelemetryNoticeResponse(
             return
         }
 
-        await setHasUserSeenTelemetryNotice(extensionContext)
+        await setHasUserSeenTelemetryNotice()
 
         // noticeResponseOk is a no-op
 

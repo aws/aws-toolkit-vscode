@@ -134,15 +134,7 @@ export const unsupportedLanguagesCacheTTL = 10 * 60 * 60 * 1000
 
 export const unsupportedLanguagesKey = 'CODEWHISPERER_UNSUPPORTED_LANGUAGES_KEY'
 
-export const autoTriggerEnabledKey = 'CODEWHISPERER_AUTO_TRIGGER_ENABLED'
-
-export const autoScansEnabledKey = 'CODEWHISPERER_AUTO_SCANS_ENABLED'
-
 export const serviceActiveKey = 'CODEWHISPERER_SERVICE_ACTIVE'
-
-export const persistedCustomizationsKey = 'CODEWHISPERER_PERSISTED_CUSTOMIZATIONS'
-
-export const selectedCustomizationKey = 'CODEWHISPERER_SELECTED_CUSTOMIZATION'
 
 export const inlinehintKey = 'CODEWHISPERER_HINT_DISPLAYED'
 
@@ -240,7 +232,7 @@ export const artifactTypeSource = 'SourceCode'
 
 export const codeScanFindingsSchema = 'codescan/findings/1.0'
 
-export const autoScanDebounceDelaySeconds = 15
+export const autoScanDebounceDelaySeconds = 30
 
 export const codewhispererDiagnosticSourceLabel = 'Amazon Q '
 
@@ -328,8 +320,6 @@ export const showScannedFilesMessage = 'Show Scanned Files'
 export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
 
 export const newCustomizationMessage = 'You have access to new Amazon Q customizations.'
-
-export const newCustomizationsAvailableKey = 'aws.amazonq.codewhisperer.newCustomizations'
 
 // Start of QCT Strings
 export const uploadZipSizeLimitInBytes = 2000000000 // 2GB

@@ -25,7 +25,6 @@ import {
     parseBuildFile,
     postTransformationJob,
     processTransformFormInput,
-    resetDebugArtifacts,
     startTransformByQ,
     stopTransformByQ,
     validateCanCompileProject,
@@ -288,7 +287,6 @@ export class GumbyController {
                 break
             case ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW:
                 this.resetTransformationChatFlow()
-                await resetDebugArtifacts()
                 this.messenger.sendCommandMessage({ ...message, command: GumbyCommands.CLEAR_CHAT })
                 await this.transformInitiated(message)
                 break
@@ -312,7 +310,7 @@ export class GumbyController {
     // prompt user to pick project and specify source JDK version
     private async initiateTransformationOnProject(message: any) {
         const authType = await getAuthType()
-        telemetry.codeTransform_jobIsStartedFromChatPrompt.emit({
+        telemetry.codeTransform_jobStart.emit({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             credentialSourceId: authType,
             result: MetadataResult.Pass,
@@ -478,6 +476,7 @@ export class GumbyController {
                 undefined,
                 GumbyNamedMessages.JOB_FAILED_IN_PRE_BUILD
             )
+            await openBuildLogFile()
             this.messenger.sendViewBuildLog(message.tabID)
         } else if (message.error instanceof AbsolutePathDetectedError) {
             this.messenger.sendKnownErrorResponse(message.tabID, message.error.message)

@@ -383,10 +383,7 @@ export class CodeWhispererCodeCoverageTracker {
 
     public static readonly instances = new Map<CodewhispererLanguage, CodeWhispererCodeCoverageTracker>()
 
-    public static getTracker(
-        language: string,
-        memeto: vscode.Memento = globals.context.globalState
-    ): CodeWhispererCodeCoverageTracker | undefined {
+    public static getTracker(language: string): CodeWhispererCodeCoverageTracker | undefined {
         if (!runtimeLanguageContext.isLanguageSupported(language)) {
             return undefined
         }

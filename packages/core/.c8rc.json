@@ -1,5 +1,5 @@
 {
-    "report-dir": "../../coverage",
+    "report-dir": "../../coverage/core",
     "reporter": ["lcov"],
     "all": true,
     "include": ["src/**", "dist/src/**"],

@@ -8,7 +8,6 @@ import { VirtualFileSystem } from '../shared/virtualFilesystem'
 import type { CancellationTokenSource } from 'vscode'
 import { Messenger } from './controllers/chat/messenger/messenger'
 import { FeatureDevClient } from './client/featureDev'
-import { featureDevScheme } from './constants'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { CodeReference } from '../amazonq/webview/ui/connector'
 import { DiffTreeFileInfo } from '../amazonq/webview/ui/diffTree/types'
@@ -28,6 +27,15 @@ export enum DevPhase {
     INIT = 'Init',
     APPROACH = 'Approach',
     CODEGEN = 'Codegen',
+}
+
+export enum CodeGenerationStatus {
+    COMPLETE = 'Complete',
+    PREDICT_READY = 'predict-ready',
+    IN_PROGRESS = 'InProgress',
+    PREDICT_FAILED = 'predict-failed',
+    DEBATE_FAILED = 'debate-failed',
+    FAILED = 'Failed',
 }
 
 export enum FollowUpTypes {
@@ -96,14 +104,6 @@ export interface SessionInfo {
 
 export interface SessionStorage {
     [key: string]: SessionInfo
-}
-
-export function createUri(filePath: string, tabID?: string) {
-    return vscode.Uri.from({
-        scheme: featureDevScheme,
-        path: filePath,
-        ...(tabID ? { query: `tabID=${tabID}` } : {}),
-    })
 }
 
 export type LLMResponseType = 'EMPTY' | 'INVALID_STATE' | 'VALID'

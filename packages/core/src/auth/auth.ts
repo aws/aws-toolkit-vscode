@@ -61,7 +61,7 @@ import {
 } from './connection'
 import { isSageMaker, isCloud9, isAmazonQ } from '../shared/extensionUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { randomUUID } from '../common/crypto'
+import { randomUUID } from '../shared/crypto'
 
 interface AuthService {
     /**
@@ -182,13 +182,7 @@ export class Auth implements AuthService, ConnectionManager {
         const profile = this.store.getProfileOrThrow(id)
         if (profile.type === 'sso') {
             const provider = this.getSsoTokenProvider(id, profile)
-
-            // We cannot easily set isReAuth inside the createToken() call,
-            // so we need to set it here.
-            await telemetry.aws_loginWithBrowser.run(async (span) => {
-                span.record({ isReAuth: true, credentialStartUrl: profile.startUrl })
-                await this.authenticate(id, () => provider.createToken(), shouldInvalidate)
-            })
+            await this.authenticate(id, () => provider.createToken({ isReAuth: true }), shouldInvalidate)
 
             return this.getSsoConnection(id, profile)
         } else {
@@ -302,7 +296,7 @@ export class Auth implements AuthService, ConnectionManager {
 
         // Remove the split session logout prompt, if it exists.
         if (!isAmazonQ()) {
-            await globals.context.globalState.update(SessionSeparationPrompt.instance.dismissKey, true)
+            await globals.globalState.update('aws.toolkit.separationPromptDismissed', true)
         }
 
         try {
@@ -386,7 +380,7 @@ export class Auth implements AuthService, ConnectionManager {
             throw new ToolkitError('Auth: Cannot force expire an IAM connection')
         }
         const provider = this.getSsoTokenProvider(conn.id, profile)
-        await provider.invalidate()
+        await provider.invalidate('devModeManualExpiration')
         // updates the state of the connection
         await this.refreshConnectionState(conn)
     }
@@ -530,7 +524,8 @@ export class Auth implements AuthService, ConnectionManager {
 
             // XXX: never drop tokens in a dev environment, unless you are Amazon Q!
             if (getCodeCatalystDevEnvId() === undefined || isAmazonQ()) {
-                await provider.invalidate()
+                // TODO: Require invalidateConnection() to require a reason and then pass it in to the following instead
+                await provider.invalidate('explicitInvalidation')
             }
         } else if (profile.type === 'iam') {
             globals.loginManager.store.invalidateCredentials(fromString(id))
@@ -1029,9 +1024,6 @@ type LoginCommand = 'aws.toolkit.auth.manageConnections' | 'aws.codecatalyst.man
  * TODO: Remove after some time.
  */
 export class SessionSeparationPrompt {
-    public readonly dismissKey = 'aws.toolkit.separationPromptDismissed'
-    private readonly loginCmdKey = 'aws.toolkit.separationPromptCommand'
-
     // Local variable handles per session displays, e.g. we forgot a CodeCatalyst connection AND
     // an Explorer only connection. We only want to display once in this case.
     // However, we don't want to set this at the global state level until a user interacts with the
@@ -1043,7 +1035,7 @@ export class SessionSeparationPrompt {
      * which is useful to redisplay the prompt after reloads in case a user misses it.
      */
     public async showAnyPreviousPrompt() {
-        const cmd = globals.context.globalState.get<string>(this.loginCmdKey)
+        const cmd = globals.globalState.tryGet('aws.toolkit.separationPromptCommand', String)
         return cmd ? await this.showForCommand(cmd as LoginCommand) : undefined
     }
 
@@ -1053,11 +1045,14 @@ export class SessionSeparationPrompt {
      * (e.g. codecatalyst sign in vs explorer)
      */
     public async showForCommand(cmd: LoginCommand) {
-        if (this.#separationPromptDisplayed || globals.context.globalState.get<boolean>(this.dismissKey)) {
+        if (
+            this.#separationPromptDisplayed ||
+            globals.globalState.get<boolean>('aws.toolkit.separationPromptDismissed')
+        ) {
             return
         }
 
-        await globals.context.globalState.update(this.loginCmdKey, cmd)
+        await globals.globalState.update('aws.toolkit.separationPromptCommand', cmd)
 
         await telemetry.toolkit_showNotification.run(async () => {
             telemetry.record({ id: 'sessionSeparation' })
@@ -1077,7 +1072,7 @@ export class SessionSeparationPrompt {
                             telemetry.record({ action: 'dismiss' })
                         }
 
-                        await globals.context.globalState.update(this.dismissKey, true)
+                        await globals.globalState.update('aws.toolkit.separationPromptDismissed', true)
                     })
                 })
         })

@@ -12,6 +12,7 @@ import { AmazonQLoginWebview } from '../../../../login/webview/vue/amazonq/backe
 import { isBuilderIdConnection, isIdcSsoConnection } from '../../../../auth/connection'
 import { amazonQScopes, AuthUtil } from '../../../../codewhisperer/util/authUtil'
 import { getOpenExternalStub } from '../../../globalSetup.test'
+import globals from '../../../../shared/extensionGlobals'
 
 // TODO: remove auth page and tests
 describe('Amazon Q Login', function () {
@@ -25,7 +26,7 @@ describe('Amazon Q Login', function () {
 
     beforeEach(function () {
         sandbox = createSandbox()
-        auth = createTestAuth()
+        auth = createTestAuth(globals.globalState)
         authUtil = new AuthUtil(auth)
         sandbox.stub(Auth, 'instance').value(auth)
         sandbox.stub(AuthUtil, 'instance').value(authUtil)
