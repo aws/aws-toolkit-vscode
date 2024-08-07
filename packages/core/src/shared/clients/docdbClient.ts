@@ -29,7 +29,11 @@ export interface DBInstance extends DocDB.DBInstance {
 export type DocumentDBClient = InterfaceNoSymbol<DefaultDocumentDBClient>
 
 export class DefaultDocumentDBClient {
-    public constructor(public readonly regionCode: string) {}
+    static create(regionCode: string): DocumentDBClient {
+        return new DefaultDocumentDBClient(regionCode)
+    }
+
+    private constructor(public readonly regionCode: string) {}
 
     private async getSdkConfig() {
         const credentials = await globals.awsContext.getCredentials()

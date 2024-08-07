@@ -23,7 +23,7 @@ describe('DefaultDocumentDBClient', function () {
     })
 
     function createClient({ regionCode = region }: { regionCode?: string } = {}): DocumentDBClient {
-        const client = new DefaultDocumentDBClient(regionCode)
+        const client = DefaultDocumentDBClient.create(regionCode)
         client.getClient = sdkStub
         return client
     }
