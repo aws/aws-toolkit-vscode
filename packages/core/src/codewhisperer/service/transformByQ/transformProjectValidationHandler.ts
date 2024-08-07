@@ -100,6 +100,7 @@ async function getProjectsValidToTransform(
                     errorReason += `-${errorCode}`
                 }
                 if (!onProjectFirstOpen) {
+                    // TODO: remove deprecated metric once BI started using new metrics
                     telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
                         codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                         codeTransformPreValidationError: 'NoJavaProject',
@@ -118,6 +119,7 @@ async function getProjectsValidToTransform(
                 } else {
                     detectedJavaVersion = JDKVersion.UNSUPPORTED
                     if (!onProjectFirstOpen) {
+                        // TODO: remove deprecated metric once BI started using new metrics
                         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
                             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                             codeTransformPreValidationError: 'UnsupportedJavaVersion',
@@ -150,6 +152,7 @@ export async function validateOpenProjects(
 
     if (javaProjects.length === 0) {
         if (!onProjectFirstOpen) {
+            // TODO: remove deprecated metric once BI started using new metrics
             telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformPreValidationError: 'NoJavaProject',
@@ -164,6 +167,7 @@ export async function validateOpenProjects(
     if (mavenJavaProjects.length === 0) {
         if (!onProjectFirstOpen) {
             void vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundNotification)
+            // TODO: remove deprecated metric once BI started using new metrics
             telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformPreValidationError: 'NonMavenProject',
