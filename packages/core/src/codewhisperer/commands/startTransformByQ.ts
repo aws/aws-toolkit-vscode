@@ -91,7 +91,7 @@ export async function processTransformFormInput(
     transformByQState.setTargetJDKVersion(toJDKVersion)
 }
 
-async function setMaven() {
+export async function setMaven() {
     let mavenWrapperExecutableName = os.platform() === 'win32' ? 'mvnw.cmd' : 'mvnw'
     const mavenWrapperExecutablePath = path.join(transformByQState.getProjectPath(), mavenWrapperExecutableName)
     if (fs.existsSync(mavenWrapperExecutablePath)) {
@@ -241,27 +241,31 @@ export async function preTransformationUploadCode() {
     void vscode.window.showInformationMessage(CodeWhispererConstants.jobStartedNotification)
 
     let uploadId = ''
-    let payloadFilePath = undefined
-    let zipSize = 0
-    let dependenciesCopied = false
-    let errorMessage = undefined
-    const zipStartTime = globals.clock.Date.now()
     throwIfCancelled()
     try {
-        const zipCodeResult = await zipCode({
-            dependenciesFolder: transformByQState.getDependencyFolderInfo()!,
-            modulePath: transformByQState.getProjectPath(),
-            zipManifest: new ZipManifest(),
+        await telemetry.codeTransform_uploadProject.run(async () => {
+            telemetry.record({ codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId() })
+
+            const zipCodeResult = await zipCode({
+                dependenciesFolder: transformByQState.getDependencyFolderInfo()!,
+                modulePath: transformByQState.getProjectPath(),
+                zipManifest: new ZipManifest(),
+            })
+
+            const payloadFilePath = zipCodeResult.tempFilePath
+            const zipSize = zipCodeResult.fileSize
+            const dependenciesCopied = zipCodeResult.dependenciesCopied
+
+            telemetry.record({
+                codeTransformTotalByteSize: zipSize,
+                codeTransformDependenciesCopied: dependenciesCopied,
+            })
+
+            transformByQState.setPayloadFilePath(payloadFilePath)
+            uploadId = await uploadPayload(payloadFilePath)
         })
-
-        payloadFilePath = zipCodeResult.tempFilePath
-        zipSize = zipCodeResult.fileSize
-        dependenciesCopied = zipCodeResult.dependenciesCopied
-
-        transformByQState.setPayloadFilePath(payloadFilePath)
-        uploadId = await uploadPayload(payloadFilePath)
     } catch (err) {
-        errorMessage = (err as Error).message
+        const errorMessage = (err as Error).message
         transformByQState.setJobFailureErrorNotification(
             `${CodeWhispererConstants.failedToUploadProjectNotification} ${errorMessage}`
         )
@@ -275,15 +279,6 @@ export async function preTransformationUploadCode() {
         })
         getLogger().error(errorMessage)
         throw err
-    } finally {
-        telemetry.codeTransform_uploadProject.emit({
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformTotalByteSize: zipSize,
-            codeTransformRunTimeLatency: calculateTotalLatency(zipStartTime),
-            codeTransformDependenciesCopied: dependenciesCopied,
-            result: errorMessage ? MetadataResult.Fail : MetadataResult.Pass,
-            reason: errorMessage,
-        })
     }
 
     throwIfCancelled()
@@ -503,13 +498,21 @@ export async function finishHumanInTheLoop(selectedDependency?: string) {
 
 export async function startTransformationJob(uploadId: string, transformStartTime: number) {
     let jobId = ''
-    let errorMessage = undefined
     try {
-        jobId = await startJob(uploadId)
-        getLogger().info(`CodeTransformation: jobId: ${jobId}`)
+        await telemetry.codeTransform_jobStart.run(async () => {
+            telemetry.record({ codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId() })
+
+            jobId = await startJob(uploadId)
+            getLogger().info(`CodeTransformation: jobId: ${jobId}`)
+
+            telemetry.record({
+                codeTransformJobId: jobId,
+                codeTransformRunTimeLatency: calculateTotalLatency(transformStartTime),
+            })
+        })
     } catch (error) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToStartJobNotification}`, error)
-        errorMessage = (error as Error).message
+        const errorMessage = (error as Error).message
         if (errorMessage.includes('too many active running jobs')) {
             transformByQState.setJobFailureErrorNotification(
                 CodeWhispererConstants.failedToStartJobTooManyJobsNotification
@@ -526,14 +529,6 @@ export async function startTransformationJob(uploadId: string, transformStartTim
             )
         }
         throw new JobStartError()
-    } finally {
-        telemetry.codeTransform_jobStart.emit({
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformJobId: jobId,
-            codeTransformRunTimeLatency: calculateTotalLatency(transformStartTime),
-            result: errorMessage ? MetadataResult.Fail : MetadataResult.Pass,
-            reason: errorMessage,
-        })
     }
 
     await sleep(2000) // sleep before polling job to prevent ThrottlingException

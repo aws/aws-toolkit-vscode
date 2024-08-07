@@ -323,21 +323,30 @@ export class ProposedTransformationExplorer {
             )
             let exportResultsArchiveSize = 0
             let downloadErrorMessage = undefined
-            const downloadStartTime = globals.clock.Date.now()
 
             const cwStreamingClient = await createCodeWhispererChatStreamingClient()
             try {
-                await downloadExportResultArchive(
-                    cwStreamingClient,
-                    {
-                        exportId: transformByQState.getJobId(),
-                        exportIntent: ExportIntent.TRANSFORMATION,
-                    },
-                    pathToArchive
-                )
+                await telemetry.codeTransform_downloadArtifact.run(async () => {
+                    telemetry.record({
+                        codeTransformArtifactType: 'ClientInstructions',
+                        codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                        codeTransformJobId: transformByQState.getJobId(),
+                    })
 
-                // Update downloaded artifact size
-                exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
+                    await downloadExportResultArchive(
+                        cwStreamingClient,
+                        {
+                            exportId: transformByQState.getJobId(),
+                            exportIntent: ExportIntent.TRANSFORMATION,
+                        },
+                        pathToArchive
+                    )
+
+                    // Update downloaded artifact size
+                    exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
+
+                    telemetry.record({ codeTransformTotalByteSize: exportResultsArchiveSize })
+                })
             } catch (e: any) {
                 // user can retry the download
                 downloadErrorMessage = (e as Error).message
@@ -355,17 +364,6 @@ export class ProposedTransformationExplorer {
                 getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
                 throw new Error('Error downloading diff')
             } finally {
-                telemetry.codeTransform_downloadArtifact.emit({
-                    codeTransformArtifactType: 'ClientInstructions',
-                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformJobId: transformByQState.getJobId(),
-                    codeTransformRuntimeError: downloadErrorMessage,
-                    codeTransformRunTimeLatency: calculateTotalLatency(downloadStartTime),
-                    codeTransformTotalByteSize: exportResultsArchiveSize,
-                    result: downloadErrorMessage ? MetadataResult.Fail : MetadataResult.Pass,
-                    reason: downloadErrorMessage,
-                })
-
                 // This metric is emitted when user clicks Download Proposed Changes button
                 // TODO: remove deprecated metric once BI started using new metrics
                 telemetry.codeTransform_vcsViewerClicked.emit({
