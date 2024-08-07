@@ -115,6 +115,7 @@ describe('createClusterCommand', function () {
         const stub = sinon.stub()
         docdb.createCluster = stub
         getTestWindow().onDidShowInputBox((input) => input.hide())
+        getTestWindow().onDidShowQuickPick((input) => input.hide())
 
         // act
         await assert.rejects(createCluster(node))

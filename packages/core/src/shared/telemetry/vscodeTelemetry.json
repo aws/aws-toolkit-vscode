@@ -1443,6 +1443,10 @@
         {
             "name": "docdb_removeTag",
             "description": "User clicked on remove tag command"
+        },
+        {
+            "name": "docdb_addRegion",
+            "description": "User clicked on add region command"
         }
     ]
 }

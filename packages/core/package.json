@@ -2061,6 +2061,10 @@
                     "command": "aws.docdb.copyEndpoint",
                     "when": "viewItem =~ /^awsDocDB-/",
                     "group": "0@1"
+                },
+                {
+                    "command": "aws.docdb.addRegion",
+                    "when": "viewItem =~ /^awsDocDB-cluster(?!.*elastic.*)/"
                 }
             ],
             "aws.toolkit.auth": [
@@ -3737,6 +3741,17 @@
                 "title": "%AWS.command.docdb.copyEndpoint%",
                 "category": "%AWS.title%",
                 "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB/",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.addRegion",
+                "title": "%AWS.command.docdb.addRegion%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB-cluster.*-running/",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

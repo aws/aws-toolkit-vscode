@@ -29,7 +29,11 @@ export interface DBInstance extends DocDB.DBInstance {
 export type DocumentDBClient = InterfaceNoSymbol<DefaultDocumentDBClient>
 
 export class DefaultDocumentDBClient {
-    public constructor(public readonly regionCode: string) {}
+    static create(regionCode: string): DocumentDBClient {
+        return new DefaultDocumentDBClient(regionCode)
+    }
+
+    private constructor(public readonly regionCode: string) {}
 
     private async getSdkConfig() {
         const credentials = await globals.awsContext.getCredentials()
@@ -153,6 +157,14 @@ export class DefaultDocumentDBClient {
         const command = new DocDBElastic.CreateClusterCommand(input)
         const response = await this.executeElasticCommand<DocDBElastic.CreateClusterCommandOutput>(command)
         return response.cluster
+    }
+
+    public async createGlobalCluster(
+        input: DocDB.CreateGlobalClusterCommandInput
+    ): Promise<DocDB.GlobalCluster | undefined> {
+        const command = new DocDB.CreateGlobalClusterCommand(input)
+        const response = await this.executeCommand<DocDB.CreateGlobalClusterCommandOutput>(command)
+        return response.GlobalCluster
     }
 
     public async createClusterSnapshot(

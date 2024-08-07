@@ -63,7 +63,7 @@ const serviceCandidates: ServiceNode[] = [
     },
     {
         serviceId: 'docdb',
-        createFn: (regionCode: string) => new DocumentDBNode(new DefaultDocumentDBClient(regionCode)),
+        createFn: (regionCode: string) => new DocumentDBNode(DefaultDocumentDBClient.create(regionCode)),
     },
     {
         serviceId: 'logs',

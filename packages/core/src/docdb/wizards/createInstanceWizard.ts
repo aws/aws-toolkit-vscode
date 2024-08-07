@@ -31,7 +31,7 @@ export class CreateInstanceWizard extends Wizard<CreateInstanceState> {
         region: string,
         cluster: DBCluster,
         options: WizardOptions<CreateInstanceState> = {},
-        readonly client: DocumentDBClient = new DefaultDocumentDBClient(region)
+        readonly client: DocumentDBClient = DefaultDocumentDBClient.create(region)
     ) {
         super({
             initState: {
