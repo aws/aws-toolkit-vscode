@@ -730,6 +730,21 @@ class FeatureDevController(
                 messageType = FeatureDevMessageType.Answer,
                 message = message("amazonqFeatureDev.follow_up.modified_source_folder", selectedFolder.path),
             )
+
+            messenger.sendAnswer(
+                tabId = tabId,
+                messageType = FeatureDevMessageType.SystemPrompt,
+                followUp = listOf(
+                    FollowUp(
+                        pillText = message("amazonqFeatureDev.follow_up.retry"),
+                        type = FollowUpTypes.RETRY,
+                        status = FollowUpStatusType.Warning
+                    )
+                ),
+            )
+
+            messenger.sendChatInputEnabledMessage(tabId, enabled = false)
+            messenger.sendUpdatePlaceholder(tabId = tabId, newPlaceholder = message("amazonqFeatureDev.placeholder.write_new_prompt"))
         }
 
         AmazonqTelemetry.modifySourceFolder(
