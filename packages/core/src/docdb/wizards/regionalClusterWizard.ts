@@ -7,7 +7,7 @@ import { CreateDBClusterCommandInput } from '@aws-sdk/client-docdb'
 import { DBStorageType, DocumentDBClient } from '../../shared/clients/docdbClient'
 import { validateClusterName, validatePassword, validateUsername } from '../utils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Wizard } from '../../shared/wizards/wizard'
+import { Wizard, WizardOptions } from '../../shared/wizards/wizard'
 import { createInputBox } from '../../shared/ui/inputPrompter'
 import { DataQuickPickItem, createQuickPick } from '../../shared/ui/pickerPrompter'
 import { createCommonButtons } from '../../shared/ui/buttons'
@@ -36,9 +36,11 @@ export interface RegionalClusterConfiguration extends CreateDBClusterCommandInpu
 export class RegionalClusterWizard extends Wizard<RegionalClusterConfiguration> {
     constructor(
         readonly client: DocumentDBClient,
-        readonly title: string
+        readonly title: string,
+        readonly isPrimaryCluster: boolean = true,
+        options: WizardOptions<RegionalClusterConfiguration> = {}
     ) {
-        super()
+        super(options)
         this.client = client
     }
 
@@ -58,10 +60,19 @@ export class RegionalClusterWizard extends Wizard<RegionalClusterConfiguration> 
         )
 
         form.Engine.setDefault(() => 'docdb')
-        form.EngineVersion.bindPrompter(async () => await createEngineVersionPrompter(this.client))
-        form.MasterUsername.bindPrompter(() => createUsernamePrompter(this.title))
-        form.MasterUserPassword.bindPrompter(() => createPasswordPrompter(this.title))
-        form.StorageEncrypted.bindPrompter(() => createEncryptedStoragePrompter())
+        form.EngineVersion.bindPrompter(async () => await createEngineVersionPrompter(this.client), {
+            showWhen: () => this.isPrimaryCluster,
+            setDefault: () => this.options.initState?.EngineVersion,
+        })
+        form.MasterUsername.bindPrompter(() => createUsernamePrompter(this.title), {
+            showWhen: () => this.isPrimaryCluster,
+        })
+        form.MasterUserPassword.bindPrompter(() => createPasswordPrompter(this.title), {
+            showWhen: () => this.isPrimaryCluster,
+        })
+        form.StorageEncrypted.bindPrompter(() => createEncryptedStoragePrompter(), {
+            showWhen: () => this.isPrimaryCluster,
+        })
 
         form.DBInstanceCount.bindPrompter(
             () =>
@@ -75,7 +86,8 @@ export class RegionalClusterWizard extends Wizard<RegionalClusterConfiguration> 
         )
 
         form.DBInstanceClass.bindPrompter(
-            async (state) => await createInstanceClassPrompter(this.client, state.EngineVersion!),
+            async (state) =>
+                await createInstanceClassPrompter(this.client, state.EngineVersion!, this.isPrimaryCluster),
             { setDefault: () => 'db.t3.medium' }
         )
 
@@ -148,17 +160,25 @@ async function createEngineVersionPrompter(docdbClient: DocumentDBClient) {
     })
 }
 
-async function createInstanceClassPrompter(docdbClient: DocumentDBClient, engineVersion: string) {
+async function createInstanceClassPrompter(
+    docdbClient: DocumentDBClient,
+    engineVersion: string,
+    isPrimaryCluster: boolean
+) {
     const options = await docdbClient.listInstanceClassOptions(engineVersion, DBStorageType.Standard)
 
-    const items: DataQuickPickItem<string>[] = options.map((option) => {
-        return {
-            data: option.DBInstanceClass,
-            label: option.DBInstanceClass ?? '(unknown)',
-            description: undefined,
-            detail: undefined,
-        }
-    })
+    const items: DataQuickPickItem<string>[] = options
+        .filter((option) => {
+            return isPrimaryCluster || /(t3|t4g|r4)/.test(option.DBInstanceClass!) === false
+        })
+        .map((option) => {
+            return {
+                data: option.DBInstanceClass,
+                label: option.DBInstanceClass ?? '(unknown)',
+                description: undefined,
+                detail: undefined,
+            }
+        })
 
     if (items.length === 0) {
         return new SkipPrompter('db.t3.medium')

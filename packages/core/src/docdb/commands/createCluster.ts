@@ -11,6 +11,7 @@ import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { DocumentDBNode } from '../explorer/docdbNode'
 import { CreateClusterWizard } from '../wizards/createClusterWizard'
 import { CreateClusterInput } from '@aws-sdk/client-docdb-elastic'
+import { DocumentDBClient } from '../../shared/clients/docdbClient'
 
 /**
  * Creates a DocumentDB cluster.
@@ -48,26 +49,12 @@ export async function createCluster(node?: DocumentDBNode) {
 
                 // create instances for cluster
                 if (cluster && result.RegionalCluster.DBInstanceCount) {
-                    const tasks = []
-
-                    for (let index = 0; index < result.RegionalCluster.DBInstanceCount; index++) {
-                        tasks.push(
-                            node.client.createInstance({
-                                Engine: 'docdb',
-                                DBClusterIdentifier: clusterName,
-                                DBInstanceIdentifier: index === 0 ? clusterName : `${clusterName}${index + 1}`,
-                                DBInstanceClass: result.RegionalCluster.DBInstanceClass ?? 'db.t3.medium',
-                            })
-                        )
-                    }
-
-                    try {
-                        await Promise.all(tasks)
-                    } catch (e) {
-                        throw ToolkitError.chain(e, `Failed to create instance for cluster ${clusterName}`, {
-                            code: 'FailureCreatingInstanceForCluster',
-                        })
-                    }
+                    await createInstancesForCluster(
+                        node.client,
+                        clusterName,
+                        result.RegionalCluster.DBInstanceClass,
+                        result.RegionalCluster.DBInstanceCount
+                    )
                 }
             }
 
@@ -86,4 +73,32 @@ export async function createCluster(node?: DocumentDBNode) {
             throw ToolkitError.chain(e, `Failed to create cluster ${clusterName}`)
         }
     })
+}
+
+export async function createInstancesForCluster(
+    client: DocumentDBClient,
+    clusterName: string,
+    instanceClass: string = 'db.t3.medium',
+    instanceCount: number
+) {
+    const tasks = []
+
+    for (let index = 0; index < instanceCount; index++) {
+        tasks.push(
+            client.createInstance({
+                Engine: 'docdb',
+                DBClusterIdentifier: clusterName,
+                DBInstanceIdentifier: index === 0 ? clusterName : `${clusterName}${index + 1}`,
+                DBInstanceClass: instanceClass,
+            })
+        )
+    }
+
+    try {
+        await Promise.all(tasks)
+    } catch (e) {
+        throw ToolkitError.chain(e, `Failed to create instance for cluster ${clusterName}`, {
+            code: 'FailureCreatingInstanceForCluster',
+        })
+    }
 }

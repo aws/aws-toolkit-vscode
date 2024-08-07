@@ -19,6 +19,7 @@ import { modifyInstance } from './commands/modifyInstance'
 import { rebootInstance } from './commands/rebootInstance'
 import { startCluster, stopCluster } from './commands/commands'
 import { addTag, listTags, removeTag } from './commands/tagCommands'
+import { addRegion } from './commands/addRegion'
 
 /**
  * Activates DocumentDB components.
@@ -84,6 +85,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
         Commands.register('aws.docdb.copyEndpoint', async (node?: DBResourceNode) => {
             await node?.copyEndpoint()
+        }),
+
+        Commands.register('aws.docdb.addRegion', async (node: DBClusterNode) => {
+            await addRegion(node)
         })
     )
 }
