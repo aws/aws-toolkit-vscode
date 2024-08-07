@@ -234,7 +234,7 @@ export async function finalizeTransformByQ(status: string) {
 
 export async function parseBuildFile() {
     try {
-        const absolutePaths = ['users/', 'system/', 'volumes/', 'c:', 'd:']
+        const absolutePaths = ['users/', 'system/', 'volumes/', 'c:\\', 'd:\\']
         const alias = path.basename(os.homedir())
         absolutePaths.push(alias)
         const buildFilePath = path.join(transformByQState.getProjectPath(), 'pom.xml')
