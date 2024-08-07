@@ -247,10 +247,11 @@ export async function parseBuildFile() {
                 }
             }
             if (detectedPaths.length > 0) {
-                const warningMessage = CodeWhispererConstants.absolutePathDetectedMessage
-                    .replace('NUM_PATHS', detectedPaths.length.toString())
-                    .replace('LIST_OF_PATHS', detectedPaths.join(', '))
-                    .replace('BUILD_FILE', path.basename(buildFilePath))
+                const warningMessage = CodeWhispererConstants.absolutePathDetectedMessage(
+                    detectedPaths.length,
+                    path.basename(buildFilePath),
+                    detectedPaths.join(', ')
+                )
                 transformByQState.getChatControllers()?.errorThrown.fire({
                     error: new AbsolutePathDetectedError(warningMessage),
                     tabID: ChatSessionManager.Instance.getSession().tabID,
