@@ -271,7 +271,7 @@ async function getAuthOrPrompt() {
 async function getConfigFileUri(projectRoot: vscode.Uri) {
     const samConfigFilename = 'samconfig'
     const samConfigFile = (
-        await vscode.workspace.findFiles(new vscode.RelativePattern(projectRoot, `**/${samConfigFilename}.*`))
+        await vscode.workspace.findFiles(new vscode.RelativePattern(projectRoot, `${samConfigFilename}.*`))
     )[0]
     if (samConfigFile) {
         return samConfigFile
