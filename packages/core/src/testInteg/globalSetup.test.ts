@@ -13,6 +13,7 @@ import { mapTestErrors, normalizeError, patchObject, setRunnableTimeout } from '
 import { getTestWindow, resetTestWindow } from '../test/shared/vscode/window'
 import * as sinon from 'sinon'
 import * as tokenProvider from '../auth/sso/ssoAccessTokenProvider'
+import * as testUtil from '../test/testUtil'
 import { DeviceFlowAuthorization } from '../auth/sso/ssoAccessTokenProvider'
 
 // ASSUMPTION: Tests are not run concurrently
@@ -26,8 +27,8 @@ export async function mochaGlobalSetup(extensionId: string) {
         console.log('globalSetup: before()')
 
         // Prevent CI from hanging by forcing a timeout on both hooks and tests
-        this.on('hook', hook => setRunnableTimeout(hook, maxTestDuration))
-        this.on('test', test => setRunnableTimeout(test, maxTestDuration))
+        this.on('hook', (hook) => setRunnableTimeout(hook, maxTestDuration))
+        this.on('test', (test) => setRunnableTimeout(test, maxTestDuration))
 
         // Shows the full error chain when tests fail
         mapTestErrors(this, normalizeError)
@@ -52,6 +53,7 @@ export async function mochaGlobalSetup(extensionId: string) {
 export async function mochaGlobalTeardown(this: Mocha.Context) {
     console.log('globalSetup: after()')
     windowPatch.dispose()
+    await testUtil.deleteTestTempDirs()
 }
 
 export const mochaHooks = {

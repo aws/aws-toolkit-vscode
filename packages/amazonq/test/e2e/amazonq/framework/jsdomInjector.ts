@@ -18,6 +18,7 @@ export function injectJSDOM() {
     global.self = dom.window as unknown as Window & typeof globalThis
     global.Element = dom.window.Element
     global.HTMLElement = dom.window.HTMLElement
+    global.Node = dom.window.Node
 
     // jsdom doesn't have support for innerText: https://github.com/jsdom/jsdom/issues/1245 which mynah ui uses
     Object.defineProperty(global.Element.prototype, 'innerText', {
@@ -27,5 +28,5 @@ export function injectJSDOM() {
     })
 
     // jsdom doesn't have support for structuredClone. See https://github.com/jsdom/jsdom/issues/3363
-    global.structuredClone = val => JSON.parse(JSON.stringify(val))
+    global.structuredClone = (val) => JSON.parse(JSON.stringify(val))
 }

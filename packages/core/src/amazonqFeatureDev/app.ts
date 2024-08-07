@@ -52,7 +52,7 @@ export function init(appContext: AmazonQAppInitContext) {
             const tabID = params.get('tabID')
             if (!tabID) {
                 getLogger().error(`Unable to find tabID from ${uri.toString()}`)
-                throw new TabIdNotFoundError(uri.toString())
+                throw new TabIdNotFoundError()
             }
 
             const session = await sessionStorage.getSession(tabID)
@@ -87,10 +87,10 @@ export function init(appContext: AmazonQAppInitContext) {
         if (authenticated) {
             const authenticatingSessions = sessionStorage.getAuthenticatingSessions()
 
-            authenticatingSessionIDs = authenticatingSessions.map(session => session.tabID)
+            authenticatingSessionIDs = authenticatingSessions.map((session) => session.tabID)
 
             // We've already authenticated these sessions
-            authenticatingSessions.forEach(session => (session.isAuthenticating = false))
+            authenticatingSessions.forEach((session) => (session.isAuthenticating = false))
         }
 
         messenger.sendAuthenticationUpdate(authenticated, authenticatingSessionIDs)

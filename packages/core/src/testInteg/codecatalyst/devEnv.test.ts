@@ -22,27 +22,31 @@ describe('shouldSendActivity', function () {
     })
 })
 
-describe('InactivityMessages', function () {
+describe('InactivityMessage', function () {
     /** Actual minute in prod is this value instead so testing is faster. */
     let relativeMinuteMillis: number
     let testWindow: TestWindow
     let devEnvActivity: sinon.SinonStubbedInstance<DevEnvActivity>
     let actualMessages: { message: string; minute: number }[] = []
     let inactivityMsg: InactivityMessage
+    let userActivity: number
 
     beforeEach(function () {
-        relativeMinuteMillis = 200
+        relativeMinuteMillis = 100
         testWindow = getTestWindow()
         inactivityMsg = new InactivityMessage()
+        userActivity = 0
+        setInitialOffset(0)
 
         devEnvActivity = sinon.createStubInstance(DevEnvActivity)
-        // Setup for DevEnvClient stub to call the onUserActivity event callback code when sendActivityUpdate() is called
-        devEnvActivity.onActivityUpdate.callsFake(activityCallback => {
-            devEnvActivity.sendActivityUpdate.callsFake(async () => {
-                const timestamp = getLatestTimestamp()
-                activityCallback(timestamp)
-                return timestamp
-            })
+        devEnvActivity.sendActivityUpdate.callsFake(async () => {
+            userActivity += 1
+            const timestamp = getLatestTimestamp()
+            return timestamp
+        })
+        devEnvActivity.onActivityUpdate.callsFake((activityCallback) => {
+            const timestamp = getLatestTimestamp()
+            activityCallback(timestamp)
         })
         devEnvActivity.isLocalActivityStale.callsFake(async () => {
             return false
@@ -56,97 +60,47 @@ describe('InactivityMessages', function () {
         testWindow.dispose()
     })
 
-    it('shows expected messages 5 minutes before shutdown on a 15 minute inactivity timeout', async function () {
+    it('shows warning 5 minutes before shutdown for 15 minute timeout', async function () {
+        setInitialOffset(9)
         await inactivityMsg.init(15, devEnvActivity as unknown as DevEnvActivity, relativeMinuteMillis)
-        await devEnvActivity.sendActivityUpdate()
-        await devEnvActivity.sendActivityUpdate()
-        await devEnvActivity.sendActivityUpdate()
-        await devEnvActivity.sendActivityUpdate()
-        await devEnvActivity.sendActivityUpdate()
 
         await assertMessagesShown([
-            ['Your CodeCatalyst Dev Environment has been inactive for 10 minutes, and will stop in 5 minutes.', 10],
-            ['Your CodeCatalyst Dev Environment has been inactive for 11 minutes, and will stop in 4 minutes.', 11],
-            ['Your CodeCatalyst Dev Environment has been inactive for 12 minutes, and will stop in 3 minutes.', 12],
-            ['Your CodeCatalyst Dev Environment has been inactive for 13 minutes, and will stop in 2 minutes.', 13],
-            ['Your CodeCatalyst Dev Environment has been inactive for 14 minutes, and will stop soon.', 14],
+            ['Your CodeCatalyst Dev Environment has been inactive for 10 minutes, and will stop soon.', 10],
         ])
     })
 
-    it('shows expected messages 5 minutes before shutdown on a 60 minute inactivity timeout', async function () {
+    it('shows warning 5 minutes before shutdown for 60 minute timeout', async function () {
+        setInitialOffset(54)
         await inactivityMsg.init(60, devEnvActivity as unknown as DevEnvActivity, relativeMinuteMillis)
-        setInitialOffset(57)
-        await devEnvActivity.sendActivityUpdate()
-        await waitUntil(async () => actualMessages.length > 0, { interval: 10 })
-        setInitialOffset(58)
-        await devEnvActivity.sendActivityUpdate()
-        await waitUntil(async () => actualMessages.length > 2, { interval: 10 })
 
         await assertMessagesShown([
-            ['Your CodeCatalyst Dev Environment has been inactive for 57 minutes, and will stop in 3 minutes.', 0],
-            ['Your CodeCatalyst Dev Environment has been inactive for 58 minutes, and will stop in 2 minutes.', 0],
-            ['Your CodeCatalyst Dev Environment has been inactive for 59 minutes, and will stop soon.', 1],
+            ['Your CodeCatalyst Dev Environment has been inactive for 55 minutes, and will stop soon.', 55],
         ])
     })
 
-    it('resets the inactivity countdown when a user clicks on a button in any activity message', async function () {
-        let isFirstMessage = true
-        testWindow.onDidShowMessage(async message => {
-            if (message.message.endsWith('stop soon.')) {
-                // User hits the "I'm here!" button on the inactivity shutdown message
-                message.selectItem("I'm here!")
-                return
-            }
-
-            if (!isFirstMessage) {
-                return
-            }
-            isFirstMessage = false
-            // User hits the 'Cancel' button on the first inactivity warning message
-            message.selectItem('Cancel')
-        })
-
-        await inactivityMsg.init(7, devEnvActivity as unknown as DevEnvActivity, relativeMinuteMillis)
-        await devEnvActivity.sendActivityUpdate()
-        await devEnvActivity.sendActivityUpdate()
-        await devEnvActivity.sendActivityUpdate()
-        await devEnvActivity.sendActivityUpdate()
-        await devEnvActivity.sendActivityUpdate()
-        await devEnvActivity.sendActivityUpdate()
-        await devEnvActivity.sendActivityUpdate()
+    it('resets inactivity countdown when a user confirms the message', async function () {
+        await inactivityMsg.init(10, devEnvActivity as unknown as DevEnvActivity, relativeMinuteMillis)
+        const msg = await testWindow.waitForMessage(/Dev Environment has been inactive/)
+        assert.deepStrictEqual(userActivity, 1)
+        msg.selectItem("I'm here!")
+        await waitUntil(async () => userActivity > 1, { truthy: true, interval: 100, timeout: 5_000 })
+        assert.deepStrictEqual(userActivity, 2, 'confirming the message should trigger user activity')
 
         await assertMessagesShown([
-            ['Your CodeCatalyst Dev Environment has been inactive for 2 minutes, and will stop in 5 minutes.', 2],
-            // User clicked 'Cancel' on the warning message so timer was reset
-            ['Your CodeCatalyst Dev Environment has been inactive for 2 minutes, and will stop in 5 minutes.', 4],
-            ['Your CodeCatalyst Dev Environment has been inactive for 3 minutes, and will stop in 4 minutes.', 5],
-            ['Your CodeCatalyst Dev Environment has been inactive for 4 minutes, and will stop in 3 minutes.', 6],
-            ['Your CodeCatalyst Dev Environment has been inactive for 5 minutes, and will stop in 2 minutes.', 7],
-            ['Your CodeCatalyst Dev Environment has been inactive for 6 minutes, and will stop soon.', 8],
-            // User clicked "I'm here!" on the shutdown message so timer was reset
-            ['Your CodeCatalyst Dev Environment has been inactive for 2 minutes, and will stop in 5 minutes.', 10],
+            ['Your CodeCatalyst Dev Environment has been inactive for 5 minutes, and will stop soon.', 5],
         ])
     })
 
-    it('takes in to consideration 2 1/2 minutes have already passed for an inactive external client.', async function () {
+    it('offsets when 2.5 minutes have already passed for an inactive external client', async function () {
         setInitialOffset(2.5)
         await inactivityMsg.init(9, devEnvActivity as unknown as DevEnvActivity, relativeMinuteMillis)
-        await devEnvActivity.sendActivityUpdate()
-        await devEnvActivity.sendActivityUpdate()
-        await devEnvActivity.sendActivityUpdate()
-        await devEnvActivity.sendActivityUpdate()
-        await devEnvActivity.sendActivityUpdate()
 
         await assertMessagesShown([
-            ['Your CodeCatalyst Dev Environment has been inactive for 4 minutes, and will stop in 5 minutes.', 4],
-            ['Your CodeCatalyst Dev Environment has been inactive for 5 minutes, and will stop in 4 minutes.', 5],
-            ['Your CodeCatalyst Dev Environment has been inactive for 6 minutes, and will stop in 3 minutes.', 6],
-            ['Your CodeCatalyst Dev Environment has been inactive for 7 minutes, and will stop in 2 minutes.', 7],
-            ['Your CodeCatalyst Dev Environment has been inactive for 8 minutes, and will stop soon.', 8],
+            ['Your CodeCatalyst Dev Environment has been inactive for 4 minutes, and will stop soon.', 4],
         ])
     })
 
-    it('does not show any inactivity message if a newer user activity is found using the api', async function () {
+    it('does not show inactivity message if user activity is found using the API', async function () {
         // This gets checked each time before we decide to show the message.
         // If a new user activity exists then we abort showing the message.
         devEnvActivity.isLocalActivityStale.callsFake(async () => {
@@ -191,22 +145,6 @@ describe('InactivityMessages', function () {
         }
     }
 
-    /**
-     * Starts capturing all vscode messages shown and records them in {@link actualMessages}.
-     *
-     * The `minute` field in {@link actualMessages} records the minute the message was shown.
-     * This value is relative to {@link relativeMinuteMillis}.
-     */
-    function startCapturingMessages() {
-        const start = Date.now()
-        const messages: { message: string; minute: number }[] = []
-        testWindow.onDidShowMessage(async message => {
-            const now = Date.now()
-            messages.push({ message: message.message, minute: Math.floor((now - start) / relativeMinuteMillis) })
-        })
-        actualMessages = messages
-    }
-
     let _initialOffset = 0
     /**
      * This is used for the edge case where the MDE was previously updated with an activity
@@ -219,8 +157,26 @@ describe('InactivityMessages', function () {
     function getLatestTimestamp() {
         let timestamp = Date.now()
         timestamp -= _initialOffset
-        _initialOffset = 0
 
         return timestamp
+    }
+
+    /**
+     * Starts capturing all vscode messages shown and records them in {@link actualMessages}.
+     *
+     * The `minute` field in {@link actualMessages} records the minute the message was shown.
+     * This value is relative to {@link relativeMinuteMillis}.
+     */
+    function startCapturingMessages() {
+        const start = Date.now()
+        const messages: { message: string; minute: number }[] = []
+        testWindow.onDidShowMessage(async (message) => {
+            const now = Date.now()
+            messages.push({
+                message: message.message,
+                minute: Math.floor((now + _initialOffset - start) / relativeMinuteMillis),
+            })
+        })
+        actualMessages = messages
     }
 })

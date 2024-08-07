@@ -32,19 +32,19 @@ export class ActiveStateController implements vscode.Disposable {
 
     constructor(private readonly container: Container) {
         this._disposable = vscode.Disposable.from(
-            RecommendationService.instance.suggestionActionEvent(async e => {
+            RecommendationService.instance.suggestionActionEvent(async (e) => {
                 await this.onSuggestionActionEvent(e)
             }),
-            RecommendationHandler.instance.onDidReceiveRecommendation(async _ => {
+            RecommendationHandler.instance.onDidReceiveRecommendation(async (_) => {
                 await this.onDidReceiveRecommendation()
             }),
-            this.container.lineTracker.onDidChangeActiveLines(async e => {
+            this.container.lineTracker.onDidChangeActiveLines(async (e) => {
                 await this.onActiveLinesChanged(e)
             }),
-            subscribeOnce(this.container.lineTracker.onReady)(async _ => {
+            subscribeOnce(this.container.lineTracker.onReady)(async (_) => {
                 await this.onReady()
             }),
-            this.container.auth.auth.onDidChangeConnectionState(async e => {
+            this.container.auth.auth.onDidChangeConnectionState(async (e) => {
                 if (e.state !== 'authenticating') {
                     await this._refresh(vscode.window.activeTextEditor)
                 }

@@ -11,20 +11,19 @@ import * as sinon from 'sinon'
 import vscode from 'vscode'
 import { appendFileSync, mkdirpSync, remove } from 'fs-extra'
 import { join } from 'path'
-import { format } from 'util'
 import globals from '../shared/extensionGlobals'
 import { CodelensRootRegistry } from '../shared/fs/codelensRootRegistry'
 import { CloudFormationTemplateRegistry } from '../shared/fs/templateRegistry'
 import { getLogger, LogLevel } from '../shared/logger'
 import { setLogger } from '../shared/logger/logger'
-import { activateExtension } from '../shared/utilities/vsCodeUtils'
-import { FakeExtensionContext, FakeMemento } from './fakeExtensionContext'
+import { FakeExtensionContext } from './fakeExtensionContext'
 import { TestLogger } from './testLogger'
 import * as testUtil from './testUtil'
 import { getTestWindow, resetTestWindow } from './shared/vscode/window'
 import { mapTestErrors, normalizeError, setRunnableTimeout } from './setupUtil'
 import { TelemetryDebounceInfo } from '../shared/vscode/commands2'
 import { disableAwsSdkWarning } from '../shared/awsClientBuilder'
+import { GlobalState } from '../shared/globalState'
 
 disableAwsSdkWarning()
 
@@ -49,14 +48,15 @@ export async function mochaGlobalSetup(extensionId: string) {
         // Shows the full error chain when tests fail
         mapTestErrors(this, normalizeError)
 
-        // Extension activation has many side-effects such as changing globals
-        // For stability in tests we will wait until the extension has activated prior to injecting mocks
-        const activationLogger = (msg: string, ...meta: any[]) => console.log(format(msg, ...meta))
-        await activateExtension(extensionId, false, activationLogger)
+        await vscode.extensions.getExtension(extensionId)?.activate()
         const fakeContext = await FakeExtensionContext.create()
         fakeContext.globalStorageUri = (await testUtil.createTestWorkspaceFolder('globalStoragePath')).uri
         fakeContext.extensionPath = globals.context.extensionPath
-        Object.assign(globals, { context: fakeContext })
+        Object.assign(globals, {
+            context: fakeContext,
+            // eslint-disable-next-line aws-toolkits/no-banned-usages
+            globalState: new GlobalState(fakeContext.globalState),
+        })
     }
 }
 
@@ -84,11 +84,12 @@ export const mochaHooks = {
         }
 
         // Enable telemetry features for tests. The metrics won't actually be posted.
-        globals.telemetry.telemetryEnabled = true
+        await globals.telemetry.setTelemetryEnabled(true)
         globals.telemetry.clearRecords()
         globals.telemetry.logger.clear()
         TelemetryDebounceInfo.instance.clear()
-        ;(globals.context as FakeExtensionContext).globalState = new FakeMemento()
+        // mochaGlobalSetup() set this to a fake, so it's safe to clear it here.
+        await globals.globalState.clear()
 
         await testUtil.closeAllEditors()
     },
@@ -156,14 +157,14 @@ export function assertLogsContain(text: string, exactMatch: boolean, severity: L
     assert.ok(
         getTestLogger()
             .getLoggedEntries(severity)
-            .some(e =>
+            .some((e) =>
                 e instanceof Error
                     ? exactMatch
                         ? e.message === text
                         : e.message.includes(text)
                     : exactMatch
-                    ? e === text
-                    : e.includes(text)
+                      ? e === text
+                      : e.includes(text)
             ),
         `Expected to find "${text}" in the logs as type "${severity}"`
     )

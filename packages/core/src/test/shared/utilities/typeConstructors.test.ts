@@ -148,7 +148,7 @@ describe('Type Constructors', function () {
 
         it('uses names attached to functions', function () {
             const typeName = 'Literal<"foo">'
-            const asFoo = addTypeName(typeName, input => {
+            const asFoo = addTypeName(typeName, (input) => {
                 if (typeof input === 'string' && input === 'foo') {
                     return input as 'foo'
                 }

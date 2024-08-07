@@ -15,7 +15,13 @@ import {
     MetricShapes,
     TelemetryBase,
 } from './telemetry.gen'
-import { getRequestId, getTelemetryReason, getTelemetryReasonDesc, getTelemetryResult } from '../errors'
+import {
+    getHttpStatusCode,
+    getRequestId,
+    getTelemetryReason,
+    getTelemetryReasonDesc,
+    getTelemetryResult,
+} from '../errors'
 import { entries, NumericKeys } from '../utilities/tsUtils'
 
 const AsyncLocalStorage: typeof AsyncLocalStorageClass =
@@ -151,14 +157,14 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
     public stop(err?: unknown): void {
         const duration = this.startTime !== undefined ? globals.clock.Date.now() - this.startTime.getTime() : undefined
 
-        // TODO: add reasonDesc/requestId to `MetricBase` so we can remove `as any` below.
         this.emit({
             duration,
             result: getTelemetryResult(err),
             reason: getTelemetryReason(err),
             reasonDesc: getTelemetryReasonDesc(err),
             requestId: getRequestId(err),
-        } as any as Partial<T>)
+            httpStatusCode: getHttpStatusCode(err),
+        } as Partial<T>)
 
         this.#startTime = undefined
     }
@@ -265,8 +271,8 @@ export class TelemetryTracer extends TelemetryBase {
 
             if (result instanceof Promise) {
                 return result
-                    .then(v => (span.stop(), v))
-                    .catch(e => {
+                    .then((v) => (span.stop(), v))
+                    .catch((e) => {
                         span.stop(e)
                         throw e
                     }) as unknown as T
@@ -314,15 +320,15 @@ export class TelemetryTracer extends TelemetryBase {
 
         return {
             name,
-            emit: data => getSpan().emit(data),
-            record: data => getSpan().record(data),
-            run: fn => this.run(name as MetricName, fn),
-            increment: data => getSpan().increment(data),
+            emit: (data) => getSpan().emit(data),
+            record: (data) => getSpan().record(data),
+            run: (fn) => this.run(name as MetricName, fn),
+            increment: (data) => getSpan().increment(data),
         }
     }
 
     private getSpan(name: string): TelemetrySpan {
-        return this.spans.find(s => s.name === name) ?? this.createSpan(name)
+        return this.spans.find((s) => s.name === name) ?? this.createSpan(name)
     }
 
     private createSpan(name: string): TelemetrySpan {

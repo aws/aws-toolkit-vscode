@@ -10,10 +10,10 @@
  * To avoid having duplicate code, we copy the necessary fields from the core library to the separate toolkit
  * extension when required (e.g. debugging, packaging).
  *
- * TODO: Find a better way to do this, hopefully remove the need for this in the core library.
+ * TODO: IDE-12831 tracks work to eliminate this script.
  *
  * Args:
- *   --restore : reverts the package json changes to the original state
+ *   --restore: reverts the package json changes to the original state
  *   --development: performs actions that should only be done during development and not production
  */
 
@@ -33,6 +33,7 @@ function main() {
     const coreLibPackageJsonFile = '../core/package.json'
 
     if (restoreMode) {
+        // TODO: IDE-12831 will eliminate this entire script.
         try {
             fs.copyFileSync(backupJsonFile, packageJsonFile)
             fs.unlinkSync(backupJsonFile)
@@ -46,7 +47,7 @@ function main() {
         const coreSettings = coreLibPackageJson.contributes.configuration.properties
 
         // Remove Amazon Q extension settings stored in core
-        Object.keys(coreSettings).forEach(key => {
+        Object.keys(coreSettings).forEach((key) => {
             if (key.startsWith('amazonQ')) {
                 delete coreSettings[key]
             }

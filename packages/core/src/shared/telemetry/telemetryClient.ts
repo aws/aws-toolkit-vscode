@@ -84,7 +84,10 @@ export class DefaultTelemetryClient implements TelemetryClient {
 
     private readonly logger = getLogger()
 
-    private constructor(private readonly clientId: string, private readonly client: ClientTelemetry) {}
+    private constructor(
+        private readonly clientId: string,
+        private readonly client: ClientTelemetry
+    ) {}
 
     /**
      * Returns failed events

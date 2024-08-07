@@ -50,7 +50,7 @@ import { ReferenceInlineProvider } from './service/referenceInlineProvider'
 import { disposeSecurityDiagnostic, securityScanRender } from './service/diagnosticsProvider'
 import { SecurityPanelViewProvider, openEditorAtRange } from './views/securityPanelViewProvider'
 import { RecommendationHandler } from './service/recommendationHandler'
-import { Commands, registerCommandsWithVSCode } from '../shared/vscode/commands2'
+import { Commands, registerCommandErrorHandler, registerDeclaredCommands } from '../shared/vscode/commands2'
 import { InlineCompletionService, refreshStatusBar } from './service/inlineCompletionService'
 import { isInlineCompletionEnabled } from './util/commonUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
@@ -68,7 +68,7 @@ import { Container } from './service/serviceContainer'
 import { debounceStartSecurityScan } from './commands/startSecurityScan'
 import { securityScanLanguageContext } from './util/securityScanLanguageContext'
 import { registerWebviewErrorHandler } from '../webviews/server'
-import { logAndShowWebviewError } from '../shared/utilities/logAndShowUtils'
+import { logAndShowError, logAndShowWebviewError } from '../shared/utilities/logAndShowUtils'
 import { openSettings } from '../shared/settings'
 
 let localize: nls.LocalizeFunc
@@ -92,8 +92,9 @@ export async function activate(context: ExtContext): Promise<void> {
         await enableDefaultConfigCloud9()
     }
 
-    registerCommandsWithVSCode(
-        context.extensionContext,
+    // TODO: is this indirection useful?
+    registerDeclaredCommands(
+        context.extensionContext.subscriptions,
         CodeWhispererCommandDeclarations.instance,
         new CodeWhispererCommandBackend(context.extensionContext)
     )
@@ -104,9 +105,13 @@ export async function activate(context: ExtContext): Promise<void> {
     const securityPanelViewProvider = new SecurityPanelViewProvider(context.extensionContext)
     activateSecurityScan()
 
-    /**
-     * Register the webview error handler for Amazon Q
-     */
+    // TODO: this is already done in packages/core/src/extensionCommon.ts, why doesn't amazonq use that?
+    registerCommandErrorHandler((info, error) => {
+        const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
+        void logAndShowError(localize, error, info.id, defaultMessage)
+    })
+
+    // TODO: this is already done in packages/core/src/extensionCommon.ts, why doesn't amazonq use that?
     registerWebviewErrorHandler((error: unknown, webviewId: string, command: string) => {
         logAndShowWebviewError(localize, error, webviewId, command)
     })
@@ -128,7 +133,7 @@ export async function activate(context: ExtContext): Promise<void> {
         /**
          * Configuration change
          */
-        vscode.workspace.onDidChangeConfiguration(async configurationChangeEvent => {
+        vscode.workspace.onDidChangeConfiguration(async (configurationChangeEvent) => {
             if (configurationChangeEvent.affectsConfiguration('editor.tabSize')) {
                 EditorContext.updateTabSize(getTabSizeSetting())
             }
@@ -141,7 +146,7 @@ export async function activate(context: ExtContext): Promise<void> {
                             CodeWhispererConstants.ssoConfigAlertMessage,
                             CodeWhispererConstants.settingsLearnMore
                         )
-                        .then(async resp => {
+                        .then(async (resp) => {
                             if (resp === CodeWhispererConstants.settingsLearnMore) {
                                 void openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
                             }
@@ -156,7 +161,7 @@ export async function activate(context: ExtContext): Promise<void> {
                             CodeWhispererConstants.ssoConfigAlertMessageShareData,
                             CodeWhispererConstants.settingsLearnMore
                         )
-                        .then(async resp => {
+                        .then(async (resp) => {
                             if (resp === CodeWhispererConstants.settingsLearnMore) {
                                 void openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
                             }
@@ -170,7 +175,7 @@ export async function activate(context: ExtContext): Promise<void> {
                         CodeWhispererConstants.reloadWindowPrompt,
                         CodeWhispererConstants.reloadWindow
                     )
-                    .then(selected => {
+                    .then((selected) => {
                         if (selected === CodeWhispererConstants.reloadWindow) {
                             void vscode.commands.executeCommand('workbench.action.reloadWindow')
                         }
@@ -184,7 +189,7 @@ export async function activate(context: ExtContext): Promise<void> {
         /**
          * Open Configuration
          */
-        Commands.register('aws.amazonq.configure', async id => {
+        Commands.register('aws.amazonq.configure', async (id) => {
             if (id === 'codewhisperer') {
                 await vscode.commands.executeCommand(
                     'workbench.action.openSettings',
@@ -238,7 +243,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 vscode.window.activeTextEditor as vscode.TextEditor,
                 client,
                 await getConfigEntry()
-            ).catch(e => {
+            ).catch((e) => {
                 getLogger().error('invokeRecommendation failed: %s', (e as Error).message)
             })
         }),
@@ -257,7 +262,7 @@ export async function activate(context: ExtContext): Promise<void> {
         connectWithCustomization.register(),
 
         // on text document close.
-        vscode.workspace.onDidCloseTextDocument(e => {
+        vscode.workspace.onDidCloseTextDocument((e) => {
             if (isInlineCompletionEnabled() && e.uri.fsPath !== InlineCompletionService.instance.filePath()) {
                 return
             }
@@ -290,10 +295,12 @@ export async function activate(context: ExtContext): Promise<void> {
     )
 
     await auth.restore()
+    await auth.clearExtraConnections()
 
     if (auth.isConnectionExpired()) {
-        auth.showReauthenticatePrompt().catch(e => {
-            getLogger().error('showReauthenticatePrompt failed: %s', (e as Error).message)
+        auth.showReauthenticatePrompt().catch((e) => {
+            const defaulMsg = localize('AWS.generic.message.error', 'Failed to reauth:')
+            void logAndShowError(localize, e, 'showReauthenticatePrompt', defaulMsg)
         })
     }
     if (auth.isValidEnterpriseSsoInUse()) {
@@ -335,7 +342,7 @@ export async function activate(context: ExtContext): Promise<void> {
 
         context.extensionContext.subscriptions.push(
             // Trigger scan if focus switches to a different file
-            vscode.window.onDidChangeActiveTextEditor(editor => {
+            vscode.window.onDidChangeActiveTextEditor((editor) => {
                 const codewhispererDiagnostics = editor
                     ? securityScanRender.securityDiagnosticCollection
                           ?.get(editor.document.uri)
@@ -358,7 +365,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 }
             }),
             // Trigger scan if the file contents change
-            vscode.workspace.onDidChangeTextDocument(async event => {
+            vscode.workspace.onDidChangeTextDocument(async (event) => {
                 const editor = vscode.window.activeTextEditor
                 if (
                     editor &&
@@ -378,7 +385,7 @@ export async function activate(context: ExtContext): Promise<void> {
         )
 
         // Trigger scan if the toggle has just been enabled
-        CodeScansState.instance.onDidChangeState(isScansEnabled => {
+        CodeScansState.instance.onDidChangeState((isScansEnabled) => {
             const editor = vscode.window.activeTextEditor
             if (editor && shouldRunAutoScan(editor, isScansEnabled) && editor.document.getText().length > 0) {
                 void debounceStartSecurityScan(
@@ -398,7 +405,7 @@ export async function activate(context: ExtContext): Promise<void> {
         )
 
         context.extensionContext.subscriptions.push(
-            vscode.window.onDidChangeActiveTextEditor(editor => {
+            vscode.window.onDidChangeActiveTextEditor((editor) => {
                 if (isCloud9()) {
                     if (editor) {
                         securityPanelViewProvider.setDecoration(editor, editor.document.uri)
@@ -440,16 +447,16 @@ export async function activate(context: ExtContext): Promise<void> {
          * Automated trigger
          */
         context.extensionContext.subscriptions.push(
-            vscode.window.onDidChangeActiveTextEditor(async editor => {
+            vscode.window.onDidChangeActiveTextEditor(async (editor) => {
                 await RecommendationHandler.instance.onEditorChange()
             }),
-            vscode.window.onDidChangeWindowState(async e => {
+            vscode.window.onDidChangeWindowState(async (e) => {
                 await RecommendationHandler.instance.onFocusChange()
             }),
-            vscode.window.onDidChangeTextEditorSelection(async e => {
+            vscode.window.onDidChangeTextEditorSelection(async (e) => {
                 await RecommendationHandler.instance.onCursorChange(e)
             }),
-            vscode.workspace.onDidChangeTextDocument(async e => {
+            vscode.workspace.onDidChangeTextDocument(async (e) => {
                 const editor = vscode.window.activeTextEditor
                 if (!editor) {
                     return
@@ -520,7 +527,7 @@ export async function activate(context: ExtContext): Promise<void> {
             /**
              * Automated trigger
              */
-            vscode.workspace.onDidChangeTextDocument(async e => {
+            vscode.workspace.onDidChangeTextDocument(async (e) => {
                 const editor = vscode.window.activeTextEditor
                 if (!editor) {
                     return
@@ -554,13 +561,13 @@ export async function activate(context: ExtContext): Promise<void> {
              * On intelliSense recommendation rejection, reset set intelli sense is active state
              * Maintaining this variable because VS Code does not expose official intelliSense isActive API
              */
-            vscode.window.onDidChangeVisibleTextEditors(async e => {
+            vscode.window.onDidChangeVisibleTextEditors(async (e) => {
                 resetIntelliSenseState(true, getAutoTriggerStatus(), RecommendationHandler.instance.isValidResponse())
             }),
-            vscode.window.onDidChangeActiveTextEditor(async e => {
+            vscode.window.onDidChangeActiveTextEditor(async (e) => {
                 resetIntelliSenseState(true, getAutoTriggerStatus(), RecommendationHandler.instance.isValidResponse())
             }),
-            vscode.window.onDidChangeTextEditorSelection(async e => {
+            vscode.window.onDidChangeTextEditorSelection(async (e) => {
                 if (e.kind === TextEditorSelectionChangeKind.Mouse) {
                     resetIntelliSenseState(
                         true,
@@ -569,7 +576,7 @@ export async function activate(context: ExtContext): Promise<void> {
                     )
                 }
             }),
-            vscode.workspace.onDidSaveTextDocument(async e => {
+            vscode.workspace.onDidSaveTextDocument(async (e) => {
                 resetIntelliSenseState(true, getAutoTriggerStatus(), RecommendationHandler.instance.isValidResponse())
             })
         )

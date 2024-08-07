@@ -36,12 +36,15 @@ export function streamToFile(stream: Readable, target: vscode.Uri): Promise<void
 class BufferWriter {
     private offset = 0
 
-    public constructor(private readonly buffer: Buffer | number[], private readonly finalSize?: number) {}
+    public constructor(
+        private readonly buffer: Buffer | number[],
+        private readonly finalSize?: number
+    ) {}
 
     public write(chunk: Buffer) {
         const buffer = this.buffer
         if (Buffer.isBuffer(buffer)) {
-            chunk.forEach(byte => (this.offset = buffer.writeUInt8(byte, this.offset)))
+            chunk.forEach((byte) => (this.offset = buffer.writeUInt8(byte, this.offset)))
         } else {
             buffer.push(...chunk)
             this.offset += chunk.length
@@ -71,7 +74,7 @@ export function streamToBuffer(stream: Readable, size?: number): Promise<Buffer>
 
     return new Promise<Buffer>((resolve, reject) => {
         stream.on('error', reject)
-        stream.on('data', chunk => writer.write(chunk))
+        stream.on('data', (chunk) => writer.write(chunk))
         stream.on('end', () => resolve(writer.finish()))
     })
 }
@@ -96,6 +99,6 @@ export async function pipe(
     }
 
     return new Promise<void>((resolve, reject) => {
-        pipeline(readStream, writeStream, err => (err ? reject(err) : resolve()))
+        pipeline(readStream, writeStream, (err) => (err ? reject(err) : resolve()))
     })
 }

@@ -9,7 +9,7 @@ import sinon from 'sinon'
 import { join } from 'path'
 import { getTestWorkspaceFolder } from 'aws-core-vscode/testInteg'
 import { CodeAnalysisScope, ZipUtil } from 'aws-core-vscode/codewhisperer'
-import { CodeWhispererConstants } from 'aws-core-vscode/codewhisperer'
+import { codeScanTruncDirPrefix } from 'aws-core-vscode/codewhisperer'
 import { ToolkitError } from 'aws-core-vscode/shared'
 
 describe('zipUtil', function () {
@@ -36,12 +36,12 @@ describe('zipUtil', function () {
         it('Should generate zip for file scan and return expected metadata', async function () {
             const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.FILE)
             assert.strictEqual(zipMetadata.lines, 49)
-            assert.ok(zipMetadata.rootDir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
+            assert.ok(zipMetadata.rootDir.includes(codeScanTruncDirPrefix))
             assert.ok(zipMetadata.srcPayloadSizeInBytes > 0)
             assert.strictEqual(zipMetadata.scannedFiles.size, 1)
             assert.strictEqual(zipMetadata.buildPayloadSizeInBytes, 0)
             assert.ok(zipMetadata.zipFileSizeInBytes > 0)
-            assert.ok(zipMetadata.zipFilePath.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
+            assert.ok(zipMetadata.zipFilePath.includes(codeScanTruncDirPrefix))
         })
 
         it('Should throw error if payload size limit is reached for file scan', async function () {
@@ -56,12 +56,12 @@ describe('zipUtil', function () {
         it('Should generate zip for project scan and return expected metadata', async function () {
             const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT)
             assert.ok(zipMetadata.lines > 0)
-            assert.ok(zipMetadata.rootDir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
+            assert.ok(zipMetadata.rootDir.includes(codeScanTruncDirPrefix))
             assert.ok(zipMetadata.srcPayloadSizeInBytes > 0)
             assert.ok(zipMetadata.scannedFiles.size > 0)
             assert.strictEqual(zipMetadata.buildPayloadSizeInBytes, 0)
             assert.ok(zipMetadata.zipFileSizeInBytes > 0)
-            assert.ok(zipMetadata.zipFilePath.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
+            assert.ok(zipMetadata.zipFilePath.includes(codeScanTruncDirPrefix))
         })
 
         it('Should throw error if payload size limit is reached for project scan', async function () {
@@ -94,7 +94,7 @@ describe('zipUtil', function () {
 
             const document = await vscode.workspace.openTextDocument(appCodePath)
             await vscode.window.showTextDocument(document)
-            void vscode.window.activeTextEditor?.edit(editBuilder => {
+            void vscode.window.activeTextEditor?.edit((editBuilder) => {
                 editBuilder.insert(new vscode.Position(0, 0), '// a comment\n')
             })
 

@@ -31,20 +31,40 @@ export async function runTests(
 
     function getRoot(): string {
         const abs = process.env['DEVELOPMENT_PATH'] ?? process.cwd()
-
         if (process.platform !== 'win32') {
             return abs
         }
 
-        // Force all drive letters (or whatever else is before the first colon) to be lowercase.
-        //
-        // Node's `require` will always cache modules based off case-sensitive paths, regardless
-        // of the underlying file system. This is normally not a problem, but VS Code also happens
-        // to normalize paths on Windows to use lowercase drive letters when using its bootstrap loader.
-        // This means that each module ends up getting loaded twice, once by the extension and once
-        // by any test code, causing all sorts of bizarre behavior during tests.
+        /**
+         * Node's `require` caches modules by case-sensitive paths, regardless of the underlying
+         * file system. This is normally not a problem, but VS Code also happens to normalize paths
+         * on Windows to use lowercase drive letters when using its bootstrap loader. This means
+         * that each module ends up getting loaded twice, once by the extension and once by any test
+         * code, causing all sorts of bizarre behavior during tests unless you normalize paths like
+         * below.
+         *
+         * In multi root npm workspaces on windows it looks like imports into other npm workspace packages
+         * makes the loaded module id an uppercase drive letter in the node require cache. #5154
+         *
+         * E.g. when we import a file from core the module ids inside of amazonq/toolkits node require
+         * cache are something like:
+         *  - C:\${pathToWorkspace}\packages\core\myfile.js
+         *
+         * However, internal workspace package imports are lower case drive letters. That means when
+         * core imports a module inside of core we see this as:
+         *  - c:\${pathToWorkspace}\packages\core\myfile.js
+         *
+         * This can cause things like globals to be undefined, since tests inside of amazonq/toolkit
+         * are looking for uppercase module ids, whereas tests inside of core are always looking for
+         * lower case module ids (since the tests live inside of core itself)
+         */
         const [drive, ...rest] = abs.split(':')
-        return rest.length === 0 ? abs : [drive.toLowerCase(), ...rest].join(':')
+        return rest.length === 0
+            ? abs
+            : [
+                  extensionId === VSCODE_EXTENSION_ID.awstoolkitcore ? drive.toLowerCase() : drive.toUpperCase(),
+                  ...rest,
+              ].join(':')
     }
 
     const root = getRoot()
@@ -75,7 +95,7 @@ export async function runTests(
 
     // The `require` option for Mocha isn't working for some reason (maybe user error?)
     // So instead we are loading the modules ourselves and registering the relevant hooks
-    initTests.forEach(relativePath => {
+    initTests.forEach((relativePath) => {
         const fullPath = path.join(dist, relativePath).replace('.ts', '.js')
         if (!fs.pathExistsSync(fullPath)) {
             console.error(`error: missing ${fullPath}`)
@@ -95,9 +115,9 @@ export async function runTests(
     })
 
     function runMocha(files: string[]): Promise<void> {
-        files.forEach(f => mocha.addFile(path.resolve(dist, f)))
+        files.forEach((f) => mocha.addFile(path.resolve(dist, f)))
         return new Promise<void>((resolve, reject) => {
-            mocha.run(failures => {
+            mocha.run((failures) => {
                 if (failures > 0) {
                     reject(new Error(`${failures} tests failed.`))
                 } else {

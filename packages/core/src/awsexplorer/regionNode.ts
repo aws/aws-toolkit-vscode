@@ -4,31 +4,31 @@
  */
 
 import { TreeItemCollapsibleState } from 'vscode'
-import { ApiGatewayNode } from '../apigateway/explorer/apiGatewayNodes'
+import { ApiGatewayNode } from '../awsService/apigateway/explorer/apiGatewayNodes'
 import { SchemasNode } from '../eventSchemas/explorer/schemasNode'
 import { CloudFormationNode } from '../lambda/explorer/cloudFormationNodes'
-import { CloudWatchLogsNode } from '../cloudWatchLogs/explorer/cloudWatchLogsNode'
+import { CloudWatchLogsNode } from '../awsService/cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { LambdaNode } from '../lambda/explorer/lambdaNodes'
-import { S3Node } from '../s3/explorer/s3Nodes'
-import { EcrNode } from '../ecr/explorer/ecrNode'
-import { RedshiftNode } from '../redshift/explorer/redshiftNode'
-import { IotNode } from '../iot/explorer/iotNodes'
+import { S3Node } from '../awsService/s3/explorer/s3Nodes'
+import { EcrNode } from '../awsService/ecr/explorer/ecrNode'
+import { RedshiftNode } from '../awsService/redshift/explorer/redshiftNode'
+import { IotNode } from '../awsService/iot/explorer/iotNodes'
 import { Region } from '../shared/regions/endpoints'
 import { defaultPartition, RegionProvider } from '../shared/regions/regionProvider'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { StepFunctionsNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { SsmDocumentNode } from '../ssmDocument/explorer/ssmDocumentNode'
 import { ResourcesNode } from '../dynamicResources/explorer/nodes/resourcesNode'
-import { AppRunnerNode } from '../apprunner/explorer/apprunnerNode'
+import { AppRunnerNode } from '../awsService/apprunner/explorer/apprunnerNode'
 import { DefaultAppRunnerClient } from '../shared/clients/apprunnerClient'
 import { DefaultEcrClient } from '../shared/clients/ecrClient'
 import { DefaultRedshiftClient } from '../shared/clients/redshiftClient'
 import { DefaultIotClient } from '../shared/clients/iotClient'
 import { DefaultS3Client } from '../shared/clients/s3Client'
 import { DefaultSchemaClient } from '../shared/clients/schemaClient'
-import { getEcsRootNode } from '../ecs/model'
+import { getEcsRootNode } from '../awsService/ecs/model'
 import { compareTreeItems, TreeShim } from '../shared/treeview/utils'
-import { Ec2ParentNode } from '../ec2/explorer/ec2ParentNode'
+import { Ec2ParentNode } from '../awsService/ec2/explorer/ec2ParentNode'
 import { DevSettings } from '../shared/settings'
 import { Ec2Client } from '../shared/clients/ec2Client'
 import { isCloud9 } from '../shared/extensionUtilities'
@@ -126,7 +126,10 @@ export class RegionNode extends AWSTreeNodeBase {
         return this.region.name
     }
 
-    public constructor(region: Region, private readonly regionProvider: RegionProvider) {
+    public constructor(
+        region: Region,
+        private readonly regionProvider: RegionProvider
+    ) {
         super(region.name, TreeItemCollapsibleState.Expanded)
         this.contextValue = 'awsRegionNode'
         this.region = region

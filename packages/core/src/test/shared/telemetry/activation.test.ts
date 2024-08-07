@@ -4,63 +4,39 @@
  */
 
 import assert from 'assert'
-import * as sinon from 'sinon'
-import * as vscode from 'vscode'
-
-import { FakeExtensionContext } from '../../fakeExtensionContext'
 import {
     handleTelemetryNoticeResponse,
     noticeResponseViewSettings,
     noticeResponseOk,
-    TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED,
     hasUserSeenTelemetryNotice,
     setHasUserSeenTelemetryNotice,
 } from '../../../shared/telemetry/activation'
+import globals from '../../../shared/extensionGlobals'
 
 describe('handleTelemetryNoticeResponse', function () {
-    let extensionContext: vscode.ExtensionContext
-    let sandbox: sinon.SinonSandbox
-
-    before(function () {
-        sandbox = sinon.createSandbox()
-    })
-
-    after(function () {
-        sandbox.restore()
-    })
-
-    beforeEach(async function () {
-        extensionContext = await FakeExtensionContext.create()
-    })
-
     it('does nothing when notice is discarded', async function () {
-        await handleTelemetryNoticeResponse(undefined, extensionContext)
-
+        await handleTelemetryNoticeResponse(undefined)
         assert.strictEqual(
-            extensionContext.globalState.get(TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED),
+            globals.globalState.get('awsTelemetryNoticeVersionAck'),
             undefined,
             'Expected opt out shown state to remain unchanged'
         )
     })
 
     it('handles View Settings response', async function () {
-        const executeCommand = sandbox.stub(vscode.commands, 'executeCommand')
-
-        await handleTelemetryNoticeResponse(noticeResponseViewSettings, extensionContext)
-
-        assert.ok(executeCommand.calledOnce, 'Expected to trigger View Settings')
+        await handleTelemetryNoticeResponse(noticeResponseViewSettings)
         assert.strictEqual(
-            extensionContext.globalState.get(TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED),
+            globals.globalState.get('awsTelemetryNoticeVersionAck'),
             2,
             'Expected opt out shown state to be set'
         )
     })
 
     it('handles Ok response', async function () {
-        await handleTelemetryNoticeResponse(noticeResponseOk, extensionContext)
+        await handleTelemetryNoticeResponse(noticeResponseOk)
 
         assert.strictEqual(
-            extensionContext.globalState.get(TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED),
+            globals.globalState.get('awsTelemetryNoticeVersionAck'),
             2,
             'Expected opt out shown state to be set'
         )
@@ -68,25 +44,12 @@ describe('handleTelemetryNoticeResponse', function () {
 })
 
 describe('hasUserSeenTelemetryNotice', async function () {
-    let extensionContext: vscode.ExtensionContext
-    let sandbox: sinon.SinonSandbox
-
-    before(function () {
-        sandbox = sinon.createSandbox()
-    })
-
-    after(function () {
-        sandbox.restore()
-    })
-
-    beforeEach(async function () {
-        extensionContext = await FakeExtensionContext.create()
-    })
+    beforeEach(async function () {})
 
     it('is affected by setHasUserSeenTelemetryNotice', async function () {
-        assert.ok(!hasUserSeenTelemetryNotice(extensionContext))
-        await setHasUserSeenTelemetryNotice(extensionContext)
-        assert.ok(hasUserSeenTelemetryNotice(extensionContext))
+        assert.ok(!hasUserSeenTelemetryNotice())
+        await setHasUserSeenTelemetryNotice()
+        assert.ok(hasUserSeenTelemetryNotice())
     })
 
     const scenarios = [
@@ -96,10 +59,10 @@ describe('hasUserSeenTelemetryNotice', async function () {
         { currentState: 9999, expectedHasSeen: true, desc: 'seen a future version' },
     ]
 
-    scenarios.forEach(scenario => {
+    scenarios.forEach((scenario) => {
         it(scenario.desc, async () => {
-            await extensionContext.globalState.update(TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED, scenario.currentState)
-            assert.strictEqual(hasUserSeenTelemetryNotice(extensionContext), scenario.expectedHasSeen)
+            await globals.globalState.update('awsTelemetryNoticeVersionAck', scenario.currentState)
+            assert.strictEqual(hasUserSeenTelemetryNotice(), scenario.expectedHasSeen)
         })
     })
 })

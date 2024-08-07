@@ -85,12 +85,14 @@ VS Code window, in the background it is running in a Browser context.
 
 ## Adding Web mode specific npm modules
 
-If you need to manage npm modules required for Web mode, such as a [browserfied module](https://www.npmjs.com/package/os-browserify), see [the documentation here](../packages/core/src/web/README.md).
+If you need to manage npm modules required for Web mode, such as a [browserfied module](https://www.npmjs.com/package/os-browserify), see [the documentation here](../packages/core/src/web/README.md#packagejson).
 
 ## Finding incompatible transitive dependencies
 
 For example, if I have a Typescript module, `myFile.ts`, that imports a module which imports another module (transitive dependency) such as `fs-extra`,
 when I execute `myFile.ts` in the browser it will break due to `fs-extra` not being browser compatible.
+
+> INFO: A common error is `Cannot read properties of undefined (reading 'native')` caused by `fs-extra`
 
 It may be difficult to determine which module imported `fs-extra` due to a nested chain of transitive dependencies.
 
@@ -102,10 +104,11 @@ to help us visualize the imports and determine which module is importing a certa
 1. Install the `graphviz` cli, this provides the `dot` cli command
     - Mac: `brew install graphviz`
     - Others: [See documentation](https://www.graphviz.org/download/)
-2. Run `npx depcruise {RELATIVE_PATH_TO_FILE}  --output-type dot | dot -T svg > dependency-graph.svg`
-    - For example, `npx depcruise src/srcShared/fs.ts  --output-type dot | dot -T svg > dependency-graph.svg` generates the following which shows `fs-extra` is imported by `fileSystemUtilities.ts`:
-      ![Dependency Graph](./images/dependency-graph.svg)
-    - Additionally specify a certain dependency with `--reaches` , `npx depcruise src/srcShared/fs.ts --reaches "fs-extra" --output-type dot | dot -T svg > dependency-graph.svg`, to hide unrelated dependencies:
+2. Temporarily install `dependency-cruiser`
+    - IMPORTANT: You will want to revert this install when done
+    - `npm i dependency-cruiser`
+3. Run `npx depcruise {RELATIVE_PATH_TO_FILE}  --reaches "{YOUR_MODULE}" --output-type dot | dot -T svg > dependency-graph.svg`
+    - For example `npx depcruise src/shared/fs/fs.ts --reaches "fs-extra" --output-type dot | dot -T svg > dependency-graph.svg`, generates the following which shows that `fs-extra` is imported by `fileSystemUtilities.ts`:
       ![Dependency Graph](./images/dependency-graph-small.svg)
 
 ## Behavior of module exports in tests

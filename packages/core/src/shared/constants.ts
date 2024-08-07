@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 
 import { isCloud9 } from './extensionUtilities'
 
-export const regionSettingKey = 'region'
 export const profileSettingKey = 'profile'
 export const productName: string = 'aws-toolkit-vscode'
 
@@ -63,6 +62,11 @@ export const lambdaFunctionUrlConfigUrl: string = 'https://docs.aws.amazon.com/l
 // URLs for "sam sync" wizard.
 export const samSyncUrl = vscode.Uri.parse(
     'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/accelerate-getting-started.html'
+)
+
+//URLs for "sam build" wizard.
+export const samBuildUrl = vscode.Uri.parse(
+    'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-building.html'
 )
 
 // URLs for CDK

@@ -45,7 +45,7 @@ export class FileContextExtractor {
                 .filter(function (elem, index, self) {
                     return index === self.indexOf(elem) && elem !== languageId
                 })
-                .forEach(importKey => should.add(importKey))
+                .forEach((importKey) => should.add(importKey))
         }
 
         return {

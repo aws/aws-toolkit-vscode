@@ -157,7 +157,10 @@ export class DevEnvActivity implements vscode.Disposable {
         return new DevEnvActivity(client, extensionUserActivity)
     }
 
-    private constructor(private readonly client: DevEnvClient, extensionUserActivity?: UserActivity) {
+    private constructor(
+        private readonly client: DevEnvClient,
+        extensionUserActivity?: UserActivity
+    ) {
         this.extensionUserActivity = extensionUserActivity ?? this.defaultUserActivity
     }
 

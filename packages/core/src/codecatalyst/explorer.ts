@@ -14,7 +14,7 @@ import { CodeCatalystCommands, codecatalystConnectionsCmd } from './commands'
 import { ConnectedDevEnv, getDevfileLocation, getThisDevEnv } from './model'
 import * as codecatalyst from './model'
 import { getLogger } from '../shared/logger'
-import { Connection } from '../auth/connection'
+import { SsoConnection } from '../auth/connection'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 
 export const learnMoreCommand = Commands.declare('aws.learnMore', () => async (docsUrl: vscode.Uri) => {
@@ -24,8 +24,8 @@ export const learnMoreCommand = Commands.declare('aws.learnMore', () => async (d
 // Only used in rare cases on C9
 export const reauth = Commands.declare(
     '_aws.codecatalyst.reauthenticate',
-    () => async (conn: Connection, authProvider: CodeCatalystAuthenticationProvider) => {
-        await authProvider.auth.reauthenticate(conn)
+    () => async (conn: SsoConnection, authProvider: CodeCatalystAuthenticationProvider) => {
+        await authProvider.reauthenticate(conn)
     }
 )
 
@@ -141,7 +141,7 @@ export class CodeCatalystRootNode implements TreeNode {
         this.addRefreshEmitter(() => this.onDidChangeEmitter.fire())
 
         this.authProvider.onDidChange(() => {
-            this.refreshEmitters.forEach(fire => fire())
+            this.refreshEmitters.forEach((fire) => fire())
         })
     }
 
@@ -220,12 +220,12 @@ export class CodeCatalystRootNode implements TreeNode {
         }
         let resolve: ((val: boolean) => void) | undefined
         if (this.resolveDevEnv === undefined) {
-            this.resolveDevEnv = new Promise<boolean>(res => {
+            this.resolveDevEnv = new Promise<boolean>((res) => {
                 resolve = res
             })
         }
 
-        this.devenv = (await getThisDevEnv(this.authProvider))?.unwrapOrElse(e => {
+        this.devenv = (await getThisDevEnv(this.authProvider))?.unwrapOrElse((e) => {
             const err = e as Error
             getLogger().warn('codecatalyst: failed to get current Dev Enviroment: %s', err.message)
             return undefined

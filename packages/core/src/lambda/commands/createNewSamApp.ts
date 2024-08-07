@@ -63,6 +63,7 @@ export async function resumeCreateNewSamApp(
     let samVersion: string | undefined
     const samInitState: SamInitState | undefined = activationReloadState.getSamInitState()
     try {
+        getLogger().debug('SAM: resumeCreateNewSamApp')
         const templateUri = vscode.Uri.file(samInitState!.template!)
         const readmeUri = vscode.Uri.file(samInitState!.readme!)
         const folder = vscode.workspace.getWorkspaceFolder(templateUri)
@@ -146,7 +147,9 @@ export async function createNewSamApplication(
 
         const credentials = await awsContext.getCredentials()
         samVersion = await getSamCliVersion(samCliContext)
-        const schemaRegions = regionProvider.getRegions().filter(r => regionProvider.isServiceInRegion('schemas', r.id))
+        const schemaRegions = regionProvider
+            .getRegions()
+            .filter((r) => regionProvider.isServiceInRegion('schemas', r.id))
         const defaultRegion = awsContext.getCredentialDefaultRegion()
 
         const config = await new CreateNewSamAppWizard({
@@ -292,7 +295,7 @@ export async function createNewSamApplication(
             if (newLaunchConfigs && newLaunchConfigs.length > 0) {
                 void showCompletionNotification(
                     config.name,
-                    `"${newLaunchConfigs.map(config => config.name).join('", "')}"`
+                    `"${newLaunchConfigs.map((config) => config.name).join('", "')}"`
                 )
             }
             reason = 'complete'
@@ -311,7 +314,7 @@ export async function createNewSamApplication(
                     ),
                     helpText
                 )
-                .then(async buttonText => {
+                .then(async (buttonText) => {
                     if (buttonText === helpText) {
                         void openUrl(vscode.Uri.parse(launchConfigDocUrl))
                     }
@@ -396,7 +399,7 @@ export async function addInitialLaunchConfiguration(
     if (configurations) {
         // add configurations that target the new template file
         const targetDir: string = path.dirname(targetUri.fsPath)
-        const filtered = configurations.filter(config => {
+        const filtered = configurations.filter((config) => {
             let templatePath: string = (config.invokeTarget as TemplateTargetProperties).templatePath
             templatePath = replaceVscodeVars(templatePath, folder.uri.fsPath)
 
@@ -408,7 +411,7 @@ export async function addInitialLaunchConfiguration(
 
         // optional for ZIP-lambdas but required for Image-lambdas
         if (runtime !== undefined) {
-            filtered.forEach(configuration => {
+            filtered.forEach((configuration) => {
                 if (!configuration.lambda) {
                     configuration.lambda = {}
                 }

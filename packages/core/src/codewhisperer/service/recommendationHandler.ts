@@ -99,7 +99,7 @@ export class RecommendationHandler {
     }
 
     isValidResponse(): boolean {
-        return session.recommendations.some(r => r.content.trim() !== '')
+        return session.recommendations.some((r) => r.content.trim() !== '')
     }
 
     async getServerResponse(
@@ -275,7 +275,7 @@ export class RecommendationHandler {
                     getLogger().error('amazonq inline-suggest: AccessDeniedException : %s', (error as Error).message)
                     void vscode.window
                         .showErrorMessage(`CodeWhisperer: ${error?.message}`, CodeWhispererConstants.settingsLearnMore)
-                        .then(async resp => {
+                        .then(async (resp) => {
                             if (resp === CodeWhispererConstants.settingsLearnMore) {
                                 void openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
                             }
@@ -412,7 +412,7 @@ export class RecommendationHandler {
     }
 
     hasAtLeastOneValidSuggestion(typedPrefix: string): boolean {
-        return session.recommendations.some(r => r.content.trim() !== '' && r.content.startsWith(typedPrefix))
+        return session.recommendations.some((r) => r.content.trim() !== '' && r.content.startsWith(typedPrefix))
     }
 
     cancelPaginatedRequest() {
@@ -493,7 +493,7 @@ export class RecommendationHandler {
         if (isCloud9('any')) {
             this.clearRecommendations()
         } else if (isInlineCompletionEnabled()) {
-            this.clearInlineCompletionStates().catch(e => {
+            this.clearInlineCompletionStates().catch((e) => {
                 getLogger().error('clearInlineCompletionStates failed: %s', (e as Error).message)
             })
         }

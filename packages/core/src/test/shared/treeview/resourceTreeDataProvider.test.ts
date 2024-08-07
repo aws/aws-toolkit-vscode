@@ -20,7 +20,10 @@ class TestNode implements TreeNode<TestNode> {
     public readonly onDidChangeChildren = this.onDidChangeChildrenEmitter.event
     public readonly onDidChangeTreeItem = this.onDidChangeTreeItemEmitter.event
 
-    public constructor(public readonly id: string, private readonly tree: Tree) {}
+    public constructor(
+        public readonly id: string,
+        private readonly tree: Tree
+    ) {}
 
     public refreshChildren() {
         this.onDidChangeChildrenEmitter.fire()
@@ -48,7 +51,7 @@ function getRoot(tree: Tree) {
 }
 
 function getLabels(nodes: TreeNode[]): Promise<string[]> {
-    return Promise.all(nodes.map(async n => stringOrProp((await n.getTreeItem()).label, 'label') ?? 'not set'))
+    return Promise.all(nodes.map(async (n) => stringOrProp((await n.getTreeItem()).label, 'label') ?? 'not set'))
 }
 
 function toTestNode(node: TreeNode): TestNode | never {
@@ -61,7 +64,7 @@ function toTestNode(node: TreeNode): TestNode | never {
 
 function setupChanged(provider: ResourceTreeDataProvider): TreeNode[] {
     const changed: TreeNode[] = []
-    provider.onDidChangeTreeData(node => node && changed.push(node))
+    provider.onDidChangeTreeData((node) => node && changed.push(node))
 
     return changed
 }

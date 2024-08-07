@@ -16,7 +16,7 @@ import { getSelectedCustomization } from './customizationUtil'
 import { selectFrom } from '../../shared/utilities/tsUtils'
 import { checkLeftContextKeywordsForJsonAndYaml } from './commonUtil'
 import { CodeWhispererSupplementalContext } from '../models/model'
-import { getOptOutPreference } from './commonUtil'
+import { getOptOutPreference } from '../../shared/telemetry/util'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -112,7 +112,7 @@ export async function buildListRecommendationRequest(
 
     const selectedCustomization = getSelectedCustomization()
     const supplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
-        ? supplementalContexts.supplementalContextItems.map(v => {
+        ? supplementalContexts.supplementalContextItems.map((v) => {
               return selectFrom(v, 'content', 'filePath')
           })
         : []

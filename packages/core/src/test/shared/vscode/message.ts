@@ -45,7 +45,10 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
     public readonly onDidSelectItem = this._onDidSelectItem.event
     public readonly onDidUpdateProgress = this._onDidUpdateProgress.event
 
-    public constructor(message: string, private readonly options?: MessageOptions<T>) {
+    public constructor(
+        message: string,
+        private readonly options?: MessageOptions<T>
+    ) {
         this._message = message
         this.modal = !!options?.modal
         this.severity = options?.severity ?? SeverityLevel.Information
@@ -74,7 +77,7 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
     }
 
     public get cancellable() {
-        return !!this.options?.items?.find(i => i.title === 'Cancel')
+        return !!this.options?.items?.find((i) => i.title === 'Cancel')
     }
 
     public assertMessage(expected: string | RegExp): void {
@@ -143,7 +146,7 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
         return [
             `severity: ${severity}`,
             `message: ${message}`,
-            `items: ${this.options?.items?.map(i => i.title).join(', ') || '[no items]'}`,
+            `items: ${this.options?.items?.map((i) => i.title).join(', ') || '[no items]'}`,
         ].join(', ')
     }
 
@@ -156,7 +159,7 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
     }
 
     public close(): void {
-        const selected = this.options?.items?.find(item => item.isCloseAffordance)
+        const selected = this.options?.items?.find((item) => item.isCloseAffordance)
 
         if (selected) {
             this.selectItem(selected)
@@ -177,8 +180,8 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
 
         const selected =
             typeof item === 'string' || item instanceof RegExp
-                ? this.options?.items?.find(i => i.title.match(item))
-                : this.options?.items?.find(i => i === item)
+                ? this.options?.items?.find((i) => i.title.match(item))
+                : this.options?.items?.find((i) => i === item)
 
         if (!selected) {
             throw new Error(`Could not find the specified item "${String(item)}" on message: ${this.printDebug()}`)
@@ -198,7 +201,7 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
     public show(): (T & { select(): void })[] {
         this._showing = true
 
-        return (this.options?.items ?? []).map(item => {
+        return (this.options?.items ?? []).map((item) => {
             return {
                 ...item,
                 select: () => this.selectItem(item),
@@ -230,7 +233,7 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
             const stringMode = typeof firstRest === 'string' || typeof rest[1] === 'string'
             const opt = typeof firstRest !== 'string' && !TestMessage.isMessageItem(firstRest) ? firstRest : undefined
             const items = (opt === undefined ? rest : rest.slice(1)) as (string | T)[]
-            const mappedItems = items.map(i => (typeof i === 'string' ? { title: i } : i))
+            const mappedItems = items.map((i) => (typeof i === 'string' ? { title: i } : i))
             const testMessage = new TestMessage(message, {
                 severity,
                 modal: opt?.modal,
@@ -238,8 +241,8 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
                 ...opt,
             })
 
-            return new Promise<vscode.MessageItem | T | string | undefined>(resolve => {
-                testMessage.onDidSelectItem(i => resolve(stringMode ? i?.title : i))
+            return new Promise<vscode.MessageItem | T | string | undefined>((resolve) => {
+                testMessage.onDidSelectItem((i) => resolve(stringMode ? i?.title : i))
                 const shownItems = testMessage.show()
                 callback?.(Object.assign(testMessage, { items: shownItems }))
             })
@@ -340,7 +343,7 @@ export class TestFileSystemDialog {
     public show(): (FileSystemDialogItem & { select(): void })[] {
         this._showing = true
 
-        return this.items.map(item => {
+        return this.items.map((item) => {
             return {
                 ...item,
                 select: () => this.selectItem(item.uri),
@@ -363,8 +366,8 @@ export class TestFileSystemDialog {
         return async (options?: vscode.OpenDialogOptions) => {
             const dialog = new TestFileSystemDialog([], { type: 'Open', ...options })
 
-            return new Promise<vscode.Uri[] | undefined>(resolve => {
-                dialog.onDidAcceptItem(item => resolve(item instanceof vscode.Uri ? [item] : item))
+            return new Promise<vscode.Uri[] | undefined>((resolve) => {
+                dialog.onDidAcceptItem((item) => resolve(item instanceof vscode.Uri ? [item] : item))
                 dialog.show()
                 callback?.(dialog)
             })
@@ -378,8 +381,8 @@ export class TestFileSystemDialog {
         return async (options?: vscode.SaveDialogOptions) => {
             const dialog = new TestFileSystemDialog([], { type: 'Save', ...options })
 
-            return new Promise<vscode.Uri | undefined>(resolve => {
-                dialog.onDidAcceptItem(item => resolve(Array.isArray(item) ? item[0] : item))
+            return new Promise<vscode.Uri | undefined>((resolve) => {
+                dialog.onDidAcceptItem((item) => resolve(Array.isArray(item) ? item[0] : item))
                 dialog.show()
                 callback?.(dialog)
             })

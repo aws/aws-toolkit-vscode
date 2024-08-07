@@ -68,7 +68,7 @@ export function toUnescapedAslJsonString(
 
     const definitionStringWithPlaceholders: any[] = escapedAslJsonStr['Fn::Join'][1]
     const definitionStringSegments: string[] = definitionStringWithPlaceholders.filter(
-        segment => typeof segment === 'string'
+        (segment) => typeof segment === 'string'
     )
     return definitionStringSegments.join('')
 }

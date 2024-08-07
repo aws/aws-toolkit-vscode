@@ -8,6 +8,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+// Disable because this is a language server.
+/* eslint-disable aws-toolkits/no-console-log */
+
 import { CancellationToken, ErrorCodes, ResponseError } from 'vscode-languageserver'
 
 export function formatError(message: string, err: any): string {
@@ -30,14 +33,14 @@ export function runSafeAsync<T>(
     errorMessage: string,
     token: CancellationToken
 ): Thenable<any | ResponseError<any>> {
-    return new Promise<T | ResponseError<any>>(resolve => {
+    return new Promise<T | ResponseError<any>>((resolve) => {
         setImmediate(() => {
             if (token.isCancellationRequested) {
                 resolve(cancelValue())
             }
 
             return func().then(
-                result => {
+                (result) => {
                     if (token.isCancellationRequested) {
                         resolve(cancelValue())
 
@@ -46,7 +49,7 @@ export function runSafeAsync<T>(
                         resolve(result)
                     }
                 },
-                e => {
+                (e) => {
                     console.error(formatError(errorMessage, e))
                     resolve(errorVal)
                 }
@@ -61,7 +64,7 @@ export function runSafe<T, E>(
     errorMessage: string,
     token: CancellationToken
 ): Thenable<T | ResponseError<E>> {
-    return new Promise<T | ResponseError<E>>(resolve => {
+    return new Promise<T | ResponseError<E>>((resolve) => {
         setImmediate(() => {
             if (token.isCancellationRequested) {
                 resolve(cancelValue())

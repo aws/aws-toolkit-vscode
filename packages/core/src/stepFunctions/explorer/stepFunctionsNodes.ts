@@ -67,14 +67,14 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
     public async updateChildren(): Promise<void> {
         const functions: Map<string, StepFunctions.StateMachineListItem> = toMap(
             await toArrayAsync(listStateMachines(this.client)),
-            details => details.name
+            (details) => details.name
         )
 
         updateInPlace(
             this.stateMachineNodes,
             functions.keys(),
-            key => this.stateMachineNodes.get(key)!.update(functions.get(key)!),
-            key => makeStateMachineNode(this, this.regionCode, functions.get(key)!)
+            (key) => this.stateMachineNodes.get(key)!.update(functions.get(key)!),
+            (key) => makeStateMachineNode(this, this.regionCode, functions.get(key)!)
         )
     }
 }

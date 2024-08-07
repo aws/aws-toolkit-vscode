@@ -20,6 +20,10 @@ export class TestLogger implements Logger {
 
     public enableDebugConsole(): void {}
 
+    public log(logLevel: LogLevel, ...message: Loggable[]): number {
+        return this.addLoggedEntries(logLevel, message)
+    }
+
     public debug(...message: Loggable[]): number {
         return this.addLoggedEntries('debug', message)
     }
@@ -42,12 +46,12 @@ export class TestLogger implements Logger {
 
     public getLoggedEntries(...logLevels: LogLevel[]): Loggable[] {
         return this.loggedEntries
-            .filter(loggedEntry => logLevels.length === 0 || logLevels.includes(loggedEntry.logLevel))
-            .map(loggedEntry => loggedEntry.entry)
+            .filter((loggedEntry) => logLevels.length === 0 || logLevels.includes(loggedEntry.logLevel))
+            .map((loggedEntry) => loggedEntry.entry)
     }
 
     private addLoggedEntries(logLevel: LogLevel, entries: Loggable[]): number {
-        entries.forEach(entry => {
+        entries.forEach((entry) => {
             this.loggedEntries.push({
                 logLevel,
                 entry,

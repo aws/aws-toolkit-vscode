@@ -60,8 +60,8 @@ export class DocumentTypeNode extends AWSTreeNodeBase {
         updateInPlace(
             this.registryNodes,
             this.childRegistryNames,
-            key => this.registryNodes.get(key)!.update(key),
-            key => new RegistryItemNode(this.regionCode, key, this.documentType, this.client)
+            (key) => this.registryNodes.get(key)!.update(key),
+            (key) => new RegistryItemNode(this.regionCode, key, this.documentType, this.client)
         )
     }
 }

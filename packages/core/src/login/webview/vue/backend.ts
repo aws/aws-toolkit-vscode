@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import globals from '../../../shared/extensionGlobals'
 import { VueWebview } from '../../../webviews/main'
 import { Region } from '../../../shared/regions/endpoints'
-import { ToolkitError } from '../../../shared/errors'
+import { getTelemetryReasonDesc, ToolkitError } from '../../../shared/errors'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { trustedDomainCancellation } from '../../../auth/sso/model'
 import { handleWebviewError } from '../../../webviews/server'
@@ -19,6 +19,7 @@ import {
     isBuilderIdConnection,
     isIamConnection,
     isIdcSsoConnection,
+    isSsoConnection,
     scopesCodeCatalyst,
     scopesCodeWhispererChat,
     scopesSsoAccountAccess,
@@ -27,11 +28,13 @@ import {
 import { Auth } from '../../../auth/auth'
 import { StaticProfile, StaticProfileKeyErrorMessage } from '../../../auth/credentials/types'
 import { telemetry } from '../../../shared/telemetry'
+import { AuthAddConnection } from '../../../shared/telemetry/telemetry'
 import { AuthSources } from '../util'
 import { AuthEnabledFeatures, AuthError, AuthFlowState, AuthUiClick, TelemetryMetadata, userCancelled } from './types'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { DevSettings } from '../../../shared/settings'
 import { AuthSSOServer } from '../../../auth/sso/server'
+import { getLogger } from '../../../shared/logger/logger'
 
 export abstract class CommonAuthWebview extends VueWebview {
     private metricMetadata: TelemetryMetadata = {}
@@ -74,7 +77,8 @@ export abstract class CommonAuthWebview extends VueWebview {
                 await setupFunc()
                 return
             } catch (e) {
-                console.log(e)
+                getLogger().error('ssoSetup encountered an error: %s', e)
+
                 if (e instanceof ToolkitError && e.code === 'NotOnboarded') {
                     /**
                      * Connection is fine, they just skipped onboarding so not an actual error.
@@ -159,15 +163,6 @@ export abstract class CommonAuthWebview extends VueWebview {
 
     abstract fetchConnections(): Promise<AwsConnection[] | undefined>
 
-    /**
-     * Re-use connection that is pushed from Amazon Q to Toolkit.
-     * @param connectionId ID of the connection to re-use
-     * @param auto indicate whether this happened automatically (true), or the result of user action (false)
-     */
-    abstract useConnection(connectionId: string, auto: boolean): Promise<AuthError | undefined>
-
-    abstract findUsableConnection(connections: AwsConnection[]): AwsConnection | undefined
-
     async errorNotification(e: AuthError) {
         void vscode.window.showInformationMessage(`${e.text}`)
     }
@@ -190,8 +185,8 @@ export abstract class CommonAuthWebview extends VueWebview {
 
     abstract signout(): Promise<void>
 
-    async listConnections(): Promise<Connection[]> {
-        return Auth.instance.listConnections()
+    async listSsoConnections(): Promise<SsoConnection[]> {
+        return (await Auth.instance.listConnections()).filter((conn) => isSsoConnection(conn)) as SsoConnection[]
     }
 
     /**
@@ -207,7 +202,7 @@ export abstract class CommonAuthWebview extends VueWebview {
         telemetry.auth_addConnection.emit({
             ...this.metricMetadata,
             source: this.authSource,
-        })
+        } as AuthAddConnection)
     }
 
     /**
@@ -235,7 +230,8 @@ export abstract class CommonAuthWebview extends VueWebview {
                 metadata.result = 'Cancelled'
             } else {
                 metadata.result = 'Failed'
-                metadata.reason = error.text
+                metadata.reason = error.id
+                metadata.reasonDesc = getTelemetryReasonDesc(error.text)
             }
         } else {
             metadata.result = 'Succeeded'

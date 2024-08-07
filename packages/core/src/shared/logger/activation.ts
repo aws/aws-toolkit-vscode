@@ -10,7 +10,7 @@ import { WinstonToolkitLogger } from './winstonToolkitLogger'
 import { Settings } from '../settings'
 import { Logging } from './commands'
 import { resolvePath } from '../utilities/pathUtils'
-import { fsCommon } from '../../srcShared/fs'
+import fs from '../../shared/fs/fs'
 import { isWeb } from '../extensionGlobals'
 import { getUserAgent } from '../telemetry/util'
 
@@ -31,7 +31,7 @@ export async function activate(
             : undefined
     const chanLogLevel = fromVscodeLogLevel(logChannel.logLevel)
 
-    await fsCommon.mkdir(extensionContext.logUri)
+    await fs.mkdir(extensionContext.logUri)
 
     const mainLogger = makeLogger({
         logLevel: chanLogLevel,
@@ -39,7 +39,7 @@ export async function activate(
         outputChannels: [logChannel],
         useConsoleLog: isWeb(),
     })
-    logChannel.onDidChangeLogLevel?.(logLevel => {
+    logChannel.onDidChangeLogLevel?.((logLevel) => {
         const newLogLevel = fromVscodeLogLevel(logLevel)
         mainLogger.setLogLevel(newLogLevel) // Also logs a message.
     })

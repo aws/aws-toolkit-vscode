@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
     <head>
         <meta charset="utf-8" />
@@ -71,12 +71,10 @@
                 }
 
                 const productName = 'AWS IDE Extensions for VS Code'
-                document.getElementById(
-                    'approvalMessage'
-                ).innerText = `${productName} have been given requested permissions`
-                document.getElementById(
-                    'footerText'
-                ).innerText = `You can close this window and start using ${productName}`
+                document.getElementById('approvalMessage').innerText =
+                    `${productName} have been given requested permissions`
+                document.getElementById('footerText').innerText =
+                    `You can close this window and start using ${productName}`
 
                 function showErrorMessage(errorText) {
                     document.getElementById('approved-auth').classList.add('hidden')

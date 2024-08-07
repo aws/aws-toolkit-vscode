@@ -15,10 +15,10 @@ import { GlobalStorage } from './globalStorage'
 import { once } from './utilities/functionUtils'
 import { Any, ArrayConstructor } from './utilities/typeConstructors'
 import { AWS_SCHEME } from './constants'
-import { fsCommon } from '../srcShared/fs'
-import { SystemUtilities } from './systemUtilities'
+import fs from '../shared/fs/fs'
 import { normalizeVSCodeUri } from './utilities/vsCodeUtils'
 import { telemetry } from './telemetry/telemetry'
+import { JsonSchemasKey } from './globalState'
 
 // Note: this file is currently 12+ MB. When requesting it, specify compression/gzip.
 export const samAndCfnSchemaUrl =
@@ -82,8 +82,8 @@ export class SchemaService {
 
     public async start(): Promise<void> {
         getDefaultSchemas()
-            .then(schemas => (this.schemas = schemas))
-            .catch(e => {
+            .then((schemas) => (this.schemas = schemas))
+            .catch((e) => {
                 getLogger().error('getDefaultSchemas failed: %s', (e as Error).message)
             })
         await this.startTimer()
@@ -98,7 +98,7 @@ export class SchemaService {
     public registerMapping(mapping: SchemaMapping, flush?: boolean): void {
         this.updateQueue.push(mapping)
         if (flush === true) {
-            this.processUpdates().catch(e => {
+            this.processUpdates().catch((e) => {
                 getLogger().error('SchemaService: processUpdates() failed: %s', (e as Error).message)
             })
         }
@@ -151,7 +151,6 @@ export async function getDefaultSchemas(): Promise<Schemas | undefined> {
 
     // Sam schema is a superset of Cfn schema, so we can use it for both
     const samAndCfnSchemaDestinationUri = GlobalStorage.samAndCfnSchemaDestinationUri()
-    const samAndCfnCacheKey = 'samAndCfnSchemaVersion'
 
     const schemas: Schemas = {}
 
@@ -160,8 +159,7 @@ export async function getDefaultSchemas(): Promise<Schemas | undefined> {
             destination: samAndCfnSchemaDestinationUri,
             eTag: undefined,
             url: samAndCfnSchemaUrl,
-            cacheKey: samAndCfnCacheKey,
-            extensionContext: globals.context,
+            cacheKey: 'samAndCfnSchemaVersion',
             title: schemaPrefix + 'cloudformation.schema.json',
         })
         schemas['cfn'] = samAndCfnSchemaDestinationUri
@@ -174,8 +172,7 @@ export async function getDefaultSchemas(): Promise<Schemas | undefined> {
             destination: samAndCfnSchemaDestinationUri,
             eTag: undefined,
             url: samAndCfnSchemaUrl,
-            cacheKey: samAndCfnCacheKey,
-            extensionContext: globals.context,
+            cacheKey: 'samAndCfnSchemaVersion',
             title: schemaPrefix + 'sam.schema.json',
         })
         schemas['sam'] = samAndCfnSchemaDestinationUri
@@ -189,7 +186,6 @@ export async function getDefaultSchemas(): Promise<Schemas | undefined> {
             version: devfileSchemaVersion,
             url: `https://raw.githubusercontent.com/devfile/api/${devfileSchemaVersion}/schemas/latest/devfile.json`,
             cacheKey: 'devfileSchemaVersion',
-            extensionContext: globals.context,
             title: schemaPrefix + 'devfile.schema.json',
         })
         schemas['devfile'] = devfileSchemaUri
@@ -207,17 +203,15 @@ export async function getDefaultSchemas(): Promise<Schemas | undefined> {
  * @param params.version Remote version
  * @param params.url Url to fetch from
  * @param params.cacheKey Cache key to check version against
- * @param params.extensionContext VSCode extension context
  */
 export async function updateSchemaFromRemote(params: {
     destination: vscode.Uri
     version?: string
     url: string
-    cacheKey: string
-    extensionContext: vscode.ExtensionContext
+    cacheKey: JsonSchemasKey
     title: string
 }): Promise<void> {
-    const cachedVersion = params.extensionContext.globalState.get<string>(params.cacheKey)
+    const cachedVersion = globals.globalState.get<string>(params.cacheKey)
     const outdated = params.version && params.version !== cachedVersion
 
     // Check that the cached file actually can be fetched. Else we might
@@ -258,17 +252,15 @@ export async function updateSchemaFromRemote(params: {
  * @param params.eTag E-Tag to send with fetch request. If this matches the url's it means we can use our cache.
  * @param params.url Url to fetch from
  * @param params.cacheKey Cache key to check version against
- * @param params.extensionContext VSCode extension context
  */
 export async function updateSchemaFromRemoteETag(params: {
     destination: vscode.Uri
     eTag?: string
     url: string
-    cacheKey: string
-    extensionContext: vscode.ExtensionContext
+    cacheKey: JsonSchemasKey
     title: string
 }): Promise<void> {
-    const cachedETag = params.extensionContext.globalState.get<string>(params.cacheKey)
+    const cachedETag = globals.globalState.get<string>(params.cacheKey)
 
     // Check that the cached file actually can be fetched. Else we might
     // never update the cache.
@@ -321,18 +313,15 @@ async function doCacheContent(
         destination: vscode.Uri
         version?: string
         url: string
-        cacheKey: string
-        extensionContext: vscode.ExtensionContext
+        cacheKey: JsonSchemasKey
         title: string
     }
 ): Promise<void> {
     const parsedFile = { ...JSON.parse(content), title: params.title }
     const dir = vscode.Uri.joinPath(params.destination, '..')
-    await SystemUtilities.createDirectory(dir)
-    await fsCommon.writeFile(params.destination.fsPath, JSON.stringify(parsedFile))
-    await params.extensionContext.globalState.update(params.cacheKey, params.version).then(undefined, err => {
-        getLogger().warn(`schemas: failed to update cache key for "${params.title}": ${err?.message}`)
-    })
+    await fs.mkdir(dir)
+    await fs.writeFile(params.destination.fsPath, JSON.stringify(parsedFile))
+    await globals.globalState.update(params.cacheKey, params.version)
 }
 
 /**
@@ -376,7 +365,7 @@ async function addCustomTags(config = Settings.instance): Promise<void> {
 
     try {
         const currentTags = config.get(settingName, ArrayConstructor(Any), [])
-        const missingTags = cloudFormationTags.filter(item => !currentTags.includes(item))
+        const missingTags = cloudFormationTags.filter((item) => !currentTags.includes(item))
 
         if (missingTags.length > 0) {
             const updateTags = currentTags.concat(missingTags)
@@ -446,7 +435,7 @@ export class JsonSchemaHandler implements SchemaHandler {
         const path = typeof args.file === 'string' ? args.file : args.file?.fsPath
         const schm = typeof args.schemaPath === 'string' ? args.schemaPath : args.schemaPath?.fsPath
         const settings = this.getJsonSettings()
-        const setting = settings.find(schema => {
+        const setting = settings.find((schema) => {
             const schmMatch = schm && schema.url && pathutil.normalize(schema.url) === pathutil.normalize(schm)
             const fileMatch = path && schema.fileMatch && schema.fileMatch.includes(path)
             return (!path || fileMatch) && (!schm || schmMatch)
@@ -477,7 +466,7 @@ export class JsonSchemaHandler implements SchemaHandler {
                 })
             }
         } else {
-            settings = filterJsonSettings(settings, file => file !== path)
+            settings = filterJsonSettings(settings, (file) => file !== path)
         }
 
         await this.config.update('json.schemas', settings)
@@ -491,7 +480,7 @@ export class JsonSchemaHandler implements SchemaHandler {
 
         // In the unlikely scenario of an error, we don't want to bubble it up
         try {
-            const settings = filterJsonSettings(this.getJsonSettings(), file => !file.endsWith('.awsResource.json'))
+            const settings = filterJsonSettings(this.getJsonSettings(), (file) => !file.endsWith('.awsResource.json'))
             await this.config.update('json.schemas', settings)
         } catch (error) {
             getLogger().warn(`JsonSchemaHandler: failed to clean stale schemas: ${error}`)
@@ -511,8 +500,8 @@ function resolveSchema(schema: string | vscode.Uri, schemas: Schemas): vscode.Ur
 }
 
 function filterJsonSettings(settings: JSONSchemaSettings[], predicate: (fileName: string) => boolean) {
-    return settings.filter(schema => {
-        schema.fileMatch = schema.fileMatch?.filter(file => predicate(file))
+    return settings.filter((schema) => {
+        schema.fileMatch = schema.fileMatch?.filter((file) => predicate(file))
 
         // Assumption: `fileMatch` was not empty beforehand
         return schema.fileMatch === undefined || schema.fileMatch.length > 0

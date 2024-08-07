@@ -17,11 +17,7 @@ You can use /dev to:
 To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
 `
 
-export const approachCreation = 'Ok, let me create a plan. This may take a few minutes.'
-export const updateCode = 'Code has been updated. Would you like to work on another task?'
-export const sessionClosed = 'Your session is now closed.'
-export const newTaskChanges = 'What change would you like to make?'
-export const uploadCodeError = `Amazon Q is unable to upload workspace artifacts to S3 for feature development. For more information, see the [Amazon Q documentation](${manageAccessGuideURL}) or contact your network or organization administrator.`
+export const uploadCodeError = `I'm sorry, I couldn’t upload your workspace artifacts to Amazon S3 to help you with this task. You might need to allow access to the S3 bucket. For more information, see the [Amazon Q documentation](${manageAccessGuideURL}) or contact your network or organization administrator.`
 
 // Utils for logging and showing customer facing conversation id text
 export const messageWithConversationId = (conversationId?: string) =>

@@ -50,20 +50,18 @@ export function isAutomation(): boolean {
     return isCI() || !!process.env['AWS_TOOLKIT_AUTOMATION']
 }
 
-/**
- * Returns true if name mangling has occured to the extension source code.
- */
-export function isNameMangled(): boolean {
-    return isNameMangled.name !== 'isNameMangled'
-}
-
 export { extensionVersion }
 
 /**
- * Returns true if the extension is being ran on the minimum version of VS Code as defined
- * by the `engines` field in `package.json`
+ * True if the current running vscode is the minimum defined by `engines.vscode` in `package.json`.
+ *
+ * @param throwWhen Throw if minimum vscode is equal or later than this version.
  */
-export function isMinimumVersion(): boolean {
+export function isMinVscode(throwWhen?: string): boolean {
+    const minVscode = getMinVscodeVersion()
+    if (throwWhen && semver.gte(minVscode, throwWhen)) {
+        throw Error(`Min vscode ${minVscode} >= ${throwWhen}. Delete or update the code that called this.`)
+    }
     return vscode.version.startsWith(getMinVscodeVersion())
 }
 
@@ -94,6 +92,15 @@ export function isInDevEnv(): boolean {
 
 export function isRemoteWorkspace(): boolean {
     return vscode.env.remoteName === 'ssh-remote'
+}
+
+/** Returns true if OS is Windows. */
+export function isWin(): boolean {
+    // if (isWeb()) {
+    //     return false
+    // }
+
+    return process.platform === 'win32'
 }
 
 export function isWebWorkspace(): boolean {
@@ -131,7 +138,7 @@ export function getEnvVars<T extends string[]>(service: string, envVarNames: T):
         // e.g. gitHostname -> GIT_HOSTNAME
         const envVarName = name
             .split(/(?=[A-Z])/)
-            .map(s => s.toUpperCase())
+            .map((s) => s.toUpperCase())
             .join('_')
         envVars[name as T[number]] = `__${service.toUpperCase()}_${envVarName}`
     }
@@ -161,7 +168,7 @@ export function getServiceEnvVarConfig<T extends string[]>(service: string, conf
     // This allows us to log only once when env vars for a service change.
     if (overriden.length > 0) {
         if (!(service in logConfigsOnce)) {
-            logConfigsOnce[service] = onceChanged(vars => {
+            logConfigsOnce[service] = onceChanged((vars) => {
                 getLogger().info(`using env vars for ${service} config: ${vars}`)
             })
         }
@@ -173,8 +180,10 @@ export function getServiceEnvVarConfig<T extends string[]>(service: string, conf
 
 export async function getMachineId(): Promise<string> {
     if (isWeb()) {
+        // TODO: use `vscode.env.machineId` instead?
         return 'browser'
     }
     const proc = new ChildProcess('hostname', [], { collect: true, logging: 'no' })
+    // TODO: check exit code.
     return (await proc.run()).stdout.trim() ?? 'unknown-host'
 }

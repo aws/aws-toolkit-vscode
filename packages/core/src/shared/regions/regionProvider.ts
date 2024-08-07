@@ -11,7 +11,6 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { getLogger } from '../logger'
 import { Endpoints, loadEndpoints, Region } from './endpoints'
-import { regionSettingKey } from '../constants'
 import { AwsContext } from '../awsContext'
 import { getIdeProperties, isAmazonQ, isCloud9 } from '../extensionUtilities'
 import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
@@ -38,7 +37,6 @@ export class RegionProvider {
 
     public constructor(
         endpoints: Endpoints = { partitions: [] },
-        private readonly globalState = globals.context.globalState,
         private readonly awsContext: Pick<AwsContext, 'getCredentialDefaultRegion'> = globals.awsContext
     ) {
         this.loadFromEndpoints(endpoints)
@@ -53,7 +51,7 @@ export class RegionProvider {
     }
 
     public isServiceInRegion(serviceId: string, regionId: string): boolean {
-        return !!this.regionData.get(regionId)?.serviceIds.find(x => x === serviceId) ?? false
+        return !!this.regionData.get(regionId)?.serviceIds.find((x) => x === serviceId) ?? false
     }
 
     public getPartitionId(regionId: string): string | undefined {
@@ -78,16 +76,16 @@ export class RegionProvider {
 
     public getRegions(partitionId = this.defaultPartitionId): Region[] {
         return [...this.regionData.values()]
-            .filter(region => region.partitionId === partitionId)
-            .map(region => region.region)
+            .filter((region) => region.partitionId === partitionId)
+            .map((region) => region.region)
     }
 
     public getExplorerRegions(): string[] {
-        return this.globalState.get<string[]>(regionSettingKey, [])
+        return globals.globalState.tryGet<string[]>('region', Object, [])
     }
 
     public async updateExplorerRegions(regions: string[]): Promise<void> {
-        return this.globalState.update(regionSettingKey, Array.from(new Set(regions)))
+        return globals.globalState.update('region', Array.from(new Set(regions)))
     }
 
     /**
@@ -114,7 +112,7 @@ export class RegionProvider {
             return this.lastTouchedRegion
         }
 
-        const lastWizardResponse = this.globalState.get<Region>('lastSelectedRegion')
+        const lastWizardResponse = globals.globalState.tryGet<Region>('lastSelectedRegion', Object)
         if (lastWizardResponse && lastWizardResponse.id) {
             return lastWizardResponse.id
         }
@@ -130,8 +128,8 @@ export class RegionProvider {
 
     private loadFromEndpoints(endpoints: Endpoints) {
         this.regionData.clear()
-        endpoints.partitions.forEach(partition => {
-            partition.regions.forEach(region =>
+        endpoints.partitions.forEach((partition) => {
+            partition.regions.forEach((region) =>
                 this.regionData.set(region.id, {
                     dnsSuffix: partition.dnsSuffix,
                     partitionId: partition.id,
@@ -140,8 +138,8 @@ export class RegionProvider {
                 })
             )
 
-            partition.services.forEach(service => {
-                service.endpoints.forEach(endpoint => {
+            partition.services.forEach((service) => {
+                service.endpoints.forEach((endpoint) => {
                     const regionData = this.regionData.get(endpoint.regionId)
 
                     if (regionData) {
@@ -179,7 +177,7 @@ export class RegionProvider {
             }
         }
 
-        load().catch(err => {
+        load().catch((err) => {
             getLogger().error('Failure while loading Endpoints Manifest: %s', err)
 
             return vscode.window.showErrorMessage(

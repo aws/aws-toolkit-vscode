@@ -6,12 +6,12 @@
 import assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
-import { SsoAccessTokenProvider } from '../../../auth/sso/ssoAccessTokenProvider'
+import { CreateTokenArgs, ReAuthState, SsoAccessTokenProvider } from '../../../auth/sso/ssoAccessTokenProvider'
 import { assertTelemetry, installFakeClock } from '../../testUtil'
 import { getCache } from '../../../auth/sso/cache'
 
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
-import { ClientRegistration, SsoToken, proceedToBrowser } from '../../../auth/sso/model'
+import { ClientRegistration, SsoProfile, SsoToken, proceedToBrowser } from '../../../auth/sso/model'
 import { OidcClient } from '../../../auth/sso/clients'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import {
@@ -39,6 +39,7 @@ describe('SsoAccessTokenProvider', function () {
     let cache: ReturnType<typeof getCache>
     let clock: FakeTimers.InstalledClock
     let tempDir: string
+    let reAuthState: TestReAuthState
 
     function createToken(timeDelta: number, extras: Partial<SsoToken> = {}) {
         return {
@@ -88,7 +89,8 @@ describe('SsoAccessTokenProvider', function () {
         oidcClient = stub(OidcClient)
         tempDir = await makeTemporaryTokenCacheFolder()
         cache = getCache(tempDir)
-        sut = SsoAccessTokenProvider.create({ region, startUrl }, cache, oidcClient, () => true)
+        reAuthState = new TestReAuthState()
+        sut = SsoAccessTokenProvider.create({ region, startUrl }, cache, oidcClient, reAuthState, () => true)
     })
 
     afterEach(async function () {
@@ -102,7 +104,7 @@ describe('SsoAccessTokenProvider', function () {
             const validToken = createToken(hourInMs)
             await cache.token.save(startUrl, { region, startUrl, token: validToken })
             await cache.registration.save({ startUrl, region }, createRegistration(hourInMs))
-            await sut.invalidate()
+            await sut.invalidate('test')
 
             assert.strictEqual(await cache.token.load(startUrl), undefined)
             assert.strictEqual(await cache.registration.load({ startUrl, region }), undefined)
@@ -144,7 +146,7 @@ describe('SsoAccessTokenProvider', function () {
             await cache.token.save(startUrl, access)
             assert.deepStrictEqual(await sut.getToken(), refreshedToken)
 
-            const cachedToken = await cache.token.load(startUrl).then(a => a?.token)
+            const cachedToken = await cache.token.load(startUrl).then((a) => a?.token)
             assert.deepStrictEqual(cachedToken, refreshedToken)
         })
 
@@ -154,7 +156,7 @@ describe('SsoAccessTokenProvider', function () {
 
             assert.strictEqual(await sut.getToken(), undefined)
 
-            const cachedToken = await cache.token.load(startUrl).then(a => a?.token)
+            const cachedToken = await cache.token.load(startUrl).then((a) => a?.token)
             assert.strictEqual(cachedToken, undefined)
         })
 
@@ -183,7 +185,7 @@ describe('SsoAccessTokenProvider', function () {
                 await cache.token.save(startUrl, access)
                 await assert.rejects(sut.getToken())
 
-                const cachedToken = await cache.token.load(startUrl).then(a => a?.token)
+                const cachedToken = await cache.token.load(startUrl).then((a) => a?.token)
                 assert.deepStrictEqual(cachedToken, refreshableToken)
             })
         })
@@ -191,7 +193,7 @@ describe('SsoAccessTokenProvider', function () {
 
     describe('createToken', function () {
         beforeEach(function () {
-            getTestWindow().onDidShowMessage(m => {
+            getTestWindow().onDidShowMessage((m) => {
                 if (m.items[0]?.title.match(proceedToBrowser)) {
                     m.items[0].select()
                 }
@@ -218,18 +220,29 @@ describe('SsoAccessTokenProvider', function () {
             return { token, registration, authorization }
         }
 
-        it('runs the full SSO flow', async function () {
-            const { token, registration } = setupFlow()
-            stubOpen()
+        // combinations of args for createToken()
+        const args: CreateTokenArgs[] = [{ isReAuth: true }, { isReAuth: false }]
 
-            assert.deepStrictEqual(await sut.createToken(), { ...token, identity: startUrl })
-            const cachedToken = await cache.token.load(startUrl).then(a => a?.token)
-            assert.deepStrictEqual(cachedToken, token)
-            assert.deepStrictEqual(await cache.registration.load({ startUrl, region }), registration)
-            assertTelemetry('aws_loginWithBrowser', {
-                result: 'Succeeded',
-                isReAuth: undefined,
-                credentialStartUrl: startUrl,
+        args.forEach((args) => {
+            it(`runs the full SSO flow with args: ${JSON.stringify(args)}`, async function () {
+                const { token, registration } = setupFlow()
+                stubOpen()
+                reAuthState.set({ startUrl }, { reAuthReason: 'myReAuthReason' })
+                assert.deepStrictEqual(reAuthState.has({ startUrl }), true)
+
+                assert.deepStrictEqual(await sut.createToken(args), { ...token, identity: startUrl })
+
+                const cachedToken = await cache.token.load(startUrl).then((a) => a?.token)
+                assert.deepStrictEqual(cachedToken, token)
+                assert.deepStrictEqual(await cache.registration.load({ startUrl, region }), registration)
+                assertTelemetry('aws_loginWithBrowser', {
+                    result: 'Succeeded',
+                    isReAuth: args.isReAuth,
+                    credentialStartUrl: startUrl,
+                    reAuthReason: args.isReAuth ? 'myReAuthReason' : undefined,
+                })
+                // re auth state is cleared on successful login
+                assert.deepStrictEqual(reAuthState.has({ startUrl }), false)
             })
         })
 
@@ -359,6 +372,18 @@ describe('SsoAccessTokenProvider', function () {
                 await assert.rejects(sut.createToken(), exception)
                 assert.deepStrictEqual(await cache.registration.load({ startUrl, region }), registration)
             })
+
+            it('does not clear the reAuthReason state on failed login', async () => {
+                oidcClient.createToken.rejects(new Error('random error')) // Forces failure during SSO flow
+                reAuthState.set({ startUrl }, { reAuthReason: 'thisReasonWillNotBeCleared' })
+
+                await assert.rejects(sut.createToken({ isReAuth: true })) // function under test
+
+                assert.deepStrictEqual(reAuthState.get({ startUrl }), {
+                    ...reAuthState.default,
+                    reAuthReason: 'thisReasonWillNotBeCleared',
+                })
+            })
         })
 
         describe('Cancellation', function () {
@@ -389,7 +414,7 @@ describe('SsoAccessTokenProvider', function () {
 
             it('stops the flow if cancelled from the progress notification', async function () {
                 stubOpen()
-                getTestWindow().onDidShowMessage(m => {
+                getTestWindow().onDidShowMessage((m) => {
                     if (m.severity === SeverityLevel.Progress) {
                         m.selectItem('Cancel')
                     }
@@ -397,6 +422,42 @@ describe('SsoAccessTokenProvider', function () {
                 await assert.rejects(sut.createToken(), CancellationError)
                 assert.strictEqual(getTestWindow().shownMessages.length, 2)
             })
+        })
+    })
+
+    /**
+     * Exposes protected methods so we can test them
+     */
+    class TestReAuthState extends ReAuthState {
+        constructor() {
+            super()
+        }
+
+        override hash(profile: { readonly identifier?: string; readonly startUrl: string }): string {
+            return super.hash(profile)
+        }
+
+        override get default(): { reAuthReason?: string } {
+            return super.default
+        }
+    }
+
+    describe(ReAuthState.name, function () {
+        it(`hash()`, async () => {
+            const profile1: Pick<SsoProfile, 'identifier' | 'startUrl'> = {
+                identifier: 'abc-123',
+                startUrl: 'https://sameUrl.com',
+            }
+            const profile2: Pick<SsoProfile, 'identifier' | 'startUrl'> = {
+                startUrl: 'https://sameUrl.com',
+            }
+
+            assert.deepStrictEqual(reAuthState.hash(profile1), profile1.identifier)
+            assert.deepStrictEqual(reAuthState.hash(profile2), profile2.startUrl)
+        })
+
+        it('default', () => {
+            assert.deepStrictEqual(reAuthState.default, { reAuthReason: undefined })
         })
     })
 })

@@ -8,18 +8,18 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { CdkAppLocation, getApp } from '../../cdk/explorer/cdkProject'
-import { ConstructNode, isStateMachine } from '../../cdk/explorer/nodes/constructNode'
-import { detectCdkProjects } from '../../cdk/explorer/detectCdkProjects'
+import { CdkAppLocation, getApp } from '../../awsService/cdk/explorer/cdkProject'
+import { ConstructNode, isStateMachine } from '../../awsService/cdk/explorer/nodes/constructNode'
+import { detectCdkProjects } from '../../awsService/cdk/explorer/detectCdkProjects'
 import { Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
 import { createQuickPick } from '../../shared/ui/pickerPrompter'
 import { createCommonButtons } from '../../shared/ui/buttons'
-import { ConstructTreeEntity } from '../../cdk/explorer/tree/types'
-import { getDisplayLabel } from '../../cdk/explorer/tree/treeInspector'
+import { ConstructTreeEntity } from '../../awsService/cdk/explorer/tree/types'
+import { getDisplayLabel } from '../../awsService/cdk/explorer/tree/treeInspector'
 
 function createLocationPrompter() {
-    const items = detectCdkProjects(vscode.workspace.workspaceFolders).then(locations => {
-        return locations.map(l => ({
+    const items = detectCdkProjects(vscode.workspace.workspaceFolders).then((locations) => {
+        return locations.map((l) => ({
             label: vscode.workspace.asRelativePath(l.cdkJsonUri),
             data: l,
         }))
@@ -51,9 +51,9 @@ export function getStateMachines(construct: ConstructTreeEntity) {
 
 function createResourcePrompter(location: CdkAppLocation) {
     const items = getApp(location)
-        .then(app => getStateMachines(app.constructTree.tree))
-        .then(constructs =>
-            constructs.map(c => ({
+        .then((app) => getStateMachines(app.constructTree.tree))
+        .then((constructs) =>
+            constructs.map((c) => ({
                 label: getDisplayLabel(c),
                 description: path.dirname(c.path),
                 data: { construct: c, location: location.treeUri.with({ fragment: c.path }) },

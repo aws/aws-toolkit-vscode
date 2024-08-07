@@ -30,15 +30,15 @@ import {
 } from '../models/model'
 import { cancel, ok } from '../../shared/localizedText'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { isAwsError } from '../../shared/errors'
+import { ToolkitError, getTelemetryReasonDesc, isAwsError } from '../../shared/errors'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { AuthUtil } from '../util/authUtil'
 import path from 'path'
 import { ZipMetadata, ZipUtil } from '../util/zipUtil'
 import { debounce } from 'lodash'
 import { once } from '../../shared/utilities/functionUtils'
-import { randomUUID } from '../../common/crypto'
-import { CodeAnalysisScope } from '../models/constants'
+import { randomUUID } from '../../shared/crypto'
+import { CodeAnalysisScope, ProjectSizeExceededErrorMessage } from '../models/constants'
 import { CodeScanJobFailedError, CreateCodeScanFailedError, SecurityScanError } from '../models/errors'
 
 const localize = nls.loadMessageBundle()
@@ -185,7 +185,7 @@ export async function startSecurityScan(
         throwIfCancelled(scope, codeScanStartTime)
         const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scope, codeScanStartTime)
         if (jobStatus === 'Failed') {
-            logger.verbose(`Security scan job failed.`)
+            logger.verbose(`Security scan failed.`)
             throw new CodeScanJobFailedError()
         }
 
@@ -199,12 +199,13 @@ export async function startSecurityScan(
             scanJob.jobId,
             CodeWhispererConstants.codeScanFindingsSchema,
             projectPaths,
-            scope
+            scope,
+            editor
         )
         const { total, withFixes } = securityRecommendationCollection.reduce(
             (accumulator, current) => ({
                 total: accumulator.total + current.issues.length,
-                withFixes: accumulator.withFixes + current.issues.filter(i => i.suggestedFixes.length > 0).length,
+                withFixes: accumulator.withFixes + current.issues.filter((i) => i.suggestedFixes.length > 0).length,
             }),
             { total: 0, withFixes: 0 }
         )
@@ -249,7 +250,11 @@ export async function startSecurityScan(
                 CodeScansState.instance.setMonthlyQuotaExceeded()
             }
         }
-        codeScanTelemetryEntry.reason = (error as SecurityScanError).message
+        codeScanTelemetryEntry.reasonDesc =
+            (error as ToolkitError)?.code === 'ContentLengthError'
+                ? 'Payload size limit reached'
+                : getTelemetryReasonDesc(error)
+        codeScanTelemetryEntry.reason = (error as ToolkitError)?.code ?? 'DefaultError'
     } finally {
         codeScanState.setToNotStarted()
         codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime
@@ -295,7 +300,9 @@ export async function emitCodeScanTelemetry(
 
 export function errorPromptHelper(error: SecurityScanError, scope: CodeAnalysisScope) {
     if (scope === CodeAnalysisScope.PROJECT) {
-        void vscode.window.showWarningMessage(error.customerFacingMessage, ok)
+        const message =
+            error.code === 'ContentLengthError' ? ProjectSizeExceededErrorMessage : error.customerFacingMessage
+        void vscode.window.showWarningMessage(message, ok)
     }
 }
 
@@ -332,7 +339,7 @@ function showScanCompletedNotification(total: number, scannedFiles: Set<string>)
     const items = [CodeWhispererConstants.showScannedFilesMessage]
     void vscode.window
         .showInformationMessage(`Security scan completed for ${totalFiles}. ${totalIssues} found.`, ...items)
-        .then(value => {
+        .then((value) => {
             if (value === CodeWhispererConstants.showScannedFilesMessage) {
                 const [, codeScanOutpuChan] = getLogOutputChan()
                 codeScanOutpuChan.show()

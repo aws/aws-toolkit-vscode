@@ -5,7 +5,7 @@
  * This class is responsible for responding to UI events by calling
  * the Gumby extension.
  */
-import fs from 'fs'
+import nodefs from 'fs'
 import path from 'path'
 import * as vscode from 'vscode'
 import { GumbyNamedMessages, Messenger } from './messenger/messenger'
@@ -24,7 +24,6 @@ import {
     openHilPomFile,
     postTransformationJob,
     processTransformFormInput,
-    resetDebugArtifacts,
     startTransformByQ,
     stopTransformByQ,
     validateCanCompileProject,
@@ -53,6 +52,7 @@ import { CodeTransformTelemetryState } from '../../telemetry/codeTransformTeleme
 import { getAuthType } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
 import DependencyVersions from '../../models/dependencies'
 import { getStringHash } from '../../../shared/utilities/textUtilities'
+import { getTelemetryReasonDesc } from '../../../shared/errors'
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
 export interface ChatControllerEventEmitters {
@@ -85,55 +85,55 @@ export class GumbyController {
         this.sessionStorage = ChatSessionManager.Instance
         this.authController = new AuthController()
 
-        this.chatControllerMessageListeners.transformSelected.event(data => {
+        this.chatControllerMessageListeners.transformSelected.event((data) => {
             return this.transformInitiated(data)
         })
 
-        this.chatControllerMessageListeners.tabOpened.event(data => {
+        this.chatControllerMessageListeners.tabOpened.event((data) => {
             return this.tabOpened(data)
         })
 
-        this.chatControllerMessageListeners.tabClosed.event(data => {
+        this.chatControllerMessageListeners.tabClosed.event((data) => {
             return this.tabClosed(data)
         })
 
-        this.chatControllerMessageListeners.authClicked.event(data => {
+        this.chatControllerMessageListeners.authClicked.event((data) => {
             this.authClicked(data)
         })
 
-        this.chatControllerMessageListeners.commandSentFromIDE.event(data => {
+        this.chatControllerMessageListeners.commandSentFromIDE.event((data) => {
             return this.commandSentFromIDE(data)
         })
 
-        this.chatControllerMessageListeners.formActionClicked.event(data => {
+        this.chatControllerMessageListeners.formActionClicked.event((data) => {
             return this.formActionClicked(data)
         })
 
-        this.chatControllerMessageListeners.transformationFinished.event(data => {
+        this.chatControllerMessageListeners.transformationFinished.event((data) => {
             return this.transformationFinished(data)
         })
 
-        this.chatControllerMessageListeners.processHumanChatMessage.event(data => {
+        this.chatControllerMessageListeners.processHumanChatMessage.event((data) => {
             return this.processHumanChatMessage(data)
         })
 
-        this.chatControllerMessageListeners.linkClicked.event(data => {
+        this.chatControllerMessageListeners.linkClicked.event((data) => {
             this.openLink(data)
         })
 
-        this.chatControllerMessageListeners.humanInTheLoopStartIntervention.event(data => {
+        this.chatControllerMessageListeners.humanInTheLoopStartIntervention.event((data) => {
             return this.startHILIntervention(data)
         })
 
-        this.chatControllerMessageListeners.humanInTheLoopPromptUserForDependency.event(data => {
+        this.chatControllerMessageListeners.humanInTheLoopPromptUserForDependency.event((data) => {
             return this.HILPromptForDependency(data)
         })
 
-        this.chatControllerMessageListeners.humanInTheLoopSelectionUploaded.event(data => {
+        this.chatControllerMessageListeners.humanInTheLoopSelectionUploaded.event((data) => {
             return this.HILDependencySelectionUploaded(data)
         })
 
-        this.chatControllerMessageListeners.errorThrown.event(data => {
+        this.chatControllerMessageListeners.errorThrown.event((data) => {
             return this.handleError(data)
         })
     }
@@ -233,7 +233,7 @@ export class GumbyController {
 
     private async validateProjectsWithReplyOnError(message: any): Promise<TransformationCandidateProject[]> {
         let telemetryJavaVersion = JDKToTelemetryValue(JDKVersion.UNSUPPORTED) as CodeTransformJavaSourceVersionsAllowed
-        let errorCode = undefined
+        let err
         try {
             const validProjects = await getValidCandidateProjects()
             if (validProjects.length > 0) {
@@ -242,23 +242,24 @@ export class GumbyController {
                 telemetryJavaVersion = JDKToTelemetryValue(javaVersion) as CodeTransformJavaSourceVersionsAllowed
             }
             return validProjects
-        } catch (err: any) {
-            if (err instanceof NoJavaProjectsFoundError) {
+        } catch (e: any) {
+            if (e instanceof NoJavaProjectsFoundError) {
                 this.messenger.sendUnrecoverableErrorResponse('no-java-project-found', message.tabID)
-            } else if (err instanceof NoMavenJavaProjectsFoundError) {
+            } else if (e instanceof NoMavenJavaProjectsFoundError) {
                 this.messenger.sendUnrecoverableErrorResponse('no-maven-java-project-found', message.tabID)
             } else {
                 this.messenger.sendUnrecoverableErrorResponse('no-project-found', message.tabID)
             }
-            errorCode = err.code
+            err = e
         } finally {
             // New projectDetails metric should always be fired whether the project was valid or invalid
             telemetry.codeTransform_projectDetails.emit({
                 passive: true,
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformLocalJavaVersion: telemetryJavaVersion,
-                result: errorCode ? MetadataResult.Fail : MetadataResult.Pass,
-                reason: errorCode,
+                result: err?.code ? MetadataResult.Fail : MetadataResult.Pass,
+                reason: err?.code,
+                reasonDesc: getTelemetryReasonDesc(err),
             })
         }
         return []
@@ -284,7 +285,6 @@ export class GumbyController {
                 break
             case ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW:
                 this.resetTransformationChatFlow()
-                await resetDebugArtifacts()
                 this.messenger.sendCommandMessage({ ...message, command: GumbyCommands.CLEAR_CHAT })
                 await this.transformInitiated(message)
                 break
@@ -308,7 +308,7 @@ export class GumbyController {
     // prompt user to pick project and specify source JDK version
     private async initiateTransformationOnProject(message: any) {
         const authType = await getAuthType()
-        telemetry.codeTransform_jobIsStartedFromChatPrompt.emit({
+        telemetry.codeTransform_jobStart.emit({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             credentialSourceId: authType,
             result: MetadataResult.Pass,
@@ -471,6 +471,7 @@ export class GumbyController {
                 undefined,
                 GumbyNamedMessages.JOB_FAILED_IN_PRE_BUILD
             )
+            await openBuildLogFile()
             this.messenger.sendViewBuildLog(message.tabID)
         }
     }
@@ -504,5 +505,5 @@ export class GumbyController {
  */
 function extractPath(text: string): string | undefined {
     const resolvedPath = path.resolve(text.trim())
-    return fs.existsSync(resolvedPath) && fs.lstatSync(resolvedPath).isDirectory() ? resolvedPath : undefined
+    return nodefs.existsSync(resolvedPath) && nodefs.lstatSync(resolvedPath).isDirectory() ? resolvedPath : undefined
 }

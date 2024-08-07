@@ -60,7 +60,7 @@ function handleMessage(event) {
 }
 
 function updateContent(/** @type {string} */ text) {
-    if (document.readyState === 'complete') {
+    if (document.readyState !== 'loading') {
         void render(text)
     } else {
         document.addEventListener('DOMContentLoaded', function () {
@@ -71,7 +71,7 @@ function updateContent(/** @type {string} */ text) {
 
 async function checkThreatComposerAPI() {
     while (!window.threatcomposer || !window.threatcomposer.setCurrentWorkspaceData) {
-        await new Promise(r => setTimeout(r, checkThreatComposerAPITimeout))
+        await new Promise((r) => setTimeout(r, checkThreatComposerAPITimeout))
     }
 }
 
@@ -110,7 +110,7 @@ async function render(/** @type {string} */ text) {
         defaultTemplate = window.threatcomposer.stringifyWorkspaceData(initialState)
     }
 
-    window.threatcomposer.addEventListener('save', e => {
+    window.threatcomposer.addEventListener('save', (e) => {
         const stringyfiedData = window.threatcomposer.stringifyWorkspaceData(e.detail)
         const currentState = vscode.getState()
         currentState.fileContents = stringyfiedData

@@ -13,7 +13,7 @@ import { isInDevEnv } from '../shared/vscode/env'
 import { isWeb } from '../shared/extensionGlobals'
 
 export async function initialize(loginManager: LoginManager): Promise<void> {
-    Auth.instance.onDidChangeActiveConnection(async conn => {
+    Auth.instance.onDidChangeActiveConnection(async (conn) => {
         // This logic needs to be moved to `Auth.useConnection` to correctly record `passive`
         if (conn?.type === 'iam' && conn.state === 'valid') {
             await loginManager.login({ passive: true, providerId: fromString(conn.id) })

@@ -12,6 +12,7 @@ import { getClientId } from '../../shared/telemetry/util'
 import { FakeMemento } from '../fakeExtensionContext'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
 import { TestSettings } from '../utilities/testSettingsConfiguration'
+import { GlobalState } from '../../shared/globalState'
 
 describe('DefaultAwsClientBuilder', function () {
     let builder: AWSClientBuilder
@@ -23,7 +24,7 @@ describe('DefaultAwsClientBuilder', function () {
     describe('createAndConfigureSdkClient', function () {
         it('includes Toolkit user-agent if no options are specified', async function () {
             const service = await builder.createAwsService(Service)
-            const clientId = getClientId(new FakeMemento())
+            const clientId = getClientId(new GlobalState(new FakeMemento()))
 
             assert.strictEqual(!!service.config.customUserAgent, true)
             assert.strictEqual(
@@ -34,7 +35,7 @@ describe('DefaultAwsClientBuilder', function () {
 
         it('adds Client-Id to user agent', async function () {
             const service = await builder.createAwsService(Service)
-            const clientId = getClientId(new FakeMemento())
+            const clientId = getClientId(new GlobalState(new FakeMemento()))
             const regex = new RegExp(`ClientId/${clientId}`)
             assert.ok(service.config.customUserAgent?.match(regex))
         })
@@ -90,7 +91,7 @@ describe('DefaultAwsClientBuilder', function () {
                 const service = await builder.createAwsService(Service, {
                     apiConfig: { operations: { FakeOperation: {} } },
                     onRequestSetup: [
-                        request => {
+                        (request) => {
                             assert.ok(request.service instanceof Service)
                             assert.strictEqual(request.operation, 'FakeOperation')
                             assert.deepStrictEqual(request.params, { foo: 'bar' })

@@ -8,14 +8,12 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import { resetCodeWhispererGlobalVariables, createMockTextEditor } from 'aws-core-vscode/test'
 import { assertTelemetryCurried } from 'aws-core-vscode/test'
-import { FakeMemento } from 'aws-core-vscode/test'
 import {
     onInlineAcceptance,
     RecommendationHandler,
     AuthUtil,
     session,
     CodeWhispererUserGroupSettings,
-    userGroupKey,
     UserGroup,
 } from 'aws-core-vscode/codewhisperer'
 import { globals } from 'aws-core-vscode/shared'
@@ -37,28 +35,24 @@ describe('onInlineAcceptance', function () {
         it('Should dispose inline completion provider', async function () {
             const mockEditor = createMockTextEditor()
             const spy = sinon.spy(RecommendationHandler.instance, 'disposeInlineCompletion')
-            const globalState = new FakeMemento()
-            await onInlineAcceptance(
-                {
-                    editor: mockEditor,
-                    range: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 21)),
-                    effectiveRange: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 21)),
-                    acceptIndex: 0,
-                    recommendation: "print('Hello World!')",
-                    requestId: '',
-                    sessionId: '',
-                    triggerType: 'OnDemand',
-                    completionType: 'Line',
-                    language: 'python',
-                    references: undefined,
-                },
-                globalState
-            )
+            await onInlineAcceptance({
+                editor: mockEditor,
+                range: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 21)),
+                effectiveRange: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 21)),
+                acceptIndex: 0,
+                recommendation: "print('Hello World!')",
+                requestId: '',
+                sessionId: '',
+                triggerType: 'OnDemand',
+                completionType: 'Line',
+                language: 'python',
+                references: undefined,
+            })
             assert.ok(spy.calledWith())
         })
 
         it('Should report telemetry that records this user decision event', async function () {
-            await globals.context.globalState.update(userGroupKey, {
+            await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
                 group: UserGroup.Classifier,
                 version: extensionVersion,
             })
@@ -77,23 +71,19 @@ describe('onInlineAcceptance', function () {
             session.triggerType = 'OnDemand'
             session.setCompletionType(0, session.recommendations[0])
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
-            const globalState = new FakeMemento()
-            await onInlineAcceptance(
-                {
-                    editor: mockEditor,
-                    range: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 21)),
-                    effectiveRange: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 21)),
-                    acceptIndex: 0,
-                    recommendation: "print('Hello World!')",
-                    requestId: '',
-                    sessionId: '',
-                    triggerType: 'OnDemand',
-                    completionType: 'Line',
-                    language: 'python',
-                    references: undefined,
-                },
-                globalState
-            )
+            await onInlineAcceptance({
+                editor: mockEditor,
+                range: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 21)),
+                effectiveRange: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 21)),
+                acceptIndex: 0,
+                recommendation: "print('Hello World!')",
+                requestId: '',
+                sessionId: '',
+                triggerType: 'OnDemand',
+                completionType: 'Line',
+                language: 'python',
+                references: undefined,
+            })
             assertTelemetry({
                 codewhispererRequestId: 'test',
                 codewhispererSessionId: 'test',

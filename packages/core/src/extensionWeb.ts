@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { getLogger } from './shared/logger'
-import { activateCommon, deactivateCommon } from './extensionCommon'
+import { activateCommon, deactivateCommon } from './extension'
 import { activateWebShared } from './extensionWebShared'
 
 export async function activate(context: vscode.ExtensionContext) {

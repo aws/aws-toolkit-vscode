@@ -10,7 +10,7 @@ const localize = nls.loadMessageBundle()
 
 import AdmZip from 'adm-zip'
 import * as path from 'path'
-import { fsCommon } from '../../srcShared/fs'
+import { fs } from '../../shared'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { cloud9Findfile, makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
@@ -47,7 +47,7 @@ class LambdaSettings extends fromExtensionManifest('aws.lambda', { recentlyUploa
         try {
             return this.get('recentlyUploaded')
         } catch (error) {
-            this.delete('recentlyUploaded').catch(e => {
+            this.delete('recentlyUploaded').catch((e) => {
                 getLogger().error('TypedSettings.delete() failed: %s', (e as Error).message)
             })
         }
@@ -181,7 +181,7 @@ function createConfirmDeploymentPrompter(lambda: LambdaFunction) {
     // TODO(sijaden): make this a quick pick? Tried to keep as close to possible as the original impl.
     return new (class extends Prompter<boolean> {
         protected promptUser(): Promise<PromptResult<boolean>> {
-            return confirmLambdaDeployment(lambda).then(res => res || WIZARD_BACK)
+            return confirmLambdaDeployment(lambda).then((res) => res || WIZARD_BACK)
         }
 
         // Stubs. Need to thin-out the `Prompter` interface to avoid this.
@@ -205,11 +205,11 @@ export interface UploadLambdaWizardState {
 
 export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
     public override async init(): Promise<this> {
-        this.form.lambda.region.bindPrompter(() => createRegionPrompter().transform(region => region.id))
+        this.form.lambda.region.bindPrompter(() => createRegionPrompter().transform((region) => region.id))
 
         if (this.invokePath) {
             this.form.uploadType.setDefault('directory')
-            if (await fsCommon.existsFile(this.invokePath.fsPath)) {
+            if (await fs.existsFile(this.invokePath.fsPath)) {
                 this.form.targetUri.setDefault(vscode.Uri.file(path.dirname(this.invokePath.fsPath)))
             } else {
                 this.form.targetUri.setDefault(this.invokePath)
@@ -234,7 +234,7 @@ export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
             })
         }
 
-        this.form.lambda.name.bindPrompter(state => {
+        this.form.lambda.name.bindPrompter((state) => {
             // invoking from the command palette passes no arguments
             if (!this.invokePath) {
                 if (state.uploadType === 'directory') {
@@ -258,12 +258,15 @@ export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
             this.form.directoryBuildType.setDefault('zip')
         }
 
-        this.form.confirmedDeploy.bindPrompter(state => createConfirmDeploymentPrompter(state.lambda!))
+        this.form.confirmedDeploy.bindPrompter((state) => createConfirmDeploymentPrompter(state.lambda!))
 
         return this
     }
 
-    constructor(readonly lambda?: LambdaFunction, readonly invokePath?: vscode.Uri) {
+    constructor(
+        readonly lambda?: LambdaFunction,
+        readonly invokePath?: vscode.Uri
+    ) {
         super({ initState: { lambda } })
     }
 }
@@ -283,7 +286,7 @@ async function runUploadDirectory(lambda: LambdaFunction, type: 'zip' | 'sam', p
                 location: vscode.ProgressLocation.Notification,
                 cancellable: false,
             },
-            async progress => {
+            async (progress) => {
                 return await zipAndUploadDirectory(lambda, parentDir.fsPath, progress)
             }
         )
@@ -304,7 +307,7 @@ async function runUploadLambdaWithSamBuild(lambda: Required<LambdaFunction>, par
     // Detect if handler is present and provide strong guidance against proceeding if not.
     try {
         const handlerFile = path.join(parentDir.fsPath, getLambdaDetails(lambda.configuration).fileName)
-        if (!(await fsCommon.exists(handlerFile))) {
+        if (!(await fs.exists(handlerFile))) {
             const isConfirmed = await showConfirmationMessage({
                 prompt: localize(
                     'AWS.lambda.upload.handlerNotFound',
@@ -334,7 +337,7 @@ async function runUploadLambdaWithSamBuild(lambda: Required<LambdaFunction>, par
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
         },
-        async progress => {
+        async (progress) => {
             let tempDir: string | undefined
             try {
                 const invoker = getSamCliContext().invoker
@@ -415,8 +418,8 @@ async function runUploadLambdaZipFile(lambda: LambdaFunction, zipFileUri: vscode
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
         },
-        async progress => {
-            const zipFile = await fsCommon.readFile(zipFileUri.fsPath).catch(err => {
+        async (progress) => {
+            const zipFile = await fs.readFile(zipFileUri.fsPath).catch((err) => {
                 throw new ToolkitError('Failed to read zip', { cause: err })
             })
             return await uploadZipBuffer(lambda, zipFile, progress)
@@ -443,7 +446,7 @@ async function zipAndUploadDirectory(
         const zip = new AdmZip()
         zip.addLocalFolder(path)
         zip.toBuffer(resolve, reject)
-    }).catch(err => {
+    }).catch((err) => {
         throw new ToolkitError('Failed to archive directory', { cause: err })
     })
 
@@ -469,7 +472,7 @@ async function uploadZipBuffer(
     progress.report({
         message: localize('AWS.lambda.upload.progress.uploadingArchive', 'Uploading archive to Lambda...'),
     })
-    await lambdaClient.updateFunctionCode(lambda.name, zip).catch(err => {
+    await lambdaClient.updateFunctionCode(lambda.name, zip).catch((err) => {
         throw new ToolkitError('Failed to upload zip archive', { cause: err })
     })
 
@@ -482,14 +485,14 @@ export async function findApplicationJsonFile(
     startPath: vscode.Uri,
     cloud9 = isCloud9()
 ): Promise<vscode.Uri | undefined> {
-    if (!(await fsCommon.exists(startPath.fsPath))) {
+    if (!(await fs.exists(startPath.fsPath))) {
         getLogger().error(
             'findApplicationJsonFile() invalid path (not accessible or does not exist): "%s"',
             startPath.fsPath
         )
         return undefined
     }
-    const isdir = await fsCommon.existsDir(startPath.fsPath)
+    const isdir = await fs.existsDir(startPath.fsPath)
     const parentDir = isdir ? startPath.fsPath : path.dirname(startPath.fsPath)
     const found = cloud9
         ? await cloud9Findfile(parentDir, '.application.json')
@@ -511,7 +514,7 @@ export async function findApplicationJsonFile(
 export async function getFunctionNames(file: vscode.Uri, region: string): Promise<string[] | undefined> {
     try {
         const names: string[] = []
-        const appData = JSON.parse(await fsCommon.readFileAsString(file.fsPath))
+        const appData = JSON.parse(await fs.readFileAsString(file.fsPath))
         if (appData['Functions']) {
             const functions = Object.keys(appData['Functions'])
             if (functions) {
@@ -543,7 +546,7 @@ async function listAllLambdaNames(region: string, path?: vscode.Uri) {
             getLogger().debug('lambda: no functions in .application.json for region: %s', region)
         } else {
             lambdaFunctionNames.push(
-                ...namesFromAppFile.map(n => {
+                ...namesFromAppFile.map((n) => {
                     return {
                         label: n,
                         description: localize('AWS.lambda.upload.fromAppJson', 'from .application.json'),
@@ -598,7 +601,7 @@ function createFunctionNamePrompter(region: string, path?: vscode.Uri) {
             'aws.lambda.upload.manualEntry.placeholder',
             'Filter or enter existing function name or ARN'
         ),
-        filterBoxInputSettings: { label: 'Existing lambda function: ', transform: input => input },
+        filterBoxInputSettings: { label: 'Existing lambda function: ', transform: (input) => input },
     })
 
     return prompter

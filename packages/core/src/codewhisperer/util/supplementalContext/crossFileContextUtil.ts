@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { fsCommon } from '../../../srcShared/fs'
+import { fs } from '../../../shared'
 import path = require('path')
 import { BM25Document, BM25Okapi } from './rankBm25'
 import { ToolkitError } from '../../../shared/errors'
@@ -110,18 +110,18 @@ export async function fetchSupplementalContextForSrc(
     // DO NOT send code chunk with empty content
     getLogger().debug(`CodeWhisperer finished fetching crossfile context out of ${relevantCrossFilePaths.length} files`)
     return {
-        supplementalContextItems: supplementalContexts.filter(item => item.content.trim().length !== 0),
+        supplementalContextItems: supplementalContexts.filter((item) => item.content.trim().length !== 0),
         strategy: 'OpenTabs_BM25',
     }
 }
 
 function findBestKChunkMatches(chunkInput: Chunk, chunkReferences: Chunk[], k: number): Chunk[] {
-    const chunkContentList = chunkReferences.map(chunk => chunk.content)
+    const chunkContentList = chunkReferences.map((chunk) => chunk.content)
 
     //performBM25Scoring returns the output in a sorted order (descending of scores)
     const top3: BM25Document[] = new BM25Okapi(chunkContentList).topN(chunkInput.content, crossFileContextConfig.topK)
 
-    return top3.map(doc => {
+    return top3.map((doc) => {
         // reference to the original metadata since BM25.top3 will sort the result
         const chunkIndex = doc.index
         const chunkReference = chunkReferences[chunkIndex]
@@ -199,7 +199,7 @@ function linkChunks(chunks: Chunk[]) {
 export async function splitFileToChunks(filePath: string, chunkSize: number): Promise<Chunk[]> {
     const chunks: Chunk[] = []
 
-    const fileContent = (await fsCommon.readFileAsString(filePath)).trimEnd()
+    const fileContent = (await fs.readFileAsString(filePath)).trimEnd()
     const lines = fileContent.split('\n')
 
     for (let i = 0; i < lines.length; i += chunkSize) {
@@ -225,7 +225,7 @@ export async function getCrossFileCandidates(editor: vscode.TextEditor): Promise
      * 2. has the same file extension or it's one of the dialect of target file (e.g .js vs. .jsx)
      * 3. is not a test file
      */
-    const unsortedCandidates = await getOpenFilesInWindow(async candidateFile => {
+    const unsortedCandidates = await getOpenFilesInWindow(async (candidateFile) => {
         return (
             targetFile !== candidateFile &&
             (path.extname(targetFile) === path.extname(candidateFile) ||
@@ -235,7 +235,7 @@ export async function getCrossFileCandidates(editor: vscode.TextEditor): Promise
     })
 
     return unsortedCandidates
-        .map(candidate => {
+        .map((candidate) => {
             return {
                 file: candidate,
                 fileDistance: getFileDistance(targetFile, candidate),
@@ -244,7 +244,7 @@ export async function getCrossFileCandidates(editor: vscode.TextEditor): Promise
         .sort((file1, file2) => {
             return file1.fileDistance - file2.fileDistance
         })
-        .map(fileToDistance => {
+        .map((fileToDistance) => {
             return fileToDistance.file
         })
 }

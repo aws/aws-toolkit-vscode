@@ -9,16 +9,20 @@ import * as vscode from 'vscode'
 import { handleMessage } from './handleMessage'
 import { FileWatchInfo, WebviewContext } from './types'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { addFileWatchMessageHandler } from './messageHandlers/addFileWatchMessageHandler'
-import { addThemeWatchMessageHandler } from './messageHandlers/addThemeWatchMessageHandler'
-import { sendThreatComposerOpenCancelled } from './messageHandlers/emitTelemetryMessageHandler'
+import { onFileChanged } from './handlers/onFileChangedHandler'
+import { onThemeChanged } from './handlers/onThemeChangedHandler'
+import { sendThreatComposerOpenCancelled } from './handlers/webviewTelemetryHandler'
+import { getLogger } from '../shared/logger'
 
 const localize = nls.loadMessageBundle()
 
 /**
  * The main class for the Threat Composer Editor. This class handles the creation and management
  * of the webview panel for the Threat Composer Editor. It also handles the communication
- * between the webview and the extension context.
+ * between the webview and the extension context. This class also stores the state of the
+ * tc.json file, that is being edited in the webview panel, in the property 'fileStates'. The
+ * 'autoSaveFileStates' property is used to store local changes that are being made in the
+ * webview panel.
  */
 export class ThreatComposerEditor {
     public readonly documentUri: vscode.Uri
@@ -30,11 +34,10 @@ export class ThreatComposerEditor {
     public workSpacePath: string
     public defaultTemplatePath: string
     public defaultTemplateName: string
-    // fileWatches is used to monitor template file changes and achieve bi-direction sync
-    public fileWatches: Record<string, FileWatchInfo>
-
-    // autoSaveFileWatches is used to monitor local file changes and achieve bi-direction sync
-    public autoSaveFileWatches: Record<string, FileWatchInfo>
+    // fileStates is used to store the state of the file being edited and achieve bi-direction sync
+    public fileStates: Record<string, FileWatchInfo>
+    // autoSaveFileStates is used to store local changes that are being made in the webview panel.
+    public autoSaveFileStates: Record<string, FileWatchInfo>
     private getWebviewContent: () => Promise<string>
 
     public constructor(
@@ -47,8 +50,8 @@ export class ThreatComposerEditor {
         this.getWebviewContent = getWebviewContent
         this.documentUri = textDocument.uri
         this.webviewPanel = webviewPanel
-        this.fileWatches = {}
-        this.autoSaveFileWatches = {}
+        this.fileStates = {}
+        this.autoSaveFileStates = {}
         this.workSpacePath = path.dirname(textDocument.uri.fsPath)
         this.defaultTemplatePath = textDocument.uri.fsPath
         this.defaultTemplateName = path.basename(this.defaultTemplatePath)
@@ -105,8 +108,8 @@ export class ThreatComposerEditor {
             workSpacePath: this.workSpacePath,
             defaultTemplatePath: this.defaultTemplatePath,
             defaultTemplateName: this.defaultTemplateName,
-            fileStates: this.fileWatches,
-            autoSaveFileState: this.autoSaveFileWatches,
+            fileStates: this.fileStates,
+            autoSaveFileState: this.autoSaveFileStates,
             loaderNotification: undefined,
             fileId: this.fileId,
         }
@@ -128,13 +131,13 @@ export class ThreatComposerEditor {
             },
             (progress, token) => {
                 token.onCancellationRequested(async () => {
-                    console.log('User canceled opening in TC operation')
+                    getLogger().debug('User canceled opening in TC operation')
                     await cancelOpenInThreatComposer('User canceled opening in THreatComposer operation')
                 })
 
                 progress.report({ increment: 0 })
 
-                return new Promise<void>(async resolve => {
+                return new Promise<void>(async (resolve) => {
                     contextObject.loaderNotification = {
                         progress: progress,
                         cancellationToken: token,
@@ -154,12 +157,24 @@ export class ThreatComposerEditor {
                     // Remember that a single text document can also be shared between multiple custom
                     // editors (this happens for example when you split a custom editor)
 
-                    addFileWatchMessageHandler(contextObject)
-                    addThemeWatchMessageHandler(contextObject)
+                    contextObject.disposables.push(
+                        vscode.workspace.onDidChangeTextDocument(async () => {
+                            await onFileChanged(contextObject)
+                        })
+                    )
+
+                    // Hook up event handler to update the UI on theme changes within VSCode.
+                    contextObject.disposables.push(
+                        vscode.window.onDidChangeActiveColorTheme(async (data) => {
+                            await onThemeChanged(data, contextObject.panel)
+                        })
+                    )
 
                     // Handle messages from the webview
                     this.disposables.push(
-                        this.webviewPanel.webview.onDidReceiveMessage(message => handleMessage(message, contextObject))
+                        this.webviewPanel.webview.onDidReceiveMessage((message) =>
+                            handleMessage(message, contextObject)
+                        )
                     )
 
                     // When the panel is closed, dispose of any disposables/remove subscriptions
@@ -168,14 +183,14 @@ export class ThreatComposerEditor {
                             return
                         }
 
-                        await telemetry.threatComposer_closed.run(async span => {
+                        await telemetry.threatComposer_closed.run(async (span) => {
                             span.record({
                                 id: this.fileId,
                             })
                             this.isPanelDisposed = true
                             contextObject.loaderNotification?.promiseResolve()
                             this.onVisualizationDisposeEmitter.fire()
-                            this.disposables.forEach(disposable => {
+                            this.disposables.forEach((disposable) => {
                                 disposable.dispose()
                             })
                             this.onVisualizationDisposeEmitter.dispose()

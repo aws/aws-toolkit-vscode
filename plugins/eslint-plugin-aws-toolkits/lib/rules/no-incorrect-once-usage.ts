@@ -115,21 +115,21 @@ export default ESLintUtils.RuleCreator.withoutDocs({
                     return
                 }
 
-                node.declarations.forEach(declaration => {
+                node.declarations.forEach((declaration) => {
                     if (
                         declaration.init?.type === AST_NODE_TYPES.CallExpression &&
                         declaration.id.type === AST_NODE_TYPES.Identifier &&
                         declaration.init.callee?.type === AST_NODE_TYPES.Identifier &&
                         declaration.init.callee.name === 'once'
                     ) {
-                        const scope = context.getScope()
+                        const scope = context.sourceCode.getScope(declaration)
                         const variable = scope.variables.find(
-                            v => v.name === (declaration.id as TSESTree.Identifier).name
+                            (v) => v.name === (declaration.id as TSESTree.Identifier).name
                         ) // we already confirmed the type in the if statement... why is TS mad?
                         let isUsedInLoopScope = false
 
                         if (variable) {
-                            const refs = variable.references.filter(ref => ref.identifier !== declaration.id)
+                            const refs = variable.references.filter((ref) => ref.identifier !== declaration.id)
 
                             // Check if it is being referenced multiple times
                             // TODO: expand to check if it is being referenced inside nested scopes only? (currently checks current scope as well)
@@ -138,7 +138,7 @@ export default ESLintUtils.RuleCreator.withoutDocs({
                             }
 
                             // Check if it is being referenced once, but inside a loop.
-                            refs.forEach(ref => {
+                            refs.forEach((ref) => {
                                 let currNode: TSESTree.Node | undefined = ref.identifier
 
                                 while (currNode && currNode !== scope.block) {

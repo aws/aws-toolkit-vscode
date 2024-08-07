@@ -6,11 +6,11 @@
 import * as crypto from 'crypto'
 import * as path from 'path'
 import { getLogger } from '../../shared/logger/logger'
+import fs from '../../shared/fs/fs'
 import { createDiskCache, KeyedCache, mapCache } from '../../shared/utilities/cacheUtils'
 import { stripUndefined } from '../../shared/utilities/collectionUtils'
 import { hasProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { SsoToken, ClientRegistration } from './model'
-import { SystemUtilities } from '../../shared/systemUtilities'
 import { DevSettings } from '../../shared/settings'
 import { onceChanged } from '../../shared/utilities/functionUtils'
 
@@ -32,7 +32,7 @@ export interface SsoCache {
     readonly registration: KeyedCache<ClientRegistration, RegistrationKey>
 }
 
-const defaultCacheDir = () => path.join(SystemUtilities.getHomeDirectory(), '.aws', 'sso', 'cache')
+const defaultCacheDir = () => path.join(fs.getUserHomeDir(), '.aws/sso/cache')
 export const getCacheDir = () => DevSettings.instance.get('ssoCacheDirectory', defaultCacheDir())
 
 export function getCache(directory = getCacheDir()): SsoCache {
@@ -135,7 +135,7 @@ function getRegistrationCacheFile(ssoCacheDir: string, key: RegistrationKey): st
     const hash = (startUrl: string, scopes: string[]) => {
         const shasum = crypto.createHash('sha256')
         shasum.update(startUrl)
-        scopes.forEach(s => shasum.update(s))
+        scopes.forEach((s) => shasum.update(s))
         return shasum.digest('hex')
     }
 

@@ -132,7 +132,7 @@ You can also use these NPM tasks (see `npm run` for the full list):
 
     1. Declare a global unhandledRejection handler.
         ```ts
-        process.on('unhandledRejection', e => {
+        process.on('unhandledRejection', (e) => {
             getLogger('channel').error(
                 localize(
                     'AWS.channel.aws.toolkit.activation.error',
@@ -218,12 +218,7 @@ To run tests against a specific folder in VSCode, do any one of:
 
 ### Coverage report
 
-You can find the coverage report at `./coverage/index.html` after running the tests. Tests ran from the workspace launch config won't generate a coverage report automatically because it can break file watching. A few manual steps are needed instead:
-
--   Run the command `Tasks: Run Build Task` if not already active
--   Instrument built code with `npm run instrument`
--   Exercise the code (`Extension Tests`, `Integration Tests`, etc.)
--   Generate a report with `npm run report`
+You can find the coverage report at `./coverage/amazonq/lcov-report/index.html` and `./coverage/core/lcov-report/index.html` after running the tests. Tests ran from the workspace launch config won't generate a coverage report automatically because it can break file watching.
 
 ### CodeCatalyst Blueprints
 
@@ -252,22 +247,32 @@ To send a pull request:
 Pull requests that change **customer-impacting behavior** must include a changelog item(s). Run one
 or both of the following commands:
 
-    # For changes relevant to Amazon Q:
+-   For changes relevant to Amazon Q:
+    ```
     npm run newChange -w packages/amazonq
-
-    # For changes relevant to AWS Toolkit:
+    ```
+-   For changes relevant to AWS Toolkit:
+    ```
     npm run newChange -w packages/toolkit
+    ```
+
+The audience for the changelog is _the user_. The changelog is presented to users by VSCode and the
+marketplace. It is a "micro-blog" for advertising improvements to users. It is the _primary_ way of
+communicating changes to customers. Please consider this when writing changelog entries.
+
+Mentioning low-level details like "function x now takes argument y", will not be useful, because it
+doesn't say what that means in terms of the user experience. Instead, describe the effect from the
+user's point of view.
 
 > [!TIP]
 >
 > -   Describe the change in a way that is _meaningful to the customer_. If you can't describe the _customer impact_ then it probably shouldn't be in the changelog.
->     -   ❌ `Update telemetry definitions` (not customer-impacting)
+>     -   ✅ `Connection wizard sometimes shows the old (stale) connection`
 >     -   ✅ `Faster startup after VSCode restarts`
 >     -   ❌ `Remove the cache when the connection wizard is re-launched` (code internals are not relevant to customers)
->     -   ✅ `Connection wizard sometimes shows the old (stale) connection`
-> -   "Bug Fix" changes should describe the _problem being fixed_. This tends to produce simpler,
->     more-intuitive descriptions. It's redundant to say "Fixed" in the description, because the
->     generated changelog will say that. Example:
+>     -   ❌ `Update telemetry definitions` (not customer-impacting)
+> -   "Bug Fix" changes should describe the _problem being fixed_. Don't say "Fixed" in the
+>     description, it's redundant. Example:
 >     -   ❌ `Fixed S3 bug which caused filenames to be uppercase`
 >     -   ✅ `S3 filenames are always uppercase`
 > -   To update an _existing_ changelog item, just edit its `.changes/next-release/….json` file, you don't need to re-run `npm run newChange`.
@@ -467,6 +472,8 @@ The package.json 'devDependencies' includes `eslint-plugin-aws-toolkits`. This i
 3. Register your rule in `plugins/eslint-plugin-aws-toolkits/index.ts`.
 4. Enable your rule in `.eslintrc`.
 
+Writing lint rules can be tricky if you are unfamiliar with the process. Use an AST viewer such as https://astexplorer.net/
+
 ### AWS SDK generator
 
 When the AWS SDK does not (yet) support a service but you have an API
@@ -542,7 +549,7 @@ For extensions to contribute their own codicons, VSCode requires a font file as 
 As a simple example, let's say I wanted to add a new icon for CloudWatch log streams. I would do the following:
 
 1. Place the icon in `resources/icons/aws/cloudwatch`. I'l name the icon `log-stream.svg`.
-1. Use `npm run generatePackage` to update `package.json`. Commit this change with the new icon.
+1. Use `npm run generateIcons` to update `package.json`. Commit this change with the new icon.
 1. You can now use the icon in the Toolkit:
 
     ```ts

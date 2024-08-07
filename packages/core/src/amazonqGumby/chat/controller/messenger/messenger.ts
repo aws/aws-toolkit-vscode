@@ -8,7 +8,7 @@
  * As much as possible, all strings used in the experience should originate here.
  */
 
-import { AuthFollowUpType, expiredText, enableQText, reauthenticateText } from '../../../../amazonq/auth/model'
+import { AuthFollowUpType, AuthMessageDataMap } from '../../../../amazonq/auth/model'
 import { ChatItemType } from '../../../../amazonqFeatureDev/models'
 import { JDKVersion, TransformationCandidateProject, transformByQState } from '../../../../codewhisperer/models/model'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
@@ -87,20 +87,21 @@ export class Messenger {
 
     public async sendAuthNeededExceptionMessage(credentialState: FeatureAuthState, tabID: string) {
         let authType: AuthFollowUpType = 'full-auth'
-        let message = reauthenticateText
-        if (credentialState.amazonQ === 'disconnected') {
-            authType = 'full-auth'
-            message = reauthenticateText
-        }
+        let message = AuthMessageDataMap[authType].message
 
-        if (credentialState.amazonQ === 'unsupported') {
-            authType = 'use-supported-auth'
-            message = enableQText
-        }
-
-        if (credentialState.amazonQ === 'expired') {
-            authType = 're-auth'
-            message = expiredText
+        switch (credentialState.amazonQ) {
+            case 'disconnected':
+                authType = 'full-auth'
+                message = AuthMessageDataMap[authType].message
+                break
+            case 'unsupported':
+                authType = 'use-supported-auth'
+                message = AuthMessageDataMap[authType].message
+                break
+            case 'expired':
+                authType = 're-auth'
+                message = AuthMessageDataMap[authType].message
+                break
         }
 
         this.dispatcher.sendAuthNeededExceptionMessage(new AuthNeededException(message, authType, tabID))
@@ -114,7 +115,7 @@ export class Messenger {
         const projectFormOptions: { value: any; label: string }[] = []
         const detectedJavaVersions = new Array<JDKVersion | undefined>()
 
-        projects.forEach(candidateProject => {
+        projects.forEach((candidateProject) => {
             projectFormOptions.push({
                 value: candidateProject.path,
                 label: candidateProject.name,
@@ -444,7 +445,7 @@ export class Messenger {
         )
 
         if (codeSnippet !== '') {
-            message = `Here is the dependency causing the issue: 
+            message = `Here is the dependency causing the issue:
 \`\`\`
 ${codeSnippet}
 \`\`\`
@@ -492,7 +493,7 @@ ${codeSnippet}
 
         const valueFormOptions: { value: any; label: string }[] = []
 
-        versions.allVersions.forEach(version => {
+        versions.allVersions.forEach((version) => {
             valueFormOptions.push({
                 value: version,
                 label: version,

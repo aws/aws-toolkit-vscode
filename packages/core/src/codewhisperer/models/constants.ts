@@ -134,19 +134,9 @@ export const unsupportedLanguagesCacheTTL = 10 * 60 * 60 * 1000
 
 export const unsupportedLanguagesKey = 'CODEWHISPERER_UNSUPPORTED_LANGUAGES_KEY'
 
-export const autoTriggerEnabledKey = 'CODEWHISPERER_AUTO_TRIGGER_ENABLED'
-
-export const autoScansEnabledKey = 'CODEWHISPERER_AUTO_SCANS_ENABLED'
-
 export const serviceActiveKey = 'CODEWHISPERER_SERVICE_ACTIVE'
 
-export const persistedCustomizationsKey = 'CODEWHISPERER_PERSISTED_CUSTOMIZATIONS'
-
-export const selectedCustomizationKey = 'CODEWHISPERER_SELECTED_CUSTOMIZATION'
-
 export const inlinehintKey = 'CODEWHISPERER_HINT_DISPLAYED'
-
-export const inlinehintWipKey = 'aws.codewhisperer.tutorial.workInProgress'
 
 export type AnnotationChangeSource = 'codewhisperer' | 'selection' | 'editor' | 'content'
 
@@ -242,7 +232,7 @@ export const artifactTypeSource = 'SourceCode'
 
 export const codeScanFindingsSchema = 'codescan/findings/1.0'
 
-export const autoScanDebounceDelaySeconds = 15
+export const autoScanDebounceDelaySeconds = 30
 
 export const codewhispererDiagnosticSourceLabel = 'Amazon Q '
 
@@ -327,13 +317,9 @@ export const stopScanMessage =
 
 export const showScannedFilesMessage = 'Show Scanned Files'
 
-export const userGroupKey = 'CODEWHISPERER_USER_GROUP'
-
 export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
 
 export const newCustomizationMessage = 'You have access to new Amazon Q customizations.'
-
-export const newCustomizationsAvailableKey = 'aws.amazonq.codewhisperer.newCustomizations'
 
 // Start of QCT Strings
 export const uploadZipSizeLimitInBytes = 2000000000 // 2GB
@@ -386,12 +372,33 @@ export const validStatesForCheckingDownloadUrl = [
     'REJECTED',
 ]
 
-export const amazonQDismissedKey = 'aws.toolkit.amazonq.dismissed'
-export const amazonQInstallDismissedKey = 'aws.toolkit.amazonqInstall.dismissed'
-
 export const amazonQFeedbackKey = 'Amazon Q'
 
 export const amazonQFeedbackText = 'Submit feedback'
+
+export const codeTransformTroubleshootProjectSize =
+    'https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#reduce-project-size'
+
+export const codeTransformTroubleshootMvnFailure =
+    'https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#maven-commands-failing'
+
+export const codeTransformTroubleshootConfigureProxy =
+    'https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#configure-proxy'
+
+export const codeTransformTroubleshootDownloadExpired =
+    'https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#download-24-hrs'
+
+export const codeTransformTroubleshootAllowS3Access =
+    'https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#allowlist-s3-bucket'
+
+export const codeTransformTroubleshootUploadError =
+    'https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#project-upload-fail'
+
+export const codeTransformTroubleshootDownloadError =
+    'https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#download-code-fail'
+
+export const codeTransformPrereqDoc =
+    'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites'
 
 export const jobStartedChatMessage =
     'I am starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub. If I run into any issues, I might pause the transformation to get input from you on how to proceed.'
@@ -447,17 +454,16 @@ export const buildSucceededChatMessage = 'I was able to build your project and w
 export const buildSucceededNotification =
     'Amazon Q was able to build your project and will start transforming your code soon.'
 
-export const unsupportedJavaVersionChatMessage =
-    'Sorry, currently I can only upgrade Java 8 or Java 11 projects. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites).'
+export const unsupportedJavaVersionChatMessage = `Sorry, currently I can only upgrade Java 8 or Java 11 projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
 export const failedToStartJobChatMessage =
-    'Sorry, I could not begin the transformation. Please try starting the transformation again.'
+    "Sorry, I couldn't begin the transformation. Please try starting the transformation again."
 
 export const failedToStartJobNotification =
     'Amazon Q could not begin the transformation. Please try starting the transformation again.'
 
 export const failedToStartJobTooManyJobsChatMessage =
-    'Sorry, I could not begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed.'
+    "Sorry, I couldn't begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed."
 
 export const failedToStartJobTooManyJobsNotification =
     'Amazon Q could not begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed.'
@@ -475,24 +481,24 @@ export const failedToStartJobLinesLimitChatMessage =
     'I am sorry, your project exceeds the free tier limit of 1000 lines of code per transformation. You can try again with a smaller project.'
 
 export const failedToUploadProjectChatMessage =
-    'Sorry, I could not upload your project. Please try starting the transformation again.'
+    "Sorry, I couldn't upload your project. Please try starting the transformation again."
 
 export const failedToUploadProjectNotification =
     'Amazon Q could not upload your project. Please try starting the transformation again.'
 
 export const failedToGetPlanChatMessage =
-    'Sorry, I could not create the transformation plan to upgrade your project. Please try starting the transformation again.'
+    "Sorry, I couldn't create the transformation plan to upgrade your project. Please try starting the transformation again."
 
 export const failedToGetPlanNotification =
     'Amazon Q could not create the transformation plan to upgrade your project. Please try starting the transformation again.'
 
 export const failedToCompleteJobChatMessage =
-    'Sorry, I could not complete the transformation. Please try starting the transformation again.'
+    "Sorry, I couldn't complete the transformation. Please try starting the transformation again."
 
 export const failedToCompleteJobNotification =
     'Amazon Q could not complete the transformation. Please try starting the transformation again.'
 
-export const failedToCompleteJobGenericChatMessage = 'Sorry, I could not complete the transformation.'
+export const failedToCompleteJobGenericChatMessage = "Sorry, I couldn't complete the transformation."
 
 export const failedToCompleteJobGenericNotification = 'Amazon Q could not complete the transformation.'
 
@@ -516,42 +522,32 @@ export const jobPartiallyCompletedChatMessage =
 export const jobPartiallyCompletedNotification =
     'Amazon Q upgraded part of your code to Java 17. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated and the errors that prevented a complete transformation.'
 
-export const noPomXmlFoundChatMessage =
-    'Sorry, I could not find a project that I can upgrade. I could not find a pom.xml file in any of your open projects. Currently, I can only upgrade Java 8 or Java 11 projects built on Maven. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites).'
+export const noPomXmlFoundChatMessage = `Sorry, I couldn\'t find a project that I can upgrade. I couldn\'t find a pom.xml file in any of your open projects. Currently, I can only upgrade Java 8 or Java 11 projects built on Maven. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
-export const noPomXmlFoundNotification =
-    'None of your open projects are supported by Amazon Q Code Transformation. Amazon Q could not find a pom.xml file in any of your open projects. Currently, Amazon Q can only upgrade Java 8 or Java 11 projects built on Maven. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites).'
+export const noPomXmlFoundNotification = `None of your open projects are supported by Amazon Q Code Transformation. Amazon Q could not find a pom.xml file in any of your open projects. Currently, Amazon Q can only upgrade Java 8 or Java 11 projects built on Maven. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
-export const noJavaHomeFoundChatMessage =
-    'Sorry, I could not locate your Java installation. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites).'
+export const noJavaHomeFoundChatMessage = `Sorry, I couldn\'t locate your Java installation. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
-export const errorUploadingWithExpiredUrl =
-    "The upload error may have been caused by the expiration of the S3 pre-signed URL that was used to upload code artifacts to Q Code Transformation. The S3 pre-signed URL expires in 30 minutes. This could be caused by any delays introduced by intermediate services in your network infrastructure. Please investigate your network configuration and consider allowlisting 'amazonq-code-transformation-us-east-1-c6160f047e0.s3.amazonaws.com' to skip any scanning that might delay the upload."
+export const errorUploadingWithExpiredUrl = `The upload error may have been caused by the expiration of the S3 pre-signed URL that was used to upload code artifacts to Q Code Transformation. The S3 pre-signed URL expires in 30 minutes. This could be caused by any delays introduced by intermediate services in your network infrastructure. Please investigate your network configuration and consider allowlisting 'amazonq-code-transformation-us-east-1-c6160f047e0.s3.amazonaws.com' to skip any scanning that might delay the upload. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootAllowS3Access}).`
 
 export const socketConnectionFailed =
     'Please check your network connectivity or firewall configuration, and then try again.'
 
-export const selfSignedCertificateError =
-    'This might have been caused by your IDE not trusting the certificate of your HTTP proxy. Ensure all certificates for your proxy client have been configured in your IDE, and then retry transformation.'
+export const selfSignedCertificateError = `This might have been caused by your IDE not trusting the certificate of your HTTP proxy. Ensure all certificates for your proxy client have been configured in your IDE, and then retry transformation. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootConfigureProxy}).`
 
-export const errorStoppingJobChatMessage = 'Sorry, I could not stop the transformation.'
+export const errorStoppingJobChatMessage = "Sorry, I couldn't stop the transformation."
 
 export const errorStoppingJobNotification = 'Amazon Q could not stop the transformation.'
 
-export const errorDownloadingDiffChatMessage =
-    'Sorry, I could not download the diff with your upgraded code. Please try downloading it again. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#output-artifact-size-limit).'
+export const errorDownloadingDiffChatMessage = `Sorry, I couldn\'t download the diff with your upgraded code. Please try downloading it again. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootDownloadError}).`
 
-export const errorDownloadingDiffNotification =
-    'Amazon Q could not download the diff with your upgraded code. Please try downloading it again. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#output-artifact-size-limit).'
+export const errorDownloadingDiffNotification = `Amazon Q could not download the diff with your upgraded code. Please try downloading it again. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootDownloadError}).`
 
-export const errorDownloadingExpiredDiff =
-    'Your transformation is not available anymore. Your code and transformation summary are deleted 24 hours after the transformation completes. Please try starting the transformation again.'
+export const errorDownloadingExpiredDiff = `Your transformation is not available anymore. Your code and transformation summary are deleted 24 hours after the transformation completes. Please try starting the transformation again. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootDownloadExpired}).`
 
-export const errorDeserializingDiffChatMessage =
-    'Sorry, I could not parse the diff with your upgraded code. Please try starting the transformation again. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#output-artifact-size-limit).'
+export const errorDeserializingDiffChatMessage = `Sorry, I couldn\'t parse the diff with your upgraded code. Please try starting the transformation again. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootDownloadError}).`
 
-export const errorDeserializingDiffNotification =
-    'Amazon Q could not parse the diff with your upgraded code. Please try starting the transformation again. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#output-artifact-size-limit).'
+export const errorDeserializingDiffNotification = `Amazon Q could not parse the diff with your upgraded code. Please try starting the transformation again. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootDownloadError}).`
 
 export const viewProposedChangesChatMessage =
     'Download complete. You can view a summary of the transformation and accept or reject the proposed changes in the Transformation Hub.'
@@ -563,11 +559,9 @@ export const changesAppliedChatMessage = 'I applied the changes to your project.
 
 export const changesAppliedNotification = 'Amazon Q applied the changes to your project.'
 
-export const noOpenProjectsFoundChatMessage =
-    'Sorry, I could not find a project that I can upgrade. Currently, I can only upgrade Java 8 or Java 11 projects built on Maven. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites).'
+export const noOpenProjectsFoundChatMessage = `Sorry, I couldn\'t find a project that I can upgrade. Currently, I can only upgrade Java 8 or Java 11 projects built on Maven. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
-export const noJavaProjectsFoundChatMessage =
-    'Sorry, I could not find a project that I can upgrade. Currently, I can only upgrade Java 8 or Java 11 projects built on Maven. For more information, see the [Amazon Q documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites).'
+export const noJavaProjectsFoundChatMessage = `Sorry, I couldn\'t find a project that I can upgrade. Currently, I can only upgrade Java 8 or Java 11 projects built on Maven. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
 export const linkToDocsHome = 'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html'
 
@@ -582,11 +576,9 @@ export const linkToDownloadZipTooLarge = ''
 
 export const dependencyFolderName = 'transformation_dependencies_temp_'
 
-export const cleanInstallErrorChatMessage =
-    'Sorry, I could not run the Maven clean install command to build your project. For more information, see the [Amazon Q Code Transformation documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#maven-commands-failing).'
+export const cleanInstallErrorChatMessage = `Sorry, I couldn\'t run the Maven clean install command to build your project. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootMvnFailure}).`
 
-export const cleanInstallErrorNotification =
-    'Amazon Q could not run the Maven clean install command to build your project. For more information, see the [Amazon Q Code Transformation documentation](https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#maven-commands-failing).'
+export const cleanInstallErrorNotification = `Amazon Q could not run the Maven clean install command to build your project. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootMvnFailure}).`
 
 export const enterJavaHomeChatMessage = 'Enter the path to JDK '
 
@@ -602,11 +594,9 @@ export const nonWindowsJava8HomeHelpChatMessage =
 export const nonWindowsJava11HomeHelpChatMessage =
     'To find the JDK path, run the following command in a new IDE terminal:  `/usr/libexec/java_home -v 11`'
 
-export const projectSizeTooLargeChatMessage =
-    'Sorry, your project size exceeds the Amazon Q Code Transformation upload limit of 2GB. For more information, see the [Code Transformation documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#project-size-limit).'
+export const projectSizeTooLargeChatMessage = `Sorry, your project size exceeds the Amazon Q Code Transformation upload limit of 2GB. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootProjectSize}).`
 
-export const projectSizeTooLargeNotification =
-    'Your project size exceeds the Amazon Q Code Transformation upload limit of 2GB. For more information, see the [Code Transformation documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#project-size-limit).'
+export const projectSizeTooLargeNotification = `Your project size exceeds the Amazon Q Code Transformation upload limit of 2GB. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootProjectSize}).`
 
 export const JDK8VersionNumber = '52'
 

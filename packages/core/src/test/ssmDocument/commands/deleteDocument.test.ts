@@ -64,7 +64,7 @@ describe('deleteDocument', async function () {
     })
 
     it('confirms deletion, deletes file, and refreshes parent node', async function () {
-        getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Delete')?.select())
         await deleteDocument(node)
         getTestWindow().getFirstMessage().assertWarn('Are you sure you want to delete document testDocument?')
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)

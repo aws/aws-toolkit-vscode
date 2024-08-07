@@ -8,7 +8,6 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import {
     onAcceptance,
-    userGroupKey,
     UserGroup,
     AcceptedSuggestionEntry,
     session,
@@ -18,7 +17,7 @@ import {
     AuthUtil,
 } from 'aws-core-vscode/codewhisperer'
 import { resetCodeWhispererGlobalVariables, createMockTextEditor } from 'aws-core-vscode/test'
-import { assertTelemetryCurried, FakeExtensionContext } from 'aws-core-vscode/test'
+import { assertTelemetryCurried } from 'aws-core-vscode/test'
 import { globals } from 'aws-core-vscode/shared'
 import { extensionVersion } from 'aws-core-vscode/shared'
 
@@ -38,7 +37,6 @@ describe('onAcceptance', function () {
         it('Should enqueue an event object to tracker', async function () {
             const mockEditor = createMockTextEditor()
             const trackerSpy = sinon.spy(CodeWhispererTracker.prototype, 'enqueue')
-            const extensionContext = await FakeExtensionContext.create()
             const fakeReferences = [
                 {
                     message: '',
@@ -50,22 +48,19 @@ describe('onAcceptance', function () {
                     },
                 },
             ]
-            await onAcceptance(
-                {
-                    editor: mockEditor,
-                    range: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 26)),
-                    effectiveRange: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 26)),
-                    acceptIndex: 0,
-                    recommendation: "print('Hello World!')",
-                    requestId: '',
-                    sessionId: '',
-                    triggerType: 'OnDemand',
-                    completionType: 'Line',
-                    language: 'python',
-                    references: fakeReferences,
-                },
-                extensionContext.globalState
-            )
+            await onAcceptance({
+                editor: mockEditor,
+                range: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 26)),
+                effectiveRange: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 26)),
+                acceptIndex: 0,
+                recommendation: "print('Hello World!')",
+                requestId: '',
+                sessionId: '',
+                triggerType: 'OnDemand',
+                completionType: 'Line',
+                language: 'python',
+                references: fakeReferences,
+            })
             const actualArg = trackerSpy.getCall(0).args[0] as AcceptedSuggestionEntry
             assert.ok(trackerSpy.calledOnce)
             assert.strictEqual(actualArg.originalString, 'def two_sum(nums, target):')
@@ -80,7 +75,7 @@ describe('onAcceptance', function () {
         })
 
         it('Should report telemetry that records this user decision event', async function () {
-            await globals.context.globalState.update(userGroupKey, {
+            await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
                 group: UserGroup.Control,
                 version: extensionVersion,
             })
@@ -98,23 +93,19 @@ describe('onAcceptance', function () {
             session.triggerType = 'OnDemand'
             session.setCompletionType(0, session.recommendations[0])
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
-            const extensionContext = await FakeExtensionContext.create()
-            await onAcceptance(
-                {
-                    editor: mockEditor,
-                    range: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 21)),
-                    effectiveRange: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 26)),
-                    acceptIndex: 0,
-                    recommendation: "print('Hello World!')",
-                    requestId: '',
-                    sessionId: '',
-                    triggerType: 'OnDemand',
-                    completionType: 'Line',
-                    language: 'python',
-                    references: undefined,
-                },
-                extensionContext.globalState
-            )
+            await onAcceptance({
+                editor: mockEditor,
+                range: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 21)),
+                effectiveRange: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 26)),
+                acceptIndex: 0,
+                recommendation: "print('Hello World!')",
+                requestId: '',
+                sessionId: '',
+                triggerType: 'OnDemand',
+                completionType: 'Line',
+                language: 'python',
+                references: undefined,
+            })
             assertTelemetry({
                 codewhispererRequestId: 'test',
                 codewhispererSessionId: 'test',

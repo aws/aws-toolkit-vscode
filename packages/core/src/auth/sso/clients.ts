@@ -28,7 +28,7 @@ import { pageableToCollection, partialClone } from '../../shared/utilities/colle
 import { assertHasProps, isNonNullable, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { getLogger } from '../../shared/logger'
 import { SsoAccessTokenProvider } from './ssoAccessTokenProvider'
-import { isClientFault } from '../../shared/errors'
+import { ToolkitError, getHttpStatusCode, getReasonFromSyntaxError, isClientFault } from '../../shared/errors'
 import { DevSettings } from '../../shared/settings'
 import { SdkError } from '@aws-sdk/types'
 import { HttpRequest, HttpResponse } from '@smithy/protocol-http'
@@ -38,7 +38,10 @@ import { toSnakeCase } from '../../shared/utilities/textUtilities'
 import { getUserAgent } from '../../shared/telemetry/util'
 
 export class OidcClient {
-    public constructor(private readonly client: SSOOIDC, private readonly clock: { Date: typeof Date }) {}
+    public constructor(
+        private readonly client: SSOOIDC,
+        private readonly clock: { Date: typeof Date }
+    ) {}
 
     public async registerClient(request: RegisterClientRequest, startUrl: string, flow?: AuthenticationFlow) {
         const response = await this.client.registerClient(request)
@@ -83,7 +86,25 @@ export class OidcClient {
     }
 
     public async createToken(request: CreateTokenRequest) {
-        const response = await this.client.createToken(request as CreateTokenRequest)
+        let response
+        try {
+            response = await this.client.createToken(request as CreateTokenRequest)
+        } catch (err) {
+            // In rare cases the SDK client may get unexpected data from its API call.
+            // This will throw a SyntaxError that contains the returned data.
+            if (err instanceof SyntaxError) {
+                getLogger().error(`createToken: SSOIDC Client received an unexpected non-JSON response: %O`, err)
+                throw new ToolkitError(
+                    `SDK Client unexpected error response: data response code: ${getHttpStatusCode(err)}, data reason: ${getReasonFromSyntaxError(err)}`,
+                    {
+                        code: `${getHttpStatusCode(err)}`,
+                        cause: err,
+                    }
+                )
+            } else {
+                throw err
+            }
+        }
         assertHasProps(response, 'accessToken', 'expiresIn')
 
         return {
@@ -99,17 +120,9 @@ export class OidcClient {
                 return true
             }
 
-            // Sessions may "expire" earlier than expected due to network faults.
-            // TODO: add more cases from node_modules/@aws-sdk/client-sso-oidc/dist-types/models/models_0.d.ts
-            // ExpiredTokenException
-            // InternalServerException
-            // InvalidClientException
-            // InvalidRequestException
-            // SlowDownException
-            // UnsupportedGrantTypeException
-            // InvalidRequestRegionException
-            // InvalidRedirectUriException
-            // InvalidRedirectUriException
+            // As part of SIM IDE-10703, there was an assumption that retrying on InvalidGrantException
+            // may be useful. This may not be the case anymore and if more research is done, this may not be needed.
+            // TODO: setup some telemetry to see if there are any successes on a subsequent retry for this case.
             return err.name === 'InvalidGrantException'
         }
         const client = new SSOOIDC({
@@ -120,6 +133,11 @@ export class OidcClient {
                 { retryDecider: updatedRetryDecider }
             ),
             customUserAgent: getUserAgent({ includePlatform: true, includeClientId: true }),
+            requestHandler: {
+                // This field may have a bug: https://github.com/aws/aws-sdk-js-v3/issues/6271
+                // If the bug is real but is fixed, then we can probably remove this field and just have no timeout by default
+                requestTimeout: 5000,
+            },
         })
 
         addLoggingMiddleware(client)
@@ -160,7 +178,9 @@ export class SsoClient {
             this.call(this.client.listAccounts, request)
         const collection = pageableToCollection(requester, request, 'nextToken', 'accountList')
 
-        return collection.filter(isNonNullable).map(accounts => accounts.map(a => (assertHasProps(a, 'accountId'), a)))
+        return collection
+            .filter(isNonNullable)
+            .map((accounts) => accounts.map((a) => (assertHasProps(a, 'accountId'), a)))
     }
 
     public listAccountRoles(
@@ -172,7 +192,7 @@ export class SsoClient {
 
         return collection
             .filter(isNonNullable)
-            .map(roles => roles.map(r => (assertHasProps(r, 'roleName', 'accountId'), r)))
+            .map((roles) => roles.map((r) => (assertHasProps(r, 'roleName', 'accountId'), r)))
     }
 
     public async getRoleCredentials(request: Omit<GetRoleCredentialsRequest, OmittedProps>) {
@@ -215,7 +235,7 @@ export class SsoClient {
     private async handleError(error: unknown): Promise<never> {
         if (error instanceof SSOServiceException && isClientFault(error) && error.name !== 'ForbiddenException') {
             getLogger().warn(`credentials (sso): invalidating stored token: ${error.message}`)
-            await this.provider.invalidate()
+            await this.provider.invalidate(`ssoClient:${error.name}`)
         }
 
         throw error
@@ -235,7 +255,7 @@ export class SsoClient {
 
 function addLoggingMiddleware(client: SSOOIDCClient) {
     client.middlewareStack.add(
-        (next, context) => args => {
+        (next, context) => (args) => {
             if (HttpRequest.isInstance(args.request)) {
                 const { hostname, path } = args.request
                 const input = partialClone(
@@ -253,13 +273,13 @@ function addLoggingMiddleware(client: SSOOIDCClient) {
     )
 
     client.middlewareStack.add(
-        (next, context) => async args => {
+        (next, context) => async (args) => {
             if (!HttpRequest.isInstance(args.request)) {
                 return next(args)
             }
 
             const { hostname, path } = args.request
-            const result = await next(args).catch(e => {
+            const result = await next(args).catch((e) => {
                 if (e instanceof Error && !(e instanceof AuthorizationPendingException)) {
                     const err = { ...e }
                     delete err['stack']

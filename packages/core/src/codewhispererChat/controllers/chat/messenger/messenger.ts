@@ -9,6 +9,7 @@ import {
     AuthNeededException,
     CodeReference,
     EditorContextCommandMessage,
+    OpenSettingsMessage,
     QuickActionMessage,
 } from '../../../view/connector/connector'
 import { EditorContextCommandType } from '../../../commands/registerCommands'
@@ -22,15 +23,16 @@ import { ChatSession } from '../../../clients/chat/v0/chat'
 import { ChatException } from './model'
 import { CWCTelemetryHelper } from '../telemetryHelper'
 import { ChatPromptCommandType, TriggerPayload } from '../model'
-import { ToolkitError } from '../../../../shared/errors'
+import { getHttpStatusCode, getRequestId, ToolkitError } from '../../../../shared/errors'
 import { keys } from '../../../../shared/utilities/tsUtils'
 import { getLogger } from '../../../../shared/logger/logger'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
-import { AuthFollowUpType, expiredText, enableQText, reauthenticateText } from '../../../../amazonq/auth/model'
+import { AuthFollowUpType, AuthMessageDataMap } from '../../../../amazonq/auth/model'
 import { userGuideURL } from '../../../../amazonq/webview/ui/texts/constants'
 import { CodeScanIssue } from '../../../../codewhisperer/models/model'
 import { marked } from 'marked'
 import { JSDOM } from 'jsdom'
+import { LspController } from '../../../../amazonq/lsp/lspController'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -42,23 +44,23 @@ export class Messenger {
 
     public async sendAuthNeededExceptionMessage(credentialState: FeatureAuthState, tabID: string, triggerID: string) {
         let authType: AuthFollowUpType = 'full-auth'
-        let message = reauthenticateText
+        let message = AuthMessageDataMap[authType].message
         if (
             credentialState.codewhispererChat === 'disconnected' &&
             credentialState.codewhispererCore === 'disconnected'
         ) {
             authType = 'full-auth'
-            message = reauthenticateText
+            message = AuthMessageDataMap[authType].message
         }
 
         if (credentialState.codewhispererCore === 'connected' && credentialState.codewhispererChat === 'expired') {
             authType = 'missing_scopes'
-            message = enableQText
+            message = AuthMessageDataMap[authType].message
         }
 
         if (credentialState.codewhispererChat === 'expired' && credentialState.codewhispererCore === 'expired') {
             authType = 're-auth'
-            message = expiredText
+            message = AuthMessageDataMap[authType].message
         }
 
         this.dispatcher.sendAuthNeededExceptionMessage(
@@ -126,6 +128,9 @@ export class Messenger {
             )
         }
         this.telemetryHelper.setResponseStreamStartTime(tabID)
+        if (triggerPayload.relevantTextDocuments && triggerPayload.relevantTextDocuments.length > 0) {
+            this.telemetryHelper.setResponseFromProjectContext(messageID)
+        }
 
         const eventCounts = new Map<string, number>()
         waitUntil(
@@ -147,7 +152,7 @@ export class Messenger {
                     ) {
                         codeReference = [
                             ...codeReference,
-                            ...chatEvent.codeReferenceEvent.references.map(reference => ({
+                            ...chatEvent.codeReferenceEvent.references.map((reference) => ({
                                 ...reference,
                                 recommendationContentSpan: {
                                     start: reference.recommendationContentSpan?.start ?? 0,
@@ -218,8 +223,8 @@ export class Messenger {
 
                 if (error instanceof CodeWhispererStreamingServiceException) {
                     errorMessage = error.message
-                    statusCode = error.$metadata?.httpStatusCode ?? 0
-                    requestID = error.$metadata.requestId
+                    statusCode = getHttpStatusCode(error) ?? 0
+                    requestID = getRequestId(error)
                 }
 
                 this.showChatExceptionMessage(
@@ -234,6 +239,29 @@ export class Messenger {
                 this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, statusCode ?? 0)
             })
             .finally(async () => {
+                if (
+                    triggerPayload.relevantTextDocuments &&
+                    triggerPayload.relevantTextDocuments.length > 0 &&
+                    LspController.instance.isIndexingInProgress()
+                ) {
+                    this.dispatcher.sendChatMessage(
+                        new ChatMessage(
+                            {
+                                message:
+                                    message +
+                                    ` \n\nBy the way, I'm still indexing this project for full context from your workspace. I may have a better response in a few minutes when it's complete if you'd like to try again then.`,
+                                messageType: 'answer-part',
+                                followUps: undefined,
+                                followUpsHeader: undefined,
+                                relatedSuggestions: undefined,
+                                triggerID,
+                                messageID,
+                            },
+                            tabID
+                        )
+                    )
+                }
+
                 if (relatedSuggestions.length !== 0) {
                     this.dispatcher.sendChatMessage(
                         new ChatMessage(
@@ -459,5 +487,9 @@ export class Messenger {
         this.dispatcher.sendErrorMessage(
             new ErrorMessage('An error occurred while processing your request.', message.trimEnd().trimStart(), tabID)
         )
+    }
+
+    public sendOpenSettingsMessage(triggerId: string, tabID: string) {
+        this.dispatcher.sendOpenSettingsMessage(new OpenSettingsMessage(tabID))
     }
 }

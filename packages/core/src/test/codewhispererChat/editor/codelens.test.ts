@@ -93,12 +93,12 @@ describe('TryChatCodeLensProvider', () => {
     it('does not register the provider if we do not want to show the code lens', async function () {
         await TryChatCodeLensProvider.register(isAmazonQVisibleEvent)
         // indicate we do not want to show it
-        await globals.context.globalState.update(TryChatCodeLensProvider.showCodeLensId, false)
+        await globals.globalState.update('aws.amazonq.showTryChatCodeLens', false)
         // ensure we do not show it
         assert.deepStrictEqual(await TryChatCodeLensProvider.register(isAmazonQVisibleEvent), false)
 
         // indicate we want to show it
-        await globals.context.globalState.update(TryChatCodeLensProvider.showCodeLensId, true)
+        await globals.globalState.update('aws.amazonq.showTryChatCodeLens', true)
         // The general toolkit activation will have already registered this provider, so it throws when we try again
         // But if it throws it implies it tried to register it.
         await assert.rejects(TryChatCodeLensProvider.register(isAmazonQVisibleEvent), {
@@ -115,7 +115,7 @@ describe('TryChatCodeLensProvider', () => {
             stub.restore()
         }
 
-        const testStates = Object.values(AuthStates).filter(s => s !== AuthStates.connected)
+        const testStates = Object.values(AuthStates).filter((s) => s !== AuthStates.connected)
         for (const state of testStates) {
             await testConnection(state)
         }
@@ -125,7 +125,7 @@ describe('TryChatCodeLensProvider', () => {
         stubConnection('connected')
         isAmazonQVisibleEventEmitter.fire(false)
         // indicate lineAnnotationController is not visible and in end state
-        await globals.context.globalState.update(inlinehintKey, EndState.id)
+        await globals.globalState.update(inlinehintKey, EndState.id)
 
         let codeLensCount = 0
         const modifierKey = resolveModifierKey()
@@ -165,7 +165,7 @@ describe('TryChatCodeLensProvider', () => {
 
         lineAnnotationControllerStates.forEach((id: string) => {
             it(`id - ${id}`, async () => {
-                await globals.context.globalState.update(inlinehintKey, id)
+                await globals.globalState.update(inlinehintKey, id)
 
                 const emptyResult = await instance.provideCodeLenses(
                     {} as any,

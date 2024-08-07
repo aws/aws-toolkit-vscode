@@ -11,10 +11,9 @@ import {
     AuthUtil,
     codeWhispererClient,
 } from 'aws-core-vscode/codewhisperer'
-import { globals, getClientId } from 'aws-core-vscode/shared'
+import { globals, getClientId, getOperatingSystem } from 'aws-core-vscode/shared'
 import { AWSError, Request } from 'aws-sdk'
 import { createSpyClient } from 'aws-core-vscode/test'
-import * as os from 'os'
 
 describe('codewhisperer', async function () {
     let clientSpy: CodeWhispererUserClient
@@ -37,9 +36,9 @@ describe('codewhisperer', async function () {
         telemetryEnabledDefault = globals.telemetry.telemetryEnabled
     })
 
-    afterEach(function () {
+    afterEach(async function () {
         sinon.restore()
-        globals.telemetry.telemetryEnabled = telemetryEnabledDefault
+        await globals.telemetry.setTelemetryEnabled(telemetryEnabledDefault)
     })
 
     it('sendTelemetryEvent for userTriggerDecision should respect telemetry optout status', async function () {
@@ -116,23 +115,12 @@ describe('codewhisperer', async function () {
             ideCategory: 'VSCODE',
             operatingSystem: getOperatingSystem(),
             product: 'CodeWhisperer',
-            clientId: await getClientId(globals.context.globalState),
+            clientId: getClientId(globals.globalState),
         }
 
         await codeWhispererClient.sendTelemetryEvent({ telemetryEvent: userTriggerDecisionPayload })
         sinon.assert.calledWith(clientSpyStub, sinon.match({ userContext: expectedUserContext }))
     })
-
-    function getOperatingSystem(): string {
-        const osId = os.platform() // 'darwin', 'win32', 'linux', etc.
-        if (osId === 'darwin') {
-            return 'MAC'
-        } else if (osId === 'win32') {
-            return 'WINDOWS'
-        } else {
-            return 'LINUX'
-        }
-    }
 
     async function sendTelemetryEventOptoutCheckHelper(
         payload: TelemetryEvent,
@@ -149,7 +137,7 @@ describe('codewhisperer', async function () {
         } as Request<SendTelemetryEventResponse, AWSError>)
 
         const authUtilStub = sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(isSso)
-        globals.telemetry.telemetryEnabled = isTelemetryEnabled
+        await globals.telemetry.setTelemetryEnabled(isTelemetryEnabled)
         await codeWhispererClient.sendTelemetryEvent({ telemetryEvent: payload })
         const expectedOptOutPreference = isTelemetryEnabled ? 'OPTIN' : 'OPTOUT'
         if (isSso || isTelemetryEnabled) {

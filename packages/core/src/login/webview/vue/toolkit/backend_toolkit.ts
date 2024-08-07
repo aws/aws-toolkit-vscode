@@ -7,18 +7,12 @@ import * as vscode from 'vscode'
 import { tryAddCredentials } from '../../../../auth/utils'
 import { getLogger } from '../../../../shared/logger'
 import { CommonAuthWebview } from '../backend'
-import {
-    AwsConnection,
-    Connection,
-    createSsoProfile,
-    hasScopes,
-    isIdcSsoConnection,
-    scopesSsoAccountAccess,
-} from '../../../../auth/connection'
+import { AwsConnection, Connection, createSsoProfile } from '../../../../auth/connection'
 import { Auth } from '../../../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
 import { AuthError, AuthFlowState, TelemetryMetadata } from '../types'
-import { addScopes } from '../../../../auth/secondaryAuth'
+import { builderIdStartUrl } from '../../../../auth/sso/model'
+import { setContext } from '../../../../shared'
 
 export class ToolkitLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.toolkit.AmazonCommonAuth'
@@ -36,7 +30,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
     }
 
     async startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
-        getLogger().debug(`called useConnection() with startUrl: '${startUrl}', region: '${region}'`)
+        getLogger().debug(`called startEnterpriseSetup() with startUrl: '${startUrl}', region: '${region}'`)
         const metadata: TelemetryMetadata = {
             credentialSourceId: 'iamIdentityCenter',
             credentialStartUrl: startUrl,
@@ -52,7 +46,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
 
                 this.storeMetricMetadata({ authEnabledFeatures: this.getAuthEnabledFeatures(conn) })
 
-                await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
+                await setContext('aws.explorer.showAuthView', false)
                 await this.showResourceExplorer()
             })
         }
@@ -66,7 +60,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
 
             this.storeMetricMetadata({ authEnabledFeatures: this.getAuthEnabledFeatures(conn) })
 
-            await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
+            await setContext('aws.explorer.showAuthView', false)
             void vscode.window.showInformationMessage('Toolkit: Successfully connected to AWS IAM Identity Center')
             void this.showResourceExplorer()
         })
@@ -87,7 +81,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
             }
             try {
                 await tryAddCredentials(profileName, data, true)
-                await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
+                await setContext('aws.explorer.showAuthView', false)
                 await this.showResourceExplorer()
             } catch (e) {
                 getLogger().error('Failed submitting credentials', e)
@@ -116,64 +110,27 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
             })
 
             await this.codeCatalystAuth.connectToAwsBuilderId()
-            await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
+            await setContext('aws.explorer.showAuthView', false)
             await this.showResourceExplorer()
         })
     }
 
     /**
-     * Returns list of connections that are pushed from Amazon Q to Toolkit
+     * Returns list of connections that are pushed from other extensions to Toolkit
      */
     async fetchConnections(): Promise<AwsConnection[] | undefined> {
         const connections: AwsConnection[] = []
-        const _connections = await Auth.instance.listConnections()
-        _connections.forEach(c => {
-            const status = Auth.instance.getConnectionState({ id: c.id })
-            const source = Auth.instance.getConnectionSource({ id: c.id })
-            if (c.type === 'sso' && source === 'amazonq' && status) {
+        Auth.instance.declaredConnections.forEach((conn) => {
+            // No need to display Builder ID as an existing connection,
+            // users can just select the Builder ID login option and it would have the same effect.
+            if (conn.startUrl !== builderIdStartUrl) {
                 connections.push({
-                    id: c.id,
-                    label: c.label,
-                    type: c.type,
-                    ssoRegion: c.ssoRegion,
-                    startUrl: c.startUrl,
-                    state: status,
+                    ssoRegion: conn.ssoRegion,
+                    startUrl: conn.startUrl,
                 } as AwsConnection)
             }
         })
         return connections
-    }
-    /**
-     * Re-use connection that is pushed from Amazon Q to Toolkit.
-     */
-    async useConnection(connectionId: string, auto: boolean): Promise<AuthError | undefined> {
-        getLogger().debug(`called useConnection() with connectionId: '${connectionId}', auto: '${auto}'`)
-        return this.ssoSetup('useConnection', async () => {
-            let conn = await Auth.instance.getConnection({ id: connectionId })
-            if (conn === undefined || conn.type !== 'sso') {
-                return
-            }
-
-            this.storeMetricMetadata(this.getMetadataForExistingConn(conn))
-
-            if (this.isCodeCatalystLogin) {
-                await this.codeCatalystAuth.tryUseConnection(conn)
-            } else {
-                if (isIdcSsoConnection(conn) && !hasScopes(conn, scopesSsoAccountAccess)) {
-                    conn = await addScopes(conn, scopesSsoAccountAccess)
-                }
-                await Auth.instance.useConnection({ id: connectionId })
-            }
-
-            this.storeMetricMetadata({ authEnabledFeatures: this.getAuthEnabledFeatures(conn) })
-
-            await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
-            await this.showResourceExplorer()
-        })
-    }
-
-    findUsableConnection(connections: AwsConnection[]): AwsConnection | undefined {
-        return undefined
     }
 
     override reauthenticateConnection(): Promise<undefined> {
@@ -198,7 +155,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
     }
 
     async quitLoginScreen() {
-        await vscode.commands.executeCommand('setContext', 'aws.explorer.showAuthView', false)
+        await setContext('aws.explorer.showAuthView', false)
         await this.showResourceExplorer()
     }
 }

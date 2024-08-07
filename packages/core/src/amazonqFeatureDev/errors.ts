@@ -6,16 +6,23 @@
 import { ToolkitError } from '../shared/errors'
 import { featureName } from './constants'
 import { uploadCodeError } from './userFacingText'
+import { i18n } from '../shared/i18n-helper'
 
 export class ConversationIdNotFoundError extends ToolkitError {
     constructor() {
-        super('Conversation id must exist before starting code generation', { code: 'ConversationIdNotFound' })
+        super(i18n('AWS.amazonq.featureDev.error.conversationIdNotFoundError'), {
+            code: 'ConversationIdNotFound',
+        })
     }
 }
 
 export class TabIdNotFoundError extends ToolkitError {
-    constructor(query: string) {
-        super(`Tab id was not found from ${query}`, { code: 'TabIdNotFound' })
+    static errorName = 'TabIdNotFoundError'
+
+    constructor() {
+        super(i18n('AWS.amazonq.featureDev.error.tabIdNotFoundError'), {
+            code: 'TabIdNotFound',
+        })
     }
 }
 
@@ -27,39 +34,56 @@ export class PanelLoadError extends ToolkitError {
 
 export class WorkspaceFolderNotFoundError extends ToolkitError {
     constructor() {
-        super(
-            `I couldn't find a workspace folder. Open a workspace, and then open a new chat tab and enter /dev to start discussing your code task with me.`,
-            {
-                code: 'WorkspaceFolderNotFound',
-            }
-        )
+        super(i18n('AWS.amazonq.featureDev.error.workspaceFolderNotFoundError'), {
+            code: 'WorkspaceFolderNotFound',
+        })
     }
 }
 
 export class UserMessageNotFoundError extends ToolkitError {
+    static errorName = 'UserMessageNotFoundError'
     constructor() {
-        super(`Message was not found`, { code: 'MessageNotFound' })
+        super(i18n('AWS.amazonq.featureDev.error.userMessageNotFoundError'), {
+            code: 'MessageNotFound',
+        })
     }
 }
 
 export class SelectedFolderNotInWorkspaceFolderError extends ToolkitError {
     constructor() {
-        super(
-            `The selected folder is not in an opened workspace folder. Add the selected folder to the workspace or pick a new folder`,
-            {
-                code: 'SelectedFolderNotInWorkspaceFolder',
-            }
-        )
+        super(i18n('AWS.amazonq.featureDev.error.selectedFolderNotInWorkspaceFolderError'), {
+            code: 'SelectedFolderNotInWorkspaceFolder',
+        })
+    }
+}
+
+export class PromptRefusalException extends ToolkitError {
+    static errorName = 'PromptRefusalException'
+    constructor() {
+        super(i18n('AWS.amazonq.featureDev.error.promptRefusalException'), {
+            code: 'PromptRefusalException',
+        })
+    }
+}
+
+export class FeatureDevServiceError extends ToolkitError {
+    static errorName = 'FeatureDevServiceError'
+    constructor(message: string, code: string) {
+        super(message, { code })
     }
 }
 
 export class PrepareRepoFailedError extends ToolkitError {
+    static errorName = 'PrepareRepoFailedError'
     constructor() {
-        super('Unable to prepare repository for uploading', { code: 'PrepareRepoFailed' })
+        super(i18n('AWS.amazonq.featureDev.error.prepareRepoFailedError'), {
+            code: 'PrepareRepoFailed',
+        })
     }
 }
 
 export class UploadCodeError extends ToolkitError {
+    static errorName = 'UploadCodeError'
     constructor(statusCode: string) {
         super(uploadCodeError, { code: `UploadCode-${statusCode}` })
     }
@@ -67,40 +91,42 @@ export class UploadCodeError extends ToolkitError {
 
 export class IllegalStateTransition extends ToolkitError {
     constructor() {
-        super('Illegal transition between states, restart the conversation', { code: 'IllegalStateTransition' })
+        super(i18n('AWS.amazonq.featureDev.error.illegalStateTransition'), { code: 'IllegalStateTransition' })
     }
 }
 
 export class ContentLengthError extends ToolkitError {
+    static errorName = 'ContentLengthError'
     constructor() {
-        super(
-            'The project you have selected for source code is too large to use as context. Please select a different folder to use for this conversation',
-            { code: 'ContentLengthError' }
-        )
+        super(i18n('AWS.amazonq.featureDev.error.contentLengthError'), { code: ContentLengthError.errorName })
+    }
+}
+
+export class ZipFileError extends ToolkitError {
+    static errorName = 'ZipFileError'
+    constructor() {
+        super(i18n('AWS.amazonq.featureDev.error.zipFileError'), { code: ZipFileError.errorName })
     }
 }
 
 export class PlanIterationLimitError extends ToolkitError {
+    static errorName = 'PlanIterationLimitError'
     constructor() {
-        super(
-            'You have reached the free tier limit for number of iterations on an implementation plan. Please proceed to generating code or start to discuss a new plan.',
-            { code: 'PlanIterationLimitError' }
-        )
+        super(i18n('AWS.amazonq.featureDev.error.planIterationLimitError'), { code: PlanIterationLimitError.errorName })
     }
 }
 
 export class CodeIterationLimitError extends ToolkitError {
+    static errorName = 'CodeIterationLimitError'
     constructor() {
-        super(
-            'You have reached the free tier limit for number of iterations on a code generation. Please proceed to accept the code or start a new conversation.',
-            { code: 'CodeIterationLimitError' }
-        )
+        super(i18n('AWS.amazonq.featureDev.error.codeIterationLimitError'), { code: CodeIterationLimitError.errorName })
     }
 }
 
 export class MonthlyConversationLimitError extends ToolkitError {
+    static errorName = 'MonthlyConversationLimitError'
     constructor(message: string) {
-        super(message, { code: 'MonthlyConversationLimitError' })
+        super(message, { code: MonthlyConversationLimitError.errorName })
     }
 }
 
@@ -116,10 +142,10 @@ export class ApiError extends ToolkitError {
     }
 }
 
-const denyListedErrors: string[] = ['Deserialization error', 'Inaccessible host']
+export const denyListedErrors: string[] = ['Deserialization error', 'Inaccessible host']
 
 export function createUserFacingErrorMessage(message: string) {
-    if (denyListedErrors.some(err => message.includes(err))) {
+    if (denyListedErrors.some((err) => message.includes(err))) {
         return `${featureName} API request failed`
     }
     return message

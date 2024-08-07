@@ -7,7 +7,7 @@ The goal is to have all state managed outside of this Vue file. Instead all stat
 and the final results are retrieved by the frontend. For this Component to update the root Component must refresh it.
 -->
 <template>
-    <div v-show="doShow" id="reauthenticate-container">
+    <div v-show="doShow" id="reauthenticate-container" :data-app="app">
         <!-- Icon -->
         <div id="icon-container">
             <svg
@@ -223,6 +223,11 @@ button#cancel {
     font-weight: bold;
     margin-top: 15px;
     cursor: pointer;
+}
+
+body.vscode-high-contrast:not(body.vscode-high-contrast-light) button#reauthenticate {
+    background-color: white;
+    color: black;
 }
 
 #title {

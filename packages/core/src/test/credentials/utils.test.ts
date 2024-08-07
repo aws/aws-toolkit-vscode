@@ -2,52 +2,49 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as vscode from 'vscode'
 import assert from 'assert'
-import { FakeExtensionContext } from '../fakeExtensionContext'
 import { BuilderIdKind, ExtensionUse, SsoKind, hasBuilderId, hasIamCredentials, hasSso } from '../../auth/utils'
 import { Connection, SsoConnection, scopesCodeCatalyst } from '../../auth/connection'
 import { builderIdConnection, iamConnection, ssoConnection } from './testUtil'
 import { amazonQScopes } from '../../codewhisperer/util/authUtil'
+import globals from '../../shared/extensionGlobals'
 
 describe('ExtensionUse.isFirstUse()', function () {
-    let fakeState: vscode.Memento
     let instance: ExtensionUse
 
     beforeEach(async function () {
-        fakeState = (await FakeExtensionContext.create()).globalState
         instance = new ExtensionUse()
-        await fakeState.update(ExtensionUse.instance.isExtensionFirstUseKey, true)
+        await globals.globalState.update(ExtensionUse.instance.isExtensionFirstUseKey, true)
     })
 
     it('is true only on first startup', function () {
-        assert.strictEqual(instance.isFirstUse(fakeState), true, 'Failed on first call.')
-        assert.strictEqual(instance.isFirstUse(fakeState), true, 'Failed on second call.')
+        assert.strictEqual(instance.isFirstUse(), true, 'Failed on first call.')
+        assert.strictEqual(instance.isFirstUse(), true, 'Failed on second call.')
 
         const nextStartup = nextExtensionStartup()
-        assert.strictEqual(nextStartup.isFirstUse(fakeState), false, 'Failed on new startup.')
+        assert.strictEqual(nextStartup.isFirstUse(), false, 'Failed on new startup.')
     })
 
     it('true when: (state value not exists + NOT has existing connections)', async function () {
         await makeStateValueNotExist()
         const notHasExistingConnections = () => false
         assert.strictEqual(
-            instance.isFirstUse(fakeState, notHasExistingConnections),
+            instance.isFirstUse(notHasExistingConnections),
             true,
             'No existing connections, should be first use'
         )
-        assert.strictEqual(nextExtensionStartup().isFirstUse(fakeState), false)
+        assert.strictEqual(nextExtensionStartup().isFirstUse(), false)
     })
 
     it('false when: (state value not exists + has existing connections)', async function () {
         await makeStateValueNotExist()
         const hasExistingConnections = () => true
         assert.strictEqual(
-            instance.isFirstUse(fakeState, hasExistingConnections),
+            instance.isFirstUse(hasExistingConnections),
             false,
             'Found existing connections, should not be first use'
         )
-        assert.strictEqual(nextExtensionStartup().isFirstUse(fakeState), false)
+        assert.strictEqual(nextExtensionStartup().isFirstUse(), false)
     })
 
     /**
@@ -55,7 +52,7 @@ describe('ExtensionUse.isFirstUse()', function () {
      * We use this state value to track if user is a first time user.
      */
     async function makeStateValueNotExist() {
-        await fakeState.update(ExtensionUse.instance.isExtensionFirstUseKey, undefined)
+        await globals.globalState.update(ExtensionUse.instance.isExtensionFirstUseKey, undefined)
     }
 
     /**
@@ -96,22 +93,22 @@ describe('connection exists funcs', function () {
             { connections: allConnections, expected: true },
             { connections: [], expected: false },
             { connections: [iamConnection], expected: false },
-        ].map(c => {
+        ].map((c) => {
             return { ...c, kind: 'any' }
         })
         const cwIdcCases: SsoTestCase[] = [
             { connections: [cwIdcConnection], expected: true },
             { connections: allConnections, expected: true },
             { connections: [], expected: false },
-            { connections: allConnections.filter(c => c !== cwIdcConnection), expected: false },
-        ].map(c => {
+            { connections: allConnections.filter((c) => c !== cwIdcConnection), expected: false },
+        ].map((c) => {
             return { ...c, kind: 'codewhisperer' }
         })
         const allCases = [...anyCases, ...cwIdcCases]
 
-        allCases.forEach(args => {
+        allCases.forEach((args) => {
             it(`ssoExists() returns '${args.expected}' when kind '${args.kind}' given [${args.connections
-                .map(c => c.label)
+                .map((c) => c.label)
                 .join(', ')}]`, async function () {
                 assert.strictEqual(await hasSso(args.kind, async () => args.connections), args.expected)
             })
@@ -123,8 +120,8 @@ describe('connection exists funcs', function () {
             { connections: [cwBuilderIdConnection], expected: true },
             { connections: allConnections, expected: true },
             { connections: [], expected: false },
-            { connections: allConnections.filter(c => c !== cwBuilderIdConnection), expected: false },
-        ].map(c => {
+            { connections: allConnections.filter((c) => c !== cwBuilderIdConnection), expected: false },
+        ].map((c) => {
             return { ...c, kind: 'codewhisperer' }
         })
 
@@ -132,16 +129,16 @@ describe('connection exists funcs', function () {
             { connections: [ccBuilderIdConnection], expected: true },
             { connections: allConnections, expected: true },
             { connections: [], expected: false },
-            { connections: allConnections.filter(c => c !== ccBuilderIdConnection), expected: false },
-        ].map(c => {
+            { connections: allConnections.filter((c) => c !== ccBuilderIdConnection), expected: false },
+        ].map((c) => {
             return { ...c, kind: 'codecatalyst' }
         })
 
         const allCases = [...cwBuilderIdCases, ...ccBuilderIdCases]
 
-        allCases.forEach(args => {
+        allCases.forEach((args) => {
             it(`builderIdExists() returns '${args.expected}' when kind '${args.kind}' given [${args.connections
-                .map(c => c.label)
+                .map((c) => c.label)
                 .join(', ')}]`, async function () {
                 assert.strictEqual(await hasBuilderId(args.kind, async () => args.connections), args.expected)
             })
@@ -153,12 +150,12 @@ describe('connection exists funcs', function () {
             [[iamConnection], true],
             [allConnections, true],
             [[], false],
-            [allConnections.filter(c => c !== iamConnection), false],
+            [allConnections.filter((c) => c !== iamConnection), false],
         ]
 
-        cases.forEach(args => {
+        cases.forEach((args) => {
             it(`credentialExists() returns '${args[1]}' given [${args[0]
-                .map(c => c.label)
+                .map((c) => c.label)
                 .join(', ')}]`, async function () {
                 const connections = args[0]
                 const expected = args[1]

@@ -3,6 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// Disable because it is a front-end file.
+/* eslint-disable aws-toolkits/no-console-log */
+
 import { defineComponent } from 'vue'
 import { AwsSamDebuggerConfiguration } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { AwsSamDebuggerConfigurationLoose, SamInvokeWebview } from './samInvokeBackend'
@@ -112,26 +115,26 @@ export default defineComponent({
     },
     created() {
         client.init().then(
-            config => this.parseConfig(config),
-            e => {
+            (config) => this.parseConfig(config),
+            (e) => {
                 console.error('client.init failed: %s', (e as Error).message)
             }
         )
 
         client.getRuntimes().then(
-            runtimes => {
+            (runtimes) => {
                 this.runtimes = runtimes
             },
-            e => {
+            (e) => {
                 console.error('client.getRuntimes failed: %s', (e as Error).message)
             }
         )
 
         client.getCompanyName().then(
-            o => {
+            (o) => {
                 this.company = o
             },
-            e => {
+            (e) => {
                 console.error('client.getCompanyName failed: %s', (e as Error).message)
             }
         )
@@ -161,21 +164,21 @@ export default defineComponent({
         launch() {
             const config = this.formatConfig()
             config &&
-                client.invokeLaunchConfig(config).catch(e => {
+                client.invokeLaunchConfig(config).catch((e) => {
                     console.error('invokeLaunchConfig failed: %s', (e as Error).message)
                 })
         },
         save() {
             const config = this.formatConfig()
             config &&
-                client.saveLaunchConfig(config).catch(e => {
+                client.saveLaunchConfig(config).catch((e) => {
                     console.error('saveLaunchConfig failed: %s', (e as Error).message)
                 })
         },
         loadConfig() {
             client.loadSamLaunchConfig().then(
-                config => this.parseConfig(config),
-                e => {
+                (config) => this.parseConfig(config),
+                (e) => {
                     console.error('client.loadSamLaunchConfig failed: %s', (e as Error).message)
                 }
             )
@@ -210,13 +213,13 @@ export default defineComponent({
         loadPayload() {
             this.resetJsonErrors()
             client.getSamplePayload().then(
-                sample => {
+                (sample) => {
                     if (!sample) {
                         return
                     }
                     this.payload.value = JSON.stringify(JSON.parse(sample), undefined, 4)
                 },
-                e => {
+                (e) => {
                     console.error('client.getSamplePayload failed: %s', (e as Error).message)
                 }
             )
@@ -224,7 +227,7 @@ export default defineComponent({
         loadResource() {
             this.resetJsonErrors()
             client.getTemplate().then(
-                template => {
+                (template) => {
                     if (!template) {
                         return
                     }
@@ -232,7 +235,7 @@ export default defineComponent({
                     this.launchConfig.invokeTarget.logicalId = template.logicalId
                     this.launchConfig.invokeTarget.templatePath = template.template
                 },
-                e => {
+                (e) => {
                     console.error('client.getTemplate failed: %s', (e as Error).message)
                 }
             )
@@ -311,7 +314,7 @@ export default defineComponent({
         },
         clearForm() {
             const init = initData()
-            Object.keys(init).forEach(k => (this.$data[k as keyof typeof init] = init[k as keyof typeof init] as any))
+            Object.keys(init).forEach((k) => (this.$data[k as keyof typeof init] = init[k as keyof typeof init] as any))
         },
     },
 })

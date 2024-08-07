@@ -21,6 +21,8 @@ jobs:
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
             NODE_OPTIONS: '--max-old-space-size=8192'
+            AWS_TOOLKIT_TEST_CACHE_DIR: '/tmp/.vscode-test/'
+            AWS_TOOLKIT_TEST_USER_DIR: '/tmp/.vscode-test/user-data/'
         steps:
             - uses: actions/checkout@v4
             - name: Use Node.js ${{ matrix.node-version }}
@@ -32,26 +34,50 @@ jobs:
               uses: coactions/setup-xvfb@v1
               with:
                   run: npm test
-            - name: Code coverage
+            - name: Code coverage (Core)
               env:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
-              uses: codecov/codecov-action@v3
+              uses: codecov/codecov-action@v4
               with:
+                  flags: macos-core-unittests
                   verbose: true
-                  file: ./coverage/lcov.info
-                  flags: macos-unittests
+                  file: ./coverage/core/lcov.info
+                  token: ${{ secrets.CODECOV_TOKEN }}
+            - name: Code coverage (Toolkit)
+              env:
+                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
+                  NODE_OPTIONS: ''
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
+              uses: codecov/codecov-action@v4
+              with:
+                  flags: macos-toolkit-unittests
+                  verbose: true
+                  file: ./coverage/toolkit/lcov.info
+                  token: ${{ secrets.CODECOV_TOKEN }}
+            - name: Code coverage (Amazon Q)
+              env:
+                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
+                  NODE_OPTIONS: ''
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
+              uses: codecov/codecov-action@v4
+              with:
+                  flags: macos-amazonq-unittests
+                  verbose: true
+                  file: ./coverage/amazonq/lcov.info
+                  token: ${{ secrets.CODECOV_TOKEN }}
             - name: Code coverage (CodeWhisperer)
               env:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
-              uses: codecov/codecov-action@v3
+              uses: codecov/codecov-action@v4
               with:
-                  verbose: true
-                  file: ./coverage/lcov.info
                   flags: codewhisperer
+                  verbose: true
+                  file: ./coverage/core/lcov.info
+                  token: ${{ secrets.CODECOV_TOKEN }}
 
     web:
         name: test Web
@@ -64,6 +90,8 @@ jobs:
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
             NODE_OPTIONS: '--max-old-space-size=8192'
+            AWS_TOOLKIT_TEST_CACHE_DIR: '/tmp/.vscode-test/'
+            AWS_TOOLKIT_TEST_USER_DIR: '/tmp/.vscode-test/user-data/'
         steps:
             - uses: actions/checkout@v4
             - name: Use Node.js ${{ matrix.node-version }}
@@ -101,11 +129,12 @@ jobs:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
-              uses: codecov/codecov-action@v3
+              uses: codecov/codecov-action@v4
               with:
+                  flags: windows-unittests
                   verbose: true
                   file: ./coverage/lcov.info
-                  flags: windows-unittests
+                  token: ${{ secrets.CODECOV_TOKEN }}
 
     lint:
         name: Lint

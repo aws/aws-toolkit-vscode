@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import globals from '../extensionGlobals'
 
 const toolkitLoggers: {
     main: Logger | undefined
@@ -23,6 +22,8 @@ export interface Logger {
     warn(error: Error, ...meta: any[]): number
     error(message: string, ...meta: any[]): number
     error(error: Error, ...meta: any[]): number
+    log(logLevel: LogLevel, message: string, ...meta: any[]): number
+    log(logLevel: LogLevel, error: Error, ...meta: any[]): number
     setLogLevel(logLevel: LogLevel): void
     /** Returns true if the given log level is being logged.  */
     logLevelEnabled(logLevel: LogLevel): boolean
@@ -102,6 +103,9 @@ export class NullLogger implements Logger {
     public logLevelEnabled(logLevel: LogLevel): boolean {
         return false
     }
+    public log(logLevel: LogLevel, message: string | Error, ...meta: any[]): number {
+        return 0
+    }
     public debug(message: string | Error, ...meta: any[]): number {
         return 0
     }
@@ -131,24 +135,49 @@ export class ConsoleLogger implements Logger {
     public logLevelEnabled(logLevel: LogLevel): boolean {
         return false
     }
+    public log(logLevel: LogLevel, message: string | Error, ...meta: any[]): number {
+        switch (logLevel) {
+            case 'error':
+                this.error(message, ...meta)
+                return 0
+            case 'warn':
+                this.warn(message, ...meta)
+                return 0
+            case 'verbose':
+                this.verbose(message, ...meta)
+                return 0
+            case 'debug':
+                this.debug(message, ...meta)
+                return 0
+            case 'info':
+            default:
+                this.info(message, ...meta)
+                return 0
+        }
+    }
     public debug(message: string | Error, ...meta: any[]): number {
+        // eslint-disable-next-line aws-toolkits/no-console-log
         console.debug(message, ...meta)
         return 0
     }
     public verbose(message: string | Error, ...meta: any[]): number {
+        // eslint-disable-next-line aws-toolkits/no-console-log
         console.debug(message, ...meta)
         return 0
     }
     public info(message: string | Error, ...meta: any[]): number {
+        // eslint-disable-next-line aws-toolkits/no-console-log
         console.info(message, ...meta)
         return 0
     }
     public warn(message: string | Error, ...meta: any[]): number {
+        // eslint-disable-next-line aws-toolkits/no-console-log
         console.warn(message, ...meta)
         return 0
     }
     /** Note: In nodejs this prints to `stderr` (see {@link Console.error}). */
     public error(message: string | Error, ...meta: any[]): number {
+        // eslint-disable-next-line aws-toolkits/no-console-log
         console.error(message, ...meta)
         return 0
     }
@@ -168,27 +197,4 @@ export function getNullLogger(type?: 'channel' | 'debugConsole' | 'main'): Logge
  */
 export function setLogger(logger: Logger | undefined, type?: 'channel' | 'debugConsole' | 'main') {
     toolkitLoggers[type ?? 'main'] = logger
-}
-
-export class PerfLog {
-    private readonly log
-    public readonly start
-
-    public constructor(public readonly topic: string) {
-        const log = getLogger()
-        this.log = log
-        this.start = globals.clock.Date.now()
-    }
-
-    public elapsed(): number {
-        return globals.clock.Date.now() - this.start
-    }
-
-    public done(): void {
-        if (!this.log.logLevelEnabled('verbose')) {
-            return
-        }
-        const elapsed = this.elapsed()
-        this.log.verbose('%s took %dms', this.topic, elapsed.toFixed(1))
-    }
 }

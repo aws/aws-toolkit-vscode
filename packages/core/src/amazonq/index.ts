@@ -3,14 +3,31 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export { activate } from './activation'
-export { DefaultAmazonQAppInitContext } from './apps/initContext'
+export { AmazonQAppInitContext, DefaultAmazonQAppInitContext } from './apps/initContext'
 export { TabType } from './webview/ui/storages/tabsStorage'
 export { MessagePublisher } from './messages/messagePublisher'
 export { MessageListener } from './messages/messageListener'
 export { AuthController } from './auth/controller'
 export { showAmazonQWalkthroughOnce } from './onboardingPage/walkthrough'
-export { openAmazonQWalkthrough } from './onboardingPage/walkthrough'
+export {
+    focusAmazonQChatWalkthrough,
+    openAmazonQWalkthrough,
+    walkthroughInlineSuggestionsExample,
+    walkthroughSecurityScanExample,
+} from './onboardingPage/walkthrough'
+export { LspController, Content } from './lsp/lspController'
+export { LspClient } from './lsp/lspClient'
+export { api } from './extApi'
+export { AmazonQChatViewProvider } from './webview/webView'
+export { init as cwChatAppInit } from '../codewhispererChat/app'
+export { init as featureDevChatAppInit } from '../amazonqFeatureDev/app'
+export { init as gumbyChatAppInit } from '../amazonqGumby/app'
+export { activateBadge } from './util/viewBadgeHandler'
+export { amazonQHelpUrl } from '../shared/constants'
+export { listCodeWhispererCommandsWalkthrough } from '../codewhisperer/ui/statusBarMenu'
+export { focusAmazonQPanel, focusAmazonQPanelKeybinding } from '../codewhispererChat/commands/registerCommands'
+export { TryChatCodeLensProvider, tryChatCodeLensCommand } from '../codewhispererChat/editor/codelens'
+export { createAmazonQUri, openDiff, openDeletedDiff, getOriginalFileUri, getFileDiffUris } from './commons/diff'
 
 /**
  * main from createMynahUI is a purely browser dependency. Due to this

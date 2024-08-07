@@ -22,7 +22,7 @@ function createProfileNamePrompter(profiles: ParsedIniData) {
         title: localize('AWS.profileName.title', 'Enter a profile name'),
         prompt: localize('AWS.profileName.prompt', 'Choose a unique name for the new profile'),
         buttons: createCommonButtons(credentialHelpUrl),
-        validateInput: name => {
+        validateInput: (name) => {
             if (name === '') {
                 return localize('AWS.credentials.error.emptyProfileName', 'Profile name must not be empty')
             }
@@ -67,7 +67,10 @@ interface CreateProfileState {
 }
 
 class ProfileChecker<T extends Profile> extends Prompter<string> {
-    public constructor(private readonly name: string, private readonly profile: T) {
+    public constructor(
+        private readonly name: string,
+        private readonly profile: T
+    ) {
         super()
     }
 

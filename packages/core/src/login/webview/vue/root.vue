@@ -3,7 +3,7 @@ configure app to AMAZONQ if for Amazon Q login
 -->
 <template>
     <!-- Body -->
-    <div class="body" style="height: 100vh">
+    <div class="body" style="height: 100vh" :data-app="app">
         <!-- Functionality -->
         <Login v-if="authFlowState === 'LOGIN'" :app="app"></Login>
         <Reauthenticate
@@ -62,6 +62,14 @@ export default defineComponent({
 })
 </script>
 <style>
+body {
+    /**
+     * Overriding the margin and padding defined by vscode
+     * https://github.com/microsoft/vscode/blame/54e0cddffb51553e76fb8d65474ba855c30621e8/src/vs/workbench/contrib/webview/browser/pre/index.html
+     */
+    padding: 0;
+}
+
 .body {
     /* The container takes up the entire height of the screen */
     height: 100vh;

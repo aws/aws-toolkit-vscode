@@ -6,7 +6,7 @@ import * as vscode from 'vscode'
 import * as os from 'os'
 import path from 'path'
 import { FolderInfo, transformByQState } from '../../models/model'
-import { fsCommon } from '../../../srcShared/fs'
+import fs from '../../../shared/fs/fs'
 import { createPomCopy, replacePomVersion } from './transformFileHandler'
 import { IManifestFile } from '../../../amazonqFeatureDev/models'
 import { getLogger } from '../../../shared/logger'
@@ -64,7 +64,7 @@ export class HumanInTheLoopManager {
     }
 
     public getDependencyListXmlOutput = async () =>
-        await fsCommon.readFileAsString(path.join(this.tmpDependencyListDir, this.localPathToXmlDependencyList))
+        await fs.readFileAsString(path.join(this.tmpDependencyListDir, this.localPathToXmlDependencyList))
 
     public createPomFileCopy = async (outputDirectoryPath: string, pomFileVirtualFileReference: vscode.Uri) => {
         const newPomCopyRef = await createPomCopy(outputDirectoryPath, pomFileVirtualFileReference, 'pom.xml')
@@ -77,23 +77,23 @@ export class HumanInTheLoopManager {
 
     public cleanUpArtifacts = async () => {
         try {
-            await fsCommon.delete(this.userDependencyUpdateDir)
+            await fs.delete(this.userDependencyUpdateDir, { recursive: true })
         } catch (e: any) {
             this.logArtifactError(e)
         }
         try {
-            await fsCommon.delete(this.tmpDependencyListDir)
+            await fs.delete(this.tmpDependencyListDir, { recursive: true })
         } catch (e: any) {
             this.logArtifactError(e)
         }
         try {
-            await fsCommon.delete(this.tmpDownloadsDir)
+            await fs.delete(this.tmpDownloadsDir, { recursive: true })
         } catch (e: any) {
             this.logArtifactError(e)
         }
         for (let i = 0; i < this.tmpSessionFiles.length; i++) {
             try {
-                await fsCommon.delete(this.tmpSessionFiles[i])
+                await fs.delete(this.tmpSessionFiles[i], { recursive: true })
             } catch (e: any) {
                 this.logArtifactError(e)
             }

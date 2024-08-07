@@ -18,7 +18,7 @@ const regionCode = 'someregioncode'
 
 function createLambdaClient(...functionNames: string[]) {
     const client = stub(DefaultLambdaClient, { regionCode })
-    client.listFunctions.returns(asyncGenerator(functionNames.map(name => ({ FunctionName: name }))))
+    client.listFunctions.returns(asyncGenerator(functionNames.map((name) => ({ FunctionName: name }))))
 
     return client
 }
@@ -39,7 +39,7 @@ describe('LambdaNode', function () {
 
         assert.strictEqual(childNodes.length, 2, 'Unexpected child count')
 
-        childNodes.forEach(node =>
+        childNodes.forEach((node) =>
             assert.ok(node instanceof LambdaFunctionNode, 'Expected child node to be LambdaFunctionNode')
         )
     })
@@ -47,7 +47,7 @@ describe('LambdaNode', function () {
     it('has child nodes with Lambda Function contextValue', async function () {
         const childNodes = await createNode('f1', 'f2').getChildren()
 
-        childNodes.forEach(node =>
+        childNodes.forEach((node) =>
             assert.strictEqual(
                 node.contextValue,
                 contextValueLambdaFunction,
@@ -59,7 +59,7 @@ describe('LambdaNode', function () {
     it('sorts child nodes', async function () {
         const childNodes = await createNode('b', 'c', 'a').getChildren()
 
-        const actualChildOrder = childNodes.map(node => node.label)
+        const actualChildOrder = childNodes.map((node) => node.label)
         assert.deepStrictEqual(actualChildOrder, ['a', 'b', 'c'], 'Unexpected child sort order')
     })
 

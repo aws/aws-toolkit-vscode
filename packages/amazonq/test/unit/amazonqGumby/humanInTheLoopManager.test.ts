@@ -5,9 +5,9 @@
 import * as vscode from 'vscode'
 import assert from 'assert'
 import path from 'path'
-import { HumanInTheLoopManager } from 'aws-core-vscode/codewhisperer'
+import { HumanInTheLoopManager } from 'aws-core-vscode/codewhisperer/node'
 import { getTestResourceFilePath, stripStringWhitespace } from './amazonQGumbyUtil'
-import { fsCommon } from 'aws-core-vscode/srcShared'
+import { fs } from 'aws-core-vscode/shared'
 import { assertEqualPaths } from 'aws-core-vscode/test'
 
 describe('HumanInTheLoopManager', async function () {
@@ -36,7 +36,7 @@ describe('HumanInTheLoopManager', async function () {
         )
         const outputPathResult = path.join(outputDirectoryPath, 'pom.xml')
         assertEqualPaths(newPomFilePath.fsPath, outputPathResult)
-        const newPomFileContents = await fsCommon.readFileAsString(newPomFilePath.path)
+        const newPomFileContents = await fs.readFileAsString(newPomFilePath.path)
         assert.strictEqual(
             stripStringWhitespace(newPomFileContents),
             stripStringWhitespace(`<?xml version="1.0" encoding="UTF-8"?>
@@ -58,7 +58,7 @@ describe('HumanInTheLoopManager', async function () {
             `)
         )
         await HumanInTheLoopManager.instance.cleanUpArtifacts()
-        const newPomFileDoesNotExistFlag = await fsCommon.existsFile(newPomFilePath)
+        const newPomFileDoesNotExistFlag = await fs.existsFile(newPomFilePath)
         assert.equal(newPomFileDoesNotExistFlag, false)
     })
 })

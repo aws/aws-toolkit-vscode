@@ -5,18 +5,18 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
+import * as os from 'os'
 import * as pathutils from '../../shared/utilities/pathUtils'
 import { getLogger } from '../logger'
 import { isInDirectory } from '../filesystemUtilities'
 import { normalizedDirnameWithTrailingSlash, normalize } from './pathUtils'
 import globals from '../extensionGlobals'
 import { ToolkitError } from '../errors'
-import { SystemUtilities } from '../systemUtilities'
 import { getGlobDirExcludedPatterns } from '../fs/watchedFiles'
 import { sanitizeFilename } from './textUtilities'
 import { GitIgnoreAcceptor } from '@gerhobbelt/gitignore-parser'
 import * as parser from '@gerhobbelt/gitignore-parser'
-import { fsCommon } from '../../srcShared/fs'
+import fs from '../fs/fs'
 
 type GitIgnoreRelativeAcceptor = {
     folderPath: string
@@ -33,7 +33,7 @@ export class GitIgnoreFilter {
     public static async build(gitIgnoreFiles: vscode.Uri[]): Promise<GitIgnoreFilter> {
         const acceptors: GitIgnoreRelativeAcceptor[] = []
         for (const file of gitIgnoreFiles) {
-            const fileContent = await SystemUtilities.readFile(file)
+            const fileContent = await fs.readFileAsString(file)
 
             const folderPath = getWorkspaceParentDirectory(file.fsPath)
             if (folderPath === undefined) {
@@ -49,8 +49,8 @@ export class GitIgnoreFilter {
     }
 
     public filterFiles(files: vscode.Uri[]) {
-        return files.filter(file =>
-            this.acceptors.every(acceptor => {
+        return files.filter((file) =>
+            this.acceptors.every((acceptor) => {
                 if (!isInDirectory(acceptor.folderPath, file.fsPath)) {
                     // .gitignore file is responsible only for it's subfolders
                     return true
@@ -103,11 +103,13 @@ export async function addFolderToWorkspace(
 
     try {
         // Wait for the WorkspaceFolders changed notification for the folder of interest before returning to caller
-        return await new Promise<boolean>(resolve => {
+        return await new Promise<boolean>((resolve) => {
             vscode.workspace.onDidChangeWorkspaceFolders(
-                workspaceFoldersChanged => {
+                (workspaceFoldersChanged) => {
                     if (
-                        workspaceFoldersChanged.added.some(addedFolder => addedFolder.uri.fsPath === folder.uri.fsPath)
+                        workspaceFoldersChanged.added.some(
+                            (addedFolder) => addedFolder.uri.fsPath === folder.uri.fsPath
+                        )
                     ) {
                         resolve(true)
                     }
@@ -156,12 +158,12 @@ export async function findParentProjectFile(
     }
 
     const workspaceProjectFiles = globals.codelensRootRegistry.items
-        .filter(item => item.item.match(projectFile))
-        .map(item => item.path)
+        .filter((item) => item.item.match(projectFile))
+        .map((item) => item.path)
 
     // Use the project file "closest" in the parent chain to sourceCodeUri
     const parentProjectFiles = workspaceProjectFiles
-        .filter(uri => {
+        .filter((uri) => {
             const dirname = normalizedDirnameWithTrailingSlash(uri)
 
             return normalize(sourceCodeUri.fsPath).startsWith(dirname)
@@ -193,7 +195,7 @@ export async function openTextDocument(filenameGlob: vscode.GlobPattern): Promis
         return undefined
     }
     await vscode.commands.executeCommand('vscode.open', found[0])
-    const textDocument = vscode.workspace.textDocuments.find(o => o.uri.fsPath.includes(found[0].fsPath))
+    const textDocument = vscode.workspace.textDocuments.find((o) => o.uri.fsPath.includes(found[0].fsPath))
     return textDocument
 }
 
@@ -251,11 +253,11 @@ export function getWorkspaceParentDirectory(
  * This only checks text documents; the API does not expose webviews.
  */
 export function checkUnsavedChanges(): boolean {
-    return vscode.workspace.textDocuments.some(doc => doc.isDirty)
+    return vscode.workspace.textDocuments.some((doc) => doc.isDirty)
 }
 
 export function getExcludePattern(additionalPatterns: string[] = []) {
-    const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map(pattern => `**/${pattern}/*`)
+    const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map((pattern) => `**/${pattern}/*`)
     const extraPatterns = [
         '**/package-lock.json',
         '**/yarn.lock',
@@ -321,7 +323,7 @@ export async function collectFiles(
     const workspaceToPrefix = new Map<vscode.WorkspaceFolder, string>(
         workspaceFoldersMapping === undefined
             ? [[workspaceFolders[0], '']]
-            : Object.entries(workspaceFoldersMapping).map(value => [value[1], value[0]])
+            : Object.entries(workspaceFoldersMapping).map((value) => [value[1], value[0]])
     )
     const prefixWithFolderPrefix = (folder: vscode.WorkspaceFolder, path: string) => {
         const prefix = workspaceToPrefix.get(folder)
@@ -352,7 +354,7 @@ export async function collectFiles(
                 continue
             }
 
-            const fileStat = await fsCommon.stat(file)
+            const fileStat = await fs.stat(file)
             if (totalSizeBytes + fileStat.size > maxSize) {
                 throw new ToolkitError(
                     'The project you have selected for source code is too large to use as context. Please select a different folder to use',
@@ -361,6 +363,7 @@ export async function collectFiles(
             }
 
             const fileContent = await readFile(file)
+
             if (fileContent === undefined) {
                 continue
             }
@@ -381,7 +384,7 @@ export async function collectFiles(
 
 const readFile = async (file: vscode.Uri) => {
     try {
-        const fileContent = await SystemUtilities.readFile(file, new TextDecoder('utf8', { fatal: false }))
+        const fileContent = await fs.readFileAsString(file, new TextDecoder('utf8', { fatal: false }))
         return fileContent
     } catch (error) {
         getLogger().debug(
@@ -422,7 +425,7 @@ export function getWorkspaceFoldersByPrefixes(
     if (folders.length <= 1) {
         return undefined
     }
-    let remainingWorkspaceFoldersToMap = folders.map(f => ({
+    let remainingWorkspaceFoldersToMap = folders.map((f) => ({
         folder: f,
         preferredPrefixQueue: f.uri.fsPath
             .split(path.sep)
@@ -445,18 +448,21 @@ export function getWorkspaceFoldersByPrefixes(
         addParentFolderCount < workspaceFolderPrefixGuards.maximumFolderDepthConsidered;
         addParentFolderCount++
     ) {
-        const workspacesByPrefixes = remainingWorkspaceFoldersToMap.reduce((acc, wsFolder) => {
-            const prefix = wsFolder.preferredPrefixQueue.pop()
-            // this should never happen, as last candidates should be handled below, and the array starts non empty
-            if (prefix === undefined) {
-                throw new ToolkitError(
-                    `Encountered a folder with invalid prefix candidates (workspace folder ${wsFolder.folder.name})`
-                )
-            }
-            acc[prefix] = acc[prefix] ?? []
-            acc[prefix].push(wsFolder)
-            return acc
-        }, {} as { [key: string]: (typeof remainingWorkspaceFoldersToMap)[0][] })
+        const workspacesByPrefixes = remainingWorkspaceFoldersToMap.reduce(
+            (acc, wsFolder) => {
+                const prefix = wsFolder.preferredPrefixQueue.pop()
+                // this should never happen, as last candidates should be handled below, and the array starts non empty
+                if (prefix === undefined) {
+                    throw new ToolkitError(
+                        `Encountered a folder with invalid prefix candidates (workspace folder ${wsFolder.folder.name})`
+                    )
+                }
+                acc[prefix] = acc[prefix] ?? []
+                acc[prefix].push(wsFolder)
+                return acc
+            },
+            {} as { [key: string]: (typeof remainingWorkspaceFoldersToMap)[0][] }
+        )
         remainingWorkspaceFoldersToMap = []
         for (const [prefix, folders] of Object.entries(workspacesByPrefixes)) {
             // if a folder has a unique prefix
@@ -507,4 +513,94 @@ export function getWorkspaceFoldersByPrefixes(
     }
 
     return results
+}
+
+/**
+ * Collects all files that are suitable for local indexing.
+ * 1. Must be a supported programming language
+ * 2. Must not be auto generated code
+ * 3. Must not be within gitignore
+ * 4. Ranked by priority.
+ * 5. Select files within maxSize limit.
+ * This function do not read the actual file content or compress them into a zip.
+ * TODO: Move this to LSP
+ * @param sourcePaths the paths where collection starts
+ * @param workspaceFolders the current workspace folders opened
+ * @param respectGitIgnore whether to respect gitignore file
+ * @returns all matched files
+ */
+export async function collectFilesForIndex(
+    sourcePaths: string[],
+    workspaceFolders: CurrentWsFolders,
+    respectGitIgnore: boolean = true,
+    maxSize = 250 * 1024 * 1024 // 250 MB,
+    // make this configurable, so we can test it
+): Promise<
+    {
+        workspaceFolder: vscode.WorkspaceFolder
+        relativeFilePath: string
+        fileUri: vscode.Uri
+        fileSizeBytes: number
+    }[]
+> {
+    const storage: Awaited<ReturnType<typeof collectFilesForIndex>> = []
+
+    const isLanguageSupported = (filename: string) => {
+        const k =
+            /\.(js|ts|java|py|rb|cpp|tsx|jsx|cc|c|h|html|json|css|md|php|swift|rs|scala|yaml|tf|sql|sh|go|yml|kt|smithy|config|kts|gradle|cfg|xml|vue)$/i
+        return k.test(filename) || filename.endsWith('Config')
+    }
+
+    const isBuildOrBin = (filePath: string) => {
+        const k = /[/\\](bin|build|node_modules|env|\.idea)[/\\]/i
+        return k.test(filePath)
+    }
+
+    let totalSizeBytes = 0
+    for (const rootPath of sourcePaths) {
+        const allFiles = await vscode.workspace.findFiles(
+            new vscode.RelativePattern(rootPath, '**'),
+            getExcludePattern()
+        )
+        const files = respectGitIgnore ? await filterOutGitignoredFiles(rootPath, allFiles) : allFiles
+
+        for (const file of files) {
+            if (!isLanguageSupported(file.fsPath)) {
+                continue
+            }
+            if (isBuildOrBin(file.fsPath)) {
+                continue
+            }
+            const relativePath = getWorkspaceRelativePath(file.fsPath, { workspaceFolders })
+            if (!relativePath) {
+                continue
+            }
+
+            const fileStat = await vscode.workspace.fs.stat(file)
+            // ignore single file over 10 MB
+            if (fileStat.size > 10 * 1024 * 1024) {
+                continue
+            }
+            storage.push({
+                workspaceFolder: relativePath.workspaceFolder,
+                relativeFilePath: relativePath.relativePath,
+                fileUri: file,
+                fileSizeBytes: fileStat.size,
+            })
+        }
+    }
+    // prioritize upper level files
+    storage.sort((a, b) => a.fileUri.fsPath.length - b.fileUri.fsPath.length)
+
+    const maxSizeBytes = Math.min(maxSize, os.freemem() / 2)
+
+    let i = 0
+    for (i = 0; i < storage.length; i += 1) {
+        totalSizeBytes += storage[i].fileSizeBytes
+        if (totalSizeBytes >= maxSizeBytes) {
+            break
+        }
+    }
+    // pick top 100k files below size limit
+    return storage.slice(0, Math.min(100000, i))
 }

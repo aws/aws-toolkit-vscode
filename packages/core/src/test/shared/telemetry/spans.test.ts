@@ -9,6 +9,7 @@ import { TelemetrySpan, TelemetryTracer } from '../../../shared/telemetry/spans'
 import { MetricName, MetricShapes } from '../../../shared/telemetry/telemetry'
 import { assertTelemetry, getMetrics, installFakeClock } from '../../testUtil'
 import { selectFrom } from '../../../shared/utilities/tsUtils'
+import { getAwsServiceError } from '../errors.test'
 
 describe('TelemetrySpan', function () {
     let clock: ReturnType<typeof installFakeClock>
@@ -77,7 +78,7 @@ describe('TelemetryTracer', function () {
         tracer = new TelemetryTracer()
     })
 
-    describe('record', function () {
+    describe('record()', function () {
         it('only writes to the active span in the current context', function () {
             tracer.apigateway_copyUrl.run(() => {
                 tracer.run(metricName, () => tracer.record({ source: 'bar' }))
@@ -106,7 +107,7 @@ describe('TelemetryTracer', function () {
         })
 
         it('does not clobber subsequent writes to individual spans', function () {
-            tracer.run(metricName, span => {
+            tracer.run(metricName, (span) => {
                 tracer.record({ source: 'bar' })
                 span.record({ source: 'foo' })
             })
@@ -122,7 +123,7 @@ describe('TelemetryTracer', function () {
         })
     })
 
-    describe('instrument', function () {
+    describe('instrument()', function () {
         async function assertPositive(n: number): Promise<number> {
             if (n <= 0) {
                 throw new Error()
@@ -155,7 +156,7 @@ describe('TelemetryTracer', function () {
         })
 
         it('does not change the active span when using a different span', function () {
-            tracer.run(metricName, span => {
+            tracer.run(metricName, (span) => {
                 tracer.vscode_executeCommand.record({ command: 'foo', debounceCount: 1 })
                 assert.strictEqual(tracer.activeSpan, span)
             })
@@ -165,9 +166,9 @@ describe('TelemetryTracer', function () {
         })
     })
 
-    describe('increment', function () {
+    describe('increment()', function () {
         it('starts at 0 for uninitialized fields', function () {
-            tracer.vscode_executeCommand.run(span => {
+            tracer.vscode_executeCommand.run((span) => {
                 span.record({ command: 'foo' })
                 span.increment({ debounceCount: 1 })
                 span.increment({ debounceCount: 1 })
@@ -181,21 +182,21 @@ describe('TelemetryTracer', function () {
         })
 
         it('applies to spans independently from one another', function () {
-            tracer.vscode_executeCommand.run(span => {
+            tracer.vscode_executeCommand.run((span) => {
                 span.record({ debounceCount: 1 })
                 span.increment({ debounceCount: 1 })
-                tracer.vscode_executeCommand.run(span => {
+                tracer.vscode_executeCommand.run((span) => {
                     span.increment({ debounceCount: 10 })
                 })
             })
 
-            const metrics = getMetrics('vscode_executeCommand').map(m => selectFrom(m, 'debounceCount'))
+            const metrics = getMetrics('vscode_executeCommand').map((m) => selectFrom(m, 'debounceCount'))
             assert.deepStrictEqual(metrics[0], { debounceCount: '10' })
             assert.deepStrictEqual(metrics[1], { debounceCount: '2' })
         })
     })
 
-    describe('run', function () {
+    describe('run()', function () {
         it('returns the result of the function', function () {
             const result = tracer.run(metricName, () => 'foo')
 
@@ -203,25 +204,45 @@ describe('TelemetryTracer', function () {
         })
 
         it('sets the active span', function () {
-            const checkSpan = () => tracer.run(metricName, span => assert.strictEqual(tracer.activeSpan, span))
+            const checkSpan = () => tracer.run(metricName, (span) => assert.strictEqual(tracer.activeSpan, span))
 
             assert.doesNotThrow(checkSpan)
         })
 
         it('uses a span over a telemetry metric', function () {
-            tracer.run(metricName, span => span.record({ source: 'bar' }))
+            tracer.run(metricName, (span) => span.record({ source: 'bar' }))
 
             assertTelemetry(metricName, { result: 'Succeeded', source: 'bar' })
         })
 
-        describe('nested run', function () {
+        it('records standard fields on failed service request', async function () {
+            await assert.rejects(async () => {
+                await tracer.aws_loginWithBrowser.run(async () => {
+                    throw await getAwsServiceError()
+                })
+            })
+
+            assertTelemetry('aws_loginWithBrowser', {
+                result: 'Failed',
+                reason: 'InvalidRequestException',
+                reasonDesc: 'Invalid client ID provided',
+                httpStatusCode: '400',
+            })
+            const metric = getMetrics('aws_loginWithBrowser')[0]
+            assert.match(metric.awsAccount ?? '', /not-set|n\/a|\d+/)
+            assert.match(metric.awsRegion ?? '', /not-set|\w+-\w+-\d+/)
+            assert.match(String(metric.duration) ?? '', /\d+/)
+            assert.match(metric.requestId ?? '', /[a-z0-9-]+/)
+        })
+
+        describe('nested run()', function () {
             const nestedName = 'nested_metric' as MetricName
 
             it('can record metadata in nested spans', function () {
-                tracer.run(metricName, span1 => {
+                tracer.run(metricName, (span1) => {
                     span1.record({ source: 'bar' })
 
-                    tracer.run(nestedName, span2 => {
+                    tracer.run(nestedName, (span2) => {
                         span1.record({ attempts: 1 })
                         span2.record({ source: 'foo' })
                     })
@@ -255,7 +276,7 @@ describe('TelemetryTracer', function () {
                 tracer.run(metricName, () => {
                     tracer.run(metricName, () => {
                         assert.strictEqual(tracer.spans.length, 2)
-                        assert.ok(tracer.spans.every(s => s.name === metricName))
+                        assert.ok(tracer.spans.every((s) => s.name === metricName))
                     })
                 })
             })

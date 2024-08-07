@@ -13,7 +13,10 @@ import { Profile } from '../../../auth/credentials/sharedCredentials'
 import { SharedCredentialsKeys } from '../../../auth/credentials/types'
 
 class TestPrompter extends Prompter<string | undefined> {
-    public constructor(private readonly name: string, private readonly profile: Profile) {
+    public constructor(
+        private readonly name: string,
+        private readonly profile: Profile
+    ) {
         super()
     }
 
@@ -63,8 +66,10 @@ describe('CreateProfileWizard', function () {
         }
 
         const wizard = new CreateProfileWizard({}, template)
-        wizard.form.name.bindPrompter(() => new TestPrompter('test', {}).transform(r => Object.keys(JSON.parse(r!))[0]))
-        wizard.form.accountId.bindPrompter(() => new TestPrompter('', {}).transform(r => r!))
+        wizard.form.name.bindPrompter(() =>
+            new TestPrompter('test', {}).transform((r) => Object.keys(JSON.parse(r!))[0])
+        )
+        wizard.form.accountId.bindPrompter(() => new TestPrompter('', {}).transform((r) => r!))
 
         const result = await wizard.run()
         const step1 = result?.profile?.['step1']

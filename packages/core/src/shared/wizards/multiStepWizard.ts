@@ -130,7 +130,10 @@ export class WizardContext {
 export class BrowseFolderQuickPickItem implements FolderQuickPickItem {
     public alwaysShow: boolean = true
 
-    public constructor(private readonly context: WizardContext, public readonly detail: string) {}
+    public constructor(
+        private readonly context: WizardContext,
+        public readonly detail: string
+    ) {}
 
     public get label(): string {
         if (this.context.workspaceFolders && this.context.workspaceFolders.length > 0) {
@@ -177,7 +180,7 @@ export async function promptUserForLocation(
     }
 ): Promise<vscode.Uri | undefined> {
     const items: FolderQuickPickItem[] = (context.workspaceFolders || [])
-        .map<FolderQuickPickItem>(f => new WorkspaceFolderQuickPickItem(f))
+        .map<FolderQuickPickItem>((f) => new WorkspaceFolderQuickPickItem(f))
         .concat([
             new BrowseFolderQuickPickItem(
                 context,

@@ -28,7 +28,7 @@ describe('deleteLambda', async function () {
         const confirmDialog = getTestWindow().waitForMessage(buildDeleteRegExp('my-function'))
 
         await Promise.all([
-            confirmDialog.then(dialog => dialog.selectItem('Delete')),
+            confirmDialog.then((dialog) => dialog.selectItem('Delete')),
             deleteLambda({ FunctionName: 'my-function' }, client),
         ])
 
@@ -43,7 +43,7 @@ describe('deleteLambda', async function () {
         const confirmDialog = getTestWindow().waitForMessage(buildDeleteRegExp('another-function'))
 
         await Promise.all([
-            confirmDialog.then(dialog => dialog.close()),
+            confirmDialog.then((dialog) => dialog.close()),
             deleteLambda({ FunctionName: 'another-function' }, client),
         ])
 
@@ -59,8 +59,8 @@ describe('deleteLambda', async function () {
         client.deleteFunction.rejects(new Error('Lambda function does not exist'))
 
         await Promise.all([
-            viewLogs.then(dialog => dialog.close()),
-            confirmDialog.then(dialog => dialog.selectItem('Delete')),
+            viewLogs.then((dialog) => dialog.close()),
+            confirmDialog.then((dialog) => dialog.selectItem('Delete')),
             deleteLambda({ FunctionName: 'bad-name' }, client),
         ])
 

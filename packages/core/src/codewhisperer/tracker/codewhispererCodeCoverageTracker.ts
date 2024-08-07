@@ -143,7 +143,7 @@ export class CodeWhispererCodeCoverageTracker {
         // the accepted characters after calculating user modification
         let unmodifiedAcceptedTokens = 0
         for (const filename in this._acceptedTokens) {
-            this._acceptedTokens[filename].forEach(v => {
+            this._acceptedTokens[filename].forEach((v) => {
                 if (filename in this._totalTokens && this._totalTokens[filename] >= v.accepted) {
                     unmodifiedAcceptedTokens += v.accepted
                     acceptedTokens += v.text.length
@@ -185,7 +185,7 @@ export class CodeWhispererCodeCoverageTracker {
                 },
             })
             .then()
-            .catch(error => {
+            .catch((error) => {
                 let requestId: string | undefined
                 if (isAwsError(error)) {
                     requestId = error.requestId
@@ -383,10 +383,7 @@ export class CodeWhispererCodeCoverageTracker {
 
     public static readonly instances = new Map<CodewhispererLanguage, CodeWhispererCodeCoverageTracker>()
 
-    public static getTracker(
-        language: string,
-        memeto: vscode.Memento = globals.context.globalState
-    ): CodeWhispererCodeCoverageTracker | undefined {
+    public static getTracker(language: string): CodeWhispererCodeCoverageTracker | undefined {
         if (!runtimeLanguageContext.isLanguageSupported(language)) {
             return undefined
         }

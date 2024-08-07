@@ -155,7 +155,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         const iteratingIndexes = this.getIteratingIndexes()
         const prefix = document.getText(new vscode.Range(start, end)).replace(/\r\n/g, '\n')
         const matchedCount = session.recommendations.filter(
-            r => r.content.length > 0 && r.content.startsWith(prefix) && r.content !== prefix
+            (r) => r.content.length > 0 && r.content.startsWith(prefix) && r.content !== prefix
         ).length
         for (const i of iteratingIndexes) {
             const r = session.recommendations[i]

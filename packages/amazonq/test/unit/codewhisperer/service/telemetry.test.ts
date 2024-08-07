@@ -26,7 +26,7 @@ import {
     vsCodeCursorUpdateDelay,
     AuthUtil,
 } from 'aws-core-vscode/codewhisperer'
-import { sleep, waitUntil, getMinVscodeVersion, CodewhispererUserTriggerDecision } from 'aws-core-vscode/shared'
+import { sleep, waitUntil, env, CodewhispererUserTriggerDecision } from 'aws-core-vscode/shared'
 import { resetCodeWhispererGlobalVariables } from 'aws-core-vscode/test'
 
 type CodeWhispererResponse = ListRecommendationsResponse & {
@@ -288,7 +288,7 @@ describe.skip('CodeWhisperer telemetry', async function () {
         // as per vscode official repo PR https://github.com/microsoft/vscode/commit/cb0e59c56677181b570b110167d13efb4ba7677d#diff-84b7f4a5ab7c383d86e2d40e2c704d255dc1e187a29386c036023a4696196556R19
         // navigation commands seem to be introduced since 1.78.0
         function shouldRun() {
-            const version = getMinVscodeVersion()
+            const version = env.getMinVscodeVersion()
             if (semver.gte(version, '1.78.0')) {
                 throw new Error('Minimum VSCode version is greater than 1.78.0, this check should be removed')
             }
@@ -577,7 +577,7 @@ async function typing(editor: vscode.TextEditor, s: string) {
     const initialContent = editor.document.getText()
     const positionBefore = editor.document.offsetAt(editor.selection.active)
 
-    await editor.edit(edit => {
+    await editor.edit((edit) => {
         edit.insert(editor.selection.active, s)
     })
 

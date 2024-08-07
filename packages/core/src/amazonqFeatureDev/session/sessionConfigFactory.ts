@@ -28,7 +28,7 @@ export async function createSessionConfig(): Promise<SessionConfig> {
         throw new WorkspaceFolderNotFoundError()
     }
 
-    const workspaceRoots = workspaceFolders.map(f => f.uri.fsPath)
+    const workspaceRoots = workspaceFolders.map((f) => f.uri.fsPath)
 
     const fs = new VirtualFileSystem()
 

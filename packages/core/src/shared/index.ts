@@ -3,6 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * Contains exports that work in both node and web.
+ */
+
 export { ExtContext } from './extensions'
 export { initialize, default as globals } from './extensionGlobals'
 export { activate as activateLogger } from './logger/activation'
@@ -21,7 +25,7 @@ export { Prompter } from './ui/prompter'
 export { VirtualFileSystem } from './virtualFilesystem'
 export { VirtualMemoryFile } from './virtualMemoryFile'
 export { AmazonqCreateUpload, Metric } from './telemetry/telemetry'
-export { getClientId } from './telemetry/util'
+export { getClientId, getOperatingSystem } from './telemetry/util'
 export { extensionVersion } from './vscode/env'
 export { cast } from './utilities/typeConstructors'
 export { createInputBox } from './ui/inputPrompter'
@@ -37,11 +41,16 @@ export {
     CodewhispererUserDecision,
     CodewhispererSecurityScan,
 } from './telemetry/telemetry.gen'
+export * from './environmentVariables'
+export * from './vscode/setContext'
 export * from './utilities/textUtilities'
 export * from './filesystemUtilities'
 export * from './localizedText'
-export { getMinVscodeVersion } from './vscode/env'
+export * as env from './vscode/env'
 export * from './vscode/commands2'
 export * from './utilities/pathUtils'
 export * from './errors'
+export * as messages from './utilities/messages'
 export * as errors from './errors'
+export * as funcUtil from './utilities/functionUtils'
+export { fs } from './fs/fs'

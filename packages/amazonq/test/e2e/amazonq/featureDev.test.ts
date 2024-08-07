@@ -10,7 +10,7 @@ import { verifyTextOrder } from './framework/text'
 import { registerAuthHook, using } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
 import { Messenger } from './framework/messenger'
-import { FollowUpTypes, examples, newTaskChanges, sessionClosed } from 'aws-core-vscode/amazonqFeatureDev'
+import { FollowUpTypes, examples } from 'aws-core-vscode/amazonqFeatureDev'
 import { ChatItem } from '@aws/mynah-ui'
 import { sleep } from 'aws-core-vscode/shared'
 
@@ -78,14 +78,14 @@ describe('Amazon Q Feature Dev', function () {
 
     function waitForButtons(buttons: FollowUpTypes[]) {
         return tab.waitForEvent(() => {
-            return buttons.every(value => tab.hasButton(value))
+            return buttons.every((value) => tab.hasButton(value))
         })
     }
 
     async function waitForText(text: string) {
         await tab.waitForEvent(
             () => {
-                return tab.getChatItems().some(chatItem => chatItem.body === text)
+                return tab.getChatItems().some((chatItem) => chatItem.body === text)
             },
             {
                 waitIntervalInMs: 250,
@@ -239,14 +239,14 @@ describe('Amazon Q Feature Dev', function () {
 
             it('clicks new task', async () => {
                 tab.clickButton(FollowUpTypes.NewTask)
-                await waitForText(newTaskChanges)
-                assert.deepStrictEqual(tab.getChatItems().pop()?.body, newTaskChanges)
+                await waitForText('What change would you like to make?')
+                assert.deepStrictEqual(tab.getChatItems().pop()?.body, 'What change would you like to make?')
             })
 
             it('click close session', async () => {
                 tab.clickButton(FollowUpTypes.CloseSession)
-                await waitForText(sessionClosed)
-                assert.deepStrictEqual(tab.getPlaceholder(), sessionClosed)
+                await waitForText('Your session is now closed.')
+                assert.deepStrictEqual(tab.getPlaceholder(), 'Your session is now closed.')
             })
         }
     }

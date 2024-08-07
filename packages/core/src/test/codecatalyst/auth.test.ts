@@ -6,10 +6,11 @@
 import assert from 'assert'
 import { CodeCatalystAuthStorage, CodeCatalystAuthenticationProvider, defaultScopes } from '../../codecatalyst/auth'
 import { getTestWindow } from '../shared/vscode/window'
-import { FakeMemento, FakeSecretStorage } from '../fakeExtensionContext'
+import { FakeSecretStorage } from '../fakeExtensionContext'
 import { createBuilderIdProfile, createSsoProfile, createTestAuth } from '../credentials/testUtil'
 import Sinon from 'sinon'
 import { isAnySsoConnection } from '../../auth/connection'
+import globals from '../../shared/extensionGlobals'
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
 
@@ -18,10 +19,9 @@ describe('CodeCatalystAuthenticationProvider', async function () {
     let codecatalystAuth: CodeCatalystAuthenticationProvider
 
     beforeEach(async function () {
-        auth = createTestAuth()
+        auth = createTestAuth(globals.globalState)
         codecatalystAuth = new CodeCatalystAuthenticationProvider(
             new CodeCatalystAuthStorage(new FakeSecretStorage()),
-            new FakeMemento(),
             auth
         )
     })
@@ -34,7 +34,7 @@ describe('CodeCatalystAuthenticationProvider', async function () {
         it('should create a new connection', async function () {
             Sinon.stub(codecatalystAuth, 'isConnectionOnboarded').resolves(true)
 
-            getTestWindow().onDidShowQuickPick(async picker => {
+            getTestWindow().onDidShowQuickPick(async (picker) => {
                 await picker.untilReady()
                 picker.acceptItem(picker.items[1])
             })
@@ -48,7 +48,7 @@ describe('CodeCatalystAuthenticationProvider', async function () {
         it('should add scopes to existing Builder ID connection', async function () {
             Sinon.stub(codecatalystAuth, 'isConnectionOnboarded').resolves(true)
 
-            getTestWindow().onDidShowMessage(async message => {
+            getTestWindow().onDidShowMessage(async (message) => {
                 assert.ok(message.modal)
                 message.selectItem('Proceed')
             })
@@ -72,7 +72,7 @@ describe('CodeCatalystAuthenticationProvider', async function () {
             assert.ok(codecatalystAuth.isConnected())
 
             const ssoConnectionIds = new Set(
-                auth.activeConnectionEvents.emits.filter(isAnySsoConnection).map(c => c.id)
+                auth.activeConnectionEvents.emits.filter(isAnySsoConnection).map((c) => c.id)
             )
             assert.strictEqual(ssoConnectionIds.size, 1, 'Expected exactly 1 unique SSO connection id')
             assert.strictEqual((await auth.listConnections()).filter(isAnySsoConnection).length, 1)
@@ -83,7 +83,7 @@ describe('CodeCatalystAuthenticationProvider', async function () {
         it('should create a new connection', async function () {
             Sinon.stub(codecatalystAuth, 'isConnectionOnboarded').resolves(true)
 
-            getTestWindow().onDidShowQuickPick(async picker => {
+            getTestWindow().onDidShowQuickPick(async (picker) => {
                 await picker.untilReady()
                 picker.acceptItem(picker.items[1])
             })
@@ -97,7 +97,7 @@ describe('CodeCatalystAuthenticationProvider', async function () {
         it('should add scopes to existing IAM Identity Center connection', async function () {
             Sinon.stub(codecatalystAuth, 'isConnectionOnboarded').resolves(true)
 
-            getTestWindow().onDidShowMessage(async message => {
+            getTestWindow().onDidShowMessage(async (message) => {
                 assert.ok(message.modal)
                 message.selectItem('Proceed')
             })
@@ -121,7 +121,7 @@ describe('CodeCatalystAuthenticationProvider', async function () {
             Sinon.stub(codecatalystAuth, 'isConnectionOnboarded').resolves(true)
             const connectToEnterpriseSso = Sinon.spy(codecatalystAuth, 'connectToEnterpriseSso')
 
-            getTestWindow().onDidShowQuickPick(async picker => {
+            getTestWindow().onDidShowQuickPick(async (picker) => {
                 await picker.untilReady()
                 picker.acceptItem(picker.items[1])
             })
@@ -143,7 +143,7 @@ describe('CodeCatalystAuthenticationProvider', async function () {
             Sinon.stub(codecatalystAuth, 'isConnectionOnboarded').resolves(true)
             const connectToEnterpriseSso = Sinon.spy(codecatalystAuth, 'connectToEnterpriseSso')
 
-            getTestWindow().onDidShowQuickPick(async picker => {
+            getTestWindow().onDidShowQuickPick(async (picker) => {
                 await picker.untilReady()
                 picker.acceptItem(picker.items[1])
             })
@@ -154,7 +154,7 @@ describe('CodeCatalystAuthenticationProvider', async function () {
             assert.strictEqual(conn.label, 'IAM Identity Center (enterprise)')
             assert.strictEqual(connectToEnterpriseSso.callCount, 1, 'Expected one call to connectToEnterpriseSso')
 
-            getTestWindow().onDidShowQuickPick(async picker => {
+            getTestWindow().onDidShowQuickPick(async (picker) => {
                 await picker.untilReady()
                 picker.acceptItem(picker.items[1])
             })
@@ -180,7 +180,7 @@ describe('CodeCatalystAuthenticationProvider', async function () {
             const connectToAwsBuilderId = Sinon.spy(codecatalystAuth, 'connectToAwsBuilderId')
             const connectToEnterpriseSso = Sinon.spy(codecatalystAuth, 'connectToEnterpriseSso')
 
-            getTestWindow().onDidShowQuickPick(async picker => {
+            getTestWindow().onDidShowQuickPick(async (picker) => {
                 await picker.untilReady()
                 picker.acceptItem(picker.items[1])
             })
@@ -196,7 +196,7 @@ describe('CodeCatalystAuthenticationProvider', async function () {
 
             assert.strictEqual(connectToEnterpriseSso.callCount, 1, 'Expected one call to connectToEnterpriseSso')
 
-            getTestWindow().onDidShowQuickPick(async picker => {
+            getTestWindow().onDidShowQuickPick(async (picker) => {
                 await picker.untilReady()
                 picker.acceptItem(picker.items[1])
             })

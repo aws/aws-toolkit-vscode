@@ -16,10 +16,7 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager<
         super(extensionContext)
     }
 
-    public async visualizeStateMachine(
-        globalStorage: vscode.Memento,
-        uri: vscode.Uri
-    ): Promise<vscode.WebviewPanel | undefined> {
+    public async visualizeStateMachine(uri: vscode.Uri): Promise<vscode.WebviewPanel | undefined> {
         const logger = getLogger()
         const existingVisualization = this.getExistingVisualization(this.getKey(uri))
 
@@ -34,7 +31,7 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager<
         const templateUri = vscode.Uri.joinPath(cdkOutPath, `${appName}.template.json`)
 
         try {
-            await this.cache.updateCache(globalStorage)
+            await this.cache.updateCache()
 
             const textDocument = await vscode.workspace.openTextDocument(templateUri.with({ fragment: '' }))
             const newVisualization = new AslVisualizationCDK(textDocument, templateUri.fsPath, resourceName)

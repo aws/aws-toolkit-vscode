@@ -14,9 +14,10 @@ import { maxFileSizeBytes } from '../limits'
 import { createHash } from 'crypto'
 import { CurrentWsFolders } from '../types'
 import { ToolkitError } from '../../shared/errors'
-import { AmazonqCreateUpload, Metric } from '../../shared/telemetry/telemetry'
+import { AmazonqCreateUpload, Metric, telemetry as amznTelemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from './telemetryHelper'
 import { maxRepoSizeBytes } from '../constants'
+import { isCodeFile } from '../../shared/filetypes'
 
 const getSha256 = (file: Buffer) => createHash('sha256').update(file).digest('base64')
 
@@ -34,16 +35,43 @@ export async function prepareRepoData(
         const zip = new AdmZip()
 
         let totalBytes = 0
+        const ignoredExtensionMap = new Map<string, number>()
+
         for (const file of files) {
             const fileSize = (await vscode.workspace.fs.stat(file.fileUri)).size
+            const isCodeFile_ = isCodeFile(file.relativeFilePath)
 
-            if (fileSize >= maxFileSizeBytes) {
+            if (fileSize >= maxFileSizeBytes || !isCodeFile_) {
+                if (!isCodeFile_) {
+                    const re = /(?:\.([^.]+))?$/
+                    const extensionArray = re.exec(file.relativeFilePath)
+                    const extension = extensionArray?.length ? extensionArray[1] : undefined
+                    if (extension) {
+                        const currentCount = ignoredExtensionMap.get(extension)
+
+                        ignoredExtensionMap.set(extension, (currentCount ?? 0) + 1)
+                    }
+                }
                 continue
             }
             totalBytes += fileSize
 
             const zipFolderPath = path.dirname(file.zipFilePath)
             zip.addLocalFile(file.fileUri.fsPath, zipFolderPath)
+        }
+
+        const iterator = ignoredExtensionMap.entries()
+
+        for (let i = 0; i < ignoredExtensionMap.size; i++) {
+            const [key, value] = iterator.next().value
+            await amznTelemetry.amazonq_bundleExtensionIgnored.run(async (bundleSpan) => {
+                const event = {
+                    filenameExt: key,
+                    count: value,
+                }
+
+                bundleSpan.record(event)
+            })
         }
 
         telemetry.setRepositorySize(totalBytes)

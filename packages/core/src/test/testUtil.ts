@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import * as fs from 'fs'
+import * as nodefs from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as FakeTimers from '@sinonjs/fake-timers'
@@ -14,7 +14,7 @@ import globals from '../shared/extensionGlobals'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { MetricName, MetricShapes } from '../shared/telemetry/telemetry'
 import { keys, selectFrom } from '../shared/utilities/tsUtils'
-import { fsCommon } from '../srcShared/fs'
+import fs2 from '../shared/fs/fs'
 import { DeclaredCommand } from '../shared/vscode/commands2'
 
 const testTempDirs: string[] = []
@@ -28,15 +28,15 @@ export async function toFile(o: any, ...filePathParts: string[]) {
     const text = o ? o.toString() : ''
     const filePath = path.join(...filePathParts)
     const dir = path.dirname(filePath)
-    await fsCommon.mkdir(dir)
-    await fsCommon.writeFile(filePath, text)
+    await fs2.mkdir(dir)
+    await fs2.writeFile(filePath, text)
 }
 
 /**
  * Gets the contents of `filepath` as UTF-8 encoded string.
  */
 export async function fromFile(filepath: string): Promise<string> {
-    return fsCommon.readFileAsString(filepath)
+    return fs2.readFileAsString(filepath)
 }
 
 /** Gets the full path to the Toolkit source root on this machine. */
@@ -55,18 +55,18 @@ export function getWorkspaceFolder(dir: string): vscode.WorkspaceFolder {
 }
 
 /**
- * Creates a random, temporary workspace folder on the filesystem and returns a
- * `WorkspaceFolder` object.
+ * Creates a random, temporary workspace folder on the filesystem and returns a `WorkspaceFolder`
+ * object. The folder will be automatically deleted after tests complete.
  *
- * @param name  Optional name, defaults to "test-workspace-folder".
- * @param subDir Optional subdirectory created in the workspace folder and returned in the result.
+ * @param name  Folder name (default: "test-workspace-folder").
+ * @param subDir Subdirectory created in the workspace folder and returned in the result.
  */
 export async function createTestWorkspaceFolder(name?: string, subDir?: string): Promise<vscode.WorkspaceFolder> {
     const tempFolder = await makeTemporaryToolkitFolder()
     testTempDirs.push(tempFolder)
     const finalWsFolder = subDir === undefined ? tempFolder : path.join(tempFolder, subDir)
     if (subDir !== undefined && subDir.length > 0) {
-        await fs.promises.mkdir(finalWsFolder, { recursive: true })
+        await nodefs.promises.mkdir(finalWsFolder, { recursive: true })
     }
     return {
         uri: vscode.Uri.file(finalWsFolder),
@@ -79,7 +79,7 @@ export async function createTestFile(fileName: string): Promise<vscode.Uri> {
     const tempFolder = await makeTemporaryToolkitFolder()
     testTempDirs.push(tempFolder) // ensures this is deleted at the end
     const tempFilePath = path.join(tempFolder, fileName)
-    await fsCommon.writeFile(tempFilePath, '')
+    await fs2.writeFile(tempFilePath, '')
     return vscode.Uri.file(tempFilePath)
 }
 
@@ -109,6 +109,10 @@ export async function createTestWorkspace(
          * the subDir where the workspace folder will point to within the temp folder
          */
         subDir?: string
+        /**
+         * optional file name suffix
+         */
+        fileNameSuffix?: string
     }
 ): Promise<vscode.WorkspaceFolder> {
     const workspace = await createTestWorkspaceFolder(opts.workspaceName, opts.subDir)
@@ -118,11 +122,12 @@ export async function createTestWorkspace(
     }
 
     const fileNamePrefix = opts?.fileNamePrefix ?? 'test-file-'
+    const fileNameSuffix = opts?.fileNameSuffix ?? ''
     const fileContent = opts?.fileContent ?? ''
 
     do {
-        const tempFilePath = path.join(workspace.uri.fsPath, `${fileNamePrefix}${n}`)
-        await fsCommon.writeFile(tempFilePath, fileContent)
+        const tempFilePath = path.join(workspace.uri.fsPath, `${fileNamePrefix}${n}${fileNameSuffix}`)
+        await fs2.writeFile(tempFilePath, fileContent)
     } while (--n > 0)
 
     return workspace
@@ -153,7 +158,7 @@ export function assertEqualPaths(actual: string, expected: string, message?: str
  * Asserts that UTF-8 contents of `file` are equal to `expected`.
  */
 export async function assertFileText(file: string, expected: string, message?: string | Error) {
-    const actualContents = await fsCommon.readFileAsString(file)
+    const actualContents = await fs2.readFileAsString(file)
     assert.strictEqual(actualContents, expected, message)
 }
 
@@ -167,12 +172,12 @@ export async function tickPromise<T>(promise: Promise<T>, clock: FakeTimers.Inst
  * Creates an executable file (including any parent directories) with the given contents.
  */
 export async function createExecutableFile(filepath: string, contents: string): Promise<void> {
-    await fsCommon.mkdir(path.dirname(filepath))
+    await fs2.mkdir(path.dirname(filepath))
     if (process.platform === 'win32') {
-        await fsCommon.writeFile(filepath, `@echo OFF$\r\n${contents}\r\n`)
+        await fs2.writeFile(filepath, `@echo OFF$\r\n${contents}\r\n`)
     } else {
-        await fsCommon.writeFile(filepath, `#!/bin/sh\n${contents}`)
-        fs.chmodSync(filepath, 0o744)
+        await fs2.writeFile(filepath, `#!/bin/sh\n${contents}`)
+        nodefs.chmodSync(filepath, 0o744)
     }
 }
 
@@ -242,7 +247,7 @@ export function assertTelemetry<K extends MetricName>(
     const expectedList = Array.isArray(expected) ? expected : [expected]
     const query = { metricName: name }
     const metadata = globals.telemetry.logger.query(query)
-    assert.ok(metadata.length > 0, `telemetry not found for metric name: "${name}"`)
+    assert.ok(metadata.length > 0, `telemetry metric not found: "${name}"`)
 
     for (let i = 0; i < expectedList.length; i++) {
         const metric = expectedList[i]
@@ -251,12 +256,12 @@ export function assertTelemetry<K extends MetricName>(
         delete expectedCopy['passive']
 
         Object.keys(expectedCopy).forEach(
-            k => ((expectedCopy as any)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
+            (k) => ((expectedCopy as any)[k] = (expectedCopy as Record<string, any>)[k]?.toString())
         )
 
-        const msg = `telemetry item ${i + 1} (of ${
+        const msg = `telemetry metric ${i + 1} (of ${
             expectedList.length
-        }) not found (in the expected order) for metric name: "${name}" `
+        }) not found (in the expected order): "${name}" `
         partialDeepCompare(metadata[i], expectedCopy, msg)
 
         // Check this explicitly because we deleted it above.
@@ -340,7 +345,7 @@ export async function assertTabCount(size: number): Promise<void | never> {
     const tabs = await waitUntil(
         async () => {
             const tabs = vscode.window.tabGroups.all
-                .map(tabGroup => tabGroup.tabs)
+                .map((tabGroup) => tabGroup.tabs)
                 .reduce((acc, curVal) => acc.concat(curVal), [])
 
             if (tabs.length === size) {
@@ -378,7 +383,7 @@ export async function closeAllEditors(): Promise<void> {
             editors.length = 0
             editors.push(
                 ...vscode.window.visibleTextEditors.filter(
-                    editor => !ignorePatterns.some(p => p.test(editor.document.fileName))
+                    (editor) => !ignorePatterns.some((p) => p.test(editor.document.fileName))
                 )
             )
 
@@ -392,7 +397,7 @@ export async function closeAllEditors(): Promise<void> {
     )
 
     if (!noVisibleEditor) {
-        const editorNames = editors.map(editor => `\t${editor.document.fileName}`)
+        const editorNames = editors.map((editor) => `\t${editor.document.fileName}`)
         throw new Error(`Editors were still open after closeAllEditors():\n${editorNames.join('\n')}`)
     }
 }
@@ -422,7 +427,7 @@ export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
     let idx = 0
     const emits: T[] = []
     const listeners: vscode.Disposable[] = []
-    listeners.push(event(data => emits.push(data)))
+    listeners.push(event((data) => emits.push(data)))
 
     return {
         emits,
@@ -453,7 +458,7 @@ export function captureEvent<T>(event: vscode.Event<T>): EventCapturer<T> {
 export function captureEventOnce<T>(event: vscode.Event<T>, timeout?: number): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         const stop = () => reject(new Error('Timed out waiting for event'))
-        event(data => resolve(data))
+        event((data) => resolve(data))
 
         if (timeout !== undefined) {
             setTimeout(stop, timeout)

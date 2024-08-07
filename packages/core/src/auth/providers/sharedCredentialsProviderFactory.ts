@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { fsCommon } from '../../srcShared/fs'
+import fs from '../../shared/fs/fs'
 import { getLogger, Logger } from '../../shared/logger'
 import { loadSharedCredentialsSections, updateAwsSdkLoadConfigEnvVar } from '../credentials/sharedCredentials'
 import { CredentialsProviderType } from './credentials'
@@ -49,7 +49,7 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
 
         const result = await loadSharedCredentialsSections()
         if (result.errors.length > 0) {
-            const errors = result.errors.map(e => e.message).join('\t\n')
+            const errors = result.errors.map((e) => e.message).join('\t\n')
             getLogger().warn(`credentials: errors while parsing:\n%s`, errors)
         }
 
@@ -57,7 +57,9 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
         this.loadedConfigModificationMillis = await this.getLastModifiedMillis(getConfigFilename())
         await updateAwsSdkLoadConfigEnvVar()
 
-        getLogger().verbose(`credentials: found sections: ${result.sections.map(s => `${s.type}:${s.name}`).join(' ')}`)
+        getLogger().verbose(
+            `credentials: found sections: ${result.sections.map((s) => `${s.type}:${s.name}`).join(' ')}`
+        )
         for (const section of result.sections) {
             if (section.type === 'profile') {
                 await this.addProviderIfValid(
@@ -80,7 +82,7 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
 
     private async getLastModifiedMillis(filepath: string): Promise<number | undefined> {
         try {
-            const stat = await fsCommon.stat(filepath)
+            const stat = await fs.stat(filepath)
             return stat.mtime
         } catch (err) {
             return undefined

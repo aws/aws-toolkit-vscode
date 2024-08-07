@@ -127,7 +127,7 @@ export function stripNewLinesAndComments(text: string): string {
     const blockCommentRegExp = /\/\*.*\*\//
     let result: string = ''
 
-    text.split(/\r|\n/).map(s => {
+    text.split(/\r|\n/).map((s) => {
         const commentStart: number = s.search(/\/\//)
         s = s.replace(blockCommentRegExp, '')
         result += commentStart === -1 ? s : s.substring(0, commentStart)
@@ -154,7 +154,7 @@ export async function insertTextIntoFile(text: string, filePath: string, line: n
 
     fs.writeSync(fd, newData, 0, newData.length, 0)
 
-    fs.close(fd, err => {
+    fs.close(fd, (err) => {
         if (err) {
             throw err
         }
@@ -386,4 +386,12 @@ export function getRandomString(length = 32) {
  */
 export function toBase64URL(base64: string) {
     return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+export function undefinedIfEmpty(str: string | undefined): string | undefined {
+    if (str && str.trim().length > 0) {
+        return str
+    }
+
+    return undefined
 }

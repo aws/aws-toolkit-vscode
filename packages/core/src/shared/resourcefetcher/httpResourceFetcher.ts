@@ -152,14 +152,14 @@ export class HttpResourceFetcher implements ResourceFetcher {
         const fsStream = fs.createWriteStream(pipeLocation)
 
         const done = new Promise<void>((resolve, reject) => {
-            const pipe = stream.pipeline(requestStream, fsStream, err => {
+            const pipe = stream.pipeline(requestStream, fsStream, (err) => {
                 if (err instanceof RequestError) {
                     return reject(Object.assign(new Error('Failed to download file'), { code: err.code }))
                 }
                 err ? reject(err) : resolve()
             })
 
-            const cancelListener = timeout?.token.onCancellationRequested(event => {
+            const cancelListener = timeout?.token.onCancellationRequested((event) => {
                 this.logCancellation(event)
                 pipe.destroy(new CancellationError(event.agent))
             })
@@ -176,7 +176,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
             headers: this.buildRequestHeaders(headers),
         })
 
-        const cancelListener = timeout?.token.onCancellationRequested(event => {
+        const cancelListener = timeout?.token.onCancellationRequested((event) => {
             this.logCancellation(event)
             promise.cancel(new CancellationError(event.agent).message)
         })

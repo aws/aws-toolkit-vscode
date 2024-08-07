@@ -35,7 +35,7 @@ export function initSecurityScanRender(
     } else if (scope === CodeAnalysisScope.PROJECT) {
         securityScanRender.securityDiagnosticCollection?.clear()
     }
-    securityRecommendationList.forEach(securityRecommendation => {
+    securityRecommendationList.forEach((securityRecommendation) => {
         updateSecurityDiagnosticCollection(securityRecommendation)
         updateSecurityIssueHoverAndCodeActions(securityRecommendation)
     })
@@ -45,7 +45,7 @@ export function initSecurityScanRender(
 function updateSecurityIssueHoverAndCodeActions(securityRecommendation: AggregatedCodeScanIssue) {
     const updatedSecurityRecommendationList = [
         ...SecurityIssueHoverProvider.instance.issues.filter(
-            group => group.filePath !== securityRecommendation.filePath
+            (group) => group.filePath !== securityRecommendation.filePath
         ),
         securityRecommendation,
     ]
@@ -59,8 +59,8 @@ export function updateSecurityDiagnosticCollection(securityRecommendation: Aggre
     const securityDiagnosticCollection = createSecurityDiagnosticCollection()
     const securityDiagnostics: vscode.Diagnostic[] = vscode.languages
         .getDiagnostics(uri)
-        .filter(diagnostic => diagnostic.source === codewhispererDiagnosticSourceLabel)
-    securityRecommendation.issues.forEach(securityIssue => {
+        .filter((diagnostic) => diagnostic.source === codewhispererDiagnosticSourceLabel)
+    securityRecommendation.issues.forEach((securityIssue) => {
         securityDiagnostics.push(createSecurityDiagnostic(securityIssue))
     })
     securityDiagnosticCollection.set(uri, securityDiagnostics)
@@ -111,7 +111,7 @@ export function disposeSecurityDiagnostic(event: vscode.TextDocumentChangeEvent)
         }
     )
 
-    currentSecurityDiagnostics?.forEach(issue => {
+    currentSecurityDiagnostics?.forEach((issue) => {
         const intersection = changedRange.intersection(issue.range)
         if (
             issue.severity === vscode.DiagnosticSeverity.Warning &&

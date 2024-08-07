@@ -25,13 +25,13 @@ export async function getCITestSchemas(): Promise<TestSchemas> {
     })
 
     const samFilePath = path.join('schema', 'sam.schema.json')
-    const samSchemaFile = await repo.files.find(f => f.name === samFilePath)?.read()
+    const samSchemaFile = await repo.files.find((f) => f.name === samFilePath)?.read()
     if (!samSchemaFile) {
         throw new Error(`Unable to find the sam schema file in path ${samFilePath} in repository ${fetchUrl}`)
     }
 
     const cfnFilePath = path.join('schema', 'cloudformation.schema.json')
-    const cfnSchemaFile = await repo.files.find(f => f.name === cfnFilePath)?.read()
+    const cfnSchemaFile = await repo.files.find((f) => f.name === cfnFilePath)?.read()
     if (!cfnSchemaFile) {
         throw new Error(
             `Unable to find the cloudformation schema file in path ${cfnFilePath} in repository ${fetchUrl}`

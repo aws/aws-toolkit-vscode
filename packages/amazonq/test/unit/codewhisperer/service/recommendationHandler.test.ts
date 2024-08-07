@@ -16,14 +16,12 @@ import {
     ConfigurationEntry,
     RecommendationHandler,
     CodeWhispererCodeCoverageTracker,
-    userGroupKey,
     UserGroup,
     supplementalContextUtil,
 } from 'aws-core-vscode/codewhisperer'
 import {
     assertTelemetryCurried,
     stub,
-    FakeMemento,
     createMockTextEditor,
     resetCodeWhispererGlobalVariables,
 } from 'aws-core-vscode/test'
@@ -42,7 +40,6 @@ describe('recommendationHandler', function () {
     })
 
     describe('getRecommendations', async function () {
-        const fakeMemeto = new FakeMemento()
         const mockClient = stub(DefaultCodeWhispererClient)
         const mockEditor = createMockTextEditor()
         const testStartUrl = 'testStartUrl'
@@ -64,8 +61,7 @@ describe('recommendationHandler', function () {
         it('should assign correct recommendations given input', async function () {
             assert.strictEqual(CodeWhispererCodeCoverageTracker.instances.size, 0)
             assert.strictEqual(
-                CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId, fakeMemeto)
-                    ?.serviceInvocationCount,
+                CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId)?.serviceInvocationCount,
                 0
             )
 
@@ -87,8 +83,7 @@ describe('recommendationHandler', function () {
             const expected: RecommendationsList = [{ content: "print('Hello World!')" }, { content: '' }]
             assert.deepStrictEqual(actual, expected)
             assert.strictEqual(
-                CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId, fakeMemeto)
-                    ?.serviceInvocationCount,
+                CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId)?.serviceInvocationCount,
                 1
             )
         })
@@ -115,7 +110,7 @@ describe('recommendationHandler', function () {
         })
 
         it('should call telemetry function that records a CodeWhisperer service invocation', async function () {
-            await globals.context.globalState.update(userGroupKey, {
+            await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
                 group: UserGroup.CrossFile,
                 version: extensionVersion,
             })
@@ -167,7 +162,7 @@ describe('recommendationHandler', function () {
         })
 
         it('should call telemetry function that records a Empty userDecision event', async function () {
-            await globals.context.globalState.update(userGroupKey, {
+            await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
                 group: UserGroup.CrossFile,
                 version: extensionVersion,
             })

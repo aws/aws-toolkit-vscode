@@ -38,7 +38,7 @@ export class WizardPrompter<T> extends Prompter<T> {
     public setStepEstimator(estimator: StepEstimator<T>): void {
         const estimates = new Map<string, number>()
 
-        this.wizard.parentEstimator = state => {
+        this.wizard.parentEstimator = (state) => {
             const key = JSON.stringify(state)
             const transformed = this.applyTransforms(state)
             const estimate = estimator(transformed)

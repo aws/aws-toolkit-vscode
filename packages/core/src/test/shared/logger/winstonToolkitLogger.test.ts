@@ -34,14 +34,14 @@ async function checkFile(
 
         // Error if unexpected messages are in the log file
         const explicitUnexpectedMessages = unexpected
-            .filter(t => contents.includes(t))
+            .filter((t) => contents.includes(t))
             .reduce((a, b) => a + `Unexpected message in log: ${b}\n`, '')
         if (explicitUnexpectedMessages) {
             return reject(new Error(explicitUnexpectedMessages))
         }
 
         // Error if any of the expected messages are not in the log file
-        const expectedMessagesNotInLogFile = expected.filter(t => !contents.includes(t))
+        const expectedMessagesNotInLogFile = expected.filter((t) => !contents.includes(t))
         if (expectedMessagesNotInLogFile.length > 0) {
             reject(
                 new Error(expectedMessagesNotInLogFile.reduce((a, b) => a + `Unexpected message in log: ${b}\n`, ''))
@@ -171,7 +171,7 @@ describe('WinstonToolkitLogger', function () {
             await checkFile(testLogger, tempLogPath, [loggedVerboseEntry], [nonLoggedVerboseEntry])
         })
 
-        happyLogScenarios.forEach(scenario => {
+        happyLogScenarios.forEach((scenario) => {
             it(scenario.name, async () => {
                 const message = `message for ${scenario.name}`
                 testLogger = new WinstonToolkitLogger('debug')
@@ -230,7 +230,7 @@ describe('WinstonToolkitLogger', function () {
             assert.ok(!(await waitForMessage).includes(nonLoggedVerboseEntry), 'unexpected message in log')
         })
 
-        happyLogScenarios.forEach(scenario => {
+        happyLogScenarios.forEach((scenario) => {
             it(scenario.name, async () => {
                 const message = `message for ${scenario.name}`
                 testLogger = new WinstonToolkitLogger('debug')
@@ -250,7 +250,7 @@ describe('WinstonToolkitLogger', function () {
                 let loggedEntries = 0
                 let loggedText = ''
 
-                const appendTextEvent = outputChannel.onDidAppendText(text => {
+                const appendTextEvent = outputChannel.onDidAppendText((text) => {
                     loggedText += text
                     loggedEntries++
 
@@ -267,7 +267,7 @@ describe('WinstonToolkitLogger', function () {
             return new Promise<string>((resolve, reject) => {
                 let loggedText = ''
 
-                const appendTextEvent = outputChannel.onDidAppendText(text => {
+                const appendTextEvent = outputChannel.onDidAppendText((text) => {
                     loggedText += text
 
                     if (text.includes(expectedText)) {
@@ -345,7 +345,7 @@ describe('WinstonToolkitLogger', function () {
                 expected.push(errorLog)
             }
 
-            await Promise.all(filePaths.map(log => checkFile(testLogger, log, expected)))
+            await Promise.all(filePaths.map((log) => checkFile(testLogger, log, expected)))
 
             const middleFile: vscode.Uri = filePaths[Math.floor(filePaths.length / 2)]
             const middleMsg = testLogger.getLogById(logIDs[Math.floor(logIDs.length / 2)], middleFile)

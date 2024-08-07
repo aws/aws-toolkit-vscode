@@ -15,12 +15,8 @@ import vscode from 'vscode'
  * Show the Amazon Q walkthrough one time forever when the user adds an Amazon Q connection.
  * All subsequent calls to this do nothing.
  */
-export async function showAmazonQWalkthroughOnce(
-    state = globals.context.globalState,
-    showWalkthrough = () => openAmazonQWalkthrough.execute()
-) {
-    const hasShownWalkthroughId = 'aws.amazonq.hasShownWalkthrough'
-    const hasShownWalkthrough = state.get(hasShownWalkthroughId, false)
+export async function showAmazonQWalkthroughOnce(showWalkthrough = () => openAmazonQWalkthrough.execute()) {
+    const hasShownWalkthrough = globals.globalState.tryGet('aws.amazonq.hasShownWalkthrough', Boolean, false)
     if (hasShownWalkthrough) {
         return
     }
@@ -30,7 +26,7 @@ export async function showAmazonQWalkthroughOnce(
         return
     }
 
-    await state.update(hasShownWalkthroughId, true)
+    await globals.globalState.update('aws.amazonq.hasShownWalkthrough', true)
     await showWalkthrough()
 }
 
@@ -64,7 +60,7 @@ fake_users = [
         const document = await vscode.workspace.openTextDocument(uri)
         const editor = await vscode.window.showTextDocument(document)
 
-        await editor.edit(editBuilder => {
+        await editor.edit((editBuilder) => {
             editBuilder.insert(new vscode.Position(0, 0), fileContents)
         })
     }

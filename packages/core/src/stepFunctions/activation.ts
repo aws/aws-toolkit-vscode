@@ -11,7 +11,6 @@ const localize = nls.loadMessageBundle()
 import { join } from 'path'
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
-import { activate as activateASL } from './asl/client'
 import { createStateMachineFromTemplate } from './commands/createStateMachineFromTemplate'
 import { publishStateMachine } from './commands/publishStateMachine'
 import { AslVisualizationManager } from './commands/visualizeStateMachine/aslVisualizationManager'
@@ -22,7 +21,8 @@ import { AslVisualizationCDKManager } from './commands/visualizeStateMachine/asl
 import { renderCdkStateMachineGraph } from './commands/visualizeStateMachine/renderStateMachineGraphCDK'
 import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { PerfLog } from '../shared/logger/logger'
+import { PerfLog } from '../shared/logger/perfLogger'
+import { ASLLanguageClient } from './asl/client'
 
 /**
  * Activate Step Functions related functionality for the extension.
@@ -40,15 +40,18 @@ export async function activate(
     let onDidOpenAslDoc: vscode.Disposable // eslint-disable-line prefer-const
     // PERFORMANCE: Start the LSP client/server _only_ when the first ASL document is opened.
     // eslint-disable-next-line prefer-const
-    onDidOpenAslDoc = vscode.window.onDidChangeActiveTextEditor(async e => {
+    onDidOpenAslDoc = vscode.window.onDidChangeActiveTextEditor(async (e) => {
         if (e?.document && ASL_FORMATS.includes(e.document.languageId)) {
-            const perflog = new PerfLog('stepFunctions: start LSP client/server')
-            await activateASL(extensionContext)
-            perflog.done()
             onDidOpenAslDoc?.dispose() // Handler should only run once.
+            await startLspServer(extensionContext)
         }
     }, undefined)
     extensionContext.subscriptions.push(onDidOpenAslDoc)
+
+    if (isASLFileOpen()) {
+        onDidOpenAslDoc?.dispose()
+        await startLspServer(extensionContext)
+    }
 }
 
 /*
@@ -59,7 +62,7 @@ export async function activate(
  */
 export const previewStateMachineCommand = Commands.declare(
     'aws.previewStateMachine',
-    (globalState: vscode.Memento, manager: AslVisualizationManager) => async (arg?: vscode.TextEditor | vscode.Uri) => {
+    (manager: AslVisualizationManager) => async (arg?: vscode.TextEditor | vscode.Uri) => {
         try {
             arg ??= vscode.window.activeTextEditor
             const input = arg instanceof vscode.Uri ? arg : arg?.document
@@ -68,7 +71,7 @@ export const previewStateMachineCommand = Commands.declare(
                 throw new ToolkitError('No active text editor or document found')
             }
 
-            return await manager.visualizeStateMachine(globalState, input)
+            return await manager.visualizeStateMachine(input)
         } finally {
             // TODO: Consider making the metric reflect the success/failure of the above call
             telemetry.stepfunctions_previewstatemachine.emit()
@@ -85,8 +88,8 @@ async function registerStepFunctionCommands(
     const cdkVisualizationManager = new AslVisualizationCDKManager(extensionContext)
 
     extensionContext.subscriptions.push(
-        previewStateMachineCommand.register(extensionContext.globalState, visualizationManager),
-        renderCdkStateMachineGraph.register(extensionContext.globalState, cdkVisualizationManager),
+        previewStateMachineCommand.register(visualizationManager),
+        renderCdkStateMachineGraph.register(cdkVisualizationManager),
         Commands.register('aws.stepfunctions.createStateMachineFromTemplate', async () => {
             try {
                 await createStateMachineFromTemplate(extensionContext)
@@ -122,6 +125,18 @@ export function initalizeWebviewPaths(
             context.asAbsolutePath(join('resources', 'css', 'stateMachineRender.css'))
         ),
     }
+}
+
+async function startLspServer(extensionContext: vscode.ExtensionContext) {
+    const perflog = new PerfLog('stepFunctions: start LSP client/server')
+    await ASLLanguageClient.create(extensionContext)
+    perflog.done()
+}
+
+function isASLFileOpen() {
+    return vscode.window.visibleTextEditors.some(
+        (textEditor) => textEditor?.document && ASL_FORMATS.includes(textEditor.document.languageId)
+    )
 }
 
 function initializeCodeLens(context: vscode.ExtensionContext) {

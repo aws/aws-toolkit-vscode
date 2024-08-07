@@ -15,6 +15,7 @@ import {
     formatDateTimestamp,
     sanitizeFilename,
     toSnakeCase,
+    undefinedIfEmpty,
 } from '../../../shared/utilities/textUtilities'
 import globals from '../../../shared/extensionGlobals'
 
@@ -183,9 +184,25 @@ describe('sanitizeFilename', function () {
         { input: 'foo.txt', output: 'foo.txt', case: 'keeps dot' },
         { input: 'züb', output: 'züb', case: 'keeps special chars' },
     ]
-    cases.forEach(testCase => {
+    cases.forEach((testCase) => {
         it(testCase.case, function () {
             assert.strictEqual(sanitizeFilename(testCase.input, testCase.replaceString), testCase.output)
+        })
+    })
+})
+
+describe('undefinedIfEmpty', function () {
+    const cases: { input: string | undefined; output: string | undefined; case: string }[] = [
+        { input: undefined, output: undefined, case: 'return undefined if input is undefined' },
+        { input: '', output: undefined, case: 'return undefined if input is empty string' },
+        { input: '   ', output: undefined, case: 'return undefined if input is blank' },
+        { input: 'foo', output: 'foo', case: 'return str if input is not empty' },
+        { input: ' foo ', output: ' foo ', case: 'return original str without trim' },
+    ]
+
+    cases.forEach((testCases) => {
+        it(testCases.case, function () {
+            assert.strictEqual(undefinedIfEmpty(testCases.input), testCases.output)
         })
     })
 })

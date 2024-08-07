@@ -30,7 +30,7 @@ export function createToolView(viewNode: ToolView): vscode.TreeView<TreeNode> {
 
     // Cloud9 will only refresh when refreshing the entire tree
     if (isCloud9()) {
-        viewNode.nodes.forEach(node => {
+        viewNode.nodes.forEach((node) => {
             // Refreshes are delayed to guard against excessive calls to `getTreeItem` and `getChildren`
             // The 10ms delay is arbitrary. A single event loop may be good enough in many scenarios.
             const refresh = debounce(() => treeDataProvider.refresh(node), 10)

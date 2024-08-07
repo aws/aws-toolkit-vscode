@@ -26,7 +26,8 @@ import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProv
 import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
 import { getIdeProperties, getIdeType, IDE, isCloud9 } from '../extensionUtilities'
-import { PerfLog, getLogger } from '../logger/logger'
+import { getLogger } from '../logger/logger'
+import { PerfLog } from '../logger/perfLogger'
 import { NoopWatcher } from '../fs/watchedFiles'
 import { detectSamCli } from './cli/samCliDetection'
 import { CodelensRootRegistry } from '../fs/codelensRootRegistry'
@@ -40,7 +41,11 @@ import { SamCliSettings } from './cli/samCliSettings'
 import { Commands } from '../vscode/commands2'
 import { registerSync } from './sync'
 import { showExtensionPage } from '../utilities/vsCodeUtils'
-
+import { TreeNode } from '../treeview/resourceTreeDataProvider'
+import { SamAppLocation } from '../applicationBuilder/explorer/samProject'
+import { ResourceNode } from '../applicationBuilder/explorer/nodes/resourceNode'
+import { ToolkitError } from '../errors'
+import { registerBuild } from './build'
 const sharedDetectSamCli = shared(detectSamCli)
 
 const supportedLanguages: {
@@ -93,7 +98,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         )
     )
 
-    config.onDidChange(async event => {
+    config.onDidChange(async (event) => {
         switch (event.key) {
             case 'location':
                 // This only shows a message (passive=true), does not set anything.
@@ -115,6 +120,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         await resumeCreateNewSamApp(ctx)
     }
 
+    registerBuild()
     registerSync()
 }
 
@@ -132,7 +138,7 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
             { id: 'aws.pickAddSamDebugConfiguration', autoconnect: false },
             codelensUtils.pickAddSamDebugConfiguration
         ),
-        Commands.register({ id: 'aws.deploySamApplication', autoconnect: true }, async arg => {
+        Commands.register({ id: 'aws.deploySamApplication', autoconnect: true }, async (arg) => {
             // `arg` is one of :
             //  - undefined
             //  - regionNode (selected from AWS Explorer)
@@ -157,6 +163,23 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
         Commands.register({ id: 'aws.toggleSamCodeLenses', autoconnect: false }, async () => {
             const toggled = !settings.get('enableCodeLenses', false)
             await settings.update('enableCodeLenses', toggled)
+        }),
+        Commands.register({ id: 'aws.appBuilder.openTemplate', autoconnect: false }, async (arg: TreeNode) => {
+            const uri = (arg.resource as SamAppLocation).samTemplateUri
+            const document = await vscode.workspace.openTextDocument(uri)
+            await vscode.window.showTextDocument(document)
+        }),
+        Commands.register({ id: 'aws.appBuilder.openHandler', autoconnect: false }, async (arg: ResourceNode) => {
+            const folderUri = arg.resource.workspaceFolder.uri
+            const handler = arg.resource.resource.Handler?.split('.')[0]
+            const handlerFile = (
+                await vscode.workspace.findFiles(new vscode.RelativePattern(folderUri, `**/${handler}.*`))
+            )[0]
+            if (!handlerFile) {
+                throw new ToolkitError(`No handler file found with name "${handler}"`)
+            }
+            const document = await vscode.workspace.openTextDocument(handlerFile)
+            await vscode.window.showTextDocument(document)
         })
     )
 }
@@ -375,7 +398,7 @@ async function createYamlExtensionPrompt(): Promise<void> {
 
         // user already has an open template with focus
         // prescreen if a template.yaml is current open so we only call once
-        const openTemplateYamls = vscode.window.visibleTextEditors.filter(editor => {
+        const openTemplateYamls = vscode.window.visibleTextEditors.filter((editor) => {
             const fileName = editor.document.fileName
             return fileName.endsWith('template.yaml') || fileName.endsWith('template.yml')
         })

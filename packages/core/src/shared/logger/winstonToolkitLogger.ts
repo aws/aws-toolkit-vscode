@@ -31,7 +31,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
                     format: 'YYYY-MM-DD HH:mm:ss',
                 }),
                 winston.format.errors({ stack: true }),
-                winston.format.printf(info => {
+                winston.format.printf((info) => {
                     if (info.raw) {
                         return info.message
                     }
@@ -101,6 +101,10 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         this.logger.add(consoleLogTransport)
     }
 
+    public log(logLevel: LogLevel, message: string | Error, ...meta: any[]): number {
+        return this.writeToLogs(logLevel, message, ...meta)
+    }
+
     public debug(message: string | Error, ...meta: any[]): number {
         return this.writeToLogs('debug', message, ...meta)
     }
@@ -124,7 +128,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     public dispose(): Promise<void> {
         return this.disposed
             ? Promise.resolve()
-            : new Promise<void>(resolve => {
+            : new Promise<void>((resolve) => {
                   this.disposed = true
                   // The 'finish' event is emitted after all underlying transports have emitted a 'finish' event: https://github.com/winstonjs/winston/blob/36586d3d30dfe32f9dd4fbabbd585e82d47d460d/lib/winston/logger.js#L316-L332
                   this.logger.once('finish', resolve)
@@ -152,7 +156,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
             throw new Error('Cannot write to disposed logger')
         }
 
-        meta = meta.map(o => (o instanceof Error ? this.mapError(level, o) : o))
+        meta = meta.map((o) => (o instanceof Error ? this.mapError(level, o) : o))
 
         if (message instanceof Error) {
             this.logger.log(level, '%O', message, ...meta, { logID: this.idCounter })

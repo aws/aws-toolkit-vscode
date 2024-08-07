@@ -37,14 +37,14 @@ import { CredentialSourceId, telemetry } from '../../../shared/telemetry/telemet
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
-import request from '../../../common/request'
+import request from '../../../shared/request'
 import { JobStoppedError, ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import { writeLogs } from './transformFileHandler'
 import { AuthUtil } from '../../util/authUtil'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { downloadExportResultArchive } from '../../../shared/utilities/download'
 import { ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhisperer-streaming'
-import { fsCommon } from '../../../srcShared/fs'
+import fs2 from '../../../shared/fs/fs'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { convertToTimeString, encodeHTML } from '../../../shared/utilities/textUtilities'
 
@@ -111,7 +111,7 @@ export async function uploadArtifactToS3(
     try {
         const uploadFileByteSize = (await fs.promises.stat(fileName)).size
         getLogger().info(
-            `Uploading zip at %s with checksum %s using uploadId: %s and size %s kB`,
+            `Uploading project artifact at %s with checksum %s using uploadId: %s and size %s kB`,
             fileName,
             sha256,
             resp.uploadId,
@@ -133,7 +133,7 @@ export async function uploadArtifactToS3(
         })
         getLogger().info(`CodeTransformation: Status from S3 Upload = ${response.status}`)
     } catch (e: any) {
-        let errorMessage = `The upload failed due to: ${(e as Error).message}`
+        let errorMessage = `The upload failed due to: ${(e as Error).message}. For more information, see the [Amazon Q documentation](${CodeWhispererConstants.codeTransformTroubleshootUploadError})`
         if (errorMessage.includes('Request has expired')) {
             errorMessage = CodeWhispererConstants.errorUploadingWithExpiredUrl
         } else if (errorMessage.includes('Failed to establish a socket connection')) {
@@ -303,7 +303,7 @@ const mavenExcludedExtensions = ['.repositories', '.sha1']
  * @returns {boolean} Returns true if the path ends with an extension associated with Maven metadata files; otherwise, false.
  */
 function isExcludedDependencyFile(path: string): boolean {
-    return mavenExcludedExtensions.some(extension => path.endsWith(extension))
+    return mavenExcludedExtensions.some((extension) => path.endsWith(extension))
 }
 
 /**
@@ -319,7 +319,7 @@ function isExcludedDependencyFile(path: string): boolean {
  */
 function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string[] {
     const entries = fs.readdirSync(dir, { withFileTypes: true })
-    const files = entries.flatMap(entry => {
+    const files = entries.flatMap((entry) => {
         const res = path.resolve(dir, entry.name)
         // exclude 'target' directory from ZIP (except if zipping dependencies) due to issues in backend
         if (entry.isDirectory()) {
@@ -364,6 +364,10 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
             const sourceFiles = getFilesRecursively(modulePath, false)
             let sourceFilesSize = 0
             for (const file of sourceFiles) {
+                if ((await fs.stat(file)).isDirectory()) {
+                    getLogger().info('CodeTransformation: Skipping directory, likely a symlink')
+                    continue
+                }
                 const relativePath = path.relative(modulePath, file)
                 const paddedPath = path.join('sources', relativePath)
                 zip.addLocalFile(file, path.dirname(paddedPath))
@@ -580,7 +584,7 @@ export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [
 
 export function getTableMapping(stepZeroProgressUpdates: ProgressUpdates) {
     const map: { [key: string]: string } = {}
-    stepZeroProgressUpdates.forEach(update => {
+    stepZeroProgressUpdates.forEach((update) => {
         // description should never be undefined since even if no data we show an empty table
         // but just in case, empty string allows us to skip this table without errors when rendering
         map[update.name] = update.description ?? ''
@@ -644,7 +648,7 @@ export async function getTransformationPlan(jobId: string) {
             CodeWhispererConstants.planIntroductionMessage
         }</p></div>${getJobStatisticsHtml(jobStatistics)}</div>`
         plan += `<div style="margin-top: 32px; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p style="font-size: 18px; margin-bottom: 4px;"><b>${CodeWhispererConstants.planHeaderMessage}</b></p><i>${CodeWhispererConstants.planDisclaimerMessage} <a href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html">Read more.</a></i><br><br>`
-        response.transformationPlan.transformationSteps.slice(1).forEach(step => {
+        response.transformationPlan.transformationSteps.slice(1).forEach((step) => {
             plan += `<div style="border: 1px solid #424750; border-radius: 8px; padding: 20px;"><div style="display:flex; justify-content:space-between; align-items:center;"><p style="font-size: 16px; margin-bottom: 4px;">${step.name}</p><a href="#top">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle"></a></div><p>${step.description}</p>`
             plan = addTableMarkdown(plan, step.id, tableMapping)
             plan += `</div><br>`
@@ -749,21 +753,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
 
             const errorMessage = response.transformationJob.reason
             if (errorMessage !== undefined) {
-                if (errorMessage.includes('Monthly aggregated Lines of Code limit breached')) {
-                    transformByQState.setJobFailureErrorNotification(
-                        CodeWhispererConstants.failedToStartJobMonthlyLimitNotification
-                    )
-                    transformByQState.setJobFailureErrorChatMessage(
-                        CodeWhispererConstants.failedToStartJobMonthlyLimitChatMessage
-                    )
-                } else if (errorMessage.includes('Lines of Code limit breached for job')) {
-                    transformByQState.setJobFailureErrorNotification(
-                        CodeWhispererConstants.failedToStartJobLinesLimitNotification
-                    )
-                    transformByQState.setJobFailureErrorChatMessage(
-                        CodeWhispererConstants.failedToStartJobLinesLimitChatMessage
-                    )
-                }
                 transformByQState.setJobFailureErrorChatMessage(
                     `${CodeWhispererConstants.failedToCompleteJobGenericChatMessage} ${errorMessage}`
                 )
@@ -889,24 +878,23 @@ export async function downloadAndExtractResultArchive(
     pathToArchiveDir: string,
     downloadArtifactType: TransformationDownloadArtifactType
 ) {
-    const archivePathExists = await fsCommon.existsDir(pathToArchiveDir)
+    const archivePathExists = await fs2.existsDir(pathToArchiveDir)
     if (!archivePathExists) {
-        await fsCommon.mkdir(pathToArchiveDir)
+        await fs2.mkdir(pathToArchiveDir)
     }
 
     const pathToArchive = path.join(pathToArchiveDir, 'ExportResultsArchive.zip')
 
-    await downloadResultArchive(jobId, downloadArtifactId, pathToArchive, downloadArtifactType)
-
     let downloadErrorMessage = undefined
     try {
         // Download and deserialize the zip
+        await downloadResultArchive(jobId, downloadArtifactId, pathToArchive, downloadArtifactType)
         const zip = new AdmZip(pathToArchive)
         zip.extractAllTo(pathToArchiveDir)
     } catch (e) {
         downloadErrorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
-        throw new Error('Error downloading transformation result artifacts')
+        throw new Error('Error downloading transformation result artifacts: ' + downloadErrorMessage)
     }
 }
 

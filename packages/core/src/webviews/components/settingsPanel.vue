@@ -100,7 +100,9 @@ export default defineComponent({
     padding: 0;
 }
 .sub-pane {
-    transition: max-height 0.5s, padding 0.5s;
+    transition:
+        max-height 0.5s,
+        padding 0.5s;
     padding: 1rem;
     overflow: hidden;
 }
@@ -111,13 +113,18 @@ export default defineComponent({
     max-height: var(--max-height);
 }
 .collapse-leave-active {
-    transition: max-height 0.5s, visibility 0.5s, padding 0.5s;
+    transition:
+        max-height 0.5s,
+        visibility 0.5s,
+        padding 0.5s;
     visibility: hidden;
     padding: 0 1rem;
     max-height: 0;
 }
 .collapse-enter-active {
-    transition: max-height 0.5s, padding 0.5s;
+    transition:
+        max-height 0.5s,
+        padding 0.5s;
     max-height: 0;
     padding: 0 1rem;
 }

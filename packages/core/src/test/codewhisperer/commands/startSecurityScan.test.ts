@@ -106,6 +106,7 @@ const mockCodeScanFindings = JSON.stringify([
             },
             suggestedFixes: [],
         },
+        codeSnippet: [],
     } satisfies model.RawCodeScanIssue,
 ])
 
@@ -180,7 +181,7 @@ describe('startSecurityScan', function () {
         )
         assert.ok(commandSpy.calledWith('workbench.action.problems.focus'))
         assert.ok(securityScanRenderSpy.calledOnce)
-        const warnings = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Warning)
+        const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
         assert.strictEqual(warnings.length, 0)
     })
 
@@ -199,7 +200,7 @@ describe('startSecurityScan', function () {
         )
         assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
         assert.ok(securityScanRenderSpy.calledOnce)
-        const warnings = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Warning)
+        const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
         assert.strictEqual(warnings.length, 0)
         assertTelemetry('codewhisperer_securityScan', {
             codewhispererCodeScanScope: 'FILE',
@@ -212,7 +213,7 @@ describe('startSecurityScan', function () {
         const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
         const securityScanStoppedErrorSpy = sinon.spy(model, 'CodeScanStoppedError')
         const testWindow = getTestWindow()
-        testWindow.onDidShowMessage(message => {
+        testWindow.onDidShowMessage((message) => {
             if (message.message === stopScanMessage) {
                 message.selectItem(startSecurityScan.stopScanButton)
             }
@@ -229,8 +230,8 @@ describe('startSecurityScan', function () {
         await scanPromise
         assert.ok(securityScanRenderSpy.notCalled)
         assert.ok(securityScanStoppedErrorSpy.calledOnce)
-        const warnings = testWindow.shownMessages.filter(m => m.severity === SeverityLevel.Warning)
-        assert.ok(warnings.map(m => m.message).includes(stopScanMessage))
+        const warnings = testWindow.shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
+        assert.ok(warnings.map((m) => m.message).includes(stopScanMessage))
     })
 
     it('Should not stop security scan for project scans when not confirmed', async function () {
@@ -238,7 +239,7 @@ describe('startSecurityScan', function () {
         const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
         const securityScanStoppedErrorSpy = sinon.spy(model, 'CodeScanStoppedError')
         const testWindow = getTestWindow()
-        testWindow.onDidShowMessage(message => {
+        testWindow.onDidShowMessage((message) => {
             if (message.message === stopScanMessage) {
                 message.selectItem(cancel)
             }
@@ -255,8 +256,8 @@ describe('startSecurityScan', function () {
         await scanPromise
         assert.ok(securityScanRenderSpy.calledOnce)
         assert.ok(securityScanStoppedErrorSpy.notCalled)
-        const warnings = testWindow.shownMessages.filter(m => m.severity === SeverityLevel.Warning)
-        assert.ok(warnings.map(m => m.message).includes(stopScanMessage))
+        const warnings = testWindow.shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
+        assert.ok(warnings.map((m) => m.message).includes(stopScanMessage))
     })
 
     it('Should stop security scan for file scans if setting is disabled', async function () {
@@ -283,7 +284,7 @@ describe('startSecurityScan', function () {
         }
         getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
         const testWindow = getTestWindow()
-        testWindow.onDidShowMessage(message => {
+        testWindow.onDidShowMessage((message) => {
             if (message.message.includes('Security scan completed')) {
                 message.selectItem(showScannedFilesMessage)
             }
@@ -325,8 +326,9 @@ describe('startSecurityScan', function () {
         assertTelemetry('codewhisperer_securityScan', [
             {
                 result: 'Cancelled',
-                reason: 'Security scan stopped by user.',
-            },
+                reasonDesc: 'Security scan stopped by user.',
+                reason: 'DefaultError',
+            } as unknown as CodewhispererSecurityScan,
             {
                 result: 'Succeeded',
             },
@@ -382,9 +384,10 @@ describe('startSecurityScan', function () {
         assertTelemetry('codewhisperer_securityScan', {
             codewhispererCodeScanScope: 'PROJECT',
             result: 'Failed',
-            reason: 'Security scan job failed.',
+            reason: 'CodeScanJobFailedError',
+            reasonDesc: 'Security scan failed.',
             passive: false,
-        })
+        } as unknown as CodewhispererSecurityScan)
     })
 
     it('Should show notification when throttled for project scans', async function () {
@@ -405,13 +408,14 @@ describe('startSecurityScan', function () {
             extensionContext,
             CodeAnalysisScope.PROJECT
         )
-        assert.ok(testWindow.shownMessages.map(m => m.message).includes(projectScansLimitReached))
+        assert.ok(testWindow.shownMessages.map((m) => m.message).includes(projectScansLimitReached))
         assertTelemetry('codewhisperer_securityScan', {
             codewhispererCodeScanScope: 'PROJECT',
             result: 'Failed',
-            reason: 'Maximum project scan count reached for this month.',
+            reason: 'ThrottlingException',
+            reasonDesc: 'Maximum project scan count reached for this month.',
             passive: false,
-        } as CodewhispererSecurityScan)
+        } as unknown as CodewhispererSecurityScan)
     })
 
     it('Should set monthly quota exceeded when throttled for file scans', async function () {
@@ -434,13 +438,14 @@ describe('startSecurityScan', function () {
             CodeAnalysisScope.FILE
         )
         assert.equal(model.CodeScansState.instance.isMonthlyQuotaExceeded(), true)
-        const warnings = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Warning)
+        const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
         assert.strictEqual(warnings.length, 0)
         assertTelemetry('codewhisperer_securityScan', {
             codewhispererCodeScanScope: 'FILE',
             result: 'Failed',
-            reason: 'Maximum auto-scans count reached for this month.',
+            reason: 'ThrottlingException',
+            reasonDesc: 'Maximum auto-scans count reached for this month.',
             passive: true,
-        } as CodewhispererSecurityScan)
+        } as unknown as CodewhispererSecurityScan)
     })
 })

@@ -15,10 +15,10 @@ import { VSCODE_EXTENSION_ID, vscodeExtensionMinVersion } from './extensions'
 import { Err, Result } from '../shared/utilities/result'
 import { ToolkitError, UnknownError } from './errors'
 import { getLogger } from './logger/logger'
-import { SystemUtilities } from './systemUtilities'
 import { getOrInstallCli } from './utilities/cliUtils'
 import { pushIf } from './utilities/collectionUtils'
 import { ChildProcess } from './utilities/childProcess'
+import { findSshPath, getVscodeCliPath } from './utilities/pathFind'
 
 export interface MissingTool {
     readonly name: 'code' | 'ssm' | 'ssh'
@@ -32,7 +32,7 @@ export async function openRemoteTerminal(options: vscode.TerminalOptions, onClos
     await withoutShellIntegration(async () => {
         const terminal = vscode.window.createTerminal(options)
 
-        const listener = vscode.window.onDidCloseTerminal(t => {
+        const listener = vscode.window.onDidCloseTerminal((t) => {
             if (t.processId === terminal.processId) {
                 vscode.Disposable.from(listener, { dispose: onClose }).dispose()
             }
@@ -120,15 +120,11 @@ export async function ensureRemoteSshInstalled(): Promise<void> {
 async function ensureSsmCli() {
     const r = await Result.promise(getOrInstallCli('session-manager-plugin', false))
 
-    return r.mapErr(e => UnknownError.cast(e).message)
+    return r.mapErr((e) => UnknownError.cast(e).message)
 }
 
 export async function ensureTools() {
-    const [vsc, ssh, ssm] = await Promise.all([
-        SystemUtilities.getVscodeCliPath(),
-        SystemUtilities.findSshPath(),
-        ensureSsmCli(),
-    ])
+    const [vsc, ssh, ssm] = await Promise.all([getVscodeCliPath(), findSshPath(), ensureSsmCli()])
 
     const missing: MissingTool[] = []
     pushIf(missing, vsc === undefined, { name: 'code' })
@@ -148,7 +144,7 @@ export async function ensureTools() {
 export async function handleMissingTool(tools: Err<MissingTool[]>) {
     const missing = tools
         .err()
-        .map(d => d.name)
+        .map((d) => d.name)
         .join(', ')
     const msg = localize(
         'AWS.codecatalyst.missingRequiredTool',
@@ -156,7 +152,7 @@ export async function handleMissingTool(tools: Err<MissingTool[]>) {
         missing
     )
 
-    tools.err().forEach(d => {
+    tools.err().forEach((d) => {
         if (d.reason) {
             getLogger().error(`codecatalyst: failed to get tool "${d.name}": ${d.reason}`)
         }

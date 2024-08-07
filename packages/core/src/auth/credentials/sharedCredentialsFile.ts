@@ -5,18 +5,48 @@
  * This module focuses on the i/o of the credentials/config files
  */
 
-import { join } from 'path'
-import { EnvironmentVariables } from '../../shared/environmentVariables'
-import { SystemUtilities } from '../../shared/systemUtilities'
+import { join, resolve } from 'path'
+import fs from '../../shared/fs/fs'
+import { getLogger } from '../../shared/logger'
+
+/**
+ * Returns env var value if it is non-empty.
+ *
+ * Asynchronously checks if the value is a valid file (not directory) path and logs an error if not.
+ * The value is still returned in that case.
+ */
+function tryGetValidFileEnvVar(envVar: string): string | undefined {
+    const envVal = process.env[envVar]
+
+    if (envVal) {
+        const f = resolve(envVal)
+        fs.existsFile(f)
+            .then((r) => {
+                if (!r) {
+                    getLogger().error('$%s filepath is invalid (or is a directory): %O', envVar, f)
+                }
+            })
+            .catch((e) => getLogger().error(e))
+        return f
+    }
+}
 
 export function getCredentialsFilename(): string {
-    const env = process.env as EnvironmentVariables
+    const envVal = tryGetValidFileEnvVar('AWS_SHARED_CREDENTIALS_FILE')
 
-    return env.AWS_SHARED_CREDENTIALS_FILE || join(SystemUtilities.getHomeDirectory(), '.aws', 'credentials')
+    if (envVal) {
+        return envVal
+    }
+
+    return join(fs.getUserHomeDir(), '.aws/credentials')
 }
 
 export function getConfigFilename(): string {
-    const env = process.env as EnvironmentVariables
+    const envVal = tryGetValidFileEnvVar('AWS_CONFIG_FILE')
 
-    return env.AWS_CONFIG_FILE || join(SystemUtilities.getHomeDirectory(), '.aws', 'config')
+    if (envVal) {
+        return envVal
+    }
+
+    return join(fs.getUserHomeDir(), '.aws/config')
 }

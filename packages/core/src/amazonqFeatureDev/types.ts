@@ -8,7 +8,6 @@ import { VirtualFileSystem } from '../shared/virtualFilesystem'
 import type { CancellationTokenSource } from 'vscode'
 import { Messenger } from './controllers/chat/messenger/messenger'
 import { FeatureDevClient } from './client/featureDev'
-import { featureDevScheme } from './constants'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { CodeReference } from '../amazonq/webview/ui/connector'
 import { DiffTreeFileInfo } from '../amazonq/webview/ui/diffTree/types'
@@ -24,6 +23,21 @@ export interface SessionStateInteraction {
     interaction: Interaction
 }
 
+export enum DevPhase {
+    INIT = 'Init',
+    APPROACH = 'Approach',
+    CODEGEN = 'Codegen',
+}
+
+export enum CodeGenerationStatus {
+    COMPLETE = 'Complete',
+    PREDICT_READY = 'predict-ready',
+    IN_PROGRESS = 'InProgress',
+    PREDICT_FAILED = 'predict-failed',
+    DEBATE_FAILED = 'debate-failed',
+    FAILED = 'Failed',
+}
+
 export enum FollowUpTypes {
     GenerateCode = 'GenerateCode',
     InsertCode = 'InsertCode',
@@ -36,7 +50,7 @@ export enum FollowUpTypes {
     SendFeedback = 'SendFeedback',
 }
 
-export type SessionStatePhase = 'Init' | 'Approach' | 'Codegen'
+export type SessionStatePhase = DevPhase.INIT | DevPhase.APPROACH | DevPhase.CODEGEN
 
 export type CurrentWsFolders = [vscode.WorkspaceFolder, ...vscode.WorkspaceFolder[]]
 
@@ -51,6 +65,8 @@ export interface SessionState {
     readonly tabID: string
     interact(action: SessionStateAction): Promise<SessionStateInteraction>
     updateWorkspaceRoot?: (workspaceRoot: string) => void
+    codeGenerationRemainingIterationCount?: number
+    codeGenerationTotalIterationCount?: number
 }
 
 export interface SessionStateConfig {
@@ -88,14 +104,6 @@ export interface SessionInfo {
 
 export interface SessionStorage {
     [key: string]: SessionInfo
-}
-
-export function createUri(filePath: string, tabID?: string) {
-    return vscode.Uri.from({
-        scheme: featureDevScheme,
-        path: filePath,
-        ...(tabID ? { query: `tabID=${tabID}` } : {}),
-    })
 }
 
 export type LLMResponseType = 'EMPTY' | 'INVALID_STATE' | 'VALID'

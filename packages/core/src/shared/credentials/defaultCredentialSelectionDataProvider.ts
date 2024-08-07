@@ -42,8 +42,11 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
     private readonly _credentialsMru: CredentialsProfileMru
     private readonly helpButton = createHelpButton(credentialHelpUrl)
 
-    public constructor(public readonly existingProfileNames: string[], protected context: vscode.ExtensionContext) {
-        this._credentialsMru = new CredentialsProfileMru(context)
+    public constructor(
+        public readonly existingProfileNames: string[],
+        protected context: vscode.ExtensionContext
+    ) {
+        this._credentialsMru = new CredentialsProfileMru()
     }
 
     public async pickCredentialProfile(
@@ -149,7 +152,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
             return localize('AWS.credentials.error.emptyProfileName', 'Profile name must not be empty')
         }
 
-        const duplicate = this.existingProfileNames.find(k => k === name)
+        const duplicate = this.existingProfileNames.find((k) => k === name)
 
         return duplicate ? 'Name not unique' : undefined
     }
@@ -182,7 +185,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         const orderedProfiles: ProfileEntry[] = this.getOrderedProfiles()
 
         const selectionList: vscode.QuickPickItem[] = []
-        orderedProfiles.forEach(profile => {
+        orderedProfiles.forEach((profile) => {
             const selectionItem: vscode.QuickPickItem = { label: profile.profileName }
 
             if (profile.isRecentlyUsed) {
@@ -206,7 +209,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         const orderedNames = new Set()
 
         // Add MRU entries first
-        mostRecentProfileNames.forEach(profileName => {
+        mostRecentProfileNames.forEach((profileName) => {
             orderedProfiles.push({ profileName: profileName, isRecentlyUsed: true })
             orderedNames.add(profileName)
         })
@@ -220,9 +223,9 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
 
         // Add remaining items, sorted alphanumerically
         const remainingProfiles: ProfileEntry[] = this.existingProfileNames
-            .filter(x => !orderedNames.has(x))
+            .filter((x) => !orderedNames.has(x))
             .sort()
-            .map(profileName => ({ profileName: profileName, isRecentlyUsed: false }))
+            .map((profileName) => ({ profileName: profileName, isRecentlyUsed: false }))
         orderedProfiles.push(...remainingProfiles)
 
         return orderedProfiles
@@ -234,7 +237,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
     private getMostRecentlyUsedProfileNames(): string[] {
         const mru = this._credentialsMru.getMruList()
 
-        return mru.filter(x => this.existingProfileNames.includes(x))
+        return mru.filter((x) => this.existingProfileNames.includes(x))
     }
 }
 
@@ -262,7 +265,7 @@ export async function credentialProfileSelector(
 
     async function collectInputs() {
         const state: Partial<CredentialSelectionState> = {}
-        await MultiStepInputFlowController.run(async input => await pickCredentialProfile(input, state))
+        await MultiStepInputFlowController.run(async (input) => await pickCredentialProfile(input, state))
         return state as CredentialSelectionState
     }
 
@@ -295,7 +298,7 @@ export async function promptToDefineCredentialsProfile(
     async function collectInputs(): Promise<CredentialSelectionState> {
         const state: Partial<CredentialSelectionState> = {}
         /* tslint:disable promise-function-async */
-        await MultiStepInputFlowController.run(input => inputProfileName(input, state))
+        await MultiStepInputFlowController.run((input) => inputProfileName(input, state))
         /* tslint:enable promise-function-async */
 
         return state as CredentialSelectionState

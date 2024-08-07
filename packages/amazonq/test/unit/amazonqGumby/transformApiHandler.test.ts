@@ -8,7 +8,7 @@ import {
     TransformationStep,
     findDownloadArtifactStep,
     getArtifactsFromProgressUpdate,
-} from 'aws-core-vscode/codewhisperer'
+} from 'aws-core-vscode/codewhisperer/node'
 
 describe('Amazon Q Transform - transformApiHandler tests', function () {
     describe('getArtifactIdentifiers', function () {

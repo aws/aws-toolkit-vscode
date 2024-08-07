@@ -4,7 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { env, Memento, version } from 'vscode'
+import { env, version } from 'vscode'
+import * as os from 'os'
 import { getLogger } from '../logger'
 import { fromExtensionManifest, migrateSetting, Settings } from '../settings'
 import { memoize } from '../utilities/functionUtils'
@@ -16,20 +17,16 @@ import { Result } from './telemetry.gen'
 import { MetricDatum } from './clienttelemetry'
 import { isValidationExemptMetric } from './exemptMetrics'
 import { isAmazonQ, isCloud9, isSageMaker } from '../../shared/extensionUtilities'
-import { isExtensionInstalled, VSCODE_EXTENSION_ID } from '../utilities'
-import { randomUUID } from '../../common/crypto'
-import { activateExtension } from '../utilities/vsCodeUtils'
+import { randomUUID } from '../crypto'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 const legacySettingsTelemetryValueDisable = 'Disable'
 const legacySettingsTelemetryValueEnable = 'Enable'
 
 const TelemetryFlag = addTypeName('boolean', convertLegacy)
-const telemetryClientIdGlobalStatekey = 'telemetryClientId'
-const telemetryClientIdEnvKey = '__TELEMETRY_CLIENT_ID'
+export const telemetryClientIdEnvKey = '__TELEMETRY_CLIENT_ID'
 
 export class TelemetryConfig {
-    private readonly amazonQSettingMigratedKey = 'amazonq.telemetry.migrated'
     private readonly _toolkitConfig
     private readonly _amazonQConfig
 
@@ -59,13 +56,13 @@ export class TelemetryConfig {
     }
 
     public async initAmazonQSetting() {
-        if (!isAmazonQ() || globals.context.globalState.get<boolean>(this.amazonQSettingMigratedKey)) {
+        if (!isAmazonQ() || globals.globalState.tryGet('amazonq.telemetry.migrated', Boolean, false)) {
             return
         }
         // aws.telemetry isn't deprecated, we are just initializing amazonQ.telemetry with its value.
         // This is also why we need to check that we only try this migration once.
         await migrateSetting({ key: 'aws.telemetry', type: Boolean }, { key: 'amazonQ.telemetry' })
-        await globals.context.globalState.update(this.amazonQSettingMigratedKey, true)
+        await globals.globalState.update('amazonq.telemetry.migrated', true)
     }
 }
 
@@ -84,11 +81,29 @@ export function convertLegacy(value: unknown): boolean {
     }
 }
 
+/**
+ * Calculates the clientId for the current profile. This calculation is performed once
+ * on first call and the result is stored for the remainder of the session.
+ *
+ * Web mode will always compute to whatever is stored in global state or vscode.machineId.
+ * For normal use, the clientId is fetched from the first providing source:
+ * 1. clientId stored in process.env
+ * 2. clientId stored in current extension's global state.
+ * 3. a random UUID
+ *
+ * The clientId in the current extension's global state AND the clientId stored in process.env
+ * is updated to the result of above to allow other extensions to converge to the same clientId.
+ */
 export const getClientId = memoize(
     /**
      * @param nonce Dummy parameter to allow tests to defeat memoize().
      */
-    (globalState: Memento, isTelemetryEnabled = new TelemetryConfig().isEnabled(), isTest?: false, nonce?: string) => {
+    (
+        globalState: typeof globals.globalState,
+        isTelemetryEnabled = new TelemetryConfig().isEnabled(),
+        isTest?: false,
+        nonce?: string
+    ) => {
         if (isTest ?? isAutomation()) {
             return 'ffffffff-ffff-ffff-ffff-ffffffffffff'
         }
@@ -96,13 +111,34 @@ export const getClientId = memoize(
             return '11111111-1111-1111-1111-111111111111'
         }
         try {
-            let clientId = globalState.get<string>(telemetryClientIdGlobalStatekey)
-            if (!clientId) {
-                clientId = randomUUID()
-                globalState.update(telemetryClientIdGlobalStatekey, clientId).then(undefined, e => {
-                    getLogger().error('getClientId: globalState.update failed: %O', e)
-                })
+            const globalClientId = process.env[telemetryClientIdEnvKey] // truly global across all extensions
+            const localClientId = globalState.tryGet('telemetryClientId', String) // local to extension, despite accessing "global" state
+            let clientId: string
+
+            if (isWeb()) {
+                const machineId = vscode.env.machineId
+                clientId = localClientId ?? machineId
+                getLogger().debug(
+                    'getClientId: web mode determined clientId: %s, stored clientId was: %s, vscode.machineId was: %s',
+                    clientId,
+                    localClientId,
+                    machineId
+                )
+            } else {
+                clientId = globalClientId ?? localClientId ?? randomUUID()
+                getLogger().debug(
+                    'getClientId: determined clientId as: %s, process.env clientId was: %s, stored clientId was: %s',
+                    clientId,
+                    globalClientId,
+                    localClientId
+                )
+                if (!globalClientId) {
+                    getLogger().debug(`getClientId: setting clientId in process.env to: %s`, clientId)
+                    process.env[telemetryClientIdEnvKey] = clientId
+                }
             }
+
+            globalState.tryUpdate('telemetryClientId', clientId)
             return clientId
         } catch (e) {
             getLogger().error('getClientId: failed to create client id: %O', e)
@@ -121,7 +157,7 @@ export const platformPair = () => `${env.appName.replace(/\s/g, '-')}/${version}
  */
 export function getUserAgent(
     opt?: { includePlatform?: boolean; includeClientId?: boolean },
-    globalState = globals.context.globalState
+    globalState = globals.globalState
 ): string {
     const pairs = isAmazonQ()
         ? [`AmazonQ-For-VSCode/${extensionVersion}`]
@@ -204,54 +240,6 @@ export function validateMetricEvent(event: MetricDatum, fatal: boolean) {
 }
 
 /**
- * Setup the telemetry client id at extension activation.
- * This function is designed to let AWS Toolkit and Amazon Q share
- * the same telemetry client id.
- */
-
-export async function setupTelemetryId(extensionContext: vscode.ExtensionContext) {
-    try {
-        if (isWeb()) {
-            await globals.context.globalState.update(telemetryClientIdGlobalStatekey, vscode.env.machineId)
-        } else {
-            const currentClientId = globals.context.globalState.get<string>(telemetryClientIdGlobalStatekey)
-            const storedClientId = process.env[telemetryClientIdEnvKey]
-            if (currentClientId && storedClientId) {
-                if (extensionContext.extension.id === VSCODE_EXTENSION_ID.awstoolkit) {
-                    getLogger().debug(`telemetry: Store telemetry client id to env ${currentClientId}`)
-                    process.env[telemetryClientIdEnvKey] = currentClientId
-                    // notify amazon q to use this stored client id
-                    // if amazon q activates first. Do not block on activate amazon q
-                    if (isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq)) {
-                        void activateExtension(VSCODE_EXTENSION_ID.amazonq).then(async () => {
-                            getLogger().debug(`telemetry: notifying Amazon Q to adopt client id ${currentClientId}`)
-                            await vscode.commands.executeCommand('aws.amazonq.setupTelemetryId')
-                        })
-                    }
-                } else if (isAmazonQ()) {
-                    getLogger().debug(`telemetry: Set telemetry client id to ${storedClientId}`)
-                    await globals.context.globalState.update(telemetryClientIdGlobalStatekey, storedClientId)
-                } else {
-                    getLogger().error(`Unexpected extension id ${extensionContext.extension.id}`)
-                }
-            } else if (!currentClientId && storedClientId) {
-                getLogger().debug(`telemetry: Write telemetry client id to global state ${storedClientId}`)
-                await globals.context.globalState.update(telemetryClientIdGlobalStatekey, storedClientId)
-            } else if (currentClientId && !storedClientId) {
-                getLogger().debug(`telemetry: Write telemetry client id to env ${currentClientId}`)
-                process.env[telemetryClientIdEnvKey] = currentClientId
-            } else {
-                const clientId = getClientId(globals.context.globalState)
-                getLogger().debug(`telemetry: Setup telemetry client id ${clientId}`)
-                process.env[telemetryClientIdEnvKey] = clientId
-            }
-        }
-    } catch (err) {
-        getLogger().error(`Error while setting up telemetry id ${err}`)
-    }
-}
-
-/**
  * Potentially helpful values for the 'source' field in telemetry.
  */
 export const ExtStartUpSources = {
@@ -262,3 +250,28 @@ export const ExtStartUpSources = {
 } as const
 
 export type ExtStartUpSource = (typeof ExtStartUpSources)[keyof typeof ExtStartUpSources]
+
+/**
+ * Useful for populating the sendTelemetryEvent request from codewhisperer's api for publishing custom telemetry events for AB Testing.
+ *
+ * Returns one of the enum values of OptOutPreferences model (see SendTelemetryRequest model in the codebase)
+ */
+export function getOptOutPreference() {
+    return globals.telemetry.telemetryEnabled ? 'OPTIN' : 'OPTOUT'
+}
+
+/**
+ * Useful for populating the sendTelemetryEvent request from codewhisperer's api for publishing custom telemetry events for AB Testing.
+ *
+ * Returns one of the enum values of the OperatingSystem model (see SendTelemetryRequest model in the codebase)
+ */
+export function getOperatingSystem(): 'MAC' | 'WINDOWS' | 'LINUX' {
+    const osId = os.platform() // 'darwin', 'win32', 'linux', etc.
+    if (osId === 'darwin') {
+        return 'MAC'
+    } else if (osId === 'win32') {
+        return 'WINDOWS'
+    } else {
+        return 'LINUX'
+    }
+}

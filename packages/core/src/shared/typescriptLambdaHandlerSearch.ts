@@ -28,7 +28,10 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
     // _candidateExportNodes - all "export function Xyz()" / "export const Xyz = () => {}"
     private _candidateExportNodes: ts.Node[] = []
 
-    public constructor(private readonly filename: string, private readonly fileContents: string) {
+    public constructor(
+        private readonly filename: string,
+        private readonly fileContents: string
+    ) {
         this._baseFilename = path.parse(this.filename).name
     }
 
@@ -86,7 +89,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
 
             // Arrow Function declarations "const foo = (arg) => { }"
             if (ts.isVariableStatement(node)) {
-                node.declarationList.forEachChild(declaration => {
+                node.declarationList.forEachChild((declaration) => {
                     if (ts.isVariableDeclaration(declaration)) {
                         const declarationName: string = declaration.name.getText()
 
@@ -132,18 +135,18 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
      */
     private findCandidateHandlersInModuleExports(): RootlessLambdaHandlerCandidate[] {
         return this._candidateModuleExportsExpressions
-            .filter(expression => {
+            .filter((expression) => {
                 return TypescriptLambdaHandlerSearch.isEligibleLambdaHandlerAssignment(
                     expression,
                     this._candidateDeclaredFunctionNames
                 )
             })
-            .map(candidate => {
+            .map((candidate) => {
                 // 'module.exports.xyz' => ['module', 'exports', 'xyz']
                 const lhsComponents: string[] = (candidate.expression as ts.BinaryExpression).left
                     .getText()
                     .split('.')
-                    .map(x => x.trim())
+                    .map((x) => x.trim())
 
                 const exportsTarget: string = lhsComponents[0] === 'exports' ? lhsComponents[1] : lhsComponents[2]
 
@@ -161,9 +164,9 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
     private findCandidateHandlersInExportDecls(): RootlessLambdaHandlerCandidate[] {
         const handlers: RootlessLambdaHandlerCandidate[] = []
 
-        this._candidateExportDeclarations.forEach(exportDeclaration => {
+        this._candidateExportDeclarations.forEach((exportDeclaration) => {
             if (exportDeclaration.exportClause) {
-                exportDeclaration.exportClause.forEachChild(clause => {
+                exportDeclaration.exportClause.forEachChild((clause) => {
                     if (ts.isExportSpecifier(clause)) {
                         const exportedFunction: string = clause.name.getText()
 
@@ -188,7 +191,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
     private findCandidateHandlersInExportedFunctions(): RootlessLambdaHandlerCandidate[] {
         const handlers: RootlessLambdaHandlerCandidate[] = []
 
-        this._candidateExportNodes.forEach(exportNode => {
+        this._candidateExportNodes.forEach((exportNode) => {
             if (
                 ts.isFunctionLike(exportNode) &&
                 TypescriptLambdaHandlerSearch.isFunctionLambdaHandlerCandidate(exportNode) &&
@@ -200,7 +203,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                     range: getRange(exportNode),
                 })
             } else if (ts.isVariableStatement(exportNode)) {
-                exportNode.declarationList.forEachChild(declaration => {
+                exportNode.declarationList.forEachChild((declaration) => {
                     if (
                         ts.isVariableDeclaration(declaration) &&
                         !!declaration.initializer &&
@@ -229,7 +232,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
             const lhsComponents: string[] = expressionStatement.expression.left
                 .getText()
                 .split('.')
-                .map(x => x.trim())
+                .map((x) => x.trim())
 
             return (
                 (lhsComponents.length === 3 && lhsComponents[0] === 'module' && lhsComponents[1] === 'exports') ||

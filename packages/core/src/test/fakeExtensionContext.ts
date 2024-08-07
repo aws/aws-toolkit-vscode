@@ -25,7 +25,7 @@ import { FakeChildProcessResult, TestSamCliProcessInvoker } from './shared/sam/c
 import { createTestWorkspaceFolder } from './testUtil'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
 import { createTestRegionProvider } from './shared/regions/testUtil'
-import { fsCommon } from '../srcShared/fs'
+import fs from '../shared/fs/fs'
 
 export interface FakeMementoStorage {
     [key: string]: any
@@ -74,6 +74,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
      */
     private constructor(preload?: FakeExtensionState) {
         if (preload) {
+            // eslint-disable-next-line aws-toolkits/no-banned-usages
             this.globalState = new FakeMemento(preload.globalState)
             this.workspaceState = new FakeMemento(preload.workspaceState)
         }
@@ -107,8 +108,8 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
         const folder = await createTestWorkspaceFolder('test')
         ctx.globalStorageUri = vscode.Uri.joinPath(folder.uri, 'globalStorage')
         ctx.logUri = vscode.Uri.joinPath(folder.uri, 'logs')
-        await fsCommon.mkdir(ctx.globalStorageUri.fsPath)
-        await fsCommon.mkdir(ctx.logUri.fsPath)
+        await fs.mkdir(ctx.globalStorageUri.fsPath)
+        await fs.mkdir(ctx.logUri.fsPath)
         return ctx
     }
 
@@ -126,15 +127,10 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
                 validator: new FakeSamCliValidator(minSamCliVersionForGoSupport),
             } as SamCliContext
         }
-        const regionProvider = createTestRegionProvider({ globalState: ctx.globalState, awsContext })
+        const regionProvider = createTestRegionProvider({ awsContext })
         const outputChannel = new MockOutputChannel()
         const fakeTelemetryPublisher = new FakeTelemetryPublisher()
-        const telemetryService = await DefaultTelemetryService.create(
-            ctx,
-            awsContext,
-            undefined,
-            fakeTelemetryPublisher
-        )
+        const telemetryService = await DefaultTelemetryService.create(awsContext, undefined, fakeTelemetryPublisher)
 
         return {
             extensionContext: ctx,

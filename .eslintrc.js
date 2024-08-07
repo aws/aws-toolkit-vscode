@@ -18,7 +18,9 @@ module.exports = {
         'plugin:@typescript-eslint/eslint-recommended',
         'plugin:@typescript-eslint/recommended-requiring-type-checking',
         'plugin:@typescript-eslint/recommended',
-        'prettier',
+        // "Add this as the _last_ item in the extends array, so that eslint-config-prettier has the
+        // opportunity to override other configs." https://github.com/prettier/eslint-plugin-prettier
+        'plugin:prettier/recommended',
     ],
     rules: {
         curly: 2, // Enforce braces on "if"/"for"/etc.
@@ -156,8 +158,10 @@ module.exports = {
 
         'aws-toolkits/no-only-in-tests': 'error',
         'aws-toolkits/no-await-on-vscode-msg': 'error',
+        'aws-toolkits/no-banned-usages': 'error',
         'aws-toolkits/no-incorrect-once-usage': 'error',
         'aws-toolkits/no-string-exec-for-child-process': 'error',
+        'aws-toolkits/no-console-log': 'error',
 
         'no-restricted-imports': [
             'error',
@@ -174,7 +178,7 @@ module.exports = {
             // {
             //     name: 'fs-extra',
             //     message:
-            //         'Avoid fs-extra, use FileSystemCommon. Notify the Toolkit team if your required functionality is not available.',
+            //         'Avoid fs-extra, use shared/fs/fs.ts. Notify the Toolkit team if your required functionality is not available.',
             // },
         ],
     },

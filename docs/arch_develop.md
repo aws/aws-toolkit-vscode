@@ -37,8 +37,7 @@ Current quirks of the current monorepo status that should be resolved/evaluated 
     -   This package contains shortcuts to some of the `npm` scripts found in the subproject(s).
     -   `createRelease` and `newChange` run at the subproject level only, e.g. from root level, try npm run createRelease -w packages/toolkit
     -   To run a script not present in the root `package.json`, use `npm run -w packages/toolkit <script>`
--   `coverage/`, `.test-reports/`, `node_modules/` are hoisted to the project root. As more subprojects are added,
-    we will need to evaluate how to merge and publish coverage reports.
+-   `coverage/`, `.test-reports/`, `node_modules/` are hoisted to the project root.
     -   `dist/` however remains at the subproject level, along with a local `node_modules/`. See [`npm workspaces`](https://docs.npmjs.com/cli/v8/using-npm/workspaces)
         for more info on how `node_modules/` hoisting works.
     -   Because of `node_modules/` hoisting, references to this folder in code access the root project modules folder. This may be
@@ -72,39 +71,37 @@ Some components of the core library depend on the `package.json`s of the extensi
     -   Does not restore, it is a superset of what exists in `packages/core` for `configuration.properties`.
     -   To develop for the Amazon Q extension: add all changes to `packages/amazonq/package.json`, EXCEPT for settings that are references by code in the core library, or settings that already exist in the core `package.json`
 
-## Shared vs Common names
+If you are modifying or registering new debuggers in VS Code via the `debuggers` contribution point, you may need to regenerate the [definitions file](../packages/core/src/shared/sam/debugger/awsSamDebugConfiguration.gen.ts). After updating ['toolkit/package.json'](../packages/toolkit/package.json), run `npm run generateConfigurationAttributes -w packages/toolkit`
 
-In this repo, the keywords **"shared"** and **"common"** have specific meanings in the context of file/folder names.
+## `web`, `node`, `common`, `shared` naming conventions
 
-### "common"
+This project can run in different environments, eg Web mode (in the browser with no compute backend), or in Node.js on your desktop (the most common way).
+A problem arises when we use code that is exclusive to one environment, an example being Node.js' Filesystem module which will fail in Web mode.
 
-Code within a folder/file that has the "common" keyword implies that it can run in any environment. Examples of environments are: Web mode, or Node.js (local desktop)
+To ensure developers use compatible code for their environment we have subfolders in each topic which contains environment specific code in a single place.
 
-We need this distinction since not all code can run in any environment. A common example is filesystem code, where the actual implementation used could work in Node.js but not in Web mode.
+Using this file tree as reference, here are the rules:
 
-### "shared"
+```
+src/
+├── myTopic/
+│   ├── {file}.ts
+│   ├── node/
+│   │   └── {file}.ts
+│   └── web/
+│       └── {file}.ts
+└── shared/
+```
 
-Code within a folder/file that has the "shared" keyword implies that it is intended to be reused wherever it can be. This is generalized code that "Feature A" or "Feature B" could use if it works for their use case.
+-   `myTopic/` is the general name of the folder, eg `request` for http requests.
+-   `myTopic/{file}.ts` is for code that works in any environment, we refer to this as `"common"` code.
+-   `node/{file}.ts` is for code that works exclusively in Node.js.
+-   `web/{file}.ts` is for code that works exclusively in Web mode.
+-   `shared/` is for code that is intended to be reused, i.e general purpose utils.
+    -   Note environment specific code should be place in to a `web/` or `node/` subfolder.
+    -   If the code is not in a subfolder then it is considered `shared common` code.
 
-An example is the `waitUntil()` function which continuously invokes an arbitrary callback function until it succeeds.
-
-> NOTE: Something that is "shared" does not mean it is "common", as it could be reused in different places but only work in Node.js for example.
-
-### How to apply this
-
--   Aim to make code compatible with "common" from the beginning.
--   In a "topic" folder, if you have common code, create a subfolder named "common" and add your common code to there.
-    ```
-    src/
-      |
-      myTopic/
-        |
-        common/
-        nonCommon.ts
-    ```
--   See if yours, or existing code can be moved in to a "shared" folder. Maybe it can be easily modified to become "shared".
--   If there is no "shared" or "common" naming used for the file/folder, then assume it only works in Node.js.
--   In the rare case your code only works in Web mode, create a `web` subfolder for that code.
+> IMPORTANT: The current codebase does not fully follow this convention yet, the transition is being done incrementally. Due to this, code that is `"common"` may not actually be common yet. If you run in to this, please move that code to the appropriate subfolder.
 
 ## Commands
 
@@ -293,8 +290,8 @@ Commands and events are defined on the backend via sub-classes of `VueWebview`. 
     ```ts
     client
         .foo()
-        .then(response => console.log(response))
-        .catch(err => console.log(err))
+        .then((response) => console.log(response))
+        .catch((err) => console.log(err))
     ```
 
     The backend protocol is allowed to throw errors. These result in rejected Promises on the frontend.
@@ -302,13 +299,13 @@ Commands and events are defined on the backend via sub-classes of `VueWebview`. 
 -   Registering for events:
 
     ```ts
-    client.onBar(num => console.log(num))
+    client.onBar((num) => console.log(num))
     ```
 
 -   Methods called `init` will only return data on the initial webview load:
 
     ```ts
-    client.init(data => (this.data = data ?? this.data))
+    client.init((data) => (this.data = data ?? this.data))
     ```
 
 ## Webviews (non Vue)
@@ -494,8 +491,8 @@ class ExampleWizard extends Wizard<ExampleState> {
             { label: '1', data: 1 },
             { label: '2', data: 2 },
         ]
-        this.form.bar.bindPrompter(state => createQuickPick(items, { title: `Select a number (${state.foo})` }), {
-            showWhen: state => state.foo?.length > 5,
+        this.form.bar.bindPrompter((state) => createQuickPick(items, { title: `Select a number (${state.foo})` }), {
+            showWhen: (state) => state.foo?.length > 5,
         })
     }
 }
@@ -522,4 +519,18 @@ tester.foo.assertShowFirst() // Fails if `foo` is not shown (or not shown first)
 tester.bar.assertDoesNotShow() // True since `foo` is not assigned an explicit value
 tester.foo.applyInput('Hello, world!') // Manipulate 'user' state
 tester.bar.assertShow() // True since 'foo' has a defined value
+```
+
+## Module path debugging
+
+Node has an environment variable `NODE_DEBUG=module` that helps to debug module imports. This can be helpful on windows, which can load node modules into uppercase or lower case drive letters, depending on the drive letter of the parent module.
+
+You can enable this by adding `"NODE_DEBUG": "module"` into the env of your launch config that you are using.
+
+When enabled you can see the file that the import is looking for, the module load request, and the relative file requested.
+
+```
+MODULE 88184: looking for ["/aws-toolkit-vscode/packages/core/dist/src"]
+MODULE 88184: Module._load REQUEST ./codewhisperer/commands/basicCommands parent: /aws-toolkit-vscode/packages/core/dist/src/extension.js
+MODULE 88184: RELATIVE: requested: ./codewhisperer/commands/basicCommands from parent.id /aws-toolkit-vscode/packages/core/dist/src/extension.js
 ```

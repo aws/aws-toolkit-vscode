@@ -4,7 +4,7 @@
  */
 
 import * as path from 'path'
-import { fsCommon } from '../../../srcShared/fs'
+import { fs } from '../../../shared'
 import * as vscode from 'vscode'
 import {
     countSubstringMatches,
@@ -114,7 +114,7 @@ async function generateSupplementalContextFromFocalFile(
     strategy: UtgStrategy,
     cancellationToken: vscode.CancellationToken
 ): Promise<CodeWhispererSupplementalContextItem[]> {
-    const fileContent = await fsCommon.readFileAsString(vscode.Uri.parse(filePath!).fsPath)
+    const fileContent = await fs.readFileAsString(vscode.Uri.parse(filePath!).fsPath)
 
     // DO NOT send code chunk with empty content
     if (fileContent.trim().length === 0) {
@@ -134,7 +134,7 @@ async function findSourceFileByContent(
     languageConfig: utgLanguageConfig,
     cancellationToken: vscode.CancellationToken
 ): Promise<string | undefined> {
-    const testFileContent = await fsCommon.readFileAsString(editor.document.fileName)
+    const testFileContent = await fs.readFileAsString(editor.document.fileName)
     const testElementList = extractFunctions(testFileContent, languageConfig.functionExtractionPattern)
 
     throwIfCancelled(cancellationToken)
@@ -159,7 +159,7 @@ async function findSourceFileByContent(
     for (const filePath of relevantFilePaths) {
         throwIfCancelled(cancellationToken)
 
-        const fileContent = await fsCommon.readFileAsString(filePath)
+        const fileContent = await fs.readFileAsString(filePath)
         const elementList = extractFunctions(fileContent, languageConfig.functionExtractionPattern)
         elementList.push(...extractClasses(fileContent, languageConfig.classExtractionPattern))
         const matchCount = countSubstringMatches(elementList, testElementList)
@@ -175,7 +175,7 @@ async function getRelevantUtgFiles(editor: vscode.TextEditor): Promise<string[]>
     const targetFile = editor.document.uri.fsPath
     const language = editor.document.languageId
 
-    return await getOpenFilesInWindow(async candidateFile => {
+    return await getOpenFilesInWindow(async (candidateFile) => {
         return (
             targetFile !== candidateFile &&
             path.extname(targetFile) === path.extname(candidateFile) &&
@@ -212,7 +212,7 @@ async function findSourceFileByName(
     }
     newPath = path.join(newPath, basenameSuffix + languageConfig.extension)
     // TODO: Add metrics here, as we are not able to find the source file by name.
-    if (await fsCommon.exists(newPath)) {
+    if (await fs.exists(newPath)) {
         return newPath
     }
 

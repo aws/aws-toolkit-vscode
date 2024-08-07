@@ -47,7 +47,7 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
         )) || []
 
     return getLambdaHandlerComponents(document, symbols, assemblyName).map<LambdaHandlerCandidate>(
-        lambdaHandlerComponents => {
+        (lambdaHandlerComponents) => {
             const handlerName = generateDotNetLambdaHandler(lambdaHandlerComponents)
 
             return {
@@ -67,7 +67,7 @@ export function getLambdaHandlerComponents(
 ): DotNetLambdaHandlerComponents[] {
     return (
         symbols
-            .filter(symbol => symbol.kind === vscode.SymbolKind.Namespace)
+            .filter((symbol) => symbol.kind === vscode.SymbolKind.Namespace)
             // Find relevant classes within the namespace
             .reduce<
                 {
@@ -77,9 +77,9 @@ export function getLambdaHandlerComponents(
             >((accumulator, namespaceSymbol: vscode.DocumentSymbol) => {
                 accumulator.push(
                     ...namespaceSymbol.children
-                        .filter(namespaceChildSymbol => namespaceChildSymbol.kind === vscode.SymbolKind.Class)
-                        .filter(classSymbol => isPublicClassSymbol(document, classSymbol))
-                        .map(classSymbol => {
+                        .filter((namespaceChildSymbol) => namespaceChildSymbol.kind === vscode.SymbolKind.Class)
+                        .filter((classSymbol) => isPublicClassSymbol(document, classSymbol))
+                        .map((classSymbol) => {
                             return {
                                 namespace: namespaceSymbol,
                                 class: classSymbol,
@@ -93,9 +93,9 @@ export function getLambdaHandlerComponents(
             .reduce<DotNetLambdaHandlerComponents[]>((accumulator, lambdaHandlerComponents) => {
                 accumulator.push(
                     ...lambdaHandlerComponents.class.children
-                        .filter(classChildSymbol => classChildSymbol.kind === vscode.SymbolKind.Method)
-                        .filter(methodSymbol => isValidLambdaHandler(document, methodSymbol))
-                        .map(methodSymbol => {
+                        .filter((classChildSymbol) => classChildSymbol.kind === vscode.SymbolKind.Method)
+                        .filter((methodSymbol) => isValidLambdaHandler(document, methodSymbol))
+                        .map((methodSymbol) => {
                             return {
                                 assembly,
                                 namespace: lambdaHandlerComponents.namespace.name,

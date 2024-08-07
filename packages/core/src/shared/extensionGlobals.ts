@@ -16,7 +16,9 @@ import { SchemaService } from './schemas'
 import { TelemetryLogger } from './telemetry/telemetryLogger'
 import { TelemetryService } from './telemetry/telemetryService'
 import { UriHandler } from './vscode/uriHandler'
-import vscode from 'vscode'
+import { GlobalState } from './globalState'
+import { setContext } from './vscode/setContext'
+import { getLogger } from './logger/logger'
 
 type Clock = Pick<
     typeof globalThis,
@@ -46,7 +48,7 @@ function copyClock(): Clock {
 
     const browserAlternatives = getBrowserAlternatives()
     if (Object.keys(browserAlternatives).length > 0) {
-        console.log('globals: Using browser alternatives for clock functions')
+        getLogger().info('globals: Using browser alternatives for clock functions')
         Object.assign(clock, browserAlternatives)
     } else {
         // In node.js context
@@ -132,6 +134,8 @@ function proxyGlobals(globals_: ToolkitGlobals): ToolkitGlobals {
 let globals = proxyGlobals(resolveGlobalsObject())
 
 export function checkDidReload(context: ExtensionContext): boolean {
+    // TODO: fix this
+    // eslint-disable-next-line aws-toolkits/no-banned-usages
     return !!context.globalState.get<string>('ACTIVATION_LAUNCH_PATH_KEY')
 }
 
@@ -145,11 +149,13 @@ export function initialize(context: ExtensionContext, isWeb: boolean = false): T
         context,
         clock: copyClock(),
         didReload: checkDidReload(context),
+        // eslint-disable-next-line aws-toolkits/no-banned-usages
+        globalState: new GlobalState(context.globalState),
         manifestPaths: {} as ToolkitGlobals['manifestPaths'],
         visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],
         isWeb,
     })
-    void vscode.commands.executeCommand('setContext', 'aws.isWebExtHost', isWeb)
+    void setContext('aws.isWebExtHost', isWeb)
 
     initialized = true
 
@@ -168,6 +174,8 @@ export { globals as default }
  */
 interface ToolkitGlobals {
     readonly context: ExtensionContext
+    /** Global, shared (with all vscode instances, including remote!), mutable, persisted state (survives IDE restart), namespaced to the extension (not shared with other vscode extensions). */
+    readonly globalState: GlobalState
     /** Decides the prefix for package.json extension parameters, e.g. commands, 'setContext' values, etc. */
     contextPrefix: string
     // TODO: make the rest of these readonly (or delete them)

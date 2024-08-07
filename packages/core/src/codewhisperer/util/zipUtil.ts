@@ -9,7 +9,7 @@ import { tempDirPath } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
 import { ToolkitError } from '../../shared/errors'
-import { fsCommon } from '../../srcShared/fs'
+import { fs } from '../../shared'
 import { getLoggerForScope } from '../service/securityScanHandler'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
@@ -30,6 +30,7 @@ export interface ZipMetadata {
 export const ZipConstants = {
     newlineRegex: /\r?\n/,
     gitignoreFilename: '.gitignore',
+    knownBinaryFileExts: ['.class'],
 }
 
 export class ZipUtil {
@@ -55,7 +56,7 @@ export class ZipUtil {
 
     public getProjectPaths() {
         const workspaceFolders = vscode.workspace.workspaceFolders
-        return workspaceFolders?.map(folder => folder.uri.fsPath) ?? []
+        return workspaceFolders?.map((folder) => folder.uri.fsPath) ?? []
     }
 
     protected async getTextContent(uri: vscode.Uri) {
@@ -96,7 +97,7 @@ export class ZipUtil {
         }
 
         this._pickedSourceFiles.add(uri.fsPath)
-        this._totalSize += (await fsCommon.stat(uri.fsPath)).size
+        this._totalSize += (await fs.stat(uri.fsPath)).size
         this._totalLines += content.split(ZipConstants.newlineRegex).length
 
         if (this.reachSizeLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.FILE)) {
@@ -149,23 +150,28 @@ export class ZipUtil {
             this.getProjectScanPayloadSizeLimitInBytes()
         )
         for (const file of sourceFiles) {
-            const isFileOpenAndDirty = this.isFileOpenAndDirty(file.fileUri)
-            const fileContent = isFileOpenAndDirty ? await this.getTextContent(file.fileUri) : file.fileContent
             const zipEntryPath = this.getZipEntryPath(file.workspaceFolder.name, file.zipFilePath)
-            this.processFile(zip, file.fileUri, fileContent, languageCount, zipEntryPath)
+
+            if (ZipConstants.knownBinaryFileExts.includes(path.extname(file.fileUri.fsPath))) {
+                await this.processBinaryFile(zip, file.fileUri, zipEntryPath)
+            } else {
+                const isFileOpenAndDirty = this.isFileOpenAndDirty(file.fileUri)
+                const fileContent = isFileOpenAndDirty ? await this.getTextContent(file.fileUri) : file.fileContent
+                this.processTextFile(zip, file.fileUri, fileContent, languageCount, zipEntryPath)
+            }
         }
     }
 
     protected processOtherFiles(zip: admZip, languageCount: Map<CodewhispererLanguage, number>) {
         vscode.workspace.textDocuments
-            .filter(document => document.uri.scheme === 'file')
-            .filter(document => vscode.workspace.getWorkspaceFolder(document.uri) === undefined)
-            .forEach(document =>
-                this.processFile(zip, document.uri, document.getText(), languageCount, document.uri.fsPath)
+            .filter((document) => document.uri.scheme === 'file')
+            .filter((document) => vscode.workspace.getWorkspaceFolder(document.uri) === undefined)
+            .forEach((document) =>
+                this.processTextFile(zip, document.uri, document.getText(), languageCount, document.uri.fsPath)
             )
     }
 
-    protected processFile(
+    protected processTextFile(
         zip: admZip,
         uri: vscode.Uri,
         fileContent: string,
@@ -188,6 +194,21 @@ export class ZipUtil {
         zip.addFile(zipEntryPath, Buffer.from(fileContent, 'utf-8'))
     }
 
+    protected async processBinaryFile(zip: admZip, uri: vscode.Uri, zipEntryPath: string) {
+        const fileSize = (await fs.stat(uri.fsPath)).size
+
+        if (
+            this.reachSizeLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.PROJECT) ||
+            this.willReachSizeLimit(this._totalSize, fileSize)
+        ) {
+            throw new ProjectSizeExceededError()
+        }
+        this._pickedSourceFiles.add(uri.fsPath)
+        this._totalSize += fileSize
+
+        zip.addLocalFile(uri.fsPath, path.dirname(zipEntryPath))
+    }
+
     protected incrementCountForLanguage(uri: vscode.Uri, languageCount: Map<CodewhispererLanguage, number>) {
         const fileExtension = path.extname(uri.fsPath).slice(1)
         const language = runtimeLanguageContext.getLanguageFromFileExtension(fileExtension)
@@ -197,7 +218,7 @@ export class ZipUtil {
     }
 
     protected isFileOpenAndDirty(uri: vscode.Uri) {
-        return vscode.workspace.textDocuments.some(document => document.uri.fsPath === uri.fsPath && document.isDirty)
+        return vscode.workspace.textDocuments.some((document) => document.uri.fsPath === uri.fsPath && document.isDirty)
     }
 
     protected getZipDirPath(): string {
@@ -226,7 +247,7 @@ export class ZipUtil {
             }
 
             getLoggerForScope(scope).debug(`Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
-            const zipFileSize = (await fsCommon.stat(zipFilePath)).size
+            const zipFileSize = (await fs.stat(zipFilePath)).size
             return {
                 rootDir: zipDirPath,
                 zipFilePath: zipFilePath,
@@ -246,8 +267,8 @@ export class ZipUtil {
     public async removeTmpFiles(zipMetadata: ZipMetadata, scope: CodeWhispererConstants.CodeAnalysisScope) {
         const logger = getLoggerForScope(scope)
         logger.verbose(`Cleaning up temporary files...`)
-        await fsCommon.delete(zipMetadata.zipFilePath)
-        await fsCommon.delete(zipMetadata.rootDir)
+        await fs.delete(zipMetadata.zipFilePath, { force: true })
+        await fs.delete(zipMetadata.rootDir, { recursive: true, force: true })
         logger.verbose(`Complete cleaning up temporary files.`)
     }
 }

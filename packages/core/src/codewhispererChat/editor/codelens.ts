@@ -33,7 +33,6 @@ export class TryChatCodeLensProvider implements vscode.CodeLensProvider {
     /** How many times we want to show the CodeLens */
     static readonly maxCount = 10
     static readonly debounceMillis: number = 700
-    static readonly showCodeLensId = `aws.amazonq.showTryChatCodeLens`
 
     private static providerDisposable: vscode.Disposable | undefined = undefined
     private disposables: vscode.Disposable[] = []
@@ -51,14 +50,14 @@ export class TryChatCodeLensProvider implements vscode.CodeLensProvider {
             vscode.window.onDidChangeTextEditorSelection(() => this._onDidChangeCodeLenses.fire())
         )
 
-        isAmazonQVisibleEvent(visible => {
+        isAmazonQVisibleEvent((visible) => {
             this.isAmazonQVisible = visible
             this._onDidChangeCodeLenses.fire()
         })
     }
 
     static async register(isAmazonQVisible: vscode.Event<boolean>): Promise<boolean> {
-        const shouldShow = globals.context.globalState.get(this.showCodeLensId, true)
+        const shouldShow = globals.globalState.tryGet('aws.amazonq.showTryChatCodeLens', Boolean, true)
         if (!shouldShow) {
             return false
         }
@@ -77,7 +76,7 @@ export class TryChatCodeLensProvider implements vscode.CodeLensProvider {
         document: vscode.TextDocument,
         token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.CodeLens[]> {
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
             token.onCancellationRequested(() => resolve([]))
 
             /**
@@ -85,7 +84,7 @@ export class TryChatCodeLensProvider implements vscode.CodeLensProvider {
              * - lineAnnotationController is visible (i.e not in end state)
              * - Amazon Q chat is visible
              */
-            const isLineAnnotationVisible = globals.context.globalState.get<string>(inlinehintKey)
+            const isLineAnnotationVisible = globals.globalState.tryGet(inlinehintKey, String)
             if ((isLineAnnotationVisible && isLineAnnotationVisible !== EndState.id) || this.isAmazonQVisible) {
                 return resolve([])
             }
@@ -150,9 +149,9 @@ export class TryChatCodeLensProvider implements vscode.CodeLensProvider {
     }
 
     dispose() {
-        void globals.context.globalState.update(TryChatCodeLensProvider.showCodeLensId, false)
+        globals.globalState.tryUpdate('aws.amazonq.showTryChatCodeLens', false)
         TryChatCodeLensProvider.providerDisposable?.dispose()
-        this.disposables.forEach(d => d.dispose())
+        this.disposables.forEach((d) => d.dispose())
     }
 }
 

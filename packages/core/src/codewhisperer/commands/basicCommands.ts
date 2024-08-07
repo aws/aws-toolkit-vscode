@@ -15,7 +15,7 @@ import { CodeScanIssue, CodeScansState, codeScanState, CodeSuggestionsState, vsC
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showCodeWhispererConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
-import { amazonQScopes, AuthUtil } from '../util/authUtil'
+import { AuthUtil } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { getLogger } from '../../shared/logger'
 import { isExtensionActive, isExtensionInstalled, openUrl } from '../../shared/utilities/vsCodeUtils'
@@ -38,18 +38,19 @@ import { removeDiagnostic } from '../service/diagnosticsProvider'
 import { SecurityIssueHoverProvider } from '../service/securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from '../service/securityIssueCodeActionProvider'
 import { SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
-import { SystemUtilities } from '../../shared/systemUtilities'
-import { ToolkitError } from '../../shared/errors'
+import { ToolkitError, getTelemetryReason, getTelemetryReasonDesc } from '../../shared/errors'
 import { isRemoteWorkspace } from '../../shared/vscode/env'
-import { hasScopes, isBuilderIdConnection } from '../../auth/connection'
+import { isBuilderIdConnection } from '../../auth/connection'
 import globals from '../../shared/extensionGlobals'
+import { getVscodeCliPath, tryRun } from '../../shared/utilities/pathFind'
+import { setContext } from '../../shared/vscode/setContext'
 
 const MessageTimeOut = 5_000
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.amazonq.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
     (suggestionState: CodeSuggestionsState) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        await telemetry.aws_modifySetting.run(async span => {
+        await telemetry.aws_modifySetting.run(async (span) => {
             span.record({
                 settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
             })
@@ -78,8 +79,8 @@ export const enableCodeSuggestions = Commands.declare(
     (context: ExtContext) =>
         async (isAuto: boolean = true) => {
             await CodeSuggestionsState.instance.setSuggestionsEnabled(isAuto)
-            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connected', true)
-            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.connectionExpired', false)
+            await setContext('aws.codewhisperer.connected', true)
+            await setContext('aws.codewhisperer.connectionExpired', false)
             vsCodeState.isFreeTierLimitReached = false
             if (!isCloud9()) {
                 await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
@@ -90,7 +91,7 @@ export const enableCodeSuggestions = Commands.declare(
 export const toggleCodeScans = Commands.declare(
     { id: 'aws.codeWhisperer.toggleCodeScan', compositeKey: { 1: 'source' } },
     (scansState: CodeScansState) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        await telemetry.aws_modifySetting.run(async span => {
+        await telemetry.aws_modifySetting.run(async (span) => {
             if (isBuilderIdConnection(AuthUtil.instance.conn)) {
                 throw new Error(`Auto-scans are not supported with the Amazon Builder ID connection.`)
             }
@@ -219,8 +220,8 @@ export const connectWithCustomization = Commands.declare(
             // Otherwise if only a prefix is given, find an entry that matches it.
             // Backwards compatible with previous implementation.
             const match = customizationArn
-                ? persistedCustomizations.find(c => c.arn === customizationArn)
-                : persistedCustomizations.find(c => c.name?.startsWith(customizationNamePrefix as string))
+                ? persistedCustomizations.find((c) => c.arn === customizationArn)
+                : persistedCustomizations.find((c) => c.name?.startsWith(customizationNamePrefix as string))
 
             // If no match is found, nothing to do :)
             if (!match) {
@@ -288,7 +289,7 @@ export const openSecurityIssuePanel = Commands.declare(
 export const notifyNewCustomizationsCmd = Commands.declare(
     { id: 'aws.amazonq.notifyNewCustomizations', logging: false },
     () => () => {
-        notifyNewCustomizations().catch(e => {
+        notifyNewCustomizations().catch((e) => {
             getLogger().error('notifyNewCustomizations failed: %s', (e as Error).message)
         })
     }
@@ -322,7 +323,7 @@ export const installAmazonQExtension = Commands.declare(
              * installExtension will fail on remote environments when the amazon q extension is already installed locally.
              * Until thats fixed we need to manually install the amazon q extension using the cli
              */
-            const vscPath = await SystemUtilities.getVscodeCliPath()
+            const vscPath = await getVscodeCliPath()
             if (!vscPath) {
                 throw new ToolkitError('installAmazonQ: Unable to find VSCode CLI path', {
                     code: 'CodeCLINotFound',
@@ -335,7 +336,7 @@ export const installAmazonQExtension = Commands.declare(
                 },
                 (progress, token) => {
                     progress.report({ message: 'Installing Amazon Q' })
-                    return SystemUtilities.tryRun(vscPath, ['--install-extension', VSCODE_EXTENSION_ID.amazonq])
+                    return tryRun(vscPath, ['--install-extension', VSCODE_EXTENSION_ID.amazonq])
                 }
             )
             return
@@ -396,7 +397,8 @@ export const applySecurityFix = Commands.declare(
         } catch (err) {
             getLogger().error(`Apply fix command failed. ${err}`)
             applyFixTelemetryEntry.result = 'Failed'
-            applyFixTelemetryEntry.reason = err as string
+            applyFixTelemetryEntry.reason = getTelemetryReason(err)
+            applyFixTelemetryEntry.reasonDesc = getTelemetryReasonDesc(err)
         } finally {
             telemetry.codewhisperer_codeScanIssueApplyFix.emit(applyFixTelemetryEntry)
             TelemetryHelper.instance.sendCodeScanRemediationsEvent(
@@ -406,7 +408,7 @@ export const applySecurityFix = Commands.declare(
                 issue.findingId,
                 issue.ruleId,
                 source,
-                applyFixTelemetryEntry.reason,
+                applyFixTelemetryEntry.reasonDesc,
                 applyFixTelemetryEntry.result,
                 !!issue.suggestedFixes.length
             )
@@ -424,64 +426,33 @@ export const signoutCodeWhisperer = Commands.declare(
 
 let _toolkitApi: any = undefined
 
-const registerToolkitApiCallbackOnce = once(async () => {
+const registerToolkitApiCallbackOnce = once(() => {
     getLogger().info(`toolkitApi: Registering callbacks of toolkit api`)
     const auth = Auth.instance
 
-    auth.onDidChangeConnectionState(async e => {
-        // when changing connection state in Q, also change connection state in toolkit
-        if (_toolkitApi && 'setConnection' in _toolkitApi) {
+    auth.onDidChangeConnectionState(async (e) => {
+        if (_toolkitApi && 'declareConnection' in _toolkitApi) {
             const id = e.id
             const conn = await auth.getConnection({ id })
-            if (conn && conn.type === 'sso') {
-                getLogger().info(`toolkitApi: set connection ${id}`)
-                await _toolkitApi.setConnection({
-                    type: conn.type,
-                    ssoRegion: conn.ssoRegion,
-                    scopes: conn.scopes,
-                    startUrl: conn.startUrl,
-                    state: e.state,
-                    id: id,
-                    label: conn.label,
-                } as AwsConnection)
+            if (conn?.type === 'sso') {
+                getLogger().info(`toolkitApi: declare connection ${id}`)
+                _toolkitApi.declareConnection(
+                    {
+                        ssoRegion: conn.ssoRegion,
+                        startUrl: conn.startUrl,
+                    },
+                    'Amazon Q'
+                )
             }
         }
     })
-    // when deleting connection in Q, also delete same connection in toolkit
-    auth.onDidDeleteConnection(async id => {
-        if (_toolkitApi && 'deleteConnection' in _toolkitApi) {
-            getLogger().info(`toolkitApi: delete connection ${id}`)
-            await _toolkitApi.deleteConnection(id)
+    auth.onDidDeleteConnection(async (event) => {
+        if (_toolkitApi && 'undeclareConnection' in _toolkitApi && event.storedProfile?.type === 'sso') {
+            const startUrl = event.storedProfile.startUrl
+            getLogger().info(`toolkitApi: undeclare connection ${event.connId} with starturl: ${startUrl}`)
+            _toolkitApi.undeclareConnection({ startUrl })
         }
     })
-
-    if (_toolkitApi) {
-        // when toolkit connection changes
-        if ('onDidChangeConnection' in _toolkitApi) {
-            _toolkitApi.onDidChangeConnection(
-                async (connection: AwsConnection) => {
-                    getLogger().info(`toolkitApi: connection change callback ${connection.id}`)
-                    await AuthUtil.instance.onUpdateConnection(connection)
-                },
-
-                async (id: string) => {
-                    getLogger().info(`toolkitApi: connection delete callback ${id}`)
-                    await AuthUtil.instance.onDeleteConnection(id)
-                }
-            )
-        }
-
-        // HACK
-        // If the user has an old 3 scope Amazon Q connection, we will use it and expire it to
-        // bring the user to the new 5 scope connection. The code for this lives in the webview,
-        // so we will force show the webview if we have a connection that fits this criteria.
-        if ('listConnections' in _toolkitApi && !AuthUtil.instance.isConnected()) {
-            const conn = AuthUtil.instance.findMinimalQConnection(await _toolkitApi.listConnections())
-            if (conn !== undefined && !hasScopes(conn.scopes!, amazonQScopes)) {
-                focusQAfterDelay()
-            }
-        }
-    }
 })
 
 export const registerToolkitApiCallback = Commands.declare(
@@ -502,7 +473,20 @@ export const registerToolkitApiCallback = Commands.declare(
                 _toolkitApi = toolkitExt?.exports.getApi(VSCODE_EXTENSION_ID.amazonq)
             }
             if (_toolkitApi) {
-                await registerToolkitApiCallbackOnce()
+                registerToolkitApiCallbackOnce()
+                // Declare current conn immediately
+                const currentConn = AuthUtil.instance.conn
+                if (currentConn?.type === 'sso') {
+                    _toolkitApi.declareConnection(
+                        {
+                            type: currentConn.type,
+                            ssoRegion: currentConn.ssoRegion,
+                            startUrl: currentConn.startUrl,
+                            id: currentConn.id,
+                        } as AwsConnection,
+                        'Amazon Q'
+                    )
+                }
             }
         }
     }

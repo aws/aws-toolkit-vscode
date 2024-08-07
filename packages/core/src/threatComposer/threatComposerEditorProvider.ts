@@ -5,8 +5,8 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { fsCommon } from '../srcShared/fs'
-import request from '../common/request'
+import fs from '../shared/fs/fs'
+import request from '../shared/request'
 import { getLogger } from '../shared/logger'
 import { ThreatComposerEditor } from './threatComposerEditor'
 import { ToolkitError } from '../shared/errors'
@@ -50,12 +50,12 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
     protected readonly name: string = 'ThreatComposerManager'
     protected readonly managedVisualizations = new Map<string, ThreatComposerEditor>()
     protected extensionContext: vscode.ExtensionContext
-    protected webviewHtml?: string
+    protected webviewHtml: string
     protected readonly logger = getLogger()
 
     constructor(context: vscode.ExtensionContext) {
         this.extensionContext = context
-        void this.fetchWebviewHtml()
+        this.webviewHtml = ''
     }
 
     /**
@@ -78,8 +78,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
      */
     private getWebviewContent = async () => {
         if (!this.webviewHtml) {
-            void this.fetchWebviewHtml()
-            return ''
+            await this.fetchWebviewHtml()
         }
         let htmlFileSplit = this.webviewHtml.split('<head>')
 
@@ -93,7 +92,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         const theme = vscode.window.activeColorTheme.kind
         const isDarkMode = theme === vscode.ColorThemeKind.Dark || theme === vscode.ColorThemeKind.HighContrast
         const darkModeTag = `<meta name='dark-mode' content='${isDarkMode}'>`
-        let html = `${htmlFileSplit[0]} <head> ${baseTag}' ${localeTag} ${darkModeTag} ${htmlFileSplit[1]}`
+        let html = `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${htmlFileSplit[1]}`
 
         const nonce = getRandomString()
         htmlFileSplit = html.split("script-src 'self'")
@@ -106,7 +105,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         html = `${htmlFileSplit[0]} script-src 'self' 'nonce-${nonce}' ${localDevURL} ${htmlFileSplit[1]}`
 
         htmlFileSplit = html.split('<body>')
-        const script = await fsCommon.readFileAsString(
+        const script = await fs.readFileAsString(
             vscode.Uri.joinPath(this.extensionContext.extensionUri, 'resources', 'js', 'vsCodeExtensionInterface.js')
         )
 
@@ -125,39 +124,36 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         webviewPanel: vscode.WebviewPanel,
         _token: vscode.CancellationToken
     ): Promise<void> {
-        const threatComposerSettings = vscode.workspace.getConfiguration('aws').threatComposer
+        await telemetry.threatComposer_opened.run(async (span) => {
+            if (!this.webviewHtml) {
+                await this.fetchWebviewHtml()
+            }
 
-        if (threatComposerSettings.defaultEditor) {
-            await telemetry.threatComposer_opened.run(async span => {
-                if (clientId === '') {
-                    clientId = getClientId(globals.context.globalState)
+            if (clientId === '') {
+                clientId = getClientId(globals.globalState)
+            }
+            // Attempt to retrieve existing visualization if it exists.
+            const existingVisualization = this.getExistingVisualization(document.uri.fsPath)
+            if (existingVisualization) {
+                existingVisualization.showPanel()
+            } else {
+                // Existing visualization does not exist, construct new visualization
+                try {
+                    const fileId = getStringHash(`${document.uri.fsPath}${clientId}`)
+                    const newVisualization = new ThreatComposerEditor(
+                        document,
+                        webviewPanel,
+                        this.extensionContext,
+                        fileId,
+                        this.getWebviewContent
+                    )
+                    this.handleNewVisualization(document.uri.fsPath, newVisualization)
+                } catch (err) {
+                    this.handleErr(err as Error)
+                    throw new ToolkitError((err as Error).message, { code: 'Failed to Open Threat Composer' })
                 }
-                // Attempt to retrieve existing visualization if it exists.
-                const existingVisualization = this.getExistingVisualization(document.uri.fsPath)
-                if (existingVisualization) {
-                    existingVisualization.showPanel()
-                } else {
-                    // Existing visualization does not exist, construct new visualization
-                    try {
-                        const fileId = getStringHash(`${document.uri.fsPath}${clientId}`)
-                        const newVisualization = new ThreatComposerEditor(
-                            document,
-                            webviewPanel,
-                            this.extensionContext,
-                            fileId,
-                            this.getWebviewContent
-                        )
-                        this.handleNewVisualization(document.uri.fsPath, newVisualization)
-                    } catch (err) {
-                        this.handleErr(err as Error)
-                        throw new ToolkitError((err as Error).message, { code: 'Failed to Open Threat Composer' })
-                    }
-                }
-            })
-        } else {
-            await vscode.commands.executeCommand('vscode.openWith', document.uri, 'default')
-            webviewPanel.dispose()
-        }
+            }
+        })
     }
 
     protected handleErr(err: Error): void {

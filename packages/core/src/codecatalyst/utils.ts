@@ -49,12 +49,12 @@ export function getHelpUrl(): string {
  */
 export function openCodeCatalystUrl(o: CodeCatalystResource) {
     const url = toCodeCatalystUrl(o)
-    vscode.env.openExternal(vscode.Uri.parse(url)).then(undefined, e => {
+    vscode.env.openExternal(vscode.Uri.parse(url)).then(undefined, (e) => {
         getLogger().error('openExternal failed: %s', (e as Error).message)
     })
 }
 
 /** Returns true if the dev env has a "vscode" IDE runtime. */
 export function isDevenvVscode(ides: Ides | undefined): boolean {
-    return ides !== undefined && ides.findIndex(ide => ide.name === 'VSCode') !== -1
+    return ides !== undefined && ides.some((ide) => ide.name === 'VSCode')
 }

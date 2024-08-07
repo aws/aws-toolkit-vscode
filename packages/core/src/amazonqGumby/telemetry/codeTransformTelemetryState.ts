@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { randomUUID } from '../../common/crypto'
+import { randomUUID } from '../../shared/crypto'
 import { codeTransformMetaDataToJsonString, ICodeTransformMetaData } from './codeTransformMetadata'
 
 interface ICodeTransformTelemetryState {

@@ -34,6 +34,8 @@ import { isAwsError } from '../../../shared/errors'
 import { ChatMessageInteractionType } from '../../../codewhisperer/client/codewhispereruserclient'
 import { supportedLanguagesList } from '../chat/chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
+import { undefinedIfEmpty } from '../../../shared'
 
 export function logSendTelemetryEventFailure(error: any) {
     let requestId: string | undefined
@@ -61,6 +63,7 @@ export class CWCTelemetryHelper {
     private responseStreamStartTime: Map<string, number> = new Map()
     private responseStreamTotalTime: Map<string, number> = new Map()
     private responseStreamTimeForChunks: Map<string, number[]> = new Map()
+    private responseWithProjectContext: Map<string, boolean> = new Map()
 
     constructor(sessionStorage: ChatSessionStorage, triggerEventsStorage: TriggerEventsStorage) {
         this.sessionStorage = sessionStorage
@@ -162,6 +165,7 @@ export class CWCTelemetryHelper {
                     cwsprChatHasReference: message.codeReference && message.codeReference.length > 0,
                     cwsprChatCodeBlockIndex: message.codeBlockIndex,
                     cwsprChatTotalCodeBlocks: message.totalCodeBlocks,
+                    cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
                 }
                 break
             case 'code_was_copied_to_clipboard':
@@ -177,6 +181,7 @@ export class CWCTelemetryHelper {
                     cwsprChatHasReference: message.codeReference && message.codeReference.length > 0,
                     cwsprChatCodeBlockIndex: message.codeBlockIndex,
                     cwsprChatTotalCodeBlocks: message.totalCodeBlocks,
+                    cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
                 }
                 break
             case 'follow-up-was-clicked':
@@ -187,6 +192,7 @@ export class CWCTelemetryHelper {
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'clickFollowUp',
+                    cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
                 }
                 break
             case 'chat-item-voted':
@@ -197,6 +203,7 @@ export class CWCTelemetryHelper {
                     cwsprChatConversationId: conversationId ?? '',
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatInteractionType: message.vote,
+                    cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
                 }
                 break
             case 'source-link-click':
@@ -208,6 +215,7 @@ export class CWCTelemetryHelper {
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatInteractionType: 'clickLink',
                     cwsprChatInteractionTarget: message.link,
+                    cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
                 }
                 break
             case 'response-body-link-click':
@@ -219,6 +227,7 @@ export class CWCTelemetryHelper {
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     cwsprChatInteractionType: 'clickBodyLink',
                     cwsprChatInteractionTarget: message.link,
+                    cwsprChatHasProjectContext: this.responseWithProjectContext.get(message.messageId),
                 }
                 break
             case 'footer-info-link-click':
@@ -237,7 +246,6 @@ export class CWCTelemetryHelper {
         if (!event) {
             return
         }
-
         telemetry.amazonq_interactWithMessage.emit(event)
 
         codeWhispererClient
@@ -251,6 +259,8 @@ export class CWCTelemetryHelper {
                         acceptedCharacterCount: event.cwsprChatAcceptedCharactersLength,
                         acceptedLineCount: event.cwsprChatAcceptedNumberOfLines,
                         acceptedSnippetHasReference: false,
+                        hasProjectLevelContext: this.responseWithProjectContext.get(event.cwsprChatMessageId),
+                        customizationArn: undefinedIfEmpty(getSelectedCustomization().arn),
                     },
                 },
             })
@@ -290,7 +300,10 @@ export class CWCTelemetryHelper {
         }
     }
 
-    public recordStartConversation(triggerEvent: TriggerEvent, triggerPayload: TriggerPayload) {
+    public recordStartConversation(
+        triggerEvent: TriggerEvent,
+        triggerPayload: TriggerPayload & { projectContextQueryLatencyMs?: number }
+    ) {
         if (triggerEvent.tabID === undefined) {
             return
         }
@@ -310,6 +323,10 @@ export class CWCTelemetryHelper {
             cwsprChatHasCodeSnippet: triggerPayload.codeSelection && !triggerPayload.codeSelection.isEmpty,
             cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
             credentialStartUrl: AuthUtil.instance.startUrl,
+            cwsprChatHasProjectContext: triggerPayload.relevantTextDocuments
+                ? triggerPayload.relevantTextDocuments.length > 0
+                : false,
+            cwsprChatProjectContextQueryMs: triggerPayload.projectContextQueryLatencyMs,
         })
     }
 
@@ -338,9 +355,16 @@ export class CWCTelemetryHelper {
             cwsprChatResponseLength: message.messageLength,
             cwsprChatConversationType: 'Chat',
             credentialStartUrl: AuthUtil.instance.startUrl,
+            codewhispererCustomizationArn: triggerPayload.customization.arn,
+            cwsprChatHasProjectContext: triggerPayload.relevantTextDocuments
+                ? triggerPayload.relevantTextDocuments.length > 0
+                : false,
         }
 
         telemetry.amazonq_addMessage.emit(event)
+        const language = this.isProgrammingLanguageSupported(triggerPayload.fileLanguage)
+            ? { languageName: triggerPayload.fileLanguage as string }
+            : undefined
         codeWhispererClient
             .sendTelemetryEvent({
                 telemetryEvent: {
@@ -349,9 +373,7 @@ export class CWCTelemetryHelper {
                         messageId: event.cwsprChatMessageId,
                         userIntent: triggerPayload.userIntent,
                         hasCodeSnippet: event.cwsprChatHasCodeSnippet,
-                        programmingLanguage: this.isProgrammingLanguageSupported(triggerPayload.fileLanguage)
-                            ? { languageName: triggerPayload.fileLanguage as string }
-                            : undefined,
+                        ...(language !== undefined ? { programmingLanguage: language } : {}),
                         activeEditorTotalCharacters: event.cwsprChatActiveEditorTotalCharacters,
                         timeToFirstChunkMilliseconds: event.cwsprChatTimeToFirstChunk,
                         timeBetweenChunks: this.getResponseStreamTimeBetweenChunks(message.tabID),
@@ -359,6 +381,10 @@ export class CWCTelemetryHelper {
                         requestLength: event.cwsprChatRequestLength,
                         responseLength: event.cwsprChatResponseLength,
                         numberOfCodeBlocks: event.cwsprChatResponseCodeSnippetCount,
+                        hasProjectLevelContext: triggerPayload.relevantTextDocuments
+                            ? triggerPayload.relevantTextDocuments.length > 0
+                            : false,
+                        customizationArn: undefinedIfEmpty(getSelectedCustomization().arn),
                     },
                 },
             })
@@ -413,6 +439,10 @@ export class CWCTelemetryHelper {
     public setResponseStreamTimeForChunks(tabID: string) {
         const chunkTimes = this.responseStreamTimeForChunks.get(tabID) ?? []
         this.responseStreamTimeForChunks.set(tabID, [...chunkTimes, performance.now()])
+    }
+
+    public setResponseFromProjectContext(messageId: string) {
+        this.responseWithProjectContext.set(messageId, true)
     }
 
     private getResponseStreamTimeToFirstChunk(tabID: string): number {

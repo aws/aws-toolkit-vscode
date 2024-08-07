@@ -21,7 +21,7 @@ import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { FeatureDevClient } from '../../../amazonqFeatureDev/client/featureDev'
 import { ToolkitError } from '../../../shared/errors'
 import { PrepareRepoFailedError } from '../../../amazonqFeatureDev/errors'
-import * as crypto from '../../../common/crypto'
+import * as crypto from '../../../shared/crypto'
 import { TelemetryHelper } from '../../../amazonqFeatureDev/util/telemetryHelper'
 import { assertTelemetry, createTestWorkspaceFolder } from '../../testUtil'
 import { getFetchStubWithResponse } from '../..'
@@ -203,14 +203,18 @@ describe('sessionState', () => {
 
     describe('CodeGenState', () => {
         it('transitions to PrepareCodeGenState when codeGenerationStatus ready ', async () => {
-            mockGetCodeGeneration = sinon.stub().resolves({ codeGenerationStatus: { status: 'Complete' } })
+            mockGetCodeGeneration = sinon.stub().resolves({
+                codeGenerationStatus: { status: 'Complete' },
+                codeGenerationRemainingIterationCount: 2,
+                codeGenerationTotalIterationCount: 3,
+            })
             mockExportResultArchive = sinon.stub().resolves({ newFileContents: [], deletedFiles: [], references: [] })
 
             const testAction = mockSessionStateAction()
-            const state = new CodeGenState(testConfig, testApproach, [], [], [], tabId, 0)
+            const state = new CodeGenState(testConfig, testApproach, [], [], [], tabId, 0, 2, 3)
             const result = await state.interact(testAction)
 
-            const nextState = new PrepareCodeGenState(testConfig, testApproach, [], [], [], tabId, 1)
+            const nextState = new PrepareCodeGenState(testConfig, testApproach, [], [], [], tabId, 1, 2, 3)
 
             assert.deepStrictEqual(result, {
                 nextState,
