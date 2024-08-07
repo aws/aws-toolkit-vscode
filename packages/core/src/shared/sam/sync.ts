@@ -11,7 +11,7 @@ import * as nls from 'vscode-nls'
 import * as localizedText from '../localizedText'
 import { DefaultS3Client } from '../clients/s3Client'
 import { Wizard } from '../wizards/wizard'
-import { createQuickPick } from '../ui/pickerPrompter'
+import { DataQuickPickItem, createQuickPick } from '../ui/pickerPrompter'
 import { DefaultCloudFormationClient } from '../clients/cloudFormationClient'
 import * as CloudFormation from '../cloudformation/cloudformation'
 import { DefaultEcrClient } from '../clients/ecrClient'
@@ -23,7 +23,7 @@ import { Commands } from '../vscode/commands2'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { ToolkitError, UnknownError } from '../errors'
 import { telemetry } from '../telemetry/telemetry'
-import { createCommonButtons } from '../ui/buttons'
+import { createBackButton, createCommonButtons, createExitButton } from '../ui/buttons'
 import { ToolkitPromptSettings } from '../settings'
 import { getLogger } from '../logger'
 import { isCloud9 } from '../extensionUtilities'
@@ -32,7 +32,7 @@ import { createExitPrompter } from '../ui/common/exitPrompter'
 import { StackSummary } from 'aws-sdk/clients/cloudformation'
 import { SamCliSettings } from './cli/samCliSettings'
 import { SamConfig } from './config'
-import { cast, Instance, Optional, Union } from '../utilities/typeConstructors'
+import { cast, Optional } from '../utilities/typeConstructors'
 import { pushIf, toRecord } from '../utilities/collectionUtils'
 import { Auth } from '../../auth/auth'
 import { asEnvironmentVariables } from '../../auth/credentials/utils'
@@ -48,19 +48,153 @@ import { showMessageWithUrl, showOnce } from '../utilities/messages'
 import { IamConnection } from '../../auth/connection'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
 import { promptAndUseConnection } from '../../auth/utils'
+import { TreeNode } from '../treeview/resourceTreeDataProvider'
 
 const localize = nls.loadMessageBundle()
 
 export interface SyncParams {
+    readonly paramsSource: ParamsSource
     readonly region: string
     readonly deployType: 'infra' | 'code'
     readonly projectRoot: vscode.Uri
     readonly template: TemplateItem
     readonly stackName: string
+    readonly bucketSource: BucketSource
     readonly bucketName: string
     readonly ecrRepoUri?: string
     readonly connection: IamConnection
     readonly skipDependencyLayer?: boolean
+}
+
+enum ParamsSource {
+    SpecifyAndSave,
+    SamConfig,
+    Flags,
+}
+enum BucketSource {
+    SamCliManaged,
+    UserProvided,
+}
+
+async function getConfigFileUri(projectRoot: vscode.Uri) {
+    const samConfigFilename = 'samconfig'
+    const samConfigFile = (
+        await vscode.workspace.findFiles(new vscode.RelativePattern(projectRoot, `**/${samConfigFilename}.*`))
+    )[0]
+    if (samConfigFile) {
+        return samConfigFile
+    } else {
+        throw new ToolkitError(`No samconfig.toml file found in ${projectRoot.fsPath}`)
+    }
+}
+
+function workspaceFolderPrompter() {
+    const workspaceFolders = vscode.workspace.workspaceFolders
+    if (workspaceFolders === undefined) {
+        throw new ToolkitError('No Workspace folder found')
+    }
+    const items = workspaceFolders?.map((workspaceFolder) => {
+        return { label: workspaceFolder.uri.path, data: workspaceFolder.uri }
+    })
+
+    return createQuickPick(items, {
+        title: 'Select workspace folder',
+        placeholder: 'Press enter to proceed with highlighted option',
+        buttons: createCommonButtons(samSyncUrl),
+    })
+}
+
+async function syncFlagsPrompter(): Promise<DataQuickPickItem<string>[] | undefined> {
+    const items: DataQuickPickItem<string>[] = [
+        {
+            label: 'Build in source',
+            data: '--build-in-source',
+            description: 'Opts in to build project in the source folder',
+        },
+        {
+            label: 'Code',
+            data: '--code',
+            description: 'Sync only code resources (Lambda Functions, API Gateway, Step Functions)',
+        },
+        {
+            label: 'Dependency layer',
+            data: '--dependency-layer',
+            description: 'Separate dependencies of individual function into Lambda layers',
+        },
+        {
+            label: 'Skip deploy sync',
+            data: '--skip-deploy-sync',
+            description: "This will skip the initial infrastructure deployment if it's not required",
+        },
+        {
+            label: 'Use container',
+            data: '--use-container',
+            description: 'Build functions with an AWS Lambda-like container',
+        },
+        {
+            label: 'Watch',
+            data: '--watch',
+            description: 'Watch local files and automatically sync with cloud',
+        },
+        {
+            label: 'Save parameters',
+            data: '--save-params',
+            description: 'Save to samconfig.toml as default parameters',
+        },
+        {
+            label: 'Beta features',
+            data: '--beta-features',
+            description: 'Enable beta features',
+        },
+        {
+            label: 'Debug',
+            data: '--debug',
+            description: 'Turn on debug logging to print debug messages and display timestamps',
+        },
+    ]
+    const quickPick = vscode.window.createQuickPick<DataQuickPickItem<string>>()
+    quickPick.title = 'Select sync flags'
+    quickPick.items = items
+    quickPick.canSelectMany = true
+    quickPick.step = 3
+    quickPick.buttons = [createBackButton(), createExitButton()]
+
+    return new Promise((resolve) => {
+        quickPick.onDidAccept(() => {
+            resolve(quickPick.selectedItems.map((item) => item))
+            quickPick.hide()
+        })
+
+        quickPick.onDidHide(() => {
+            resolve(undefined)
+            quickPick.dispose()
+        })
+
+        quickPick.show()
+    })
+}
+
+function paramsSourcePrompter() {
+    const items: DataQuickPickItem<ParamsSource>[] = [
+        {
+            label: 'Specify only required parameters and save as defaults',
+            data: ParamsSource.SpecifyAndSave,
+        },
+        {
+            label: 'Use default values from samconfig',
+            data: ParamsSource.SamConfig,
+        },
+        {
+            label: 'Specify sync flags',
+            data: ParamsSource.Flags,
+        },
+    ]
+
+    return createQuickPick(items, {
+        title: 'Specify parameters for sync',
+        placeholder: 'Press enter to proceed with highlighted option',
+        buttons: createCommonButtons(samSyncUrl),
+    })
 }
 
 export const prefixNewBucketName = (name: string) => `newbucket:${name}`
@@ -235,19 +369,40 @@ export class SyncWizard extends Wizard<SyncParams> {
     ) {
         super({ initState: state, exitPrompterProvider: createExitPrompter })
 
-        this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id))
-        this.form.template.bindPrompter(() => createTemplatePrompter(registry))
-        this.form.stackName.bindPrompter(({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!)))
-        this.form.bucketName.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)))
+        this.form.paramsSource.bindPrompter(() => paramsSourcePrompter())
+
+        this.form.template.bindPrompter(() => createTemplatePrompter(registry), {
+            showWhen: ({ paramsSource }) =>
+                paramsSource === ParamsSource.Flags || paramsSource === ParamsSource.SpecifyAndSave,
+        })
+        this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
+            showWhen: ({ paramsSource }) =>
+                paramsSource === ParamsSource.Flags || paramsSource === ParamsSource.SpecifyAndSave,
+        })
+        this.form.stackName.bindPrompter(
+            ({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!)),
+            {
+                showWhen: ({ paramsSource }) =>
+                    paramsSource === ParamsSource.Flags || paramsSource === ParamsSource.SpecifyAndSave,
+            }
+        )
+
+        this.form.bucketName.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)), {
+            showWhen: ({ paramsSource }) =>
+                paramsSource === ParamsSource.Flags || paramsSource === ParamsSource.SpecifyAndSave,
+        })
+
         this.form.ecrRepoUri.bindPrompter(({ region }) => createEcrPrompter(new DefaultEcrClient(region!)), {
             showWhen: ({ template }) => !!template && hasImageBasedResources(template.data),
         })
 
-        //
         const getProjectRoot = (template: TemplateItem | undefined) =>
             template ? getWorkspaceUri(template) : undefined
 
-        this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
+        this.form.projectRoot.bindPrompter(() => workspaceFolderPrompter(), {
+            showWhen: ({ paramsSource }) => paramsSource === ParamsSource.SamConfig,
+            setDefault: (state) => getProjectRoot(state.template),
+        })
     }
 }
 
@@ -304,9 +459,9 @@ async function injectCredentials(conn: IamConnection, env = process.env) {
 async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boundArgs: string[] }> {
     const data = {
         codeOnly: args.deployType === 'code',
-        templatePath: args.template.uri.fsPath,
-        bucketName: await ensureBucket(args),
-        ecrRepoUri: await ensureRepo(args),
+        templatePath: args.template !== undefined ? args.template.uri.fsPath : undefined,
+        bucketName: args.bucketName !== undefined ? await ensureBucket(args) : undefined,
+        ecrRepoUri: args.ecrRepoUri !== undefined ? await ensureRepo(args) : undefined,
         ...selectFrom(args, 'stackName', 'region', 'skipDependencyLayer'),
     }
 
@@ -326,6 +481,15 @@ async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boundArgs: 
         ecrRepoUri: '--image-repository',
         skipDependencyLayer: '--no-dependency-layer',
     })
+
+    if (args.paramsSource === ParamsSource.SamConfig) {
+        const samConfigFile = await getConfigFileUri(args.projectRoot)
+        boundArgs.push('--config-file', `${samConfigFile.fsPath}`)
+    }
+
+    if (args.paramsSource === ParamsSource.SpecifyAndSave) {
+        boundArgs.push('--save-params')
+    }
 
     return { boundArgs }
 }
@@ -438,6 +602,18 @@ export async function runSamSync(args: SyncParams) {
         })
     }
 
+    const syncFlags: string[] = []
+
+    if (args.paramsSource === ParamsSource.Flags) {
+        const flagItems = await syncFlagsPrompter()
+        if (flagItems) {
+            flagItems.forEach((item) => {
+                syncFlags.push(item.data as string)
+            })
+        }
+    }
+    boundArgs.push(...syncFlags)
+
     const sam = new ChildProcess(samCliPath, ['sync', ...boundArgs], {
         spawnOptions: await addTelemetryEnvVar({
             cwd: args.projectRoot.fsPath,
@@ -494,7 +670,7 @@ function getSyncParamsFromConfig(config: SamConfig) {
 }
 
 export async function prepareSyncParams(
-    arg: vscode.Uri | AWSTreeNodeBase | undefined,
+    arg: vscode.Uri | AWSTreeNodeBase | TreeNode | undefined,
     validate?: boolean
 ): Promise<Partial<SyncParams>> {
     // Skip creating dependency layers by default for backwards compat
@@ -528,6 +704,15 @@ export async function prepareSyncParams(
         }
 
         return { ...baseParams, template, projectRoot: getWorkspaceUri(template) }
+    } else if (arg && arg.getTreeItem()) {
+        const templateUri = (arg.getTreeItem() as vscode.TreeItem).resourceUri
+        if (templateUri) {
+            const template = {
+                uri: templateUri,
+                data: await CloudFormation.load(templateUri.fsPath, validate),
+            }
+            return { ...baseParams, template, projectRoot: getWorkspaceUri(template) }
+        }
     }
 
     return baseParams
@@ -572,7 +757,7 @@ async function getAuthOrPrompt() {
 export function registerSync() {
     async function runSync(
         deployType: SyncParams['deployType'],
-        arg?: unknown,
+        arg: vscode.Uri | AWSTreeNodeBase | TreeNode | undefined,
         validate?: boolean
     ): Promise<SamSyncResult> {
         telemetry.record({ syncedResources: deployType === 'infra' ? 'AllResources' : 'CodeOnly' })
@@ -584,16 +769,9 @@ export function registerSync() {
             })
         }
 
-        // Constructor of `vscode.Uri` is marked private but that shouldn't matter when checking the instance type
-        const Uri = vscode.Uri as unknown as abstract new () => vscode.Uri
-        const input = cast(arg, Optional(Union(Instance(Uri), Instance(AWSTreeNodeBase))))
-
         await confirmDevStack()
         const registry = await globals.templateRegistry
-        const params = await new SyncWizard(
-            { deployType, ...(await prepareSyncParams(input, validate)) },
-            registry
-        ).run()
+        const params = await new SyncWizard({ deployType, ...(await prepareSyncParams(arg, validate)) }, registry).run()
         if (params === undefined) {
             throw new CancellationError('user')
         }
@@ -613,7 +791,7 @@ export function registerSync() {
             id: 'aws.samcli.sync',
             autoconnect: true,
         },
-        (arg?: unknown, validate?: boolean) => telemetry.sam_sync.run(() => runSync('infra', arg, validate))
+        (arg?, validate?: boolean) => telemetry.sam_sync.run(() => runSync('infra', arg, validate))
     )
 
     const settings = SamCliSettings.instance
