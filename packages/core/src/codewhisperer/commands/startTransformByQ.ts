@@ -261,6 +261,7 @@ export async function parseBuildFile() {
         }
     } catch (err: any) {
         // swallow error
+        getLogger().error(`CodeTransformation: error scanning for absolute paths, tranformation continuing: ${err}`)
     }
     return undefined
 }
