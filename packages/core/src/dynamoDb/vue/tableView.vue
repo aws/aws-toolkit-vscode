@@ -211,7 +211,6 @@ export default defineComponent({
         async executeQuery() {
             let sortKeyElement = document.getElementById('sortKey')
             let partitionKeyElement = document.getElementById('partitionKey')
-
             let sortKeyValue = ''
             if (sortKeyElement) {
                 sortKeyValue = (sortKeyElement as any).value
