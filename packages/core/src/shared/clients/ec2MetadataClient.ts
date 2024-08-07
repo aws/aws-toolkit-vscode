@@ -40,7 +40,10 @@ export class DefaultEc2MetadataClient {
             ;(this.metadata as any).fetchMetadataToken((tokenErr: AWSError, token: string) => {
                 let options
                 if (tokenErr) {
-                    getLogger().error('Ec2MetadataClient failed to fetch token: %s', tokenErr)
+                    getLogger().warn(
+                        'Ec2MetadataClient failed to fetch token. If this is an EC2 environment, then Toolkit will fall back to IMDSv1: %s',
+                        tokenErr
+                    )
 
                     // Fall back to IMDSv1 for legacy instances.
                     options = {}
