@@ -7,7 +7,11 @@ import { FolderInfo, transformByQState } from '../../models/model'
 import { getLogger } from '../../../shared/logger'
 import * as CodeWhispererConstants from '../../models/constants'
 import { spawnSync } from 'child_process' // Consider using ChildProcess once we finalize all spawnSync calls
-import { CodeTransformMavenBuildCommand, telemetry } from '../../../shared/telemetry/telemetry'
+import {
+    CodeTransformBuildCommand,
+    CodeTransformMavenBuildCommand,
+    telemetry,
+} from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import { ToolkitError } from '../../../shared/errors'
@@ -16,54 +20,31 @@ import { throwIfCancelled } from './transformApiHandler'
 
 // run 'install' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
 function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: string) {
-    // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
-    const baseCommand = transformByQState.getMavenName()
+    telemetry.codeTransform_localBuildProject.run(() => {
+        telemetry.record({ codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId() })
 
-    transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
+        // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
+        const baseCommand = transformByQState.getMavenName()
 
-    // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
-    const args = [`-Dmaven.repo.local=${dependenciesFolder.path}`, 'clean', 'install', '-q']
-    let environment = process.env
+        transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
 
-    if (transformByQState.getJavaHome() !== undefined) {
-        environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
-    }
+        // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
+        const args = [`-Dmaven.repo.local=${dependenciesFolder.path}`, 'clean', 'install', '-q']
+        let environment = process.env
 
-    const argString = args.join(' ')
-    const spawnResult = spawnSync(baseCommand, args, {
-        cwd: modulePath,
-        shell: true,
-        encoding: 'utf-8',
-        env: environment,
-        maxBuffer: CodeWhispererConstants.maxBufferSize,
-    })
-
-    if (spawnResult.status !== 0) {
-        let errorLog = ''
-        errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
-        errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
-        transformByQState.appendToErrorLog(`${baseCommand} ${argString} failed: \n ${errorLog}`)
-        getLogger().error(
-            `CodeTransformation: Error in running Maven ${argString} command ${baseCommand} = ${errorLog}`
-        )
-        let errorReason = ''
-        if (spawnResult.stdout) {
-            errorReason = `Maven ${argString}: InstallationExecutionError`
-            /*
-             * adding this check here because these mvn commands sometimes generate a lot of output.
-             * rarely, a buffer overflow has resulted when these mvn commands are run with -X, -e flags
-             * which are not being used here (for now), but still keeping this just in case.
-             */
-            if (Buffer.byteLength(spawnResult.stdout, 'utf-8') > CodeWhispererConstants.maxBufferSize) {
-                errorReason += '-BufferOverflow'
-            }
-        } else {
-            errorReason = `Maven ${argString}: InstallationSpawnError`
+        if (transformByQState.getJavaHome() !== undefined) {
+            environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
         }
-        if (spawnResult.error) {
-            const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
-            errorReason += `-${errorCode}`
-        }
+
+        const argString = args.join(' ')
+        const spawnResult = spawnSync(baseCommand, args, {
+            cwd: modulePath,
+            shell: true,
+            encoding: 'utf-8',
+            env: environment,
+            maxBuffer: CodeWhispererConstants.maxBufferSize,
+        })
+
         let mavenBuildCommand = transformByQState.getMavenName()
         // slashes not allowed in telemetry
         if (mavenBuildCommand === './mvnw') {
@@ -71,16 +52,51 @@ function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: 
         } else if (mavenBuildCommand === '.\\mvnw.cmd') {
             mavenBuildCommand = 'mvnw.cmd'
         }
-        telemetry.codeTransform_mvnBuildFailed.emit({
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformMavenBuildCommand: mavenBuildCommand as CodeTransformMavenBuildCommand,
-            result: MetadataResult.Fail,
-            reason: errorReason,
-        })
-        throw new ToolkitError(`Maven ${argString} error`, { code: 'MavenExecutionError' })
-    } else {
-        transformByQState.appendToErrorLog(`${baseCommand} ${argString} succeeded`)
-    }
+
+        telemetry.record({ codeTransformBuildCommand: mavenBuildCommand as CodeTransformBuildCommand })
+
+        if (spawnResult.status !== 0) {
+            let errorLog = ''
+            errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
+            errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
+            transformByQState.appendToErrorLog(`${baseCommand} ${argString} failed: \n ${errorLog}`)
+            getLogger().error(
+                `CodeTransformation: Error in running Maven ${argString} command ${baseCommand} = ${errorLog}`
+            )
+            let errorReason = ''
+            if (spawnResult.stdout) {
+                errorReason = `Maven ${argString}: InstallationExecutionError`
+                /*
+                 * adding this check here because these mvn commands sometimes generate a lot of output.
+                 * rarely, a buffer overflow has resulted when these mvn commands are run with -X, -e flags
+                 * which are not being used here (for now), but still keeping this just in case.
+                 */
+                if (Buffer.byteLength(spawnResult.stdout, 'utf-8') > CodeWhispererConstants.maxBufferSize) {
+                    errorReason += '-BufferOverflow'
+                }
+            } else {
+                errorReason = `Maven ${argString}: InstallationSpawnError`
+            }
+            if (spawnResult.error) {
+                const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
+                errorReason += `-${errorCode}`
+            }
+            // TODO: remove deprecated metric once BI started using new metrics
+            telemetry.codeTransform_mvnBuildFailed.emit({
+                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                codeTransformMavenBuildCommand: mavenBuildCommand as CodeTransformMavenBuildCommand,
+                result: MetadataResult.Fail,
+                reason: errorReason,
+            })
+
+            // Explicitly set metric as failed since no exception was caught
+            telemetry.record({ result: MetadataResult.Fail, reason: errorReason })
+
+            throw new ToolkitError(`Maven ${argString} error`, { code: 'MavenExecutionError' })
+        } else {
+            transformByQState.appendToErrorLog(`${baseCommand} ${argString} succeeded`)
+        }
+    })
 }
 
 function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: string) {
@@ -137,6 +153,7 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
         } else if (mavenBuildCommand === '.\\mvnw.cmd') {
             mavenBuildCommand = 'mvnw.cmd'
         }
+        // TODO: remove deprecated metric once BI started using new metrics
         telemetry.codeTransform_mvnBuildFailed.emit({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformMavenBuildCommand: mavenBuildCommand as CodeTransformMavenBuildCommand,
