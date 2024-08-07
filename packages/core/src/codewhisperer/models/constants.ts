@@ -410,8 +410,8 @@ export const codeTransformTroubleshootDownloadError =
 export const codeTransformPrereqDoc =
     'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites'
 
-export const codeTransformBillingText =
-    '<p>LOC lines of code were submitted for transformation. If you reach the quota for lines of code included in your subscription, you will be charged $BILLING_RATE for each additional line of code. You might be charged up to $ROUNDED_COST for this transformation. To avoid being charged, stop the transformation job before it completes. For more information on pricing and quotas, see [Amazon Q Developer pricing](https://aws.amazon.com/q/developer/pricing/).</p>'
+export const codeTransformBillingText = (linesOfCode: number) =>
+    `<p>${linesOfCode} lines of code were submitted for transformation. If you reach the quota for lines of code included in your subscription, you will be charged $${codeTransformBillingRate} for each additional line of code. You might be charged up to $${(linesOfCode * codeTransformBillingRate).toFixed(2)} for this transformation. To avoid being charged, stop the transformation job before it completes. For more information on pricing and quotas, see [Amazon Q Developer pricing](${linkToBillingInfo}).</p>`
 
 export const codeTransformBillingRate = 0.003
 
@@ -580,9 +580,7 @@ export const noJavaProjectsFoundChatMessage = `Sorry, I couldn\'t find a project
 
 export const linkToDocsHome = 'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html'
 
-export const linkToPrerequisites = ''
-
-export const linkToMavenTroubleshooting = ''
+export const linkToBillingInfo = 'https://aws.amazon.com/q/developer/pricing/'
 
 export const linkToUploadZipTooLarge =
     'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#project-size-limit'

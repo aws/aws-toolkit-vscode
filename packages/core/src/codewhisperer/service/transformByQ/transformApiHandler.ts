@@ -603,13 +603,8 @@ export function getJobStatisticsHtml(jobStatistics: any) {
     return htmlString
 }
 
-export function getBillingString(linesOfCode: number) {
-    const roundedCost = (linesOfCode * CodeWhispererConstants.codeTransformBillingRate).toFixed(2)
-    return CodeWhispererConstants.codeTransformBillingText
-        .replaceAll('LOC', linesOfCode.toString())
-        .replace('BILLING_RATE', CodeWhispererConstants.codeTransformBillingRate.toString())
-        .replace('ROUNDED_COST', roundedCost)
-}
+export const getBillingString = (linesOfCode: number): string =>
+    CodeWhispererConstants.codeTransformBillingText(linesOfCode)
 
 export async function getTransformationPlan(jobId: string) {
     let response = undefined
