@@ -71,12 +71,7 @@ describe('DynamoDbClient', () => {
 
             sinon.stub(dynamoDbClient, 'getTableInformation').rejects()
 
-            try {
-                await dynamoDbClient.getTableInformation(request)
-                assert.fail('Expected error not thrown')
-            } catch (err: any) {
-                assert.equal(err.message, 'Error')
-            }
+            await assert.rejects(() => dynamoDbClient.getTableInformation(request), /Error: Error/)
         })
     })
 
@@ -95,12 +90,7 @@ describe('DynamoDbClient', () => {
 
             sinon.stub(dynamoDbClient, 'scanTable').rejects()
 
-            try {
-                await dynamoDbClient.scanTable(request)
-                assert.fail('Expected error not thrown')
-            } catch (err: any) {
-                assert.equal(err.message, 'Error')
-            }
+            await assert.rejects(() => dynamoDbClient.scanTable(request), /Error: Error/)
         })
     })
 
@@ -119,12 +109,7 @@ describe('DynamoDbClient', () => {
 
             sinon.stub(dynamoDbClient, 'deleteTable').rejects()
 
-            try {
-                await dynamoDbClient.deleteTable(request)
-                assert.fail('Expected error not thrown')
-            } catch (err: any) {
-                assert.equal(err.message, 'Error')
-            }
+            await assert.rejects(() => dynamoDbClient.deleteTable(request), /Error: Error/)
         })
     })
 
@@ -143,12 +128,7 @@ describe('DynamoDbClient', () => {
 
             sinon.stub(dynamoDbClient, 'queryTable').rejects()
 
-            try {
-                await dynamoDbClient.queryTable(request)
-                assert.fail('Expected error not thrown')
-            } catch (err: any) {
-                assert.equal(err.message, 'Error')
-            }
+            await assert.rejects(() => dynamoDbClient.queryTable(request), /Error: Error/)
         })
     })
 })
