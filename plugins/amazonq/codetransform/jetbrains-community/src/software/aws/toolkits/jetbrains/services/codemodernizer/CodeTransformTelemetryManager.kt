@@ -8,16 +8,13 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import org.apache.commons.codec.digest.DigestUtils
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationStatus
-import software.aws.toolkits.jetbrains.core.gettingstarted.editor.ActiveConnection
-import software.aws.toolkits.jetbrains.core.gettingstarted.editor.ActiveConnectionType
-import software.aws.toolkits.jetbrains.core.gettingstarted.editor.BearerTokenFeatureSet
-import software.aws.toolkits.jetbrains.core.gettingstarted.editor.checkBearerConnectionValidity
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CustomerSelection
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.ValidationResult
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeModernizerSessionState
 import software.aws.toolkits.jetbrains.services.codemodernizer.state.CodeTransformTelemetryState
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.calculateTotalLatency
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getAuthType
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getJavaVersionFromProjectSetting
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getMavenVersion
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.tryGetJdk
@@ -32,7 +29,6 @@ import software.aws.toolkits.telemetry.CodeTransformPatchViewerCancelSrcComponen
 import software.aws.toolkits.telemetry.CodeTransformPreValidationError
 import software.aws.toolkits.telemetry.CodeTransformVCSViewerSrcComponents
 import software.aws.toolkits.telemetry.CodetransformTelemetry
-import software.aws.toolkits.telemetry.CredentialSourceId
 import software.aws.toolkits.telemetry.Result
 import java.time.Instant
 import java.util.Base64
@@ -157,14 +153,7 @@ class CodeTransformTelemetryManager(private val project: Project) {
     fun dependenciesCopied() = CodetransformTelemetry.dependenciesCopied(codeTransformSessionId = sessionId)
 
     fun jobIsStartedFromChatPrompt() {
-        val connection = checkBearerConnectionValidity(project, BearerTokenFeatureSet.Q)
-        var authType: CredentialSourceId? = null
-        if (connection.connectionType == ActiveConnectionType.IAM_IDC && connection is ActiveConnection.ValidBearer) {
-            authType = CredentialSourceId.IamIdentityCenter
-        } else if (connection.connectionType == ActiveConnectionType.BUILDER_ID && connection is ActiveConnection.ValidBearer) {
-            authType = CredentialSourceId.AwsId
-        }
-        CodetransformTelemetry.jobIsStartedFromChatPrompt(codeTransformSessionId = sessionId, credentialSourceId = authType)
+        CodetransformTelemetry.jobIsStartedFromChatPrompt(codeTransformSessionId = sessionId, credentialSourceId = getAuthType(project))
     }
 
     /**
@@ -172,16 +161,9 @@ class CodeTransformTelemetryManager(private val project: Project) {
      */
 
     fun initiateTransform(telemetryErrorMessage: String? = null) {
-        val connection = checkBearerConnectionValidity(project, BearerTokenFeatureSet.Q)
-        var authType: CredentialSourceId? = null
-        if (connection.connectionType == ActiveConnectionType.IAM_IDC && connection is ActiveConnection.ValidBearer) {
-            authType = CredentialSourceId.IamIdentityCenter
-        } else if (connection.connectionType == ActiveConnectionType.BUILDER_ID && connection is ActiveConnection.ValidBearer) {
-            authType = CredentialSourceId.AwsId
-        }
         CodetransformTelemetry.initiateTransform(
             codeTransformSessionId = sessionId,
-            credentialSourceId = authType,
+            credentialSourceId = getAuthType(project),
             result = if (telemetryErrorMessage.isNullOrEmpty()) Result.Succeeded else Result.Failed,
             reason = telemetryErrorMessage,
         )

@@ -13,8 +13,13 @@ import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
+import software.aws.toolkits.jetbrains.core.gettingstarted.editor.ActiveConnection
+import software.aws.toolkits.jetbrains.core.gettingstarted.editor.ActiveConnectionType
+import software.aws.toolkits.jetbrains.core.gettingstarted.editor.BearerTokenFeatureSet
+import software.aws.toolkits.jetbrains.core.gettingstarted.editor.checkBearerConnectionValidity
 import software.aws.toolkits.jetbrains.utils.actions.OpenBrowserAction
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CredentialSourceId
 
 val STATES_WHERE_PLAN_EXIST = setOf(
     TransformationStatus.PLANNED,
@@ -42,6 +47,17 @@ fun refreshToken(project: Project) {
     val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(QConnection.getInstance())
     val provider = (connection?.getConnectionSettings() as TokenConnectionSettings).tokenProvider.delegate as BearerTokenProvider
     provider.refresh()
+}
+
+fun getAuthType(project: Project): CredentialSourceId? {
+    val connection = checkBearerConnectionValidity(project, BearerTokenFeatureSet.Q)
+    var authType: CredentialSourceId? = null
+    if (connection.connectionType == ActiveConnectionType.IAM_IDC && connection is ActiveConnection.ValidBearer) {
+        authType = CredentialSourceId.IamIdentityCenter
+    } else if (connection.connectionType == ActiveConnectionType.BUILDER_ID && connection is ActiveConnection.ValidBearer) {
+        authType = CredentialSourceId.AwsId
+    }
+    return authType
 }
 
 fun getQTokenProvider(project: Project) = (

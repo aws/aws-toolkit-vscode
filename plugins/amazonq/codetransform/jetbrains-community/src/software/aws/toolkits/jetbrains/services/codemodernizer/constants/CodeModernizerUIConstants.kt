@@ -15,6 +15,11 @@ import javax.swing.BorderFactory
 
 const val FEATURE_NAME = "Amazon Q Transform"
 
+const val APPENDIX_TABLE_KEY = "-1"
+const val JOB_STATISTICS_TABLE_KEY = "0"
+const val LOC_THRESHOLD = 100000
+const val BILLING_RATE = 0.003
+
 class CodeModernizerUIConstants {
 
     object HEADER {

@@ -18,12 +18,18 @@ import com.intellij.ui.components.JBScrollPane
 import icons.AwsIcons
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationPlan
 import software.amazon.awssdk.services.codewhispererruntime.model.TransformationStep
+import software.aws.toolkits.jetbrains.services.codemodernizer.constants.APPENDIX_TABLE_KEY
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.CodeModernizerUIConstants
+import software.aws.toolkits.jetbrains.services.codemodernizer.constants.JOB_STATISTICS_TABLE_KEY
+import software.aws.toolkits.jetbrains.services.codemodernizer.constants.LOC_THRESHOLD
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.PlanTable
 import software.aws.toolkits.jetbrains.services.codemodernizer.plan.CodeModernizerPlanEditorProvider.Companion.MIGRATION_PLAN_KEY
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getAuthType
+import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getBillingText
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getTableMapping
 import software.aws.toolkits.jetbrains.services.codewhisperer.layout.CodeWhispererLayoutConfig.addHorizontalGlue
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CredentialSourceId
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Component
@@ -51,9 +57,9 @@ import javax.swing.event.HyperlinkEvent
 import javax.swing.table.DefaultTableCellRenderer
 import javax.swing.table.DefaultTableModel
 
-class CodeModernizerPlanEditor(val project: Project, val virtualFile: VirtualFile) : UserDataHolderBase(), FileEditor {
+class CodeModernizerPlanEditor(val project: Project, private val virtualFile: VirtualFile) : UserDataHolderBase(), FileEditor {
     val plan = virtualFile.getUserData(MIGRATION_PLAN_KEY) ?: throw RuntimeException("Migration plan not found")
-    val tableMapping =
+    private val tableMapping =
         if (!plan.transformationSteps()[0].progressUpdates().isNullOrEmpty()) {
             getTableMapping(plan.transformationSteps()[0].progressUpdates())
         } else {
@@ -72,17 +78,39 @@ class CodeModernizerPlanEditor(val project: Project, val virtualFile: VirtualFil
                     )
                     // key "0" reserved for job statistics table
                     // comes from "name" field of each progressUpdate in step zero of plan
-                    if ("0" in tableMapping) {
+                    if (JOB_STATISTICS_TABLE_KEY in tableMapping) {
+                        val planTable = mapper.readValue(tableMapping[JOB_STATISTICS_TABLE_KEY], PlanTable::class.java)
+                        val linesOfCode = planTable.rows.find { it.name == "linesOfCode" }?.value?.toInt()
+                        if (linesOfCode != null && linesOfCode > LOC_THRESHOLD && getAuthType(project) == CredentialSourceId.IamIdentityCenter) {
+                            val billingText = getBillingText(linesOfCode)
+                            val billingTextComponent =
+                                JEditorPane("text/html", billingText).apply {
+                                    addHyperlinkListener { he ->
+                                        if (he.eventType == HyperlinkEvent.EventType.ACTIVATED) {
+                                            BrowserUtil.browse(he.url)
+                                        }
+                                    }
+                                    isEditable = false
+                                    isOpaque = false
+                                    alignmentX = Component.LEFT_ALIGNMENT
+                                    font =
+                                        font.deriveFont(
+                                            CodeModernizerUIConstants.FONT_CONSTRAINTS.BOLD,
+                                            CodeModernizerUIConstants.PLAN_CONSTRAINTS.SUBTITLE_FONT_SIZE,
+                                        )
+                                }
+                            add(billingTextComponent, CodeModernizerUIConstants.transformationPlanPlaneConstraint)
+                        }
                         add(
-                            transformationPlanInfo(mapper.readValue(tableMapping["0"], PlanTable::class.java)),
+                            transformationPlanInfo(planTable),
                             CodeModernizerUIConstants.transformationPlanPlaneConstraint,
                         )
                     }
                     add(transformationPlanPanel(plan), CodeModernizerUIConstants.transformationPlanPlaneConstraint)
                     // key "-1" reserved for appendix table
-                    if ("-1" in tableMapping) {
+                    if (APPENDIX_TABLE_KEY in tableMapping) {
                         add(
-                            transformationPlanAppendix(mapper.readValue(tableMapping["-1"], PlanTable::class.java)),
+                            transformationPlanAppendix(mapper.readValue(tableMapping[APPENDIX_TABLE_KEY], PlanTable::class.java)),
                             CodeModernizerUIConstants.transformationPlanPlaneConstraint,
                         )
                     }
