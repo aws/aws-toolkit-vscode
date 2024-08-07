@@ -12,9 +12,10 @@ import { localize, openUrl } from '../../../utilities/vsCodeUtils'
 import { Commands } from '../../../vscode/commands2'
 import { AppNode } from './appNode'
 import { detectSamProjects } from '../detectSamProjects'
+import globals from '../../../extensionGlobals'
 
 export async function getAppNodes(): Promise<TreeNode[]> {
-    // no active workspace
+    // no active workspace, show buttons in welcomeview
     if (!vscode.workspace.workspaceFolders) {
         return []
     }
@@ -22,11 +23,44 @@ export async function getAppNodes(): Promise<TreeNode[]> {
 
     if (appsFound.length === 0) {
         return [
+            new WalkthroughNode(),
             createPlaceholderItem(localize('AWS.appBuilder.explorerNode.noApps', '[No SAM Apps found in Workspaces]')),
         ]
     }
 
-    return appsFound.map((appLocation) => new AppNode(appLocation)).sort((a, b) => a.label.localeCompare(b.label) ?? 0)
+    let nodesToReturn: TreeNode[] = appsFound
+        .map((appLocation) => new AppNode(appLocation))
+        .sort((a, b) => a.label.localeCompare(b.label) ?? 0)
+    const walkthroughCompleted = globals.context.globalState.get('aws.toolkit.walkthroughCompleted')
+    // show walkthrough node if walkthrough not completed yet
+    if (!walkthroughCompleted) {
+        nodesToReturn.unshift(new WalkthroughNode())
+    }
+    return nodesToReturn
+}
+
+/**
+ * Create Open Walkthrough Node in App builder sidebar
+ *
+ */
+export class WalkthroughNode implements TreeNode {
+    public readonly id = 'walkthrough'
+    public readonly resource = this
+    public constructor() {}
+
+    public getTreeItem() {
+        const itemLabel = 'Learn more with Walkthrough'
+
+        const item = new vscode.TreeItem(itemLabel)
+        item.contextValue = 'awsWalkthroughNode'
+        item.command = {
+            title: 'Open Walkthrough',
+            command: 'workbench.action.openWalkthrough',
+            arguments: ['amazonwebservices.aws-toolkit-vscode#aws.gettingStarted.walkthrough'],
+        }
+
+        return item
+    }
 }
 
 export class AppBuilderRootNode implements TreeNode {

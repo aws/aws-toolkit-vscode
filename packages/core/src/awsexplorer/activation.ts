@@ -135,24 +135,10 @@ export async function activate(args: {
         },
     ]
 
-    // empty node for enabling Welcome nodes to open walkthrough
-    const emptyWalkthroughNode: ToolView[] = [
-        {
-            nodes: [],
-            view: 'aws.appBuilderOpenWalkthrough',
-            refreshCommands: [],
-        },
-        {
-            nodes: [],
-            view: 'aws.appBuilderOpenWalkthroughForFileExplorer',
-            refreshCommands: [],
-        },
-    ]
     const viewNodes: ToolView[] = [
         ...amazonQViewNode,
         ...codecatalystViewNode,
         ...appBuilderNode,
-        ...emptyWalkthroughNode,
         { nodes: [CdkRootNode.instance], view: 'aws.cdk', refreshCommands: [CdkRootNode.instance.refreshCdkExplorer] },
     ]
     for (const viewNode of viewNodes) {

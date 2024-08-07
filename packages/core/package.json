@@ -730,19 +730,9 @@
         },
         "viewsWelcome": [
             {
-                "view": "aws.appBuilder.OpenWalkthroughForFileExplorer",
-                "contents": "[Open walkthrough](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23aws.gettingStarted.walkthrough%22%7D)",
-                "when": "true"
-            },
-            {
                 "view": "aws.appBuilderForFileExplorer",
                 "contents": "[Open walkthrough](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23aws.gettingStarted.walkthrough%22%7D)\n [Open Folder](command:vscode.openFolder)",
                 "when": "workbenchState == empty"
-            },
-            {
-                "view": "aws.appBuilder.OpenWalkthrough",
-                "contents": "[Open walkthrough](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23aws.gettingStarted.walkthrough%22%7D)",
-                "when": "true"
             },
             {
                 "view": "aws.appBuilder",
@@ -752,15 +742,6 @@
         ],
         "views": {
             "explorer": [
-                {
-                    "id": "aws.appBuilder.OpenWalkthroughForFileExplorer",
-                    "name": "%AWS.appBuilder.openWalkthroughTitle%",
-                    "when": "!aws.appBuilder.hide && !aws.workthrough.completed && workbenchState !== empty",
-                    "contextualTitle": "Application Builder Walkthrough",
-                    "widget": {
-                        "type": "inspector"
-                    }
-                },
                 {
                     "id": "aws.appBuilderForFileExplorer",
                     "name": "%AWS.appBuilder.explorerTitle%",
@@ -786,11 +767,6 @@
                     "id": "aws.cdk",
                     "name": "%AWS.cdk.explorerTitle%",
                     "when": "!aws.explorer.showAuthView"
-                },
-                {
-                    "id": "aws.appBuilder.OpenWalkthrough",
-                    "name": "%AWS.appBuilder.openWalkthroughTitle%",
-                    "when": "!aws.explorer.showAuthView && !aws.workthrough.completed && workbenchState !== empty"
                 },
                 {
                     "id": "aws.appBuilder",
