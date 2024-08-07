@@ -331,8 +331,13 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
             }),
         })
 
-        //Run SAM build in Terminal
-        await runInTerminal(buildProcess, 'build')
+        try {
+            //Run SAM build in Terminal
+            await runInTerminal(buildProcess, 'build')
+        } catch (error) {
+            throw ToolkitError.chain(error, 'Failed to build SAM template', { details: { ...buildFlags } })
+        }
+
         //Run SAM deploy in Terminal
         await runInTerminal(deployProcess, 'deploy')
     } catch (error) {
