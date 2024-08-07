@@ -9,7 +9,7 @@ import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
-import { stopTransformByQ } from '../../../codewhisperer/commands/startTransformByQ'
+import { parseBuildFile, stopTransformByQ } from '../../../codewhisperer/commands/startTransformByQ'
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
@@ -296,5 +296,16 @@ describe('transformByQ', function () {
             '-1': '{"columnNames":["relativePath","action"],"rows":[{"relativePath":"pom.xml","action":"Update"}, {"relativePath":"src/main/java/com/bhoruka/bloodbank/BloodbankApplication.java","action":"Update"}]}',
         }
         assert.deepStrictEqual(actual, expected)
+    })
+
+    it(`WHEN parseBuildFile on pom.xml with absolute path THEN absolute path detected`, async function () {
+        const dirPath = await createTestWorkspaceFolder()
+        transformByQState.setProjectPath(dirPath.uri.fsPath)
+        const pomPath = path.join(dirPath.uri.fsPath, 'pom.xml')
+        await toFile('<project><properties><path>system/name/here</path></properties></project>', pomPath)
+        const expectedWarning =
+            'I detected 1 potential absolute file path(s) in your pom.xml file: **system/**. Absolute file paths might cause issues when I build your code. Any errors will show up in the build log.'
+        const warningMessage = await parseBuildFile()
+        assert.strictEqual(expectedWarning, warningMessage)
     })
 })
