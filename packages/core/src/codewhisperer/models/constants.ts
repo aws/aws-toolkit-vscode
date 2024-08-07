@@ -415,6 +415,8 @@ export const codeTransformBillingText = (linesOfCode: number) =>
 
 export const codeTransformBillingRate = 0.003
 
+export const codeTransformLocThreshold = 100000
+
 export const jobStartedChatMessage =
     'I am starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub. If I run into any issues, I might pause the transformation to get input from you on how to proceed.'
 

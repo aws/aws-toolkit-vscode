@@ -647,7 +647,7 @@ export async function getTransformationPlan(jobId: string) {
         const linesOfCode = Number(
             jobStatistics.find((stat: { name: string; value: string }) => stat.name === 'linesOfCode').value
         )
-        if (authType === 'iamIdentityCenter' && linesOfCode > 100000) {
+        if (authType === 'iamIdentityCenter' && linesOfCode > CodeWhispererConstants.codeTransformLocThreshold) {
             plan += getBillingString(linesOfCode)
         }
         plan += `<div style="display: flex;"><div style="flex: 1; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p>${
