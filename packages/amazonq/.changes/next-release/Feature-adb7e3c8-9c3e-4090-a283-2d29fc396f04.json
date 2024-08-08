@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Amazon Q Code Transformation: warn user if absolute file paths are found in the pom.xml"
-}
