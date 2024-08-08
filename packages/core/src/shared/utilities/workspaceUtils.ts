@@ -552,7 +552,7 @@ export async function collectFilesForIndex(
     }
 
     const isBuildOrBin = (filePath: string) => {
-        const k = /[/\\](bin|build|node_modules|env|\.idea)[/\\]/i
+        const k = /[/\\](bin|build|node_modules|env|\.idea|\.venv|venv)[/\\]/i
         return k.test(filePath)
     }
 
