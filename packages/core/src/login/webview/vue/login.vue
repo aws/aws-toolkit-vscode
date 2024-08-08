@@ -278,17 +278,12 @@ import { LoginOption } from './types'
 import { CommonAuthWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { Region } from '../../../shared/regions/endpoints'
+import { ssoUrlFormatRegex, ssoUrlFormatMessage } from '../../../auth/sso/constants'
 
 const client = WebviewClientFactory.create<CommonAuthWebview>()
 
 /** Where the user is currently in the builder id setup process */
 type Stage = 'START' | 'SSO_FORM' | 'CONNECTED' | 'AUTHENTICATING' | 'AWS_PROFILE'
-
-function validateSsoUrlFormat(url: string) {
-    const regex =
-        /^(https?:\/\/(.+)\.awsapps\.com\/start|https?:\/\/identitycenter\.amazonaws\.com\/ssoins-[\da-zA-Z]{16})\/?$/
-    return regex.test(url)
-}
 
 function getCredentialId(loginOption: LoginOption) {
     switch (loginOption) {
@@ -481,9 +476,8 @@ export default defineComponent({
             }
         },
         handleUrlInput() {
-            if (this.startUrl && !validateSsoUrlFormat(this.startUrl)) {
-                this.startUrlError =
-                    'URLs must start with http:// or https://. Example: https://d-xxxxxxxxxx.awsapps.com/start'
+            if (this.startUrl && !ssoUrlFormatRegex.test(this.startUrl)) {
+                this.startUrlError = ssoUrlFormatMessage
             } else if (this.startUrl && this.existingStartUrls.some((url) => url === this.startUrl)) {
                 this.startUrlError =
                     'A connection for this start URL already exists. Sign out before creating a new one.'
