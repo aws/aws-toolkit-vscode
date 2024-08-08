@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Ignore virtual environment when indexing workspace"
+}
