@@ -240,9 +240,5 @@ export async function deleteItem(
         const sortKeyValue = selectedRow[sortKeyName]
         deleteRequest.Key[sortKeyName] = { S: sortKeyValue } as any
     }
-    const response = await client.deleteItem(deleteRequest)
-    if (response.$response.error) {
-        return false
-    }
-    return true
+    return await client.deleteItem(deleteRequest)
 }
