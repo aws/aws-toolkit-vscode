@@ -31,7 +31,7 @@ class PluginVersionChecker : ApplicationInitializedListener {
         }
 
         val core = AwsToolkit.PLUGINS_INFO.get(AwsPlugin.CORE) ?: return
-        val mismatch = AwsToolkit.PLUGINS_INFO.values.filter { it.descriptor != null && it.version != core.version }
+        val mismatch = AwsToolkit.PLUGINS_INFO.values.filter { it.descriptor?.isEnabled == true && it.version != core.version }
 
         if (mismatch.isEmpty()) {
             return
