@@ -15,10 +15,10 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.ProjectExtension
 import com.intellij.testFramework.junit5.TestDisposable
 import com.intellij.testFramework.replaceService
+import info.debatty.java.stringsimilarity.Levenshtein
 import org.assertj.core.api.Assertions.assertThat
 import org.gradle.internal.impldep.com.amazonaws.ResponseMetadata.AWS_REQUEST_ID
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.mockito.kotlin.any
@@ -38,10 +38,13 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.customization.Code
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
+import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeInsertionDiff
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererUserModificationTracker
+import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.percentage
 import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.InsertedCodeModificationEntry
 import software.aws.toolkits.jetbrains.services.telemetry.MockTelemetryServiceExtension
 import java.time.Instant
+import kotlin.math.min
 import kotlin.test.assertNotNull
 
 class CodeWhispererUserModificationTrackerTest {
@@ -61,6 +64,7 @@ class CodeWhispererUserModificationTrackerTest {
     private lateinit var mockModelConfigurator: CodeWhispererModelConfigurator
     private val project: Project
         get() = projectExtension.project
+    private val levenshtein = Levenshtein()
 
     companion object {
         @JvmField
@@ -141,11 +145,12 @@ class CodeWhispererUserModificationTrackerTest {
         sut.enqueue(insertedCodeModificationEntry)
         sut.dispose()
 
+        val percentageChanges = sut.checkDiff("println();", "print").percentage()
         verify(mockClient).sendChatUserModificationTelemetry(
             eq(conversationId),
             eq(messageId),
             eq(CodeWhispererJava.INSTANCE),
-            eq(sut.checkDiff("println();", "print")),
+            eq(percentageChanges),
             eq(CodeWhispererSettings.getInstance().isProjectContextEnabled()),
             eq(mockCustomization)
         )
@@ -158,15 +163,75 @@ class CodeWhispererUserModificationTrackerTest {
                 .matches({ it.metadata["cwsprChatConversationId"] == conversationId }, "cwsprChatConversationId doesn't match")
                 .matches({ it.metadata["cwsprChatMessageId"] == messageId }, "cwsprChatMessageId doesn't match")
                 .matches(
-                    { it.metadata["cwsprChatModificationPercentage"] == sut.checkDiff("println();", "print").toString() },
+                    { it.metadata["cwsprChatModificationPercentage"] == percentageChanges.toString() },
                     "cwsprChatModificationPercentage doesn't match"
                 )
         }
     }
 
-    @Disabled
     @Test
-    fun checkDiff() {
-        // TODO
+    fun `checkDiff edge cases`() {
+        // any empty string will return null
+        val r1 = sut.checkDiff("", "")
+        assertThat(r1).isNull()
+
+        val r2 = sut.checkDiff("foo", "")
+        assertThat(r2).isNull()
+
+        val r3 = sut.checkDiff("", "foo")
+        assertThat(r3).isNull()
+
+        // null will return null
+        val r4 = sut.checkDiff(null, null)
+        assertThat(r4).isNull()
+
+        val r5 = sut.checkDiff(null, "foo")
+        assertThat(r5).isNull()
+
+        val r6 = sut.checkDiff("foo", null)
+        assertThat(r6).isNull()
+    }
+
+    @Test
+    fun `checkDiff should return data having correct payload`() {
+        val r1 = sut.checkDiff("foo", "bar")
+        assertThat(r1).isEqualTo(
+            CodeInsertionDiff(modified = "foo", original = "bar", diff = levenshtein.distance("foo", "bar"))
+        )
+
+        val r2 = sut.checkDiff("foo", "foo")
+        assertThat(r2).isEqualTo(
+            CodeInsertionDiff(modified = "foo", original = "foo", diff = levenshtein.distance("foo", "foo"))
+        )
+    }
+
+    @Test
+    fun `CodeInsertionDiff_percentage() should return correct result`() {
+        fun assertPercentageCorrect(original: String?, modified: String?) {
+            val diff = sut.checkDiff(currString = modified, acceptedString = original)
+            val expectedPercentage: Double = when {
+                original == null || modified == null -> 1.0
+
+                original.isEmpty() || modified.isEmpty() -> 1.0
+
+                else -> min(1.0, (levenshtein.distance(modified, original) / original.length))
+            }
+
+            val actual = diff.percentage()
+
+            assertThat(actual).isEqualTo(expectedPercentage)
+        }
+
+        assertPercentageCorrect(null, null)
+        assertPercentageCorrect(null, "foo")
+        assertPercentageCorrect("foo", null)
+
+        assertPercentageCorrect("", "")
+        assertPercentageCorrect("", "foo")
+        assertPercentageCorrect("foo", "")
+
+        assertPercentageCorrect("foo", "bar")
+        assertPercentageCorrect("foo", "foo")
+        assertPercentageCorrect("bar", "foo")
     }
 }

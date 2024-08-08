@@ -57,6 +57,21 @@ data class AcceptedSuggestionEntry(
     val connection: ToolkitConnection?
 ) : UserModificationTrackingEntry
 
+data class CodeInsertionDiff(
+    val original: String,
+    val modified: String,
+    val diff: Double
+)
+
+fun CodeInsertionDiff?.percentage(): Double = when {
+    this == null -> 1.0
+
+    // TODO: should revisit this case
+    original.isEmpty() || modified.isEmpty() -> 1.0
+
+    else -> min(1.0, (diff / original.length))
+}
+
 @Service(Service.Level.PROJECT)
 class CodeWhispererUserModificationTracker(private val project: Project) : Disposable {
     private val acceptedSuggestions = LinkedBlockingDeque<UserModificationTrackingEntry>(DEFAULT_MAX_QUEUE_SIZE)
@@ -129,7 +144,7 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
             val modificationPercentage = checkDiff(currentString?.trim(), insertedCode.originalString.trim())
             sendModificationWithChatTelemetry(insertedCode, modificationPercentage)
         } catch (e: Exception) {
-            sendModificationWithChatTelemetry(insertedCode, 1.0)
+            sendModificationWithChatTelemetry(insertedCode, null)
         }
     }
 
@@ -137,7 +152,7 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
         val file = acceptedSuggestion.vFile
 
         if (file == null || (!file.isValid)) {
-            sendModificationTelemetry(acceptedSuggestion, 1.0)
+            sendModificationTelemetry(acceptedSuggestion, null)
             // temp remove event sent as further discussion needed for metric calculation
             // sendUserModificationTelemetryToServiceAPI(acceptedSuggestion, 1.0)
         } else {
@@ -156,7 +171,7 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
                 // temp remove event sent as further discussion needed for metric calculation
                 // sendUserModificationTelemetryToServiceAPI(acceptedSuggestion, modificationPercentage)
             } catch (e: Exception) {
-                sendModificationTelemetry(acceptedSuggestion, 1.0)
+                sendModificationTelemetry(acceptedSuggestion, null)
                 // temp remove event sent as further discussion needed for metric calculation
                 // sendUserModificationTelemetryToServiceAPI(acceptedSuggestion, 1.0)
             }
@@ -168,25 +183,26 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
      * Levenshtein distance was preferred over Jaro–Winkler distance for simplicity
      */
     @VisibleForTesting
-    internal fun checkDiff(currString: String?, acceptedString: String?): Double {
+    internal fun checkDiff(currString: String?, acceptedString: String?): CodeInsertionDiff? {
         if (currString == null || acceptedString == null || acceptedString.isEmpty() || currString.isEmpty()) {
-            return 1.0
+            return null
         }
-
         val diff = checker.distance(currString, acceptedString)
-        val percentage = diff / acceptedString.length
-
-        return min(1.0, percentage)
+        return CodeInsertionDiff(
+            original = acceptedString,
+            modified = currString,
+            diff = diff
+        )
     }
 
-    private fun sendModificationTelemetry(suggestion: AcceptedSuggestionEntry, percentage: Double) {
+    private fun sendModificationTelemetry(suggestion: AcceptedSuggestionEntry, diff: CodeInsertionDiff?) {
         LOG.debug { "Sending user modification telemetry. Request Id: ${suggestion.requestId}" }
         val startUrl = getConnectionStartUrl(suggestion.connection)
         CodewhispererTelemetry.userModification(
             project = project,
             codewhispererCompletionType = suggestion.completionType,
             codewhispererLanguage = suggestion.codewhispererLanguage.toTelemetryType(),
-            codewhispererModificationPercentage = percentage,
+            codewhispererModificationPercentage = diff.percentage(),
             codewhispererRequestId = suggestion.requestId,
             codewhispererRuntime = suggestion.codewhispererRuntime,
             codewhispererRuntimeSource = suggestion.codewhispererRuntimeSource,
@@ -194,15 +210,17 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
             codewhispererSuggestionIndex = suggestion.index,
             codewhispererTriggerType = suggestion.triggerType,
             credentialStartUrl = startUrl,
-            codewhispererUserGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup().name
+            codewhispererUserGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup().name,
+            codewhispererCharactersModified = diff?.modified?.length ?: 0,
+            codewhispererCharactersAccepted = diff?.original?.length ?: 0
         )
     }
 
-    private fun sendModificationWithChatTelemetry(insertedCode: InsertedCodeModificationEntry, percentage: Double) {
+    private fun sendModificationWithChatTelemetry(insertedCode: InsertedCodeModificationEntry, diff: CodeInsertionDiff?) {
         AmazonqTelemetry.modifyCode(
             cwsprChatConversationId = insertedCode.conversationId,
             cwsprChatMessageId = insertedCode.messageId,
-            cwsprChatModificationPercentage = percentage,
+            cwsprChatModificationPercentage = diff.percentage(),
             credentialStartUrl = getStartUrl(project)
         )
         val lang = insertedCode.vFile?.programmingLanguage() ?: CodeWhispererUnknownLanguage.INSTANCE
@@ -213,7 +231,7 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
             insertedCode.conversationId,
             insertedCode.messageId,
             lang,
-            percentage,
+            diff.percentage(),
             CodeWhispererSettings.getInstance().isProjectContextEnabled(),
             CodeWhispererModelConfigurator.getInstance().activeCustomization(project)
         ).also {

@@ -84,9 +84,9 @@ class CodeTransformTelemetryManager(private val project: Project) {
         codeTransformRunTimeLatency = calculateTotalLatency(startTime, Instant.now()),
     )
 
+    @Suppress("UNUSED_PARAMETER")
     fun apiError(errorMessage: String, apiName: CodeTransformApiNames, jobId: String?) = CodetransformTelemetry.logApiError(
-        codeTransformApiErrorMessage = errorMessage,
-        codeTransformApiNames = apiName,
+        reason = errorMessage,
         codeTransformSessionId = sessionId,
         codeTransformJobId = jobId,
     )
@@ -302,7 +302,7 @@ class CodeTransformTelemetryManager(private val project: Project) {
     )
 
     fun error(errorMessage: String) = CodetransformTelemetry.logGeneralError(
-        codeTransformApiErrorMessage = errorMessage,
+        reason = errorMessage,
         codeTransformSessionId = sessionId,
     )
 
