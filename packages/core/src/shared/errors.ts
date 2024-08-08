@@ -785,7 +785,15 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
         return false
     }
 
-    if (isVSCodeProxyError(err) || isSocketTimeoutError(err)) {
+    if (
+        isVSCodeProxyError(err) ||
+        isSocketTimeoutError(err) ||
+        isNonJsonHttpResponse(err) ||
+        isEnoentError(err) ||
+        isEaccesError(err) ||
+        isEbadfError(err) ||
+        isEconnRefusedError(err)
+    ) {
         return true
     }
 
@@ -805,7 +813,14 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
         'EHOSTUNREACH',
         'EADDRINUSE',
         'ENOBUFS', // client side memory issue during http request?
-        'EADDRNOTAVAIL', // port not available/allowed?
+        'EADDRNOTAVAIL', // port not available/allowed?,
+        'SELF_SIGNED_CERT_IN_CHAIN',
+        'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
+        'HPE_INVALID_VERSION',
+        'DEPTH_ZERO_SELF_SIGNED_CERT',
+        'ENOTCONN',
+        '502',
+        'InternalServerException',
     ].includes(err.code)
 }
 
@@ -816,7 +831,7 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
  * Setting ID: http.proxy
  */
 function isVSCodeProxyError(err: Error): boolean {
-    return err.name === 'Error' && err.message.startsWith('Failed to establish a socket connection to proxies')
+    return isError(err, 'Error', 'Failed to establish a socket connection to proxies')
 }
 
 /**
@@ -828,7 +843,44 @@ function isVSCodeProxyError(err: Error): boolean {
  * https://github.com/aws/aws-sdk-js-v3/issues/6271
  */
 function isSocketTimeoutError(err: Error): boolean {
-    return err.name === 'TimeoutError' && err.message.includes('Connection timed out after')
+    return isError(err, 'TimeoutError', 'Connection timed out after')
+}
+
+/**
+ * Expected JSON response from HTTP request, but got an error HTML error page instead.
+ *
+ * Example error message:
+ * "Unexpected token '<', "<html><bod"... is not valid JSON Deserialization error: to see the raw response, inspect the hidden field {error}.$response on this object."
+ */
+function isNonJsonHttpResponse(err: Error): boolean {
+    return isError(err, 'SyntaxError', 'Unexpected token')
+}
+
+/**
+ * We were seeing errors of ENOENT for the oidc FQDN (eg: oidc.us-east-1.amazonaws.com) during the SSO flow.
+ * Our assumption is that this is an intermittent error.
+ */
+function isEnoentError(err: Error): boolean {
+    return isError(err, 'ENOENT', 'getaddrinfo ENOENT')
+}
+
+function isEaccesError(err: Error): boolean {
+    return isError(err, 'EACCES', 'connect EACCES')
+}
+
+function isEbadfError(err: Error): boolean {
+    return isError(err, 'EBADF', 'connect EBADF')
+}
+
+function isEconnRefusedError(err: Error): boolean {
+    return isError(err, 'Error', 'connect ECONNREFUSED')
+}
+
+/** Helper function to assert given error has the expected properties */
+function isError(err: Error, id: string, messageIncludes: string = '') {
+    // It is not always clear if the error has the expected value in the `name` or `code` field
+    // so this checks both.
+    return (err.name === id || (err as any).code === id) && err.message.includes(messageIncludes)
 }
 
 /**
