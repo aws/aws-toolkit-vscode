@@ -1,0 +1,22 @@
+{
+	"date": "2024-08-08",
+	"version": "1.20.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /dev: include a retry option for the same prompt after folder reselection"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Ignore virtual environment when indexing workspace"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q Code Transformation: show pro tier users estimated cost of /transform on projects over 100K lines"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q Code Transformation: warn user if absolute file paths are found in the pom.xml"
+		}
+	]
+}
