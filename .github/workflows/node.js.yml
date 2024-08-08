@@ -10,6 +10,34 @@ on:
         branches: [master, feature/*, mynah-dev]
 
 jobs:
+    check-test-files:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 2
+            - name: Check for the presence test files
+              id: check_file
+              run: |
+                  testFiles=$(git diff --name-only ${{ github.event.pull_request.base.sha }} | { grep '\.test\.ts$' || true; })
+                  if [ -n "$testFiles" ]; then
+                      echo "Found test files in the code changes"
+                      exit 0
+                  fi
+                  echo "TEST_FILES_FOUND=true" >> $GITHUB_OUTPUT
+            - name: Notify contributor
+              if: steps.check_file.outputs.TEST_FILES_FOUND == 'true'
+              uses: actions/github-script@v7
+              with:
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  script: |
+                      github.rest.issues.createComment({
+                          issue_number: context.issue.number,
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          body: 'We have detected that your changes do not add or modify test files'
+                      })
+
     macos:
         name: test macOS
         runs-on: macos-latest
