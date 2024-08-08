@@ -7,6 +7,7 @@ import assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as semver from 'semver'
+import * as process from 'process'
 import { DefaultCodeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
 import * as startSecurityScan from '../../../codewhisperer/commands/startSecurityScan'
 import { SecurityPanelViewProvider } from '../../../codewhisperer/views/securityPanelViewProvider'
@@ -14,7 +15,7 @@ import { FakeExtensionContext } from '../../fakeExtensionContext'
 import * as diagnosticsProvider from '../../../codewhisperer/service/diagnosticsProvider'
 import { getTestWorkspaceFolder } from '../../../testInteg/integrationTestsUtilities'
 import { join } from 'path'
-import { assertTelemetry, closeAllEditors } from '../../testUtil'
+import { assertTelemetry, closeAllEditors, createTestWorkspaceFolder, toFile } from '../../testUtil'
 import { stub } from '../../utilities/stubber'
 import { AWSError, HttpResponse } from 'aws-sdk'
 import { getTestWindow } from '../../shared/vscode/window'
@@ -134,7 +135,6 @@ let editor: vscode.TextEditor
 
 describe('startSecurityScan', function () {
     const workspaceFolder = getTestWorkspaceFolder()
-
     beforeEach(async function () {
         extensionContext = await FakeExtensionContext.create()
         mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
@@ -447,5 +447,94 @@ describe('startSecurityScan', function () {
             reasonDesc: 'Maximum auto-scans count reached for this month.',
             passive: true,
         } as unknown as CodewhispererSecurityScan)
+    })
+})
+
+describe('startSecurityScanPerformanceTest', function () {
+    beforeEach(async function () {
+        extensionContext = await FakeExtensionContext.create()
+        mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
+        const folder = await createTestWorkspaceFolder()
+        const mockFilePath = join(folder.uri.fsPath, 'app.py')
+        await toFile('hello_world', mockFilePath)
+        appCodePath = mockFilePath
+        editor = await openTestFile(appCodePath)
+        await model.CodeScansState.instance.setScansEnabled(false)
+        sinon.stub(timeoutUtils, 'sleep')
+    })
+
+    afterEach(function () {
+        sinon.restore()
+    })
+
+    after(async function () {
+        await closeAllEditors()
+    })
+
+    const createClient = () => {
+        const mockClient = stub(DefaultCodeWhispererClient)
+        mockClient.createCodeScan.resolves(mockCreateCodeScanResponse)
+        mockClient.createUploadUrl.resolves(mockCreateUploadUrlResponse)
+        mockClient.getCodeScan.resolves(mockGetCodeScanResponse)
+        mockClient.listCodeScanFindings.resolves(mockListCodeScanFindingsResponse)
+        return mockClient
+    }
+
+    const openTestFile = async (filePath: string) => {
+        const doc = await vscode.workspace.openTextDocument(filePath)
+        return await vscode.window.showTextDocument(doc, {
+            selection: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
+        })
+    }
+
+    it('Should calculate cpu and memory usage for file scans', async function () {
+        getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
+        const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
+        const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
+
+        await model.CodeScansState.instance.setScansEnabled(true)
+        const startTime = process.hrtime()
+        const startScanCpuUsage = process.cpuUsage()
+
+        await startSecurityScan.startSecurityScan(
+            mockSecurityPanelViewProvider,
+            editor,
+            createClient(),
+            extensionContext,
+            CodeAnalysisScope.FILE
+        )
+
+        // EndScanCpuUsage is the difference of CPU Usage from start of a scan to end of a scan.
+        const EndScanCpuUsage = process.cpuUsage(startScanCpuUsage)
+        const elapsedTime = process.hrtime(startTime)
+        const elapsedSeconds = elapsedTime[0] + elapsedTime[1] / 1e9
+
+        const EndScanCpuUsageByUser = EndScanCpuUsage.user / 1000000 // Convert microseconds to seconds
+        const EndScanCpuUsageBySystem = EndScanCpuUsage.system / 1000000
+
+        const EndScanMemoryUsage = process.memoryUsage().heapTotal
+        const EndScanMemoryUsageInMB = EndScanMemoryUsage / (1024 * 1024) // Converting bytes to MB
+
+        const cpuUsagePercentage = ((EndScanCpuUsageByUser + EndScanCpuUsageBySystem) / elapsedSeconds) * 100
+
+        // These limits are considered after some observations but may vary with machine, OS etc factors.
+        assert(
+            cpuUsagePercentage < 50,
+            `Expected CPU usage should be less than 50% of total CPU%, actual CPU usage is ${cpuUsagePercentage}`
+        )
+
+        assert(
+            EndScanMemoryUsageInMB < 400,
+            'System memory usage for performing a file scan should not be greater than 400 MB'
+        )
+
+        assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
+        assert.ok(securityScanRenderSpy.calledOnce)
+        const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
+        assert.strictEqual(warnings.length, 0)
+        assertTelemetry('codewhisperer_securityScan', {
+            codewhispererCodeScanScope: 'FILE',
+            passive: true,
+        })
     })
 })
