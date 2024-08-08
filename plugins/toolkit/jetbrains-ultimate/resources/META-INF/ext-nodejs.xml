@@ -15,11 +15,4 @@
         <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJs20ImageDebug"/>
         <sam.projectWizard id="NODEJS" implementationClass="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsSamProjectWizard"/>
     </extensions>
-    <extensions defaultExtensionNs="amazon.q.codewhisperer">
-        <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJavaScript"/>
-        <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTypeScript"/>
-        <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJsx"/>
-        <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTsx"/>
-        <importAdder implementation="software.aws.toolkits.jetbrains.services.codewhisperer.importadder.CodeWhispererJSImportAdder"/>
-    </extensions>
 </idea-plugin>

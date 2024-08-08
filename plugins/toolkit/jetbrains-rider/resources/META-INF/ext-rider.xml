@@ -35,10 +35,6 @@
         <sam.projectWizard id="DOTNET" implementationClass="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetSamProjectWizard"/>
     </extensions>
 
-    <extensions defaultExtensionNs="amazon.q.codewhisperer">
-        <programmingLanguage implementation="software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererCsharp"/>
-    </extensions>
-
     <actions>
         <group id="aws.toolkit.serverless.template.rider">
             <add-to-group group-id="SolutionExplorerPopupMenu" anchor="last"/>

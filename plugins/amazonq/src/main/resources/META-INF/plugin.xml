@@ -48,13 +48,20 @@
 
     <depends>aws.toolkit.core</depends>
     <depends>com.intellij.modules.lang</depends>
-    <depends optional="true" config-file="ext-java.xml">com.intellij.java</depends>
-    <depends optional="true" config-file="ext-python.xml">com.intellij.modules.python</depends>
-    <depends optional="true" config-file="ext-scala.xml">org.intellij.scala</depends>
-    <depends optional="true" config-file="ext-kotlin.xml">org.jetbrains.kotlin</depends>
-    <depends optional="true" config-file="ext-shell.xml">com.jetbrains.sh</depends>
-    <depends optional="true" config-file="ext-rust.xml">com.jetbrains.rust</depends>
-    <depends optional="true" config-file="ext-rust-deprecated.xml">org.rust.lang</depends>
+
+    <depends optional="true" config-file="amazonq-ext-datagrip.xml">com.intellij.database</depends>
+    <depends optional="true" config-file="amazonq-ext-go.xml">org.jetbrains.plugins.go</depends>
+    <depends optional="true" config-file="amazonq-ext-java.xml">com.intellij.java</depends>
+    <depends optional="true" config-file="amazonq-ext-kotlin.xml">org.jetbrains.kotlin</depends>
+    <depends optional="true" config-file="amazonq-ext-nodejs.xml">JavaScriptDebugger</depends>
+    <depends optional="true" config-file="amazonq-ext-php.xml">com.jetbrains.php</depends>
+    <depends optional="true" config-file="amazonq-ext-python.xml">com.intellij.modules.python</depends>
+    <depends optional="true" config-file="amazonq-ext-rider.xml">com.intellij.modules.rider</depends>
+    <depends optional="true" config-file="amazonq-ext-ruby.xml">org.jetbrains.plugins.ruby</depends>
+    <depends optional="true" config-file="amazonq-ext-rust.xml">com.jetbrains.rust</depends>
+    <depends optional="true" config-file="amazonq-ext-rust-deprecated.xml">org.rust.lang</depends>
+    <depends optional="true" config-file="amazonq-ext-scala.xml">org.intellij.scala</depends>
+    <depends optional="true" config-file="amazonq-ext-shell.xml">com.jetbrains.sh</depends>
 
     <incompatible-with>com.intellij.cwm.guest</incompatible-with>
     <incompatible-with>com.intellij.jetbrains.client</incompatible-with>

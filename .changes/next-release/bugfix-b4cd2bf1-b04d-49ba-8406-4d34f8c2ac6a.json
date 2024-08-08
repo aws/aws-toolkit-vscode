@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix 'Cannot create extension' in AWS Toolkit"
+}

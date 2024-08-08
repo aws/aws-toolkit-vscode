@@ -5,6 +5,4 @@
     <depends optional="true" config-file="ext-nodejs.xml">JavaScriptDebugger</depends>
     <depends optional="true" config-file="ext-datagrip.xml">com.intellij.database</depends>
     <depends optional="true" config-file="ext-go.xml">org.jetbrains.plugins.go</depends>
-    <depends optional="true" config-file="ext-ruby.xml">org.jetbrains.plugins.ruby</depends>
-    <depends optional="true" config-file="ext-php.xml">com.jetbrains.php</depends>
 </idea-plugin>
