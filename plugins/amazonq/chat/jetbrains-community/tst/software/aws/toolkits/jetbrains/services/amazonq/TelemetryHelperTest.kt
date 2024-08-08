@@ -140,7 +140,8 @@ class TelemetryHelperTest {
             userIntent = UserIntent.IMPROVE_CODE,
             triggerType = TriggerType.Hotkeys,
             customization = mockCustomization,
-            relevantTextDocuments = listOf()
+            relevantTextDocuments = emptyList(),
+            useRelevantDocuments = true,
         )
         private val response = ChatMessage(
             tabId = tabId,

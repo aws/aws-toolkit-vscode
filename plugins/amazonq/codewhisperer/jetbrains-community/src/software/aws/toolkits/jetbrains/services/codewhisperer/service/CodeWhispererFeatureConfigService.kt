@@ -80,6 +80,8 @@ class CodeWhispererFeatureConfigService {
     // 6) Add a test case for this feature.
     fun getTestFeature(): String = getFeatureValueForKey(TEST_FEATURE_NAME).stringValue()
 
+    fun getIsDataCollectionEnabled(): Boolean = getFeatureValueForKey(DATA_COLLECTION_FEATURE).stringValue() == "data-collection"
+
     fun getCustomizationArnOverride(): String = getFeatureValueForKey(CUSTOMIZATION_ARN_OVERRIDE_NAME).stringValue()
 
     // Get the feature value for the given key.
@@ -91,6 +93,7 @@ class CodeWhispererFeatureConfigService {
     companion object {
         fun getInstance(): CodeWhispererFeatureConfigService = service()
         private const val TEST_FEATURE_NAME = "testFeature"
+        private const val DATA_COLLECTION_FEATURE = "IDEProjectContextDataCollection"
         const val CUSTOMIZATION_ARN_OVERRIDE_NAME = "customizationArnOverride"
         private val LOG = getLogger<CodeWhispererFeatureConfigService>()
 

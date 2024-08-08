@@ -198,7 +198,7 @@ class ChatSessionV1(
      */
     private fun ChatRequestData.toChatRequest(): GenerateAssistantResponseRequest {
         val userInputMessageContextBuilder = UserInputMessageContext.builder()
-        userInputMessageContextBuilder.editorState(activeFileContext.toEditorState(relevantTextDocuments))
+        userInputMessageContextBuilder.editorState(activeFileContext.toEditorState(relevantTextDocuments, useRelevantDocuments))
         val userInputMessageContext = userInputMessageContextBuilder.build()
 
         val userInput = UserInputMessage.builder()
@@ -217,7 +217,7 @@ class ChatSessionV1(
             .build()
     }
 
-    private fun ActiveFileContext.toEditorState(relevantDocuments: List<RelevantDocument>): EditorState {
+    private fun ActiveFileContext.toEditorState(relevantDocuments: List<RelevantDocument>, useRelevantDocuments: Boolean): EditorState {
         val editorStateBuilder = EditorState.builder()
         if (fileContext != null) {
             val cursorStateBuilder = CursorState.builder()
@@ -284,6 +284,7 @@ class ChatSessionV1(
         }
 
         editorStateBuilder.relevantDocuments(documents)
+        editorStateBuilder.useRelevantDocuments(useRelevantDocuments)
         return editorStateBuilder.build()
     }
 

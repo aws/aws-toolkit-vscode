@@ -23,7 +23,8 @@ data class ChatRequestData(
     val userIntent: UserIntent?,
     val triggerType: TriggerType,
     val customization: CodeWhispererCustomization?,
-    val relevantTextDocuments: List<RelevantDocument>
+    val relevantTextDocuments: List<RelevantDocument>,
+    val useRelevantDocuments: Boolean
 )
 
 interface CodeNames {

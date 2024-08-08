@@ -134,6 +134,10 @@
             "event":true,
             "sensitive":true
         },
+        "Boolean":{
+            "type":"boolean",
+            "box":true
+        },
         "ChatHistory":{
             "type":"list",
             "member":{"shape":"ChatMessage"},
@@ -276,7 +280,8 @@
             "members":{
                 "document":{"shape":"TextDocument"},
                 "cursorState":{"shape":"CursorState"},
-                "relevantDocuments": {"shape": "RelevantDocumentList"}
+                "relevantDocuments": {"shape": "RelevantDocumentList"},
+                "useRelevantDocuments": {"shape": "Boolean"}
             }
         },
         "ExportContext":{
