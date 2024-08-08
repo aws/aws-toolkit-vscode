@@ -1,3 +1,12 @@
+# _3.22_ (2024-08-08)
+- **(Feature)** feat(Amazon Q Code Transformation): warn user if absolute path found in pom.xml
+- **(Feature)** feat(Amazon Q Code Transformation): show pro tier users estimated cost of /transform on projects over 100K lines
+- **(Bug Fix)** fix(Amazon Q Code Transformation): prevent empty chat bubble from appearing when starting or cancelling a transformation
+- **(Bug Fix)** Amazon Q /dev: include a retry option for the same prompt after folder reselection
+- **(Bug Fix)** Fix inability to open files on double click and open context menu on right click in the S3 bucket viewer
+- **(Bug Fix)** fix(amazonq): Amazon Q chat `@workspace` uses more than 20% cpu
+- **(Bug Fix)** Fix 'Cannot create extension' in AWS Toolkit
+
 # _3.21_ (2024-08-01)
 - **(Bug Fix)** Fix NullPointerException that may happen when re-authenticating to Amazon Q
 - **(Bug Fix)** Amazon Q Chat: Fixing issue with the max tabs notification not being dismissible

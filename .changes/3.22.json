@@ -1,0 +1,26 @@
+{
+  "date" : "2024-08-08",
+  "version" : "3.22",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "feat(Amazon Q Code Transformation): warn user if absolute path found in pom.xml"
+  }, {
+    "type" : "feature",
+    "description" : "feat(Amazon Q Code Transformation): show pro tier users estimated cost of /transform on projects over 100K lines"
+  }, {
+    "type" : "bugfix",
+    "description" : "fix(Amazon Q Code Transformation): prevent empty chat bubble from appearing when starting or cancelling a transformation"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q /dev: include a retry option for the same prompt after folder reselection"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix inability to open files on double click and open context menu on right click in the S3 bucket viewer"
+  }, {
+    "type" : "bugfix",
+    "description" : "fix(amazonq): Amazon Q chat `@workspace` uses more than 20% cpu"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix 'Cannot create extension' in AWS Toolkit"
+  } ]
+}

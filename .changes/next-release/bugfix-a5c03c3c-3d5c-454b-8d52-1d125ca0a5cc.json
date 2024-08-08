@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "fix(amazonq): Amazon Q chat `@workspace` uses more than 20% cpu"
-}

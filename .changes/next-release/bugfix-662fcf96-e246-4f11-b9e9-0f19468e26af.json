@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "fix(Amazon Q Code Transformation): prevent empty chat bubble from appearing when starting or cancelling a transformation"
-}

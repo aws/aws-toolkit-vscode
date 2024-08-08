@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix inability to open files on double click and open context menu on right click in the S3 bucket viewer"
-}

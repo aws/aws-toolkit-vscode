@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "feat(Amazon Q Code Transformation): warn user if absolute path found in pom.xml"
-}
