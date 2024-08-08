@@ -1,9 +1,15 @@
 <template>
     <div class="context-menu" v-if="visible" :style="style">
-        <button @click="onCopy">
+        <button @click="onCopyCell">
             <p>
                 <span class="icon icon-sm icon-vscode-copy"></span>
                 Copy
+            </p>
+        </button>
+        <button @click="onCopyRow">
+            <p>
+                <span class="icon icon-sm icon-vscode-copy"></span>
+                Copy Row
             </p>
         </button>
         <vscode-divider style="margin-top: 2px"></vscode-divider>
@@ -42,8 +48,13 @@ export default defineComponent({
             left: `${props.position.left}px`,
         }))
 
-        const onCopy = () => {
-            emit('copy')
+        const onCopyCell = () => {
+            emit('copyCell')
+            emit('close')
+        }
+
+        const onCopyRow = () => {
+            emit('copyRow')
             emit('close')
         }
 
@@ -59,7 +70,8 @@ export default defineComponent({
 
         return {
             style,
-            onCopy,
+            onCopyCell,
+            onCopyRow,
             onDelete,
             onEdit,
         }

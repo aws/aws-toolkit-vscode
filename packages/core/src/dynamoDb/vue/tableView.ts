@@ -82,6 +82,12 @@ export class DynamoDbTableWebview extends VueWebview {
         return await getTableKeySchema(this.data.tableName, this.data.region)
     }
 
+    public async copyCell(selectedCell: string) {
+        if (selectedCell !== '') {
+            await copyToClipboard(JSON.stringify(selectedCell), 'TableCell')
+        }
+    }
+
     public async copyRow(selectedRow: RowData) {
         if (selectedRow !== undefined) {
             await copyToClipboard(JSON.stringify(selectedRow), 'TableItem')

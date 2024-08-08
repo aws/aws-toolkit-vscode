@@ -73,7 +73,8 @@
                 v-if="contextMenuVisible"
                 :position="contextMenuPosition"
                 :visible="contextMenuVisible"
-                @copy="handleCopy"
+                @copyCell="handleCopyCell"
+                @copyRow="handleCopyRow"
                 @delete="handleDelete"
                 @edit="handleEdit"
                 @close="contextMenuVisible = false"
@@ -117,6 +118,7 @@ const contextMenuVisible = ref(false)
 const contextMenuPosition = ref({ top: 0, left: 0 })
 let selectedRow = ref<RowData>()
 let tableSchema: TableSchema
+let selectedCell = ''
 
 export default defineComponent({
     data() {
@@ -228,9 +230,14 @@ export default defineComponent({
             contextMenuPosition.value = { top: event.clientY, left: event.clientX }
             contextMenuVisible.value = true
             selectedRow.value = row
+            selectedCell = (event.target as any).innerHTML
         },
 
-        handleCopy() {
+        handleCopyCell() {
+            client.copyCell(selectedCell)
+        },
+
+        handleCopyRow() {
             if (selectedRow.value === undefined) {
                 return
             }
