@@ -8,6 +8,8 @@ import { codeWhispererClient as client } from '../client/codewhisperer'
 import { AuthUtil } from '../util/authUtil'
 import { getLogger } from '../../shared/logger'
 import { isBuilderIdConnection, isIdcSsoConnection } from '../../auth/connection'
+import { CodeWhispererSettings } from '../util/codewhispererSettings'
+import globals from '../../shared/extensionGlobals'
 
 export class FeatureContext {
     constructor(
@@ -20,6 +22,7 @@ export class FeatureContext {
 const testFeatureName = 'testFeature'
 const customizationArnOverrideName = 'customizationArnOverride'
 const featureConfigPollIntervalInMs = 30 * 60 * 1000 // 30 mins
+const dataCollectionFeatureName = 'IDEProjectContextDataCollection'
 
 // TODO: add real feature later
 export const featureDefinitions = new Map([
@@ -35,6 +38,8 @@ export class FeatureConfigProvider {
 
     static #instance: FeatureConfigProvider
 
+    private _isDataCollectionGroup = false
+
     constructor() {
         this.fetchFeatureConfigs().catch((e) => {
             getLogger().error('fetchFeatureConfigs failed: %s', (e as Error).message)
@@ -45,6 +50,10 @@ export class FeatureConfigProvider {
 
     public static get instance() {
         return (this.#instance ??= new this())
+    }
+
+    isAmznDataCollectionGroup(): boolean {
+        return this._isDataCollectionGroup
     }
 
     async fetchFeatureConfigs(): Promise<void> {
@@ -63,7 +72,6 @@ export class FeatureConfigProvider {
                     new FeatureContext(evaluation.feature, evaluation.variation, evaluation.value)
                 )
             })
-
             const customizationArnOverride = this.featureConfigs.get(customizationArnOverrideName)?.value?.stringValue
             if (customizationArnOverride !== undefined) {
                 // Double check if server-side wrongly returns a customizationArn to BID users
@@ -94,6 +102,17 @@ export class FeatureConfigProvider {
                         )
                         this.featureConfigs.delete(customizationArnOverrideName)
                     }
+                }
+            }
+
+            const dataCollectionValue = this.featureConfigs.get(dataCollectionFeatureName)?.value.stringValue
+            if (dataCollectionValue === 'data-collection') {
+                this._isDataCollectionGroup = true
+                // Enable local workspace index by default, for Amzn users.
+                const isSet = globals.globalState.get<boolean>('aws.amazonq.workspaceIndexToggleOn') || false
+                if (!isSet) {
+                    await CodeWhispererSettings.instance.enableLocalIndex()
+                    globals.globalState.tryUpdate('aws.amazonq.workspaceIndexToggleOn', true)
                 }
             }
         } catch (e) {

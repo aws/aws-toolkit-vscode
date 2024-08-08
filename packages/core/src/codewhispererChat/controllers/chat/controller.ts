@@ -47,6 +47,7 @@ import { randomUUID } from '../../../shared/crypto'
 import { LspController } from '../../../amazonq/lsp/lspController'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
+import { FeatureConfigProvider } from '../../../codewhisperer/service/featureConfigProvider'
 import { getHttpStatusCode, getReasonFromSyntaxError } from '../../../shared/errors'
 
 export interface ChatControllerMessagePublishers {
@@ -557,9 +558,10 @@ export class ChatController {
             await this.messenger.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
             return
         }
+        triggerPayload.useRelevantDocuments = false
         if (triggerPayload.message) {
-            const userIntentEnableProjectContext = triggerPayload.message.includes(`@workspace`)
-            if (userIntentEnableProjectContext) {
+            triggerPayload.useRelevantDocuments = triggerPayload.message.includes(`@workspace`)
+            if (triggerPayload.useRelevantDocuments) {
                 triggerPayload.message = triggerPayload.message.replace(/@workspace/g, '')
                 if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                     const start = performance.now()
@@ -574,6 +576,19 @@ export class ChatController {
                     this.messenger.sendOpenSettingsMessage(triggerID, tabID)
                     return
                 }
+            }
+            // if user does not have @workspace in the prompt, but user is in the data collection group
+            // If the user is in the data collection group but turned off local index to opt-out, do not collect data.
+            // TODO: Remove this entire block of code in one month as requested
+            else if (
+                FeatureConfigProvider.instance.isAmznDataCollectionGroup() &&
+                !LspController.instance.isIndexingInProgress() &&
+                CodeWhispererSettings.instance.isLocalIndexEnabled()
+            ) {
+                getLogger().info(`amazonq: User is in data collection group`)
+                const start = performance.now()
+                triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
+                triggerPayload.projectContextQueryLatencyMs = performance.now() - start
             }
         }
 
