@@ -60,6 +60,7 @@ import { ExtStartUpSources } from './shared/telemetry'
 import { activate as activateThreatComposerEditor } from './threatComposer/activation'
 import { isSsoConnection, hasScopes } from './auth/connection'
 import { setContext } from './shared'
+import { AuthSSOServer } from './auth/sso/server'
 
 let localize: nls.LocalizeFunc
 
@@ -145,6 +146,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         // MUST restore CW/Q auth so that we can see if this user is already a Q user.
         await AuthUtil.instance.restore()
+        await AuthSSOServer.instance.start()
 
         await activateAwsExplorer({
             context: extContext,
@@ -247,6 +249,7 @@ export async function activate(context: vscode.ExtensionContext) {
 export async function deactivate() {
     await deactivateCommon()
     await globals.resourceManager.dispose()
+    await AuthSSOServer.instance.close()
 }
 
 async function handleAmazonQInstall() {

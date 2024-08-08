@@ -33,7 +33,6 @@ import { AuthSources } from '../util'
 import { AuthEnabledFeatures, AuthError, AuthFlowState, AuthUiClick, TelemetryMetadata, userCancelled } from './types'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { DevSettings } from '../../../shared/settings'
-import { AuthSSOServer } from '../../../auth/sso/server'
 import { getLogger } from '../../../shared/logger/logger'
 
 export abstract class CommonAuthWebview extends VueWebview {
@@ -296,9 +295,5 @@ export abstract class CommonAuthWebview extends VueWebview {
 
     getDefaultStartUrl() {
         return DevSettings.instance.get('autofillStartUrl', '')
-    }
-
-    cancelAuthFlow() {
-        AuthSSOServer.lastInstance?.cancelCurrentFlow()
     }
 }

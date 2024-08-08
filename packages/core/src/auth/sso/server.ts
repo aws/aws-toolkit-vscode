@@ -11,7 +11,7 @@ import { Socket } from 'net'
 import globals from '../../shared/extensionGlobals'
 import { Result } from '../../shared/utilities/result'
 import fs from '../../shared/fs/fs'
-import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { randomUUID } from '../../shared/crypto'
 
 export class MissingPortError extends ToolkitError {
     constructor() {
@@ -50,7 +50,10 @@ export class AuthError extends ToolkitError {
 export class AuthSSOServer {
     // Last initialized instance of the Auth Server
     static #lastInstance: AuthSSOServer | undefined
-    public static get lastInstance() {
+    public static get instance() {
+        if (!AuthSSOServer.#lastInstance) {
+            AuthSSOServer.#lastInstance = new AuthSSOServer(randomUUID())
+        }
         return AuthSSOServer.#lastInstance
     }
 
@@ -66,7 +69,7 @@ export class AuthSSOServer {
 
     private _closed: boolean = false
 
-    private constructor(private readonly state: string) {
+    private constructor(public readonly state: string) {
         this.authenticationPromise = new Promise<Result<string>>((resolve) => {
             this.deferred = { resolve }
         })
@@ -106,22 +109,6 @@ export class AuthSSOServer {
         this.server.on('connection', (connection) => {
             this.connections.push(connection)
         })
-    }
-
-    public static init(state: string) {
-        const lastInstance = AuthSSOServer.#lastInstance
-        if (lastInstance !== undefined && !lastInstance.closed) {
-            lastInstance
-                .close()!
-                .catch((err) =>
-                    getLogger().error('Failed to close already existing auth sever in AuthSSOServer.init(): %s', err)
-                )
-        }
-
-        getLogger().debug('AuthSSOServer: Initialized new auth server.')
-        const instance = new AuthSSOServer(state)
-        AuthSSOServer.#lastInstance = instance
-        return instance
     }
 
     start() {
@@ -264,11 +251,6 @@ export class AuthSSOServer {
 
         // Send the response back to the editor
         this.deferred?.resolve(Result.err(error))
-    }
-
-    public cancelCurrentFlow() {
-        getLogger().debug('AuthSSOServer: Cancelling current login flow')
-        this.deferred?.resolve(Result.err(new CancellationError('user')))
     }
 
     public waitForAuthorization(): Promise<Result<string>> {

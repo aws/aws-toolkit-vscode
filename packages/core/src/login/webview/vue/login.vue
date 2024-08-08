@@ -501,8 +501,6 @@ export default defineComponent({
             void client.emitUiClick('auth_regionSelection')
         },
         async handleCancelButton() {
-            void client.cancelAuthFlow()
-
             await client.storeMetricMetadata({ isReAuth: false, result: 'Cancelled' })
             void client.emitAuthMetric()
             void client.emitUiClick('auth_cancelButton')
