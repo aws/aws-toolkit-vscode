@@ -95,6 +95,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): Gen
     const relevantDocuments: RelevantTextDocument[] = triggerPayload.relevantTextDocuments
         ? triggerPayload.relevantTextDocuments
         : []
+    const useRelevantDocuments = triggerPayload.useRelevantDocuments
     // service will throw validation exception if string is empty
     const customizationArn: string | undefined = undefinedIfEmpty(triggerPayload.customization.arn)
 
@@ -110,6 +111,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): Gen
                             document,
                             cursorState,
                             relevantDocuments,
+                            useRelevantDocuments,
                         },
                     },
                     userIntent: triggerPayload.userIntent,
