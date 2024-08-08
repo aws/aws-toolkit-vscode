@@ -485,13 +485,20 @@ describe('util', function () {
         assert.deepStrictEqual(
             isNetworkError(new Error('Failed to establish a socket connection to proxies BLAH BLAH BLAH')),
             true,
-            'Did not return "true" on a VS Code Proxy error'
+            'Did not VS Code Proxy error as network error'
         )
         assert.deepStrictEqual(
             isNetworkError(new Error('I am NOT a network error')),
             false,
             'Incorrectly indicated as network error'
         )
+        let err = new Error("Unexpected token '<'")
+        err.name = 'SyntaxError'
+        assert.deepStrictEqual(isNetworkError(err), true, 'Did not indicate SyntaxError as network error')
+
+        err = new Error('getaddrinfo ENOENT oidc.us-east-1.amazonaws.com')
+        ;(err as any).code = 'ENOENT'
+        assert.deepStrictEqual(isNetworkError(err), true, 'Did not indicate ENOENT error as network error')
     })
 
     it('scrubNames()', async function () {
