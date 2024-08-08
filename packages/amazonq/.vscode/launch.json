@@ -15,7 +15,7 @@
                 "webRoot": "${workspaceFolder}"
             },
             "runtimeExecutable": "${execPath}",
-            "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+            "args": ["--extensionDevelopmentPath=${workspaceFolder}", "${input:disableExtensions}"],
             "env": {
                 "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010",
                 "WEBPACK_DEVELOPER_SERVER": "http://localhost:8080"
@@ -101,6 +101,24 @@
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
             "preLaunchTask": "watch"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "disableExtensions",
+            "type": "pickString",
+            "description": "Disable extensions when running tests",
+            "options": [
+                {
+                    "value": "--disable-extensions",
+                    "label": "Yes"
+                },
+                {
+                    "value": "",
+                    "label": "No"
+                }
+            ],
+            "default": "No"
         }
     ]
 }
