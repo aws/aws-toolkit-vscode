@@ -43,6 +43,7 @@ import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { randomUUID } from '../../shared/crypto'
 import { collectFiles, getWorkspaceFoldersByPrefixes } from '../../shared/utilities/workspaceUtils'
 import { i18n } from '../../shared/i18n-helper'
+import { Messenger } from '../controllers/chat/messenger/messenger'
 
 export class ConversationNotStartedState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
@@ -245,11 +246,13 @@ abstract class CodeGenBase {
     }
 
     async generateCode({
+        messenger,
         fs,
         codeGenerationId,
         telemetry: telemetry,
         workspaceFolders,
     }: {
+        messenger: Messenger
         fs: VirtualFileSystem
         codeGenerationId: string
         telemetry: TelemetryHelper
@@ -288,6 +291,15 @@ abstract class CodeGenBase {
                 }
                 case CodeGenerationStatus.PREDICT_READY:
                 case CodeGenerationStatus.IN_PROGRESS: {
+                    if (codegenResult.codeGenerationStatusDetail) {
+                        messenger.sendAnswer({
+                            message:
+                                i18n('AWS.amazonq.featureDev.pillText.generatingCode') +
+                                `\n\n${codegenResult.codeGenerationStatusDetail}`,
+                            type: 'answer-part',
+                            tabID: this.tabID,
+                        })
+                    }
                     await new Promise((f) => globals.clock.setTimeout(f, this.requestDelay))
                     break
                 }
@@ -381,6 +393,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                 })
 
                 const codeGeneration = await this.generateCode({
+                    messenger: action.messenger,
                     fs: action.fs,
                     codeGenerationId,
                     telemetry: action.telemetry,
