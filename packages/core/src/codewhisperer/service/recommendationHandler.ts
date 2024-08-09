@@ -656,9 +656,9 @@ export class RecommendationHandler {
             return
         }
         if (this.isSuggestionVisible()) {
-            // to force refresh the visual cue so that the total recommendation count can be updated
+            // do not force refresh the tooltip to avoid suggestion "flashing"
             // const index = this.inlineCompletionProvider?.getActiveItemIndex
-            await this.showRecommendation(0, false)
+            // await this.showRecommendation(0, false)
             return
         }
         if (
