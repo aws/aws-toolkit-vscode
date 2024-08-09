@@ -12,7 +12,7 @@
                         }}</span>
                     </div>
                     <div class="header-right">
-                        <vscode-button class="refresh-button" @click="refreshTable">Refresh</vscode-button>
+                        <vscode-button class="refresh-button" @click="refreshTable">Re-Scan</vscode-button>
                         <div class="pagination">
                             <vscode-link :class="{ disabled: isFirstPage }" @click="prevPage">&lt;</vscode-link>
                             <vscode-link href="#">{{ dynamoDbTableData.currentPage }}</vscode-link>
@@ -43,7 +43,7 @@
                         </div>
                     </div>
                     <div class="header-right">
-                        <vscode-button class="refresh-button" style="visibility: hidden">Refresh</vscode-button>
+                        <vscode-button class="refresh-button" @click="refreshTableQueryPanel">Re-Run</vscode-button>
                         <div class="pagination">
                             <vscode-link :class="{ disabled: isFirstPage }" @click="prevPage">&lt;</vscode-link>
                             <vscode-link href="#">{{ dynamoDbTableData.currentPage }}</vscode-link>
@@ -179,11 +179,22 @@ export default defineComponent({
     methods: {
         async refreshTable() {
             this.isLoading = true
-            this.resetFields()
             this.updatePageNumber()
             this.dynamoDbTableData = await client.fetchPageData(undefined)
             this.pageKeys = [undefined, this.dynamoDbTableData.lastEvaluatedKey]
             this.queryPanelData.isActive = false
+            this.isLoading = false
+        },
+
+        async refreshTableQueryPanel() {
+            this.isLoading = true
+            if (this.queryPanelData.isActive) {
+                this.updatePageNumber()
+                this.dynamoDbTableData = await client.queryData(this.queryPanelData.queryRequest, undefined)
+                this.pageKeys = [undefined, this.dynamoDbTableData.lastEvaluatedKey]
+            } else {
+                this.refreshTable()
+            }
             this.isLoading = false
         },
 
