@@ -275,6 +275,101 @@ async function registerAppBuilderCommands(
         return vscode.Uri.parse(dir)
     }
 
+    /**
+     * create wizard to choose runtime/Location
+     */
+    const chooseRuntimeLocaltionWizard = new (class ExampleWizard extends Wizard<{
+        runtime: string
+        dir: string
+    }> {
+        public constructor() {
+            super()
+            const form = this.form
+
+            // step1: choose runtime
+            const items = [
+                { label: 'Python', data: 'python' },
+                { label: 'Node JS', data: 'node' },
+                { label: 'Java', data: 'java' },
+                { label: 'Dot Net', data: 'dotnet' },
+            ]
+            form.runtime.bindPrompter(() => {
+                return createQuickPick(items, {
+                    title: localize('AWS.toolkit.walkthrough.selectruntime', 'Select a runtime'),
+                    buttons: createCommonButtons(serverlessLandUrl),
+                })
+            })
+
+            // step2: choose location for project
+            const wsFolders = vscode.workspace.workspaceFolders
+            const items2 = [
+                {
+                    label: localize('AWS.toolkit.walkthrough.openexplorer', 'Open file explorer'),
+                    data: 'file-selector',
+                },
+            ]
+
+            // if at least one open workspace, add all opened workspace as options
+            if (wsFolders) {
+                for (var wsFolder of wsFolders) {
+                    items2.push({ label: wsFolder.uri.fsPath, data: wsFolder.uri.fsPath })
+                }
+            }
+
+            form.dir.bindPrompter(() => {
+                return createQuickPick(items2, {
+                    title: localize('AWS.toolkit.walkthrough.projectlocation', 'Select a location for project'),
+                    buttons: createCommonButtons(serverlessLandUrl),
+                })
+            })
+        }
+    })()
+
+    interface IServerlessLandProject {
+        asset: string
+        handler: string
+        template: string
+    }
+
+    /**
+     * Takes projectUri and runtime then generate matching project
+     * @param projectUri The choosen project uri to generate proejct
+     * @param runtime The runtime choosen
+     */
+    async function genWalkthroughProject(projectUri: vscode.Uri, runtime: string): Promise<void> {
+        // create project here
+        // TODO update with file fetching from serverless land
+        const walkthroughSelected = context.extensionContext.globalState.get('walkthroughSelected')
+
+        let appMap = new Map<string, IServerlessLandProject>()
+        appMap.set('APIpython', {
+            asset: 'hello-world-sam',
+            handler: 'hello_world/app.py',
+            template: 'template.yaml',
+        })
+        appMap.set('APInode', { asset: 'apigw-iam', handler: 'src/app.js', template: 'template.yaml' })
+        appMap.set('APIpython', {
+            asset: 'hello-world-sam',
+            handler: 'hello_world/app.py',
+            template: 'template.yaml',
+        })
+
+        const appSelected = appMap.get(walkthroughSelected + runtime)
+        if (!appSelected) {
+            throw new ToolkitError(
+                `Tried to get template '${walkthroughSelected}+${runtime}', but it hasn't been registered.`
+            )
+        }
+
+        // await getServerlesslandPattern(projectOwner, projectRepo, appSelected.asset, projectUri)
+        const lambdaUri = vscode.Uri.joinPath(projectUri, appSelected.asset, appSelected.handler)
+        const templateUri = vscode.Uri.joinPath(projectUri, appSelected.asset, appSelected.template)
+        await vscode.commands.executeCommand('explorer.openToSide', lambdaUri)
+        await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')
+        await vscode.commands.executeCommand('explorer.openToSide', templateUri)
+        await vscode.commands.executeCommand('aws.openInApplicationComposer', templateUri)
+    }
+
     context.extensionContext.subscriptions.push(
         Commands.register('aws.toolkit.setWalkthroughToAPI', async () => {
             setWalkthrough('API')
@@ -296,73 +391,17 @@ async function registerAppBuilderCommands(
             const walkthroughRuntime = context.extensionContext.globalState.get('walkthroughRuntime')
             return walkthroughRuntime
         }),
-        Commands.register('aws.toolkit.installAWSCLI', async () => {
-            // get arch/sys => support win/mac
-            //const installer_path = `/private/tmp/AWSCLIV2-${date.toISOString().split('T')[0]}.pkg`;
-            // if mac
-            // const downloadUrl = new URL('https://awscli.amazonaws.com/AWSCLIV2.pkg')
-            // To update with installer PR
-            // await installOnMac(downloadUrl, 'awscli')
-        }),
         Commands.register('aws.toolkit.installSAMCLI', async () => {
-            // get arch/sys => support win/mac
-            //if mac
-            // const downloadUrl = new URL(
-            //     'https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-macos-x86_64.pkg'
-            // )
-            // To update with installer PR
-            // await installOnMac(downloadUrl, 'samcli')
+            // await tools.sam.installGui()
+        }),
+        Commands.register('aws.toolkit.installAWSCLI', async () => {
+            // await tools.aws.installGui()
+        }),
+        Commands.register('aws.toolkit.installDocker', async () => {
+            // await tools.docker.installGui()
         }),
         Commands.register('aws.toolkit.getRuntimeQuickPick', async () => {
-            const wizard = new (class ExampleWizard extends Wizard<{
-                runtime: string
-                dir: string
-            }> {
-                public constructor() {
-                    super()
-                    const form = this.form
-
-                    // step1: choose runtime
-                    const items = [
-                        { label: 'Python', data: 'python' },
-                        { label: 'Node JS', data: 'node' },
-                        { label: 'Java', data: 'java' },
-                        { label: 'Dot Net', data: 'dotnet' },
-                    ]
-                    form.runtime.bindPrompter(() => {
-                        return createQuickPick(items, {
-                            title: localize('AWS.toolkit.walkthrough.selectruntime', 'Select a runtime'),
-                            buttons: createCommonButtons(serverlessLandUrl),
-                        })
-                    })
-
-                    // step2: choose location for project
-                    const wsFolders = vscode.workspace.workspaceFolders
-                    const items2 = [
-                        {
-                            label: localize('AWS.toolkit.walkthrough.openexplorer', 'Open file explorer'),
-                            data: 'file-selector',
-                        },
-                    ]
-
-                    // if at least one open workspace, add all opened workspace as options
-                    if (wsFolders) {
-                        for (var wsFolder of wsFolders) {
-                            items2.push({ label: wsFolder.uri.fsPath, data: wsFolder.uri.fsPath })
-                        }
-                    }
-
-                    form.dir.bindPrompter(() => {
-                        return createQuickPick(items2, {
-                            title: localize('AWS.toolkit.walkthrough.projectlocation', 'Select a location for project'),
-                            buttons: createCommonButtons(serverlessLandUrl),
-                        })
-                    })
-                }
-            })()
-            const result = await wizard.run()
-            // {foo:'abcddd',bar:1}
-            // return if undefined
+            const result = await chooseRuntimeLocaltionWizard.run()
             console.log(result)
             if (!result) {
                 return undefined
@@ -371,23 +410,11 @@ async function registerAppBuilderCommands(
             let projectUri = await getProjectUri(result.dir)
             if (!projectUri) {
                 // exit for non-vaild uri
-                console.log('exit')
-                return undefined
+                console.log('exit on customer cancellation')
+                return
             }
-            // create project here
-            // TODO update with file fetching from serverless land
-            const walkthroughSelected = context.extensionContext.globalState.get('walkthroughSelected')
-
-            const lambdaUri = vscode.Uri.joinPath(projectUri, 'src/handler.py')
-            const contents = Buffer.from(`tester handler for ${walkthroughSelected}:${result.runtime}`, 'utf8')
-            vscode.workspace.fs.writeFile(lambdaUri, contents)
-            const templateUri = vscode.Uri.joinPath(projectUri, 'template2.yaml')
-            const contents2 = Buffer.from(`tester template ${walkthroughSelected}:${result.runtime}`, 'utf8')
-            vscode.workspace.fs.writeFile(templateUri, contents2)
-            vscode.commands.executeCommand('explorer.openToSide', lambdaUri)
-            vscode.commands.executeCommand('vscode.open', templateUri)
-
-            console.log(result)
+            // generate project
+            await genWalkthroughProject(projectUri, result.runtime)
         }),
         Commands.register(`aws.toolkit.walkthrough`, async () => {
             vscode.commands.executeCommand(
