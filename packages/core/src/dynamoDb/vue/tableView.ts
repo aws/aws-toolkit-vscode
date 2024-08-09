@@ -119,7 +119,11 @@ export class DynamoDbTableWebview extends VueWebview {
         }
         try {
             await deleteItem(this.data.tableName, selectedRow, tableSchema, this.data.region)
+<<<<<<< HEAD
             return this.fetchPageData(this.data.lastEvaluatedKey)
+=======
+            return this.fetchPageData(this.data.lastEvaluatedKey, this.data.currentPage)
+>>>>>>> 4f0aaff93 (Delete Item from Context Menu  (#5428))
         } catch (err) {
             getLogger().error(`Delete action failed on DynamoDB Item`)
             return undefined
