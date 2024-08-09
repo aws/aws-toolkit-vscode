@@ -43,7 +43,7 @@
                         </div>
                     </div>
                     <div class="header-right">
-                        <vscode-button class="refresh-button" @click="refreshTable">Refresh</vscode-button>
+                        <vscode-button class="refresh-button" style="visibility: hidden">Refresh</vscode-button>
                         <div class="pagination">
                             <vscode-link :class="{ disabled: isFirstPage }" @click="prevPage">&lt;</vscode-link>
                             <vscode-link href="#">{{ dynamoDbTableData.currentPage }}</vscode-link>
@@ -74,7 +74,6 @@
                         row[key]
                     }}</vscode-data-grid-cell>
                 </vscode-data-grid-row>
-                <!-- {{ updateTableSection(dynamoDbTableData) }} -->
             </vscode-data-grid>
         </div>
     </div>
@@ -110,6 +109,13 @@ export default defineComponent({
             partitionKey: '',
             sortKey: '',
             partitionKeyValue: '',
+            queryPanelData: {
+                isActive: false,
+                queryRequest: {
+                    partitionKey: '',
+                    sortKey: '',
+                },
+            },
         }
     },
     async created() {
@@ -144,37 +150,48 @@ export default defineComponent({
         },
 
         async refreshTable() {
+            this.isLoading = true
             this.resetFields()
             this.updatePageNumber()
-            this.isLoading = true
             this.dynamoDbTableData = await client.fetchPageData(undefined)
-            this.isLoading = false
             this.pageKeys = [undefined, this.dynamoDbTableData.lastEvaluatedKey]
+            this.queryPanelData.isActive = false
+            this.isLoading = false
         },
 
         async prevPage() {
-            this.updatePageNumber()
             if (this.dynamoDbTableData.currentPage > 1) {
-                const previousKey = this.pageKeys[this.dynamoDbTableData.currentPage - 2]
                 this.isLoading = true
-                this.dynamoDbTableData = await client.fetchPageData(previousKey, this.dynamoDbTableData.currentPage)
+                const newPageNumber = this.dynamoDbTableData.currentPage - 1
+                this.updatePageNumber()
+                const previousKey = this.pageKeys[this.dynamoDbTableData.currentPage - 2]
+                if (this.queryPanelData.isActive) {
+                    this.dynamoDbTableData = await client.queryData(this.queryPanelData.queryRequest, previousKey)
+                } else {
+                    this.dynamoDbTableData = await client.fetchPageData(previousKey)
+                }
+                this.dynamoDbTableData.currentPage = newPageNumber
                 this.isLoading = false
-                this.dynamoDbTableData.currentPage -= 1
             }
         },
 
         async nextPage() {
-            this.updatePageNumber()
             this.isLoading = true
-            this.dynamoDbTableData = await client.fetchPageData(
-                this.dynamoDbTableData.lastEvaluatedKey,
-                this.dynamoDbTableData.currentPage
-            )
-            this.isLoading = false
+            const newPageNumber = this.dynamoDbTableData.currentPage + 1
+            this.updatePageNumber()
+            if (this.queryPanelData.isActive) {
+                this.dynamoDbTableData = await client.queryData(
+                    this.queryPanelData.queryRequest,
+                    this.dynamoDbTableData.lastEvaluatedKey
+                )
+            } else {
+                this.dynamoDbTableData = await client.fetchPageData(this.dynamoDbTableData.lastEvaluatedKey)
+            }
             if (this.dynamoDbTableData.lastEvaluatedKey) {
                 this.pageKeys.push(this.dynamoDbTableData.lastEvaluatedKey)
             }
-            this.dynamoDbTableData.currentPage += 1
+            this.dynamoDbTableData.currentPage = newPageNumber
+            this.isLoading = false
         },
 
         updatePageNumber() {
@@ -206,8 +223,10 @@ export default defineComponent({
             }
             this.updatePageNumber()
             this.dynamoDbTableData = await client.queryData(queryRequest)
-            this.isLoading = false
             this.pageKeys = [undefined, this.dynamoDbTableData.lastEvaluatedKey]
+            this.queryPanelData.isActive = true
+            this.queryPanelData.queryRequest = queryRequest
+            this.isLoading = false
         },
 
         showContextMenu(event: any, row: any) {
