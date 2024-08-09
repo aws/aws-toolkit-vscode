@@ -42,6 +42,14 @@
                             <vscode-button :disabled="!partitionKeyValue" @click="executeQuery">Run</vscode-button>
                         </div>
                     </div>
+                    <div class="header-right">
+                        <vscode-button class="refresh-button" @click="refreshTable">Refresh</vscode-button>
+                        <div class="pagination">
+                            <vscode-link :class="{ disabled: isFirstPage }" @click="prevPage">&lt;</vscode-link>
+                            <vscode-link href="#">{{ dynamoDbTableData.currentPage }}</vscode-link>
+                            <vscode-link :class="{ disabled: isLastPage }" @click="nextPage">&gt;</vscode-link>
+                        </div>
+                    </div>
                 </vscode-panel-view>
             </vscode-panels>
         </div>
@@ -163,6 +171,7 @@ export default defineComponent({
     },
     methods: {
         async refreshTable() {
+            this.resetFields()
             this.updatePageNumber()
             this.isLoading = true
             this.dynamoDbTableData = await client.fetchPageData(undefined)
@@ -211,6 +220,7 @@ export default defineComponent({
         },
 
         async executeQuery() {
+            this.isLoading = true
             let sortKeyElement = document.getElementById('sortKey')
             let partitionKeyElement = document.getElementById('partitionKey')
             let sortKeyValue = ''
@@ -223,6 +233,8 @@ export default defineComponent({
             }
             this.updatePageNumber()
             this.dynamoDbTableData = await client.queryData(queryRequest)
+            this.isLoading = false
+            this.pageKeys = [undefined, this.dynamoDbTableData.lastEvaluatedKey]
         },
 
         showContextMenu(event: MouseEvent, row: any) {
