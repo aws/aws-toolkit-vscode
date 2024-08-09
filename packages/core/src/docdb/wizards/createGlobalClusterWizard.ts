@@ -13,6 +13,8 @@ import { Wizard, WizardOptions } from '../../shared/wizards/wizard'
 import { validateClusterName } from '../utils'
 import { RegionalClusterConfiguration, RegionalClusterWizard } from './regionalClusterWizard'
 
+const DocDBGlobalHelpUrl = 'https://docs.aws.amazon.com/documentdb/latest/developerguide/global-clusters.html'
+
 export interface CreateGlobalClusterState {
     RegionCode: string
     GlobalClusterName: string
@@ -42,6 +44,7 @@ export class CreateGlobalClusterWizard extends Wizard<CreateGlobalClusterState> 
             return createRegionPrompter(regions, {
                 serviceFilter: 'docdb',
                 title: localize('AWS.docdb.addRegion.region.prompt', 'Secondary region'),
+                helpUrl: DocDBGlobalHelpUrl,
             }).transform((region) => region.id)
         })
 

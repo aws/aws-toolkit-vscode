@@ -25,18 +25,17 @@ export class DBInstanceNode extends DBResourceNode {
         readonly instance: DBInstance
     ) {
         super(parent.client, instance.DBInstanceIdentifier ?? '[Instance]', vscode.TreeItemCollapsibleState.None)
-        this.id = instance.DBInstanceArn
         this.description = this.makeDescription()
         this.contextValue = this.getContext()
         this.tooltip = `${this.name}\nClass: ${this.instance.DBInstanceClass}\nStatus: ${this.status}`
     }
 
     private makeDescription(): string {
-        if (this.getContext() !== DocDBContext.InstanceAvailable) {
-            return `${this.status} • ${this.instance.DBInstanceClass}`
-        }
         const type = this.instance.IsClusterWriter ? 'primary' : 'replica'
-        return `${type} • ${this.instance.DBInstanceClass}`
+        if (this.getContext() !== DocDBContext.InstanceAvailable) {
+            return `${this.status} ${type} instance`
+        }
+        return `${type} instance • ${this.instance.DBInstanceClass}`
     }
 
     private getContext(): DocDBNodeContext {

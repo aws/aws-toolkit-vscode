@@ -6,7 +6,7 @@
 import sinon from 'sinon'
 import assert from 'assert'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { DBElasticCluster, DocumentDBClient } from '../../../shared/clients/docdbClient'
+import { DocumentDBClient } from '../../../shared/clients/docdbClient'
 import { DBCluster } from '@aws-sdk/client-docdb'
 import { DBClusterNode } from '../../../docdb/explorer/dbClusterNode'
 import { DocumentDBNode } from '../../../docdb/explorer/docdbNode'
@@ -15,7 +15,7 @@ import { DBElasticClusterNode } from '../../../docdb/explorer/dbElasticClusterNo
 describe('DocumentDBNode', function () {
     const firstCluster: DBCluster = { DBClusterIdentifier: 'Cluster-1' }
     const secondCluster: DBCluster = { DBClusterIdentifier: 'Cluster-2' }
-    const thirdCluster: DBElasticCluster = { clusterName: 'Cluster-3', clusterArn: '', status: 'ACTIVE' }
+    const thirdCluster = { clusterName: 'Cluster-3', clusterArn: '', status: 'ACTIVE' }
 
     let client: DocumentDBClient
 
@@ -31,6 +31,7 @@ describe('DocumentDBNode', function () {
     it('gets children', async function () {
         client.listClusters = sinon.stub().resolves([firstCluster, secondCluster])
         client.listElasticClusters = sinon.stub().resolves([thirdCluster])
+        client.listGlobalClusters = sinon.stub().resolves([])
 
         const node = new DocumentDBNode(client)
         const [firstClusterNode, secondClusterNode, thirdClusterNode, ...otherNodes] = await node.getChildren()

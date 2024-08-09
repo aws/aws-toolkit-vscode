@@ -20,7 +20,7 @@ function isElasticCluster(clusterId: string | undefined): boolean | undefined {
 export const DBStorageType = { Standard: 'standard', IOpt1: 'iopt1' } as const
 
 /** A list of Amazon DocumentDB clusters. */
-export interface DBElasticCluster extends DocDBElastic.Cluster {}
+export type DBElasticCluster = DocDBElastic.Cluster & DocDBElastic.ClusterInList
 
 export interface DBInstance extends DocDB.DBInstance {
     IsClusterWriter?: boolean
@@ -113,7 +113,17 @@ export class DefaultDocumentDBClient {
         return response.DBEngineVersions ?? []
     }
 
-    public async listElasticClusters(): Promise<DBElasticCluster[]> {
+    public async listGlobalClusters(clusterId: string | undefined = undefined): Promise<DocDB.GlobalCluster[]> {
+        const input: DocDB.DescribeGlobalClustersCommandInput = {
+            Filters: [],
+            GlobalClusterIdentifier: clusterId,
+        }
+        const command = new DocDB.DescribeGlobalClustersCommand(input)
+        const response = await this.executeCommand<DocDB.DescribeGlobalClustersCommandOutput>(command)
+        return response.GlobalClusters ?? []
+    }
+
+    public async listElasticClusters(): Promise<DocDBElastic.ClusterInList[]> {
         const command = new DocDBElastic.ListClustersCommand()
         const response = await this.executeElasticCommand<DocDBElastic.ListClustersCommandOutput>(command)
         return response.clusters ?? []

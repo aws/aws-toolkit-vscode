@@ -67,7 +67,11 @@ describe('addRegionCommand', function () {
 
         getTestWindow().onDidShowQuickPick(async (picker) => {
             await picker.untilReady()
-            picker.acceptItem(picker.items[0])
+            if (picker.title?.includes('instances')) {
+                picker.acceptItem(picker.items[1])
+            } else {
+                picker.acceptItem(picker.items[0])
+            }
         })
     }
 

@@ -151,7 +151,7 @@ describe('deleteClusterCommand', function () {
     })
 
     describe('elastic cluster', function () {
-        let cluster: DBElasticCluster
+        let cluster: any
         let node: DBElasticClusterNode
 
         beforeEach(function () {

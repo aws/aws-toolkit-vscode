@@ -19,6 +19,8 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { DBInstance, DocumentDBClient } from '../../shared/clients/docdbClient'
 import { DocDBContext, DocDBNodeContext } from './docdbContext'
 
+export type DBClusterRole = 'global' | 'regional' | 'primary' | 'secondary'
+
 /**
  * An AWS Explorer node representing DocumentDB clusters.
  *
@@ -31,10 +33,10 @@ export class DBClusterNode extends DBResourceNode {
     constructor(
         public readonly parent: AWSTreeNodeBase,
         readonly cluster: DBCluster,
-        client: DocumentDBClient
+        client: DocumentDBClient,
+        readonly clusterRole: DBClusterRole = 'regional'
     ) {
         super(client, cluster.DBClusterIdentifier ?? '[Cluster]', vscode.TreeItemCollapsibleState.Collapsed)
-        this.id = cluster.DBClusterIdentifier
         this.arn = cluster.DBClusterArn ?? ''
         this.name = cluster.DBClusterIdentifier ?? ''
         this.contextValue = this.getContext()
@@ -79,9 +81,9 @@ export class DBClusterNode extends DBResourceNode {
 
     public getDescription(): string | boolean {
         if (this.contextValue !== (DocDBContext.ClusterRunning as string)) {
-            return this.status!
+            return `${this.clusterRole} cluster • ${this.status}`
         }
-        return false
+        return `${this.clusterRole} cluster`
     }
 
     public async createInstance(request: CreateDBInstanceMessage): Promise<DBInstance | undefined> {

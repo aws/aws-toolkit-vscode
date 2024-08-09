@@ -44,9 +44,9 @@ export class DBElasticClusterNode extends DBResourceNode {
 
     public getDescription(): string | boolean {
         if (this.contextValue !== (DocDBContext.ElasticClusterRunning as string)) {
-            return this.status!
+            return `elastic cluster • ${this.status}`
         }
-        return false
+        return 'elastic cluster'
     }
 
     public async deleteCluster(finalSnapshotId: string | undefined): Promise<DBElasticCluster | undefined> {
