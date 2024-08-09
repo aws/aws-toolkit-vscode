@@ -72,7 +72,11 @@
                     v-for="row in dynamoDbTableData.tableContent"
                     @contextmenu.prevent="showContextMenu($event, row)"
                 >
-                    <vscode-data-grid-cell v-for="(key, index) in Object.keys(row)" :grid-column="index + 1">
+                    <vscode-data-grid-cell
+                        :title="row[key]"
+                        v-for="(key, index) in Object.keys(row)"
+                        :grid-column="index + 1"
+                    >
                         {{ row[key] }}
                     </vscode-data-grid-cell>
                 </vscode-data-grid-row>
