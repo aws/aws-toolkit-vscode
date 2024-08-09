@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { DynamoDB } from 'aws-sdk'
+import { Settings } from '../../shared'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { DynamoDbTableNode } from '../explorer/dynamoDbTableNode'
 import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
 import { AttributeValue, Key, ScanInput } from 'aws-sdk/clients/dynamodb'
-import { Settings } from '../../shared'
 
 export interface RowData {
     [key: string]: string
@@ -250,4 +251,10 @@ export async function deleteItem(
 
 async function getMaxItemsPerPage(): Promise<number> {
     return Settings.instance.getSection('aws').get<number>('dynamodb.maxItemsPerPage', 100)
+}
+
+export function dynamoDbConsoleUrl(node: DynamoDbTableNode): vscode.Uri {
+    const service = 'dynamodb'
+    const resourcePath = `tables:selected=${node.dynamoDbtable}`
+    return vscode.Uri.parse(`https://console.aws.amazon.com/${service}/home?region=${node.regionCode}#/${resourcePath}`)
 }

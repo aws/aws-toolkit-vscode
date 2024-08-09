@@ -268,5 +268,6 @@
     "AWS.amazonq.toggleCodeScan": "Toggle Auto-Scans",
     "AWS.command.dynamoDb.searchTables": "Search Tables",
     "AWS.command.dynamoDb.viewTable": "View Table",
-    "AWS.command.dynamoDb.deleteTable": "Delete Table"
+    "AWS.command.dynamoDb.deleteTable": "Delete Table",
+    "AWS.command.dynamoDb.openTableInConsole": "Open Table in Console"
 }

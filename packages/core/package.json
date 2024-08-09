@@ -1231,6 +1231,10 @@
                 {
                     "command": "aws.dynamoDb.deleteTable",
                     "when": "false"
+                },
+                {
+                    "command": "aws.dynamoDb.openTableInConsole",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -2045,6 +2049,11 @@
                 {
                     "command": "aws.dynamoDb.deleteTable",
                     "group": "0@1",
+                    "when": "view == aws.explorer && viewItem == awsDynamoDbTableNode"
+                },
+                {
+                    "command": "aws.dynamoDb.openTableInConsole",
+                    "group": "inline@1",
                     "when": "view == aws.explorer && viewItem == awsDynamoDbTableNode"
                 }
             ],
@@ -3639,6 +3648,18 @@
                 "command": "aws.dynamoDb.deleteTable",
                 "title": "%AWS.command.dynamoDb.deleteTable%",
                 "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.dynamoDb.openTableInConsole",
+                "title": "%AWS.command.dynamoDb.openTableInConsole%",
+                "category": "%AWS.title%",
+                "enablement": "!aws.isWebExtHost",
+                "icon": "$(link-external)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
