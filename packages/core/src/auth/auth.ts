@@ -742,6 +742,7 @@ export class Auth implements AuthService, ConnectionManager {
             state: profile.metadata.connectionState,
             label: profile.metadata?.label ?? this.getSsoProfileLabel(profile),
             getToken: () => this.getToken(id, provider),
+            getRegistration: () => provider.getClientRegistration(),
         }
     }
 

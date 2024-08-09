@@ -149,10 +149,16 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
         }
 
         const authState = (await AuthUtil.instance.getChatAuthState()).codewhispererChat
+        const currConn = AuthUtil.instance.conn as SsoConnection
+        const registration = await currConn?.getRegistration()
         telemetry.record({
             authStatus: authState === 'connected' || authState === 'expired' ? authState : 'notConnected',
-            authEnabledConnections: AuthUtils.getAuthFormIdsFromConnection(AuthUtil.instance.conn).join(','),
-            authScopes: ((AuthUtil.instance.conn as SsoConnection)?.scopes ?? []).join(','),
+            authEnabledConnections: AuthUtils.getAuthFormIdsFromConnection(currConn).join(','),
+            authScopes: (currConn?.scopes ?? []).join(','),
+            awsRegion: currConn?.ssoRegion,
+            credentialStartUrl: currConn?.startUrl,
+            ssoRegistrationExpiresAt: registration?.expiresAt.toISOString(),
+            ssoRegistrationClientId: registration?.clientId,
         })
     })
 }

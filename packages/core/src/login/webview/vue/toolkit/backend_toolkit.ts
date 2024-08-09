@@ -34,7 +34,6 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         const metadata: TelemetryMetadata = {
             credentialSourceId: 'iamIdentityCenter',
             credentialStartUrl: startUrl,
-            awsRegion: region,
             isReAuth: false,
         }
 
@@ -43,8 +42,14 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
                 this.storeMetricMetadata({ ...metadata })
 
                 const conn = await this.codeCatalystAuth.connectToEnterpriseSso(startUrl, region)
+                const registration = await conn.getRegistration()
 
-                this.storeMetricMetadata({ authEnabledFeatures: this.getAuthEnabledFeatures(conn) })
+                this.storeMetricMetadata({
+                    authEnabledFeatures: this.getAuthEnabledFeatures(conn),
+                    ssoRegistrationExpiresAt: registration?.expiresAt.toISOString(),
+                    ssoRegistrationClientId: registration?.clientId,
+                    awsRegion: conn.ssoRegion,
+                })
 
                 await setContext('aws.explorer.showAuthView', false)
                 await this.showResourceExplorer()
@@ -58,7 +63,13 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
             const conn = await Auth.instance.createConnection(ssoProfile)
             await Auth.instance.useConnection(conn)
 
-            this.storeMetricMetadata({ authEnabledFeatures: this.getAuthEnabledFeatures(conn) })
+            const registration = await conn.getRegistration()
+            this.storeMetricMetadata({
+                authEnabledFeatures: this.getAuthEnabledFeatures(conn),
+                ssoRegistrationExpiresAt: registration?.expiresAt.toISOString(),
+                ssoRegistrationClientId: registration?.clientId,
+                awsRegion: conn.ssoRegion,
+            })
 
             await setContext('aws.explorer.showAuthView', false)
             void vscode.window.showInformationMessage('Toolkit: Successfully connected to AWS IAM Identity Center')
@@ -109,7 +120,14 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
                 isReAuth: false,
             })
 
-            await this.codeCatalystAuth.connectToAwsBuilderId()
+            const conn = await this.codeCatalystAuth.connectToAwsBuilderId()
+            const registration = await conn.getRegistration()
+            this.storeMetricMetadata({
+                ssoRegistrationExpiresAt: registration?.expiresAt.toISOString(),
+                ssoRegistrationClientId: registration?.clientId,
+                awsRegion: conn.ssoRegion,
+            })
+
             await setContext('aws.explorer.showAuthView', false)
             await this.showResourceExplorer()
         })

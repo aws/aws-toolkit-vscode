@@ -56,7 +56,13 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                 isReAuth: false,
             })
 
-            await awsIdSignIn()
+            const conn = await awsIdSignIn()
+            const registration = await conn.getRegistration()
+            this.storeMetricMetadata({
+                ssoRegistrationExpiresAt: registration?.expiresAt.toISOString(),
+                ssoRegistrationClientId: registration?.clientId,
+                awsRegion: conn.ssoRegion,
+            })
             void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS Builder ID')
         })
     }
@@ -66,13 +72,18 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         return await this.ssoSetup('startCodeWhispererEnterpriseSetup', async () => {
             this.storeMetricMetadata({
                 credentialStartUrl: startUrl,
-                awsRegion: region,
                 credentialSourceId: 'iamIdentityCenter',
                 authEnabledFeatures: 'codewhisperer',
                 isReAuth: false,
             })
 
-            await connectToEnterpriseSso(startUrl, region)
+            const conn = await connectToEnterpriseSso(startUrl, region)
+            const registration = await conn.getRegistration()
+            this.storeMetricMetadata({
+                ssoRegistrationExpiresAt: registration?.expiresAt.toISOString(),
+                ssoRegistrationClientId: registration?.clientId,
+                awsRegion: conn.ssoRegion,
+            })
             void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
         })
     }
@@ -99,7 +110,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                 this.storeMetricMetadata({
                     authEnabledFeatures: this.getAuthEnabledFeatures(AuthUtil.instance.conn as SsoConnection),
                     isReAuth: true,
-                    ...this.getMetadataForExistingConn(),
+                    ...(await this.getMetadataForExistingConn()),
                 })
                 await AuthUtil.instance.reauthenticate()
             })
@@ -152,7 +163,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                 AuthUtil.instance.secondaryAuth.activeConnection as SsoConnection
             ),
             isReAuth: true,
-            ...this.getMetadataForExistingConn(),
+            ...(await this.getMetadataForExistingConn()),
             result: 'Cancelled',
         })
 

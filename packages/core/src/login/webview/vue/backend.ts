@@ -18,7 +18,6 @@ import {
     hasScopes,
     isBuilderIdConnection,
     isIamConnection,
-    isIdcSsoConnection,
     isSsoConnection,
     scopesCodeCatalyst,
     scopesCodeWhispererChat,
@@ -243,20 +242,19 @@ export abstract class CommonAuthWebview extends VueWebview {
     /**
      * Get metadata about the current auth for reauthentication telemetry.
      */
-    getMetadataForExistingConn(conn = AuthUtil.instance.conn): TelemetryMetadata {
+    async getMetadataForExistingConn(conn = AuthUtil.instance.conn): Promise<TelemetryMetadata> {
         if (conn === undefined) {
             return {}
         }
 
-        if (isIdcSsoConnection(conn)) {
+        if (isSsoConnection(conn)) {
+            const registration = await conn.getRegistration()
             return {
-                credentialSourceId: 'iamIdentityCenter',
+                credentialSourceId: isBuilderIdConnection(conn) ? 'awsId' : 'iamIdentityCenter',
                 credentialStartUrl: conn?.startUrl,
                 awsRegion: conn?.ssoRegion,
-            }
-        } else if (isBuilderIdConnection(conn)) {
-            return {
-                credentialSourceId: 'awsId',
+                ssoRegistrationExpiresAt: registration?.expiresAt.toISOString(),
+                ssoRegistrationClientId: registration?.clientId,
             }
         } else if (isIamConnection(conn)) {
             return {

@@ -5,7 +5,7 @@
 import * as vscode from 'vscode'
 import { Credentials } from '@aws-sdk/types'
 import { Mutable } from '../shared/utilities/tsUtils'
-import { builderIdStartUrl, SsoToken, truncateStartUrl } from './sso/model'
+import { builderIdStartUrl, ClientRegistration, SsoToken, truncateStartUrl } from './sso/model'
 import { SsoClient } from './sso/clients'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { fromString } from './providers/credentials'
@@ -107,6 +107,8 @@ export interface SsoConnection extends SsoProfile {
      * handle cases where the service rejects the token.
      */
     getToken(): Promise<Pick<SsoToken, 'accessToken' | 'expiresAt'>>
+
+    getRegistration(): Promise<ClientRegistration | undefined>
 }
 
 export interface IamConnection {

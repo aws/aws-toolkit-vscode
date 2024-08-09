@@ -291,5 +291,18 @@ export async function emitUserState() {
             authEnabledConnections: [...enabledConnections].join(','),
             authScopes: [...enabledScopes].join(','),
         })
+
+        // There may be other SSO connections in toolkit, but there is no use case for
+        // displaying registration info for non-active connections at this time.
+        const activeConn = Auth.instance.activeConnection
+        if (activeConn?.type === 'sso') {
+            const registration = await activeConn.getRegistration()
+            telemetry.record({
+                awsRegion: activeConn.ssoRegion,
+                credentialStartUrl: activeConn.startUrl,
+                ssoRegistrationExpiresAt: registration?.expiresAt.toISOString(),
+                ssoRegistrationClientId: registration?.clientId,
+            })
+        }
     })
 }

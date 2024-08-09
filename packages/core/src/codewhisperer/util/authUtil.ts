@@ -201,7 +201,8 @@ export class AuthUtil {
             conn = await this.auth.reauthenticate(conn)
         }
 
-        return this.secondaryAuth.useNewConnection(conn)
+        await this.secondaryAuth.useNewConnection(conn)
+        return conn
     }
 
     public async connectToEnterpriseSso(startUrl: string, region: string) {
@@ -220,7 +221,8 @@ export class AuthUtil {
             conn = await this.auth.reauthenticate(conn)
         }
 
-        return this.secondaryAuth.useNewConnection(conn)
+        await this.secondaryAuth.useNewConnection(conn)
+        return conn
     }
 
     public static get instance() {
