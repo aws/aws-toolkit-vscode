@@ -2112,11 +2112,6 @@
                     "command": "aws.openInApplicationComposer",
                     "when": "viewItem == awsAppBuilderAppNode",
                     "group": "3@1"
-                },
-                {
-                    "command": "aws.deleteLambda",
-                    "when": "viewItem == awsAppBuilderAppNode",
-                    "group": "4@1"
                 }
             ],
             "aws.toolkit.auth": [
