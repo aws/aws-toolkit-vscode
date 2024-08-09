@@ -37,6 +37,7 @@ import { Wizard } from '../shared/wizards/wizard'
 import { createQuickPick } from '../shared/ui/pickerPrompter'
 import { createCommonButtons } from '../shared/ui/buttons'
 import * as nls from 'vscode-nls'
+import { ToolkitError } from '../shared/errors'
 
 const localize = nls.loadMessageBundle()
 const serverlessLandUrl = 'https://serverlessland.com/'
@@ -249,6 +250,31 @@ async function registerAppBuilderCommands(
         vscode.commands.executeCommand('setContext', 'walkthroughSelected', 'None')
     }
 
+    const getProjectUri = (dir: string) => {
+        const wsFolders = vscode.workspace.workspaceFolders
+        if (dir == 'file-selector') {
+            let options: vscode.OpenDialogOptions = {
+                canSelectMany: false,
+                openLabel: 'Create Project',
+                canSelectFiles: false,
+                canSelectFolders: true,
+            }
+            if (wsFolders) {
+                options.defaultUri = wsFolders[0]?.uri
+            }
+
+            return vscode.window.showOpenDialog(options).then((fileUri) => {
+                if (fileUri && fileUri[0]) {
+                    console.log('file choose')
+                    return Promise.resolve(fileUri[0])
+                }
+                return Promise.resolve(undefined)
+            })
+        }
+        // option2:workspce filepath returned
+        return vscode.Uri.parse(dir)
+    }
+
     context.extensionContext.subscriptions.push(
         Commands.register('aws.toolkit.setWalkthroughToAPI', async () => {
             setWalkthrough('API')
@@ -341,33 +367,8 @@ async function registerAppBuilderCommands(
             if (!result) {
                 return undefined
             }
-            // select folder and create project here
-            const getProjectUri = () => {
-                const wsFolders = vscode.workspace.workspaceFolders
-                if (result.dir == 'file-selector') {
-                    let options: vscode.OpenDialogOptions = {
-                        canSelectMany: false,
-                        openLabel: 'Create Project',
-                        canSelectFiles: false,
-                        canSelectFolders: true,
-                    }
-                    if (wsFolders) {
-                        options.defaultUri = wsFolders[0]?.uri
-                    }
 
-                    return vscode.window.showOpenDialog(options).then((fileUri) => {
-                        if (fileUri && fileUri[0]) {
-                            console.log('file choose')
-                            return Promise.resolve(fileUri[0])
-                        }
-                        return Promise.resolve(undefined)
-                    })
-                }
-                // option2:workspce filepath returned
-                return vscode.Uri.parse(result.dir)
-            }
-
-            let projectUri = await getProjectUri()
+            let projectUri = await getProjectUri(result.dir)
             if (!projectUri) {
                 // exit for non-vaild uri
                 console.log('exit')
@@ -391,7 +392,7 @@ async function registerAppBuilderCommands(
         Commands.register(`aws.toolkit.walkthrough`, async () => {
             vscode.commands.executeCommand(
                 'workbench.action.openWalkthrough',
-                'amazonwebservices.aws-toolkit-vscode#lambdaWelcome'
+                'amazonwebservices.aws-toolkit-vscode#aws.gettingStarted.walkthrough'
             )
         })
     )

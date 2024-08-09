@@ -3051,7 +3051,7 @@
             },
             {
                 "command": "aws.toolkit.walkthrough",
-                "title": "Application builder walkthrough",
+                "title": "%AWS.toolkit.walkthrough.quickpickTitle%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
