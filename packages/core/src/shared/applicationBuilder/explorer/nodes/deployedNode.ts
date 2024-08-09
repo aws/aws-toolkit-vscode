@@ -11,6 +11,7 @@ import { DefaultLambdaClient } from '../../../clients/lambdaClient'
 import { createPlaceholderItem } from '../../../treeview/utils'
 import { localize } from 'vscode-nls'
 import { getLogger } from '../../../logger/logger'
+import { ToolkitError } from '../../..'
 
 export interface DeployedResource {
     stackName: string
@@ -20,9 +21,15 @@ export interface DeployedResource {
 
 // TODO:: Add doc strings to all TreeNodes
 export class DeployedLambdaNode implements TreeNode<DeployedResource> {
-    public readonly id: any = this.resource.configuration.FunctionName
-    public readonly label: any = this.resource.configuration.FunctionArn
-    public constructor(public readonly resource: DeployedResource) {}
+    public readonly id: string
+
+    public constructor(public readonly resource: DeployedResource) {
+        if (this.resource.configuration.FunctionName) {
+            this.id = this.resource.configuration.FunctionName
+        } else {
+            throw new ToolkitError('Cannot create DeployedLambdaNode, `FunctionName` does not exist.')
+        }
+    }
 
     public async getChildren(): Promise<DeployedLambdaNode[]> {
         return []
@@ -33,9 +40,8 @@ export class DeployedLambdaNode implements TreeNode<DeployedResource> {
 
         item.contextValue = 'awsAppBuilderDeployedNode'
         item.iconPath = getIcon('vscode-cloud')
-        item.label = this.id
         item.collapsibleState = vscode.TreeItemCollapsibleState.None
-
+        item.tooltip = this.resource.configuration.FunctionArn
         return item
     }
 }
