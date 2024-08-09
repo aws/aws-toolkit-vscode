@@ -70,29 +70,64 @@
                     v-for="row in dynamoDbTableData.tableContent"
                     @contextmenu.prevent="showContextMenu($event, row)"
                 >
-                    <vscode-data-grid-cell v-for="(key, index) in Object.keys(row)" :grid-column="index + 1">{{
-                        row[key]
-                    }}</vscode-data-grid-cell>
+                    <vscode-data-grid-cell v-for="(key, index) in Object.keys(row)" :grid-column="index + 1">
+                        {{ row[key] }}
+                    </vscode-data-grid-cell>
                 </vscode-data-grid-row>
             </vscode-data-grid>
+
+            <!-- Context Menu -->
+            <ContextMenu
+                v-if="contextMenuVisible"
+                :position="contextMenuPosition"
+                :visible="contextMenuVisible"
+                @copyCell="handleCopyCell"
+                @copyRow="handleCopyRow"
+                @delete="handleDelete"
+                @edit="handleEdit"
+                @close="contextMenuVisible = false"
+            />
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
 import { allComponents, provideVSCodeDesignSystem } from '@vscode/webview-ui-toolkit'
+import { ref, onMounted, onUnmounted } from 'vue'
+import ContextMenu from './contextMenu.vue'
 
 provideVSCodeDesignSystem().register(allComponents)
+
+onMounted(() => {
+    document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+    document.removeEventListener('click', handleClickOutside)
+})
+
+function handleClickOutside(event: MouseEvent) {
+    const contextMenuElement = document.querySelector('.context-menu')
+    if (contextMenuElement && !contextMenuElement.contains(event.target as Node)) {
+        contextMenuVisible.value = false
+    }
+}
 </script>
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { RowData } from '../utils/dynamodb'
+import { RowData, TableSchema } from '../utils/dynamodb'
 import { DynamoDbTableWebview, DynamoDbTableData } from './tableView'
 import { WebviewClientFactory } from '../../webviews/client'
 import { Key } from 'aws-sdk/clients/dynamodb'
 
 const client = WebviewClientFactory.create<DynamoDbTableWebview>()
+const contextMenuVisible = ref(false)
+const contextMenuPosition = ref({ top: 0, left: 0 })
+let selectedRow = ref<RowData>()
+let tableSchema: TableSchema
+let selectedCell = ''
+
 export default defineComponent({
     data() {
         return {
@@ -121,7 +156,7 @@ export default defineComponent({
     async created() {
         this.isLoading = true
         this.dynamoDbTableData = await client.init()
-        const tableSchema = await client.getTableSchema()
+        tableSchema = await client.getTableSchema()
         this.partitionKey = tableSchema.partitionKey.name
         this.sortKey = tableSchema.sortKey?.name ?? ''
         this.pageKeys = [undefined, this.dynamoDbTableData.lastEvaluatedKey]
@@ -142,13 +177,6 @@ export default defineComponent({
         },
     },
     methods: {
-        updateTableSection(dynamoDbTableData: Pick<DynamoDbTableData, 'tableContent'>) {
-            const basicGrid = document.getElementById('datagrid')
-            if (basicGrid) {
-                ;(basicGrid as any).rowsData = dynamoDbTableData.tableContent
-            }
-        },
-
         async refreshTable() {
             this.isLoading = true
             this.resetFields()
@@ -229,9 +257,39 @@ export default defineComponent({
             this.isLoading = false
         },
 
-        showContextMenu(event: any, row: any) {
-            console.log(event)
-            console.log(row)
+        showContextMenu(event: MouseEvent, row: any) {
+            event.preventDefault()
+            contextMenuPosition.value = { top: event.clientY, left: event.clientX }
+            contextMenuVisible.value = true
+            selectedRow.value = row
+            selectedCell = (event.target as any).innerHTML
+        },
+
+        handleCopyCell() {
+            client.copyCell(selectedCell)
+        },
+
+        handleCopyRow() {
+            if (selectedRow.value === undefined) {
+                return
+            }
+            client.copyRow(selectedRow.value)
+        },
+
+        async handleDelete() {
+            if (selectedRow.value === undefined) {
+                return
+            }
+            const response = await client.deleteItem(selectedRow.value, tableSchema)
+            if (response) {
+                this.dynamoDbTableData = response
+                this.updatePageNumber()
+            }
+        },
+
+        handleEdit() {
+            // Handle edit logic
+            console.log('Edit clicked')
         },
     },
 })

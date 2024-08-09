@@ -48,10 +48,6 @@ vscode-link {
     font-size: 1.5em;
 }
 
-/* vscode-data-grid-row.sticky-header {
-    border-bottom: 1px solid;
-} */
-
 vscode-data-grid-row {
     width: max-content;
 }
