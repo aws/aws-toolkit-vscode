@@ -729,6 +729,18 @@
                 }
             ]
         },
+        "viewsWelcome": [
+            {
+                "view": "aws.appBuilderForFileExplorer",
+                "contents": "[Open walkthrough](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23aws.gettingStarted.walkthrough%22%7D)\n [Open Folder](command:vscode.openFolder)",
+                "when": "workbenchState == empty"
+            },
+            {
+                "view": "aws.appBuilder",
+                "contents": "[Open walkthrough](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23aws.gettingStarted.walkthrough%22%7D)\n [Open Folder](command:vscode.openFolder)",
+                "when": "workbenchState == empty"
+            }
+        ],
         "views": {
             "explorer": [
                 {
@@ -3813,7 +3825,23 @@
                 }
             }
         ],
-        "walkthroughs": [],
+        "walkthroughs": [
+            {
+                "id": "aws.gettingStarted.walkthrough",
+                "title": "Build an application with Lambda",
+                "description": "Your quick guide to get you building AWS application visually, iterating locally, and deploying to AWS!",
+                "when": "workspacePlatform != webworker",
+                "steps": [
+                    {
+                        "id": "aws-cli",
+                        "title": "Install AWS Cli",
+                        "media": {
+                            "markdown": "./resources/walkthrough/setup-connect.md"
+                        }
+                    }
+                ]
+            }
+        ],
         "icons": {
             "aws-amazonq-q-gradient": {
                 "description": "AWS Contributed Icon",

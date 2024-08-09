@@ -134,6 +134,7 @@ export async function activate(args: {
             refreshCommands: [AppBuilderRootNode.instance.refreshAppBuilderForFileExplorer],
         },
     ]
+
     const viewNodes: ToolView[] = [
         ...amazonQViewNode,
         ...codecatalystViewNode,
