@@ -7,8 +7,8 @@
                 <vscode-panel-view id="view-1">
                     <div class="header-left">
                         <span class="table-name">{{ dynamoDbTableData.tableName }}</span>
-                        <span class="last-refreshed-info" style="width: 100%">{{
-                            'Refreshed on: ' + new Date().toLocaleString()
+                        <span class="last-refreshed-info" :key="lastRefreshedText" style="width: 100%">{{
+                            lastRefreshedText
                         }}</span>
                     </div>
                     <div class="header-right">
@@ -122,6 +122,7 @@ import { RowData, TableSchema } from '../utils/dynamodb'
 import { DynamoDbTableWebview, DynamoDbTableData } from './tableView'
 import { WebviewClientFactory } from '../../webviews/client'
 import { Key } from 'aws-sdk/clients/dynamodb'
+import { formatDistanceToNow } from 'date-fns'
 
 const client = WebviewClientFactory.create<DynamoDbTableWebview>()
 const contextMenuVisible = ref(false)
@@ -153,6 +154,9 @@ export default defineComponent({
                     sortKey: '',
                 },
             },
+            lastRefreshed: new Date(),
+            refreshInterval: null as ReturnType<typeof setInterval> | null,
+            lastRefreshedText: '',
         }
     },
     async created() {
@@ -177,6 +181,18 @@ export default defineComponent({
             }
             return false
         },
+    },
+    beforeUnmount() {
+        if (this.refreshInterval) {
+            clearInterval(this.refreshInterval)
+        }
+    },
+
+    mounted() {
+        this.refreshInterval = setInterval(() => {
+            this.lastRefreshedText =
+                'Last refreshed - ' + formatDistanceToNow(this.lastRefreshed, { addSuffix: true, includeSeconds: true })
+        }, 10000)
     },
     methods: {
         async refreshTable() {
@@ -240,6 +256,9 @@ export default defineComponent({
 
         updatePageNumber() {
             this.pageNumber += 1
+            this.lastRefreshed = new Date()
+            this.lastRefreshedText =
+                'Last refreshed - ' + formatDistanceToNow(this.lastRefreshed, { addSuffix: true, includeSeconds: true })
         },
 
         resetFields() {
