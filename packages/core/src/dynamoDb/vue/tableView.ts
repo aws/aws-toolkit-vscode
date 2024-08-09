@@ -52,21 +52,25 @@ export class DynamoDbTableWebview extends VueWebview {
     /**
      * Fetches a page of data from the DynamoDB table.
      * @param {Key} [lastEvaluatedKey] - The key to start scanning from.
-     * @param {number} [currentPage=1] - The current page number.
      * @returns {DynamoDbTableData} The response object containing the scanned data.
      */
-    public async fetchPageData(lastEvaluatedKey?: Key, currentPage = 1) {
+    public async fetchPageData(lastEvaluatedKey?: Key) {
         const tableRequest: ScanInput = {
             TableName: this.data.tableName,
             Limit: 50,
             ExclusiveStartKey: lastEvaluatedKey,
         }
-        const response = await getDynamoDbTableData(tableRequest, this.data.region, currentPage)
+        const response = await getDynamoDbTableData(tableRequest, this.data.region)
         return response
     }
 
-    public async queryData(queryRequest: { partitionKey: string; sortKey: string }) {
-        const tableData: TableData = await queryTableContent(queryRequest, this.data.region, this.data.tableName)
+    public async queryData(queryRequest: { partitionKey: string; sortKey: string }, lastEvaluatedKey?: Key) {
+        const tableData: TableData = await queryTableContent(
+            queryRequest,
+            this.data.region,
+            this.data.tableName,
+            lastEvaluatedKey
+        )
         const response = {
             tableName: this.data.tableName,
             region: this.data.region,
