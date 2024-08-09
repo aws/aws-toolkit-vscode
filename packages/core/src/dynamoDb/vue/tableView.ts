@@ -8,8 +8,18 @@ import { ExtContext } from '../../shared'
 import { VueWebview } from '../../webviews/main'
 import { getLogger, Logger } from '../../shared/logger'
 import { Key, ScanInput } from 'aws-sdk/clients/dynamodb'
+import * as localizedText from '../../shared/localizedText'
+import { copyToClipboard, showConfirmationMessage } from '../../shared/utilities/messages'
 import { DynamoDbTarget, telemetry } from '../../shared/telemetry/telemetry'
-import { getTableContent, queryTableContent, RowData, TableData, getTableKeySchema } from '../utils/dynamodb'
+import {
+    getTableContent,
+    queryTableContent,
+    RowData,
+    TableData,
+    getTableKeySchema,
+    deleteItem,
+    TableSchema,
+} from '../utils/dynamodb'
 
 const localize = nls.loadMessageBundle()
 
@@ -70,6 +80,46 @@ export class DynamoDbTableWebview extends VueWebview {
 
     public async getTableSchema() {
         return await getTableKeySchema(this.data.tableName, this.data.region)
+    }
+
+    public async copyCell(selectedCell: string) {
+        if (selectedCell !== '') {
+            await copyToClipboard(JSON.stringify(selectedCell), 'TableCell')
+        }
+    }
+
+    public async copyRow(selectedRow: RowData) {
+        if (selectedRow !== undefined) {
+            await copyToClipboard(JSON.stringify(selectedRow), 'TableItem')
+        }
+    }
+
+    public async deleteItem(selectedRow: RowData, tableSchema: TableSchema) {
+        const isConfirmed = await showConfirmationMessage({
+            prompt: localize(
+                'AWS.dynamoDb.deleteItem.prompt',
+                'Are you sure you want to delete the item with partition key: {0}?',
+                selectedRow[tableSchema.partitionKey.name]
+            ),
+            confirm: localizedText.localizedDelete,
+            cancel: localizedText.cancel,
+        })
+
+        if (!isConfirmed) {
+            getLogger().debug(`Delete action cancelled on DynamoDB Item`)
+            return
+        }
+
+        if (selectedRow === undefined || tableSchema === undefined) {
+            throw new Error('Invalid row, failed to delete the item.')
+        }
+        try {
+            await deleteItem(this.data.tableName, selectedRow, tableSchema, this.data.region)
+            return this.fetchPageData(this.data.lastEvaluatedKey, this.data.currentPage)
+        } catch (err) {
+            getLogger().error(`Delete action failed on DynamoDB Item`)
+            return undefined
+        }
     }
 }
 

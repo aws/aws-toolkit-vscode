@@ -70,4 +70,12 @@ export class DynamoDbClient {
         const sdkClient = await this.createSdkClient()
         return sdkClient.query(request).promise()
     }
+
+    /**
+     * Delete an Item from a table in DynamoDB.
+     */
+    public async deleteItem(request: DynamoDB.Types.DeleteItemInput) {
+        const sdkClient = await this.createSdkClient()
+        return sdkClient.deleteItem(request).promise()
+    }
 }

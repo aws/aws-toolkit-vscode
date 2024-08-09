@@ -27,7 +27,7 @@ export async function deleteDynamoDbTable(
     })
 
     if (!isConfirmed) {
-        getLogger().debug(`Delete action canceled on DynamoDB table: ${node.dynamoDbtable}`)
+        getLogger().debug(`Delete action cancelled on DynamoDB table: ${node.dynamoDbtable}`)
         return
     }
 

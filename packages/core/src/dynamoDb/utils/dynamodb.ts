@@ -216,3 +216,29 @@ function getAttributeValue(attribute: AttributeValue): { key: string; value: any
     }
     return undefined
 }
+
+export async function deleteItem(
+    tableName: string,
+    selectedRow: RowData,
+    tableSchema: TableSchema,
+    regionCode: string,
+    client = new DynamoDbClient(regionCode)
+) {
+    const partitionKeyName = tableSchema.partitionKey.name
+    const partitionKeyValue = selectedRow[partitionKeyName]
+
+    const deleteRequest: DynamoDB.DocumentClient.DeleteItemInput = {
+        TableName: tableName,
+        Key: {
+            [partitionKeyName]: {
+                S: partitionKeyValue,
+            } as any,
+        },
+    }
+    if (tableSchema.sortKey) {
+        const sortKeyName = tableSchema.sortKey.name
+        const sortKeyValue = selectedRow[sortKeyName]
+        deleteRequest.Key[sortKeyName] = { S: sortKeyValue } as any
+    }
+    return await client.deleteItem(deleteRequest)
+}
