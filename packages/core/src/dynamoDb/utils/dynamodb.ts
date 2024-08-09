@@ -102,6 +102,7 @@ export async function queryTableContent(
     client = new DynamoDbClient(regionCode)
 ) {
     const queryRequestObject = await prepareQueryRequestObject(tableName, regionCode, client, queryRequest)
+    queryRequestObject.Limit = 50
     const queryResponse = await client.queryTable(queryRequestObject)
     const { columnNames, tableHeader } = getTableColumnsNames(queryResponse)
     const tableItems = getTableItems(columnNames, queryResponse)

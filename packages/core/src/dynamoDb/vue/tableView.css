@@ -73,14 +73,10 @@ vscode-panels {
     width: 100%;
 }
 
-vscode-panel-view#view-1 {
+vscode-panel-view#view-1,
+vscode-panel-view#view-2 {
     width: 100%;
     justify-content: space-between;
-}
-
-vscode-panel-view#view-2 {
-    flex-direction: column;
-    width: 90%;
 }
 
 .query-section {
