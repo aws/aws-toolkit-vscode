@@ -75,6 +75,13 @@
                     "maximum": 250,
                     "markdownDescription": "%AWS.configuration.description.iot.maxItemsPerPage%"
                 },
+                "aws.dynamodb.maxItemsPerPage": {
+                    "type": "number",
+                    "default": 100,
+                    "minimum": 10,
+                    "maximum": 250,
+                    "markdownDescription": "%AWS.configuration.description.dynamodb.maxItemsPerPage%"
+                },
                 "aws.s3.maxItemsPerPage": {
                     "type": "number",
                     "default": 300,

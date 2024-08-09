@@ -6,6 +6,7 @@
 import * as nls from 'vscode-nls'
 import { ExtContext } from '../../shared'
 import { VueWebview } from '../../webviews/main'
+import { openSettings } from '../../shared/settings'
 import { getLogger, Logger } from '../../shared/logger'
 import { Key, ScanInput } from 'aws-sdk/clients/dynamodb'
 import * as localizedText from '../../shared/localizedText'
@@ -57,7 +58,6 @@ export class DynamoDbTableWebview extends VueWebview {
     public async fetchPageData(lastEvaluatedKey?: Key) {
         const tableRequest: ScanInput = {
             TableName: this.data.tableName,
-            Limit: 50,
             ExclusiveStartKey: lastEvaluatedKey,
         }
         const response = await getDynamoDbTableData(tableRequest, this.data.region)
@@ -125,6 +125,10 @@ export class DynamoDbTableWebview extends VueWebview {
             return undefined
         }
     }
+
+    public async openPageSizeSettings() {
+        await openSettings('aws.dynamoDb.maxItemsPerPage')
+    }
 }
 
 const Panel = VueWebview.compilePanel(DynamoDbTableWebview)
@@ -137,7 +141,7 @@ export async function viewDynamoDbTable(context: ExtContext, node: { dynamoDbtab
     const logger: Logger = getLogger()
 
     try {
-        const response = await getDynamoDbTableData({ TableName: node.dynamoDbtable, Limit: 50 }, node.regionCode)
+        const response = await getDynamoDbTableData({ TableName: node.dynamoDbtable }, node.regionCode)
         const webViewPanel = activePanels.get(node.dynamoDbtable) ?? new Panel(context.extensionContext, response)
         if (!activePanels.has(node.dynamoDbtable)) {
             activePanels.set(node.dynamoDbtable, webViewPanel)

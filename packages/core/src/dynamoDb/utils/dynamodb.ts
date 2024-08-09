@@ -8,6 +8,7 @@ import { copyToClipboard } from '../../shared/utilities/messages'
 import { DynamoDbTableNode } from '../explorer/dynamoDbTableNode'
 import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
 import { AttributeValue, Key, ScanInput } from 'aws-sdk/clients/dynamodb'
+import { Settings } from '../../shared'
 
 export interface RowData {
     [key: string]: string
@@ -33,6 +34,7 @@ export async function getTableContent(
     regionCode: string,
     client = new DynamoDbClient(regionCode)
 ) {
+    tableRequest.Limit = await getMaxItemsPerPage()
     const response = await client.scanTable(tableRequest)
     const { columnNames, tableHeader } = getTableColumnsNames(response)
     const tableItems = getTableItems(columnNames, response)
@@ -103,7 +105,7 @@ export async function queryTableContent(
     client = new DynamoDbClient(regionCode)
 ) {
     const queryRequestObject = await prepareQueryRequestObject(tableName, regionCode, client, queryRequest)
-    queryRequestObject.Limit = 50
+    queryRequestObject.Limit = await getMaxItemsPerPage()
     queryRequestObject.ExclusiveStartKey = lastEvaluatedKey
     const queryResponse = await client.queryTable(queryRequestObject)
     const { columnNames, tableHeader } = getTableColumnsNames(queryResponse)
@@ -244,4 +246,8 @@ export async function deleteItem(
         deleteRequest.Key[sortKeyName] = { S: sortKeyValue } as any
     }
     return await client.deleteItem(deleteRequest)
+}
+
+async function getMaxItemsPerPage(): Promise<number> {
+    return Settings.instance.getSection('aws').get<number>('dynamodb.maxItemsPerPage', 100)
 }

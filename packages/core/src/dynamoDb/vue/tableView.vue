@@ -17,6 +17,7 @@
                             <vscode-link :class="{ disabled: isFirstPage }" @click="prevPage">&lt;</vscode-link>
                             <vscode-link href="#">{{ dynamoDbTableData.currentPage }}</vscode-link>
                             <vscode-link :class="{ disabled: isLastPage }" @click="nextPage">&gt;</vscode-link>
+                            <span class="icon icon-sm icon-vscode-settings-gear" @click="openSettings"></span>
                         </div>
                     </div>
                 </vscode-panel-view>
@@ -48,6 +49,7 @@
                             <vscode-link :class="{ disabled: isFirstPage }" @click="prevPage">&lt;</vscode-link>
                             <vscode-link href="#">{{ dynamoDbTableData.currentPage }}</vscode-link>
                             <vscode-link :class="{ disabled: isLastPage }" @click="nextPage">&gt;</vscode-link>
+                            <span class="icon icon-sm icon-vscode-settings-gear" @click="openSettings"></span>
                         </div>
                     </div>
                 </vscode-panel-view>
@@ -187,14 +189,13 @@ export default defineComponent({
         },
 
         async refreshTableQueryPanel() {
-            this.isLoading = true
-            if (this.queryPanelData.isActive) {
-                this.updatePageNumber()
-                this.dynamoDbTableData = await client.queryData(this.queryPanelData.queryRequest, undefined)
-                this.pageKeys = [undefined, this.dynamoDbTableData.lastEvaluatedKey]
-            } else {
-                this.refreshTable()
+            if (!this.queryPanelData.isActive) {
+                return this.refreshTable()
             }
+            this.isLoading = true
+            this.updatePageNumber()
+            this.dynamoDbTableData = await client.queryData(this.queryPanelData.queryRequest, undefined)
+            this.pageKeys = [undefined, this.dynamoDbTableData.lastEvaluatedKey]
             this.isLoading = false
         },
 
@@ -231,6 +232,10 @@ export default defineComponent({
             }
             this.dynamoDbTableData.currentPage = newPageNumber
             this.isLoading = false
+        },
+
+        openSettings() {
+            client.openPageSizeSettings()
         },
 
         updatePageNumber() {

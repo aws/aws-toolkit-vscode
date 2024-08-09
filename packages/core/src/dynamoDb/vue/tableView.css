@@ -32,6 +32,7 @@
     flex-direction: row;
     justify-content: space-evenly;
     margin-top: 10px;
+    width: 100px;
 }
 
 .table-name {
@@ -95,4 +96,11 @@ vscode-panel-view#view-2 {
     justify-content: center;
     align-items: center;
     height: 100%;
+}
+
+span.icon.icon-sm.icon-vscode-settings-gear {
+    font-size: medium;
+    align-self: center;
+    border-left: 1px inset;
+    padding: 5px;
 }
