@@ -1,20 +1,20 @@
 <checklist>
 	<div class="theme-picker-row">
-		<checkbox when-checked="command:aws.toolkit.setWalkthroughToAPI" checked-on="walkthroughSelected == 'API'">
+		<checkbox when-checked="command:aws.toolkit.setWalkthroughToAPI" checked-on="aws.toolkit.walkthroughSelected == 'API'">
 			<img width="200" src="./API.png"/>
 			Rest API
 		</checkbox>
-		<checkbox when-checked="command:aws.toolkit.setWalkthroughToS3" checked-on="walkthroughSelected == 'S3'">
+		<checkbox when-checked="command:aws.toolkit.setWalkthroughToS3" checked-on="aws.toolkit.walkthroughSelected == 'S3'">
 			<img width="200" src="./S3.png"/>
 			S3
 		</checkbox>
 	</div>
 	<div class="theme-picker-row">
-		<checkbox when-checked="command:aws.toolkit.setWalkthroughToVisual" checked-on="walkthroughSelected == 'Visual'">
+		<checkbox when-checked="command:aws.toolkit.setWalkthroughToVisual" checked-on="aws.toolkit.walkthroughSelected == 'Visual'">
 			<img width="200" src="./AppComposer.png"/>
 			New template with visual builder
 		</checkbox>
-		<checkbox when-checked="command:aws.toolkit.setWalkthroughToCustomTemplate" checked-on="walkthroughSelected == 'CustomTemplate'">
+		<checkbox when-checked="command:aws.toolkit.setWalkthroughToCustomTemplate" checked-on="aws.toolkit.walkthroughSelected == 'CustomTemplate'">
 			<img width="200" src="./CustomTemplate.png"/>
 			Use template in workspace
 		</checkbox>

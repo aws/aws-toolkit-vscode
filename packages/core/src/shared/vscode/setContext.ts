@@ -30,6 +30,7 @@ type contextKey =
     | 'gumby.reviewState'
     | 'gumby.transformationProposalReviewInProgress'
     | 'gumby.wasQCodeTransformationUsed'
+    | 'aws.toolkit.walkthroughSelected'
 
 /**
  * Calls the vscode "setContext" command.
