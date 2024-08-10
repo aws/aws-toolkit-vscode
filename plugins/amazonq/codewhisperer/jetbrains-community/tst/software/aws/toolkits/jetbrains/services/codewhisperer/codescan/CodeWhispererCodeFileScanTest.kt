@@ -43,6 +43,7 @@ import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureR
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.File
 import java.io.FileInputStream
+import java.lang.management.ManagementFactory
 import java.util.Base64
 import java.util.UUID
 import java.util.zip.ZipFile
@@ -54,17 +55,27 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
     private lateinit var psifile2: PsiFile
     private lateinit var psifile3: PsiFile
     private lateinit var psifile4: PsiFile
+    private lateinit var psifilePerformanceTest: PsiFile
+    private lateinit var psifilePerformanceTest2: PsiFile
     private lateinit var file: File
     private lateinit var file2: File
     private lateinit var file3: File
     private lateinit var file4: File
+    private lateinit var performanceTestfileWithPayload200KB: File
+    private lateinit var performanceTestfileWithPayload150KB: File
     private lateinit var virtualFile3: VirtualFile
     private lateinit var virtualFile4: VirtualFile
     private lateinit var sessionConfigSpy: CodeScanSessionConfig
     private lateinit var sessionConfigSpy2: CodeScanSessionConfig
+    private lateinit var sessionConfigSpy3: CodeScanSessionConfig
+    private lateinit var sessionConfigSpy4: CodeScanSessionConfig
     private val payloadContext = PayloadContext(CodewhispererLanguage.Python, 1, 1, 10, listOf(), 600, 200)
     private lateinit var codeScanSessionContext: CodeScanSessionContext
+    private lateinit var codeScanSessionContext2: CodeScanSessionContext
+    private lateinit var codeScanSessionContext3: CodeScanSessionContext
     private lateinit var codeScanSessionSpy: CodeWhispererCodeScanSession
+    private lateinit var codeScanSessionSpy2: CodeWhispererCodeScanSession
+    private lateinit var codeScanSessionSpy3: CodeWhispererCodeScanSession
     private val codeScanName = UUID.randomUUID().toString()
 
     @Before
@@ -131,6 +142,33 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
         virtualFile4 = psifile4.virtualFile
         file4 = virtualFile4.toNioPath().toFile()
 
+        // Create a 200KB file
+        val content = "a".repeat(200 * 1024)
+        psifilePerformanceTest = projectRule.fixture.addFileToProject("test.txt", content)
+        performanceTestfileWithPayload200KB = psifilePerformanceTest.virtualFile.toNioPath().toFile()
+
+        sessionConfigSpy3 = spy(
+            CodeScanSessionConfig.create(
+                psifilePerformanceTest.virtualFile,
+                project,
+                CodeWhispererConstants.CodeAnalysisScope.FILE
+            )
+        )
+        setupResponse(psifilePerformanceTest.virtualFile.toNioPath().relativeTo(sessionConfigSpy3.projectRoot.toNioPath()))
+
+        // Create a 150KB file
+        val codeContentForPayload = "a".repeat(150 * 1024)
+        psifilePerformanceTest2 = projectRule.fixture.addFileToProject("test.txt", codeContentForPayload)
+        performanceTestfileWithPayload150KB = psifilePerformanceTest2.virtualFile.toNioPath().toFile()
+
+        sessionConfigSpy4 = spy(
+            CodeScanSessionConfig.create(
+                psifilePerformanceTest2.virtualFile,
+                project,
+                CodeWhispererConstants.CodeAnalysisScope.FILE
+            )
+        )
+        setupResponse(psifilePerformanceTest2.virtualFile.toNioPath().relativeTo(sessionConfigSpy4.projectRoot.toNioPath()))
         sessionConfigSpy = spy(
             CodeScanSessionConfig.create(
                 psifile.virtualFile,
@@ -158,12 +196,87 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
         codeScanSessionSpy = spy(CodeWhispererCodeScanSession(codeScanSessionContext))
         doNothing().`when`(codeScanSessionSpy).uploadArtifactToS3(any(), any(), any(), any(), isNull(), any())
 
+        codeScanSessionContext2 = CodeScanSessionContext(project, sessionConfigSpy3, CodeWhispererConstants.CodeAnalysisScope.FILE)
+        codeScanSessionSpy2 = spy(CodeWhispererCodeScanSession(codeScanSessionContext2))
+        doNothing().`when`(codeScanSessionSpy2).uploadArtifactToS3(any(), any(), any(), any(), isNull(), any())
+
+        codeScanSessionContext3 = CodeScanSessionContext(project, sessionConfigSpy4, CodeWhispererConstants.CodeAnalysisScope.FILE)
+        codeScanSessionSpy3 = spy(CodeWhispererCodeScanSession(codeScanSessionContext3))
+        doNothing().`when`(codeScanSessionSpy3).uploadArtifactToS3(any(), any(), any(), any(), isNull(), any())
         mockClient.stub {
             onGeneric { createUploadUrl(any()) }.thenReturn(fakeCreateUploadUrlResponse)
             onGeneric { createCodeScan(any(), any()) }.thenReturn(fakeCreateCodeScanResponse)
             onGeneric { getCodeScan(any(), any()) }.thenReturn(fakeGetCodeScanResponse)
             onGeneric { listCodeScanFindings(any(), any()) }.thenReturn(fakeListCodeScanFindingsResponse)
         }
+    }
+
+    @Test
+    fun `test run() - measure CPU and memory usage`() {
+        // Set up CPU and Memory monitoring
+        val runtime = Runtime.getRuntime()
+        val bean = ManagementFactory.getThreadMXBean()
+        val startCpuTime = bean.getCurrentThreadCpuTime()
+        val startMemoryUsage = runtime.totalMemory() - runtime.freeMemory()
+        val startSystemTime = System.nanoTime()
+
+        // Run the code scan
+        runBlocking {
+            codeScanSessionSpy2.run()
+        }
+
+        // Calculate CPU and memory usage
+        val endCpuTime = bean.getCurrentThreadCpuTime()
+        val endMemoryUsage = runtime.totalMemory() - runtime.freeMemory()
+        val endSystemTime = System.nanoTime()
+
+        val cpuTimeUsedNanos = endCpuTime - startCpuTime
+        val cpuTimeUsedSeconds = cpuTimeUsedNanos / 1_000_000_000.0
+        val elapsedTimeSeconds = (endSystemTime - startSystemTime) / 1_000_000_000.0
+
+        val memoryUsed = endMemoryUsage - startMemoryUsage
+        val memoryUsedInMB = memoryUsed / (1024.0 * 1024.0) // Converting into MB
+
+        // Calculate CPU usage in percentage
+        val cpuUsagePercentage = (cpuTimeUsedSeconds / elapsedTimeSeconds) * 100
+
+        assertThat(cpuTimeUsedSeconds).isLessThan(5.0)
+        assertThat(cpuUsagePercentage).isLessThan(30.0)
+        assertThat(memoryUsedInMB).isLessThan(200.0) // Memory used should be less than 200MB
+    }
+
+    @Test
+    fun `test run() - measure CPU and memory usage with payload of 150KB`() {
+        // Set up CPU and Memory monitoring
+        val runtime = Runtime.getRuntime()
+        val bean = ManagementFactory.getThreadMXBean()
+        val startCpuTime = bean.getCurrentThreadCpuTime()
+        val startMemoryUsage = runtime.totalMemory() - runtime.freeMemory()
+        val startSystemTime = System.nanoTime()
+
+        // Run the code scan
+        runBlocking {
+            codeScanSessionSpy3.run()
+        }
+
+        // Calculate CPU and memory usage
+        val endCpuTime = bean.getCurrentThreadCpuTime()
+        val endMemoryUsage = runtime.totalMemory() - runtime.freeMemory()
+        val endSystemTime = System.nanoTime()
+
+        val cpuTimeUsedNanos = endCpuTime - startCpuTime
+        val cpuTimeUsedSeconds = cpuTimeUsedNanos / 1_000_000_000.0
+        val elapsedTimeSeconds = (endSystemTime - startSystemTime) / 1_000_000_000.0
+
+        val memoryUsed = endMemoryUsage - startMemoryUsage
+        val memoryUsedInMB = memoryUsed / (1024.0 * 1024.0) // Converting into MB
+
+        // Calculate CPU usage in percentage
+        val cpuUsagePercentage = (cpuTimeUsedSeconds / elapsedTimeSeconds) * 100
+
+        assertThat(cpuTimeUsedSeconds).isLessThan(5.0)
+        assertThat(cpuUsagePercentage).isLessThan(30.0)
+        assertThat(memoryUsedInMB).isLessThan(200.0) // Memory used should be less than 200MB
     }
 
     @Test
