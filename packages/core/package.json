@@ -729,6 +729,18 @@
                 }
             ]
         },
+        "viewsWelcome": [
+            {
+                "view": "aws.appBuilderForFileExplorer",
+                "contents": "[Open walkthrough](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23aws.gettingStarted.walkthrough%22%7D)\n [Open Folder](command:vscode.openFolder)",
+                "when": "workbenchState == empty"
+            },
+            {
+                "view": "aws.appBuilder",
+                "contents": "[Open walkthrough](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23aws.gettingStarted.walkthrough%22%7D)\n [Open Folder](command:vscode.openFolder)",
+                "when": "workbenchState == empty"
+            }
+        ],
         "views": {
             "explorer": [
                 {
@@ -2100,11 +2112,6 @@
                     "command": "aws.openInApplicationComposer",
                     "when": "viewItem == awsAppBuilderAppNode",
                     "group": "3@1"
-                },
-                {
-                    "command": "aws.deleteLambda",
-                    "when": "viewItem == awsAppBuilderAppNode",
-                    "group": "4@1"
                 }
             ],
             "aws.toolkit.auth": [
@@ -4358,7 +4365,7 @@
         "@aws-sdk/property-provider": "3.46.0",
         "@aws-sdk/smithy-client": "^3.46.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
-        "@aws/mynah-ui": "^4.15.5",
+        "@aws/mynah-ui": "^4.15.6",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
         "@smithy/middleware-retry": "^2.3.1",

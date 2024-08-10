@@ -173,7 +173,10 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
             const folderUri = arg.resource.workspaceFolder.uri
             const handler = arg.resource.resource.Handler?.split('.')[0]
             const handlerFile = (
-                await vscode.workspace.findFiles(new vscode.RelativePattern(folderUri, `**/${handler}.*`))
+                await vscode.workspace.findFiles(
+                    new vscode.RelativePattern(folderUri, `**/${handler}.*`),
+                    new vscode.RelativePattern(folderUri, '.aws-sam')
+                )
             )[0]
             if (!handlerFile) {
                 throw new ToolkitError(`No handler file found with name "${handler}"`)

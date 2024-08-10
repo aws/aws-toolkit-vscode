@@ -128,7 +128,11 @@ export class Messenger {
             )
         }
         this.telemetryHelper.setResponseStreamStartTime(tabID)
-        if (triggerPayload.relevantTextDocuments && triggerPayload.relevantTextDocuments.length > 0) {
+        if (
+            triggerPayload.relevantTextDocuments &&
+            triggerPayload.relevantTextDocuments.length > 0 &&
+            triggerPayload.useRelevantDocuments === true
+        ) {
             this.telemetryHelper.setResponseFromProjectContext(messageID)
         }
 

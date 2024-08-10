@@ -53,10 +53,7 @@ export class AppNode implements TreeNode {
             if (resources.length === 0) {
                 return [
                     createPlaceholderItem(
-                        localize(
-                            'AWS.appBuilder.explorerNode.app.noTemplate',
-                            '[No Resource found in this SAM Template]'
-                        )
+                        localize('AWS.appBuilder.explorerNode.app.noTemplate', '[No IaC templates found in Workspaces]')
                     ),
                 ]
             }
@@ -67,7 +64,7 @@ export class AppNode implements TreeNode {
                 createPlaceholderItem(
                     localize(
                         'AWS.appBuilder.explorerNode.app.noResourceTree',
-                        '[Unable to load Resource tree for this App. Update SAM template]'
+                        '[Unable to load Resource tree for this App. Update IaC template]'
                     )
                 ),
             ]

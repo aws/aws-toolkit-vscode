@@ -619,6 +619,13 @@ export async function getTransformationPlan(jobId: string) {
         const arrowIcon = getTransformationIcon('upArrow')
 
         let plan = `<style>table {border: 1px solid #424750;}</style>\n\n<a id="top"></a><br><p style="font-size: 24px;"><img src="${logoIcon}" style="margin-right: 15px; vertical-align: middle;"></img><b>${CodeWhispererConstants.planTitle}</b></p><br>`
+        const authType = await getAuthType()
+        const linesOfCode = Number(
+            jobStatistics.find((stat: { name: string; value: string }) => stat.name === 'linesOfCode').value
+        )
+        if (authType === 'iamIdentityCenter' && linesOfCode > CodeWhispererConstants.codeTransformLocThreshold) {
+            plan += CodeWhispererConstants.codeTransformBillingText(linesOfCode)
+        }
         plan += `<div style="display: flex;"><div style="flex: 1; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p>${
             CodeWhispererConstants.planIntroductionMessage
         }</p></div>${getJobStatisticsHtml(jobStatistics)}</div>`
