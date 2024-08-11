@@ -21,6 +21,7 @@ import {
     deleteItem,
     TableSchema,
 } from '../utils/dynamodb'
+import { editItem } from '../utils/editItem'
 
 const localize = nls.loadMessageBundle()
 
@@ -128,6 +129,14 @@ export class DynamoDbTableWebview extends VueWebview {
 
     public async openPageSizeSettings() {
         await openSettings('aws.dynamoDb.maxItemsPerPage')
+    }
+
+    public async editItem(selectedRow: RowData, tableSchema: TableSchema) {
+        await editItem(selectedRow, {
+            tableName: this.data.tableName,
+            regionCode: this.data.region,
+            tableSchema: tableSchema,
+        })
     }
 }
 

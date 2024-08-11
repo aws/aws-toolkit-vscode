@@ -30,7 +30,7 @@
 .pagination {
     display: flex;
     flex-direction: row;
-    justify-content: space-evenly;
+    justify-content: space-between;
     margin-top: 10px;
     width: 100px;
 }

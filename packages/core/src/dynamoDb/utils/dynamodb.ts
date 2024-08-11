@@ -209,7 +209,7 @@ export async function getTableKeySchema(
     return tableSchema
 }
 
-function getAttributeValue(attribute: AttributeValue): { key: string; value: any } | undefined {
+export function getAttributeValue(attribute: AttributeValue): { key: string; value: any } | undefined {
     const keys = Object.keys(attribute) as (keyof AttributeValue)[]
     for (const key of keys) {
         const value = attribute[key]

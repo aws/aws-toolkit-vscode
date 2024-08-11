@@ -326,9 +326,11 @@ export default defineComponent({
             }
         },
 
-        handleEdit() {
-            // Handle edit logic
-            console.log('Edit clicked')
+        async handleEdit() {
+            if (selectedRow.value === undefined) {
+                return
+            }
+            await client.editItem(selectedRow.value, tableSchema)
         },
     },
 })
