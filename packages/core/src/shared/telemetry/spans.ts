@@ -91,6 +91,40 @@ function getValidatedState(state: Partial<MetricBase>, definition: MetricDefinit
 }
 
 /**
+ * Options used for the creation of a span
+ */
+export type SpanOptions = {
+    /** True if this span should emit its telemetry events. Defaults to true if undefined. */
+    emit?: boolean
+
+    /**
+     * Adds a function entry to the span stack.
+     *
+     * This allows you to eventually retrieve the function entry stack by using {@link TelemetryTracer.getFunctionStack()},
+     * which tells you the chain of function executions to bring you to that point in the code.
+     *
+     * Example:
+     * ```
+     * function a() {
+     *   telemetry.your_Metric.run(() => b(), { functionId: { name: 'a'} })
+     * }
+     *
+     * function b() {
+     *   telemetry.your_Metric.run(() => c(), { functionId: { name: 'b'} })
+     * }
+     *
+     * function c() {
+     *   telemetry.your_Metric.run(() => {
+     *     const stack = telemetry.getFunctionStack()
+     *     console.log(stack) // [ {source: 'a' }, { source: 'b' }, { source: 'c' }]
+     *   }, { functionId: { name: 'c'} })
+     * }
+     * ```
+     */
+    functionId?: FunctionEntry
+}
+
+/**
  * A span represents a "unit of work" captured for logging/telemetry.
  * It can contain other spans recursively, then it's called a "trace" or "flow".
  * https://opentelemetry.io/docs/concepts/signals/traces/
@@ -99,6 +133,7 @@ function getValidatedState(state: Partial<MetricBase>, definition: MetricDefinit
  */
 export class TelemetrySpan<T extends MetricBase = MetricBase> {
     #startTime?: Date
+    #options: SpanOptions
 
     private readonly state: Partial<T> = {}
     private readonly definition = definitions[this.name] ?? {
@@ -113,7 +148,17 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
      */
     static readonly #excludedFields = ['passive', 'value']
 
-    public constructor(public readonly name: string) {}
+    public constructor(
+        public readonly name: string,
+        options?: SpanOptions
+    ) {
+        // set defaults on undefined options
+        this.#options = {
+            // do emit by default
+            emit: options?.emit === undefined ? true : options.emit,
+            functionId: options?.functionId,
+        }
+    }
 
     public get startTime(): Date | undefined {
         return this.#startTime
@@ -122,6 +167,10 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
     public record(data: Partial<T>): this {
         Object.assign(this.state, data)
         return this
+    }
+
+    public getFunctionEntry(): Readonly<FunctionEntry> | undefined {
+        return this.#options.functionId
     }
 
     public emit(data?: Partial<T>): void {
@@ -157,14 +206,16 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
     public stop(err?: unknown): void {
         const duration = this.startTime !== undefined ? globals.clock.Date.now() - this.startTime.getTime() : undefined
 
-        this.emit({
-            duration,
-            result: getTelemetryResult(err),
-            reason: getTelemetryReason(err),
-            reasonDesc: getTelemetryReasonDesc(err),
-            requestId: getRequestId(err),
-            httpStatusCode: getHttpStatusCode(err),
-        } as Partial<T>)
+        if (this.#options.emit) {
+            this.emit({
+                duration,
+                result: getTelemetryResult(err),
+                reason: getTelemetryReason(err),
+                reasonDesc: getTelemetryReasonDesc(err),
+                requestId: getRequestId(err),
+                httpStatusCode: getHttpStatusCode(err),
+            } as Partial<T>)
+        }
 
         this.#startTime = undefined
     }
@@ -256,8 +307,12 @@ export class TelemetryTracer extends TelemetryBase {
      * All changes made to {@link attributes} (via {@link record}) during the execution are
      * reverted after the execution completes.
      */
-    public run<T, U extends MetricName>(name: U, fn: (span: Metric<MetricShapes[U]>) => T): T {
-        const span = this.createSpan(name).start()
+    public run<T, U extends MetricName>(
+        name: U,
+        fn: (span: Metric<MetricShapes[U]>) => T,
+        options?: SpanOptions | undefined
+    ): T {
+        const span = this.createSpan(name, options).start()
         const frame = this.switchContext(span)
 
         try {
@@ -302,6 +357,32 @@ export class TelemetryTracer extends TelemetryBase {
     }
 
     /**
+     * Returns the stack of all {@link FunctionEntry}s with the 0th
+     * index being the top level call, and the last index being the final
+     * nested call.
+     *
+     * Ensure that {@link TelemetryTracer.runWithCallEntry()} and/or {@link TelemetrySpan.recordCallEntry()}
+     * have been used before this method is called, otherwise it will return
+     * no useful information.
+     *
+     * Use {@link asStringifiedStack} to create a stringified version of this stack.
+     */
+    public getFunctionStack(): FunctionEntry[] {
+        const stack: FunctionEntry[] = []
+        const endIndex = this.spans.length - 1
+        let i = endIndex
+        while (i >= 0) {
+            const span = this.spans[i]
+            const entry = span.getFunctionEntry()
+            if (entry) {
+                stack.push(entry)
+            }
+            i -= 1
+        }
+        return stack
+    }
+
+    /**
      * Wraps a function with {@link run}.
      *
      * This can be used when immediate execution of the function is not desirable.
@@ -322,7 +403,7 @@ export class TelemetryTracer extends TelemetryBase {
             name,
             emit: (data) => getSpan().emit(data),
             record: (data) => getSpan().record(data),
-            run: (fn) => this.run(name as MetricName, fn),
+            run: (fn, options?: SpanOptions) => this.run(name as MetricName, fn, options),
             increment: (data) => getSpan().increment(data),
         }
     }
@@ -331,8 +412,8 @@ export class TelemetryTracer extends TelemetryBase {
         return this.spans.find((s) => s.name === name) ?? this.createSpan(name)
     }
 
-    private createSpan(name: string): TelemetrySpan {
-        const span = new TelemetrySpan(name).record(this.attributes ?? {})
+    private createSpan(name: string, options?: SpanOptions): TelemetrySpan {
+        const span = new TelemetrySpan(name, options).record(this.attributes ?? {})
         if (this.activeSpan && this.activeSpan.name !== rootSpanName) {
             return span.record({ parentMetric: this.activeSpan.name } satisfies { parentMetric: string } as any)
         }
@@ -348,4 +429,63 @@ export class TelemetryTracer extends TelemetryBase {
 
         return ctx
     }
+}
+
+/**
+ * A Function Entry is a single entry in to a stack of Function Entries.
+ *
+ * Think of a Function Entry as one entry in the stack trace of an Error.
+ * So a stack of Function Entries will allows you to build a path of functions.
+ * This can allow you to trace the path of executions.
+ *
+ * In MOST cases, a Function Entry will represent a method/function call, but it is not
+ * limited to that.
+ */
+export type FunctionEntry = {
+    /**
+     * An identifier that represents the callback. You'll probably want to use the function name.
+     */
+    readonly name: string
+
+    /**
+     * If the source is a method, you'll want to include the class name for better context.
+     */
+    readonly class?: string
+}
+
+/**
+ * Returns a stringified version of the provided {@link ExecutionContext.stack}.
+ *
+ * Eg: "TestClassA1#methodA,methodB:TestClassA2#methodX,methodY,thisIsAlsoZ:someFunction"
+ *
+ *   - '#' separates a class from its methods
+ *   - ',' separates methods of the same class
+ *   - ':' separates classes/functions
+ *   - The call stack goes in order from left to right
+ *   - The first item in the string is the top level, initial caller in the stack
+ *   - The last item is the final caller in the stack
+ *
+ * See tests for examples.
+ */
+export function asStringifiedStack(stack: FunctionEntry[]): string {
+    let prevEntry: FunctionEntry | undefined
+    let currString: string = ''
+
+    // Iterate over each entry, appending the source and class to the final output string
+    for (const currEntry of stack) {
+        const prevClass = prevEntry?.class
+        const newClass = currEntry.class
+
+        if (prevClass && prevClass === newClass) {
+            // The new class is same as the prev class, so we don't need to add the class since it already exists
+            currString = `${currString},${currEntry.name}`
+        } else {
+            // The new class may be different from the prev class, so start a new subsection, adding the new class if it exists.
+            currString = `${currString ? currString + ':' : ''}${newClass ? newClass + '#' : ''}${currEntry.name}`
+        }
+
+        prevEntry = currEntry
+    }
+
+    return currString
 }
