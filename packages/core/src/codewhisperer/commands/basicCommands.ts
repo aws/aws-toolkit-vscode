@@ -29,7 +29,6 @@ import { applyPatch } from 'diff'
 import { closeSecurityIssueWebview, showSecurityIssueWebview } from '../views/securityIssue/securityIssueWebview'
 import { Mutable } from '../../shared/utilities/tsUtils'
 import { CodeWhispererSource } from './types'
-import { FeatureConfigProvider } from '../service/featureConfigProvider'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { Auth, AwsConnection } from '../../auth'
 import { once } from '../../shared/utilities/functionUtils'
@@ -301,13 +300,6 @@ function focusQAfterDelay() {
         void focusAmazonQPanel.execute(placeholder, 'startDelay')
     }, 1000)
 }
-
-export const fetchFeatureConfigsCmd = Commands.declare(
-    { id: 'aws.amazonq.fetchFeatureConfigs', logging: false },
-    () => async () => {
-        await FeatureConfigProvider.instance.fetchFeatureConfigs()
-    }
-)
 
 /**
  * Actually install Amazon Q.

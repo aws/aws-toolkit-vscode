@@ -47,7 +47,7 @@ import { randomUUID } from '../../../shared/crypto'
 import { LspController } from '../../../amazonq/lsp/lspController'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
-import { FeatureConfigProvider } from '../../../codewhisperer/service/featureConfigProvider'
+import { FeatureConfigProvider } from '../../../shared/featureConfig'
 import { getHttpStatusCode, getReasonFromSyntaxError } from '../../../shared/errors'
 
 export interface ChatControllerMessagePublishers {
