@@ -326,15 +326,15 @@
     "AWS.amazonq.featureDev.placeholder.describe": "Describe your task or issue in as much detail as possible",
     "AWS.toolkit.walkthrough.quickpickTitle": "Walkthrough of Application Builder",
     "AWS.toolkit.walkthrough.title": "Get started building your application",
-    "AWS.toolkit.walkthrough.description": "Your quick guide to get you building AWS application visually, iterating locally, and deploying to AWS!",
+    "AWS.toolkit.walkthrough.description": "Your quick guide to get you building AWS applications visually, iterating locally, and deploying to AWS!",
     "AWS.toolkit.walkthrough.toolInstall.title": "Installation",
     "AWS.toolkit.walkthrough.toolInstall.description": "AWS CLI is used for... \n\n[Install AWS CLI](command:aws.toolkit.installAWSCLI)\n\n SAM CLI is used for...\n\n[Install SAM CLI](command:aws.toolkit.installSAMCLI)\n\n Docker is optional however if you want to invoke your function locally it is required so that Lambda can locally emulate the execution environment\n\n[Install Docker (optional)](command:aws.toolkit.installDocker)",
     "AWS.toolkit.walkthrough.chooseTemplate.title": "Choose your application template",
     "AWS.toolkit.walkthrough.chooseTemplate.description": "Select an application template, visually compose an application from scratch, open an existing template, or browse more application examples \n\n[Initialize your project](command:aws.toolkit.initializeWalkthroughProject)",
     "AWS.toolkit.walkthrough.step1.title": "Iterate locally",
-    "AWS.toolkit.walkthrough.step1.description": "Build your code changes, invoke/ debug locally, and view your execution results",
+    "AWS.toolkit.walkthrough.step1.description": "Build your code changes, invoke/debug locally, and view your execution results",
     "AWS.toolkit.walkthrough.step2.title": "Deploy to AWS",
     "AWS.toolkit.walkthrough.step2.description": "Deploy your template to test your application on AWS. You can remotely invoke your function from within VS Code.",
     "AWS.toolkit.walkthrough.step3.title": "New command palette additions",
-    "AWS.toolkit.walkthrough.step3.description": "We've added commands for building your template, invoking locally, invoking remotedly, viewing your template in Application Composer, and opending the Getting started Walkthrough."
+    "AWS.toolkit.walkthrough.step3.description": "We've added commands for building your template, invoking locally, invoking remotely, viewing your template in Application Composer, and opening the Getting started Walkthrough."
 }

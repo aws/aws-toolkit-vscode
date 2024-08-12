@@ -3799,7 +3799,7 @@
                 "command": "aws.samcli.sync",
                 "key": "ctrl+shift+s",
                 "mac": "cmd+shift+s",
-                "when": "editorLangId == yaml || workspaceContains:**/*.yaml"
+                "when": "editorLangId == yaml || workspaceContains:**/template.yaml"
             }
         ],
         "grammars": [

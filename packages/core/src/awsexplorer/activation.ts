@@ -283,7 +283,7 @@ async function registerAppBuilderCommands(
                 ]
                 form.runtime.bindPrompter(() => {
                     return createQuickPick(items, {
-                        title: localize('AWS.toolkit.walkthrough.selectruntime', 'Select a runtime'),
+                        title: localize('AWS.toolkit.walkthrough.selectRuntime', 'Select a runtime'),
                         buttons: createCommonButtons(serverlessLandUrl),
                     })
                 })
@@ -293,7 +293,7 @@ async function registerAppBuilderCommands(
             const wsFolders = vscode.workspace.workspaceFolders
             const items2 = [
                 {
-                    label: localize('AWS.toolkit.walkthrough.openexplorer', 'Open file explorer'),
+                    label: localize('AWS.toolkit.walkthrough.openExplorer', 'Open file explorer'),
                     data: 'file-selector',
                 },
             ]
@@ -307,7 +307,7 @@ async function registerAppBuilderCommands(
 
             form.dir.bindPrompter(() => {
                 return createQuickPick(items2, {
-                    title: localize('AWS.toolkit.walkthrough.projectlocation', 'Select a location for project'),
+                    title: localize('AWS.toolkit.walkthrough.projectLocation', 'Select a location for project'),
                     buttons: createCommonButtons(serverlessLandUrl),
                 })
             })
