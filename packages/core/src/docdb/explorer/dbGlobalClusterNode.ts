@@ -12,7 +12,7 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { DBClusterNode, DBClusterRole } from './dbClusterNode'
 import { DefaultDocumentDBClient, DocumentDBClient } from '../../shared/clients/docdbClient'
-import { DBCluster, GlobalCluster, GlobalClusterMember } from '@aws-sdk/client-docdb'
+import { DBCluster, GlobalCluster, GlobalClusterMember, ModifyGlobalClusterMessage } from '@aws-sdk/client-docdb'
 import { DBResourceNode } from './dbResourceNode'
 import { DocDBContext } from './docdbContext'
 import { copyToClipboard } from '../../shared/utilities/messages'
@@ -90,6 +90,16 @@ export class DBGlobalClusterNode extends DBResourceNode {
                 }
             })
         )
+    }
+
+    public async renameCluster(clusterName: string): Promise<DBCluster | undefined> {
+        const request: ModifyGlobalClusterMessage = {
+            GlobalClusterIdentifier: this.cluster.GlobalClusterIdentifier,
+            NewGlobalClusterIdentifier: clusterName,
+        }
+        const response = await this.client.modifyGlobalCluster(request)
+        this.name = response?.GlobalClusterIdentifier ?? this.name
+        return response
     }
 
     public get status(): string | undefined {

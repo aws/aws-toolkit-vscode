@@ -177,6 +177,14 @@ export class DefaultDocumentDBClient {
         return response.GlobalCluster
     }
 
+    public async modifyGlobalCluster(
+        input: DocDB.ModifyGlobalClusterCommandInput
+    ): Promise<DocDB.GlobalCluster | undefined> {
+        const command = new DocDB.ModifyGlobalClusterCommand(input)
+        const response = await this.executeCommand<DocDB.ModifyGlobalClusterCommandOutput>(command)
+        return response.GlobalCluster
+    }
+
     public async createClusterSnapshot(
         input: DocDBElastic.CreateClusterSnapshotInput
     ): Promise<DocDBElastic.ClusterSnapshot | undefined> {

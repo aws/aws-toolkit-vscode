@@ -23,6 +23,11 @@ export async function addRegion(node: DBClusterNode): Promise<void> {
     }
 
     return telemetry.docdb_addRegion.run(async () => {
+        if (node.clusterRole !== 'regional') {
+            void vscode.window.showErrorMessage('Currently supported for standalone clusters only.')
+            return
+        }
+
         if (node.cluster.DBClusterMembers?.length === 0) {
             void vscode.window.showErrorMessage(
                 localize('AWS.docdb.addRegion.noInstances', 'Cluster must have at least one instance to add a region')

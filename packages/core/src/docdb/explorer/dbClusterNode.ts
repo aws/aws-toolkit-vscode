@@ -96,7 +96,9 @@ export class DBClusterNode extends DBResourceNode {
             NewDBClusterIdentifier: clusterName,
             ApplyImmediately: true,
         }
-        return await this.client.modifyCluster(request)
+        const response = await this.client.modifyCluster(request)
+        this.name = response?.DBClusterIdentifier ?? this.name
+        return response
     }
 
     public async deleteCluster(finalSnapshotId: string | undefined): Promise<DBCluster | undefined> {

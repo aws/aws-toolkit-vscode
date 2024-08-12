@@ -2016,7 +2016,7 @@
                 },
                 {
                     "command": "aws.docdb.renameCluster",
-                    "when": "viewItem =~ /^awsDocDB-cluster-(?!.*elastic.*)/",
+                    "when": "viewItem =~ /^awsDocDB-cluster(?!.*-elastic.*)/",
                     "group": "0@2"
                 },
                 {
@@ -3682,7 +3682,7 @@
                 "command": "aws.docdb.renameCluster",
                 "title": "%AWS.generic.promptRename%",
                 "category": "%AWS.title%",
-                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB-cluster-running/",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB-cluster(-running)?/",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

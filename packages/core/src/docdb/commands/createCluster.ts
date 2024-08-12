@@ -37,7 +37,7 @@ export async function createCluster(node?: DocumentDBNode) {
             throw new ToolkitError('User cancelled wizard', { cancelled: true })
         }
 
-        const clusterName = result.RegionalCluster.DBClusterIdentifier ?? result.ElasticCluster.clusterName
+        const clusterName = result.RegionalCluster?.DBClusterIdentifier ?? result.ElasticCluster?.clusterName
         getLogger().info(`Creating cluster: ${clusterName}`)
         let cluster
 
