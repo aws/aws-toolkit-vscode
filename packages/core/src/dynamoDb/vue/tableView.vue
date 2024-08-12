@@ -39,7 +39,7 @@
                             ><i>Sort key: </i><b>{{ sortKey }}</b>
                         </vscode-text-field>
                         <div class="run-section">
-                            <vscode-button style="background: round" @click="resetFields">Reset</vscode-button>
+                            <vscode-button @click="resetFields">Reset</vscode-button>
                             <vscode-button :disabled="!partitionKeyValue" @click="executeQuery">Run</vscode-button>
                         </div>
                     </div>

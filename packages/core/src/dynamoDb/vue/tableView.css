@@ -55,7 +55,6 @@ vscode-data-grid-row {
 
 .disabled {
     pointer-events: none;
-    color: gray;
 }
 
 vscode-data-grid-cell {
