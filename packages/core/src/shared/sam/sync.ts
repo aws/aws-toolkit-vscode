@@ -49,6 +49,7 @@ import { IamConnection } from '../../auth/connection'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
 import { promptAndUseConnection } from '../../auth/utils'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
+import { getConfigFileUri } from './utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -76,18 +77,6 @@ enum BucketSource {
     UserProvided,
 }
 
-async function getConfigFileUri(projectRoot: vscode.Uri) {
-    const samConfigFilename = 'samconfig'
-    const samConfigFile = (
-        await vscode.workspace.findFiles(new vscode.RelativePattern(projectRoot, `**/${samConfigFilename}.*`))
-    )[0]
-    if (samConfigFile) {
-        return samConfigFile
-    } else {
-        throw new ToolkitError(`No samconfig.toml file found in ${projectRoot.fsPath}`)
-    }
-}
-
 function workspaceFolderPrompter() {
     const workspaceFolders = vscode.workspace.workspaceFolders
     if (workspaceFolders === undefined) {
@@ -109,7 +98,7 @@ async function syncFlagsPrompter(): Promise<DataQuickPickItem<string>[] | undefi
         {
             label: 'Build in source',
             data: '--build-in-source',
-            description: 'Opts in to build project in the source folder',
+            description: 'Opts in to build project in the source folder. Only for node apps',
         },
         {
             label: 'Code',
@@ -185,7 +174,7 @@ function paramsSourcePrompter() {
             data: ParamsSource.SamConfig,
         },
         {
-            label: 'Specify sync flags',
+            label: 'Specify all sync parameters',
             data: ParamsSource.Flags,
         },
     ]
@@ -459,7 +448,7 @@ async function injectCredentials(conn: IamConnection, env = process.env) {
 async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boundArgs: string[] }> {
     const data = {
         codeOnly: args.deployType === 'code',
-        templatePath: args.template !== undefined ? args.template.uri.fsPath : undefined,
+        templatePath: args.template?.uri?.fsPath,
         bucketName: args.bucketName !== undefined ? await ensureBucket(args) : undefined,
         ecrRepoUri: args.ecrRepoUri !== undefined ? await ensureRepo(args) : undefined,
         ...selectFrom(args, 'stackName', 'region', 'skipDependencyLayer'),
