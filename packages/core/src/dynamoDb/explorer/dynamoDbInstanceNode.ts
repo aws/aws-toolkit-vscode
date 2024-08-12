@@ -8,6 +8,7 @@ import { DynamoDbTableNode } from './dynamoDbTableNode'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
+import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { toMap, toArrayAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 
 export class DynamoDbInstanceNode extends AWSTreeNodeBase {
@@ -29,6 +30,7 @@ export class DynamoDbInstanceNode extends AWSTreeNodeBase {
                 await this.updateChildren()
                 return [...this.dynamoDbTableNodes.values()]
             },
+            getNoChildrenPlaceholderNode: async () => new PlaceholderNode(this, this.placeHolderMessage),
         })
     }
 

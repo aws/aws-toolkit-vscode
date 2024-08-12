@@ -274,6 +274,7 @@ export default defineComponent({
             if (partitionKeyElement) {
                 ;(partitionKeyElement as any).value = ''
             }
+            this.partitionKeyValue = ''
         },
 
         async executeQuery() {
