@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Amazon Q: Optimized the workspace indexing logic which makes the indexing time now only 5-10% of what it was before."
+}

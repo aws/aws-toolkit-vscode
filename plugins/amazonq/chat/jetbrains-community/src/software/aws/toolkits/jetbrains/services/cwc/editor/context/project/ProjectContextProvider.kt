@@ -10,8 +10,10 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
-import com.intellij.openapi.vcs.changes.ChangeListManager
-import com.intellij.openapi.vfs.VfsUtil
+import com.intellij.openapi.vfs.VfsUtilCore
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.VirtualFileVisitor
+import com.intellij.openapi.vfs.isFile
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -155,6 +157,7 @@ class ProjectContextProvider(val project: Project, private val encoderServer: En
         logger.info { "project context index response code: ${connection.responseCode} for ${project.name}" }
         val duration = (System.currentTimeMillis() - indexStartTime).toDouble()
         val startUrl = getStartUrl(project)
+        logger.debug { "project context index time: ${duration}ms" }
         if (connection.responseCode == 200) {
             val usage = getUsage()
             TelemetryHelper.recordIndexWorkspace(duration, filesResult.files.size, filesResult.fileSize, true, usage?.memoryUsage, usage?.cpuUsage, startUrl)
@@ -261,23 +264,36 @@ class ProjectContextProvider(val project: Project, private val encoderServer: En
     }
 
     private fun isBuildOrBin(filePath: String): Boolean {
-        val regex = Regex("""[/\\](bin|build|node_modules|venv|env|\.idea)[/\\]""", RegexOption.IGNORE_CASE)
+        val regex = Regex("""[/\\](bin|build|node_modules|venv|.venv|env|\.idea|.conda)[/\\]""", RegexOption.IGNORE_CASE)
         return regex.find(filePath) != null
     }
 
     private fun collectFiles(): FileCollectionResult {
         val collectedFiles = mutableListOf<String>()
         var currentTotalFileSize = 0L
-        val changeListManager = ChangeListManager.getInstance(project)
         val featureDevSessionContext = FeatureDevSessionContext(project)
-        val allFiles = project.guessProjectDir()?.let {
-            VfsUtil.collectChildrenRecursively(it).filter { child ->
-                !changeListManager.isIgnoredFile(child) &&
-                    !isBuildOrBin(child.path) &&
-                    runBlocking { !featureDevSessionContext.ignoreFile(child, scope) } &&
-                    child.length <= 10 * 1024 * 1024
-            }
-        }.orEmpty()
+        val allFiles = mutableListOf<VirtualFile>()
+        project.guessProjectDir()?.let {
+            VfsUtilCore.visitChildrenRecursively(
+                it,
+                object : VirtualFileVisitor<Unit>(NO_FOLLOW_SYMLINKS) {
+                    // TODO: refactor this along with /dev & codescan file traversing logic
+                    override fun visitFile(file: VirtualFile): Boolean {
+                        if ((file.isDirectory && isBuildOrBin(file.name)) ||
+                            runBlocking { featureDevSessionContext.ignoreFile(file.name, scope) } ||
+                            (file.isFile && file.length > 10 * 1024 * 1024)
+                        ) {
+                            return false
+                        }
+                        if (file.isFile) {
+                            allFiles.add(file)
+                            return false
+                        }
+                        return true
+                    }
+                }
+            )
+        }
 
         for (file in allFiles) {
             if (willExceedPayloadLimit(currentTotalFileSize, file.length)) {

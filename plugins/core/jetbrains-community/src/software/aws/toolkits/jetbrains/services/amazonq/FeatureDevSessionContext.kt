@@ -89,15 +89,6 @@ class FeatureDevSessionContext(val project: Project, val maxProjectSizeBytes: Lo
         return ZipCreationResult(zippedProject, checkSum256, zippedProject.length())
     }
 
-    private suspend fun ignoreFile(file: File, scope: CoroutineScope): Boolean = with(scope) {
-        val deferredResults = ignorePatternsWithGitIgnore.map { pattern ->
-            async {
-                pattern.containsMatchIn(file.path)
-            }
-        }
-        deferredResults.any { it.await() }
-    }
-
     fun isFileExtensionAllowed(file: VirtualFile): Boolean {
         // if it is a directory, it is allowed
         if (file.isDirectory) return true
@@ -110,7 +101,16 @@ class FeatureDevSessionContext(val project: Project, val maxProjectSizeBytes: Lo
         return !isFileExtensionAllowed(file)
     }
 
-    suspend fun ignoreFile(file: VirtualFile, scope: CoroutineScope): Boolean = ignoreFile(File(file.path), scope)
+    suspend fun ignoreFile(file: VirtualFile, scope: CoroutineScope): Boolean = ignoreFile(file.path, scope)
+
+    suspend fun ignoreFile(path: String, scope: CoroutineScope): Boolean = with(scope) {
+        val deferredResults = ignorePatternsWithGitIgnore.map { pattern ->
+            async {
+                pattern.containsMatchIn(path)
+            }
+        }
+        deferredResults.any { it.await() }
+    }
 
     suspend fun zipFiles(projectRoot: VirtualFile): File = withContext(getCoroutineBgContext()) {
         val files = mutableListOf<VirtualFile>()
@@ -121,26 +121,26 @@ class FeatureDevSessionContext(val project: Project, val maxProjectSizeBytes: Lo
             projectRoot,
             object : VirtualFileVisitor<Unit>() {
                 override fun visitFile(file: VirtualFile): Boolean {
-                    val isFileIgnoredByPattern = runBlocking { ignoreFile(file, this) }
                     val isFileIgnoredByExtension = runBlocking { ignoreFileByExtension(file, this) }
-                    val isFileIgnored = isFileIgnoredByExtension || isFileIgnoredByPattern
-
                     if (isFileIgnoredByExtension) {
                         val extension = file.extension.orEmpty()
                         ignoredExtensionMap[extension] = (ignoredExtensionMap[extension] ?: 0) + 1
+                        return false
+                    }
+                    val isFileIgnoredByPattern = runBlocking { ignoreFile(file.name, this) }
+                    if (isFileIgnoredByPattern) {
+                        return false
                     }
 
-                    if (file.isFile && !isFileIgnored) {
+                    if (file.isFile) {
                         totalSize += file.length
                         files.add(file)
 
                         if (maxProjectSizeBytes != null && totalSize > maxProjectSizeBytes) {
                             throw RepoSizeLimitError(message("amazonqFeatureDev.content_length.error_text"))
                         }
-                        return true
-                    } else {
-                        return !isFileIgnored
                     }
+                    return true
                 }
             }
         )
