@@ -73,8 +73,8 @@
                     @contextmenu.prevent="showContextMenu($event, row)"
                 >
                     <vscode-data-grid-cell
-                        :title="row[key]"
                         v-for="(key, index) in Object.keys(row)"
+                        :title="typeof row[key] === 'object' ? JSON.stringify(row[key]) : row[key]"
                         :grid-column="index + 1"
                     >
                         {{ row[key] }}

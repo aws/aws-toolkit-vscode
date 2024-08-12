@@ -267,7 +267,7 @@
     "AWS.amazonq.codewhisperer.title": "Amazon Q",
     "AWS.amazonq.toggleCodeSuggestion": "Toggle Auto-Suggestions",
     "AWS.amazonq.toggleCodeScan": "Toggle Auto-Scans",
-    "AWS.command.dynamoDb.searchTables": "Search Tables",
+    "AWS.command.dynamoDb.searchTables": "Search DynamoDB Tables",
     "AWS.command.dynamoDb.viewTable": "View Table",
     "AWS.command.dynamoDb.deleteTable": "Delete Table",
     "AWS.command.dynamoDb.openTableInConsole": "Open Table in Console"
