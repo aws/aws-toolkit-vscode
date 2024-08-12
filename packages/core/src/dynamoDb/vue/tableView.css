@@ -53,8 +53,9 @@ vscode-data-grid-row {
     width: max-content;
 }
 
-.disabled {
+vscode-link.disabled {
     pointer-events: none;
+    color: grey;
 }
 
 vscode-data-grid-cell {

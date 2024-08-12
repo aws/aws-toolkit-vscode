@@ -15,7 +15,9 @@
                         <vscode-button class="refresh-button" @click="refreshTable">Re-Scan</vscode-button>
                         <div class="pagination">
                             <vscode-link :class="{ disabled: isFirstPage }" @click="prevPage">&lt;</vscode-link>
-                            <vscode-link href="#">{{ dynamoDbTableData.currentPage }}</vscode-link>
+                            <vscode-link class="disabled" style="color: white">{{
+                                dynamoDbTableData.currentPage
+                            }}</vscode-link>
                             <vscode-link :class="{ disabled: isLastPage }" @click="nextPage">&gt;</vscode-link>
                             <span class="icon icon-sm icon-vscode-settings-gear" @click="openSettings"></span>
                         </div>
@@ -47,7 +49,9 @@
                         <vscode-button class="refresh-button" @click="refreshTableQueryPanel">Re-Run</vscode-button>
                         <div class="pagination">
                             <vscode-link :class="{ disabled: isFirstPage }" @click="prevPage">&lt;</vscode-link>
-                            <vscode-link href="#">{{ dynamoDbTableData.currentPage }}</vscode-link>
+                            <vscode-link class="disabled" style="color: white">{{
+                                dynamoDbTableData.currentPage
+                            }}</vscode-link>
                             <vscode-link :class="{ disabled: isLastPage }" @click="nextPage">&gt;</vscode-link>
                             <span class="icon icon-sm icon-vscode-settings-gear" @click="openSettings"></span>
                         </div>
