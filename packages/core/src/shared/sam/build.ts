@@ -193,14 +193,15 @@ export function registerBuild() {
             const { path: samCliPath } = await getSamCliPathAndVersion()
 
             // Create a child process to run the SAM build command
-            const process = new ChildProcess(samCliPath, ['build', ...buildFlags], {
+            const buildProcess = new ChildProcess(samCliPath, ['build', ...buildFlags], {
                 spawnOptions: await addTelemetryEnvVar({
                     cwd: params.projectRoot.fsPath,
+                    env: process.env,
                 }),
             })
 
             //Run SAM build in Terminal
-            await runInTerminal(process, 'build')
+            await runInTerminal(buildProcess, 'build')
 
             return {
                 isSuccess: true,
