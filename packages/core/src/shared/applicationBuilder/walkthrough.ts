@@ -92,13 +92,6 @@ class RuntimeLocationWizard extends Wizard<{
 }
 
 /**
- * Get the actual file Uri from Wizard results. If Customer chooses 'file-selector' option, the input dir='file-selector'
- * In this case, a file selector will popup for customer to choose dir. Returns a vscode.Uri
- * @param dir 'file-selector' or string representation of a file-path
- * @param labelValue 'open folder' label in file-selector. Currently either 'Create Project' or 'Open existing Project'
- */
-
-/**
  * Takes projectUri and runtime then generate matching project
  * @param walkthroughSelected the selected walkthrough
  * @param projectUri The choosen project uri to generate proejct
@@ -189,6 +182,12 @@ async function openProjectInWorkspace(projectUri: vscode.Uri): Promise<void> {
     vscode.workspace.updateWorkspaceFolders(0, 0, { uri: projectUri })
 }
 
+/**
+ * Used in Toolkit Appbuilder Walkthrough.
+ * 1: Customer select a template
+ * 2: Create project / Or don't create if customer choose use my own template
+ * 3: Add project to workspace, Open template.yaml, open template.yaml in AppComposer
+ */
 export async function initWalkthroughProjectCommand() {
     const walkthroughSelected = globals.globalState.get(walkthroughContextString)
     if (!walkthroughSelected || !(typeof walkthroughSelected === 'string')) {
