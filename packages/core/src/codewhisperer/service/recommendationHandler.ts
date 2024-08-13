@@ -657,7 +657,6 @@ export class RecommendationHandler {
         }
         if (this.isSuggestionVisible()) {
             // do not force refresh the tooltip to avoid suggestion "flashing"
-            // await this.showRecommendation(0, false)
             return
         }
         if (
