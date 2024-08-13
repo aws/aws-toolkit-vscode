@@ -30,8 +30,9 @@
 .pagination {
     display: flex;
     flex-direction: row;
-    justify-content: space-evenly;
+    justify-content: space-between;
     margin-top: 10px;
+    width: 100px;
 }
 
 .table-name {
@@ -52,9 +53,9 @@ vscode-data-grid-row {
     width: max-content;
 }
 
-.disabled {
+vscode-link.disabled {
     pointer-events: none;
-    color: gray;
+    color: grey;
 }
 
 vscode-data-grid-cell {
@@ -69,14 +70,10 @@ vscode-panels {
     width: 100%;
 }
 
-vscode-panel-view#view-1 {
+vscode-panel-view#view-1,
+vscode-panel-view#view-2 {
     width: 100%;
     justify-content: space-between;
-}
-
-vscode-panel-view#view-2 {
-    flex-direction: column;
-    width: 90%;
 }
 
 .query-section {
@@ -99,4 +96,19 @@ vscode-panel-view#view-2 {
     justify-content: center;
     align-items: center;
     height: 100%;
+}
+
+span.icon.icon-sm.icon-vscode-settings-gear {
+    font-size: medium;
+    align-self: center;
+    border-left: 1px inset;
+    padding: 5px;
+}
+
+h2.empty-result {
+    text-align: center;
+    vertical-align: middle;
+    display: flex;
+    justify-content: center;
+    margin-top: 100px;
 }

@@ -139,6 +139,7 @@ describe('DynamoDbUtils', () => {
                 { partitionKey: 'library', sortKey: 'as' },
                 'regionCode',
                 'ableName',
+                undefined,
                 dynamoDbClient
             )
 

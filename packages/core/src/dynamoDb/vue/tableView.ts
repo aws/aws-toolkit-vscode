@@ -6,6 +6,7 @@
 import * as nls from 'vscode-nls'
 import { ExtContext } from '../../shared'
 import { VueWebview } from '../../webviews/main'
+import { openSettings } from '../../shared/settings'
 import { getLogger, Logger } from '../../shared/logger'
 import { Key, ScanInput } from 'aws-sdk/clients/dynamodb'
 import * as localizedText from '../../shared/localizedText'
@@ -20,6 +21,7 @@ import {
     deleteItem,
     TableSchema,
 } from '../utils/dynamodb'
+import { editItem } from '../utils/editItem'
 
 const localize = nls.loadMessageBundle()
 
@@ -52,21 +54,24 @@ export class DynamoDbTableWebview extends VueWebview {
     /**
      * Fetches a page of data from the DynamoDB table.
      * @param {Key} [lastEvaluatedKey] - The key to start scanning from.
-     * @param {number} [currentPage=1] - The current page number.
      * @returns {DynamoDbTableData} The response object containing the scanned data.
      */
-    public async fetchPageData(lastEvaluatedKey?: Key, currentPage = 1) {
+    public async fetchPageData(lastEvaluatedKey?: Key) {
         const tableRequest: ScanInput = {
             TableName: this.data.tableName,
-            Limit: 50,
             ExclusiveStartKey: lastEvaluatedKey,
         }
-        const response = await getDynamoDbTableData(tableRequest, this.data.region, currentPage)
+        const response = await getDynamoDbTableData(tableRequest, this.data.region)
         return response
     }
 
-    public async queryData(queryRequest: { partitionKey: string; sortKey: string }) {
-        const tableData: TableData = await queryTableContent(queryRequest, this.data.region, this.data.tableName)
+    public async queryData(queryRequest: { partitionKey: string; sortKey: string }, lastEvaluatedKey?: Key) {
+        const tableData: TableData = await queryTableContent(
+            queryRequest,
+            this.data.region,
+            this.data.tableName,
+            lastEvaluatedKey
+        )
         const response = {
             tableName: this.data.tableName,
             region: this.data.region,
@@ -115,11 +120,23 @@ export class DynamoDbTableWebview extends VueWebview {
         }
         try {
             await deleteItem(this.data.tableName, selectedRow, tableSchema, this.data.region)
-            return this.fetchPageData(this.data.lastEvaluatedKey, this.data.currentPage)
+            return this.fetchPageData(this.data.lastEvaluatedKey)
         } catch (err) {
             getLogger().error(`Delete action failed on DynamoDB Item`)
             return undefined
         }
+    }
+
+    public async openPageSizeSettings() {
+        await openSettings('aws.dynamoDb.maxItemsPerPage')
+    }
+
+    public async editItem(selectedRow: RowData, tableSchema: TableSchema) {
+        await editItem(selectedRow, {
+            tableName: this.data.tableName,
+            regionCode: this.data.region,
+            tableSchema: tableSchema,
+        })
     }
 }
 
@@ -133,7 +150,7 @@ export async function viewDynamoDbTable(context: ExtContext, node: { dynamoDbtab
     const logger: Logger = getLogger()
 
     try {
-        const response = await getDynamoDbTableData({ TableName: node.dynamoDbtable, Limit: 50 }, node.regionCode)
+        const response = await getDynamoDbTableData({ TableName: node.dynamoDbtable }, node.regionCode)
         const webViewPanel = activePanels.get(node.dynamoDbtable) ?? new Panel(context.extensionContext, response)
         if (!activePanels.has(node.dynamoDbtable)) {
             activePanels.set(node.dynamoDbtable, webViewPanel)

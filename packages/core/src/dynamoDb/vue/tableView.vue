@@ -7,16 +7,19 @@
                 <vscode-panel-view id="view-1">
                     <div class="header-left">
                         <span class="table-name">{{ dynamoDbTableData.tableName }}</span>
-                        <span class="last-refreshed-info" style="width: 100%">{{
-                            'Refreshed on: ' + new Date().toLocaleString()
+                        <span class="last-refreshed-info" :key="lastRefreshedText" style="width: 100%">{{
+                            lastRefreshedText
                         }}</span>
                     </div>
                     <div class="header-right">
-                        <vscode-button class="refresh-button" @click="refreshTable">Refresh</vscode-button>
+                        <vscode-button class="refresh-button" @click="refreshTable">Re-Scan</vscode-button>
                         <div class="pagination">
                             <vscode-link :class="{ disabled: isFirstPage }" @click="prevPage">&lt;</vscode-link>
-                            <vscode-link href="#">{{ dynamoDbTableData.currentPage }}</vscode-link>
+                            <vscode-link class="disabled" style="color: white">{{
+                                dynamoDbTableData.currentPage
+                            }}</vscode-link>
                             <vscode-link :class="{ disabled: isLastPage }" @click="nextPage">&gt;</vscode-link>
+                            <span class="icon icon-sm icon-vscode-settings-gear" @click="openSettings"></span>
                         </div>
                     </div>
                 </vscode-panel-view>
@@ -38,8 +41,19 @@
                             ><i>Sort key: </i><b>{{ sortKey }}</b>
                         </vscode-text-field>
                         <div class="run-section">
-                            <vscode-button style="background: round" @click="resetFields">Reset</vscode-button>
+                            <vscode-button @click="resetFields">Reset</vscode-button>
                             <vscode-button :disabled="!partitionKeyValue" @click="executeQuery">Run</vscode-button>
+                        </div>
+                    </div>
+                    <div class="header-right">
+                        <vscode-button class="refresh-button" @click="refreshTableQueryPanel">Re-Run</vscode-button>
+                        <div class="pagination">
+                            <vscode-link :class="{ disabled: isFirstPage }" @click="prevPage">&lt;</vscode-link>
+                            <vscode-link class="disabled" style="color: white">{{
+                                dynamoDbTableData.currentPage
+                            }}</vscode-link>
+                            <vscode-link :class="{ disabled: isLastPage }" @click="nextPage">&gt;</vscode-link>
+                            <span class="icon icon-sm icon-vscode-settings-gear" @click="openSettings"></span>
                         </div>
                     </div>
                 </vscode-panel-view>
@@ -62,11 +76,16 @@
                     v-for="row in dynamoDbTableData.tableContent"
                     @contextmenu.prevent="showContextMenu($event, row)"
                 >
-                    <vscode-data-grid-cell v-for="(key, index) in Object.keys(row)" :grid-column="index + 1">
+                    <vscode-data-grid-cell
+                        v-for="(key, index) in Object.keys(row)"
+                        :title="typeof row[key] === 'object' ? JSON.stringify(row[key]) : row[key]"
+                        :grid-column="index + 1"
+                    >
                         {{ row[key] }}
                     </vscode-data-grid-cell>
                 </vscode-data-grid-row>
             </vscode-data-grid>
+            <h2 class="empty-result" v-if="dynamoDbTableData.tableHeader.length === 0">No Items to display</h2>
 
             <!-- Context Menu -->
             <ContextMenu
@@ -112,6 +131,7 @@ import { RowData, TableSchema } from '../utils/dynamodb'
 import { DynamoDbTableWebview, DynamoDbTableData } from './tableView'
 import { WebviewClientFactory } from '../../webviews/client'
 import { Key } from 'aws-sdk/clients/dynamodb'
+import { formatDistanceToNow } from 'date-fns'
 
 const client = WebviewClientFactory.create<DynamoDbTableWebview>()
 const contextMenuVisible = ref(false)
@@ -136,6 +156,16 @@ export default defineComponent({
             partitionKey: '',
             sortKey: '',
             partitionKeyValue: '',
+            queryPanelData: {
+                isActive: false,
+                queryRequest: {
+                    partitionKey: '',
+                    sortKey: '',
+                },
+            },
+            lastRefreshed: new Date(),
+            refreshInterval: null as ReturnType<typeof setInterval> | null,
+            lastRefreshedText: '',
         }
     },
     async created() {
@@ -161,42 +191,83 @@ export default defineComponent({
             return false
         },
     },
+    beforeUnmount() {
+        if (this.refreshInterval) {
+            clearInterval(this.refreshInterval)
+        }
+    },
+
+    mounted() {
+        this.refreshInterval = setInterval(() => {
+            this.lastRefreshedText =
+                'Last refreshed - ' + formatDistanceToNow(this.lastRefreshed, { addSuffix: true, includeSeconds: true })
+        }, 10000)
+    },
     methods: {
         async refreshTable() {
-            this.updatePageNumber()
             this.isLoading = true
+            this.updatePageNumber()
             this.dynamoDbTableData = await client.fetchPageData(undefined)
-            this.isLoading = false
             this.pageKeys = [undefined, this.dynamoDbTableData.lastEvaluatedKey]
+            this.queryPanelData.isActive = false
+            this.isLoading = false
+        },
+
+        async refreshTableQueryPanel() {
+            if (!this.queryPanelData.isActive) {
+                return this.refreshTable()
+            }
+            this.isLoading = true
+            this.updatePageNumber()
+            this.dynamoDbTableData = await client.queryData(this.queryPanelData.queryRequest, undefined)
+            this.pageKeys = [undefined, this.dynamoDbTableData.lastEvaluatedKey]
+            this.isLoading = false
         },
 
         async prevPage() {
-            this.updatePageNumber()
             if (this.dynamoDbTableData.currentPage > 1) {
-                const previousKey = this.pageKeys[this.dynamoDbTableData.currentPage - 2]
                 this.isLoading = true
-                this.dynamoDbTableData = await client.fetchPageData(previousKey, this.dynamoDbTableData.currentPage)
+                const newPageNumber = this.dynamoDbTableData.currentPage - 1
+                this.updatePageNumber()
+                const previousKey = this.pageKeys[this.dynamoDbTableData.currentPage - 2]
+                if (this.queryPanelData.isActive) {
+                    this.dynamoDbTableData = await client.queryData(this.queryPanelData.queryRequest, previousKey)
+                } else {
+                    this.dynamoDbTableData = await client.fetchPageData(previousKey)
+                }
+                this.dynamoDbTableData.currentPage = newPageNumber
                 this.isLoading = false
-                this.dynamoDbTableData.currentPage -= 1
             }
         },
 
         async nextPage() {
-            this.updatePageNumber()
             this.isLoading = true
-            this.dynamoDbTableData = await client.fetchPageData(
-                this.dynamoDbTableData.lastEvaluatedKey,
-                this.dynamoDbTableData.currentPage
-            )
-            this.isLoading = false
+            const newPageNumber = this.dynamoDbTableData.currentPage + 1
+            this.updatePageNumber()
+            if (this.queryPanelData.isActive) {
+                this.dynamoDbTableData = await client.queryData(
+                    this.queryPanelData.queryRequest,
+                    this.dynamoDbTableData.lastEvaluatedKey
+                )
+            } else {
+                this.dynamoDbTableData = await client.fetchPageData(this.dynamoDbTableData.lastEvaluatedKey)
+            }
             if (this.dynamoDbTableData.lastEvaluatedKey) {
                 this.pageKeys.push(this.dynamoDbTableData.lastEvaluatedKey)
             }
-            this.dynamoDbTableData.currentPage += 1
+            this.dynamoDbTableData.currentPage = newPageNumber
+            this.isLoading = false
+        },
+
+        openSettings() {
+            client.openPageSizeSettings()
         },
 
         updatePageNumber() {
             this.pageNumber += 1
+            this.lastRefreshed = new Date()
+            this.lastRefreshedText =
+                'Last refreshed - ' + formatDistanceToNow(this.lastRefreshed, { addSuffix: true, includeSeconds: true })
         },
 
         resetFields() {
@@ -208,9 +279,11 @@ export default defineComponent({
             if (partitionKeyElement) {
                 ;(partitionKeyElement as any).value = ''
             }
+            this.partitionKeyValue = ''
         },
 
         async executeQuery() {
+            this.isLoading = true
             let sortKeyElement = document.getElementById('sortKey')
             let partitionKeyElement = document.getElementById('partitionKey')
             let sortKeyValue = ''
@@ -223,11 +296,31 @@ export default defineComponent({
             }
             this.updatePageNumber()
             this.dynamoDbTableData = await client.queryData(queryRequest)
+            this.pageKeys = [undefined, this.dynamoDbTableData.lastEvaluatedKey]
+            this.queryPanelData.isActive = true
+            this.queryPanelData.queryRequest = queryRequest
+            this.isLoading = false
         },
 
         showContextMenu(event: MouseEvent, row: any) {
             event.preventDefault()
-            contextMenuPosition.value = { top: event.clientY, left: event.clientX }
+
+            let topPosition = event.clientY
+            let leftPosition = event.clientX
+
+            const menuHeight = 210
+            const menuWidth = 170
+            const viewportHeight = window.innerHeight
+            const viewportWidth = window.innerWidth
+
+            if (topPosition + menuHeight > viewportHeight) {
+                topPosition = viewportHeight - menuHeight - 10
+            }
+            if (leftPosition + menuWidth > viewportWidth) {
+                leftPosition = viewportWidth - menuWidth - 10
+            }
+
+            contextMenuPosition.value = { top: topPosition, left: leftPosition }
             contextMenuVisible.value = true
             selectedRow.value = row
             selectedCell = (event.target as any).innerHTML
@@ -255,9 +348,11 @@ export default defineComponent({
             }
         },
 
-        handleEdit() {
-            // Handle edit logic
-            console.log('Edit clicked')
+        async handleEdit() {
+            if (selectedRow.value === undefined) {
+                return
+            }
+            await client.editItem(selectedRow.value, tableSchema)
         },
     },
 })

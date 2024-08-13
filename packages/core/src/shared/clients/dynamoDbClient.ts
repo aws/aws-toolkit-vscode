@@ -78,4 +78,20 @@ export class DynamoDbClient {
         const sdkClient = await this.createSdkClient()
         return sdkClient.deleteItem(request).promise()
     }
+
+    /**
+     * Get an Item from a table in DynamoDB.
+     */
+    public async getItem(request: DynamoDB.Types.GetItemInput) {
+        const sdkClient = await this.createSdkClient()
+        return sdkClient.getItem(request).promise()
+    }
+
+    /**
+     * Update Item in DynamoDB
+     */
+    public async updateItem(request: DynamoDB.Types.UpdateItemInput) {
+        const sdkClient = await this.createSdkClient()
+        return sdkClient.updateItem(request).promise()
+    }
 }

@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { DynamoDB } from 'aws-sdk'
+import { Settings } from '../../shared'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { DynamoDbTableNode } from '../explorer/dynamoDbTableNode'
 import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
@@ -33,6 +35,7 @@ export async function getTableContent(
     regionCode: string,
     client = new DynamoDbClient(regionCode)
 ) {
+    tableRequest.Limit = await getMaxItemsPerPage()
     const response = await client.scanTable(tableRequest)
     const { columnNames, tableHeader } = getTableColumnsNames(response)
     const tableItems = getTableItems(columnNames, response)
@@ -45,7 +48,7 @@ export async function getTableContent(
     return tableData
 }
 
-function getTableColumnsNames(items: DynamoDB.Types.ScanOutput): {
+export function getTableColumnsNames(items: DynamoDB.Types.ScanOutput): {
     columnNames: Set<string>
     tableHeader: RowData[]
 } {
@@ -66,7 +69,7 @@ function getTableColumnsNames(items: DynamoDB.Types.ScanOutput): {
     }
 }
 
-function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Types.ScanOutput) {
+export function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Types.ScanOutput) {
     const tableItems = []
     for (const item of items.Items ?? []) {
         const curItem: RowData = {}
@@ -99,9 +102,12 @@ export async function queryTableContent(
     queryRequest: { partitionKey: string; sortKey: string },
     regionCode: string,
     tableName: string,
+    lastEvaluatedKey?: Key,
     client = new DynamoDbClient(regionCode)
 ) {
     const queryRequestObject = await prepareQueryRequestObject(tableName, regionCode, client, queryRequest)
+    queryRequestObject.Limit = await getMaxItemsPerPage()
+    queryRequestObject.ExclusiveStartKey = lastEvaluatedKey
     const queryResponse = await client.queryTable(queryRequestObject)
     const { columnNames, tableHeader } = getTableColumnsNames(queryResponse)
     const tableItems = getTableItems(columnNames, queryResponse)
@@ -203,7 +209,7 @@ export async function getTableKeySchema(
     return tableSchema
 }
 
-function getAttributeValue(attribute: AttributeValue): { key: string; value: any } | undefined {
+export function getAttributeValue(attribute: AttributeValue): { key: string; value: any } | undefined {
     const keys = Object.keys(attribute) as (keyof AttributeValue)[]
     for (const key of keys) {
         const value = attribute[key]
@@ -241,4 +247,14 @@ export async function deleteItem(
         deleteRequest.Key[sortKeyName] = { S: sortKeyValue } as any
     }
     return await client.deleteItem(deleteRequest)
+}
+
+async function getMaxItemsPerPage(): Promise<number> {
+    return Settings.instance.getSection('aws').get<number>('dynamodb.maxItemsPerPage', 100)
+}
+
+export function dynamoDbConsoleUrl(node: DynamoDbTableNode): vscode.Uri {
+    const service = 'dynamodb'
+    const resourcePath = `tables:selected=${node.dynamoDbtable}`
+    return vscode.Uri.parse(`https://console.aws.amazon.com/${service}/home?region=${node.regionCode}#/${resourcePath}`)
 }
