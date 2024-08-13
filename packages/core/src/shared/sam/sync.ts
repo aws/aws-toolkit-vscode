@@ -449,8 +449,8 @@ async function saveAndBindArgs(args: SyncParams): Promise<{ readonly boundArgs: 
     const data = {
         codeOnly: args.deployType === 'code',
         templatePath: args.template?.uri?.fsPath,
-        bucketName: args.bucketName !== undefined ? await ensureBucket(args) : undefined,
-        ecrRepoUri: args.ecrRepoUri !== undefined ? await ensureRepo(args) : undefined,
+        bucketName: args.bucketName && (await ensureBucket(args)),
+        ecrRepoUri: args.ecrRepoUri && (await ensureRepo(args)),
         ...selectFrom(args, 'stackName', 'region', 'skipDependencyLayer'),
     }
 
