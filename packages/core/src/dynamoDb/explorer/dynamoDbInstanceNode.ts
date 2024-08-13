@@ -44,4 +44,13 @@ export class DynamoDbInstanceNode extends AWSTreeNodeBase {
             (key) => new DynamoDbTableNode(this.regionCode, key, this)
         )
     }
+
+    public async clearChildren() {
+        this.dynamoDbTableNodes = new Map<string, DynamoDbTableNode>()
+    }
+
+    public async refreshNode(): Promise<void> {
+        await this.clearChildren()
+        await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', this)
+    }
 }
