@@ -72,7 +72,7 @@ export async function activate(args: {
         await setContext(walkthroughContextString, walkthroughSelected)
     }
     await registerAwsExplorerCommands(args.context, awsExplorer, args.toolkitOutputChannel)
-    await registerAppBuilderCommands(args.context, args.toolkitOutputChannel)
+    await registerAppBuilderCommands(args.context)
 
     telemetry.vscode_activeRegions.emit({ value: args.regionProvider.getExplorerRegions().length })
 
@@ -236,12 +236,8 @@ async function setWalkthrough(walkthroughSelected: string = 'S3'): Promise<void>
 /**
  *
  * @param context VScode Context
- * @param toolkitOutputChannel Output channel for logging
  */
-async function registerAppBuilderCommands(
-    context: ExtContext,
-    toolkitOutputChannel: vscode.OutputChannel
-): Promise<void> {
+async function registerAppBuilderCommands(context: ExtContext): Promise<void> {
     context.extensionContext.subscriptions.push(
         Commands.register('aws.toolkit.lambda.setWalkthroughToAPI', async () => {
             await setWalkthrough('API')
