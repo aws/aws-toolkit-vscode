@@ -30,10 +30,10 @@ export async function getAppNodes(): Promise<TreeNode[]> {
         ]
     }
 
-    let nodesToReturn: TreeNode[] = appsFound
+    const nodesToReturn: TreeNode[] = appsFound
         .map((appLocation) => new AppNode(appLocation))
         .sort((a, b) => a.label.localeCompare(b.label) ?? 0)
-    const walkthroughCompleted = globals.context.globalState.get('aws.toolkit.walkthroughCompleted')
+    const walkthroughCompleted = globals.globalState.get('aws.toolkit.walkthroughCompleted')
     // show walkthrough node if walkthrough not completed yet
     if (!walkthroughCompleted) {
         nodesToReturn.unshift(new WalkthroughNode())
