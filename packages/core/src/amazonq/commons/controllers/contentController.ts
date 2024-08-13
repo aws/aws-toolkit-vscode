@@ -51,7 +51,6 @@ export class EditorContentController {
                         getLogger().error('TextEditor.edit failed: %s', (e as Error).message)
                     }
                 )
-            await Commands.tryExecute('editor.action.format')
         }
     }
 }
