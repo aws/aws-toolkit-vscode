@@ -65,7 +65,7 @@ type globalKey =
     | 'sam.sync.updateMessage'
     | 'telemetryClientId'
     | 'telemetryId'
-    | 'aws.toolkit.walkthroughSelected'
+    | 'aws.toolkit.lambda.walkthroughSelected'
 
 /**
  * Extension-local (not visible to other vscode extensions) shared state which persists after IDE
