@@ -9,7 +9,7 @@
     "AWS.configuration.description.lambda.recentlyUploaded": "Recently selected Lambda upload targets.",
     "AWS.configuration.description.ecs.openTerminalCommand": "The command to run when starting a new interactive terminal session.",
     "AWS.configuration.description.iot.maxItemsPerPage": "Controls how many IoT Things, Certificates, or Policies are listed before showing a node to `Load More...`.",
-    "AWS.configuration.description.dynamodb.maxItemsPerPage": "Controls how many items to show per page in dynamoDb table view.",
+    "AWS.configuration.description.dynamodb.maxItemsPerPage": "Controls how many items to show per page in DynamoDB table view.",
     "AWS.configuration.description.s3.maxItemsPerPage": "Controls how many S3 items are listed before showing a node to `Load More...`.\nThis corresponds to the `MaxKeys` requested in a single call to S3. [Learn More](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html#AmazonS3-ListObjectsV2-response-MaxKeys)",
     "AWS.configuration.description.samcli.lambdaTimeout": "Maximum time (in milliseconds) to wait for SAM output while starting a Local Lambda session",
     "AWS.configuration.description.samcli.location": "Location of SAM CLI. SAM CLI is used to create, build, package, and deploy Serverless Applications. [Learn More](https://aws.amazon.com/serverless/sam/)",
@@ -270,5 +270,5 @@
     "AWS.command.dynamoDb.searchTables": "Search DynamoDB Tables",
     "AWS.command.dynamoDb.viewTable": "View Table",
     "AWS.command.dynamoDb.deleteTable": "Delete Table",
-    "AWS.command.dynamoDb.openTableInConsole": "Open Table in Console"
+    "AWS.command.dynamoDb.openTableInConsole": "Open table in browser"
 }

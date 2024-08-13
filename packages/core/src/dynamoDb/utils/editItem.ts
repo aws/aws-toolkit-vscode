@@ -14,7 +14,8 @@ import { telemetry } from '../../shared/telemetry'
 
 export async function editItem(
     selectedRow: RowData,
-    { tableName, regionCode, tableSchema }: { tableName: string; regionCode: string; tableSchema: TableSchema }
+    { tableName, regionCode, tableSchema }: { tableName: string; regionCode: string; tableSchema: TableSchema },
+    client: DynamoDbClient = new DynamoDbClient(regionCode)
 ) {
     const currentContent = JSON.stringify(selectedRow, undefined, 4)
     let filename = `${selectedRow[tableSchema.partitionKey.name]}`
@@ -70,20 +71,23 @@ async function updateDynamoDbItem(
     const sortKey = tableSchema.sortKey?.name
 
     if (updatedItem[partitionKey] !== currentItem[partitionKey]) {
-        void vscode.window.showErrorMessage(`Partition key '${partitionKey}' cannot be updated.`)
+        void vscode.window.showErrorMessage(`DynamoDB does not allow updating Partition Key.`)
         return
     }
 
     if (sortKey && updatedItem[sortKey] !== currentItem[sortKey]) {
-        void vscode.window.showErrorMessage(`Sort key '${sortKey}' cannot be updated.`)
+        void vscode.window.showErrorMessage(`DynamoDB does not allow updating Sort Key`)
         return
     }
 
-    if (!compareRowDataItems(updatedItem, currentItem)) {
+    if (!compareRowDataItems(updatedItem, currentItem, tableSchema)) {
         return
     }
     const itemWithDataType: GetItemOutput = await getItem(client, currentItem, tableName, tableSchema)
     const expressionAttributeValues = getExpressionAttributeValues(updatedItem, itemWithDataType, tableSchema)
+    if (!expressionAttributeValues) {
+        return
+    }
     const updateRequest: UpdateItemInput = {
         TableName: tableName,
         Key: getKeyObject(currentItem, tableSchema),
@@ -91,11 +95,14 @@ async function updateDynamoDbItem(
     }
     void telemetry.dynamodb_edit.run(async () => {
         telemetry.record({ action: 'user' })
-        const response = await client.updateItem(updateRequest)
-        if (response) {
+        try {
+            const response = await client.updateItem(updateRequest)
             telemetry.record({ action: 'success' })
+            return response
+        } catch (err) {
+            void vscode.window.showErrorMessage(`Error occurred while updating the item ${(err as any).message}`)
+            telemetry.record({ action: 'failure' })
         }
-        return response
     })
     return undefined
 }
@@ -104,10 +111,23 @@ function getExpressionAttributeValues(updatedItem: RowData, currentItem: GetItem
     if (!currentItem.Item) {
         return
     }
-    const keys = Object.keys(updatedItem)
+    const uniqueKeys = new Set([...Object.keys(updatedItem), ...Object.keys(currentItem.Item)])
     const expressionAttributeValues: AttributeUpdates = {}
 
-    for (const key of keys) {
+    for (const key of uniqueKeys) {
+        if (!(key in updatedItem)) {
+            // a key is not present in updateItem, it is deleted.
+            expressionAttributeValues[key] = {
+                Action: 'DELETE',
+            }
+            continue
+        } else if (!(key in currentItem.Item)) {
+            // a key is not present in currentItem, it is added.
+            void vscode.window.showErrorMessage(
+                'Addition of new attributes is not supported here. Please use AWS console.'
+            )
+            return undefined
+        }
         const attributeMap = getAttributeValue(currentItem.Item[key])
 
         if (attributeMap && updatedItem[key] !== attributeMap.value) {
@@ -122,12 +142,23 @@ function getExpressionAttributeValues(updatedItem: RowData, currentItem: GetItem
     return expressionAttributeValues
 }
 
-function compareRowDataItems(updatedItem: RowData, currentItem: RowData) {
-    const keys = Object.keys(updatedItem)
+/**
+ * Compares two row data items to check for differences.
+ * Iterates through the keys of the updated item and compares the values
+ * with the corresponding keys in the current item. If any key is missing
+ * in the current item or if the values do not match, it returns `true`,
+ * indicating that the items are different. If all values match, it returns `false`.
+ * @param updatedItem - The object representing the updated row data.
+ * @param currentItem - The object representing the current row data.
+ * @param tableSchema - The schema of the DynamoDB table, defining key attributes and data types.
+ * @returns {boolean} - Returns `true` if there are differences between the two items, otherwise `false`.
+ */
+function compareRowDataItems(updatedItem: RowData, currentItem: RowData, tableSchema: TableSchema) {
+    const keys = Object.keys(currentItem)
     let isDifferent = false
 
     for (const key of keys) {
-        if (updatedItem[key] !== currentItem[key]) {
+        if (!(key in updatedItem) || updatedItem[key] !== currentItem[key]) {
             isDifferent = true
             break
         }

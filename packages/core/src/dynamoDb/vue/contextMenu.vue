@@ -83,15 +83,15 @@ export default defineComponent({
 .context-menu {
     display: flex;
     flex-direction: column;
-    align-items: center; /* Centers items vertically */
+    align-items: center;
     position: absolute;
     background-color: #fff;
     border: 1px solid #ccc;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     padding: 10px;
-    width: 150px; /* Adjust width as needed */
+    width: 150px;
     border-radius: 5px;
-    z-index: 1000; /* Ensure menu appears above other elements */
+    z-index: 1000;
 }
 
 .context-menu button {

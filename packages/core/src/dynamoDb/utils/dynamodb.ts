@@ -48,7 +48,7 @@ export async function getTableContent(
     return tableData
 }
 
-function getTableColumnsNames(items: DynamoDB.Types.ScanOutput): {
+export function getTableColumnsNames(items: DynamoDB.Types.ScanOutput): {
     columnNames: Set<string>
     tableHeader: RowData[]
 } {
@@ -69,7 +69,7 @@ function getTableColumnsNames(items: DynamoDB.Types.ScanOutput): {
     }
 }
 
-function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Types.ScanOutput) {
+export function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Types.ScanOutput) {
     const tableItems = []
     for (const item of items.Items ?? []) {
         const curItem: RowData = {}
