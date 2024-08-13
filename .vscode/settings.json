@@ -1,6 +1,12 @@
 {
     "files.exclude": {
-        "**/src/testFixtures": true
+        "**/.DS_Store": false,
+        "**/.git": false,
+        "**/.hg": false,
+        "**/.svn": false,
+        "**/*.crswap": false,
+        "**/CVS": false,
+        "**/Thumbs.db": false
     },
     "search.exclude": {
         "dist": true,
@@ -12,5 +18,9 @@
     "typescript.preferences.importModuleSpecifier": "relative",
     "javascript.preferences.importModuleSpecifier": "relative",
     "typescript.tsdk": "node_modules/typescript/lib",
-    "npm.packageManager": "npm"
+    "npm.packageManager": "npm",
+    "editor.renderWhitespace": "all",
+    "editor.cursorStyle": "underline",
+    "editor.multiCursorModifier": "ctrlCmd",
+    "editor.wordWrap": "wordWrapColumn"
 }
