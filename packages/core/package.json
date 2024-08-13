@@ -2006,12 +2006,12 @@
                 },
                 {
                     "command": "aws.docdb.startCluster",
-                    "when": "viewItem =~ /^awsDocDB-cluster.*-stopped/",
+                    "when": "viewItem =~ /^awsDocDB-cluster-(regional|elastic)-stopped/",
                     "group": "inline@1"
                 },
                 {
                     "command": "aws.docdb.stopCluster",
-                    "when": "viewItem =~ /^awsDocDB-cluster.*-running/",
+                    "when": "viewItem =~ /^awsDocDB-cluster-(regional|elastic)-running/",
                     "group": "inline@1"
                 },
                 {
@@ -2026,7 +2026,7 @@
                 },
                 {
                     "command": "aws.docdb.createInstance",
-                    "when": "viewItem =~ /^awsDocDB-cluster-(?!.*elastic.*)/ && viewItem != awsDocDB-cluster-stopped"
+                    "when": "viewItem =~ /^awsDocDB-cluster-(?!.*elastic.*)(?!-stopped)/"
                 },
                 {
                     "command": "aws.docdb.renameInstance",
@@ -2064,7 +2064,7 @@
                 },
                 {
                     "command": "aws.docdb.addRegion",
-                    "when": "viewItem =~ /^awsDocDB-cluster(?!.*elastic.*)/"
+                    "when": "viewItem =~ /^awsDocDB-cluster-(global|regional)/"
                 }
             ],
             "aws.toolkit.auth": [
@@ -3682,7 +3682,7 @@
                 "command": "aws.docdb.renameCluster",
                 "title": "%AWS.generic.promptRename%",
                 "category": "%AWS.title%",
-                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB-cluster(-running)?/",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB-cluster.*/",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

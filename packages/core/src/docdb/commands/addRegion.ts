@@ -8,6 +8,7 @@ import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { DBClusterNode } from '../explorer/dbClusterNode'
+import { DBGlobalClusterNode } from '../explorer/dbGlobalClusterNode'
 import { DefaultDocumentDBClient } from '../../shared/clients/docdbClient'
 import { ToolkitError } from '../../shared'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
@@ -17,22 +18,38 @@ import { CreateGlobalClusterWizard } from '../wizards/createGlobalClusterWizard'
 import { CreateDBClusterMessage } from '@aws-sdk/client-docdb'
 import { createInstancesForCluster } from './createCluster'
 
-export async function addRegion(node: DBClusterNode): Promise<void> {
+export async function addRegion(node: DBClusterNode | DBGlobalClusterNode): Promise<void> {
     if (!node) {
         throw new ToolkitError('No node specified for AddRegion')
     }
 
     return telemetry.docdb_addRegion.run(async () => {
-        if (node.clusterRole !== 'regional') {
-            void vscode.window.showErrorMessage('Currently supported for standalone clusters only.')
-            return
-        }
+        let globalClusterName = undefined
 
-        if (node.cluster.DBClusterMembers?.length === 0) {
-            void vscode.window.showErrorMessage(
-                localize('AWS.docdb.addRegion.noInstances', 'Cluster must have at least one instance to add a region')
-            )
-            throw new ToolkitError('Cluster must have at least one instance to add a region', { cancelled: true })
+        if (node instanceof DBClusterNode) {
+            if (node.clusterRole !== 'regional') {
+                void vscode.window.showErrorMessage('Currently supported for standalone clusters only.')
+                return
+            }
+
+            if (node.cluster.DBClusterMembers?.length === 0) {
+                void vscode.window.showErrorMessage(
+                    localize(
+                        'AWS.docdb.addRegion.noInstances',
+                        'Cluster must have at least one instance to add a region'
+                    )
+                )
+                throw new ToolkitError('Cluster must have at least one instance to add a region', { cancelled: true })
+            }
+        } else {
+            globalClusterName = node.cluster.GlobalClusterIdentifier
+
+            if (node.cluster.GlobalClusterMembers!.length > 4) {
+                void vscode.window.showErrorMessage(
+                    localize('AWS.docdb.addRegion.maxRegions', 'Global clusters can have a maximum of 5 regions')
+                )
+                throw new ToolkitError('Global clusters can have a maximum of 5 regions', { cancelled: true })
+            }
         }
 
         if (node.cluster.Status !== 'available') {
@@ -43,7 +60,7 @@ export async function addRegion(node: DBClusterNode): Promise<void> {
         }
 
         const wizard = new CreateGlobalClusterWizard(node.regionCode, node.cluster.EngineVersion, node.client, {
-            initState: { GlobalClusterName: undefined }, //TODO: provide if adding to existing global cluster
+            initState: { GlobalClusterName: globalClusterName },
         })
         const response = await wizard.run()
 
@@ -51,29 +68,47 @@ export async function addRegion(node: DBClusterNode): Promise<void> {
             throw new CancellationError('user')
         }
 
-        let clusterName = response.GlobalClusterName
         const regionCode = response.RegionCode
-        const primaryCluster = node.cluster
+        let input: CreateDBClusterMessage
+        let clusterName = response.GlobalClusterName
 
         try {
-            getLogger().info(`Creating global cluster: ${clusterName}`)
-            const globalCluster = await node.client.createGlobalCluster({
-                GlobalClusterIdentifier: response.GlobalClusterName,
-                SourceDBClusterIdentifier: primaryCluster.DBClusterArn,
-            })
+            if (node instanceof DBClusterNode) {
+                // Create new global cluster from regional cluster
+                const primaryCluster = node.cluster
 
-            clusterName = response.Cluster.DBClusterIdentifier
-            const input: CreateDBClusterMessage = {
-                GlobalClusterIdentifier: globalCluster?.GlobalClusterIdentifier,
-                DBClusterIdentifier: response.Cluster.DBClusterIdentifier,
-                DeletionProtection: primaryCluster.DeletionProtection,
-                Engine: primaryCluster.Engine,
-                EngineVersion: primaryCluster.EngineVersion,
-                StorageType: primaryCluster.StorageType,
-                StorageEncrypted: globalCluster?.StorageEncrypted,
+                getLogger().info(`Creating global cluster: ${clusterName}`)
+                const globalCluster = await node.client.createGlobalCluster({
+                    GlobalClusterIdentifier: response.GlobalClusterName,
+                    SourceDBClusterIdentifier: primaryCluster.DBClusterArn,
+                })
+
+                input = {
+                    GlobalClusterIdentifier: globalCluster?.GlobalClusterIdentifier,
+                    DBClusterIdentifier: response.Cluster.DBClusterIdentifier,
+                    DeletionProtection: primaryCluster.DeletionProtection,
+                    Engine: primaryCluster.Engine,
+                    EngineVersion: primaryCluster.EngineVersion,
+                    StorageType: primaryCluster.StorageType,
+                    StorageEncrypted: globalCluster?.StorageEncrypted,
+                }
+            } else {
+                // Add secondary cluster to global cluster
+                const globalCluster = node.cluster
+
+                input = {
+                    GlobalClusterIdentifier: globalClusterName,
+                    DBClusterIdentifier: response.Cluster.DBClusterIdentifier,
+                    DeletionProtection: globalCluster.DeletionProtection,
+                    Engine: globalCluster.Engine,
+                    EngineVersion: globalCluster.EngineVersion,
+                    StorageEncrypted: globalCluster.StorageEncrypted,
+                }
             }
 
-            getLogger().info(`Creating cluster: ${clusterName} in region ${regionCode}`)
+            clusterName = response.Cluster.DBClusterIdentifier
+            getLogger().info(`Creating secondary cluster: ${clusterName} in region ${regionCode}`)
+
             const client = DefaultDocumentDBClient.create(regionCode)
             const newCluster = await client.createCluster(input)
 
@@ -89,7 +124,11 @@ export async function addRegion(node: DBClusterNode): Promise<void> {
             getLogger().info('Created cluster: %O', newCluster)
             void vscode.window.showInformationMessage(localize('AWS.docdb.addRegion.success', 'Region added'))
 
-            node?.parent.refresh()
+            if (node instanceof DBClusterNode) {
+                node?.parent.refresh()
+            } else {
+                node?.refresh()
+            }
         } catch (e) {
             getLogger().error(`Failed to create cluster ${clusterName}: %s`, e)
             void showViewLogsMessage(

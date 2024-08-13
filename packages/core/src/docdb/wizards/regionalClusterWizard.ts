@@ -88,7 +88,10 @@ export class RegionalClusterWizard extends Wizard<RegionalClusterConfiguration> 
         form.DBInstanceClass.bindPrompter(
             async (state) =>
                 await createInstanceClassPrompter(this.client, state.EngineVersion!, this.isPrimaryCluster),
-            { setDefault: () => 'db.t3.medium' }
+            {
+                setDefault: () => 'db.t3.medium',
+                showWhen: (state) => state.DBInstanceCount! > 0,
+            }
         )
 
         return this

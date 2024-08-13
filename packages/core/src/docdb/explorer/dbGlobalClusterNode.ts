@@ -30,6 +30,7 @@ function getRegionFromArn(arn: string) {
 export class DBGlobalClusterNode extends DBResourceNode {
     override name = this.cluster.GlobalClusterIdentifier!
     override arn = this.cluster.GlobalClusterArn!
+    readonly clusterRole: DBClusterRole = 'global'
 
     constructor(
         public readonly parent: AWSTreeNodeBase,
@@ -40,7 +41,7 @@ export class DBGlobalClusterNode extends DBResourceNode {
         super(client, cluster.GlobalClusterIdentifier ?? '[Cluster]', vscode.TreeItemCollapsibleState.Collapsed)
         this.arn = cluster.GlobalClusterArn ?? ''
         this.name = cluster.GlobalClusterIdentifier ?? ''
-        this.contextValue = DocDBContext.Cluster
+        this.contextValue = this.getContext()
         this.iconPath = new vscode.ThemeIcon('globe') //TODO: determine icon for global cluster
         this.description = 'global cluster'
         this.tooltip = `${this.name}\nEngine: ${this.cluster.EngineVersion}\nStatus: ${this.cluster.Status}`
@@ -74,6 +75,15 @@ export class DBGlobalClusterNode extends DBResourceNode {
                 },
             })
         })
+    }
+
+    private getContext() {
+        if (this.status === 'available') {
+            return `${DocDBContext.GlobalCluster}-running`
+        } else if (this.status === 'stopped') {
+            return `${DocDBContext.GlobalCluster}-stopped`
+        }
+        return DocDBContext.GlobalCluster
     }
 
     // retrieve member cluster details from other regions

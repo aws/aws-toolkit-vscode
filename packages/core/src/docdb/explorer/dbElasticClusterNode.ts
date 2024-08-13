@@ -8,7 +8,7 @@ import { inspect } from 'util'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { DBResourceNode } from './dbResourceNode'
 import { DBElasticCluster, DocumentDBClient } from '../../shared/clients/docdbClient'
-import { DocDBContext, DocDBNodeContext } from './docdbContext'
+import { DocDBContext } from './docdbContext'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { waitUntil } from '../../shared'
@@ -33,17 +33,17 @@ export class DBElasticClusterNode extends DBResourceNode {
         this.tooltip = `${this.name}\nStatus: ${this.status}`
     }
 
-    private getContext(): DocDBNodeContext {
+    private getContext() {
         if (this.status === 'active') {
-            return DocDBContext.ElasticClusterRunning
+            return `${DocDBContext.ElasticCluster}-running`
         } else if (this.status === 'stopped') {
-            return DocDBContext.ElasticClusterStopped
+            return `${DocDBContext.ElasticCluster}-stopped`
         }
-        return DocDBContext.Cluster
+        return DocDBContext.ElasticCluster
     }
 
     public getDescription(): string | boolean {
-        if (this.contextValue !== (DocDBContext.ElasticClusterRunning as string)) {
+        if (this.status !== 'active') {
             return `elastic cluster • ${this.status}`
         }
         return 'elastic cluster'

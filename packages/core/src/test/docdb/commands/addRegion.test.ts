@@ -12,7 +12,9 @@ import { globals } from '../../../shared'
 import { DBStorageType, DefaultDocumentDBClient, DocumentDBClient } from '../../../shared/clients/docdbClient'
 import { addRegion } from '../../../docdb/commands/addRegion'
 import { DBClusterNode } from '../../../docdb/explorer/dbClusterNode'
+import { DBGlobalClusterNode } from '../../../docdb/explorer/dbGlobalClusterNode'
 import { DocumentDBNode } from '../../../docdb/explorer/docdbNode'
+import { GlobalCluster } from '@aws-sdk/client-docdb'
 
 describe('addRegionCommand', function () {
     const globalClusterName = 'docdb-global'
@@ -22,7 +24,7 @@ describe('addRegionCommand', function () {
         Status: 'available',
     }
     let docdb: DocumentDBClient
-    let node: DBClusterNode
+    let node: DBClusterNode | DBGlobalClusterNode
     let sandbox: sinon.SinonSandbox
     let spyExecuteCommand: sinon.SinonSpy
 
@@ -75,7 +77,7 @@ describe('addRegionCommand', function () {
         })
     }
 
-    it('prompts for new region and cluster params, creates cluster, shows success, and refreshes node', async function () {
+    it('prompts for new region and cluster params, creates global cluster, creates secondary cluster, and refreshes node', async function () {
         // arrange
         const createGlobalClusterStub = sinon.stub().resolves({
             GlobalClusterIdentifier: globalClusterName,
@@ -123,6 +125,60 @@ describe('addRegionCommand', function () {
         )
 
         sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node.parent)
+
+        assertTelemetry('docdb_addRegion', { result: 'Succeeded' })
+    })
+
+    it('creates a secondary cluster, and refreshes node when adding to a global cluster', async function () {
+        // arrange
+        const createGlobalClusterStub = sinon.stub().resolves({
+            GlobalClusterIdentifier: globalClusterName,
+        })
+        const createClusterStub = sinon.stub().resolves({
+            DBClusterIdentifier: clusterName,
+        })
+        const createInstanceStub = sinon.stub().resolves()
+        docdb.createGlobalCluster = createGlobalClusterStub
+        docdb.createCluster = createClusterStub
+        docdb.createInstance = createInstanceStub
+        setupWizard()
+
+        const globalCluster: GlobalCluster = {
+            GlobalClusterIdentifier: globalClusterName,
+            GlobalClusterMembers: [],
+            Status: 'available',
+        }
+        node = new DBGlobalClusterNode(new DocumentDBNode(docdb), globalCluster, new Map(), docdb)
+
+        // act
+        await addRegion(node)
+
+        // assert
+        getTestWindow().getFirstMessage().assertInfo('Region added')
+
+        assert(createGlobalClusterStub.notCalled)
+
+        assert(
+            createClusterStub.calledOnceWith(
+                sinon.match({
+                    DBClusterIdentifier: clusterName,
+                    GlobalClusterIdentifier: globalClusterName,
+                })
+            )
+        )
+
+        assert(
+            createInstanceStub.calledOnceWith(
+                sinon.match({
+                    Engine: 'docdb',
+                    DBClusterIdentifier: clusterName,
+                    DBInstanceIdentifier: clusterName,
+                    DBInstanceClass: 'db.r5.large',
+                })
+            )
+        )
+
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
 
         assertTelemetry('docdb_addRegion', { result: 'Succeeded' })
     })

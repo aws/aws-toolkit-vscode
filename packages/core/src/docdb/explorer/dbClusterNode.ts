@@ -17,7 +17,7 @@ import { DBResourceNode } from './dbResourceNode'
 import { DBInstanceNode } from './dbInstanceNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { DBInstance, DocumentDBClient } from '../../shared/clients/docdbClient'
-import { DocDBContext, DocDBNodeContext } from './docdbContext'
+import { DocDBContext } from './docdbContext'
 
 export type DBClusterRole = 'global' | 'regional' | 'primary' | 'secondary'
 
@@ -70,17 +70,18 @@ export class DBClusterNode extends DBResourceNode {
         })
     }
 
-    private getContext(): DocDBNodeContext {
+    private getContext() {
+        const context = `${DocDBContext.Cluster}-${this.clusterRole}`
         if (this.status === 'available') {
-            return DocDBContext.ClusterRunning
+            return `${context}-running`
         } else if (this.status === 'stopped') {
-            return DocDBContext.ClusterStopped
+            return `${context}-stopped`
         }
-        return DocDBContext.Cluster
+        return context
     }
 
     public getDescription(): string | boolean {
-        if (this.contextValue !== (DocDBContext.ClusterRunning as string)) {
+        if (this.status !== 'available') {
             return `${this.clusterRole} cluster • ${this.status}`
         }
         return `${this.clusterRole} cluster`

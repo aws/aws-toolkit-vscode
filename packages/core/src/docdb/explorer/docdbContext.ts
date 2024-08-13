@@ -5,10 +5,8 @@
 
 export const DocDBContext = {
     Cluster: 'awsDocDB-cluster',
-    ClusterRunning: 'awsDocDB-cluster-running',
-    ClusterStopped: 'awsDocDB-cluster-stopped',
-    ElasticClusterRunning: 'awsDocDB-cluster-elastic-running',
-    ElasticClusterStopped: 'awsDocDB-cluster-elastic-stopped',
+    ElasticCluster: 'awsDocDB-cluster-elastic',
+    GlobalCluster: 'awsDocDB-cluster-global',
     Instance: 'awsDocDB-instance',
     InstanceAvailable: 'awsDocDB-instance-available',
 } as const
