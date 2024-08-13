@@ -85,6 +85,7 @@
                     </vscode-data-grid-cell>
                 </vscode-data-grid-row>
             </vscode-data-grid>
+            <h2 class="empty-result" v-if="dynamoDbTableData.tableHeader.length === 0">No Items to display</h2>
 
             <!-- Context Menu -->
             <ContextMenu

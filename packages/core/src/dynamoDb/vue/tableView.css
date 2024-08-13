@@ -104,3 +104,11 @@ span.icon.icon-sm.icon-vscode-settings-gear {
     border-left: 1px inset;
     padding: 5px;
 }
+
+h2.empty-result {
+    text-align: center;
+    vertical-align: middle;
+    display: flex;
+    justify-content: center;
+    margin-top: 100px;
+}
