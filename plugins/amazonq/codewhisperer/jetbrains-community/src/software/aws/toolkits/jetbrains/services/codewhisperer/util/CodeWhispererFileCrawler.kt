@@ -20,20 +20,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.model.ListUtgCandi
  * since different language has its own way importing other files or its own naming style for test file
  */
 interface FileCrawler {
-    /**
-     * parse the import statements provided a file
-     * @param psiFile of the file we are search with
-     * @return list of file reference from the import statements
-     */
-    suspend fun listFilesImported(psiFile: PsiFile): List<VirtualFile>
-
     fun listFilesUnderProjectRoot(project: Project): List<VirtualFile>
-
-    /**
-     * @param psiFile the file we are searching with, aka target file
-     * @return Files under the same package as the given file and exclude the given file
-     */
-    fun listFilesWithinSamePackage(psiFile: PsiFile): List<VirtualFile>
 
     /**
      * should be invoked at test files e.g. MainTest.java, or test_main.py
@@ -59,12 +46,9 @@ interface FileCrawler {
 }
 
 class NoOpFileCrawler : FileCrawler {
-    override suspend fun listFilesImported(psiFile: PsiFile): List<VirtualFile> = emptyList()
-
     override fun listFilesUnderProjectRoot(project: Project): List<VirtualFile> = emptyList()
-    override fun listUtgCandidate(target: PsiFile) = ListUtgCandidateResult(null, UtgStrategy.Empty)
 
-    override fun listFilesWithinSamePackage(psiFile: PsiFile): List<VirtualFile> = emptyList()
+    override fun listUtgCandidate(target: PsiFile) = ListUtgCandidateResult(null, UtgStrategy.Empty)
 
     override fun listCrossFileCandidate(target: PsiFile): List<VirtualFile> = emptyList()
 
@@ -99,17 +83,6 @@ abstract class CodeWhispererFileCrawler : FileCrawler {
         }
     }.orEmpty()
 
-    override fun listFilesWithinSamePackage(psiFile: PsiFile): List<VirtualFile> = runReadAction {
-        psiFile.containingDirectory?.files?.mapNotNull {
-            // exclude target file
-            if (it != psiFile) {
-                it.virtualFile
-            } else {
-                null
-            }
-        }.orEmpty()
-    }
-
     override fun listCrossFileCandidate(target: PsiFile): List<VirtualFile> {
         val targetFile = target.virtualFile
 
@@ -123,7 +96,7 @@ abstract class CodeWhispererFileCrawler : FileCrawler {
 
         val fileToFileDistanceList = runReadAction {
             openedFiles.map {
-                return@map it to CodeWhispererFileCrawler.getFileDistance(targetFile = targetFile, candidateFile = it)
+                return@map it to CodeWhispererFileCrawler.getFileDistance(fileA = targetFile, fileB = it)
             }
         }
 
@@ -202,15 +175,14 @@ abstract class CodeWhispererFileCrawler : FileCrawler {
             }
         }
 
-        // TODO: move to CodeWhispererUtils.kt
         /**
          * For [LocalFileSystem](implementation of virtual file system), the path will be an absolute file path with file separator characters replaced
          * by forward slash "/"
          * @see [VirtualFile.getPath]
          */
-        fun getFileDistance(targetFile: VirtualFile, candidateFile: VirtualFile): Int {
-            val targetFilePaths = targetFile.path.split("/").dropLast(1)
-            val candidateFilePaths = candidateFile.path.split("/").dropLast(1)
+        fun getFileDistance(fileA: VirtualFile, fileB: VirtualFile): Int {
+            val targetFilePaths = fileA.path.split("/").dropLast(1)
+            val candidateFilePaths = fileB.path.split("/").dropLast(1)
 
             var i = 0
             while (i < minOf(targetFilePaths.size, candidateFilePaths.size)) {

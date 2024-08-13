@@ -3,17 +3,11 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.util
 
-import com.intellij.openapi.application.runReadAction
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.module.ModuleUtilCore
 import com.intellij.openapi.project.rootManager
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
-import com.intellij.psi.PsiJavaFile
-import com.intellij.psi.PsiPackage
-import com.intellij.psi.search.GlobalSearchScope
-import kotlinx.coroutines.yield
 import org.jetbrains.jps.model.java.JavaModuleSourceRootTypes
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
@@ -28,48 +22,6 @@ object JavaCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
         Regex("""^(.+)Test(\.java)$"""),
         Regex("""^(.+)Tests(\.java)$""")
     )
-
-    override suspend fun listFilesImported(psiFile: PsiFile): List<VirtualFile> {
-        if (psiFile !is PsiJavaFile) return emptyList()
-        val result = mutableListOf<VirtualFile>()
-        val imports = runReadAction { psiFile.importList?.allImportStatements }
-        val activeFiles = FileEditorManager.getInstance(psiFile.project).openFiles.toSet()
-
-        // only consider imported files which belong users' own package, thus [isInLocalFileSystem && isWritable]
-        val fileHandleLambda = { virtualFile: VirtualFile ->
-            if (virtualFile.isInLocalFileSystem && virtualFile.isWritable) {
-                // prioritize active files on users' editor
-                if (activeFiles.contains(virtualFile)) {
-                    result.add(0, virtualFile)
-                } else {
-                    result.add(virtualFile)
-                }
-            }
-        }
-
-        imports?.forEach {
-            yield()
-            runReadAction { it.resolve() }?.let { psiElement ->
-                // case like import javax.swing.*;
-                if (psiElement is PsiPackage) {
-                    val filesInPackage = psiElement.getFiles(GlobalSearchScope.allScope(psiFile.project)).mapNotNull { it.virtualFile }
-                    filesInPackage.forEach { file ->
-                        fileHandleLambda(file)
-                    }
-                } else {
-                    // single file import
-                    runReadAction {
-                        psiElement.containingFile.virtualFile?.let { virtualFile ->
-                            // file within users' project
-                            fileHandleLambda(virtualFile)
-                        }
-                    }
-                }
-            }
-        }
-
-        return result
-    }
 
     // psiFile = "MainTest.java", targetFileName = "Main.java"
     override fun findSourceFileByName(target: PsiFile): VirtualFile? =

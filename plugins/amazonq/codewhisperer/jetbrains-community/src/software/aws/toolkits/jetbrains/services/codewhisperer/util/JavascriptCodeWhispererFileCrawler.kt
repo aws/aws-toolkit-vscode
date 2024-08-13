@@ -14,8 +14,6 @@ object JavascriptCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
         Regex("""^(.+)\.(?i:s)pec(\.js|\.jsx)$""")
     )
 
-    override suspend fun listFilesImported(psiFile: PsiFile): List<VirtualFile> = emptyList()
-
     override fun findSourceFileByName(target: PsiFile): VirtualFile? = null
 
     override fun findSourceFileByContent(target: PsiFile): VirtualFile? = null

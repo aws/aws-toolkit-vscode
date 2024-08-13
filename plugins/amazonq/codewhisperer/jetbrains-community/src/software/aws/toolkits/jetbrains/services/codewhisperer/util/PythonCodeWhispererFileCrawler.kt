@@ -17,8 +17,6 @@ object PythonCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
         Regex("""^(.+)_test(\.py)$""")
     )
 
-    override suspend fun listFilesImported(psiFile: PsiFile): List<VirtualFile> = emptyList()
-
     override fun findSourceFileByName(target: PsiFile): VirtualFile? = super.listFilesUnderProjectRoot(target.project).find {
         !it.isDirectory &&
             it.isWritable &&

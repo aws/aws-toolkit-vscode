@@ -6,13 +6,11 @@ package software.aws.toolkits.jetbrains.services.codewhisperer
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ExtensionTestUtil
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
 import com.intellij.testFramework.runInEdtAndWait
-import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
@@ -260,81 +258,6 @@ class JavaCodeWhispererFileCrawlerTest {
                 assertThat(expected.contains(it)).isTrue
             }
         }
-    }
-
-    @Test
-    fun `listFilesWithinSamePackage`() {
-        val targetFile = fixture.addFileToProject("/utils/AnotherClass.java", "")
-        val file2Package1 = fixture.addFileToProject("/utils/NotImported.java", "")
-        val file3Package1 = fixture.addFileToProject("/utils/NotImported2.java", "")
-        fixture.addFileToProject("Main.java", "")
-        fixture.addFileToProject("service/controllers/MyController.java", "")
-
-        runReadAction {
-            val actual = sut.listFilesWithinSamePackage(targetFile)
-            val expected = listOf<PsiFile>(file2Package1, file3Package1)
-                .map { it.virtualFile }
-                .toSet()
-
-            assertThat(actual).hasSize(expected.size)
-            actual.forEach {
-                assertThat(expected.contains(it)).isTrue
-            }
-        }
-    }
-
-    @Test
-    fun `findFilesImported`() {
-        val mainClass = fixture.addFileToProject(
-            "Main.java",
-            """
-            package com.cw.file_crawler_test;
-            
-            import java.util.Map;
-            import java.util.regex.Pattern;
-            
-            import com.cw.file_crawler_test.utils.AnotherClass;
-            import com.cw.file_crawler_test.service.controllers.MyController;
-            
-            public class Main {
-            };
-            """.trimIndent()
-        )
-
-        val controllerClass = fixture.addFileToProject(
-            "service/controllers/MyController.java",
-            """
-                package com.cw.file_crawler_test.service.controllers;
-                
-                public class MyController {}
-            """.trimIndent()
-        )
-
-        val anotherClass = fixture.addFileToProject(
-            "/utils/AnotherClass.java",
-            """
-                package com.cw.file_crawler_test.utils;
-                
-                public class AnotherClass {}
-            """.trimIndent()
-        )
-
-        fun assertCrawlerFindCorrectFiles(sut: CodeWhispererFileCrawler) {
-            runReadAction {
-                val expected = setOf<VirtualFile>(controllerClass.virtualFile, anotherClass.virtualFile)
-                val actualFiles = runBlocking { sut.listFilesImported(mainClass) }
-
-                assertThat(actualFiles).hasSize(2)
-                actualFiles.forEach {
-                    assertThat(expected).contains(it)
-                }
-            }
-        }
-
-        assertCrawlerFindCorrectFiles(JavaCodeWhispererFileCrawler)
-        // can't make it work right since the temp file created is not in the real file system
-        // Naive crawler will actually read the file system thun unable to find files
-        //        assertCrawlerFindCorrectFiles(NaiveJavaCodeWhispererFileCrawler(project))
     }
 
     @Test

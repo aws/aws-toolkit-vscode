@@ -14,8 +14,6 @@ object TypescriptCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
         Regex("""^(.+)\.(?i:s)pec(\.ts|\.tsx)$""")
     )
 
-    override suspend fun listFilesImported(psiFile: PsiFile): List<VirtualFile> = emptyList()
-
     override fun findSourceFileByName(target: PsiFile): VirtualFile? = null
 
     override fun findSourceFileByContent(target: PsiFile): VirtualFile? = null
