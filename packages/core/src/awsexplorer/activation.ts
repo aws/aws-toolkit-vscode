@@ -266,6 +266,7 @@ async function registerAppBuilderCommands(
         }),
         Commands.register('aws.toolkit.lambda.initializeWalkthroughProject', async (): Promise<void> => {
             await initWalkthroughProjectCommand()
+            await globals.globalState.update('aws.toolkit.lambda.walkthroughCompleted', true)
         }),
         Commands.register(`aws.toolkit.lambda.openWalkthrough`, async () => {
             await vscode.commands.executeCommand(
