@@ -267,10 +267,10 @@ async function registerAppBuilderCommands(
         Commands.register('aws.toolkit.lambda.initializeWalkthroughProject', async (): Promise<void> => {
             await initWalkthroughProjectCommand()
         }),
-        Commands.register(`aws.toolkit.lambda.walkthrough`, async () => {
+        Commands.register(`aws.toolkit.lambda.openWalkthrough`, async () => {
             await vscode.commands.executeCommand(
                 'workbench.action.openWalkthrough',
-                'amazonwebservices.aws-toolkit-vscode#aws.gettingStarted.walkthrough'
+                'amazonwebservices.aws-toolkit-vscode#aws.toolkit.lambda.walkthrough'
             )
         })
     )

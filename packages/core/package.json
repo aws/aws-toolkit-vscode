@@ -732,12 +732,12 @@
         "viewsWelcome": [
             {
                 "view": "aws.appBuilderForFileExplorer",
-                "contents": "[Open walkthrough](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23aws.toolkit.lambda.walkthrough%22%7D)\n [Open Folder](command:vscode.openFolder)",
+                "contents": "[Open walkthrough](command:aws.toolkit.lambda.openWalkthrough)\n [Open Folder](command:vscode.openFolder)",
                 "when": "workbenchState == empty"
             },
             {
                 "view": "aws.appBuilder",
-                "contents": "[Open walkthrough](command:workbench.action.openWalkthrough?%7B%22category%22%3A%22amazonwebservices.aws-toolkit-vscode%23aws.toolkit.lambda.walkthrough%22%7D)\n [Open Folder](command:vscode.openFolder)",
+                "contents": "[Open walkthrough](command:aws.toolkit.lambda.openWalkthrough)\n [Open Folder](command:vscode.openFolder)",
                 "when": "workbenchState == empty"
             }
         ],
@@ -2163,7 +2163,7 @@
                     "group": "1_help@5"
                 },
                 {
-                    "command": "aws.toolkit.lambda.walkthrough",
+                    "command": "aws.toolkit.lambda.openWalkthrough",
                     "group": "1_help@6"
                 }
             ],
@@ -3057,7 +3057,7 @@
                 }
             },
             {
-                "command": "aws.toolkit.lambda.walkthrough",
+                "command": "aws.toolkit.lambda.openWalkthrough",
                 "title": "%AWS.toolkit.lambda.walkthrough.quickpickTitle%",
                 "category": "%AWS.title%",
                 "cloud9": {

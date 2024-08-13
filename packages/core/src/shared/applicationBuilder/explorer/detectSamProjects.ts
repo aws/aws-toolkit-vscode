@@ -29,11 +29,6 @@ async function detectSamProjectsFromWorkspaceFolder(
     workspaceFolder: vscode.WorkspaceFolder
 ): Promise<SamAppLocation[]> {
     const result: SamAppLocation[] = []
-
-    if (!(await getFiles(workspaceFolder, 'samconfig.toml'))) {
-        return result
-    }
-
     const samTemplateFiles = await getFiles(workspaceFolder, 'template.{yml,yaml}', '**/.aws-sam/**')
     for (const samTemplateFile of samTemplateFiles) {
         const project = { samTemplateUri: samTemplateFile, workspaceFolder: workspaceFolder }
