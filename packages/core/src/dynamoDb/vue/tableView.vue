@@ -303,7 +303,23 @@ export default defineComponent({
 
         showContextMenu(event: MouseEvent, row: any) {
             event.preventDefault()
-            contextMenuPosition.value = { top: event.clientY, left: event.clientX }
+
+            let topPosition = event.clientY
+            let leftPosition = event.clientX
+
+            const menuHeight = 210
+            const menuWidth = 170
+            const viewportHeight = window.innerHeight
+            const viewportWidth = window.innerWidth
+
+            if (topPosition + menuHeight > viewportHeight) {
+                topPosition = viewportHeight - menuHeight - 10
+            }
+            if (leftPosition + menuWidth > viewportWidth) {
+                leftPosition = viewportWidth - menuWidth - 10
+            }
+
+            contextMenuPosition.value = { top: topPosition, left: leftPosition }
             contextMenuVisible.value = true
             selectedRow.value = row
             selectedCell = (event.target as any).innerHTML
