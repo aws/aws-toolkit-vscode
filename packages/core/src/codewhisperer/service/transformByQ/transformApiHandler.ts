@@ -407,7 +407,6 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
     } catch (e: any) {
         telemetry.codeTransform_logGeneralError.emit({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformApiErrorMessage: 'Failed to zip project',
             result: MetadataResult.Fail,
             reason: 'ZipCreationFailed',
         })
