@@ -14,7 +14,7 @@ export class EditorContentController {
      * @param text the raw text from Amazon Q chat
      * @param trackCodeEdit callback to track user edits
      */
-    public async insertTextAtCursorPosition(
+    public insertTextAtCursorPosition(
         text: string,
         trackCodeEdit: (editor: TextEditor, cursorStart: Position) => void
     ) {
