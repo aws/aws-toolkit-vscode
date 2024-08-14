@@ -28,17 +28,17 @@ export class EditorContentController {
             if (indent.trim().length !== 0) {
                 indent = ' '.repeat(indent.length - indent.trimStart().length)
             }
-            let textWithIntent = ''
+            let textWithIndent = ''
             text.split('\n').forEach((line, index) => {
                 if (index === 0) {
-                    textWithIntent += line
+                    textWithIndent += line
                 } else {
-                    textWithIntent += '\n' + indent + line
+                    textWithIndent += '\n' + indent + line
                 }
             })
             editor
                 .edit((editBuilder) => {
-                    editBuilder.insert(cursorStart, textWithIntent)
+                    editBuilder.insert(cursorStart, textWithIndent)
                 })
                 .then(
                     (appliedEdits) => {
