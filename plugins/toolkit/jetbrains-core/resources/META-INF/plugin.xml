@@ -176,6 +176,8 @@
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
+        <dependencySupport kind="executable" coordinate="aws"/>
+
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.EcsExecCommandSettings"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.SamDisplayDevModeWarningSettings"/>
 
