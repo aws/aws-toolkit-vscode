@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import { Position, TextEditor, window } from 'vscode'
 import { getLogger } from '../../../shared/logger'
-import { Commands } from '../../../shared'
 
 export class EditorContentController {
     /* *
