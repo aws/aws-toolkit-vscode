@@ -467,7 +467,7 @@ async function deployTypePrompt() {
     ]
 
     return createQuickPick(items, {
-        title: 'Select deployment command',
+        title: localize('AWS.appBuilder.deployType.title', 'Select deployment command'),
         placeholder: 'Press enter to proceed with highlighted option',
         buttons: createCommonButtons(samDeployUrl),
     })
