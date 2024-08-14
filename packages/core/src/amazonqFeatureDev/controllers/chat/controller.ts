@@ -153,8 +153,8 @@ export class FeatureDevController {
         this.chatControllerMessageListeners.processResponseBodyLinkClick.event((data) => {
             this.processLink(data)
         })
-        this.chatControllerMessageListeners.insertCodeAtPositionClicked.event((data) => {
-            this.insertCodeAtPosition(data)
+        this.chatControllerMessageListeners.insertCodeAtPositionClicked.event(async (data) => {
+            await this.insertCodeAtPosition(data)
         })
         this.chatControllerMessageListeners.fileClicked.event(async (data) => {
             return await this.fileClicked(data)
@@ -892,8 +892,8 @@ export class FeatureDevController {
         void openUrl(vscode.Uri.parse(message.link))
     }
 
-    private insertCodeAtPosition(message: any) {
-        this.contentController.insertTextAtCursorPosition(message.code, () => {})
+    private async insertCodeAtPosition(message: any) {
+        await this.contentController.insertTextAtCursorPosition(message.code, () => {})
     }
 
     private retriesRemaining(session: Session | undefined) {
