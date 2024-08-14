@@ -106,6 +106,10 @@
                         "amazonQWelcomePage": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "amazonQSessionConfigurationMessage": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false

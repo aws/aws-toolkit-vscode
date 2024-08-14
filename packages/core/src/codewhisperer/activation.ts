@@ -302,6 +302,9 @@ export async function activate(context: ExtContext): Promise<void> {
             const defaulMsg = localize('AWS.generic.message.error', 'Failed to reauth:')
             void logAndShowError(localize, e, 'showReauthenticatePrompt', defaulMsg)
         })
+        if (auth.isEnterpriseSsoInUse()) {
+            await auth.notifySessionConfiguration()
+        }
     }
     if (auth.isValidEnterpriseSsoInUse()) {
         await notifyNewCustomizations()
