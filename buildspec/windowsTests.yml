@@ -8,23 +8,11 @@ env:
 phases:
   install:
     commands:
-      # FIX_WHEN_MIN_IS_233: 232 does not support jdk21
-      - |
-        $url = 'https://corretto.aws/downloads/latest/amazon-corretto-17-x64-windows-jdk.msi';
-        Write-Host ('Downloading from {0}' -f $url);
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;
-        Invoke-WebRequest -Uri $url -OutFile 'corretto_jdk_build.msi';
-        Start-Process 'corretto_jdk_build.msi' -PassThru | Wait-Process;
-        Write-Host 'Removing ...';
-        Remove-Item corretto_jdk_build.msi -Force;
       - |
         if(-Not($Env:CODE_COV_TOKEN -eq $null)) {
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;
             Invoke-WebRequest -Uri https://uploader.codecov.io/latest/windows/codecov.exe -Outfile codecov.exe
         }
-      - if (Test-Path "C:\codebuild\global.json") { rm -fo "C:\codebuild\global.json" }
-      - rm -r -fo "C:\Program Files\dotnet\sdk"
-      - choco install -fy dotnet-6.0-sdk
       - dotnet --list-sdks
 
   build:

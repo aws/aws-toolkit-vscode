@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.lambda.dotnet
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.platform.backend.workspace.WorkspaceModel
 import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
@@ -21,7 +22,6 @@ import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.protocol.HandlerExistRequest
 import software.aws.toolkits.jetbrains.protocol.lambdaPsiModel
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
-import software.aws.toolkits.jetbrains.services.lambda.WorkspaceModel
 import software.aws.toolkits.jetbrains.services.lambda.dotnet.element.RiderLambdaHandlerFakePsiElement
 import java.nio.file.Path
 

@@ -98,7 +98,7 @@ include("detekt-rules")
 include("ui-tests")
 include("sandbox-all")
 when (providers.gradleProperty("ideProfileName").get()) {
-    "2023.2", "2023.3", "2024.1" -> include("tmp-all")
+    "2023.3", "2024.1" -> include("tmp-all")
 }
 
 /*
@@ -153,7 +153,7 @@ file("plugins").listFiles()?.forEach root@ {
             if (it.name == "jetbrains-gateway") {
                 when (providers.gradleProperty("ideProfileName").get()) {
                     // buildSrc is evaluated after settings so we can't key off of IdeVersions.kt
-                    "2023.2", "2023.3" -> {
+                    "2023.3", "2024.1" -> {
                         return@forEach
                     }
                 }

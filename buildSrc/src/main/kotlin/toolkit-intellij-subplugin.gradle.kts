@@ -96,11 +96,6 @@ dependencies {
         bundledPlugins(toolkitIntelliJ.productProfile().map { it.bundledPlugins })
         plugins(toolkitIntelliJ.productProfile().map { it.marketplacePlugins })
     }
-
-    // FIX_WHEN_MIN_IS_233: something weird with dependency transform in 232-only (pulling in 13.0?) but doesn't worth investigating at the moment
-    if (providers.gradleProperty("ideProfileName").getOrNull() == "2023.2") {
-        compileOnly("org.jetbrains:annotations:24.0.0")
-    }
 }
 
 tasks.jar {

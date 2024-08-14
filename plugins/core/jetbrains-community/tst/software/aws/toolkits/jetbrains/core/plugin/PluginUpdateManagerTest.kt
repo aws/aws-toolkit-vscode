@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.core.plugin
 
 import com.intellij.ide.plugins.IdeaPluginDescriptor
-import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.updateSettings.impl.PluginDownloader
@@ -16,7 +15,6 @@ import io.mockk.every
 import io.mockk.mockkObject
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
-import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -46,7 +44,6 @@ class PluginUpdateManagerTest {
 
     @Before
     fun setup() {
-        assumeTrue("hangs in 2023.2?", ApplicationInfo.getInstance().build.baselineVersion != 232)
         sut = PluginUpdateManager().let {
             Disposer.register(disposableRule.disposable, it)
             spy(it)

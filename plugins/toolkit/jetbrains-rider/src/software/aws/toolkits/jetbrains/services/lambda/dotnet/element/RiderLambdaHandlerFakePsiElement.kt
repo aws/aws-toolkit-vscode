@@ -6,6 +6,8 @@ package software.aws.toolkits.jetbrains.services.lambda.dotnet.element
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.platform.backend.workspace.WorkspaceModel
+import com.intellij.platform.backend.workspace.virtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
@@ -14,8 +16,6 @@ import com.jetbrains.rider.projectView.workspace.containingProjectEntity
 import com.jetbrains.rider.projectView.workspace.getProjectModelEntity
 import com.jetbrains.rider.projectView.workspace.getVirtualFileAsContentRoot
 import com.jetbrains.rider.util.idea.getPsiFile
-import software.aws.toolkits.jetbrains.core.compatability.toVirtualFile
-import software.aws.toolkits.jetbrains.services.lambda.WorkspaceModel
 import javax.swing.Icon
 
 /**
@@ -51,5 +51,5 @@ class RiderLambdaHandlerFakePsiElement(
         .getProjectModelEntity(fileId)
         ?.containingProjectEntity()
         ?.url
-        ?.toVirtualFile()
+        ?.virtualFile
 }
