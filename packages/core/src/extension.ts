@@ -49,7 +49,7 @@ import { ExtStartUpSources } from './shared/telemetry/util'
 import { ExtensionUse, getAuthFormIdsFromConnection } from './auth/utils'
 import { Auth } from './auth'
 import { AuthFormId } from './login/webview/vue/types'
-import { isSsoConnection } from './auth/connection'
+import { getTelemetryMetadataForConn, isSsoConnection } from './auth/connection'
 import { registerCommands } from './commands'
 
 // In web mode everything must be in a single file, so things like the endpoints file will not be available.
@@ -286,23 +286,18 @@ export async function emitUserState() {
                 }
             })
         }
-        telemetry.record({
-            authStatus,
-            authEnabledConnections: [...enabledConnections].join(','),
-            authScopes: [...enabledScopes].join(','),
-        })
 
         // There may be other SSO connections in toolkit, but there is no use case for
         // displaying registration info for non-active connections at this time.
         const activeConn = Auth.instance.activeConnection
         if (activeConn?.type === 'sso') {
-            const registration = await activeConn.getRegistration()
-            telemetry.record({
-                awsRegion: activeConn.ssoRegion,
-                credentialStartUrl: activeConn.startUrl,
-                ssoRegistrationExpiresAt: registration?.expiresAt.toISOString(),
-                ssoRegistrationClientId: registration?.clientId,
-            })
+            telemetry.record(await getTelemetryMetadataForConn(activeConn))
         }
+
+        telemetry.record({
+            authStatus,
+            authEnabledConnections: [...enabledConnections].join(','),
+            authScopes: [...enabledScopes].join(','),
+        })
     })
 }

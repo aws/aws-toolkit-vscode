@@ -16,21 +16,19 @@ import {
     AwsConnection,
     Connection,
     hasScopes,
-    isBuilderIdConnection,
-    isIamConnection,
     isSsoConnection,
     scopesCodeCatalyst,
     scopesCodeWhispererChat,
     scopesSsoAccountAccess,
     SsoConnection,
+    TelemetryMetadata,
 } from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
 import { StaticProfile, StaticProfileKeyErrorMessage } from '../../../auth/credentials/types'
 import { telemetry } from '../../../shared/telemetry'
 import { AuthAddConnection } from '../../../shared/telemetry/telemetry'
 import { AuthSources } from '../util'
-import { AuthEnabledFeatures, AuthError, AuthFlowState, AuthUiClick, TelemetryMetadata, userCancelled } from './types'
-import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { AuthEnabledFeatures, AuthError, AuthFlowState, AuthUiClick, userCancelled } from './types'
 import { DevSettings } from '../../../shared/settings'
 import { AuthSSOServer } from '../../../auth/sso/server'
 import { getLogger } from '../../../shared/logger/logger'
@@ -237,32 +235,6 @@ export abstract class CommonAuthWebview extends VueWebview {
         }
 
         return metadata
-    }
-
-    /**
-     * Get metadata about the current auth for reauthentication telemetry.
-     */
-    async getMetadataForExistingConn(conn = AuthUtil.instance.conn): Promise<TelemetryMetadata> {
-        if (conn === undefined) {
-            return {}
-        }
-
-        if (isSsoConnection(conn)) {
-            const registration = await conn.getRegistration()
-            return {
-                credentialSourceId: isBuilderIdConnection(conn) ? 'awsId' : 'iamIdentityCenter',
-                credentialStartUrl: conn?.startUrl,
-                awsRegion: conn?.ssoRegion,
-                ssoRegistrationExpiresAt: registration?.expiresAt.toISOString(),
-                ssoRegistrationClientId: registration?.clientId,
-            }
-        } else if (isIamConnection(conn)) {
-            return {
-                credentialSourceId: 'sharedCredentials',
-            }
-        }
-
-        throw new Error('getMetadataForExistingConn() called with unknown connection type')
     }
 
     /**

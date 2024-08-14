@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { AwsConnection, Connection, isSsoConnection, SsoConnection } from '../../../../auth/connection'
+import { AwsConnection, Connection, getTelemetryMetadataForConn, isSsoConnection } from '../../../../auth/connection'
 import { AuthUtil } from '../../../../codewhisperer/util/authUtil'
 import { CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
@@ -14,6 +14,7 @@ import { getLogger } from '../../../../shared/logger'
 import { debounce } from 'lodash'
 import { AuthError, AuthFlowState, userCancelled } from '../types'
 import { builderIdStartUrl } from '../../../../auth/sso/model'
+import { ToolkitError } from '../../../../shared/errors'
 
 export class AmazonQLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.amazonq.AmazonCommonAuth'
@@ -57,12 +58,8 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
             })
 
             const conn = await awsIdSignIn()
-            const registration = await conn.getRegistration()
-            this.storeMetricMetadata({
-                ssoRegistrationExpiresAt: registration?.expiresAt.toISOString(),
-                ssoRegistrationClientId: registration?.clientId,
-                awsRegion: conn.ssoRegion,
-            })
+            this.storeMetricMetadata(await getTelemetryMetadataForConn(conn))
+
             void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS Builder ID')
         })
     }
@@ -78,12 +75,8 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
             })
 
             const conn = await connectToEnterpriseSso(startUrl, region)
-            const registration = await conn.getRegistration()
-            this.storeMetricMetadata({
-                ssoRegistrationExpiresAt: registration?.expiresAt.toISOString(),
-                ssoRegistrationClientId: registration?.clientId,
-                awsRegion: conn.ssoRegion,
-            })
+            this.storeMetricMetadata(await getTelemetryMetadataForConn(conn))
+
             void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
         })
     }
@@ -96,10 +89,13 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
             // Sanity checks
             if (!AuthUtil.instance.isConnected()) {
                 getLogger().error('amazon Q reauthenticate called on a non-existant connection')
+                throw new ToolkitError('Cannot reauthenticate non-existant connection.')
             }
 
-            if (!isSsoConnection(AuthUtil.instance.conn)) {
+            const conn = AuthUtil.instance.conn
+            if (!isSsoConnection(conn)) {
                 getLogger().error('amazon Q reauthenticate called, but the connection is not SSO')
+                throw new ToolkitError('Cannot reauthenticate non-SSO connection.')
             }
 
             /**
@@ -108,11 +104,14 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
              */
             this.reauthError = await this.ssoSetup('reauthenticate', async () => {
                 this.storeMetricMetadata({
-                    authEnabledFeatures: this.getAuthEnabledFeatures(AuthUtil.instance.conn as SsoConnection),
+                    authEnabledFeatures: this.getAuthEnabledFeatures(conn),
                     isReAuth: true,
-                    ...(await this.getMetadataForExistingConn()),
+                    ...(await getTelemetryMetadataForConn(conn)),
                 })
                 await AuthUtil.instance.reauthenticate()
+                this.storeMetricMetadata({
+                    ...(await getTelemetryMetadataForConn(conn)),
+                })
             })
         } finally {
             this.isReauthenticating = false
@@ -158,12 +157,15 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     }
 
     override async signout(): Promise<void> {
+        const conn = AuthUtil.instance.secondaryAuth.activeConnection
+        if (!isSsoConnection(conn)) {
+            throw new ToolkitError(`Cannot signout non-SSO connection, type is: ${conn?.type}`)
+        }
+
         this.storeMetricMetadata({
-            authEnabledFeatures: this.getAuthEnabledFeatures(
-                AuthUtil.instance.secondaryAuth.activeConnection as SsoConnection
-            ),
+            authEnabledFeatures: this.getAuthEnabledFeatures(conn),
             isReAuth: true,
-            ...(await this.getMetadataForExistingConn()),
+            ...(await getTelemetryMetadataForConn(conn)),
             result: 'Cancelled',
         })
 
