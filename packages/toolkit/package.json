@@ -1015,9 +1015,6 @@
                     "when": "!config.aws.samcli.legacyDeploy"
                 },
                 {
-                    "command": "aws.appBuilder.build"
-                },
-                {
                     "command": "aws.s3.copyPath",
                     "when": "false"
                 },
@@ -3578,12 +3575,6 @@
                 "title": "%AWS.command.samcli.sync%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost"
-            },
-            {
-                "command": "aws.appBuilder.build",
-                "title": "%AWS.command.appBuilder.build%",
-                "category": "%AWS.title%",
-                "icon": "$(symbol-method)"
             },
             {
                 "command": "aws.appBuilder.deploy",

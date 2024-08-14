@@ -5,6 +5,8 @@
 
 import * as vscode from 'vscode'
 import { ToolkitError } from '../errors'
+import path from 'path'
+import { FileSystem } from '../fs/fs'
 
 /**
  * @description Finds the samconfig.toml file under the provided project folder
@@ -12,12 +14,14 @@ import { ToolkitError } from '../errors'
  * @returns The URI of the samconfig.toml file
  */
 export async function getConfigFileUri(projectRoot: vscode.Uri) {
-    const samConfigFilename = 'samconfig'
-    const samConfigFile = (
-        await vscode.workspace.findFiles(new vscode.RelativePattern(projectRoot, `${samConfigFilename}.toml`))
-    )[0]
+    const samConfigFilename = 'samconfig.toml'
+    let samConfigFile: string | undefined
+    const fs = FileSystem.instance
+    if (await fs.exists(path.join(projectRoot.path, samConfigFilename))) {
+        samConfigFile = path.join(projectRoot.path, 'samconfig.toml')
+    }
     if (samConfigFile) {
-        return samConfigFile
+        return vscode.Uri.file(samConfigFile)
     } else {
         throw new ToolkitError(`No samconfig.toml file found in ${projectRoot.fsPath}`)
     }
