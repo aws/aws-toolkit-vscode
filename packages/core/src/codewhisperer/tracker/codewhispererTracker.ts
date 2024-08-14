@@ -139,7 +139,7 @@ export class CodeWhispererTracker {
                     credentialStartUrl: AuthUtil.instance.startUrl,
                     codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
                     codewhispererCharactersAccepted: suggestion.originalString.length,
-                    codewhispererCharactersModified: -1, // TODO: currently we don't have an accurate number for this field with existing implementation
+                    codewhispererCharactersModified: 0, // TODO: currently we don't have an accurate number for this field with existing implementation
                 })
                 // TODO:
                 // Temperary comment out user modification event, need further discussion on how to calculate this metric

@@ -116,7 +116,7 @@ describe('codewhispererTracker', function () {
                 credentialStartUrl: testStartUrl,
                 codewhispererUserGroup: 'CrossFile',
                 codewhispererCharactersAccepted: suggestion.originalString.length,
-                codewhispererCharactersModified: -1,
+                codewhispererCharactersModified: 0,
             })
         })
     })
