@@ -239,11 +239,12 @@ export class ChatController {
         const session = this.sessionStorage.getSession(message.tabID)
         session.tokenSource.cancel()
     }
+
     private async processTriggerTabIDReceived(message: TriggerTabIDReceived) {
         this.triggerEventsStorage.updateTriggerEventTabIDFromUnknown(message.triggerID, message.tabID)
     }
 
-    private processInsertCodeAtCursorPosition(message: InsertCodeAtCursorPosition) {
+    private async processInsertCodeAtCursorPosition(message: InsertCodeAtCursorPosition) {
         this.editorContentController.insertTextAtCursorPosition(message.code, (editor, cursorStart) => {
             CodeWhispererTracker.getTracker().enqueue({
                 conversationID: this.telemetryHelper.getConversationId(message.tabID) ?? '',
