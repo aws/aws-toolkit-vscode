@@ -324,7 +324,7 @@ export class CWCTelemetryHelper {
             cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
             credentialStartUrl: AuthUtil.instance.startUrl,
             cwsprChatHasProjectContext: triggerPayload.relevantTextDocuments
-                ? triggerPayload.relevantTextDocuments.length > 0
+                ? triggerPayload.relevantTextDocuments.length > 0 && triggerPayload.useRelevantDocuments === true
                 : false,
             cwsprChatProjectContextQueryMs: triggerPayload.projectContextQueryLatencyMs,
         })
@@ -357,7 +357,7 @@ export class CWCTelemetryHelper {
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererCustomizationArn: triggerPayload.customization.arn,
             cwsprChatHasProjectContext: triggerPayload.relevantTextDocuments
-                ? triggerPayload.relevantTextDocuments.length > 0
+                ? triggerPayload.relevantTextDocuments.length > 0 && triggerPayload.useRelevantDocuments === true
                 : false,
         }
 

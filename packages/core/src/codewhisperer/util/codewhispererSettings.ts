@@ -46,6 +46,10 @@ export class CodeWhispererSettings extends fromExtensionManifest('amazonQ', desc
         return this.get('workspaceIndex', false)
     }
 
+    public async enableLocalIndex() {
+        await this.update('workspaceIndex', true)
+    }
+
     public isLocalIndexGPUEnabled(): boolean {
         return this.get('workspaceIndexUseGPU', false)
     }

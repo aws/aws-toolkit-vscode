@@ -1,3 +1,10 @@
+## 1.20.0 2024-08-08
+
+- **Bug Fix** Amazon Q /dev: include a retry option for the same prompt after folder reselection
+- **Bug Fix** Ignore virtual environment when indexing workspace
+- **Feature** Amazon Q Code Transformation: show pro tier users estimated cost of /transform on projects over 100K lines
+- **Feature** Amazon Q Code Transformation: warn user if absolute file paths are found in the pom.xml
+
 ## 1.19.0 2024-08-01
 
 - **Bug Fix** Amazon Q Chat: Fixing issue with an incorrect input cursor position in the prompt text box
