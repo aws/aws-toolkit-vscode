@@ -349,7 +349,7 @@ export class AuthUtil {
     public async notifySessionConfiguration() {
         const suppressId = 'amazonQSessionConfigurationMessage'
         const settings = AmazonQPromptSettings.instance
-        const shouldShow = await settings.isPromptEnabled(suppressId as any)
+        const shouldShow = await settings.isPromptEnabled(suppressId)
         if (!shouldShow) {
             return
         }
@@ -367,7 +367,7 @@ export class AuthUtil {
                 await openUrl(learnMoreUrl)
             }
         })
-        await settings.disablePrompt(suppressId as any)
+        await settings.disablePrompt(suppressId)
     }
 
     public async notifyReauthenticate(isAutoTrigger?: boolean) {
