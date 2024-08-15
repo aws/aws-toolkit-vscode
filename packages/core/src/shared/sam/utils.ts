@@ -23,6 +23,6 @@ export async function getConfigFileUri(projectRoot: vscode.Uri) {
     if (samConfigFile) {
         return vscode.Uri.file(samConfigFile)
     } else {
-        throw new ToolkitError(`No samconfig.toml file found in ${projectRoot.fsPath}`)
+        throw new ToolkitError(`No samconfig.toml file found in ${projectRoot.fsPath}`, { code: "samNoConfigFound'})
     }
 }
