@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Amazon Q Chat: Fix Tab selection scrollbar visibility which causes tabs half visible if there are several tabs open"
-}

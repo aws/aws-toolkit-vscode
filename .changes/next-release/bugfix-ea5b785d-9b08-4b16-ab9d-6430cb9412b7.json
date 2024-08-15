@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Amazon Q Chat: @ context selector conflicts with some use cases where the user wants use @ character for a word in the prompt itself"
-}

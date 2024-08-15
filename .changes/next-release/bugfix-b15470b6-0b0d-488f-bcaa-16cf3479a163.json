@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Amazon Q Chat: / command selector doesn't work if user pastes the command to prompt and submits"
-}

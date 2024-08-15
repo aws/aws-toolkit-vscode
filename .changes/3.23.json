@@ -1,0 +1,35 @@
+{
+  "date" : "2024-08-15",
+  "version" : "3.23",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Fix NPE in Rider AWS SAM project wizard (#4768)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Chat: Fix Tab selection scrollbar visibility which causes tabs half visible if there are several tabs open"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q `/dev`: update supported file extensions"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q: Optimized the workspace file collection logic which makes the collection time now only 5-10% of what it was before."
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Chat: / command selector doesn't work if user pastes the command to prompt and submits"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Chat: Related link previews sometimes remain on screen and block the whole Chat UI"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Chat: @ context selector conflicts with some use cases where the user wants use @ character for a word in the prompt itself"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Chat: Fix Header items in card bodies don't wrap if they don't contain spaces"
+  }, {
+    "type" : "removal",
+    "description" : "Removed support for 2023.2.x IDEs"
+  }, {
+    "type" : "removal",
+    "description" : "Removed support for Gateway 2024.1"
+  } ]
+}

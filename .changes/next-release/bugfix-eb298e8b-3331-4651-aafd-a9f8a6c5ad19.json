@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Amazon Q Chat: Fix Header items in card bodies don't wrap if they don't contain spaces"
-}

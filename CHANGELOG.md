@@ -1,3 +1,15 @@
+# _3.23_ (2024-08-15)
+- **(Bug Fix)** Fix NPE in Rider AWS SAM project wizard ([#4768](https://github.com/aws/aws-toolkit-jetbrains/issues/4768))
+- **(Bug Fix)** Amazon Q Chat: Fix Tab selection scrollbar visibility which causes tabs half visible if there are several tabs open
+- **(Bug Fix)** Amazon Q `/dev`: update supported file extensions
+- **(Bug Fix)** Amazon Q: Optimized the workspace file collection logic which makes the collection time now only 5-10% of what it was before.
+- **(Bug Fix)** Amazon Q Chat: / command selector doesn't work if user pastes the command to prompt and submits
+- **(Bug Fix)** Amazon Q Chat: Related link previews sometimes remain on screen and block the whole Chat UI
+- **(Bug Fix)** Amazon Q Chat: @ context selector conflicts with some use cases where the user wants use @ character for a word in the prompt itself
+- **(Bug Fix)** Amazon Q Chat: Fix Header items in card bodies don't wrap if they don't contain spaces
+- **(Removal)** Removed support for 2023.2.x IDEs
+- **(Removal)** Removed support for Gateway 2024.1
+
 # _3.22_ (2024-08-08)
 - **(Feature)** feat(Amazon Q Code Transformation): warn user if absolute path found in pom.xml
 - **(Feature)** feat(Amazon Q Code Transformation): show pro tier users estimated cost of /transform on projects over 100K lines
