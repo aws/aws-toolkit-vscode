@@ -1,3 +1,7 @@
+## 1.21.0 2024-08-15
+
+- **Bug Fix** Q feature dev: update file extension list and minor UI fixes
+
 ## 1.20.0 2024-08-08
 
 - **Bug Fix** Amazon Q /dev: include a retry option for the same prompt after folder reselection
