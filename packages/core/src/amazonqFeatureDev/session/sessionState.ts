@@ -281,6 +281,15 @@ abstract class CodeGenBase {
                         await this.config.proxyClient.exportResultArchive(this.conversationId)
                     const newFileInfo = registerNewFiles(fs, newFileContents, this.uploadId, workspaceFolders)
                     telemetry.setNumberOfFilesGenerated(newFileInfo.length)
+
+                    if (newFileContents.length !== 0 || deletedFiles.length !== 0) {
+                        messenger.sendAnswer({
+                            message: i18n('AWS.amazonq.featureDev.pillText.generatedCode'),
+                            type: 'answer-part',
+                            tabID: this.tabID,
+                        })
+                    }
+
                     return {
                         newFiles: newFileInfo,
                         deletedFiles: getDeletedFileInfos(deletedFiles, workspaceFolders),
@@ -399,6 +408,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     telemetry: action.telemetry,
                     workspaceFolders: this.config.workspaceFolders,
                 })
+
                 this.filePaths = codeGeneration.newFiles
                 this.deletedFiles = codeGeneration.deletedFiles
                 this.references = codeGeneration.references
