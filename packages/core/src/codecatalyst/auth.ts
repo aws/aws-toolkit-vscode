@@ -151,8 +151,8 @@ export class CodeCatalystAuthenticationProvider {
         }
     }
 
-    public async restore() {
-        await this.secondaryAuth.restoreConnection()
+    public async restore(source?: string) {
+        await this.secondaryAuth.restoreConnection(source)
     }
 
     private async accessDeniedExceptionHandler(showReauthPrompt: boolean = true) {
