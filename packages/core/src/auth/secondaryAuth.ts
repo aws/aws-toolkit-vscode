@@ -12,8 +12,9 @@ import { Auth } from './auth'
 import { once, onceChanged } from '../shared/utilities/functionUtils'
 import { isNonNullable } from '../shared/utilities/tsUtils'
 import { ToolIdStateKey } from '../shared/globalState'
-import { Connection, SsoConnection, StatefulConnection } from './connection'
+import { Connection, getTelemetryMetadataForConn, SsoConnection, StatefulConnection } from './connection'
 import { indent } from '../shared/utilities/textUtilities'
+import { telemetry } from '../shared/telemetry/telemetry'
 
 export type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId'
 
@@ -244,13 +245,28 @@ export class SecondaryAuth<T extends Connection = Connection> {
 
     // Used to lazily restore persisted connections.
     // Kind of clunky. We need an async module loader layer to make things ergonomic.
-    public readonly restoreConnection: () => Promise<T | undefined> = once(async () => {
+    public readonly restoreConnection: (source?: string) => Promise<T | undefined> = once(async (source?: string) => {
         try {
-            await this.auth.tryAutoConnect()
-            this.#savedConnection = await this.loadSavedConnection()
-            this.#onDidChangeActiveConnection.fire(this.activeConnection)
+            return await telemetry.auth_modifyConnection.run(async () => {
+                telemetry.record({
+                    source,
+                    action: 'restore',
+                    connectionState: 'undefined',
+                })
+                await this.auth.tryAutoConnect()
+                this.#savedConnection = await this.loadSavedConnection()
+                this.#onDidChangeActiveConnection.fire(this.activeConnection)
 
-            return this.#savedConnection
+                const conn = this.#activeConnection
+                if (conn) {
+                    telemetry.record({
+                        connectionState: this.auth.getConnectionState(conn),
+                        ...(await getTelemetryMetadataForConn(conn)),
+                    })
+                }
+
+                return this.#savedConnection
+            })
         } catch (err) {
             getLogger().warn(`auth (${this.toolId}): failed to restore connection: %s`, err)
         }
