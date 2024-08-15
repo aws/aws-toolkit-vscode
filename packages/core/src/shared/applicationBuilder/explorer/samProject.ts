@@ -59,39 +59,37 @@ export async function getStackName(workspaceFolder: vscode.WorkspaceFolder): Pro
 
 export async function getApp(location: SamAppLocation): Promise<SamApp> {
     const samTemplate = await CloudFormation.tryLoad(location.samTemplateUri)
-    const functionResources = parseSamTemplate(samTemplate.template?.Resources)
+    const templateResources = getResourceEntity(samTemplate.template?.Resources)
     const apiEventResources: ResourceTreeEntity[] = []
-    for (const resource of functionResources) {
+    for (const resource of templateResources) {
         if (resource.Events) {
             apiEventResources.push(...resource.Events)
         }
     }
 
-    const resourceTree = [...functionResources, ...apiEventResources]
+    const resourceTree = [...templateResources, ...apiEventResources]
 
     return { location, resourceTree }
 }
 
-function parseSamTemplate(resources: any): ResourceTreeEntity[] {
+function getResourceEntity(resources: any): ResourceTreeEntity[] {
     const resourceTree: ResourceTreeEntity[] = []
 
     for (const [logicalId, resource] of Object.entries(resources) as [string, any][]) {
-        if (resource.Type === CloudFormation.SERVERLESS_FUNCTION_TYPE) {
-            const resourceEntity: ResourceTreeEntity = {
-                Id: logicalId,
-                Type: resource.Type,
-                Runtime: resource.Properties.Runtime,
-                Handler: resource.Properties.Handler,
-                Events: resource.Properties.Events ? parseEvents(resource.Properties.Events) : undefined,
-            }
-            resourceTree.push(resourceEntity)
+        const resourceEntity: ResourceTreeEntity = {
+            Id: logicalId,
+            Type: resource.Type,
+            Runtime: resource.Properties ? resource.Properties.Runtime : undefined,
+            Handler: resource.Properties ? resource.Properties.Handler : undefined,
+            Events: resource.Properties.Events ? getEvents(resource.Properties.Events) : undefined,
         }
+        resourceTree.push(resourceEntity)
     }
 
     return resourceTree
 }
 
-function parseEvents(events: Record<string, any>): ResourceTreeEntity[] {
+function getEvents(events: Record<string, any>): ResourceTreeEntity[] {
     const eventResources: ResourceTreeEntity[] = []
 
     for (const [eventsLogicalId, event] of Object.entries(events)) {
