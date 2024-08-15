@@ -227,13 +227,15 @@ export class SecondaryAuth<T extends Connection = Connection> {
         this.#onDidChangeActiveConnection.fire(undefined)
     }
 
-    public async useNewConnection(conn: T) {
+    public async useNewConnection(conn: T): Promise<T> {
         await this.saveConnection(conn)
         if (this.auth.activeConnection === undefined) {
             // Since no connection exists yet in the "primary" auth, we will make
             // this connection available to all primary auth users
             await this.auth.useConnection(conn)
         }
+
+        return conn
     }
 
     public async addScopes(conn: T & SsoConnection, extraScopes: string[]) {
