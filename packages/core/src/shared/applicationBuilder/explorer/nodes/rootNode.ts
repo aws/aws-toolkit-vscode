@@ -33,7 +33,7 @@ export async function getAppNodes(): Promise<TreeNode[]> {
     const nodesToReturn: TreeNode[] = appsFound
         .map((appLocation) => new AppNode(appLocation))
         .sort((a, b) => a.label.localeCompare(b.label) ?? 0)
-    const walkthroughCompleted = globals.globalState.get('aws.toolkit.walkthroughCompleted')
+    const walkthroughCompleted = globals.globalState.get('aws.toolkit.lambda.walkthroughCompleted')
     // show walkthrough node if walkthrough not completed yet
     if (!walkthroughCompleted) {
         nodesToReturn.unshift(new WalkthroughNode())
@@ -57,8 +57,7 @@ export class WalkthroughNode implements TreeNode {
         item.contextValue = 'awsWalkthroughNode'
         item.command = {
             title: localize('AWS.appBuilder.openWalkthroughTitle', 'Walkthrough of Application Builder'),
-            command: 'workbench.action.openWalkthrough',
-            arguments: ['amazonwebservices.aws-toolkit-vscode#aws.gettingStarted.walkthrough'],
+            command: 'aws.toolkit.lambda.openWalkthrough',
         }
 
         return item
