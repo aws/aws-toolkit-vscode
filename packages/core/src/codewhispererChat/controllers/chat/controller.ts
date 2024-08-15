@@ -43,11 +43,12 @@ import { getLogger } from '../../../shared/logger/logger'
 import { triggerPayloadToChatRequest } from './chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
-import { randomUUID } from '../../../common/crypto'
+import { randomUUID } from '../../../shared/crypto'
 import { LspController } from '../../../amazonq/lsp/lspController'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
-import { getHttpStatusCode } from '../../../shared/errors'
+import { FeatureConfigProvider } from '../../../codewhisperer/service/featureConfigProvider'
+import { getHttpStatusCode, getReasonFromSyntaxError } from '../../../shared/errors'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -298,24 +299,7 @@ export class ChatController {
             errorMessage = e.toUpperCase()
         } else if (e instanceof SyntaxError) {
             // Workaround to handle case when LB returns web-page with error and our client doesn't return proper exception
-            // eslint-disable-next-line no-prototype-builtins
-            if (e.hasOwnProperty('$response')) {
-                type exceptionKeyType = keyof typeof e
-                const responseKey = '$response' as exceptionKeyType
-                const response = e[responseKey]
-
-                let reason
-
-                if (response) {
-                    type responseKeyType = keyof typeof response
-                    const reasonKey = 'reason' as responseKeyType
-                    reason = response[reasonKey]
-                }
-
-                errorMessage = reason ? (reason as string) : defaultMessage
-            } else {
-                errorMessage = defaultMessage
-            }
+            errorMessage = getReasonFromSyntaxError(e) ?? defaultMessage
         } else if (e instanceof CodeWhispererStreamingServiceException) {
             errorMessage = e.message
             requestID = e.$metadata.requestId
@@ -574,9 +558,10 @@ export class ChatController {
             await this.messenger.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
             return
         }
+        triggerPayload.useRelevantDocuments = false
         if (triggerPayload.message) {
-            const userIntentEnableProjectContext = triggerPayload.message.includes(`@workspace`)
-            if (userIntentEnableProjectContext) {
+            triggerPayload.useRelevantDocuments = triggerPayload.message.includes(`@workspace`)
+            if (triggerPayload.useRelevantDocuments) {
                 triggerPayload.message = triggerPayload.message.replace(/@workspace/g, '')
                 if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                     const start = performance.now()
@@ -591,6 +576,19 @@ export class ChatController {
                     this.messenger.sendOpenSettingsMessage(triggerID, tabID)
                     return
                 }
+            }
+            // if user does not have @workspace in the prompt, but user is in the data collection group
+            // If the user is in the data collection group but turned off local index to opt-out, do not collect data.
+            // TODO: Remove this entire block of code in one month as requested
+            else if (
+                FeatureConfigProvider.instance.isAmznDataCollectionGroup() &&
+                !LspController.instance.isIndexingInProgress() &&
+                CodeWhispererSettings.instance.isLocalIndexEnabled()
+            ) {
+                getLogger().info(`amazonq: User is in data collection group`)
+                const start = performance.now()
+                triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
+                triggerPayload.projectContextQueryLatencyMs = performance.now() - start
             }
         }
 

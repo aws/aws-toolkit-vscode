@@ -110,7 +110,6 @@ export class HumanInTheLoopManager {
             codeTransformJobId: transformByQState.getJobId(),
             result: MetadataResult.Fail,
             reason: errorMessage,
-            codeTransformApiErrorMessage: errorMessage,
         })
     }
 

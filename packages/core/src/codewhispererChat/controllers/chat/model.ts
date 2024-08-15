@@ -142,6 +142,7 @@ export interface TriggerPayload {
     readonly userIntent: UserIntent | undefined
     readonly customization: Customization
     relevantTextDocuments?: RelevantTextDocument[]
+    useRelevantDocuments?: boolean
 }
 
 export interface InsertedCode {

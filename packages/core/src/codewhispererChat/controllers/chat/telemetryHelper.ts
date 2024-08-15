@@ -34,6 +34,8 @@ import { isAwsError } from '../../../shared/errors'
 import { ChatMessageInteractionType } from '../../../codewhisperer/client/codewhispereruserclient'
 import { supportedLanguagesList } from '../chat/chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
+import { undefinedIfEmpty } from '../../../shared'
 
 export function logSendTelemetryEventFailure(error: any) {
     let requestId: string | undefined
@@ -258,6 +260,7 @@ export class CWCTelemetryHelper {
                         acceptedLineCount: event.cwsprChatAcceptedNumberOfLines,
                         acceptedSnippetHasReference: false,
                         hasProjectLevelContext: this.responseWithProjectContext.get(event.cwsprChatMessageId),
+                        customizationArn: undefinedIfEmpty(getSelectedCustomization().arn),
                     },
                 },
             })
@@ -321,7 +324,7 @@ export class CWCTelemetryHelper {
             cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
             credentialStartUrl: AuthUtil.instance.startUrl,
             cwsprChatHasProjectContext: triggerPayload.relevantTextDocuments
-                ? triggerPayload.relevantTextDocuments.length > 0
+                ? triggerPayload.relevantTextDocuments.length > 0 && triggerPayload.useRelevantDocuments === true
                 : false,
             cwsprChatProjectContextQueryMs: triggerPayload.projectContextQueryLatencyMs,
         })
@@ -354,7 +357,7 @@ export class CWCTelemetryHelper {
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererCustomizationArn: triggerPayload.customization.arn,
             cwsprChatHasProjectContext: triggerPayload.relevantTextDocuments
-                ? triggerPayload.relevantTextDocuments.length > 0
+                ? triggerPayload.relevantTextDocuments.length > 0 && triggerPayload.useRelevantDocuments === true
                 : false,
         }
 
@@ -381,6 +384,7 @@ export class CWCTelemetryHelper {
                         hasProjectLevelContext: triggerPayload.relevantTextDocuments
                             ? triggerPayload.relevantTextDocuments.length > 0
                             : false,
+                        customizationArn: undefinedIfEmpty(getSelectedCustomization().arn),
                     },
                 },
             })

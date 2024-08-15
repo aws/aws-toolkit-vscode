@@ -3,323 +3,293 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
+/**
+ * This module contains shared code between the main extension and browser/web
+ * extension entrypoints.
+ *
+ * See `arch_develop.md` in `docs/` for more info.
+ */
+
+import vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import * as codecatalyst from './codecatalyst/activation'
-import { activate as activateAwsExplorer } from './awsexplorer/activation'
-import { activate as activateCloudWatchLogs } from './awsService/cloudWatchLogs/activation'
-import { CredentialsProviderManager } from './auth/providers/credentialsProviderManager'
-import { SharedCredentialsProviderFactory } from './auth/providers/sharedCredentialsProviderFactory'
-import { activate as activateSchemas } from './eventSchemas/activation'
-import { activate as activateLambda } from './lambda/activation'
-import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
-import { AwsContextCommands } from './shared/awsContextCommands'
-import {
-    getIdeProperties,
-    getExtEnvironmentDetails,
-    isCloud9,
-    isSageMaker,
-    showWelcomeMessage,
-} from './shared/extensionUtilities'
-import { getLogger, Logger } from './shared/logger/logger'
-import { activate as activateEcr } from './awsService/ecr/activation'
-import { activate as activateEc2 } from './awsService/ec2/activation'
-import { activate as activateSam } from './shared/sam/activation'
-import { activate as activateS3 } from './awsService/s3/activation'
-import { activate as activateDocumentDb } from './docdb/activation'
-import * as awsFiletypes from './shared/awsFiletypes'
-import { activate as activateApiGateway } from './awsService/apigateway/activation'
-import { activate as activateStepFunctions } from './stepFunctions/activation'
-import { activate as activateSsmDocument } from './ssmDocument/activation'
-import { activate as activateDynamicResources } from './dynamicResources/activation'
-import { activate as activateEcs } from './awsService/ecs/activation'
-import { activate as activateAppRunner } from './awsService/apprunner/activation'
-import { activate as activateIot } from './awsService/iot/activation'
-import { activate as activateDev } from './dev/activation'
-import { activate as activateApplicationComposer } from './applicationcomposer/activation'
-import { activate as activateRedshift } from './awsService/redshift/activation'
-import { activate as activateIamPolicyChecks } from './awsService/accessanalyzer/activation'
-import { Ec2CredentialsProvider } from './auth/providers/ec2CredentialsProvider'
-import { EnvVarsCredentialsProvider } from './auth/providers/envVarsCredentialsProvider'
-import { EcsCredentialsProvider } from './auth/providers/ecsCredentialsProvider'
-import { SchemaService } from './shared/schemas'
-import { AwsResourceManager } from './dynamicResources/awsResourceManager'
-import globals from './shared/extensionGlobals'
-import { Experiments, Settings, showSettingsFailedMsg } from './shared/settings'
-import { isReleaseVersion } from './shared/vscode/env'
-import { telemetry } from './shared/telemetry/telemetry'
-import { Auth, SessionSeparationPrompt } from './auth/auth'
-import { registerSubmitFeedback } from './feedback/vue/submitFeedback'
-import { activateCommon, deactivateCommon, emitUserState } from './extensionCommon'
-import { learnMoreAmazonQCommand, qExtensionPageCommand, dismissQTree } from './amazonq/explorer/amazonQChildrenNodes'
-import { AuthUtil, codeWhispererCoreScopes, isPreviousQUser } from './codewhisperer/util/authUtil'
-import { installAmazonQExtension } from './codewhisperer/commands/basicCommands'
-import { isExtensionInstalled, VSCODE_EXTENSION_ID } from './shared/utilities'
-import { ExtensionUse } from './auth/utils'
-import { ExtStartUpSources } from './shared/telemetry'
-import { activate as activateThreatComposerEditor } from './threatComposer/activation'
-import { isSsoConnection, hasScopes } from './auth/connection'
-import { setContext } from './shared'
+import globals, { initialize, isWeb } from './shared/extensionGlobals'
+import { join } from 'path'
+import { Commands } from './shared/vscode/commands2'
+import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
+import { getIdeProperties, aboutExtension, isCloud9 } from './shared/extensionUtilities'
+import { logAndShowError, logAndShowWebviewError } from './shared/utilities/logAndShowUtils'
+import { AuthStatus, telemetry } from './shared/telemetry/telemetry'
+import { openUrl } from './shared/utilities/vsCodeUtils'
+import { activateViewsShared } from './awsexplorer/activationShared'
+import fs from './shared/fs/fs'
+import * as errors from './shared/errors'
+import { activate as activateLogger } from './shared/logger/activation'
+import { initializeComputeRegion } from './shared/extensionUtilities'
+import { activate as activateTelemetry } from './shared/telemetry/activation'
+import { DefaultAwsContext } from './shared/awsContext'
+import { Settings } from './shared/settings'
+import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
+import { initialize as initializeAuth } from './auth/activation'
+import { LoginManager } from './auth/deprecated/loginManager'
+import { CredentialsStore } from './auth/credentials/store'
+import { initializeAwsCredentialsStatusBarItem } from './auth/ui/statusBarItem'
+import { RegionProvider, getEndpointsFromFetcher } from './shared/regions/regionProvider'
+import { getMachineId, isAutomation } from './shared/vscode/env'
+import { registerCommandErrorHandler } from './shared/vscode/commands2'
+import { registerWebviewErrorHandler } from './webviews/server'
+import { showQuickStartWebview } from './shared/extensionStartup'
+import { ExtContext } from './shared/extensions'
+import { getSamCliContext } from './shared/sam/cli/samCliContext'
+import { UriHandler } from './shared/vscode/uriHandler'
+import { disableAwsSdkWarning } from './shared/awsClientBuilder'
+import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
+import { ResourceFetcher } from './shared/resourcefetcher/resourcefetcher'
+import { ExtStartUpSources } from './shared/telemetry/util'
+import { ExtensionUse, getAuthFormIdsFromConnection } from './auth/utils'
+import { Auth } from './auth'
+import { AuthFormId } from './login/webview/vue/types'
+import { isSsoConnection } from './auth/connection'
+import { registerCommands } from './commands'
+
+// In web mode everything must be in a single file, so things like the endpoints file will not be available.
+// The following imports the endpoints file, which causes webpack to bundle it in the final output file
+import endpoints from '../resources/endpoints.json'
+import { getLogger } from './shared'
+import { showViewLogsMessage } from './shared/utilities/messages'
+
+disableAwsSdkWarning()
 
 let localize: nls.LocalizeFunc
 
 /**
- * The entrypoint for the nodejs version of the toolkit
- *
- * **CONTRIBUTORS** If you are adding code to this function prioritize adding it to
- * {@link activateCommon} if appropriate
+ * Activation/setup code that is shared by the regular (nodejs) extension AND web mode extension.
+ * Most setup code should live here, unless there is a reason not to.
  */
-export async function activate(context: vscode.ExtensionContext) {
-    const activationStartedOn = Date.now()
+export async function activateCommon(
+    context: vscode.ExtensionContext,
+    contextPrefix: string,
+    isWeb: boolean
+): Promise<ExtContext> {
     localize = nls.loadMessageBundle()
-    const contextPrefix = 'toolkit'
 
-    try {
-        // IMPORTANT: If you are doing setup that should also work in web mode (browser), it should be done in the function below
-        const extContext = await activateCommon(context, contextPrefix, false)
-
-        initializeCredentialsProviderManager()
-
-        const toolkitEnvDetails = getExtEnvironmentDetails()
-        // Splits environment details by new line, filter removes the empty string
-        toolkitEnvDetails
-            .split(/\r?\n/)
-            .filter(Boolean)
-            .forEach((line) => getLogger().info(line))
-
-        globals.awsContextCommands = new AwsContextCommands(globals.regionProvider, Auth.instance)
-        globals.schemaService = new SchemaService()
-        globals.resourceManager = new AwsResourceManager(context)
-
-        const settings = Settings.instance
-        const experiments = Experiments.instance
-
-        experiments.onDidChange(({ key }) => {
-            telemetry.aws_experimentActivation.run((span) => {
-                // Record the key prior to reading the setting as `get` may throw
-                span.record({ experimentId: key })
-                span.record({ experimentState: experiments.get(key) ? 'activated' : 'deactivated' })
-            })
-        })
-
-        await globals.schemaService.start()
-        awsFiletypes.activate()
-
-        try {
-            await activateDev(context)
-        } catch (error) {
-            getLogger().debug(`Developer Tools (internal): failed to activate: ${(error as Error).message}`)
-        }
-
-        context.subscriptions.push(registerSubmitFeedback(context, 'AWS Toolkit', contextPrefix))
-
-        // do not enable codecatalyst for sagemaker
-        // TODO: remove setContext if SageMaker adds the context to their IDE
-        if (!isSageMaker()) {
-            await setContext('aws.isSageMaker', false)
-            await codecatalyst.activate(extContext)
-        } else {
-            await setContext('aws.isSageMaker', true)
-        }
-
-        // Clean up remaining logins after codecatalyst activated and ran its cleanup.
-        // Because we are splitting auth sessions by extension, we can't use Amazon Q
-        // connections anymore.
-        // TODO: Remove after some time?
-        for (const conn of await Auth.instance.listConnections()) {
-            if (isSsoConnection(conn) && hasScopes(conn, codeWhispererCoreScopes)) {
-                getLogger().debug(
-                    `forgetting connection: ${conn.id} with starturl/scopes: ${conn.startUrl} / %O`,
-                    conn.scopes
-                )
-                await Auth.instance.forgetConnection(conn)
-                await SessionSeparationPrompt.instance.showForCommand('aws.toolkit.auth.manageConnections')
-            }
-        }
-
-        // Display last prompt if connections were forgotten in prior sessions
-        // but the user did not interact or sign in again. Useful in case the user misses it the first time.
-        await SessionSeparationPrompt.instance.showAnyPreviousPrompt()
-
-        await activateCloudFormationTemplateRegistry(context)
-
-        // MUST restore CW/Q auth so that we can see if this user is already a Q user.
-        await AuthUtil.instance.restore()
-
-        await activateAwsExplorer({
-            context: extContext,
-            regionProvider: globals.regionProvider,
-            toolkitOutputChannel: globals.outputChannel,
-        })
-
-        await activateAppRunner(extContext)
-
-        await activateApiGateway({
-            extContext: extContext,
-            outputChannel: globals.outputChannel,
-        })
-
-        await activateLambda(extContext)
-
-        await activateSsmDocument(context, globals.awsContext, globals.regionProvider, globals.outputChannel)
-
-        await activateSam(extContext)
-
-        await activateS3(extContext)
-
-        await activateEc2(extContext)
-
-        await activateEcr(context)
-
-        await activateCloudWatchLogs(context, settings)
-
-        await activateDynamicResources(context)
-
-        await activateIot(extContext)
-
-        await activateEcs(extContext)
-
-        await activateSchemas(extContext)
-
-        if (!isCloud9()) {
-            if (!isSageMaker()) {
-                // Amazon Q/CodeWhisperer Tree setup.
-                learnMoreAmazonQCommand.register()
-                qExtensionPageCommand.register()
-                dismissQTree.register()
-                installAmazonQExtension.register()
-
-                await handleAmazonQInstall()
-            }
-            await activateApplicationComposer(context)
-            await activateThreatComposerEditor(context)
-        }
-
-        await activateStepFunctions(context, globals.awsContext, globals.outputChannel)
-
-        await activateRedshift(extContext)
-
-        await activateDocumentDb(extContext)
-
-        await activateIamPolicyChecks(extContext)
-
-        context.subscriptions.push(
-            vscode.window.registerUriHandler({
-                handleUri: (uri) =>
-                    telemetry.runRoot(() => {
-                        telemetry.record({ source: 'UriHandler' })
-
-                        return globals.uriHandler.handleUri(uri)
-                    }),
-            })
-        )
-
-        showWelcomeMessage(context)
-
-        const settingsValid = await settings.isReadable()
-        if (!settingsValid) {
-            void showSettingsFailedMsg('read')
-        }
-        recordToolkitInitialization(activationStartedOn, settingsValid, getLogger())
-
-        if (!isReleaseVersion()) {
-            globals.telemetry.assertPassiveTelemetry(globals.didReload)
-        }
-
-        await emitUserState()
-    } catch (error) {
-        const stacktrace = (error as Error).stack?.split('\n')
-        // truncate if the stacktrace is unusually long
-        if (stacktrace !== undefined && stacktrace.length > 40) {
-            stacktrace.length = 40
-        }
-        getLogger('channel').error(
-            localize(
-                'AWS.channel.aws.toolkit.activation.error',
-                'Error Activating {0} Toolkit: {1} \n{2}',
-                getIdeProperties().company,
-                (error as Error).message,
-                stacktrace?.join('\n')
-            )
-        )
-        throw error
-    }
-}
-
-export async function deactivate() {
-    await deactivateCommon()
-    await globals.resourceManager.dispose()
-}
-
-async function handleAmazonQInstall() {
-    const dismissedInstall = globals.globalState.get<boolean>('aws.toolkit.amazonqInstall.dismissed')
-    if (isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) || dismissedInstall) {
-        return
-    }
-
-    await telemetry.toolkit_showNotification.run(async () => {
-        if (isPreviousQUser()) {
-            await installAmazonQExtension.execute()
-            telemetry.record({ id: 'amazonQStandaloneInstalled' })
-            void vscode.window.showInformationMessage(
-                "Amazon Q is now its own extension.\n\nWe've auto-installed it for you with all the same features and settings from CodeWhisperer and Amazon Q chat."
-            )
-            await globals.globalState.update('aws.toolkit.amazonqInstall.dismissed', true)
-        } else {
-            telemetry.record({ id: 'amazonQStandaloneChange' })
-            void vscode.window
-                .showInformationMessage(
-                    'Amazon Q has moved to its own extension.' +
-                        '\nInstall it to use Amazon Q, a generative AI assistant, with chat and code suggestions.',
-                    'Install',
-                    'Learn More'
-                )
-                .then(async (resp) => {
-                    await telemetry.toolkit_invokeAction.run(async () => {
-                        telemetry.record({
-                            source: ExtensionUse.instance.isFirstUse()
-                                ? ExtStartUpSources.firstStartUp
-                                : ExtStartUpSources.none,
-                        })
-
-                        if (resp === 'Learn More') {
-                            // Clicking learn more will open the q extension page
-                            telemetry.record({ action: 'learnMore' })
-                            await qExtensionPageCommand.execute()
-                            return
-                        }
-
-                        if (resp === 'Install') {
-                            telemetry.record({ action: 'installAmazonQ' })
-                            await installAmazonQExtension.execute()
-                        } else {
-                            telemetry.record({ action: 'dismissQNotification' })
-                        }
-                        await globals.globalState.update('aws.toolkit.amazonqInstall.dismissed', true)
-                    })
-                })
-        }
+    initialize(context, isWeb)
+    const homeDirLogs = await fs.init(context, (homeDir) => {
+        void showViewLogsMessage(`Invalid home directory (check $HOME): "${homeDir}"`)
     })
-}
+    errors.init(fs.getUsername(), isAutomation())
+    await initializeComputeRegion()
 
-function initializeCredentialsProviderManager() {
-    const manager = CredentialsProviderManager.getInstance()
-    manager.addProviderFactory(new SharedCredentialsProviderFactory())
-    manager.addProviders(new Ec2CredentialsProvider(), new EcsCredentialsProvider(), new EnvVarsCredentialsProvider())
-}
+    globals.contextPrefix = '' //todo: disconnect supplied argument
 
-function recordToolkitInitialization(activationStartedOn: number, settingsValid: boolean, logger?: Logger) {
-    try {
-        const activationFinishedOn = Date.now()
-        const duration = activationFinishedOn - activationStartedOn
+    registerCommandErrorHandler((info, error) => {
+        const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
+        void logAndShowError(localize, error, info.id, defaultMessage)
+    })
 
-        if (settingsValid) {
-            telemetry.toolkit_init.emit({ duration, result: 'Succeeded' })
-        } else {
-            telemetry.toolkit_init.emit({ duration, result: 'Failed', reason: 'UserSettingsRead' })
-        }
-    } catch (err) {
-        logger?.error(err as Error)
+    registerWebviewErrorHandler((error: unknown, webviewId: string, command: string) => {
+        logAndShowWebviewError(localize, error, webviewId, command)
+    })
+
+    // Setup the logger
+    const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit', { log: true })
+    const toolkitLogChannel = vscode.window.createOutputChannel('AWS Toolkit Logs', { log: true })
+    await activateLogger(context, contextPrefix, toolkitOutputChannel, toolkitLogChannel)
+    globals.outputChannel = toolkitOutputChannel
+    globals.logOutputChannel = toolkitLogChannel
+
+    if (homeDirLogs.length > 0) {
+        getLogger().error('fs.init: invalid home directory given by env vars: %O', homeDirLogs)
     }
+
+    if (isCloud9()) {
+        vscode.window.withProgress = wrapWithProgressForCloud9(globals.outputChannel)
+        context.subscriptions.push(
+            Commands.register('aws.quickStart', async () => {
+                try {
+                    await showQuickStartWebview(context)
+                } finally {
+                    telemetry.aws_helpQuickstart.emit({ result: 'Succeeded' })
+                }
+            })
+        )
+    }
+
+    //setup globals
+    globals.machineId = await getMachineId()
+    globals.awsContext = new DefaultAwsContext()
+    globals.sdkClientBuilder = new DefaultAWSClientBuilder(globals.awsContext)
+    globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
+
+    // order matters here
+    globals.manifestPaths.endpoints = context.asAbsolutePath(join('resources', 'endpoints.json'))
+    globals.manifestPaths.lambdaSampleRequests = context.asAbsolutePath(
+        join('resources', 'vs-lambda-sample-request-manifest.xml')
+    )
+    globals.regionProvider = RegionProvider.fromEndpointsProvider(makeEndpointsProvider())
+
+    // telemetry
+    await activateTelemetry(context, globals.awsContext, Settings.instance, 'AWS Toolkit For VS Code')
+
+    // Create this now, but don't call vscode.window.registerUriHandler() until after all
+    // Toolkit services have a chance to register their path handlers. #4105
+    globals.uriHandler = new UriHandler()
+
+    // Generic extension commands
+    registerGenericCommands(context, contextPrefix)
+
+    // Toolkit specific commands
+    registerCommands(context)
+    context.subscriptions.push(
+        // No-op command used for decoration-only codelenses.
+        vscode.commands.registerCommand('aws.doNothingCommand', () => {}),
+        // "Show AWS Commands..."
+        Commands.register('aws.listCommands', () =>
+            vscode.commands.executeCommand('workbench.action.quickOpen', `> ${getIdeProperties().company}:`)
+        ),
+        // register URLs in extension menu
+        Commands.register(`aws.toolkit.help`, async () => {
+            void openUrl(vscode.Uri.parse(documentationUrl))
+            telemetry.aws_help.emit()
+        })
+    )
+
+    // auth
+    await initializeAuth(globals.loginManager)
+    await initializeAwsCredentialsStatusBarItem(globals.awsContext, context)
+
+    const extContext: ExtContext = {
+        extensionContext: context,
+        awsContext: globals.awsContext,
+        samCliContext: getSamCliContext,
+        regionProvider: globals.regionProvider,
+        outputChannel: globals.outputChannel,
+        telemetryService: globals.telemetry,
+        uriHandler: globals.uriHandler,
+        credentialsStore: globals.loginManager.store,
+    }
+
+    await activateViewsShared(extContext.extensionContext)
+
+    return extContext
+}
+
+/** Deactivation code that is shared between nodejs and web implementations */
+export async function deactivateCommon() {
+    await globals.telemetry.shutdown()
+}
+/**
+ * Registers generic commands used by both web and node versions of the toolkit.
+ */
+export function registerGenericCommands(extensionContext: vscode.ExtensionContext, contextPrefix: string) {
+    extensionContext.subscriptions.push(
+        // register URLs in extension menu
+        Commands.register(`aws.${contextPrefix}.github`, async () => {
+            void openUrl(vscode.Uri.parse(githubUrl))
+            telemetry.aws_showExtensionSource.emit()
+        }),
+        Commands.register(`aws.${contextPrefix}.createIssueOnGitHub`, async () => {
+            void openUrl(vscode.Uri.parse(githubCreateIssueUrl))
+            telemetry.aws_reportPluginIssue.emit()
+        }),
+        Commands.register(`aws.${contextPrefix}.aboutExtension`, async () => {
+            await aboutExtension()
+        })
+    )
+}
+
+/**
+ * Returns an object that provides AWS service endpoints that the toolkit supports.
+ *
+ * https://docs.aws.amazon.com/general/latest/gr/rande.html
+ */
+export function makeEndpointsProvider() {
+    let localManifestFetcher: ResourceFetcher
+    let remoteManifestFetcher: ResourceFetcher
+    if (isWeb()) {
+        localManifestFetcher = { get: async () => JSON.stringify(endpoints) }
+        // Cannot use HttpResourceFetcher due to web mode breaking on import
+        remoteManifestFetcher = { get: async () => (await fetch(endpointsFileUrl)).text() }
+    } else {
+        localManifestFetcher = new FileResourceFetcher(globals.manifestPaths.endpoints)
+        // HACK: HttpResourceFetcher breaks web mode when imported, so we use webpack.IgnorePlugin()
+        // to exclude it from the bundle.
+        // TODO: Make HttpResourceFetcher web mode compatible
+        const { HttpResourceFetcher } = require('./shared/resourcefetcher/httpResourceFetcher')
+        remoteManifestFetcher = new HttpResourceFetcher(endpointsFileUrl, { showUrl: true })
+    }
+
+    return {
+        local: () => getEndpointsFromFetcher(localManifestFetcher),
+        remote: () => getEndpointsFromFetcher(remoteManifestFetcher),
+    }
+}
+
+/**
+ * Wraps the `vscode.window.withProgress` functionality with functionality that also writes to the output channel.
+ *
+ * Cloud9 does not show a progress notification.
+ */
+function wrapWithProgressForCloud9(channel: vscode.OutputChannel): (typeof vscode.window)['withProgress'] {
+    const withProgress = vscode.window.withProgress.bind(vscode.window)
+
+    return (options, task) => {
+        if (options.title) {
+            channel.appendLine(options.title)
+        }
+
+        return withProgress(options, (progress, token) => {
+            const newProgress: typeof progress = {
+                ...progress,
+                report: (value) => {
+                    if (value.message) {
+                        channel.appendLine(value.message)
+                    }
+                    progress.report(value)
+                },
+            }
+
+            return task(newProgress, token)
+        })
+    }
+}
+
+export async function emitUserState() {
+    await telemetry.auth_userState.run(async () => {
+        telemetry.record({ passive: true })
+
+        const firstUse = ExtensionUse.instance.isFirstUse()
+        const wasUpdated = ExtensionUse.instance.wasUpdated()
+
+        if (firstUse) {
+            telemetry.record({ source: ExtStartUpSources.firstStartUp })
+        } else if (wasUpdated) {
+            telemetry.record({ source: ExtStartUpSources.update })
+        } else {
+            telemetry.record({ source: ExtStartUpSources.reload })
+        }
+
+        let authStatus: AuthStatus = 'notConnected'
+        const enabledConnections: Set<AuthFormId> = new Set()
+        const enabledScopes: Set<string> = new Set()
+        if (Auth.instance.hasConnections) {
+            authStatus = 'expired'
+            ;(await Auth.instance.listConnections()).forEach((conn) => {
+                const state = Auth.instance.getConnectionState(conn)
+                if (state === 'valid') {
+                    authStatus = 'connected'
+                }
+
+                getAuthFormIdsFromConnection(conn).forEach((id) => enabledConnections.add(id))
+                if (isSsoConnection(conn)) {
+                    conn.scopes?.forEach((s) => enabledScopes.add(s))
+                }
+            })
+        }
+        telemetry.record({
+            authStatus,
+            authEnabledConnections: [...enabledConnections].join(','),
+            authScopes: [...enabledScopes].join(','),
+        })
+    })
 }

@@ -15,7 +15,7 @@
                         <p>Install Python 3.6+</p>
                     </li>
                     <li>
-                        <code> pip install cfn-policy-validator==0.0.33 </code>
+                        <code> pip install cfn-policy-validator==0.0.34 </code>
                     </li>
                     <li>
                         <code> pip install tf-policy-validator==0.0.8 </code>
@@ -377,16 +377,16 @@ export default defineComponent({
             this.initialData.checkNoNewAccessFilePath = data
             client
                 .readCustomChecksFile(this.initialData.checkNoNewAccessFilePath)
-                .then(response => {
+                .then((response) => {
                     this.initialData.checkNoNewAccessTextArea = response
                 })
-                .catch(err => console.log(err))
+                .catch((err) => console.log(err))
         })
         client.onChangeCheckAccessNotGrantedFilePath((data: string) => {
             this.initialData.checkAccessNotGrantedFilePath = data
             client
                 .readCustomChecksJsonFile(this.initialData.checkAccessNotGrantedFilePath)
-                .then(response => {
+                .then((response) => {
                     this.initialData.checkAccessNotGrantedActionsTextArea = response.actions
                         ? response.actions.toString()
                         : ''
@@ -394,7 +394,7 @@ export default defineComponent({
                         ? response.resources.toString()
                         : ''
                 })
-                .catch(err => console.log(err))
+                .catch((err) => console.log(err))
         })
         client.onChangeCloudformationParameterFilePath((data: string) => {
             this.initialData.cfnParameterPath = data
@@ -433,10 +433,10 @@ export default defineComponent({
             this.initialData.checkNoNewAccessFilePath = event.target.value
             client
                 .readCustomChecksFile(this.initialData.checkNoNewAccessFilePath)
-                .then(response => {
+                .then((response) => {
                     this.initialData.checkNoNewAccessTextArea = response
                 })
-                .catch(err => console.log(err))
+                .catch((err) => console.log(err))
         },
         setCheckNoNewAccessTextArea: function (event: any) {
             this.initialData.checkNoNewAccessTextArea = event.target.value
@@ -447,7 +447,7 @@ export default defineComponent({
             this.initialData.checkAccessNotGrantedFilePath = event.target.value
             client
                 .readCustomChecksJsonFile(this.initialData.checkAccessNotGrantedFilePath)
-                .then(response => {
+                .then((response) => {
                     this.initialData.checkAccessNotGrantedActionsTextArea = response.actions
                         ? response.actions.toString()
                         : ''
@@ -455,7 +455,7 @@ export default defineComponent({
                         ? response.resources.toString()
                         : ''
                 })
-                .catch(err => console.log(err))
+                .catch((err) => console.log(err))
         },
         setcheckAccessNotGrantedActionsTextArea: function (event: any) {
             this.initialData.checkAccessNotGrantedActionsTextArea = event.target.value

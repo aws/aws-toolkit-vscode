@@ -2,15 +2,27 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as vscode from 'vscode'
+import vscode from 'vscode'
 import os from 'os'
 import { promises as nodefs, constants as nodeConstants, WriteFileOptions } from 'fs'
 import { isCloud9 } from '../extensionUtilities'
 import _path from 'path'
-import { PermissionsError, PermissionsTriplet, ToolkitError, isFileNotFoundError, isPermissionsError } from '../errors'
+import {
+    PermissionsError,
+    PermissionsTriplet,
+    ToolkitError,
+    getTelemetryReasonDesc,
+    isFileNotFoundError,
+    isPermissionsError,
+    scrubNames,
+} from '../errors'
 import globals from '../extensionGlobals'
 import { isWin } from '../vscode/env'
 import { resolvePath } from '../utilities/pathUtils'
+import crypto from 'crypto'
+import { waitUntil } from '../utilities/timeoutUtils'
+import { telemetry } from '../telemetry/telemetry'
+import { getLogger } from '../logger/logger'
 
 const vfs = vscode.workspace.fs
 type Uri = vscode.Uri
@@ -182,25 +194,159 @@ export class FileSystem {
      *
      * @param path File location
      * @param data File content
-     * @param opt File permissions/flags. Only works in a non-web (nodejs) context. If provided,
+     * @param opts File permissions/flags. Only works in a non-web (nodejs) context. If provided,
      * nodejs filesystem interface is used instead of routing through vscode VFS.
+     * @param opts.atomic If true, ensures content is not corrupted from a concurrent write.
+     *                    This is not truly atomic as an async write can override the final result,
+     *                    but if the content is structured like JSON it will still be parseable.
+     *
+     *                    Eg: we were seeing a JSON file with an unexpected extra '}' and when parsing it
+     *                    failed. We suspected a race condition from separate write, and all we wanted was
+     *                    a parseable JSON.
+     *
+     *                    This optional has an uncalcuated performance impact as there is an additional
+     *                    rename() operation.
      */
-    async writeFile(path: Uri | string, data: string | Uint8Array, opt?: WriteFileOptions): Promise<void> {
+    async writeFile(
+        path: Uri | string,
+        data: string | Uint8Array,
+        opts?: WriteFileOptions & { atomic?: boolean }
+    ): Promise<void> {
         const uri = this.#toUri(path)
         const errHandler = createPermissionsErrorHandler(this.isWeb, uri, '*w*')
         const content = this.#toBytes(data)
-        // - Special case: if `opt` is given, use nodejs directly. This isn't ideal, but is the only
-        //   way (unless you know better) we can let callers specify permissions.
-        // - Cloud9 vscode.workspace.writeFile has limited functionality, e.g. cannot write outside
-        //   of open workspace.
-        const useNodejs = (opt && !this.isWeb) || isCloud9()
 
-        if (useNodejs) {
-            return nodefs.writeFile(uri.fsPath, content, opt).catch(errHandler)
+        if (this.isWeb) {
+            return vfs.writeFile(uri, content).then(undefined, errHandler)
         }
 
-        return vfs.writeFile(uri, content).then(undefined, errHandler)
+        // Node writeFile is the only way to set `writeOpts`, such as the `mode`, on a file .
+        // When not in web we will use Node's writeFile() for all other scenarios.
+        // It also has better error messages than VS Code's writeFile().
+        let write = (u: Uri) => nodefs.writeFile(u.fsPath, content, opts).then(undefined, errHandler)
+
+        if (isCloud9()) {
+            // In Cloud9 vscode.workspace.writeFile has limited functionality, e.g. cannot write outside
+            // of open workspace.
+            //
+            // This is future proofing in the scenario we switch the initial implementation of `write()`
+            // to something else, C9 will still use node fs.
+            write = (u: Uri) => nodefs.writeFile(u.fsPath, content, opts).then(undefined, errHandler)
+        }
+
+        // Node writeFile does NOT create parent folders by default, unlike VS Code FS writeFile()
+        await fs.mkdir(_path.dirname(uri.fsPath))
+
+        if (opts?.atomic) {
+            // Background: As part of an "atomic write" we write to a temp file, then rename
+            // to the target file. The problem was that each `rename()` implementation doesn't always
+            // work. The solution is to try each implementation and then fallback to a regular write if none of them work.
+            // 1. Atomic write with VSC rename(), but may throw `FileNotFound` errors
+            //    - Looks to be this error from what we see in telemetry: https://github.com/microsoft/vscode/blob/09d5f4efc5089ce2fc5c8f6aeb51d728d7f4e758/src/vs/platform/files/common/fileService.ts#L1029-L1030
+            // 2. Atomic write with Node rename(), but may throw `EPERM` errors on Windows
+            //    - This is explained in https://github.com/aws/aws-toolkit-vscode/pull/5335
+            //    - Step 1 is supposed to address the EPERM issue
+            // 3. Finally, do a regular file write, but may result in invalid file content
+            //
+            // For telemetry, we will only report failures as to not overload with succeed events.
+            const tempFile = this.#toUri(`${uri.fsPath}.${crypto.randomBytes(8).toString('hex')}.tmp`)
+            try {
+                await write(tempFile)
+                await fs.rename(tempFile, uri)
+                return
+            } catch (e) {
+                telemetry.ide_fileSystem.emit({
+                    action: 'writeFile',
+                    result: 'Failed',
+                    reason: 'writeFileAtomicVscRename',
+                    reasonDesc: getTelemetryReasonDesc(e),
+                })
+                getLogger().warn(`writeFile atomic VSC failed for, ${uri.fsPath}, with %O`, e)
+                // Atomic write with VSC rename() failed, so try with Node rename()
+                try {
+                    await write(tempFile)
+                    await nodefs.rename(tempFile.fsPath, uri.fsPath)
+                    return
+                } catch (e) {
+                    telemetry.ide_fileSystem.emit({
+                        action: 'writeFile',
+                        result: 'Failed',
+                        reason: 'writeFileAtomicNodeRename',
+                        reasonDesc: getTelemetryReasonDesc(e),
+                    })
+                    getLogger().warn(`writeFile atomic Node failed for, ${uri.fsPath}, with %O`, e)
+                    // The atomic rename techniques were not successful, so we will
+                    // just resort to regular a non-atomic write
+                }
+            } finally {
+                // clean up temp file since it possibly remains
+                if (await fs.exists(tempFile)) {
+                    await fs.delete(tempFile)
+                }
+            }
+        }
+
+        await write(uri)
     }
+
+    async rename(oldPath: vscode.Uri | string, newPath: vscode.Uri | string) {
+        const oldUri = this.#toUri(oldPath)
+        const newUri = this.#toUri(newPath)
+        const errHandler = createPermissionsErrorHandler(this.isWeb, oldUri, 'rw*')
+
+        if (isCloud9()) {
+            return nodefs.rename(oldUri.fsPath, newUri.fsPath).catch(errHandler)
+        }
+
+        /**
+         * We were seeing 'FileNotFound' errors during renames, even though we did a `writeFile()` right before the rename.
+         * The error looks to be from here: https://github.com/microsoft/vscode/blob/09d5f4efc5089ce2fc5c8f6aeb51d728d7f4e758/src/vs/platform/files/node/diskFileSystemProvider.ts#L747
+         * So a guess is that the exists()(stat() under the hood) call needs to be retried since there may be a race condition.
+         */
+        let attempts = 0
+        const isExists = await waitUntil(async () => {
+            const result = await fs.exists(oldUri)
+            attempts += 1
+            return result
+        }, FileSystem.renameTimeoutOpts)
+        // TODO: Move the `ide_fileSystem` or some variation of this metric in to common telemetry
+        // TODO: Deduplicate the `ide_fileSystem` call. Maybe have a method that all operations pass through which wraps the call in telemetry.
+        //       Then look to report telemetry failure events.
+        const scrubbedPath = scrubNames(oldUri.fsPath)
+        if (!isExists) {
+            // source path never existed after multiple attempts.
+            // Either the file never existed, or had we waited longer it would have. We won't know.
+            telemetry.ide_fileSystem.emit({
+                result: 'Failed',
+                action: 'rename',
+                reason: 'SourceNotExists',
+                reasonDesc: `After ${FileSystem.renameTimeoutOpts.timeout}ms the source path did not exist: ${scrubbedPath}`,
+            })
+        } else if (attempts > 1) {
+            // Indicates that rename() would have failed if we had not waited for it to exist.
+            telemetry.ide_fileSystem.emit({
+                result: 'Succeeded',
+                action: 'rename',
+                reason: 'RenameRaceCondition',
+                reasonDesc: `After multiple attempts the source path existed: ${scrubbedPath}`,
+                attempts: attempts,
+            })
+        }
+
+        return vfs.rename(oldUri, newUri, { overwrite: true }).then(undefined, errHandler)
+    }
+
+    /**
+     * It looks like scenario of a failed rename is rare,
+     * so we can afford to have a longer timeout and interval.
+     *
+     * These values are an arbitrary guess to how long it takes
+     * for a newly created file to be visible on the filesystem.
+     */
+    static readonly renameTimeoutOpts = {
+        timeout: 10_000,
+        interval: 300,
+    } as const
 
     /**
      * The stat of the file,  throws if the file does not exist or on any other error.

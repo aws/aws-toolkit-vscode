@@ -10,7 +10,8 @@ describe('CreateGlobalClusterWizard', function () {
     let tester: WizardTester<CreateGlobalClusterState>
 
     beforeEach(async function () {
-        const wizard = new CreateGlobalClusterWizard('region', {} as any)
+        const engineVersion = '5.0.0'
+        const wizard = new CreateGlobalClusterWizard('region', engineVersion, {} as any)
         tester = await createWizardTester(wizard)
     })
 

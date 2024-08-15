@@ -19,10 +19,7 @@ export abstract class AbstractAslVisualizationManager<T extends AslVisualization
 
     public constructor(private readonly extensionContext: vscode.ExtensionContext) {}
 
-    public abstract visualizeStateMachine(
-        globalStorage: vscode.Memento,
-        uri: vscode.Uri
-    ): Promise<vscode.WebviewPanel | undefined>
+    public abstract visualizeStateMachine(uri: vscode.Uri): Promise<vscode.WebviewPanel | undefined>
 
     protected pushToExtensionContextSubscriptions(visualizationDisposable: vscode.Disposable): void {
         this.extensionContext.subscriptions.push(visualizationDisposable)
@@ -57,9 +54,9 @@ export abstract class AbstractAslVisualizationManager<T extends AslVisualization
         return this.managedVisualizations.get(key)
     }
 
-    protected async updateCache(globalStorage: vscode.Memento, logger: Logger): Promise<void> {
+    protected async updateCache(logger: Logger): Promise<void> {
         try {
-            await this.cache.updateCache(globalStorage)
+            await this.cache.updateCache()
         } catch (err) {
             // So we can't update the cache, but can we use an existing on disk version.
             logger.warn('Updating State Machine Graph Visualisation assets failed, checking for fallback local cache.')

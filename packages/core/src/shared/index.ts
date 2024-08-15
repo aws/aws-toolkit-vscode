@@ -3,6 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * Contains exports that work in both node and web.
+ */
+
 export { ExtContext } from './extensions'
 export { initialize, default as globals } from './extensionGlobals'
 export { activate as activateLogger } from './logger/activation'
@@ -14,7 +18,6 @@ export { initializeComputeRegion } from './extensionUtilities'
 export { RegionProvider } from './regions/regionProvider'
 export { Commands } from './vscode/commands2'
 export { getMachineId } from './vscode/env'
-export * from './environmentVariables'
 export { getLogger } from './logger/logger'
 export { activateExtension } from './utilities/vsCodeUtils'
 export { waitUntil, sleep } from './utilities/timeoutUtils'
@@ -24,7 +27,6 @@ export { VirtualMemoryFile } from './virtualMemoryFile'
 export { AmazonqCreateUpload, Metric } from './telemetry/telemetry'
 export { getClientId, getOperatingSystem } from './telemetry/util'
 export { extensionVersion } from './vscode/env'
-export * from './vscode/setContext'
 export { cast } from './utilities/typeConstructors'
 export {
     CodewhispererUserTriggerDecision,
@@ -34,6 +36,8 @@ export {
     CodewhispererUserDecision,
     CodewhispererSecurityScan,
 } from './telemetry/telemetry.gen'
+export * from './environmentVariables'
+export * from './vscode/setContext'
 export * from './utilities/textUtilities'
 export * from './filesystemUtilities'
 export * from './localizedText'
@@ -43,4 +47,5 @@ export * from './utilities/pathUtils'
 export * from './errors'
 export * as messages from './utilities/messages'
 export * as errors from './errors'
+export * as funcUtil from './utilities/functionUtils'
 export { fs } from './fs/fs'

@@ -10,11 +10,12 @@ import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { isDocumentValid, isStepFunctionsRole, StateMachineGraphCache } from '../../stepFunctions/utils'
+import globals from '../../shared/extensionGlobals'
 
 const requestBody = 'request body string'
 const assetUrl = 'https://something'
 const filePath = '/some/path'
-const storageKey = 'KEY'
+const storageKey = 'SCRIPT_LAST_DOWNLOADED_URL'
 let tempFolder = ''
 
 describe('StateMachineGraphCache', function () {
@@ -28,12 +29,6 @@ describe('StateMachineGraphCache', function () {
 
     describe('updateCachedFile', function () {
         it('downloads a file when it is not in cache and stores it', async function () {
-            const globalStorage = {
-                keys: () => [],
-                update: sinon.spy(),
-                get: sinon.stub().returns(undefined),
-            }
-
             const getFileData = sinon.stub().resolves(requestBody)
             const fileExists = sinon.stub().onFirstCall().resolves(false).onSecondCall().resolves(true)
 
@@ -49,23 +44,17 @@ describe('StateMachineGraphCache', function () {
             })
 
             await cache.updateCachedFile({
-                globalStorage,
                 lastDownloadedURLKey: storageKey,
                 currentURL: assetUrl,
                 filePath: filePath,
             })
 
-            assert.ok(globalStorage.update.calledWith(storageKey, assetUrl))
+            assert.deepStrictEqual(globals.globalState.get(storageKey), assetUrl)
             assert.ok(writeFile.calledWith(filePath, requestBody))
         })
 
         it('downloads and stores a file when cached file exists but url has been updated', async function () {
-            const globalStorage = {
-                keys: () => [],
-                update: sinon.spy(),
-                get: sinon.stub().returns('https://old-url'),
-            }
-
+            await globals.globalState.update(storageKey, 'https://old-url')
             const getFileData = sinon.stub().resolves(requestBody)
             const fileExists = sinon.stub().onFirstCall().resolves(true).onSecondCall().resolves(true)
 
@@ -81,23 +70,17 @@ describe('StateMachineGraphCache', function () {
             })
 
             await cache.updateCachedFile({
-                globalStorage,
                 lastDownloadedURLKey: storageKey,
                 currentURL: assetUrl,
                 filePath: filePath,
             })
 
-            assert.ok(globalStorage.update.calledWith(storageKey, assetUrl))
+            assert.deepStrictEqual(globals.globalState.get(storageKey), assetUrl)
             assert.ok(writeFile.calledWith(filePath, requestBody))
         })
 
         it('it does not store data when file exists and url for it is same', async function () {
-            const globalStorage = {
-                keys: () => [],
-                update: sinon.spy(),
-                get: sinon.stub().returns(assetUrl),
-            }
-
+            await globals.globalState.update(storageKey, assetUrl)
             const getFileData = sinon.stub().resolves(requestBody)
             const fileExists = sinon.stub().onFirstCall().resolves(true).onSecondCall().resolves(true)
 
@@ -113,13 +96,12 @@ describe('StateMachineGraphCache', function () {
             })
 
             await cache.updateCachedFile({
-                globalStorage,
                 lastDownloadedURLKey: storageKey,
                 currentURL: assetUrl,
                 filePath: filePath,
             })
 
-            assert.ok(globalStorage.update.notCalled)
+            assert.deepStrictEqual(globals.globalState.get(storageKey), assetUrl)
             assert.ok(writeFile.notCalled)
         })
         it('it passes if both files required exist', async function () {
@@ -160,12 +142,6 @@ describe('StateMachineGraphCache', function () {
         })
 
         it('creates assets directory when it does not exist', async function () {
-            const globalStorage = {
-                keys: () => [],
-                update: sinon.spy(),
-                get: sinon.stub().returns(undefined),
-            }
-
             const getFileData = sinon.stub().resolves(requestBody)
             const fileExists = sinon.stub().onFirstCall().resolves(false).onSecondCall().resolves(false)
 
@@ -185,13 +161,12 @@ describe('StateMachineGraphCache', function () {
             })
 
             await cache.updateCachedFile({
-                globalStorage,
                 lastDownloadedURLKey: storageKey,
                 currentURL: assetUrl,
                 filePath: filePath,
             })
 
-            assert.ok(globalStorage.update.calledWith(storageKey, assetUrl))
+            assert.deepStrictEqual(globals.globalState.get(storageKey), assetUrl)
             assert.ok(writeFile.calledWith(filePath, requestBody))
             assert.ok(makeDir.calledWith(dirPath))
         })

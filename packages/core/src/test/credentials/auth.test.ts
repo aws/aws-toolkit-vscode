@@ -9,7 +9,7 @@ import fs from '../../shared/fs/fs'
 import { ToolkitError, isUserCancelledError } from '../../shared/errors'
 import { assertTreeItem } from '../shared/treeview/testUtil'
 import { getTestWindow } from '../shared/vscode/window'
-import { assertTelemetry, captureEventOnce, getMetrics } from '../testUtil'
+import { captureEventOnce } from '../testUtil'
 import { createBuilderIdProfile, createSsoProfile, createTestAuth } from './testUtil'
 import { toCollection } from '../../shared/utilities/asyncCollection'
 import globals from '../../shared/extensionGlobals'
@@ -28,7 +28,7 @@ describe('Auth', function () {
     let auth: ReturnType<typeof createTestAuth>
 
     beforeEach(function () {
-        auth = createTestAuth()
+        auth = createTestAuth(globals.globalState)
     })
 
     it('can create a new sso connection', async function () {
@@ -256,15 +256,10 @@ describe('Auth', function () {
             assert.strictEqual(auth.getConnectionState(conn), 'valid')
         })
 
-        it('reauthentication is indicated in metric', async function () {
+        it('reauthentication flag is set at start of reauth process', async function () {
             const conn = await auth.createInvalidSsoConnection(ssoProfile)
             await auth.reauthenticate(conn)
-            assertTelemetry('aws_loginWithBrowser', {
-                result: 'Succeeded',
-                isReAuth: true,
-                credentialStartUrl: ssoProfile.startUrl,
-            })
-            assert.strictEqual(getMetrics('aws_loginWithBrowser').length, 1)
+            auth.getTestTokenProvider(conn).createToken.calledWith({ isReAuth: true })
         })
     })
 

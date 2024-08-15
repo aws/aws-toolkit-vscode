@@ -34,6 +34,7 @@ import { indent } from '../../shared/utilities/textUtilities'
 import { showReauthenticateMessage } from '../../shared/utilities/messages'
 import { showAmazonQWalkthroughOnce } from '../../amazonq/onboardingPage/walkthrough'
 import { setContext } from '../../shared/vscode/setContext'
+import { isInDevEnv } from '../../shared/vscode/env'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesCodeWhispererCore]
@@ -222,20 +223,6 @@ export class AuthUtil {
         return this.secondaryAuth.useNewConnection(conn)
     }
 
-    /**
-     * HACK: Use the connection, but then mark it as expired.
-     * We currently only need this to handle an edge case with the transition
-     * from the old to new standalone extension. This should eventually be removed.
-     */
-    public async useConnectionButExpire(conn: Connection) {
-        await this.secondaryAuth.useNewConnection(conn)
-        if (conn.type !== 'sso') {
-            return
-        }
-        await this.auth.expireConnection(conn)
-        await this.notifyReauthenticate()
-    }
-
     public static get instance() {
         if (this.#instance !== undefined) {
             return this.#instance
@@ -408,6 +395,23 @@ export class AuthUtil {
         }
 
         return state
+    }
+
+    /**
+     * Edge Case: Due to a change in behaviour/functionality, there are potential extra
+     * auth connections that the Amazon Q extension has cached. We need to remove these
+     * as they are irrelevant to the Q extension and can cause issues.
+     */
+    public async clearExtraConnections(): Promise<void> {
+        const currentQConn = this.conn
+        // Q currently only maintains 1 connection at a time, so we assume everything else is extra.
+        // IMPORTANT: In the case Q starts to manage multiple connections, this implementation will need to be updated.
+        const allOtherConnections = (await this.auth.listConnections()).filter((c) => c.id !== currentQConn?.id)
+        for (const conn of allOtherConnections) {
+            getLogger().warn(`forgetting extra amazon q connection: %O`, conn)
+            // in a Dev Env the connection may be used by code catalyst, so we forget instead of fully deleting
+            isInDevEnv() ? await this.auth.forgetConnection(conn) : await this.auth.deleteConnection(conn)
+        }
     }
 }
 

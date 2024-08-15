@@ -10,6 +10,7 @@ import {
     formatError,
     getErrorMsg,
     getTelemetryReason,
+    getTelemetryReasonDesc,
     getTelemetryResult,
     isNetworkError,
     resolveErrorMessageToDisplay,
@@ -451,36 +452,62 @@ describe('util', function () {
             'unauthorized message'
         )
         assert.deepStrictEqual(getErrorMsg(undefined), undefined)
-        const err = new TestAwsError('ValidationException', 'aws validation msg 1', new Date())
-        assert.deepStrictEqual(getErrorMsg(err), 'aws validation msg 1')
-        ;(err as any).error_description = ''
-        assert.deepStrictEqual(getErrorMsg(err), 'aws validation msg 1')
-        ;(err as any).error_description = {}
-        assert.deepStrictEqual(getErrorMsg(err), 'aws validation msg 1')
-        ;(err as any).error_description = 'aws error desc 1'
-        assert.deepStrictEqual(getErrorMsg(err), 'aws error desc 1')
+        let awsErr = new TestAwsError('ValidationException', 'aws validation msg 1', new Date())
+        assert.deepStrictEqual(getErrorMsg(awsErr), 'aws validation msg 1')
+        ;(awsErr as any).error_description = ''
+        assert.deepStrictEqual(getErrorMsg(awsErr), 'aws validation msg 1')
+        ;(awsErr as any).error_description = {}
+        assert.deepStrictEqual(getErrorMsg(awsErr), 'aws validation msg 1')
+        ;(awsErr as any).error_description = 'aws error desc 1'
+        assert.deepStrictEqual(getErrorMsg(awsErr), 'aws error desc 1')
+
+        // Arg withCause=true
+        awsErr = new TestAwsError('ValidationException', 'aws validation msg 1', new Date())
+        let toolkitError = new ToolkitError('ToolkitError Message')
+        assert.deepStrictEqual(getErrorMsg(toolkitError, true), 'ToolkitError Message')
+
+        toolkitError = new ToolkitError('ToolkitError Message', { cause: awsErr })
+        assert.deepStrictEqual(getErrorMsg(toolkitError, true), `ToolkitError Message | aws validation msg 1`)
+
+        const nestedNestedToolkitError = new ToolkitError('C')
+        const nestedToolkitError = new ToolkitError('B', { cause: nestedNestedToolkitError })
+        toolkitError = new ToolkitError('A', { cause: nestedToolkitError })
+        assert.deepStrictEqual(getErrorMsg(toolkitError, true), `A | B | C`)
+    })
+
+    it('getTelemetryReasonDesc()', () => {
+        const err = new Error('Cause Message a/b/c/d.txt')
+        const toolkitError = new ToolkitError('ToolkitError Message', { cause: err })
+        assert.deepStrictEqual(getTelemetryReasonDesc(toolkitError), 'ToolkitError Message | Cause Message x/x/x/x.txt')
     })
 
     it('isNetworkError()', function () {
         assert.deepStrictEqual(
             isNetworkError(new Error('Failed to establish a socket connection to proxies BLAH BLAH BLAH')),
             true,
-            'Did not return "true" on a VS Code Proxy error'
+            'Did not VS Code Proxy error as network error'
         )
         assert.deepStrictEqual(
             isNetworkError(new Error('I am NOT a network error')),
             false,
             'Incorrectly indicated as network error'
         )
+        let err = new Error("Unexpected token '<'")
+        err.name = 'SyntaxError'
+        assert.deepStrictEqual(isNetworkError(err), true, 'Did not indicate SyntaxError as network error')
+
+        err = new Error('getaddrinfo ENOENT oidc.us-east-1.amazonaws.com')
+        ;(err as any).code = 'ENOENT'
+        assert.deepStrictEqual(isNetworkError(err), true, 'Did not indicate ENOENT error as network error')
     })
 
     it('scrubNames()', async function () {
         const fakeUser = 'jdoe123'
         assert.deepStrictEqual(scrubNames('', fakeUser), '')
-        assert.deepStrictEqual(scrubNames('a ./ b', fakeUser), 'a ././ b') // TODO: fix this
-        assert.deepStrictEqual(scrubNames('a ../ b', fakeUser), 'a .././ b') // TODO: fix this
-        assert.deepStrictEqual(scrubNames('a /.. b', fakeUser), 'a /.. b') // TODO: fix this
-        assert.deepStrictEqual(scrubNames('a //..// b', fakeUser), 'a //..//.// b') // TODO: fix this
+        assert.deepStrictEqual(scrubNames('a ./ b', fakeUser), 'a ./ b')
+        assert.deepStrictEqual(scrubNames('a ../ b', fakeUser), 'a ../ b')
+        assert.deepStrictEqual(scrubNames('a /.. b', fakeUser), 'a /.. b')
+        assert.deepStrictEqual(scrubNames('a //..// b', fakeUser), 'a //..// b')
         assert.deepStrictEqual(scrubNames('a / b', fakeUser), 'a / b')
         assert.deepStrictEqual(scrubNames('a ~/ b', fakeUser), 'a ~/ b')
         assert.deepStrictEqual(scrubNames('a //// b', fakeUser), 'a //// b')
@@ -498,9 +525,17 @@ describe('util', function () {
             scrubNames('user: jdoe123 file: C:/Users/user1/.aws/sso/cache/abc123.json (regex: /foo/)', fakeUser),
             'user: x file: C:/Users/x/.aws/sso/cache/x.json (regex: /x/)'
         )
-        assert.deepStrictEqual(scrubNames('/Users/user1/foo.jso (?)', fakeUser), '/Users/x/x.jso (?)')
-        assert.deepStrictEqual(scrubNames('/Users/user1/foo.js (?)', fakeUser), '/Users/x/x.js (?)')
-        assert.deepStrictEqual(scrubNames('/Users/user1/foo.longextension (?)', fakeUser), '/Users/x/x (?)')
+        assert.deepStrictEqual(scrubNames('/Users/user1/foo.jso', fakeUser), '/Users/x/x.jso')
+        assert.deepStrictEqual(scrubNames('/Users/user1/foo.js', fakeUser), '/Users/x/x.js')
+        assert.deepStrictEqual(scrubNames('/Users/user1/noFileExtension', fakeUser), '/Users/x/x')
+        assert.deepStrictEqual(scrubNames('/Users/user1/minExtLength.a', fakeUser), '/Users/x/x.a')
+        assert.deepStrictEqual(scrubNames('/Users/user1/extIsNum.123456', fakeUser), '/Users/x/x.123456')
+        assert.deepStrictEqual(
+            scrubNames('/Users/user1/foo.looooooooongextension', fakeUser),
+            '/Users/x/x.looooooooongextension'
+        )
+        assert.deepStrictEqual(scrubNames('/Users/user1/multipleExts.ext1.ext2.ext3', fakeUser), '/Users/x/x.ext3')
+
         assert.deepStrictEqual(scrubNames('c:\\fooß\\bar\\baz.txt', fakeUser), 'c:/xß/x/x.txt')
         assert.deepStrictEqual(
             scrubNames('uhh c:\\path with\\ spaces \\baz.. hmm...', fakeUser),

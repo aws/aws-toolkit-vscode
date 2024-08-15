@@ -28,7 +28,7 @@ import { pageableToCollection, partialClone } from '../../shared/utilities/colle
 import { assertHasProps, isNonNullable, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { getLogger } from '../../shared/logger'
 import { SsoAccessTokenProvider } from './ssoAccessTokenProvider'
-import { isClientFault } from '../../shared/errors'
+import { ToolkitError, getHttpStatusCode, getReasonFromSyntaxError, isClientFault } from '../../shared/errors'
 import { DevSettings } from '../../shared/settings'
 import { SdkError } from '@aws-sdk/types'
 import { HttpRequest, HttpResponse } from '@smithy/protocol-http'
@@ -86,7 +86,25 @@ export class OidcClient {
     }
 
     public async createToken(request: CreateTokenRequest) {
-        const response = await this.client.createToken(request as CreateTokenRequest)
+        let response
+        try {
+            response = await this.client.createToken(request as CreateTokenRequest)
+        } catch (err) {
+            // In rare cases the SDK client may get unexpected data from its API call.
+            // This will throw a SyntaxError that contains the returned data.
+            if (err instanceof SyntaxError) {
+                getLogger().error(`createToken: SSOIDC Client received an unexpected non-JSON response: %O`, err)
+                throw new ToolkitError(
+                    `SDK Client unexpected error response: data response code: ${getHttpStatusCode(err)}, data reason: ${getReasonFromSyntaxError(err)}`,
+                    {
+                        code: `${getHttpStatusCode(err)}`,
+                        cause: err,
+                    }
+                )
+            } else {
+                throw err
+            }
+        }
         assertHasProps(response, 'accessToken', 'expiresIn')
 
         return {
@@ -217,7 +235,7 @@ export class SsoClient {
     private async handleError(error: unknown): Promise<never> {
         if (error instanceof SSOServiceException && isClientFault(error) && error.name !== 'ForbiddenException') {
             getLogger().warn(`credentials (sso): invalidating stored token: ${error.message}`)
-            await this.provider.invalidate()
+            await this.provider.invalidate(`ssoClient:${error.name}`)
         }
 
         throw error
