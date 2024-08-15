@@ -1998,6 +1998,69 @@
                     "command": "aws.codecatalyst.signout",
                     "when": "viewItem =~ /^awsCodeCatalystNode/&& !isCloud9 && aws.codecatalyst.connected",
                     "group": "0@2"
+                },
+                {
+                    "command": "aws.docdb.createCluster",
+                    "when": "view == aws.explorer && viewItem == awsDocDBNode",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.docdb.startCluster",
+                    "when": "viewItem =~ /^awsDocDB-cluster-(regional|elastic)-stopped/",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.docdb.stopCluster",
+                    "when": "viewItem =~ /^awsDocDB-cluster-(regional|elastic)-running/",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.docdb.renameCluster",
+                    "when": "viewItem =~ /^awsDocDB-cluster(?!.*-elastic.*)/",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.docdb.deleteCluster",
+                    "when": "viewItem =~ /^awsDocDB-cluster-(regional|elastic)/",
+                    "group": "0@4"
+                },
+                {
+                    "command": "aws.docdb.createInstance",
+                    "when": "viewItem =~ /^awsDocDB-cluster-(?!elastic|global)(?!-stopped)/"
+                },
+                {
+                    "command": "aws.docdb.renameInstance",
+                    "when": " viewItem =~ /^awsDocDB-instance/",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.docdb.modifyInstance",
+                    "when": " viewItem =~ /^awsDocDB-instance/",
+                    "group": "0@3"
+                },
+                {
+                    "command": "aws.docdb.rebootInstance",
+                    "when": "viewItem =~ /^awsDocDB-instance/",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.docdb.deleteInstance",
+                    "when": " viewItem =~ /^awsDocDB-instance/",
+                    "group": "0@4"
+                },
+                {
+                    "command": "aws.docdb.listTags",
+                    "when": "viewItem =~ /^awsDocDB-(?!cluster-global).*/"
+                },
+                {
+                    "command": "aws.docdb.openBrowser",
+                    "when": "viewItem =~ /^awsDocDB-/",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.docdb.copyEndpoint",
+                    "when": "viewItem =~ /^awsDocDB-/",
+                    "group": "0@1"
                 }
             ],
             "aws.toolkit.auth": [
@@ -3541,6 +3604,144 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.docdb.createCluster",
+                "title": "%AWS.command.docdb.createCluster%",
+                "icon": "$(add)",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.createInstance",
+                "title": "%AWS.command.docdb.createInstance%",
+                "icon": "$(add)",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.deleteInstance",
+                "title": "%AWS.generic.promptDelete%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem == awsDocDB-instance-available",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.renameInstance",
+                "title": "%AWS.generic.promptRename%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem == awsDocDB-instance-available",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.modifyInstance",
+                "title": "%AWS.command.docdb.modifyInstance%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost && viewItem == awsDocDB-instance-available",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.rebootInstance",
+                "title": "%AWS.command.docdb.rebootInstance%",
+                "icon": "$(debug-restart)",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem == awsDocDB-instance-available",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.renameCluster",
+                "title": "%AWS.generic.promptRename%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB-cluster.*/",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.startCluster",
+                "title": "%AWS.command.docdb.startCluster%",
+                "icon": "$(debug-start)",
+                "category": "%AWS.title%",
+                "enablement": "!aws.isWebExtHost && viewItem =~ /^awsDocDB-cluster.*-stopped/"
+            },
+            {
+                "command": "aws.docdb.stopCluster",
+                "title": "%AWS.command.docdb.stopCluster%",
+                "icon": "$(debug-pause)",
+                "category": "%AWS.title%",
+                "enablement": "!aws.isWebExtHost && viewItem =~ /^awsDocDB-cluster.*-running/"
+            },
+            {
+                "command": "aws.docdb.deleteCluster",
+                "title": "%AWS.generic.promptDelete%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB-cluster.*-running/",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.listTags",
+                "title": "%AWS.command.docdb.tags%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB/",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.openBrowser",
+                "title": "%AWS.command.docdb.open%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB/",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.copyEndpoint",
+                "title": "%AWS.command.docdb.copyEndpoint%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB/",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             }
         ],
         "jsonValidation": [
@@ -4103,6 +4304,8 @@
     "dependencies": {
         "@amzn/codewhisperer-streaming": "file:../../src.gen/@amzn/codewhisperer-streaming",
         "@aws-sdk/client-cognito-identity": "3.490.0",
+        "@aws-sdk/client-docdb": "^3.596.0",
+        "@aws-sdk/client-docdb-elastic": "^3.600.0",
         "@aws-sdk/client-lambda": "3.385.0",
         "@aws-sdk/client-sso": "^3.342.0",
         "@aws-sdk/client-sso-oidc": "^3.574.0",
