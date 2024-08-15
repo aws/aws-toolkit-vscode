@@ -33,8 +33,8 @@ import { isExtensionInstalled } from '../shared/utilities'
 import { CommonAuthViewProvider } from '../login/webview'
 import { setContext } from '../shared'
 import { AppBuilderRootNode } from '../shared/applicationBuilder/explorer/nodes/rootNode'
+import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { initWalkthroughProjectCommand, walkthroughContextString } from '../shared/applicationBuilder/walkthrough'
-import { tools } from '../shared/utilities/guiInstall'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -239,6 +239,15 @@ async function setWalkthrough(walkthroughSelected: string = 'S3'): Promise<void>
  */
 async function registerAppBuilderCommands(context: ExtContext): Promise<void> {
     context.extensionContext.subscriptions.push(
+        Commands.register('aws.toolkit.installSAMCLI', async () => {
+            await getOrInstallCli('sam-cli', true, true)
+        }),
+        Commands.register('aws.toolkit.installAWSCLI', async () => {
+            await getOrInstallCli('aws-cli', true, true)
+        }),
+        Commands.register('aws.toolkit.installDocker', async () => {
+            await getOrInstallCli('docker', true, true)
+        }),
         Commands.register('aws.toolkit.lambda.setWalkthroughToAPI', async () => {
             await setWalkthrough('API')
         }),
@@ -250,15 +259,6 @@ async function registerAppBuilderCommands(context: ExtContext): Promise<void> {
         }),
         Commands.register('aws.toolkit.lambda.setWalkthroughToCustomTemplate', async () => {
             await setWalkthrough('CustomTemplate')
-        }),
-        Commands.register('aws.toolkit.installSAMCLI', async () => {
-            await tools.sam.installGui()
-        }),
-        Commands.register('aws.toolkit.installAWSCLI', async () => {
-            await tools.aws.installGui()
-        }),
-        Commands.register('aws.toolkit.installDocker', async () => {
-            await tools.docker.installGui()
         }),
         Commands.register('aws.toolkit.lambda.initializeWalkthroughProject', async (): Promise<void> => {
             await initWalkthroughProjectCommand()

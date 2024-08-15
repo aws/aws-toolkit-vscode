@@ -32,19 +32,30 @@ export class InvalidPlatformError extends Error {}
 
 interface Cli {
     command: {
-        unix: string
-        windows: string
+        unix?: Array<string>
+        windows?: Array<string>
     }
     source: {
-        macos: string
-        windows: string
-        linux: string
+        macos?: {
+            x86?: string
+            arm?: string
+        }
+        windows?: {
+            x86?: string
+            arm?: string
+        }
+        linux?: {
+            x86?: string
+            arm?: string
+        }
     }
     manualInstallLink: string
     name: string
+    exec?: string
 }
 
-type AwsClis = Extract<ToolId, 'session-manager-plugin'>
+// To Create docker in telemetry common repo
+type AwsClis = Extract<ToolId, 'session-manager-plugin' | 'aws-cli' | 'sam-cli'> | 'docker'
 
 /**
  * CLIs and their full filenames and download paths for their respective OSes
@@ -53,19 +64,101 @@ type AwsClis = Extract<ToolId, 'session-manager-plugin'>
 export const awsClis: { [cli in AwsClis]: Cli } = {
     'session-manager-plugin': {
         command: {
-            unix: path.join('sessionmanagerplugin', 'bin', 'session-manager-plugin'),
-            windows: path.join('sessionmanagerplugin', 'bin', 'session-manager-plugin.exe'),
+            unix: [path.join('sessionmanagerplugin', 'bin', 'session-manager-plugin')],
+            windows: [path.join('sessionmanagerplugin', 'bin', 'session-manager-plugin.exe')],
         },
         source: {
             // use pkg: zip is unsigned
-            macos: 'https://s3.amazonaws.com/session-manager-downloads/plugin/latest/mac/session-manager-plugin.pkg',
-            windows:
-                'https://session-manager-downloads.s3.amazonaws.com/plugin/latest/windows/SessionManagerPlugin.zip',
-            linux: 'https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb',
+            macos: {
+                x86: 'https://s3.amazonaws.com/session-manager-downloads/plugin/latest/mac/session-manager-plugin.pkg',
+                arm: 'https://s3.amazonaws.com/session-manager-downloads/plugin/latest/mac_arm64/session-manager-plugin.pkg',
+            },
+            windows: {
+                x86: 'https://session-manager-downloads.s3.amazonaws.com/plugin/latest/windows/SessionManagerPlugin.zip',
+            },
+            linux: {
+                x86: 'https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb',
+                arm: 'https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_arm64/session-manager-plugin.deb',
+            },
         },
         name: 'Session Manager Plugin',
         manualInstallLink:
             'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html',
+        exec: 'session-manager-plugin',
+    },
+    'sam-cli': {
+        command: {
+            windows: [
+                'sam.cmd',
+                path.join('C:', 'Program Files', 'Amazon', 'AWSSAMCLI', 'bin', 'sam.cmd'),
+                path.join('C:', 'Program Files (x86)', 'Amazon', 'AWSSAMCLI', 'bin', 'sam.cmd'),
+            ],
+            unix: ['sam', path.join('/', 'usr', 'bin', 'sam'), path.join('/', 'usr', 'local', 'bin', 'sam')],
+        },
+        source: {
+            macos: {
+                x86: 'https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-macos-x86_64.pkg',
+                arm: 'https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-macos-arm64.pkg',
+            },
+            windows: {
+                x86: 'https://github.com/aws/aws-sam-cli/releases/latest/download/AWS_SAM_CLI_64_PY3.msi',
+            },
+        },
+        name: 'AWS SAM',
+        manualInstallLink:
+            'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html',
+        exec: 'sam',
+    },
+    'aws-cli': {
+        command: {
+            windows: [
+                'aws.exe',
+                path.join('C:', 'Program Files', 'Amazon', 'AWSCLIV2', 'bin', 'aws.exe'),
+                path.join('C:', 'Program Files (x86)', 'Amazon', 'AWSCLIV2', 'bin', 'aws.exe'),
+            ],
+            unix: ['aws', path.join('/', 'usr', 'bin', 'aws'), path.join('/', 'usr', 'local', 'bin', 'aws')],
+        },
+        source: {
+            macos: {
+                x86: 'https://awscli.amazonaws.com/AWSCLIV2.pkg',
+                arm: 'https://awscli.amazonaws.com/AWSCLIV2.pkg',
+            },
+            windows: {
+                x86: 'https://awscli.amazonaws.com/AWSCLIV2.msi',
+                arm: 'https://awscli.amazonaws.com/AWSCLIV2.msi',
+            },
+        },
+        name: 'AWS',
+        manualInstallLink: 'https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html',
+        exec: 'aws',
+    },
+    docker: {
+        command: {
+            windows: [
+                'docker.exe',
+                path.join('C:', 'Program Files', 'Docker', 'Docker', 'resources', 'bin', 'docker.exe'),
+                path.join('C:', 'Program Files (x86)', 'Docker', 'Docker', 'resources', 'bin', 'docker.exe'),
+            ],
+            unix: [
+                'docker',
+                path.join('/', 'usr', 'bin', 'docker'),
+                path.join('/', 'usr', 'local', 'bin', 'docker'),
+                path.join('/', 'Applications', 'Docker.app', 'Contents', 'Resources', 'bin', 'docker'),
+            ],
+        },
+        source: {
+            macos: {
+                x86: 'https://desktop.docker.com/mac/main/amd64/Docker.dmg',
+                arm: 'https://desktop.docker.com/mac/main/arm64/Docker.dmg',
+            },
+            windows: {
+                x86: 'https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe',
+                arm: 'https://desktop.docker.com/win/main/arm64/Docker%20Desktop%20Installer.exe',
+            },
+        },
+        name: 'Docker',
+        manualInstallLink: 'https://docs.docker.com/desktop',
+        exec: 'docker',
     },
 }
 
@@ -83,7 +176,26 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
     let result: Result = 'Succeeded'
 
     let tempDir: string | undefined
+
+    // get install uri to see if auto-install is enabled.
     const manualInstall = localize('AWS.cli.manualInstall', 'Install manually...')
+    if (!getOsCliSource(awsClis[cli])) {
+        // Installer not supported on this platform, direct custoemr to manual install
+        const selection = await vscode.window.showInformationMessage(
+            localize(
+                'AWS.cli.installCliPrompt',
+                '{0} could not find {1} CLI. Install a local copy?',
+                localize('AWS.channel.aws.toolkit', '{0} Toolkit', getIdeProperties().company),
+                cliToInstall.name
+            ),
+            manualInstall
+        )
+        if (selection === manualInstall) {
+            void openUrl(vscode.Uri.parse(cliToInstall.manualInstallLink))
+        }
+        throw new CancellationError('user')
+    }
+
     try {
         const install = localize('AWS.generic.install', 'Install')
         const selection = !confirm
@@ -113,11 +225,16 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
         )
 
         tempDir = await makeTemporaryToolkitFolder()
-        let cliPath: string
+        let cliPath: string | undefined
         try {
             switch (cli) {
                 case 'session-manager-plugin':
                     cliPath = await installSsmCli(tempDir, progress, timeout)
+                    break
+                case 'aws-cli':
+                case 'sam-cli':
+                case 'docker':
+                    cliPath = await installGui(cli, tempDir, progress, timeout)
                     break
                 default:
                     throw new InstallerError(`Invalid not found for CLI: ${cli}`)
@@ -126,8 +243,19 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
             timeout.dispose()
         }
         // validate
-        if (!(await hasCliCommand(cliToInstall, false))) {
-            throw new InstallerError('Could not verify installed CLIs')
+        if (cli === 'session-manager-plugin') {
+            if (!cliPath || !(await hasCliCommand(cliToInstall, false))) {
+                throw new InstallerError('Could not verify installed CLIs')
+            }
+        } else {
+            if (!cliPath) {
+                // install success but wrong exit code
+                const toolPath = await hasCliCommand(cliToInstall, true)
+                if (!toolPath) {
+                    throw new InstallerError('Could not verify installed CLIs')
+                }
+                return toolPath
+            }
         }
 
         return cliPath
@@ -169,8 +297,11 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
                 }
             )
         }
-
-        telemetry.aws_toolInstallation.emit({ result, toolId: cli })
+        getLogger().info(`${cli} installation: ${result}`)
+        // commented for we need to add docker to toolId type in telemetry. No good way to add it in dev.
+        if (cli !== 'docker') {
+            telemetry.aws_toolInstallation.emit({ result, toolId: cli })
+        }
     }
 }
 
@@ -190,32 +321,51 @@ export async function getCliCommand(cli: Cli): Promise<string | undefined> {
  * @param command CLI Command name
  */
 async function hasCliCommand(cli: Cli, global: boolean): Promise<string | undefined> {
-    const command = global ? path.parse(getOsCommand(cli)).base : path.join(getToolkitLocalCliPath(), getOsCommand(cli))
-    const result = await new ChildProcess(command, ['--version']).run()
-
-    return result.exitCode === 0 ? command : undefined
+    const commands = getOsCommands(cli)
+    for (const command of commands ? commands : []) {
+        const cmd = global ? path.parse(command).base : path.join(getToolkitLocalCliPath(), command)
+        const result = await new ChildProcess(cmd, ['--version']).run()
+        return result.exitCode === 0 ? cmd : undefined
+    }
 }
 
-function getOsCommand(cli: Cli): string {
+function getOsCommands(cli: Cli): Array<string> | undefined {
     return process.platform === 'win32' ? cli.command.windows : cli.command.unix
 }
 
-function getOsCliSource(cli: Cli): string {
+function getOsArch(): string {
+    switch (process.arch) {
+        case 'x32':
+        case 'x64':
+            return 'x86'
+        case 'arm':
+        case 'arm64':
+            return 'arm'
+        default:
+            return process.arch
+    }
+}
+
+// return undefined if customer platform not supported
+function getOsCliSource(cli: Cli): string | undefined {
     switch (process.platform) {
         case 'win32':
-            return cli.source.windows
+            return getOsArch() === 'x86' ? cli.source.windows?.x86 : cli.source.windows?.arm
         case 'darwin':
-            return cli.source.macos
+            return getOsArch() === 'x86' ? cli.source.macos?.x86 : cli.source.macos?.arm
         case 'linux':
-            return cli.source.linux
+            return getOsArch() === 'x86' ? cli.source.linux?.x86 : cli.source.linux?.arm
         default:
             throw new InvalidPlatformError(`Platform ${process.platform} is not supported for CLI autoinstallation.`)
     }
 }
 
-async function downloadCliSource(cli: Cli, tempDir: string, timeout: Timeout): Promise<string> {
+async function downloadCliSource(cli: Cli, tempDir: string, timeout: Timeout): Promise<string | undefined> {
     const installerSource = getOsCliSource(cli)
-    const destinationFile = path.join(tempDir, path.parse(getOsCliSource(cli)).base)
+    if (!installerSource) {
+        return
+    }
+    const destinationFile = path.join(tempDir, path.parse(installerSource).base)
     const fetcher = new HttpResourceFetcher(installerSource, { showUrl: true, timeout })
     getLogger().info(`Downloading installer from ${installerSource}...`)
     await fetcher.get(destinationFile)
@@ -255,7 +405,11 @@ async function installSsmCli(
 
     const ssmInstaller = await downloadCliSource(awsClis['session-manager-plugin'], tempDir, timeout)
     const outDir = path.join(getToolkitLocalCliPath(), 'sessionmanagerplugin')
-    const finalPath = path.join(getToolkitLocalCliPath(), getOsCommand(awsClis['session-manager-plugin']))
+    const cmd = getOsCommands(awsClis['session-manager-plugin'])
+    if (!cmd || !ssmInstaller) {
+        throw new InvalidPlatformError(`Platform ${process.platform} is not supported for CLI autoinstallation.`)
+    }
+    const finalPath = path.join(getToolkitLocalCliPath(), cmd[0])
     const TimedProcess = ChildProcess.extend({ timeout, rejectOnError: true, rejectOnErrorCode: true })
 
     getLogger('channel').info(`Installing SSM CLI from ${ssmInstaller} to ${outDir}...`)
@@ -301,6 +455,9 @@ async function installSsmCli(
     }
 
     async function installOnLinux() {
+        if (!ssmInstaller) {
+            throw new InvalidPlatformError(`Platform ${process.platform} is not supported for CLI autoinstallation.`)
+        }
         const ssmDir = path.dirname(ssmInstaller)
         // extract deb file (using ar) to ssmInstaller dir
         await new TimedProcess('ar', ['-x', ssmInstaller]).run({ spawnOptions: { cwd: ssmDir } })
@@ -317,13 +474,68 @@ async function installSsmCli(
 }
 
 /**
+ *
+ * @param cli The cli to install
+ * @param tempDir Temp dir to store installer
+ * @param progress Progress report
+ * @param timeout Timeout for install
+ * @returns
+ */
+async function installGui(
+    cli: AwsClis,
+    tempDir: string,
+    progress: vscode.Progress<{ message?: string; increment?: number }>,
+    timeout: Timeout
+): Promise<string | undefined> {
+    progress.report({ message: msgDownloading })
+    const TimedProcess = ChildProcess.extend({ timeout, rejectOnError: true, rejectOnErrorCode: true })
+    progress.report({ message: msgInstallingLocal })
+
+    return handleError(install())
+
+    async function install() {
+        const guiInstaller = await downloadCliSource(awsClis[cli], tempDir, timeout)
+        getLogger('channel').info(`Installing ${cli} from ${guiInstaller}...`)
+
+        if (!guiInstaller) {
+            throw new InvalidPlatformError(`Platform ${process.platform} is not supported for CLI autoinstallation.`)
+        }
+        switch (process.platform) {
+            case 'darwin':
+                await new TimedProcess('open', [guiInstaller, '-W']).run()
+                return await getCliCommand(awsClis[cli])
+            case 'win32':
+                await new TimedProcess(guiInstaller, []).run()
+                return await getCliCommand(awsClis[cli])
+            // customer shouldn't reach this point as they will be directed to manual install link in entrypoint.
+            default:
+                throw new InvalidPlatformError(
+                    `Platform ${process.platform} is not supported for CLI autoinstallation.`
+                )
+        }
+    }
+}
+
+/**
  * @throws {@link CancellationError} if the install times out or the user cancels
  */
-export async function getOrInstallCli(cli: AwsClis, confirm: boolean): Promise<string> {
+export async function getOrInstallCli(cli: AwsClis, confirm: boolean, popup: boolean = false): Promise<string> {
     if (DevSettings.instance.get('forceInstallTools', false)) {
         return installCli(cli, confirm)
     } else {
-        return (await getCliCommand(awsClis[cli])) ?? installCli(cli, confirm)
+        const path = await getCliCommand(awsClis[cli])
+        // if popup, when tool is detected, show a popup message and return path
+        if (path && popup) {
+            void vscode.window.showInformationMessage(
+                localize(
+                    'AWS.cli.cliFoundPrompt',
+                    '{0} CLI exists in your environment, location found: {1}',
+                    awsClis[cli].name,
+                    path
+                )
+            )
+        }
+        return path ?? installCli(cli, confirm)
     }
 }
 
