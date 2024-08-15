@@ -43,13 +43,13 @@ class FeatureDevSessionContext(val project: Project, val maxProjectSizeBytes: Lo
     private val ignorePatterns = setOf(
         "\\.aws-sam",
         "\\.svn",
-        "\\.hg/",
+        "\\.hg/?",
         "\\.rvm",
-        "\\.git/",
+        "\\.git/?",
         "\\.gitignore",
         "\\.project",
         "\\.gem",
-        "/\\.idea/",
+        "/\\.idea/?",
         "\\.zip$",
         "\\.bin$",
         "\\.png$",
@@ -62,9 +62,9 @@ class FeatureDevSessionContext(val project: Project, val maxProjectSizeBytes: Lo
         "/license\\.md$",
         "/License\\.md$",
         "/LICENSE\\.md$",
-        "node_modules/",
-        "build/",
-        "dist/"
+        "node_modules/?",
+        "build/?",
+        "dist/?"
     ).map { Regex(it) }
 
     // projectRoot: is the directory where the project is located when selected to open a project.

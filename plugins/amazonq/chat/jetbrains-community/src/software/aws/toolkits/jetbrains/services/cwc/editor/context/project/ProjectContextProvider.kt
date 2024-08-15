@@ -146,6 +146,9 @@ class ProjectContextProvider(val project: Project, private val encoderServer: En
         val indexStartTime = System.currentTimeMillis()
         val url = URL("http://localhost:${encoderServer.port}/indexFiles")
         val filesResult = collectFiles()
+        var duration = (System.currentTimeMillis() - indexStartTime).toDouble()
+        logger.debug { "project context file collection time: ${duration}ms" }
+        logger.debug { "list of files collected: ${filesResult.files.joinToString("\n")}" }
         val projectRoot = project.guessProjectDir()?.path ?: return false
         val payload = IndexRequestPayload(filesResult.files, projectRoot, false)
         val payloadJson = mapper.writeValueAsString(payload)
@@ -155,13 +158,13 @@ class ProjectContextProvider(val project: Project, private val encoderServer: En
         setConnectionProperties(connection)
         setConnectionRequest(connection, encrypted)
         logger.info { "project context index response code: ${connection.responseCode} for ${project.name}" }
-        val duration = (System.currentTimeMillis() - indexStartTime).toDouble()
+        duration = (System.currentTimeMillis() - indexStartTime).toDouble()
         val startUrl = getStartUrl(project)
         logger.debug { "project context index time: ${duration}ms" }
         if (connection.responseCode == 200) {
             val usage = getUsage()
             TelemetryHelper.recordIndexWorkspace(duration, filesResult.files.size, filesResult.fileSize, true, usage?.memoryUsage, usage?.cpuUsage, startUrl)
-            logger.debug { "project context index finished for ${project.name}, list of files indexed: ${filesResult.files.joinToString("\n")}" }
+            logger.debug { "project context index finished for ${project.name}" }
             return true
         } else {
             TelemetryHelper.recordIndexWorkspace(duration, filesResult.files.size, filesResult.fileSize, false, null, null, startUrl)
@@ -263,9 +266,9 @@ class ProjectContextProvider(val project: Project, private val encoderServer: En
         return currentTotalFileSize.let { totalSize -> totalSize > (maxSize * 1024 * 1024 - currentFileSize) }
     }
 
-    private fun isBuildOrBin(filePath: String): Boolean {
-        val regex = Regex("""[/\\](bin|build|node_modules|venv|.venv|env|\.idea|.conda)[/\\]""", RegexOption.IGNORE_CASE)
-        return regex.find(filePath) != null
+    private fun isBuildOrBin(fileName: String): Boolean {
+        val regex = Regex("""bin|build|node_modules|venv|\.venv|env|\.idea|\.conda""", RegexOption.IGNORE_CASE)
+        return regex.find(fileName) != null
     }
 
     private fun collectFiles(): FileCollectionResult {
