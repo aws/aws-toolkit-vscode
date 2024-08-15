@@ -26,7 +26,6 @@ export class DBElasticClusterNode extends DBResourceNode {
         client: DocumentDBClient
     ) {
         super(client, cluster.clusterName ?? '[Cluster]', vscode.TreeItemCollapsibleState.None)
-        this.id = cluster.clusterArn
         this.contextValue = this.getContext()
         this.iconPath = new vscode.ThemeIcon('layers-dot') //TODO: determine icon for elastic cluster
         this.description = this.getDescription()

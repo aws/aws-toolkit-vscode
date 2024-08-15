@@ -29,6 +29,7 @@ export type DBClusterRole = 'global' | 'regional' | 'primary' | 'secondary'
 export class DBClusterNode extends DBResourceNode {
     override name = this.cluster.DBClusterIdentifier!
     override arn = this.cluster.DBClusterArn!
+    public instances: DBInstance[] = []
 
     constructor(
         public readonly parent: AWSTreeNodeBase,
@@ -49,13 +50,13 @@ export class DBClusterNode extends DBResourceNode {
         return telemetry.docdb_listInstances.run(async () => {
             return await makeChildrenNodes({
                 getChildNodes: async () => {
-                    const instances: DBInstance[] = (await this.client.listInstances([this.arn])).map((i) => {
+                    this.instances = (await this.client.listInstances([this.arn])).map((i) => {
                         const member = this.cluster.DBClusterMembers?.find(
                             (m) => m.DBInstanceIdentifier === i.DBInstanceIdentifier
                         )
                         return { ...i, ...member }
                     })
-                    const nodes = instances.map((instance) => new DBInstanceNode(this, instance))
+                    const nodes = this.instances.map((instance) => new DBInstanceNode(this, instance))
                     return nodes
                 },
                 getNoChildrenPlaceholderNode: async () => {

@@ -17,6 +17,7 @@ import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { CreateGlobalClusterWizard } from '../wizards/createGlobalClusterWizard'
 import { CreateDBClusterMessage } from '@aws-sdk/client-docdb'
 import { createInstancesForCluster } from './createCluster'
+import { isSupportedGlobalInstanceClass } from '../utils'
 
 export async function addRegion(node: DBClusterNode | DBGlobalClusterNode): Promise<void> {
     if (!node) {
@@ -25,6 +26,11 @@ export async function addRegion(node: DBClusterNode | DBGlobalClusterNode): Prom
 
     return telemetry.docdb_addRegion.run(async () => {
         let globalClusterName = undefined
+
+        if (node.cluster.StorageEncrypted) {
+            void vscode.window.showErrorMessage('Currently supported for unencrypted clusters only.')
+            return
+        }
 
         if (node instanceof DBClusterNode) {
             if (node.clusterRole !== 'regional') {
@@ -40,6 +46,21 @@ export async function addRegion(node: DBClusterNode | DBGlobalClusterNode): Prom
                     )
                 )
                 throw new ToolkitError('Cluster must have at least one instance to add a region', { cancelled: true })
+            }
+
+            const unsupportedInstanceFound = node.instances.find(
+                (instance) => !isSupportedGlobalInstanceClass(instance.DBInstanceClass!)
+            )
+
+            if (unsupportedInstanceFound) {
+                void vscode.window.showErrorMessage(
+                    localize(
+                        'AWS.docdb.addRegion.unsupportedInstanceClass',
+                        'Instance class {0} not supported for global cluster.  Upgrade the instances then try again.',
+                        unsupportedInstanceFound.DBInstanceClass
+                    )
+                )
+                throw new ToolkitError('Instance class not supported for global cluster', { cancelled: true })
             }
         } else {
             globalClusterName = node.cluster.GlobalClusterIdentifier

@@ -26,6 +26,8 @@ describe('rebootInstanceCommand', function () {
         sandbox = sinon.createSandbox()
         spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
+        getTestWindow().onDidShowMessage((m) => m.items.find((i) => i.title === 'Yes')?.select())
+
         docdb = { regionCode: 'us-east-1' } as DocumentDBClient
         const clusterName = 'docdb-1234'
         const cluster = { DBClusterIdentifier: clusterName, Status: 'available' }
@@ -52,8 +54,10 @@ describe('rebootInstanceCommand', function () {
         await rebootInstance(node)
 
         // assert
+        getTestWindow().getFirstMessage().assertWarn('Are you sure you want to reboot instance test-instance?')
+
         getTestWindow()
-            .getFirstMessage()
+            .getSecondMessage()
             .assertInfo(/Rebooting instance: test-instance/)
 
         assert(stub.calledOnceWithExactly(instanceName))
@@ -74,7 +78,7 @@ describe('rebootInstanceCommand', function () {
 
         // assert
         getTestWindow()
-            .getFirstMessage()
+            .getSecondMessage()
             .assertError(/Failed to reboot instance: test-instance/)
 
         assertTelemetry('docdb_rebootInstance', {

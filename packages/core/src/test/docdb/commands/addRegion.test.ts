@@ -22,6 +22,7 @@ describe('addRegionCommand', function () {
     const cluster = {
         DBClusterArn: 'arn:docdb-1234',
         Status: 'available',
+        DBClusterMembers: [{ IsClusterWriter: true }],
     }
     let docdb: DocumentDBClient
     let node: DBClusterNode | DBGlobalClusterNode
@@ -45,6 +46,7 @@ describe('addRegionCommand', function () {
 
         sandbox.stub(DefaultDocumentDBClient, 'create').returns(docdb)
 
+        cluster.DBClusterMembers = [{ IsClusterWriter: true }]
         const parentNode = new DocumentDBNode(docdb)
         node = new DBClusterNode(parentNode, cluster, docdb)
     })
@@ -215,5 +217,39 @@ describe('addRegionCommand', function () {
             .assertError(/Failed to create cluster: docdb-1234/)
 
         assertTelemetry('docdb_addRegion', { result: 'Failed' })
+    })
+
+    it('shows a warning when the cluster has no instances', async function () {
+        // arrange
+        const clusterNode = node as DBClusterNode
+        clusterNode.cluster.DBClusterMembers = []
+        setupWizard()
+
+        // act
+        await assert.rejects(addRegion(node))
+
+        // assert
+        getTestWindow()
+            .getFirstMessage()
+            .assertError(/Cluster must have at least one instance to add a region/)
+
+        assertTelemetry('docdb_addRegion', { result: 'Cancelled' })
+    })
+
+    it('shows a warning when the cluster has an unsupported instance class', async function () {
+        // arrange
+        const clusterNode = node as DBClusterNode
+        clusterNode.instances = [{ DBInstanceClass: 'db.t3.medium' }]
+        setupWizard()
+
+        // act
+        await assert.rejects(addRegion(node))
+
+        // assert
+        getTestWindow()
+            .getFirstMessage()
+            .assertError(/Instance class db.t3.medium not supported/)
+
+        assertTelemetry('docdb_addRegion', { result: 'Cancelled' })
     })
 })

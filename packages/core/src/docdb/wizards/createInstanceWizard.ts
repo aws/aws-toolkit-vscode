@@ -42,7 +42,7 @@ export class CreateInstanceWizard extends Wizard<CreateInstanceState> {
         })
         this.cluster = cluster
         this.client = client
-        this.title = localize('AWS.docdb.createInstance.title', 'Create Instance')
+        this.title = localize('AWS.docdb.createInstance.title', 'Add Instance')
     }
 
     public override async init(): Promise<this> {

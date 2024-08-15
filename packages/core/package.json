@@ -2021,12 +2021,12 @@
                 },
                 {
                     "command": "aws.docdb.deleteCluster",
-                    "when": "viewItem =~ /^awsDocDB-cluster/",
+                    "when": "viewItem =~ /^awsDocDB-cluster-(regional|elastic)/",
                     "group": "0@4"
                 },
                 {
                     "command": "aws.docdb.createInstance",
-                    "when": "viewItem =~ /^awsDocDB-cluster-(?!.*elastic.*)(?!-stopped)/"
+                    "when": "viewItem =~ /^awsDocDB-cluster-(?!elastic|global)(?!-stopped)/"
                 },
                 {
                     "command": "aws.docdb.renameInstance",
@@ -2050,7 +2050,7 @@
                 },
                 {
                     "command": "aws.docdb.listTags",
-                    "when": "viewItem =~ /^awsDocDB-/"
+                    "when": "viewItem =~ /^awsDocDB-(?!cluster-global).*/"
                 },
                 {
                     "command": "aws.docdb.openBrowser",
@@ -2061,10 +2061,6 @@
                     "command": "aws.docdb.copyEndpoint",
                     "when": "viewItem =~ /^awsDocDB-/",
                     "group": "0@1"
-                },
-                {
-                    "command": "aws.docdb.addRegion",
-                    "when": "viewItem =~ /^awsDocDB-cluster-(global|regional)/"
                 }
             ],
             "aws.toolkit.auth": [
@@ -3741,17 +3737,6 @@
                 "title": "%AWS.command.docdb.copyEndpoint%",
                 "category": "%AWS.title%",
                 "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB/",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
-                "command": "aws.docdb.addRegion",
-                "title": "%AWS.command.docdb.addRegion%",
-                "category": "%AWS.title%",
-                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB-cluster.*-running/",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

@@ -59,8 +59,6 @@ export class DefaultDocumentDBClient {
         const client = await this.getClient()
         try {
             return await client.send(command)
-        } catch (e) {
-            throw ToolkitError.chain(e, `Failed to execute command: ${command.constructor.name}`)
         } finally {
             client.destroy()
         }
@@ -73,8 +71,6 @@ export class DefaultDocumentDBClient {
         const client = await this.getElasticClient()
         try {
             return await client.send(command)
-        } catch (e) {
-            throw ToolkitError.chain(e, `Failed to execute command: ${command.constructor.name}`)
         } finally {
             client.destroy()
         }

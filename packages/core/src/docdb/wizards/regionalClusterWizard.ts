@@ -5,7 +5,7 @@
 
 import { CreateDBClusterCommandInput } from '@aws-sdk/client-docdb'
 import { DBStorageType, DocumentDBClient } from '../../shared/clients/docdbClient'
-import { validateClusterName, validatePassword, validateUsername } from '../utils'
+import { isSupportedGlobalInstanceClass, validateClusterName, validatePassword, validateUsername } from '../utils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Wizard, WizardOptions } from '../../shared/wizards/wizard'
 import { createInputBox } from '../../shared/ui/inputPrompter'
@@ -171,17 +171,13 @@ async function createInstanceClassPrompter(
     const options = await docdbClient.listInstanceClassOptions(engineVersion, DBStorageType.Standard)
 
     const items: DataQuickPickItem<string>[] = options
-        .filter((option) => {
-            return isPrimaryCluster || /(t3|t4g|r4)/.test(option.DBInstanceClass!) === false
-        })
-        .map((option) => {
-            return {
-                data: option.DBInstanceClass,
-                label: option.DBInstanceClass ?? '(unknown)',
-                description: undefined,
-                detail: undefined,
-            }
-        })
+        .filter((option) => isPrimaryCluster || isSupportedGlobalInstanceClass(option.DBInstanceClass!))
+        .map((option) => ({
+            data: option.DBInstanceClass,
+            label: option.DBInstanceClass ?? '(unknown)',
+            description: undefined,
+            detail: undefined,
+        }))
 
     if (items.length === 0) {
         return new SkipPrompter('db.t3.medium')

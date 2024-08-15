@@ -129,6 +129,10 @@ export function validateInstanceName(name: string): string | undefined {
     return undefined
 }
 
+export function isSupportedGlobalInstanceClass(instanceClass: string) {
+    return /(t3|t4g|r4)/.test(instanceClass) === false
+}
+
 /**
  * Format for rendering readable dates as YYYY-MM-DD
  */
