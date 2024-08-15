@@ -66,7 +66,7 @@ export interface SyncParams {
 export const prefixNewBucketName = (name: string) => `newbucket:${name}`
 export const prefixNewRepoName = (name: string) => `newrepo:${name}`
 
-function createBucketPrompter(client: DefaultS3Client) {
+export function createBucketPrompter(client: DefaultS3Client) {
     const recentBucket = getRecentResponse(client.regionCode, 'bucketName')
     const items = client.listBucketsIterable().map((b) => [
         {
@@ -101,7 +101,7 @@ const canPickStack = (s: StackSummary) => s.StackStatus.endsWith('_COMPLETE')
 const canShowStack = (s: StackSummary) =>
     (s.StackStatus.endsWith('_COMPLETE') || s.StackStatus.endsWith('_IN_PROGRESS')) && !s.StackStatus.includes('DELETE')
 
-function createStackPrompter(client: DefaultCloudFormationClient) {
+export function createStackPrompter(client: DefaultCloudFormationClient) {
     const recentStack = getRecentResponse(client.regionCode, 'stackName')
     const consoleUrl = getAwsConsoleUrl('cloudformation', client.regionCode)
     const items = client.listAllStacks().map((stacks) =>
@@ -296,7 +296,7 @@ async function ensureRepo(resp: Pick<SyncParams, 'region' | 'ecrRepoUri'>) {
     }
 }
 
-async function injectCredentials(conn: IamConnection, env = process.env) {
+export async function injectCredentials(conn: IamConnection, env = process.env) {
     const creds = await conn.getCredentials()
     return { ...env, ...asEnvironmentVariables(creds) }
 }
