@@ -48,13 +48,16 @@ export const showCodeWhispererConnectionPrompt = async () => {
 
 export async function awsIdSignIn() {
     getLogger().info('selected AWS ID sign in')
+    let conn
     try {
-        await AuthUtil.instance.connectToAwsBuilderId()
+        conn = await AuthUtil.instance.connectToAwsBuilderId()
     } catch (e) {
         throw ToolkitError.chain(e, failedToConnectAwsBuilderId, { code: 'FailedToConnect' })
     }
     vsCodeState.isFreeTierLimitReached = false
     await Commands.tryExecute('aws.amazonq.enableCodeSuggestions')
+
+    return conn
 }
 
 export const createCodeWhispererIamItem = () => {

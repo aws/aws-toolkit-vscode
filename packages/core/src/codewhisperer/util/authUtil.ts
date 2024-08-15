@@ -188,7 +188,7 @@ export class AuthUtil {
         return this.conn !== undefined && isBuilderIdConnection(this.conn)
     }
 
-    public async connectToAwsBuilderId() {
+    public async connectToAwsBuilderId(): Promise<SsoConnection> {
         let conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
 
         if (!conn) {
@@ -201,10 +201,10 @@ export class AuthUtil {
             conn = await this.auth.reauthenticate(conn)
         }
 
-        return this.secondaryAuth.useNewConnection(conn)
+        return (await this.secondaryAuth.useNewConnection(conn)) as SsoConnection
     }
 
-    public async connectToEnterpriseSso(startUrl: string, region: string) {
+    public async connectToEnterpriseSso(startUrl: string, region: string): Promise<SsoConnection> {
         let conn = (await this.auth.listConnections()).find(
             (conn): conn is SsoConnection =>
                 isSsoConnection(conn) && conn.startUrl.toLowerCase() === startUrl.toLowerCase()
@@ -220,7 +220,7 @@ export class AuthUtil {
             conn = await this.auth.reauthenticate(conn)
         }
 
-        return this.secondaryAuth.useNewConnection(conn)
+        return (await this.secondaryAuth.useNewConnection(conn)) as SsoConnection
     }
 
     public static get instance() {

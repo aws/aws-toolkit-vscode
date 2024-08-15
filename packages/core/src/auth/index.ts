@@ -10,7 +10,14 @@
  */
 export { initialize as initializeAuth } from './activation'
 export { initializeAwsCredentialsStatusBarItem } from './ui/statusBarItem'
-export { Connection, AwsConnection, SsoConnection, isAnySsoConnection, isBuilderIdConnection } from './connection'
+export {
+    Connection,
+    AwsConnection,
+    SsoConnection,
+    isAnySsoConnection,
+    isBuilderIdConnection,
+    getTelemetryMetadataForConn,
+} from './connection'
 export { Auth } from './auth'
 export { CredentialsStore } from './credentials/store'
 export { LoginManager } from './deprecated/loginManager'
