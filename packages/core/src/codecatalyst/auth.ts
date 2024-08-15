@@ -248,9 +248,7 @@ export class CodeCatalystAuthenticationProvider {
                 await upgrade()
             }
 
-            await this.secondaryAuth.useNewConnection(conn)
-
-            return conn
+            return (await this.secondaryAuth.useNewConnection(conn)) as SsoConnection
         }
 
         if (isUpgradeableConnection(conn)) {
@@ -272,7 +270,7 @@ export class CodeCatalystAuthenticationProvider {
         return this.isConnected() && isIdcSsoConnection(this.activeConnection)
     }
 
-    public async connectToAwsBuilderId() {
+    public async connectToAwsBuilderId(): Promise<SsoConnection> {
         let conn: SsoConnection
         let isConnectionOnboarded: boolean
 
@@ -294,10 +292,10 @@ export class CodeCatalystAuthenticationProvider {
             await this.promptOnboarding()
         }
 
-        return this.secondaryAuth.useNewConnection(conn)
+        return (await this.secondaryAuth.useNewConnection(conn)) as SsoConnection
     }
 
-    public async connectToEnterpriseSso(startUrl: string, region: string) {
+    public async connectToEnterpriseSso(startUrl: string, region: string): Promise<SsoConnection> {
         let conn: SsoConnection | undefined
         let isConnectionOnboarded: boolean
 
@@ -327,8 +325,7 @@ export class CodeCatalystAuthenticationProvider {
             await this.promptOnboarding()
         }
 
-        await this.secondaryAuth.useNewConnection(conn)
-        return conn
+        return (await this.secondaryAuth.useNewConnection(conn)) as SsoConnection
     }
 
     /**
@@ -350,8 +347,7 @@ export class CodeCatalystAuthenticationProvider {
             // Sanity check - connections with other scopes should have been forced out at this point.
             if (!hasExactScopes(conn, defaultScopes)) {
                 const newConn = await setScopes(conn, defaultScopes)
-                await this.secondaryAuth.useNewConnection(newConn)
-                connToReauth = newConn
+                connToReauth = await this.secondaryAuth.useNewConnection(newConn)
             }
 
             return await this.auth.reauthenticate(connToReauth)
