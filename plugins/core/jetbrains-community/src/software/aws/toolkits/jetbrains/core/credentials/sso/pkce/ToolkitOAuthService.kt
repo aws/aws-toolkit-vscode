@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.core.credentials.sso.pkce
 import com.intellij.collaboration.auth.OAuthCallbackHandlerBase
 import com.intellij.collaboration.auth.services.OAuthCredentialsAcquirer
 import com.intellij.collaboration.auth.services.OAuthRequest
+import com.intellij.collaboration.auth.services.OAuthService
 import com.intellij.collaboration.auth.services.OAuthServiceBase
 import com.intellij.collaboration.auth.services.PkceUtils
 import com.intellij.openapi.application.ApplicationNamesInfo
@@ -61,17 +62,23 @@ class ToolkitOAuthService : OAuthServiceBase<AccessToken>() {
         return authorize(ToolkitOAuthRequest(registration))
     }
 
-    override fun handleServerCallback(path: String, parameters: Map<String, List<String>>): Boolean {
-        val request = currentRequest.get() ?: return false
-        val toolkitRequest = request.request as? ToolkitOAuthRequest ?: return false
+    override fun handleOAuthServerCallback(path: String, parameters: Map<String, List<String>>): OAuthService.OAuthResult<AccessToken>? {
+        val request = currentRequest.get() ?: return OAuthService.OAuthResult(null, false)
+        val toolkitRequest = request.request as? ToolkitOAuthRequest ?: return OAuthService.OAuthResult(request.request, false)
 
         val callbackState = parameters["state"]?.firstOrNull()
         if (toolkitRequest.csrfToken != callbackState) {
             request.result.completeExceptionally(RuntimeException("Invalid CSRF token"))
-            return false
+            return OAuthService.OAuthResult(toolkitRequest, false)
         }
 
-        return super.handleServerCallback(path, parameters)
+        if (parameters["code"] == null) {
+            val error = parameters["error"]?.firstOrNull()
+            val errorDescription = parameters["error_description"]?.firstOrNull()
+            toolkitRequest.error = OAuthError(error = error, errorDescription = errorDescription)
+        }
+
+        return super.handleOAuthServerCallback(path, parameters)
     }
 
     override fun revokeToken(token: String) {
@@ -82,6 +89,11 @@ class ToolkitOAuthService : OAuthServiceBase<AccessToken>() {
         fun getInstance() = service<ToolkitOAuthService>()
     }
 }
+
+private data class OAuthError(
+    val error: String?,
+    val errorDescription: String?
+)
 
 private class ToolkitOAuthRequest(internal val registration: PKCEClientRegistration) : OAuthRequest<AccessToken> {
     private val port: Int get() = BuiltInServerManager.getInstance().port
@@ -120,6 +132,8 @@ private class ToolkitOAuthRequest(internal val registration: PKCEClientRegistrat
         )
 
     private fun randB64url(bits: Int): String = base64Encoder.encodeToString(BigInteger(bits, DigestUtil.random).toByteArray())
+
+    internal var error: OAuthError? = null
 }
 
 // exchange for real token
@@ -157,7 +171,7 @@ internal class ToolkitOAuthCallbackHandler : OAuthCallbackHandlerBase() {
     override fun oauthService() = ToolkitOAuthService.getInstance()
 
     // on success / fail
-    override fun handleAcceptCode(isAccepted: Boolean): AcceptCodeHandleResult {
+    override fun handleOAuthResult(oAuthResult: OAuthService.OAuthResult<*>): AcceptCodeHandleResult {
         // focus should be on requesting component?
         runInEdt {
             IdeFocusManager.getGlobalInstance().getLastFocusedIdeWindow()?.toFront()
@@ -166,16 +180,22 @@ internal class ToolkitOAuthCallbackHandler : OAuthCallbackHandlerBase() {
         val urlBase = newFromEncoded(
             "http://127.0.0.1:${BuiltInServerManager.getInstance().port}/api/${ToolkitOAuthCallbackResultService.SERVICE_NAME}/index.html"
         )
-        val params = if (isAccepted) {
+        val params = if (oAuthResult.isAccepted) {
             mapOf(
                 "productName" to PKCE_CLIENT_NAME,
                 // we don't have the request context to get the requested scopes in this callback until 233
                 "scopes" to ApplicationNamesInfo.getInstance().fullProductName
             )
         } else {
+            val (error, errorDescription) = (oAuthResult.request as? ToolkitOAuthRequest)?.error ?: OAuthError(null, null)
+            val errorString = if (error != null && errorDescription != null) {
+                "$error: $errorDescription"
+            } else {
+                errorDescription ?: error ?: message("general.unknown_error")
+            }
+
             mapOf(
-                // when 233, check if we can retrieve the underlying error
-                "error" to message("general.unknown_error")
+                "error" to errorString
             )
         }
 
