@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { getIcon } from '../../../icons'
+import { IconPath, getIcon } from '../../../icons'
 import { TreeNode } from '../../../treeview/resourceTreeDataProvider'
 import { ResourceTreeEntity, SamAppLocation } from '../samProject'
 import { SERVERLESS_FUNCTION_TYPE } from '../../../cloudformation/cloudformation'
@@ -15,12 +15,13 @@ import { StackResource } from '../../../../lambda/commands/listSamResources'
 enum ResourceTypeId {
     Function = 'function',
     Api = 'api',
+    Other = '',
 }
 
 export class ResourceNode implements TreeNode {
     public readonly id = this.resourceTreeEntity.Id
     private readonly type = this.resourceTreeEntity.Type
-    public readonly functionName = this.deployedResource?.LogicalResourceId
+    public readonly resourceLogicalId = this.deployedResource?.LogicalResourceId
 
     public constructor(
         private readonly location: SamAppLocation,
@@ -49,25 +50,50 @@ export class ResourceNode implements TreeNode {
         return [...generatePropertyNodes(this.resourceTreeEntity), ...deployedNode]
     }
 
-    public getTreeItem() {
-        const item =
+    public getTreeItem(): vscode.TreeItem {
+        // Determine the initial TreeItem collapsible state based on the type
+        const collapsibleState =
             this.type === SERVERLESS_FUNCTION_TYPE
-                ? new vscode.TreeItem(this.resourceTreeEntity.Id, vscode.TreeItemCollapsibleState.Collapsed)
-                : new vscode.TreeItem(this.resourceTreeEntity.Id, vscode.TreeItemCollapsibleState.None)
+                ? vscode.TreeItemCollapsibleState.Collapsed
+                : vscode.TreeItemCollapsibleState.None
+
+        // Create the TreeItem with the determined collapsible state
+        const item = new vscode.TreeItem(this.resourceTreeEntity.Id, collapsibleState)
+
+        // Set the tooltip to the URI of the SAM template
         item.tooltip = this.location.samTemplateUri.toString()
-        item.iconPath =
-            this.type === SERVERLESS_FUNCTION_TYPE ? getIcon('aws-lambda-function') : getIcon('vscode-symbol-event')
+
+        // Assign iconPath based on the type
+        item.iconPath = this.getIconPath()
+
+        // Set the resource URI to the SAM template URI
         item.resourceUri = this.location.samTemplateUri
+
+        // Define the context value for the item
         item.contextValue = `awsAppBuilderResourceNode.${this.getResourceId()}`
+
         return item
+    }
+
+    private getIconPath(): IconPath | undefined {
+        switch (this.type) {
+            case SERVERLESS_FUNCTION_TYPE:
+                return getIcon('aws-lambda-function')
+            case 'Api':
+                return getIcon('vscode-symbol-event')
+            default:
+                return undefined
+        }
     }
 
     private getResourceId(): ResourceTypeId {
         switch (this.type) {
             case SERVERLESS_FUNCTION_TYPE:
                 return ResourceTypeId.Function
-            default:
+            case 'Api':
                 return ResourceTypeId.Api
+            default:
+                return ResourceTypeId.Other
         }
     }
 }
