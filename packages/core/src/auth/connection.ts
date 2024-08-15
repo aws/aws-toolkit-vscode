@@ -5,13 +5,14 @@
 import * as vscode from 'vscode'
 import { Credentials } from '@aws-sdk/types'
 import { Mutable } from '../shared/utilities/tsUtils'
-import { builderIdStartUrl, SsoToken, truncateStartUrl } from './sso/model'
+import { builderIdStartUrl, ClientRegistration, SsoToken, truncateStartUrl } from './sso/model'
 import { SsoClient } from './sso/clients'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { fromString } from './providers/credentials'
 import { getLogger } from '../shared/logger/logger'
 import { showMessageWithUrl } from '../shared/utilities/messages'
 import { onceChanged } from '../shared/utilities/functionUtils'
+import { AuthAddConnection, AwsLoginWithBrowser } from '../shared/telemetry/telemetry.gen'
 
 /** Shows a warning message unless it is the same as the last one shown. */
 const warnOnce = onceChanged((s: string, url: string) => {
@@ -107,6 +108,8 @@ export interface SsoConnection extends SsoProfile {
      * handle cases where the service rejects the token.
      */
     getToken(): Promise<Pick<SsoToken, 'accessToken' | 'expiresAt'>>
+
+    getRegistration(): Promise<ClientRegistration | undefined>
 }
 
 export interface IamConnection {
@@ -389,4 +392,31 @@ export interface AwsConnection {
     readonly startUrl: string
     readonly scopes?: string[]
     readonly state: ProfileMetadata['connectionState']
+}
+
+type Writeable<T> = { -readonly [U in keyof T]: T[U] }
+export type TelemetryMetadata = Partial<Writeable<AuthAddConnection | AwsLoginWithBrowser>>
+
+export async function getTelemetryMetadataForConn(conn?: Connection): Promise<TelemetryMetadata> {
+    if (conn === undefined) {
+        return {}
+    }
+
+    if (isSsoConnection(conn)) {
+        const registration = await conn.getRegistration()
+        return {
+            authScopes: conn.scopes?.join(','),
+            credentialSourceId: isBuilderIdConnection(conn) ? 'awsId' : 'iamIdentityCenter',
+            credentialStartUrl: conn?.startUrl,
+            awsRegion: conn?.ssoRegion,
+            ssoRegistrationExpiresAt: registration?.expiresAt.toISOString(),
+            ssoRegistrationClientId: registration?.clientId,
+        }
+    } else if (isIamConnection(conn)) {
+        return {
+            credentialSourceId: 'sharedCredentials',
+        }
+    }
+
+    throw new Error('getTelemetryMetadataForConn() called with unknown connection type')
 }

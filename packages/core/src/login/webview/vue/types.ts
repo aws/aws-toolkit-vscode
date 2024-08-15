@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AuthAddConnection } from '../../../shared/telemetry/telemetry'
-
 /**
  * Types that can be used by both the backend and frontend files
  */
@@ -67,8 +65,6 @@ export const userCancelled = 'userCancelled'
 
 export type AuthEnabledFeatures = 'awsExplorer' | 'codewhisperer' | 'codecatalyst'
 
-type Writeable<T> = { -readonly [U in keyof T]: T[U] }
-export type TelemetryMetadata = Partial<Writeable<AuthAddConnection>>
 export type AuthError = { id: string; text: string }
 
 export type ServiceItemId = 'awsExplorer' | 'codewhisperer' | 'codecatalyst'

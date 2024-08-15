@@ -240,6 +240,9 @@ describe('SsoAccessTokenProvider', function () {
                     isReAuth: args.isReAuth,
                     credentialStartUrl: startUrl,
                     reAuthReason: args.isReAuth ? 'myReAuthReason' : undefined,
+                    awsRegion: region,
+                    ssoRegistrationExpiresAt: registration.expiresAt.toISOString(),
+                    ssoRegistrationClientId: registration.clientId,
                 })
                 // re auth state is cleared on successful login
                 assert.deepStrictEqual(reAuthState.has({ startUrl }), false)
