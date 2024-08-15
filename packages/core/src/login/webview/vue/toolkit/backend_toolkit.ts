@@ -7,10 +7,16 @@ import * as vscode from 'vscode'
 import { tryAddCredentials } from '../../../../auth/utils'
 import { getLogger } from '../../../../shared/logger'
 import { CommonAuthWebview } from '../backend'
-import { AwsConnection, Connection, createSsoProfile } from '../../../../auth/connection'
+import {
+    AwsConnection,
+    Connection,
+    TelemetryMetadata,
+    createSsoProfile,
+    getTelemetryMetadataForConn,
+} from '../../../../auth/connection'
 import { Auth } from '../../../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
-import { AuthError, AuthFlowState, TelemetryMetadata } from '../types'
+import { AuthError, AuthFlowState } from '../types'
 import { builderIdStartUrl } from '../../../../auth/sso/model'
 import { setContext } from '../../../../shared'
 
@@ -34,7 +40,6 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         const metadata: TelemetryMetadata = {
             credentialSourceId: 'iamIdentityCenter',
             credentialStartUrl: startUrl,
-            awsRegion: region,
             isReAuth: false,
         }
 
@@ -43,8 +48,10 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
                 this.storeMetricMetadata({ ...metadata })
 
                 const conn = await this.codeCatalystAuth.connectToEnterpriseSso(startUrl, region)
-
-                this.storeMetricMetadata({ authEnabledFeatures: this.getAuthEnabledFeatures(conn) })
+                this.storeMetricMetadata({
+                    authEnabledFeatures: this.getAuthEnabledFeatures(conn),
+                    ...(await getTelemetryMetadataForConn(conn)),
+                })
 
                 await setContext('aws.explorer.showAuthView', false)
                 await this.showResourceExplorer()
@@ -58,7 +65,10 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
             const conn = await Auth.instance.createConnection(ssoProfile)
             await Auth.instance.useConnection(conn)
 
-            this.storeMetricMetadata({ authEnabledFeatures: this.getAuthEnabledFeatures(conn) })
+            this.storeMetricMetadata({
+                authEnabledFeatures: this.getAuthEnabledFeatures(conn),
+                ...(await getTelemetryMetadataForConn(conn)),
+            })
 
             await setContext('aws.explorer.showAuthView', false)
             void vscode.window.showInformationMessage('Toolkit: Successfully connected to AWS IAM Identity Center')
@@ -109,7 +119,9 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
                 isReAuth: false,
             })
 
-            await this.codeCatalystAuth.connectToAwsBuilderId()
+            const conn = await this.codeCatalystAuth.connectToAwsBuilderId()
+            this.storeMetricMetadata(await getTelemetryMetadataForConn(conn))
+
             await setContext('aws.explorer.showAuthView', false)
             await this.showResourceExplorer()
         })
