@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix NPE in Rider AWS SAM project wizard (#4768)"
+}

@@ -81,8 +81,9 @@ abstract class DotNetSamProjectGeneratorRoot(
     }
 
     private fun validateData() {
-        // first validateData comes from SamInitSelectionPanel constructor...
-        samPanel.validate()?.let {
+        // first validateData comes from SamInitSelectionPanel constructor, so is null...
+        @Suppress("UNNECESSARY_SAFE_CALL")
+        samPanel?.validate()?.let {
             context.statusMessages.add(StatusMessages.Error(it.message))
             return
         }
