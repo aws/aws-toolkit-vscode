@@ -6,7 +6,12 @@
 import { SinonSandbox, createSandbox } from 'sinon'
 import { assertTelemetry } from '../../../testUtil'
 import assert from 'assert'
-import { createBuilderIdProfile, createSsoProfile, createTestAuth } from '../../../credentials/testUtil'
+import {
+    createBuilderIdProfile,
+    createSsoProfile,
+    createTestAuth,
+    mockRegistration,
+} from '../../../credentials/testUtil'
 import { Auth } from '../../../../auth'
 import { AmazonQLoginWebview } from '../../../../login/webview/vue/amazonq/backend_amazonq'
 import { isBuilderIdConnection, isIdcSsoConnection } from '../../../../auth/connection'
@@ -51,6 +56,8 @@ describe('Amazon Q Login', function () {
             credentialSourceId: 'awsId',
             authEnabledFeatures: 'codewhisperer',
             isReAuth: false,
+            ssoRegistrationExpiresAt: mockRegistration.expiresAt.toISOString(),
+            ssoRegistrationClientId: mockRegistration.clientId,
         })
     })
 
@@ -70,6 +77,8 @@ describe('Amazon Q Login', function () {
             credentialStartUrl: startUrl,
             awsRegion: region,
             isReAuth: false,
+            ssoRegistrationExpiresAt: mockRegistration.expiresAt.toISOString(),
+            ssoRegistrationClientId: mockRegistration.clientId,
         })
     })
 
@@ -87,6 +96,8 @@ describe('Amazon Q Login', function () {
             credentialSourceId: 'awsId',
             authEnabledFeatures: 'codewhisperer',
             isReAuth: true,
+            ssoRegistrationExpiresAt: mockRegistration.expiresAt.toISOString(),
+            ssoRegistrationClientId: mockRegistration.clientId,
         })
     })
 
@@ -108,6 +119,8 @@ describe('Amazon Q Login', function () {
             credentialStartUrl: startUrl,
             awsRegion: region,
             isReAuth: true,
+            ssoRegistrationExpiresAt: mockRegistration.expiresAt.toISOString(),
+            ssoRegistrationClientId: mockRegistration.clientId,
         })
     })
 
@@ -129,6 +142,8 @@ describe('Amazon Q Login', function () {
             credentialStartUrl: startUrl,
             awsRegion: region,
             isReAuth: true,
+            ssoRegistrationExpiresAt: mockRegistration.expiresAt.toISOString(),
+            ssoRegistrationClientId: mockRegistration.clientId,
         })
     })
 })

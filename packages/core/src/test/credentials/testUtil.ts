@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import { Auth } from '../../auth/auth'
 import { CredentialsProviderManager } from '../../auth/providers/credentialsProviderManager'
 import { SsoClient } from '../../auth/sso/clients'
-import { builderIdStartUrl, SsoToken } from '../../auth/sso/model'
+import { builderIdStartUrl, ClientRegistration, SsoToken } from '../../auth/sso/model'
 import { DeviceFlowAuthorization, SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
 import { captureEvent, EventCapturer } from '../testUtil'
 import { stub } from '../utilities/stubber'
@@ -19,6 +19,12 @@ import { SharedCredentialsProvider } from '../../auth/providers/sharedCredential
 import { Connection, IamConnection, ProfileStore, SsoConnection, SsoProfile } from '../../auth/connection'
 import * as sinon from 'sinon'
 
+export const mockRegistration = {
+    clientId: 'test-client-id',
+    clientSecret: 'test-client-secret',
+    expiresAt: new Date(Date.now()),
+}
+
 /** Mock Connection objects for test usage */
 export const ssoConnection: SsoConnection = {
     type: 'sso',
@@ -27,6 +33,7 @@ export const ssoConnection: SsoConnection = {
     ssoRegion: 'us-east-1',
     startUrl: 'https://nkomonen.awsapps.com/start',
     getToken: sinon.stub(),
+    getRegistration: async () => mockRegistration as ClientRegistration,
 }
 export const builderIdConnection: SsoConnection = {
     ...ssoConnection,
@@ -69,6 +76,7 @@ function createTestTokenProvider() {
     let counter = 0
     const provider = stub(DeviceFlowAuthorization)
     provider.getToken.callsFake(async () => token)
+    provider.getClientRegistration.callsFake(async () => mockRegistration as ClientRegistration)
     provider.createToken.callsFake(
         async () => (token = { accessToken: String(++counter), expiresAt: new Date(Date.now() + 1000000) })
     )
