@@ -294,8 +294,8 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.commands.registerCommand('aws.amazonq.openEditorAtRange', openEditorAtRange)
     )
 
-    await auth.restore()
-    await auth.clearExtraConnections()
+    await auth.restore('startup')
+    await auth.clearExtraConnections('startup')
 
     if (auth.isConnectionExpired()) {
         auth.showReauthenticatePrompt().catch((e) => {
