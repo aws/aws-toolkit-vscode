@@ -207,7 +207,7 @@ export default defineComponent({
         async refreshTable() {
             this.isLoading = true
             this.updatePageNumber()
-            this.dynamoDbTableData = await client.fetchPageData(undefined)
+            this.dynamoDbTableData = (await client.fetchPageData(undefined)) ?? this.dynamoDbTableData
             this.pageKeys = [undefined, this.dynamoDbTableData.lastEvaluatedKey]
             this.queryPanelData.isActive = false
             this.isLoading = false
@@ -219,7 +219,8 @@ export default defineComponent({
             }
             this.isLoading = true
             this.updatePageNumber()
-            this.dynamoDbTableData = await client.queryData(this.queryPanelData.queryRequest, undefined)
+            this.dynamoDbTableData =
+                (await client.queryData(this.queryPanelData.queryRequest, undefined)) ?? this.dynamoDbTableData
             this.pageKeys = [undefined, this.dynamoDbTableData.lastEvaluatedKey]
             this.isLoading = false
         },
@@ -231,9 +232,11 @@ export default defineComponent({
                 this.updatePageNumber()
                 const previousKey = this.pageKeys[this.dynamoDbTableData.currentPage - 2]
                 if (this.queryPanelData.isActive) {
-                    this.dynamoDbTableData = await client.queryData(this.queryPanelData.queryRequest, previousKey)
+                    this.dynamoDbTableData =
+                        (await client.queryData(this.queryPanelData.queryRequest, previousKey)) ??
+                        this.dynamoDbTableData
                 } else {
-                    this.dynamoDbTableData = await client.fetchPageData(previousKey)
+                    this.dynamoDbTableData = (await client.fetchPageData(previousKey)) ?? this.dynamoDbTableData
                 }
                 this.dynamoDbTableData.currentPage = newPageNumber
                 this.isLoading = false
@@ -245,12 +248,14 @@ export default defineComponent({
             const newPageNumber = this.dynamoDbTableData.currentPage + 1
             this.updatePageNumber()
             if (this.queryPanelData.isActive) {
-                this.dynamoDbTableData = await client.queryData(
-                    this.queryPanelData.queryRequest,
-                    this.dynamoDbTableData.lastEvaluatedKey
-                )
+                this.dynamoDbTableData =
+                    (await client.queryData(
+                        this.queryPanelData.queryRequest,
+                        this.dynamoDbTableData.lastEvaluatedKey
+                    )) ?? this.dynamoDbTableData
             } else {
-                this.dynamoDbTableData = await client.fetchPageData(this.dynamoDbTableData.lastEvaluatedKey)
+                this.dynamoDbTableData =
+                    (await client.fetchPageData(this.dynamoDbTableData.lastEvaluatedKey)) ?? this.dynamoDbTableData
             }
             if (this.dynamoDbTableData.lastEvaluatedKey) {
                 this.pageKeys.push(this.dynamoDbTableData.lastEvaluatedKey)
@@ -295,7 +300,7 @@ export default defineComponent({
                 sortKey: sortKeyValue,
             }
             this.updatePageNumber()
-            this.dynamoDbTableData = await client.queryData(queryRequest)
+            this.dynamoDbTableData = (await client.queryData(queryRequest)) ?? this.dynamoDbTableData
             this.pageKeys = [undefined, this.dynamoDbTableData.lastEvaluatedKey]
             this.queryPanelData.isActive = true
             this.queryPanelData.queryRequest = queryRequest
