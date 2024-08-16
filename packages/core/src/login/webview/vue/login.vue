@@ -569,7 +569,7 @@ export default defineComponent({
 .logoIcon {
     display: flex;
     flex-direction: row;
-    justify-content: left;
+    justify-content: center;
     align-items: flex-start;
     height: auto;
 }
