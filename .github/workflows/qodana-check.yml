@@ -15,7 +15,12 @@ jobs:
   qodana:
     runs-on: ubuntu-latest
     permissions:
+      # PR check
       checks: write
+      # PR comments
+      pull-requests: write
+      # SARIF upload
+      security-events: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,7 +33,7 @@ jobs:
           tool-cache: false
           large-packages: false
       - name: 'Qodana Scan'
-        uses: JetBrains/qodana-action@v2024.1.8
+        uses: JetBrains/qodana-action@v2024.1.9
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
