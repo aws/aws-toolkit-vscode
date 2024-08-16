@@ -5,6 +5,8 @@ package software.aws.toolkits.jetbrains.services.lambda.java
 
 import com.intellij.compiler.CompilerTestUtil
 import com.intellij.execution.executors.DefaultDebugExecutor
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.testFramework.common.ThreadLeakTracker
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -55,6 +57,9 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Lambda
 
     @Before
     fun setUp() {
+        // FIX_WHEN_MIN_IS_241: jdk21 known offender: https://github.com/JetBrains/intellij-community/commit/1bdcfa5340969ba84c0ecf88d48f6e27d3de8a54
+        ThreadLeakTracker.longRunningThreadCreated(ApplicationManager.getApplication(), "process reaper")
+
         setSamExecutableFromEnvironment()
 
         val fixture = projectRule.fixture

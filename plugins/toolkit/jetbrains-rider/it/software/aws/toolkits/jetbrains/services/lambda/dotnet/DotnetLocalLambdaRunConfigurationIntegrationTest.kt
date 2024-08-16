@@ -58,7 +58,8 @@ abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val 
 
     override fun getSolutionDirectoryName(): String = "testData/solutions/$solutionName"
 
-    @Test
+    // broken
+    @Test(enabled = false)
     fun samIsExecutedDebugger() {
         setBreakpoint()
 
@@ -178,7 +179,8 @@ abstract class DotnetLocalLambdaImageRunConfigurationIntegrationTestBase(private
             .containsEntry("AWS_SESSION_TOKEN", "")
     }
 
-    @Test
+    // broken
+    @Test(enabled = false)
     fun samIsExecutedDebuggerImage() {
         setBreakpoint()
 

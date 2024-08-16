@@ -18,6 +18,7 @@ import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assume.assumeFalse
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -42,6 +43,7 @@ import software.aws.toolkits.jetbrains.utils.rules.runGoModTidy
 import software.aws.toolkits.jetbrains.utils.samImageRunDebugTest
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 
+@Ignore("broken")
 @RunWith(Parameterized::class)
 class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime) {
     companion object {

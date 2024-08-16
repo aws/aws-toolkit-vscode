@@ -314,6 +314,11 @@ tasks.withType<Detekt>().configureEach {
     dependsOn(generateModels)
 }
 
+tasks.integrationTest {
+    // linux: computeSystemScaleFactor "Must be precomputed"
+    systemProperty("hidpi", false)
+}
+
 tasks.test {
     if (SystemInfo.isWindows) {
         // extremely flaky
