@@ -10,6 +10,7 @@ import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { toMap, toArrayAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
+import { telemetry } from '../../shared/telemetry'
 
 export class DynamoDbInstanceNode extends AWSTreeNodeBase {
     protected readonly placeHolderMessage = '[No Tables Found]'
@@ -35,14 +36,17 @@ export class DynamoDbInstanceNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const tables = toMap(await toArrayAsync(this.dynamoDbClient.getTables()), (configuration) => configuration)
-        const sortedTablesByName = new Map([...tables.entries()].sort((a, b) => a[0].localeCompare(b[0])))
-        updateInPlace(
-            this.dynamoDbTableNodes,
-            sortedTablesByName.keys(),
-            (key) => this.dynamoDbTableNodes.get(key)!,
-            (key) => new DynamoDbTableNode(this.regionCode, key, this)
-        )
+        return telemetry.dynamodb_view.run(async (span) => {
+            span.record({ dynamoDbTarget: 'table' })
+            const tables = toMap(await toArrayAsync(this.dynamoDbClient.getTables()), (configuration) => configuration)
+            const sortedTablesByName = new Map([...tables.entries()].sort((a, b) => a[0].localeCompare(b[0])))
+            updateInPlace(
+                this.dynamoDbTableNodes,
+                sortedTablesByName.keys(),
+                (key) => this.dynamoDbTableNodes.get(key)!,
+                (key) => new DynamoDbTableNode(this.regionCode, key, this)
+            )
+        })
     }
 
     public async clearChildren() {

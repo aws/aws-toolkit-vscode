@@ -57,30 +57,47 @@ export class DynamoDbTableWebview extends VueWebview {
      * @returns {DynamoDbTableData} The response object containing the scanned data.
      */
     public async fetchPageData(lastEvaluatedKey?: Key) {
-        const tableRequest: ScanInput = {
-            TableName: this.data.tableName,
-            ExclusiveStartKey: lastEvaluatedKey,
-        }
-        const response = await getDynamoDbTableData(tableRequest, this.data.region)
-        return response
+        return telemetry.dynamodb_fetchRecords.run(async (span) => {
+            const tableRequest: ScanInput = {
+                TableName: this.data.tableName,
+                ExclusiveStartKey: lastEvaluatedKey,
+            }
+            try {
+                const response = await getDynamoDbTableData(tableRequest, this.data.region)
+                span.emit({ dynamoDbFetchType: 'scan', result: 'Succeeded' })
+                return response
+            } catch (err) {
+                span.emit({ dynamoDbFetchType: 'scan', result: 'Failed' })
+                getLogger().error(`Failed to fetch the page data ${err}`)
+            }
+        })
     }
 
     public async queryData(queryRequest: { partitionKey: string; sortKey: string }, lastEvaluatedKey?: Key) {
-        const tableData: TableData = await queryTableContent(
-            queryRequest,
-            this.data.region,
-            this.data.tableName,
-            lastEvaluatedKey
-        )
-        const response = {
-            tableName: this.data.tableName,
-            region: this.data.region,
-            currentPage: this.data.currentPage,
-            tableHeader: tableData.tableHeader,
-            tableContent: tableData.tableContent,
-            lastEvaluatedKey: tableData.lastEvaluatedKey,
-        }
-        return response
+        return telemetry.dynamodb_fetchRecords.run(async (span) => {
+            try {
+                const tableData: TableData = await queryTableContent(
+                    queryRequest,
+                    this.data.region,
+                    this.data.tableName,
+                    lastEvaluatedKey
+                )
+                span.emit({ dynamoDbFetchType: 'query', result: 'Succeeded' })
+
+                const response = {
+                    tableName: this.data.tableName,
+                    region: this.data.region,
+                    currentPage: this.data.currentPage,
+                    tableHeader: tableData.tableHeader,
+                    tableContent: tableData.tableContent,
+                    lastEvaluatedKey: tableData.lastEvaluatedKey,
+                }
+                return response
+            } catch (err) {
+                span.emit({ dynamoDbFetchType: 'query', result: 'Failed' })
+                getLogger().error(`Failed to query the page data ${err}`)
+            }
+        })
     }
 
     public async getTableSchema() {
@@ -148,24 +165,27 @@ const activePanels = new Map<string, InstanceType<typeof Panel>>()
  */
 export async function viewDynamoDbTable(context: ExtContext, node: { dynamoDbtable: string; regionCode: string }) {
     const logger: Logger = getLogger()
-
-    try {
-        const response = await getDynamoDbTableData({ TableName: node.dynamoDbtable }, node.regionCode)
-        const webViewPanel = activePanels.get(node.dynamoDbtable) ?? new Panel(context.extensionContext, response)
-        if (!activePanels.has(node.dynamoDbtable)) {
-            activePanels.set(node.dynamoDbtable, webViewPanel)
+    await telemetry.dynamodb_openTable.run(async (span) => {
+        try {
+            const response = await getDynamoDbTableData({ TableName: node.dynamoDbtable }, node.regionCode)
+            span.emit({ result: 'Succeeded' })
+            const webViewPanel = activePanels.get(node.dynamoDbtable) ?? new Panel(context.extensionContext, response)
+            if (!activePanels.has(node.dynamoDbtable)) {
+                activePanels.set(node.dynamoDbtable, webViewPanel)
+            }
+            const webview = await webViewPanel.show({
+                title: localize('AWS.dynamoDb.viewTable.title', node.dynamoDbtable),
+                retainContextWhenHidden: true,
+            })
+            webview.onDidDispose(() => {
+                activePanels.delete(node.dynamoDbtable)
+            })
+        } catch (err) {
+            const error = err as Error
+            span.emit({ result: 'Failed', reason: `${error.message}` })
+            logger.error('Error loading the table: %s', error)
         }
-        const webview = await webViewPanel.show({
-            title: localize('AWS.dynamoDb.viewTable.title', node.dynamoDbtable),
-            retainContextWhenHidden: true,
-        })
-        webview.onDidDispose(() => {
-            activePanels.delete(node.dynamoDbtable)
-        })
-    } catch (err) {
-        const error = err as Error
-        logger.error('Error loading the table: %s', error)
-    }
+    })
 }
 
 export async function getDynamoDbTableData(tableRequest: ScanInput, regionCode: string, currentPage: number = 1) {

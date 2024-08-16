@@ -5,7 +5,6 @@
 
 import * as nls from 'vscode-nls'
 import { Wizard } from '../../shared/wizards/wizard'
-import { telemetry } from '../../shared/telemetry/telemetry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
@@ -24,17 +23,14 @@ export async function searchDynamoDbTables(
     source: string,
     dbData?: { regionName: string }
 ): Promise<void> {
-    await telemetry.dynamodb_openTable.run(async (span) => {
-        const wizard = new SearchDynamoDbTablesWizard(dbData)
-        span.record({ dynamoDbResourceType: 'table', source: source })
-        const response = await wizard.run()
-        if (!response) {
-            throw new CancellationError('user')
-        }
-        await viewDynamoDbTable(context, {
-            dynamoDbtable: response.submenuResponse.data,
-            regionCode: response.submenuResponse.region,
-        })
+    const wizard = new SearchDynamoDbTablesWizard(dbData)
+    const response = await wizard.run()
+    if (!response) {
+        throw new CancellationError('user')
+    }
+    await viewDynamoDbTable(context, {
+        dynamoDbtable: response.submenuResponse.data,
+        regionCode: response.submenuResponse.region,
     })
 }
 

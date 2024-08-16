@@ -10,6 +10,7 @@ import { copyToClipboard } from '../../shared/utilities/messages'
 import { DynamoDbTableNode } from '../explorer/dynamoDbTableNode'
 import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
 import { AttributeValue, Key, ScanInput } from 'aws-sdk/clients/dynamodb'
+import { telemetry } from '../../shared/telemetry'
 
 export interface RowData {
     [key: string]: string
@@ -92,10 +93,15 @@ export function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Ty
  * @param {DynamoDbTableNode} node - The DynamoDB table node containing table and region information.
  */
 export async function copyDynamoDbArn(node: DynamoDbTableNode, client = new DynamoDbClient(node.regionCode)) {
-    const response = await client.getTableInformation({ TableName: node.dynamoDbtable })
-    if (response.TableArn !== undefined) {
-        await copyToClipboard(response.TableArn, 'ARN')
-    }
+    return telemetry.dynamodb_view.run(async (span) => {
+        const response = await client.getTableInformation({ TableName: node.dynamoDbtable })
+        if (response.TableArn !== undefined) {
+            span.emit({ dynamoDbTarget: 'tableProperties', result: 'Succeeded' })
+            await copyToClipboard(response.TableArn, 'ARN')
+        } else {
+            span.emit({ dynamoDbTarget: 'tableProperties', result: 'Failed', reason: 'Table ARN is undefined' })
+        }
+    })
 }
 
 export async function queryTableContent(
