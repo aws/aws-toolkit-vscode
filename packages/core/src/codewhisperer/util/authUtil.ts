@@ -25,6 +25,7 @@ import {
     scopesGumby,
     isIdcSsoConnection,
     hasExactScopes,
+    getTelemetryMetadataForConn,
 } from '../../auth/connection'
 import { getLogger } from '../../shared/logger'
 import { Commands } from '../../shared/vscode/commands2'
@@ -35,6 +36,7 @@ import { showReauthenticateMessage } from '../../shared/utilities/messages'
 import { showAmazonQWalkthroughOnce } from '../../amazonq/onboardingPage/walkthrough'
 import { setContext } from '../../shared/vscode/setContext'
 import { isInDevEnv } from '../../shared/vscode/env'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesCodeWhispererCore]
@@ -99,7 +101,7 @@ export class AuthUtil {
         'Amazon Q',
         isValidCodeWhispererCoreConnection
     )
-    public readonly restore = () => this.secondaryAuth.restoreConnection()
+    public readonly restore = (source?: string) => this.secondaryAuth.restoreConnection(source)
 
     public constructor(public readonly auth = Auth.instance) {}
 
@@ -188,7 +190,7 @@ export class AuthUtil {
         return this.conn !== undefined && isBuilderIdConnection(this.conn)
     }
 
-    public async connectToAwsBuilderId() {
+    public async connectToAwsBuilderId(): Promise<SsoConnection> {
         let conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
 
         if (!conn) {
@@ -201,10 +203,10 @@ export class AuthUtil {
             conn = await this.auth.reauthenticate(conn)
         }
 
-        return this.secondaryAuth.useNewConnection(conn)
+        return (await this.secondaryAuth.useNewConnection(conn)) as SsoConnection
     }
 
-    public async connectToEnterpriseSso(startUrl: string, region: string) {
+    public async connectToEnterpriseSso(startUrl: string, region: string): Promise<SsoConnection> {
         let conn = (await this.auth.listConnections()).find(
             (conn): conn is SsoConnection =>
                 isSsoConnection(conn) && conn.startUrl.toLowerCase() === startUrl.toLowerCase()
@@ -220,7 +222,7 @@ export class AuthUtil {
             conn = await this.auth.reauthenticate(conn)
         }
 
-        return this.secondaryAuth.useNewConnection(conn)
+        return (await this.secondaryAuth.useNewConnection(conn)) as SsoConnection
     }
 
     public static get instance() {
@@ -402,15 +404,29 @@ export class AuthUtil {
      * auth connections that the Amazon Q extension has cached. We need to remove these
      * as they are irrelevant to the Q extension and can cause issues.
      */
-    public async clearExtraConnections(): Promise<void> {
+    public async clearExtraConnections(source: string): Promise<void> {
         const currentQConn = this.conn
         // Q currently only maintains 1 connection at a time, so we assume everything else is extra.
         // IMPORTANT: In the case Q starts to manage multiple connections, this implementation will need to be updated.
         const allOtherConnections = (await this.auth.listConnections()).filter((c) => c.id !== currentQConn?.id)
         for (const conn of allOtherConnections) {
             getLogger().warn(`forgetting extra amazon q connection: %O`, conn)
-            // in a Dev Env the connection may be used by code catalyst, so we forget instead of fully deleting
-            isInDevEnv() ? await this.auth.forgetConnection(conn) : await this.auth.deleteConnection(conn)
+            await telemetry.auth_modifyConnection.run(async () => {
+                telemetry.record({
+                    connectionState: Auth.instance.getConnectionState(conn) ?? 'undefined',
+                    source,
+                    ...(await getTelemetryMetadataForConn(conn)),
+                })
+
+                if (isInDevEnv()) {
+                    telemetry.record({ action: 'forget' })
+                    // in a Dev Env the connection may be used by code catalyst, so we forget instead of fully deleting
+                    await this.auth.forgetConnection(conn)
+                } else {
+                    telemetry.record({ action: 'delete' })
+                    await this.auth.deleteConnection(conn)
+                }
+            })
         }
     }
 }

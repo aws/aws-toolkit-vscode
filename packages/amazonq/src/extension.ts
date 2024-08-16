@@ -3,7 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AuthUtils, CredentialsStore, LoginManager, SsoConnection, initializeAuth } from 'aws-core-vscode/auth'
+import {
+    AuthUtils,
+    CredentialsStore,
+    LoginManager,
+    getTelemetryMetadataForConn,
+    initializeAuth,
+    isAnySsoConnection,
+} from 'aws-core-vscode/auth'
 import {
     AuthUtil,
     activate as activateCodeWhisperer,
@@ -149,10 +156,15 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
         }
 
         const authState = (await AuthUtil.instance.getChatAuthState()).codewhispererChat
+        const currConn = AuthUtil.instance.conn
+        if (currConn !== undefined && !isAnySsoConnection(currConn)) {
+            getLogger().error(`Current Amazon Q connection is not SSO, type is: %s`, currConn?.type)
+        }
+
         telemetry.record({
             authStatus: authState === 'connected' || authState === 'expired' ? authState : 'notConnected',
-            authEnabledConnections: AuthUtils.getAuthFormIdsFromConnection(AuthUtil.instance.conn).join(','),
-            authScopes: ((AuthUtil.instance.conn as SsoConnection)?.scopes ?? []).join(','),
+            authEnabledConnections: AuthUtils.getAuthFormIdsFromConnection(currConn).join(','),
+            ...(await getTelemetryMetadataForConn(currConn)),
         })
     })
 }

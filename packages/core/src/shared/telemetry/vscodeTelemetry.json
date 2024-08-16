@@ -270,6 +270,11 @@
             "name": "awsRegion",
             "type": "string",
             "description": "An AWS region."
+        },
+        {
+            "name": "connectionState",
+            "type": "string",
+            "description": "A detailed state of a specific auth connection. Use `authStatus` for a higher level view of an extension's general connection."
         }
     ],
     "metrics": [
@@ -1039,6 +1044,40 @@
                 }
             ],
             "passive": true
+        },
+        {
+            "name": "auth_modifyConnection",
+            "description": "An auth connection was modified in some way, e.g. deleted, updated",
+            "metadata": [
+                {
+                    "type": "action",
+                    "required": true
+                },
+                {
+                    "type": "authScopes",
+                    "required": false
+                },
+                {
+                    "type": "connectionState",
+                    "required": true
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "source",
+                    "required": true
+                },
+                {
+                    "type": "ssoRegistrationClientId",
+                    "required": false
+                },
+                {
+                    "type": "ssoRegistrationExpiresAt",
+                    "required": false
+                }
+            ]
         }
     ]
 }
