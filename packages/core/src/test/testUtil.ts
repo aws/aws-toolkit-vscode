@@ -247,6 +247,12 @@ export function assertTelemetry<K extends MetricName>(
     const expectedList = Array.isArray(expected) ? expected : [expected]
     const query = { metricName: name }
     const metadata = globals.telemetry.logger.query(query)
+
+    // succeeds if no results found, but none were expected
+    if (Array.isArray(expected) && expected.length === 0 && metadata.length === 0) {
+        return
+    }
+
     assert.ok(metadata.length > 0, `telemetry metric not found: "${name}"`)
 
     for (let i = 0; i < expectedList.length; i++) {
