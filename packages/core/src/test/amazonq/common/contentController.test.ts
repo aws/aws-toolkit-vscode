@@ -10,8 +10,6 @@ describe('contentController', () => {
         controller = new EditorContentController()
     })
 
-    afterEach(async function () {})
-
     describe('insertTextAtCursorPosition', () => {
         it('insert code when left hand size has no non empty character', async () => {
             const editor = await openATextEditorWithText('def hello_world():\n    ', 'test.py')
@@ -24,6 +22,8 @@ describe('contentController', () => {
                         assert.equal(editor.document.getText(), 'def hello_world():\n    abc\n    def')
                     }
                 )
+            } else {
+                assert.fail('Failed to open a text editor')
             }
         })
 
@@ -38,6 +38,8 @@ describe('contentController', () => {
                         assert.equal(editor.document.getText(), 'def abc\n    defhello_world():\n')
                     }
                 )
+            } else {
+                assert.fail('Failed to open a text editor')
             }
         })
     })
