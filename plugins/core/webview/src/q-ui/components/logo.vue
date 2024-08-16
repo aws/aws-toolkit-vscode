@@ -20,11 +20,7 @@ export default defineComponent({
             return this.$store.state.stage
         },
         logoPosition() {
-            if (this.stage === 'REAUTH') {
-                return "logoIconCenter"
-            }
-
-            return "logoIconLeft"
+            return "logoIconCenter"
         }
     }
 })
@@ -104,14 +100,6 @@ export default defineComponent({
 </template>
 
 <style scoped lang="scss">
-.logoIconLeft {
-    display: flex;
-    flex-direction: row;
-    justify-content: left;
-    align-items: flex-start;
-    padding-top: 75px;
-    height: auto;
-}
 
 .logoIconCenter {
     display: flex;
