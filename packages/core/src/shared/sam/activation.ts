@@ -155,10 +155,20 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
         }),
         Commands.register({ id: 'aws.appBuilder.openHandler', autoconnect: false }, async (arg: ResourceNode) => {
             const folderUri = arg.resource.workspaceFolder.uri
-            const handler = arg.resource.resource.Handler?.split('.')[0]
+            let handler: string | undefined
+            let extension = '*'
+            if (arg.resource.resource.Runtime?.includes('java')) {
+                handler = arg.resource.resource.Handler?.split('::')[0]
+                if (handler?.includes('.')) {
+                    handler = handler.split('.')[1]
+                }
+                extension = 'java'
+            } else {
+                handler = arg.resource.resource.Handler?.split('.')[0]
+            }
             const handlerFile = (
                 await vscode.workspace.findFiles(
-                    new vscode.RelativePattern(folderUri, `**/${handler}.*`),
+                    new vscode.RelativePattern(folderUri, `**/${handler}.${extension}`),
                     new vscode.RelativePattern(folderUri, '.aws-sam')
                 )
             )[0]
