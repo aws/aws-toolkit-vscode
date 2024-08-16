@@ -19,7 +19,7 @@ import { telemetry } from '../../shared/telemetry'
  * Refreshes the parent cluster node.
  */
 export async function deleteInstance(node: DBInstanceNode) {
-    getLogger().debug('DeleteInstance called for: %O', node)
+    getLogger().debug('docdb:DeleteInstance called for: %O', node)
 
     await telemetry.docdb_deleteInstance.run(async () => {
         if (!node) {
@@ -28,13 +28,13 @@ export async function deleteInstance(node: DBInstanceNode) {
 
         const parent = node.parent as DBClusterNode
         const client = parent.client
-        const instanceName = node.instance.DBInstanceIdentifier!
+        const instanceName = node.instance.DBInstanceIdentifier ?? ''
 
         if (node.instance.DBInstanceStatus !== 'available') {
             void vscode.window.showErrorMessage(
                 localize('AWS.docdb.deleteInstance.instanceStopped', 'Instance must be running')
             )
-            throw new ToolkitError('Instance not running', { cancelled: true })
+            throw new ToolkitError('Instance not running', { cancelled: true, code: 'docdbInstanceNotAvailable' })
         }
 
         if (parent?.status !== 'available') {
@@ -46,18 +46,18 @@ export async function deleteInstance(node: DBInstanceNode) {
 
         const isConfirmed = await showConfirmationDialog(instanceName)
         if (!isConfirmed) {
-            getLogger().info('DeleteInstance cancelled')
-            throw new ToolkitError('User cancelled', { cancelled: true })
+            getLogger().debug('docdb:DeleteInstance cancelled')
+            throw new ToolkitError('User cancelled deleteInstance', { cancelled: true })
         }
 
         try {
-            getLogger().info(`Deleting instance: ${instanceName}`)
+            getLogger().info(`docdb:Deleting instance: ${instanceName}`)
 
             const instance = await client.deleteInstance({
                 DBInstanceIdentifier: instanceName,
             })
 
-            getLogger().info('Deleted instance: %O', instance)
+            getLogger().info('docdb:Deleted instance: %O', instance)
             void vscode.window.showInformationMessage(
                 localize('AWS.docdb.deleteInstance.success', 'Deleting instance: {0}', instanceName)
             )
@@ -65,7 +65,7 @@ export async function deleteInstance(node: DBInstanceNode) {
             parent.refresh()
             return instance
         } catch (e) {
-            getLogger().error(`Failed to delete instance ${instanceName}: %s`, e)
+            getLogger().error(`docdb:Failed to delete instance ${instanceName}: %s`, e)
             void showViewLogsMessage(
                 localize('AWS.docdb.deleteInstance.error', 'Failed to delete instance: {0}', instanceName)
             )

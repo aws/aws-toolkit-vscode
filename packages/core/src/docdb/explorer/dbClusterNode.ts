@@ -149,7 +149,10 @@ export class DBClusterNode extends DBResourceNode {
     }
 
     override copyEndpoint() {
-        return copyToClipboard(this.cluster.Endpoint!, this.name)
+        if (this.cluster.Endpoint) {
+            return copyToClipboard(this.cluster.Endpoint, this.name)
+        }
+        return Promise.reject()
     }
 
     public [inspect.custom](): string {

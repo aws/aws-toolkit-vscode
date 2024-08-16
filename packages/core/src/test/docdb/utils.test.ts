@@ -7,7 +7,7 @@ import assert from 'assert'
 import { validateClusterName, validateInstanceName, validatePassword, validateUsername } from '../../docdb/utils'
 
 describe('validateClusterName', function () {
-    it('vValidates', function () {
+    it('validates', function () {
         assert.strictEqual(validateClusterName(''), 'Cluster name must be between 1 and 63 characters long')
         assert.strictEqual(validateClusterName('c'.repeat(64)), 'Cluster name must be between 1 and 63 characters long')
         assert.strictEqual(validateClusterName('404'), 'Cluster name must start with a lowercase letter')

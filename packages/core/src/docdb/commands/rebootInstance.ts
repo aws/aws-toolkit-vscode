@@ -17,7 +17,7 @@ import { DBInstanceNode } from '../explorer/dbInstanceNode'
  * Refreshes the parent node.
  */
 export async function rebootInstance(node: DBInstanceNode) {
-    getLogger().debug('RebootInstance called for: %O', node)
+    getLogger().debug('docdb:RebootInstance called for: %O', node)
 
     await telemetry.docdb_rebootInstance.run(async () => {
         if (!node) {
@@ -28,7 +28,7 @@ export async function rebootInstance(node: DBInstanceNode) {
             void vscode.window.showErrorMessage(
                 localize('AWS.docdb.deleteInstance.instanceStopped', 'Instance must be running')
             )
-            throw new ToolkitError('Instance not available', { cancelled: true })
+            throw new ToolkitError('Instance not available', { cancelled: true, code: 'docdbInstanceNotAvailable' })
         }
 
         const isConfirmed = await showConfirmationMessage({
@@ -41,7 +41,7 @@ export async function rebootInstance(node: DBInstanceNode) {
             cancel: localizedText.cancel,
         })
         if (!isConfirmed) {
-            getLogger().info('RebootInstance canceled')
+            getLogger().debug('docdb:RebootInstance canceled')
             throw new CancellationError('user')
         }
 
@@ -49,7 +49,7 @@ export async function rebootInstance(node: DBInstanceNode) {
         try {
             const instance = await node.rebootInstance()
 
-            getLogger().info('Rebooting instance: %s', instanceName)
+            getLogger().info('docdb:Rebooting instance: %s', instanceName)
             void vscode.window.showInformationMessage(
                 localize('AWS.docdb.rebootInstance.success', 'Rebooting instance: {0}', instanceName)
             )
@@ -57,7 +57,7 @@ export async function rebootInstance(node: DBInstanceNode) {
             node.parent.refresh()
             return instance
         } catch (e) {
-            getLogger().error(`Failed to reboot instance ${instanceName}: %s`, e)
+            getLogger().error(`docdb:Failed to reboot instance ${instanceName}: %s`, e)
             void showViewLogsMessage(
                 localize('AWS.docdb.rebootInstance.error', 'Failed to reboot instance: {0}', instanceName)
             )

@@ -4,7 +4,7 @@
  */
 
 import { CreateDBClusterCommandInput } from '@aws-sdk/client-docdb'
-import { DBStorageType, DocumentDBClient } from '../../shared/clients/docdbClient'
+import { DBStorageType, DocDBEngine, DocumentDBClient, MaxInstanceCount } from '../../shared/clients/docdbClient'
 import { isSupportedGlobalInstanceClass, validateClusterName, validatePassword, validateUsername } from '../utils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Wizard, WizardOptions } from '../../shared/wizards/wizard'
@@ -59,7 +59,7 @@ export class RegionalClusterWizard extends Wizard<RegionalClusterConfiguration> 
             { relativeOrder: 1 }
         )
 
-        form.Engine.setDefault(() => 'docdb')
+        form.Engine.setDefault(() => DocDBEngine)
         form.EngineVersion.bindPrompter(async () => await createEngineVersionPrompter(this.client), {
             showWhen: () => this.isPrimaryCluster,
             setDefault: () => this.options.initState?.EngineVersion,
@@ -190,7 +190,7 @@ async function createInstanceClassPrompter(
 }
 
 //TODO: Make this it's own picker class
-function instanceCountItems(defaultCount: number, max: number = 16): DataQuickPickItem<number>[] {
+function instanceCountItems(defaultCount: number, max: number = MaxInstanceCount): DataQuickPickItem<number>[] {
     const items = []
 
     for (let index = 0; index <= max; index++) {

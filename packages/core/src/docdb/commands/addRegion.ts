@@ -60,7 +60,10 @@ export async function addRegion(node: DBClusterNode | DBGlobalClusterNode): Prom
                         unsupportedInstanceFound.DBInstanceClass
                     )
                 )
-                throw new ToolkitError('Instance class not supported for global cluster', { cancelled: true })
+                throw new ToolkitError('Instance class not supported for global cluster', {
+                    cancelled: true,
+                    code: 'docdbInstanceClassNotSupported',
+                })
             }
         } else {
             globalClusterName = node.cluster.GlobalClusterIdentifier
@@ -69,7 +72,10 @@ export async function addRegion(node: DBClusterNode | DBGlobalClusterNode): Prom
                 void vscode.window.showErrorMessage(
                     localize('AWS.docdb.addRegion.maxRegions', 'Global clusters can have a maximum of 5 regions')
                 )
-                throw new ToolkitError('Global clusters can have a maximum of 5 regions', { cancelled: true })
+                throw new ToolkitError('Global clusters can have a maximum of 5 regions', {
+                    cancelled: true,
+                    code: 'docdbMaxRegionsInUse',
+                })
             }
         }
 
@@ -77,7 +83,7 @@ export async function addRegion(node: DBClusterNode | DBGlobalClusterNode): Prom
             void vscode.window.showErrorMessage(
                 localize('AWS.docdb.deleteCluster.clusterStopped', 'Cluster must be running')
             )
-            throw new ToolkitError('Cluster not available', { cancelled: true })
+            throw new ToolkitError('Cluster not available', { cancelled: true, code: 'docdbClusterStopped' })
         }
 
         const wizard = new CreateGlobalClusterWizard(node.regionCode, node.cluster.EngineVersion, node.client, {
@@ -98,7 +104,7 @@ export async function addRegion(node: DBClusterNode | DBGlobalClusterNode): Prom
                 // Create new global cluster from regional cluster
                 const primaryCluster = node.cluster
 
-                getLogger().info(`Creating global cluster: ${clusterName}`)
+                getLogger().info(`docdb:Creating global cluster: ${clusterName}`)
                 const globalCluster = await node.client.createGlobalCluster({
                     GlobalClusterIdentifier: response.GlobalClusterName,
                     SourceDBClusterIdentifier: primaryCluster.DBClusterArn,
@@ -128,7 +134,7 @@ export async function addRegion(node: DBClusterNode | DBGlobalClusterNode): Prom
             }
 
             clusterName = response.Cluster.DBClusterIdentifier
-            getLogger().info(`Creating secondary cluster: ${clusterName} in region ${regionCode}`)
+            getLogger().info(`docdb:Creating secondary cluster: ${clusterName} in region ${regionCode}`)
 
             const client = DefaultDocumentDBClient.create(regionCode)
             const newCluster = await client.createCluster(input)
@@ -142,7 +148,7 @@ export async function addRegion(node: DBClusterNode | DBGlobalClusterNode): Prom
                 )
             }
 
-            getLogger().info('Created cluster: %O', newCluster)
+            getLogger().info('docdb:Created cluster: %O', newCluster)
             void vscode.window.showInformationMessage(localize('AWS.docdb.addRegion.success', 'Region added'))
 
             if (node instanceof DBClusterNode) {
@@ -151,7 +157,7 @@ export async function addRegion(node: DBClusterNode | DBGlobalClusterNode): Prom
                 node?.refresh()
             }
         } catch (e) {
-            getLogger().error(`Failed to create cluster ${clusterName}: %s`, e)
+            getLogger().error(`docdb:Failed to create cluster ${clusterName}: %s`, e)
             void showViewLogsMessage(
                 localize('AWS.docdb.createCluster.error', 'Failed to create cluster: {0}', clusterName)
             )

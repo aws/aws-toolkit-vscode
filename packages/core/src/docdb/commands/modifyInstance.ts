@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { getLogger, ToolkitError } from '../../shared'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
-import { DBClusterNode } from '../explorer/dbClusterNode'
 import { DBInstanceNode } from '../explorer/dbInstanceNode'
 import { DBCluster, ModifyDBInstanceMessage } from '@aws-sdk/client-docdb'
 import { DBStorageType, DocumentDBClient } from '../../shared/clients/docdbClient'
@@ -23,7 +22,7 @@ import { telemetry } from '../../shared/telemetry'
  * Refreshes the node.
  */
 export async function modifyInstance(node: DBInstanceNode) {
-    getLogger().debug('ModifyInstance called for: %O', node)
+    getLogger().debug('docdb:ModifyInstance called for: %O', node)
 
     await telemetry.docdb_resizeInstance.run(async () => {
         if (!node) {
@@ -34,18 +33,18 @@ export async function modifyInstance(node: DBInstanceNode) {
             void vscode.window.showErrorMessage(
                 localize('AWS.docdb.modifyInstance.instanceStopped', 'Instance must be running')
             )
-            throw new ToolkitError('Instance not available', { cancelled: true })
+            throw new ToolkitError('Instance not available', { cancelled: true, code: 'docdbInstanceNotAvailable' })
         }
 
         const instanceName = node.instance.DBInstanceIdentifier
-        const parent = node.parent as DBClusterNode
+        const parent = node.parent
 
         const quickPickItems = await getInstanceClassOptions(parent.client, parent.cluster)
-        const newInstanceClass = await promptForInstanceClass(quickPickItems, node.instance.DBInstanceClass!)
+        const newInstanceClass = await promptForInstanceClass(quickPickItems, node.instance.DBInstanceClass ?? '')
 
         if (!newInstanceClass) {
-            getLogger().info('ModifyInstance cancelled')
-            throw new ToolkitError('User cancelled wizard', { cancelled: true })
+            getLogger().debug('docdb:ModifyInstance cancelled')
+            throw new ToolkitError('User cancelled modifyInstance wizard', { cancelled: true })
         }
 
         try {
@@ -57,7 +56,7 @@ export async function modifyInstance(node: DBInstanceNode) {
 
             const instance = await parent.client.modifyInstance(request)
 
-            getLogger().info('Modified instance: %O', instanceName)
+            getLogger().info('docdb:Modified instance: %O', instanceName)
             void vscode.window.showInformationMessage(
                 localize('AWS.docdb.modifyInstance.success', 'Modified instance: {0}', instanceName)
             )
@@ -66,7 +65,7 @@ export async function modifyInstance(node: DBInstanceNode) {
             parent.refresh()
             return instance
         } catch (e) {
-            getLogger().error(`Failed to modify instance ${instanceName}: %s`, e)
+            getLogger().error(`docdb:Failed to modify instance ${instanceName}: %s`, e)
             void showViewLogsMessage(
                 localize('AWS.docdb.modifyInstance.error', 'Failed to modify instance: {0}', instanceName)
             )

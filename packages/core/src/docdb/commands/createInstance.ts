@@ -11,8 +11,7 @@ import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { DBClusterNode } from '../explorer/dbClusterNode'
 import { CreateInstanceWizard } from '../wizards/createInstanceWizard'
 import { CreateDBInstanceMessage } from '@aws-sdk/client-docdb'
-
-const MaxInstanceCount = 16
+import { DocDBEngine, MaxInstanceCount } from '../../shared/clients/docdbClient'
 
 /**
  * Creates a DocumentDB instance.
@@ -22,7 +21,7 @@ const MaxInstanceCount = 16
  * Refreshes the cluster node.
  */
 export async function createInstance(node: DBClusterNode) {
-    getLogger().debug('CreateInstance called for: %O', node)
+    getLogger().debug('docdb:CreateInstance called for: %O', node)
 
     await telemetry.docdb_createInstance.run(async () => {
         if (!node) {
@@ -34,7 +33,7 @@ export async function createInstance(node: DBClusterNode) {
             void vscode.window.showInformationMessage(
                 localize('AWS.docdb.createInstance.limitReached', 'Max instances in use')
             )
-            throw new ToolkitError('Max instances in use')
+            throw new ToolkitError('Max instances in use', { code: 'documentDBMaxInstancesInUse' })
         }
 
         const generateInstanceName = (clusterName: string) =>
@@ -42,7 +41,7 @@ export async function createInstance(node: DBClusterNode) {
 
         const options = {
             implicitState: {
-                DBInstanceIdentifier: generateInstanceName(node.cluster.DBClusterIdentifier!),
+                DBInstanceIdentifier: generateInstanceName(node.cluster.DBClusterIdentifier ?? ''),
                 DBInstanceClass: instances[0]?.DBInstanceClass,
             },
         }
@@ -51,32 +50,24 @@ export async function createInstance(node: DBClusterNode) {
         const result = await wizard.run()
 
         if (!result) {
-            getLogger().info('CreateInstance cancelled')
-            throw new ToolkitError('User cancelled wizard', { cancelled: true })
-        }
-
-        if (result.DBInstanceIdentifier === '') {
-            result.DBInstanceIdentifier = undefined!
-        }
-
-        if (result.DBInstanceClass === '') {
-            result.DBInstanceClass = undefined!
+            getLogger().debug('docdb:CreateInstance cancelled')
+            throw new ToolkitError('User cancelled createInstance wizard', { cancelled: true })
         }
 
         const instanceName = result.DBInstanceIdentifier
-        getLogger().info(`Creating instance: ${instanceName}`)
+        getLogger().info(`docdb:Creating instance: ${instanceName}`)
 
         try {
             const request: CreateDBInstanceMessage = {
-                Engine: 'docdb',
+                Engine: DocDBEngine,
                 DBClusterIdentifier: node.cluster.DBClusterIdentifier,
                 DBInstanceIdentifier: result.DBInstanceIdentifier,
-                DBInstanceClass: result.DBInstanceClass,
+                DBInstanceClass: result.DBInstanceClass !== '' ? result.DBInstanceClass : undefined,
             }
 
             const instance = await node.createInstance(request)
 
-            getLogger().info('Created instance: %O', instance)
+            getLogger().info('docdb:Created instance: %O', instance)
             void vscode.window.showInformationMessage(
                 localize('AWS.docdb.createInstance.success', 'Creating instance: {0}', instanceName)
             )
@@ -84,7 +75,7 @@ export async function createInstance(node: DBClusterNode) {
             node.refresh()
             return instance
         } catch (e) {
-            getLogger().error(`Failed to create instance ${instanceName}: %s`, e)
+            getLogger().error(`docdb:Failed to create instance ${instanceName}: %s`, e)
             void showViewLogsMessage(
                 localize('AWS.docdb.createInstance.error', 'Failed to create instance: {0}', instanceName)
             )

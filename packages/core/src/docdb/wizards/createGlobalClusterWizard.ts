@@ -4,7 +4,7 @@
  */
 
 import { globals } from '../../shared'
-import { DocumentDBClient } from '../../shared/clients/docdbClient'
+import { DocDBEngine, DocumentDBClient } from '../../shared/clients/docdbClient'
 import { createExitPrompter } from '../../shared/ui/common/exitPrompter'
 import { createRegionPrompter } from '../../shared/ui/common/region'
 import { createInputBox } from '../../shared/ui/inputPrompter'
@@ -42,7 +42,7 @@ export class CreateGlobalClusterWizard extends Wizard<CreateGlobalClusterState> 
         this.form.RegionCode.bindPrompter(async () => {
             const regions = globals.regionProvider.getRegions().filter((r) => r.id !== this.region)
             return createRegionPrompter(regions, {
-                serviceFilter: 'docdb',
+                serviceFilter: DocDBEngine,
                 title: localize('AWS.docdb.addRegion.region.prompt', 'Secondary region'),
                 helpUrl: DocDBGlobalHelpUrl,
             }).transform((region) => region.id)

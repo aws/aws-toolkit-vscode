@@ -46,7 +46,7 @@ export async function addTag(node: DBResourceNode): Promise<void> {
             validateInput: (input) => validateTag(input, 1, 'key'),
         })
         if (key === undefined) {
-            getLogger().info('AddTag cancelled')
+            getLogger().info('docdb:AddTag cancelled')
             throw new ToolkitError('User cancelled', { cancelled: true })
         }
 
@@ -56,13 +56,13 @@ export async function addTag(node: DBResourceNode): Promise<void> {
             validateInput: (input) => validateTag(input, 0, 'value'),
         })
         if (value === undefined) {
-            getLogger().info('AddTag cancelled')
+            getLogger().info('docdb:AddTag cancelled')
             throw new ToolkitError('User cancelled', { cancelled: true })
         }
 
         const tag = { [key.trim()]: value.trim() }
         await node.client.addResourceTags({ resourceArn: node.arn, tags: tag })
-        getLogger().info('Added resource tag for: %O', node.name)
+        getLogger().info('docdb:Added resource tag for: %O', node.name)
         void vscode.window.showInformationMessage(localize('AWS.docdb.tags.add.success', 'Tag added'))
     })
 }
@@ -86,12 +86,12 @@ export async function removeTag(node: DBResourceNode): Promise<void> {
         })
 
         if (resp === undefined) {
-            getLogger().info('RemoveTag cancelled')
+            getLogger().info('docdb:RemoveTag cancelled')
             throw new ToolkitError('User cancelled', { cancelled: true })
         }
 
         await node.client.removeResourceTags({ resourceArn: node.arn, tagKeys: [resp] })
-        getLogger().info('Removed resource tag for: %O', node.name)
+        getLogger().info('docdb:Removed resource tag for: %O', node.name)
         void vscode.window.showInformationMessage(localize('AWS.docdb.tags.remove.success', 'Tag removed'))
     })
 }
