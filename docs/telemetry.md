@@ -139,3 +139,124 @@ Finally, if `setupStep2()` was the thing that failed we would see a metric like:
     ...
 }
 ```
+
+## Adding a "Stack Trace" to your metric
+
+### Problem
+
+Common example: _"I have a function, `thisFailsSometimes()` that is called in multiple places. The function sometimes fails, I know from telemetry, but I do not know if it is failing when it is a specific caller. If I knew the call stack/trace that it took to call my function that would help me debug."_
+
+```typescript
+function outerA() {
+    thisFailsSometimes(1) // this succeeds
+}
+
+function outerB() {
+    thisFailsSometimes(0) // this fails
+}
+
+function thisFailsSometimes(num: number) {
+    return telemetry.my_Metric.run(() => {
+        if (number === 0) {
+            throw Error('Cannot be 0')
+        }
+        ...
+    })
+}
+```
+
+### Solution
+
+Add a value to `function` in the options of a `run()`. This will result in a stack of functions identifiers that were previously called
+before `thisFailsSometimes()` was run. You can then retrieve the stack in the `run()` of your final metric using `getFunctionStack()`.
+
+```typescript
+function outerA() {
+    telemetry.my_Metric.run(() => thisFailsSometimes(1), { functionId: { name: 'outerA' }})
+}
+
+function outerB() {
+    telemetry.my_Metric.run(() => thisFailsSometimes(0), { functionId: { source: 'outerB' }})
+}
+
+function thisFailsSometimes(num: number) {
+    return telemetry.my_Metric.run(() => {
+        telemetry.record({ theCallStack: asStringifiedStack(telemetry.getFunctionStack())})
+        if (number === 0) {
+            throw Error('Cannot be 0')
+        }
+        ...
+    }, { functionId: { name: 'thisFailsSometimes' }})
+}
+
+// Results in a metric: { theCallStack: 'outerB:thisFailsSometimes', result: 'Failed' }
+// { theCallStack: 'outerB:thisFailsSometimes' } implies 'outerB' was run first, then 'thisFailsSometimes'. See docstrings for more info.
+outerB()
+```
+
+### Important Notes
+
+-   If a nested function does not use a `run()` then it will not be part of the call stack.
+
+    ```typescript
+    function a() {
+        return telemetry.my_Metric.run(() => b(), { functionId: { name: 'a' } })
+    }
+
+    function b() {
+        return c()
+    }
+
+    function c() {
+        return telemetry.my_Metric.run(() => asStringifiedStack(telemetry.getFunctionStack()), {
+            functionId: { name: 'c' },
+        })
+    }
+
+    c() // result: 'a:c', note that 'b' is not included
+    ```
+
+-   If you are using `run()` with a class method, you can also add the class to the entry for more context
+
+    ```typescript
+    class A {
+        a() {
+            return telemetry.my_Metric.run(() => this.b(), { functionId: { name: 'a', class: 'A' } })
+        }
+
+        b() {
+            return telemetry.my_Metric.run(() => asStringifiedStack(telemetry.getFunctionStack()), {
+                functionId: { name: 'b', class: 'A' },
+            })
+        }
+    }
+
+    const inst = new A()
+    inst.a() // 'A#a,b'
+    ```
+
+-   If you do not want your `run()` to emit telemetry, set `emit: false` in the options
+
+    ```typescript
+    function a() {
+        return telemetry.my_Metric.run(() => b(), { functionId: { name: 'a' }, emit: false })
+    }
+    ```
+
+-   If you want to add to the function stack, but don't have a specific metric to use,
+    use the metric named `function_call`. Also look to set `emit: false` if you do not
+    want it to emit telemetry.
+
+    ```typescript
+    function a() {
+        return telemetry.function_call.run(() => b(), { functionId: { name: 'a' }, emit: false })
+    }
+    ```
+
+-   If your function name is generic, look to make it unique so there is no confusion.
+
+    ```typescript
+    function a() {
+        return telemetry.my_Metric.run(() => b(), { functionId: { name: 'aButMoreUnique' } })
+    }
+    ```
