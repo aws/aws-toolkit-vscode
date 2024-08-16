@@ -38,7 +38,8 @@ enum class CodeWhispererExploreStateType {
     DoNotShowAgainWarn,
     DoNotShowAgainError,
     AccountlessNullified,
-    ConnectionExpiredDoNotShowAgain
+    ConnectionExpiredDoNotShowAgain,
+    SessionConfigurationMessageShown,
 }
 
 interface CodeWhispererActivationChangedListener {

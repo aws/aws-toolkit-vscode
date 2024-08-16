@@ -70,6 +70,12 @@ class CodeWhispererExplorerActionManager : PersistentStateComponent<CodeWhispere
         actionState.value[CodeWhispererExploreStateType.ConnectionExpiredDoNotShowAgain] = doNotShowAgain
     }
 
+    fun getSessionConfigurationMessageShown(): Boolean = actionState.value.getOrDefault(CodeWhispererExploreStateType.SessionConfigurationMessageShown, false)
+
+    fun setSessionConfigurationMessageShown(isShown: Boolean) {
+        actionState.value[CodeWhispererExploreStateType.SessionConfigurationMessageShown] = isShown
+    }
+
     fun setAutoSuggestion(project: Project, isAutoEnabled: Boolean) {
         setAutoEnabled(isAutoEnabled)
         val autoSuggestionState = if (isAutoEnabled) CodeWhispererConstants.AutoSuggestion.ACTIVATED else CodeWhispererConstants.AutoSuggestion.DEACTIVATED

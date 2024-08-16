@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.util
 
+import com.intellij.ide.BrowserUtil
 import com.intellij.notification.NotificationAction
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
@@ -39,6 +40,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.utils.isQExpired
 import software.aws.toolkits.jetbrains.utils.notifyError
+import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.jetbrains.utils.pluginAwareExecuteOnPooledThread
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
@@ -194,6 +196,9 @@ object CodeWhispererUtil {
                     if (!isPluginStarting) {
                         CodeWhispererService.markReAuthPromptShown()
                     }
+                    if (!tokenConnection(project).isSono()) {
+                        notifySessionConfiguration(project)
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -219,6 +224,24 @@ object CodeWhispererUtil {
                 }
             )
         )
+    }
+
+    private fun notifySessionConfiguration(project: Project) {
+        if (CodeWhispererExplorerActionManager.getInstance().getSessionConfigurationMessageShown()) {
+            return
+        }
+        val learnMoreLink = "https://docs.aws.amazon.com/singlesignon/latest/userguide/configure-user-session.html#90-day-extended-session-duration"
+        notifyInfo(
+            message("q.session_configuration"),
+            message("q.session_configuration.description"),
+            project,
+            listOf(
+                NotificationAction.createSimple(message("q.learn.more")) {
+                    BrowserUtil.browse(learnMoreLink)
+                }
+            )
+        )
+        CodeWhispererExplorerActionManager.getInstance().setSessionConfigurationMessageShown(true)
     }
 
     fun getConnectionStartUrl(connection: ToolkitConnection?): String? {
