@@ -2112,6 +2112,11 @@
                     "command": "aws.openInApplicationComposer",
                     "when": "viewItem == awsAppBuilderAppNode",
                     "group": "3@1"
+                },
+                {
+                    "command": "aws.invokeLambda",
+                    "when": "viewItem == awsAppBuilderDeployedNode",
+                    "group": "inline@1"
                 }
             ],
             "aws.toolkit.auth": [
@@ -2815,6 +2820,7 @@
                 "title": "%AWS.command.invokeLambda%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": "$(play)",
                 "cloud9": {
                     "cn": {
                         "title": "%AWS.command.invokeLambda.cn%",
