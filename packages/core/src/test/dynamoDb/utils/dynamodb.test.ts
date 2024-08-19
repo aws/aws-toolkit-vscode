@@ -12,6 +12,7 @@ import { ScanOutput, TableDescription } from 'aws-sdk/clients/dynamodb'
 import { DynamoDbClient } from '../../../shared/clients/dynamoDbClient'
 import { DynamoDbTableNode } from '../../../dynamoDb/explorer/dynamoDbTableNode'
 import * as dynamoDbUtils from '../../../dynamoDb/utils/dynamodb'
+import { deleteItem, dynamoDbConsoleUrl } from '../../../dynamoDb/utils/dynamodb'
 
 function generateRequest<T>(output?: T): PromiseResult<T, AWSError> {
     return Promise.resolve(output) as unknown as PromiseResult<T, AWSError>
@@ -69,10 +70,13 @@ describe('DynamoDbUtils', () => {
                 Items: [{ age: { N: '25' }, ID: { S: '2' }, name: { S: 'Jane' } }],
             } as unknown as ScanOutput
             const scanTableStub = sinon.stub(dynamoDbClient, 'scanTable').resolves(generateRequest(expectedScanResult))
-
+            const tableSchema: dynamoDbUtils.TableSchema = {
+                partitionKey: { name: 'age', dataType: 'S' },
+            }
             const actualResult = await dynamoDbUtils.getTableContent(
                 { TableName: 'Users', Limit: 5 },
                 '',
+                tableSchema,
                 dynamoDbClient
             )
 
@@ -85,10 +89,13 @@ describe('DynamoDbUtils', () => {
                 Items: [],
             } as unknown as ScanOutput
             sinon.stub(dynamoDbClient, 'scanTable').resolves(generateRequest(expectedScanResult))
-
+            const tableSchema: dynamoDbUtils.TableSchema = {
+                partitionKey: { name: 'age', dataType: 'S' },
+            }
             const actualResult = await dynamoDbUtils.getTableContent(
                 { TableName: 'Users', Limit: 5 },
                 '',
+                tableSchema,
                 dynamoDbClient
             )
 
@@ -132,13 +139,16 @@ describe('DynamoDbUtils', () => {
             const expectedQueryResult = {
                 Items: [{ age: { N: '25' }, ID: { S: '2' }, name: { S: 'Jane' } }],
             } as unknown as ScanOutput
-
+            const tableSchema: dynamoDbUtils.TableSchema = {
+                partitionKey: { name: 'age', dataType: 'S' },
+            }
             sinon.stub(dynamoDbClient, 'getTableInformation').resolves(getTableDescriptionResponse())
             sinon.stub(dynamoDbClient, 'queryTable').resolves(generateRequest(expectedQueryResult))
             const actualResult = await dynamoDbUtils.queryTableContent(
                 { partitionKey: 'library', sortKey: 'as' },
                 'regionCode',
-                'ableName',
+                'tableName',
+                tableSchema,
                 undefined,
                 dynamoDbClient
             )
@@ -157,6 +167,102 @@ describe('DynamoDbUtils', () => {
                 sortKey: { name: 'SK', dataType: 'S' },
             }
             assert.deepStrictEqual(actualResult, expectedResult)
+        })
+    })
+
+    describe('deleteItem', () => {
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+            dynamoDbClient = new DynamoDbClient('us-west-2')
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('should delete item with partition key only', async () => {
+            const deleteItemStub = sandbox.stub(dynamoDbClient, 'deleteItem').resolves()
+
+            const tableName = 'TestTable'
+            const selectedRow = { ID: '2' }
+            const tableSchema = {
+                partitionKey: { name: 'ID', dataType: 'S' },
+            }
+            const regionCode = 'us-west-2'
+
+            await deleteItem(tableName, selectedRow, tableSchema, regionCode, dynamoDbClient)
+
+            const expectedDeleteRequest = {
+                TableName: tableName,
+                Key: {
+                    ID: { S: '2' },
+                },
+            }
+
+            assert.ok(deleteItemStub.calledOnce)
+            assert.deepStrictEqual(deleteItemStub.firstCall.args[0], expectedDeleteRequest)
+        })
+
+        it('should delete item with partition key and sort key', async () => {
+            const deleteItemStub = sandbox.stub(dynamoDbClient, 'deleteItem').resolves()
+
+            const tableName = 'TestTable'
+            const selectedRow = { ID: '2', SortKey: '3' }
+            const tableSchema = {
+                partitionKey: { name: 'ID', dataType: 'S' },
+                sortKey: { name: 'SortKey', dataType: 'S' },
+            }
+            const regionCode = 'us-west-2'
+
+            await deleteItem(tableName, selectedRow, tableSchema, regionCode, dynamoDbClient)
+
+            const expectedDeleteRequest = {
+                TableName: tableName,
+                Key: {
+                    ID: { S: '2' },
+                    SortKey: { S: '3' },
+                },
+            }
+
+            assert.ok(deleteItemStub.calledOnce)
+            assert.deepStrictEqual(deleteItemStub.firstCall.args[0], expectedDeleteRequest)
+        })
+
+        it('should handle missing sort key in schema', async () => {
+            const deleteItemStub = sandbox.stub(dynamoDbClient, 'deleteItem').resolves()
+
+            const tableName = 'TestTable'
+            const selectedRow = { ID: '2' }
+            const tableSchema = {
+                partitionKey: { name: 'ID', dataType: 'S' },
+            }
+            const regionCode = 'us-west-2'
+
+            await deleteItem(tableName, selectedRow, tableSchema, regionCode, dynamoDbClient)
+
+            const expectedDeleteRequest = {
+                TableName: tableName,
+                Key: {
+                    ID: { S: '2' },
+                },
+            }
+
+            assert.ok(deleteItemStub.calledOnce)
+            assert.deepStrictEqual(deleteItemStub.firstCall.args[0], expectedDeleteRequest)
+        })
+    })
+
+    describe('dynamoDbConsoleUrl', () => {
+        it('should generate correct DynamoDB console URL', () => {
+            const dynamoDbTableNode = sinon.stub() as unknown as DynamoDbTableNode
+            dynamoDbTableNode.dynamoDbtable = 'MyTable'
+
+            const expectedUrl =
+                'https://console.aws.amazon.com/dynamodb/home?region%3Dundefined#%2Ftables%3Aselected%3DMyTable'
+
+            const result = dynamoDbConsoleUrl(dynamoDbTableNode)
+
+            assert.strictEqual(result.toString(), expectedUrl)
         })
     })
 })

@@ -12,48 +12,50 @@ import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
 import { AttributeUpdates, GetItemInput, GetItemOutput, UpdateItemInput } from 'aws-sdk/clients/dynamodb'
 import { telemetry } from '../../shared/telemetry'
 
+const openedDocuments: Set<string> = new Set()
+
 export async function editItem(
     selectedRow: RowData,
     { tableName, regionCode, tableSchema }: { tableName: string; regionCode: string; tableSchema: TableSchema },
-    client: DynamoDbClient = new DynamoDbClient(regionCode)
+    client: DynamoDbClient = new DynamoDbClient(regionCode),
+    editItemHelper: EditItemHelper = new EditItemHelper(tableName, tableSchema, client)
 ) {
-    const currentContent = JSON.stringify(selectedRow, undefined, 4)
+    const currentItem = await editItemHelper.getCurrentItem(selectedRow)
+
     let filename = `${selectedRow[tableSchema.partitionKey.name]}`
     if (tableSchema.sortKey) {
         filename += `-${selectedRow[tableSchema.sortKey.name]}`
     }
-    const tempFilePath = path.join(os.tmpdir(), `${filename}.json`)
-    fs.writeFileSync(tempFilePath, currentContent)
+    const editItemFilePath = path.join(os.tmpdir(), `${filename}.json`)
+    fs.writeFileSync(editItemFilePath, JSON.stringify(currentItem, undefined, 4))
+    openedDocuments.add(editItemFilePath)
 
-    const document = await vscode.workspace.openTextDocument(tempFilePath)
+    const document = await vscode.workspace.openTextDocument(editItemFilePath)
     await vscode.window.showTextDocument(document, { preview: false, viewColumn: vscode.ViewColumn.Beside })
 
     const saveListener = vscode.workspace.onDidSaveTextDocument(async (savedDoc) => {
-        if (savedDoc.fileName === tempFilePath) {
-            await saveItem(tempFilePath, selectedRow, { tableName, regionCode, tableSchema })
+        if (savedDoc.fileName === editItemFilePath) {
+            await saveItem(editItemFilePath, currentItem, editItemHelper)
         }
     })
 
     const closeListener = vscode.workspace.onDidCloseTextDocument(async (closedDoc) => {
-        if (closedDoc.fileName === tempFilePath) {
-            await saveItem(tempFilePath, selectedRow, { tableName, regionCode, tableSchema })
+        if (closedDoc.fileName === editItemFilePath) {
+            await saveItem(editItemFilePath, currentItem, editItemHelper)
             saveListener.dispose()
             closeListener.dispose()
-            if (fs.existsSync(tempFilePath)) {
-                fs.unlinkSync(tempFilePath)
+            if (fs.existsSync(editItemFilePath)) {
+                fs.unlinkSync(editItemFilePath)
+                openedDocuments.delete(editItemFilePath)
             }
         }
     })
 }
 
-async function saveItem(
-    tempFilePath: string,
-    selectedRow: RowData,
-    { tableName, regionCode, tableSchema }: { tableName: string; regionCode: string; tableSchema: TableSchema }
-) {
+async function saveItem(tempFilePath: string, currentItemInfo: RowData, editItemHelper: EditItemHelper) {
     try {
         const updatedContent = JSON.parse(fs.readFileSync(tempFilePath, 'utf-8'))
-        const response = await updateDynamoDbItem(updatedContent, selectedRow, { tableName, regionCode, tableSchema })
+        const response = await updateDynamoDbItem(updatedContent, currentItemInfo, editItemHelper)
         if (response) {
             void vscode.window.showInformationMessage('Item updated successfully in DynamoDB')
         }
@@ -61,14 +63,10 @@ async function saveItem(
         void vscode.window.showErrorMessage(`Failed to update item in DynamoDB: ${(error as any).message}`)
     }
 }
-async function updateDynamoDbItem(
-    updatedItem: RowData,
-    currentItem: RowData,
-    { tableName, regionCode, tableSchema }: { tableName: string; regionCode: string; tableSchema: TableSchema },
-    client: DynamoDbClient = new DynamoDbClient(regionCode)
-) {
-    const partitionKey = tableSchema.partitionKey.name
-    const sortKey = tableSchema.sortKey?.name
+
+async function updateDynamoDbItem(updatedItem: RowData, currentItem: RowData, editItemHelper: EditItemHelper) {
+    const partitionKey = editItemHelper.tableSchema.partitionKey.name
+    const sortKey = editItemHelper.tableSchema.sortKey?.name
 
     if (updatedItem[partitionKey] !== currentItem[partitionKey]) {
         void vscode.window.showErrorMessage(`DynamoDB does not allow updating Partition Key.`)
@@ -80,23 +78,25 @@ async function updateDynamoDbItem(
         return
     }
 
-    if (!compareRowDataItems(updatedItem, currentItem, tableSchema)) {
+    if (!editItemHelper.compareRowDataItems(updatedItem, currentItem)) {
         return
     }
-    const itemWithDataType: GetItemOutput = await getItem(client, currentItem, tableName, tableSchema)
-    const expressionAttributeValues = getExpressionAttributeValues(updatedItem, itemWithDataType, tableSchema)
+
+    const expressionAttributeValues = editItemHelper.getExpressionAttributeValues(updatedItem, currentItem)
     if (!expressionAttributeValues) {
         return
     }
+
     const updateRequest: UpdateItemInput = {
-        TableName: tableName,
-        Key: getKeyObject(currentItem, tableSchema),
+        TableName: editItemHelper.tableName,
+        Key: editItemHelper.getKeyObject(currentItem),
         AttributeUpdates: expressionAttributeValues,
     }
+
     void telemetry.dynamodb_edit.run(async () => {
         telemetry.record({ action: 'user' })
         try {
-            const response = await client.updateItem(updateRequest)
+            const response = await editItemHelper.client.updateItem(updateRequest)
             telemetry.record({ action: 'success' })
             return response
         } catch (err) {
@@ -107,83 +107,127 @@ async function updateDynamoDbItem(
     return undefined
 }
 
-function getExpressionAttributeValues(updatedItem: RowData, currentItem: GetItemOutput, tableSchema: TableSchema) {
-    if (!currentItem.Item) {
-        return
+class EditItemHelper {
+    private getItemResponse: GetItemOutput | undefined
+    public tableName: string
+    public tableSchema: TableSchema
+    public client: DynamoDbClient
+
+    constructor(tableName: string, tableSchema: TableSchema, client: DynamoDbClient) {
+        this.tableName = tableName
+        this.tableSchema = tableSchema
+        this.client = client
     }
-    const uniqueKeys = new Set([...Object.keys(updatedItem), ...Object.keys(currentItem.Item)])
-    const expressionAttributeValues: AttributeUpdates = {}
 
-    for (const key of uniqueKeys) {
-        if (!(key in updatedItem)) {
-            // a key is not present in updateItem, it is deleted.
-            expressionAttributeValues[key] = {
-                Action: 'DELETE',
-            }
-            continue
-        } else if (!(key in currentItem.Item)) {
-            // a key is not present in currentItem, it is added.
-            void vscode.window.showErrorMessage(
-                'Addition of new attributes is not supported here. Please use AWS console.'
-            )
-            return undefined
-        }
-        const attributeMap = getAttributeValue(currentItem.Item[key])
-
-        if (attributeMap && updatedItem[key] !== attributeMap.value) {
-            expressionAttributeValues[key] = {
-                Action: 'PUT',
-                Value: {
-                    [attributeMap.key]: updatedItem[key],
+    public async getCurrentItem(selectedRow: RowData): Promise<RowData> {
+        const getItemInputRequest: GetItemInput = {
+            TableName: this.tableName,
+            Key: {
+                [this.tableSchema.partitionKey.name]: {
+                    [this.tableSchema.partitionKey.dataType]: selectedRow[this.tableSchema.partitionKey.name],
                 },
+            },
+        }
+
+        if (this.tableSchema.sortKey) {
+            getItemInputRequest.Key[this.tableSchema.sortKey.name] = {
+                [this.tableSchema.sortKey.dataType]: selectedRow[this.tableSchema.sortKey.name],
             }
         }
-    }
-    return expressionAttributeValues
-}
 
-/**
- * Compares two row data items to check for differences.
- * Iterates through the keys of the updated item and compares the values
- * with the corresponding keys in the current item. If any key is missing
- * in the current item or if the values do not match, it returns `true`,
- * indicating that the items are different. If all values match, it returns `false`.
- * @param updatedItem - The object representing the updated row data.
- * @param currentItem - The object representing the current row data.
- * @param tableSchema - The schema of the DynamoDB table, defining key attributes and data types.
- * @returns {boolean} - Returns `true` if there are differences between the two items, otherwise `false`.
- */
-function compareRowDataItems(updatedItem: RowData, currentItem: RowData, tableSchema: TableSchema) {
-    const keys = Object.keys(currentItem)
-    let isDifferent = false
+        const response = await this.client.getItem(getItemInputRequest)
+        this.getItemResponse = response
 
-    for (const key of keys) {
-        if (!(key in updatedItem) || updatedItem[key] !== currentItem[key]) {
-            isDifferent = true
-            break
+        const currentItem: RowData = {}
+
+        if (!response.Item) {
+            return currentItem
         }
-    }
-    return isDifferent
-}
 
-async function getItem(client: DynamoDbClient, selectedRow: RowData, tableName: string, tableSchema: TableSchema) {
-    const requestObject: GetItemInput = {
-        TableName: tableName,
-        Key: getKeyObject(selectedRow, tableSchema),
-    }
+        for (const [key, value] of Object.entries(response.Item)) {
+            const attributeValue = getAttributeValue(value)
+            currentItem[key] = attributeValue?.value ?? ''
+        }
 
-    return await client.getItem(requestObject)
-}
-
-function getKeyObject(selectedRow: RowData, tableSchema: TableSchema) {
-    const partitionKeyName = tableSchema.partitionKey.name
-    const keyObject: { [key: string]: { [key: string]: string } } = {
-        [partitionKeyName]: { [tableSchema.partitionKey.dataType]: selectedRow[partitionKeyName] },
+        return currentItem
     }
 
-    if (tableSchema.sortKey) {
-        const sortKeyName = tableSchema.sortKey.name
-        keyObject[sortKeyName] = { [tableSchema.sortKey.dataType]: selectedRow[sortKeyName] }
+    public getExpressionAttributeValues(updatedItem: RowData, currentItem: RowData) {
+        const uniqueKeys = new Set([...Object.keys(updatedItem), ...Object.keys(currentItem)])
+        const expressionAttributeValues: AttributeUpdates = {}
+
+        for (const key of uniqueKeys) {
+            if (!(key in updatedItem)) {
+                // a key is not present in updateItem, it is deleted.
+                expressionAttributeValues[key] = {
+                    Action: 'DELETE',
+                }
+                continue
+            } else if (!(key in currentItem)) {
+                // a key is not present in currentItem, it is added.
+                void vscode.window.showErrorMessage(
+                    'Addition of new attributes is not supported here. Please use AWS console.'
+                )
+                return undefined
+            }
+            if (!this.getItemResponse || !this.getItemResponse?.Item) {
+                return undefined
+            }
+            const attributeMap = getAttributeValue(this.getItemResponse.Item[key])
+
+            if (attributeMap && updatedItem[key] !== attributeMap.value) {
+                expressionAttributeValues[key] = {
+                    Action: 'PUT',
+                    Value: {
+                        [attributeMap.key]: updatedItem[key],
+                    },
+                }
+            }
+        }
+        return expressionAttributeValues
     }
-    return keyObject
+
+    /**
+     * Compares two row data items to check for differences.
+     * Iterates through the keys of the updated item and compares the values
+     * with the corresponding keys in the current item. If any key is missing
+     * in the current item or if the values do not match, it returns `true`,
+     * indicating that the items are different. If all values match, it returns `false`.
+     * @param updatedItem - The object representing the updated row data.
+     * @param currentItem - The object representing the current row data.
+     * @param tableSchema - The schema of the DynamoDB table, defining key attributes and data types.
+     * @returns {boolean} - Returns `true` if there are differences between the two items, otherwise `false`.
+     */
+    public compareRowDataItems(updatedItem: RowData, currentItem: RowData) {
+        const existingKeys = Object.keys(currentItem)
+        for (const key of existingKeys) {
+            if (!(key in updatedItem) || updatedItem[key] !== currentItem[key]) {
+                return true
+            }
+        }
+
+        const newKeys = Object.keys(updatedItem)
+        for (const key of newKeys) {
+            if (!(key in currentItem) || updatedItem[key] !== currentItem[key]) {
+                void vscode.window.showErrorMessage(
+                    'Addition of new attributes is not supported here. Please use AWS console.'
+                )
+                return false // To avoid further processing
+            }
+        }
+        return false
+    }
+
+    public getKeyObject(currentItem: RowData) {
+        const partitionKeyName = this.tableSchema.partitionKey.name
+        const keyObject: { [key: string]: { [key: string]: string } } = {
+            [partitionKeyName]: { [this.tableSchema.partitionKey.dataType]: currentItem[partitionKeyName] },
+        }
+
+        if (this.tableSchema.sortKey) {
+            const sortKeyName = this.tableSchema.sortKey.name
+            keyObject[sortKeyName] = { [this.tableSchema.sortKey.dataType]: currentItem[sortKeyName] }
+        }
+        return keyObject
+    }
 }

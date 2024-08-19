@@ -10,6 +10,7 @@ import { copyToClipboard } from '../../shared/utilities/messages'
 import { DynamoDbTableNode } from '../explorer/dynamoDbTableNode'
 import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
 import { AttributeValue, Key, ScanInput } from 'aws-sdk/clients/dynamodb'
+import { telemetry } from '../../shared/telemetry'
 
 export interface RowData {
     [key: string]: string
@@ -33,11 +34,12 @@ export interface TableSchema {
 export async function getTableContent(
     tableRequest: ScanInput,
     regionCode: string,
+    tableSchema: TableSchema,
     client = new DynamoDbClient(regionCode)
 ) {
     tableRequest.Limit = await getMaxItemsPerPage()
     const response = await client.scanTable(tableRequest)
-    const { columnNames, tableHeader } = getTableColumnsNames(response)
+    const { columnNames, tableHeader } = getTableColumnsNames(response, tableSchema)
     const tableItems = getTableItems(columnNames, response)
 
     const tableData: TableData = {
@@ -48,25 +50,38 @@ export async function getTableContent(
     return tableData
 }
 
-export function getTableColumnsNames(items: DynamoDB.Types.ScanOutput): {
+export function getTableColumnsNames(
+    items: DynamoDB.Types.ScanOutput,
+    tableSchema: TableSchema
+): {
     columnNames: Set<string>
     tableHeader: RowData[]
 } {
     const tableColumnsNames = new Set<string>()
     const tableHeader = [] as RowData[]
+    const response = {
+        columnNames: tableColumnsNames,
+        tableHeader: tableHeader,
+    }
+    if (!items.Items || items.Items.length === 0) {
+        return response
+    }
+    tableColumnsNames.add(tableSchema.partitionKey.name)
+    if (tableSchema.sortKey) {
+        tableColumnsNames.add(tableSchema.sortKey.name)
+    }
     for (const item of items.Items ?? []) {
         for (const key of Object.keys(item)) {
-            tableColumnsNames.add(key)
+            if (!tableColumnsNames.has(key)) {
+                tableColumnsNames.add(key)
+            }
         }
     }
     for (const columnName of tableColumnsNames) {
         tableHeader.push({ columnDataKey: columnName, title: columnName })
     }
 
-    return {
-        columnNames: tableColumnsNames,
-        tableHeader: tableHeader,
-    }
+    return response
 }
 
 export function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Types.ScanOutput) {
@@ -92,16 +107,22 @@ export function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Ty
  * @param {DynamoDbTableNode} node - The DynamoDB table node containing table and region information.
  */
 export async function copyDynamoDbArn(node: DynamoDbTableNode, client = new DynamoDbClient(node.regionCode)) {
-    const response = await client.getTableInformation({ TableName: node.dynamoDbtable })
-    if (response.TableArn !== undefined) {
-        await copyToClipboard(response.TableArn, 'ARN')
-    }
+    return telemetry.dynamodb_view.run(async (span) => {
+        const response = await client.getTableInformation({ TableName: node.dynamoDbtable })
+        if (response.TableArn !== undefined) {
+            span.emit({ dynamoDbTarget: 'tableProperties', result: 'Succeeded' })
+            await copyToClipboard(response.TableArn, 'ARN')
+        } else {
+            span.emit({ dynamoDbTarget: 'tableProperties', result: 'Failed', reason: 'Table ARN is undefined' })
+        }
+    })
 }
 
 export async function queryTableContent(
     queryRequest: { partitionKey: string; sortKey: string },
     regionCode: string,
     tableName: string,
+    tableSchema: TableSchema,
     lastEvaluatedKey?: Key,
     client = new DynamoDbClient(regionCode)
 ) {
@@ -109,7 +130,7 @@ export async function queryTableContent(
     queryRequestObject.Limit = await getMaxItemsPerPage()
     queryRequestObject.ExclusiveStartKey = lastEvaluatedKey
     const queryResponse = await client.queryTable(queryRequestObject)
-    const { columnNames, tableHeader } = getTableColumnsNames(queryResponse)
+    const { columnNames, tableHeader } = getTableColumnsNames(queryResponse, tableSchema)
     const tableItems = getTableItems(columnNames, queryResponse)
 
     const tableData: TableData = {

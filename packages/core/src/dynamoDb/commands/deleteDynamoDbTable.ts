@@ -33,14 +33,20 @@ export async function deleteDynamoDbTable(
 
     await telemetry.dynamodb_deleteTable.run(async () => {
         telemetry.record({ action: 'user' })
-        const response = await client.deleteTable({ TableName: node.dynamoDbtable })
-        if (response.TableDescription && response.TableDescription.TableName) {
-            getLogger().debug(`Deleted DynamoDB table: ${response.TableDescription.TableName}`)
-            node.parentNode.refresh()
-            return
+        try {
+            const response = await client.deleteTable({ TableName: node.dynamoDbtable })
+            if (response.TableDescription && response.TableDescription.TableName) {
+                getLogger().debug(`Deleted DynamoDB table: ${response.TableDescription.TableName}`)
+                await new Promise((resolve) => setTimeout(resolve, 3000)).then(async () => {
+                    await node.parentNode.refreshNode()
+                })
+            } else {
+                throw new Error(`Delete failed with error : ${JSON.stringify(response)}`)
+            }
+        } catch (err) {
+            const errorString = `Failed to delete DynamoDB table: ${node.dynamoDbtable}`
+            getLogger().error(errorString)
+            throw new Error(errorString)
         }
-        const errorString = `Failed to delete DynamoDB table: ${node.dynamoDbtable}`
-        getLogger().error(errorString)
-        throw new Error(errorString)
     })
 }
