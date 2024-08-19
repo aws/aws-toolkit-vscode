@@ -135,7 +135,7 @@ function handleClickOutside(event: MouseEvent) {
 import { defineComponent } from 'vue'
 import { RowData, TableSchema } from '../utils/dynamodb'
 import { DynamoDbTableWebview, DynamoDbTableData } from './tableView'
-import { WebviewClientFactory } from '../../webviews/client'
+import { WebviewClientFactory } from '../../../webviews/client'
 import { Key } from 'aws-sdk/clients/dynamodb'
 import { formatDistanceToNow } from 'date-fns'
 

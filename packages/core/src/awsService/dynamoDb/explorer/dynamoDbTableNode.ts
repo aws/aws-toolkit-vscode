@@ -4,9 +4,9 @@
  */
 
 import { DynamoDB } from 'aws-sdk'
-import { getIcon } from '../../shared/icons'
-import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
+import { getIcon } from '../../../shared/icons'
+import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { DynamoDbInstanceNode } from './dynamoDbInstanceNode'
 
 export class DynamoDbTableNode extends AWSTreeNodeBase implements AWSResourceNode {

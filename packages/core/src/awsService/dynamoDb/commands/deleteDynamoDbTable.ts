@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger } from '../../shared'
-import { telemetry } from '../../shared/telemetry'
-import * as localizedText from '../../shared/localizedText'
-import { localize } from '../../shared/utilities/vsCodeUtils'
-import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
-import { showConfirmationMessage } from '../../shared/utilities/messages'
+import { getLogger } from '../../../shared'
+import { telemetry } from '../../../shared/telemetry'
+import * as localizedText from '../../../shared/localizedText'
+import { localize } from '../../../shared/utilities/vsCodeUtils'
+import { DynamoDbClient } from '../../../shared/clients/dynamoDbClient'
+import { showConfirmationMessage } from '../../../shared/utilities/messages'
 import { DynamoDbTableNode } from '../explorer/dynamoDbTableNode'
 
 export async function deleteDynamoDbTable(

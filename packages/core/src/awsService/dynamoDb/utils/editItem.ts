@@ -8,9 +8,9 @@ import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { RowData, TableSchema, getAttributeValue } from './dynamodb'
-import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
+import { DynamoDbClient } from '../../../shared/clients/dynamoDbClient'
 import { AttributeUpdates, GetItemInput, GetItemOutput, UpdateItemInput } from 'aws-sdk/clients/dynamodb'
-import { telemetry } from '../../shared/telemetry'
+import { telemetry } from '../../../shared/telemetry'
 
 const openedDocuments: Set<string> = new Set()
 

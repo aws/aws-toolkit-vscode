@@ -5,12 +5,12 @@
 
 import * as vscode from 'vscode'
 import { DynamoDB } from 'aws-sdk'
-import { Settings } from '../../shared'
-import { copyToClipboard } from '../../shared/utilities/messages'
+import { Settings } from '../../../shared'
+import { copyToClipboard } from '../../../shared/utilities/messages'
 import { DynamoDbTableNode } from '../explorer/dynamoDbTableNode'
-import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
+import { DynamoDbClient } from '../../../shared/clients/dynamoDbClient'
 import { AttributeValue, Key, ScanInput } from 'aws-sdk/clients/dynamodb'
-import { telemetry } from '../../shared/telemetry'
+import { telemetry } from '../../../shared/telemetry'
 
 export interface RowData {
     [key: string]: string

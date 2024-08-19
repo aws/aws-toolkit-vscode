@@ -5,15 +5,15 @@
 
 import * as sinon from 'sinon'
 import * as assert from 'assert'
-import { DynamoDbClient } from '../../../shared/clients/dynamoDbClient'
-import { deleteDynamoDbTable } from '../../../awsService/dynamoDb/commands/deleteDynamoDbTable'
-import { DynamoDbTableNode } from '../../../awsService/dynamoDb/explorer/dynamoDbTableNode'
+import { DynamoDbClient } from '../../../../shared/clients/dynamoDbClient'
+import { deleteDynamoDbTable } from '../../../../awsService/dynamoDb/commands/deleteDynamoDbTable'
+import { DynamoDbTableNode } from '../../../../awsService/dynamoDb/explorer/dynamoDbTableNode'
 import { AWSError } from 'aws-sdk'
 import { DeleteTableOutput } from 'aws-sdk/clients/dynamodb'
 import { PromiseResult } from 'aws-sdk/lib/request'
-import * as utilities from '../../../shared/utilities/messages'
-import { DynamoDbInstanceNode } from '../../../awsService/dynamoDb/explorer/dynamoDbInstanceNode'
-import { assertTelemetry } from '../../testUtil'
+import * as utilities from '../../../../shared/utilities/messages'
+import { DynamoDbInstanceNode } from '../../../../awsService/dynamoDb/explorer/dynamoDbInstanceNode'
+import { assertTelemetry } from '../../../testUtil'
 
 describe('deleteDynamoDbTable', () => {
     let dynamoDbClient: DynamoDbClient

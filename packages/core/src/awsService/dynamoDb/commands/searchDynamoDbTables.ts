@@ -4,15 +4,15 @@
  */
 
 import * as nls from 'vscode-nls'
-import { Wizard } from '../../shared/wizards/wizard'
-import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
-import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
-import { toArrayAsync } from '../../shared/utilities/collectionUtils'
-import { CancellationError } from '../../shared/utilities/timeoutUtils'
-import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
-import { ExtContext } from '../../shared/extensions'
+import { Wizard } from '../../../shared/wizards/wizard'
+import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
+import { DynamoDbClient } from '../../../shared/clients/dynamoDbClient'
+import { toArrayAsync } from '../../../shared/utilities/collectionUtils'
+import { CancellationError } from '../../../shared/utilities/timeoutUtils'
+import { RegionSubmenu, RegionSubmenuResponse } from '../../../shared/ui/common/regionSubmenu'
+import { ExtContext } from '../../../shared/extensions'
 import { viewDynamoDbTable } from '../vue/tableView'
-import { telemetry } from '../../shared/telemetry'
+import { telemetry } from '../../../shared/telemetry'
 
 const localize = nls.loadMessageBundle()
 

@@ -23,6 +23,7 @@ import {
     showWelcomeMessage,
 } from './shared/extensionUtilities'
 import { getLogger, Logger } from './shared/logger/logger'
+import { activate as activateDynamoDb } from './awsService/dynamoDb/activation'
 import { activate as activateEcr } from './awsService/ecr/activation'
 import { activate as activateEc2 } from './awsService/ec2/activation'
 import { activate as activateSam } from './shared/sam/activation'
@@ -166,6 +167,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateSam(extContext)
 
         await activateS3(extContext)
+
+        await activateDynamoDb(extContext)
 
         await activateEc2(extContext)
 

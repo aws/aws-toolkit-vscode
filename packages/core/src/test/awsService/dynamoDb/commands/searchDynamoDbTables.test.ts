@@ -5,10 +5,10 @@
 
 import * as sinon from 'sinon'
 import * as assert from 'assert'
-import { ExtContext } from '../../../shared'
-import * as tableView from '../../../awsService/dynamoDb/vue/tableView'
-import { searchDynamoDbTables } from '../../../awsService/dynamoDb/commands/searchDynamoDbTables'
-import { assertTelemetry } from '../../testUtil'
+import { ExtContext } from '../../../../shared'
+import * as tableView from '../../../../awsService/dynamoDb/vue/tableView'
+import { searchDynamoDbTables } from '../../../../awsService/dynamoDb/commands/searchDynamoDbTables'
+import { assertTelemetry } from '../../../testUtil'
 
 describe('SearchDynamoDbTables', () => {
     let sandbox: sinon.SinonSandbox

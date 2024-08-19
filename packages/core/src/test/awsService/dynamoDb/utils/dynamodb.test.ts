@@ -7,12 +7,12 @@ import * as sinon from 'sinon'
 import * as assert from 'assert'
 import { AWSError } from 'aws-sdk'
 import { PromiseResult } from 'aws-sdk/lib/request'
-import * as utilities from '../../../shared/utilities/messages'
+import * as utilities from '../../../../shared/utilities/messages'
 import { ScanOutput, TableDescription } from 'aws-sdk/clients/dynamodb'
-import { DynamoDbClient } from '../../../shared/clients/dynamoDbClient'
-import { DynamoDbTableNode } from '../../../awsService/dynamoDb/explorer/dynamoDbTableNode'
-import * as dynamoDbUtils from '../../../awsService/dynamoDb/utils/dynamodb'
-import { deleteItem, dynamoDbConsoleUrl } from '../../../awsService/dynamoDb/utils/dynamodb'
+import { DynamoDbClient } from '../../../../shared/clients/dynamoDbClient'
+import { DynamoDbTableNode } from '../../../../awsService/dynamoDb/explorer/dynamoDbTableNode'
+import * as dynamoDbUtils from '../../../../awsService/dynamoDb/utils/dynamodb'
+import { deleteItem, dynamoDbConsoleUrl } from '../../../../awsService/dynamoDb/utils/dynamodb'
 
 function generateRequest<T>(output?: T): PromiseResult<T, AWSError> {
     return Promise.resolve(output) as unknown as PromiseResult<T, AWSError>

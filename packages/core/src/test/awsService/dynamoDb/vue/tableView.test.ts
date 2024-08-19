@@ -5,18 +5,18 @@
 
 import * as sinon from 'sinon'
 import * as assert from 'assert'
-import { ExtContext } from '../../../shared'
-import * as settings from '../../../shared/settings'
-import * as edit from '../../../awsService/dynamoDb/utils/editItem'
-import * as utilities from '../../../shared/utilities/messages'
-import * as dynamoDbUtils from '../../../awsService/dynamoDb/utils/dynamodb'
-import * as messagesUtils from '../../../shared/utilities/messages'
+import { ExtContext } from '../../../../shared'
+import * as settings from '../../../../shared/settings'
+import * as edit from '../../../../awsService/dynamoDb/utils/editItem'
+import * as utilities from '../../../../shared/utilities/messages'
+import * as dynamoDbUtils from '../../../../awsService/dynamoDb/utils/dynamodb'
+import * as messagesUtils from '../../../../shared/utilities/messages'
 import {
     DynamoDbTableWebview,
     DynamoDbTableData,
     viewDynamoDbTable,
     getDynamoDbTableData,
-} from '../../../awsService/dynamoDb/vue/tableView'
+} from '../../../../awsService/dynamoDb/vue/tableView'
 
 describe('TableView', () => {
     let sandbox: sinon.SinonSandbox

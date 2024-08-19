@@ -5,12 +5,12 @@
 
 import * as vscode from 'vscode'
 import { DynamoDbTableNode } from './dynamoDbTableNode'
-import { makeChildrenNodes } from '../../shared/treeview/utils'
-import { DynamoDbClient } from '../../shared/clients/dynamoDbClient'
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { toMap, toArrayAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
-import { telemetry } from '../../shared/telemetry'
+import { makeChildrenNodes } from '../../../shared/treeview/utils'
+import { DynamoDbClient } from '../../../shared/clients/dynamoDbClient'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
+import { toMap, toArrayAsync, updateInPlace } from '../../../shared/utilities/collectionUtils'
+import { telemetry } from '../../../shared/telemetry'
 
 export class DynamoDbInstanceNode extends AWSTreeNodeBase {
     protected readonly placeHolderMessage = '[No Tables Found]'

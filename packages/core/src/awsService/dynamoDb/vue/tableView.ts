@@ -4,14 +4,14 @@
  */
 
 import * as nls from 'vscode-nls'
-import { ExtContext } from '../../shared'
-import { VueWebview } from '../../webviews/main'
-import { openSettings } from '../../shared/settings'
-import { getLogger, Logger } from '../../shared/logger'
+import { ExtContext } from '../../../shared'
+import { VueWebview } from '../../../webviews/main'
+import { openSettings } from '../../../shared/settings'
+import { getLogger, Logger } from '../../../shared/logger'
 import { Key, ScanInput } from 'aws-sdk/clients/dynamodb'
-import * as localizedText from '../../shared/localizedText'
-import { copyToClipboard, showConfirmationMessage } from '../../shared/utilities/messages'
-import { DynamoDbTarget, telemetry } from '../../shared/telemetry/telemetry'
+import * as localizedText from '../../../shared/localizedText'
+import { copyToClipboard, showConfirmationMessage } from '../../../shared/utilities/messages'
+import { DynamoDbTarget, telemetry } from '../../../shared/telemetry/telemetry'
 import {
     getTableContent,
     queryTableContent,
@@ -39,7 +39,7 @@ export interface DynamoDbTableData {
  * This class binds the JavaScript and service methods for handling DynamoDB operations.
  */
 export class DynamoDbTableWebview extends VueWebview {
-    public static readonly sourcePath: string = 'src/dynamoDb/vue/index.js'
+    public static readonly sourcePath: string = 'src/awsService/dynamoDb/vue/index.js'
     public readonly id = 'dynamoDbTableView'
 
     public constructor(private readonly data: DynamoDbTableData) {
