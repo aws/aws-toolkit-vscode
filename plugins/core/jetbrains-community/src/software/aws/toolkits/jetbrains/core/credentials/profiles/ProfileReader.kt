@@ -8,7 +8,7 @@ import software.amazon.awssdk.profiles.ProfileFile
 import software.amazon.awssdk.profiles.ProfileProperty
 import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants.PROFILE_SSO_SESSION_PROPERTY
 import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants.SSO_SESSION_SECTION_NAME
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 
 data class Profiles(
     val validProfiles: Map<String, Profile>,
@@ -62,7 +62,7 @@ private fun validateProfile(profile: Profile, allProfiles: Map<String, Profile>)
             // NO-OP Always valid
         }
         else -> {
-            throw IllegalArgumentException(message("credentials.profile.unsupported", profile.name()))
+            throw IllegalArgumentException(AwsCoreBundle.message("credentials.profile.unsupported", profile.name()))
         }
     }
 }
@@ -81,7 +81,7 @@ private fun validateAssumeRoleProfile(profile: Profile, allProfiles: Map<String,
         try {
             CredentialSourceType.parse(credentialSource.get())
         } catch (e: Exception) {
-            throw IllegalArgumentException(message("credentials.profile.assume_role.invalid_credential_source", rootProfile.name()))
+            throw IllegalArgumentException(AwsCoreBundle.message("credentials.profile.assume_role.invalid_credential_source", rootProfile.name()))
         }
     } else {
         validateProfile(rootProfile, allProfiles)
@@ -105,7 +105,7 @@ private fun validateSsoProfile(profile: Profile) {
     profile.requiredProperty(ProfileProperty.SSO_ROLE_NAME)
 
     val sessionSection = ProfileFile.defaultProfileFile().getSection(SSO_SESSION_SECTION_NAME, ssoSessionName).orElse(null)
-        ?: error(message("credentials.ssoSession.validation_error", profile.name(), ssoSessionName))
+        ?: error(AwsCoreBundle.message("credentials.ssoSession.validation_error", profile.name(), ssoSessionName))
 
     validateSsoSession(sessionSection)
 }

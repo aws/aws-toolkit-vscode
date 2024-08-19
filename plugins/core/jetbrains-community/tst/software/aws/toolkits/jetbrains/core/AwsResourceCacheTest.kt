@@ -427,7 +427,7 @@ class AwsResourceCacheTest {
         whenever(mockResource.fetch(any())).thenThrow(RuntimeException("boom"))
         assertThatThrownBy { sut.getResourceNow(mockResource, connectionSettings, timeout = Duration.ofSeconds(1)) }
             .isInstanceOf(RuntimeException::class.java)
-            .hasMessage("boom")
+            .hasCauseWithMessage("boom")
     }
 
     @Test

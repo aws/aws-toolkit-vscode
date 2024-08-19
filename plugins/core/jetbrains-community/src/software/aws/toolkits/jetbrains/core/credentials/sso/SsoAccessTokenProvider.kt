@@ -24,7 +24,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sso.pkce.PKCE_CLIENT_NAM
 import software.aws.toolkits.jetbrains.core.credentials.sso.pkce.ToolkitOAuthService
 import software.aws.toolkits.jetbrains.utils.assertIsNonDispatchThread
 import software.aws.toolkits.jetbrains.utils.sleepWithCancellation
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import software.aws.toolkits.telemetry.AwsTelemetry
 import software.aws.toolkits.telemetry.CredentialSourceId
 import software.aws.toolkits.telemetry.Result
@@ -269,7 +269,7 @@ class SsoAccessTokenProvider(
         val registration = registerDAGClient()
         val authorization = authorizeDAGClient(registration)
 
-        progressIndicator.text2 = message("aws.sso.signing.device.waiting", authorization.userCode)
+        progressIndicator.text2 = AwsCoreBundle.message("aws.sso.signing.device.waiting", authorization.userCode)
         _authorization.set(PendingAuthorization.DAGAuthorization(authorization, progressIndicator))
 
         onPendingToken.tokenPending(authorization)
@@ -331,7 +331,7 @@ class SsoAccessTokenProvider(
             } catch (e: ProcessCanceledException) {
                 future.cancel(true)
                 _authorization.set(null)
-                throw ProcessCanceledException(IllegalStateException(message("credentials.pending.user_cancel.message")))
+                throw ProcessCanceledException(IllegalStateException(AwsCoreBundle.message("credentials.pending.user_cancel.message")))
             }
         }
     }

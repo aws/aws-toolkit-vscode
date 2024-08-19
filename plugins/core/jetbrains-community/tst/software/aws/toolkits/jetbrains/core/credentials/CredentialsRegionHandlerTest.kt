@@ -18,7 +18,7 @@ import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.settings.AwsSettingsRule
 import software.aws.toolkits.jetbrains.settings.UseAwsCredentialRegion
 import software.aws.toolkits.jetbrains.utils.rules.NotificationListenerRule
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 
 class CredentialsRegionHandlerTest {
 
@@ -138,7 +138,7 @@ class CredentialsRegionHandlerTest {
         val newSelected = sut.determineSelectedRegion(identifier, selectedRegion = defaultRegion)
 
         assertThat(newSelected).isEqualTo(defaultRegion)
-        assertThat(notificationListener.notifications.filter { it.title == message("aws.notification.title") }).isEmpty()
+        assertThat(notificationListener.notifications.filter { it.title == AwsCoreBundle.message("aws.notification.title") }).isEmpty()
     }
 
     @Test
@@ -180,7 +180,7 @@ class CredentialsRegionHandlerTest {
     }
 
     private fun getOnlyNotification(): Notification {
-        val credentialNotifications = notificationListener.notifications.filter { it.title == message("aws.notification.title") }
+        val credentialNotifications = notificationListener.notifications.filter { it.title == AwsCoreBundle.message("aws.notification.title") }
         assertThat(credentialNotifications).hasSize(1)
 
         return credentialNotifications.first()

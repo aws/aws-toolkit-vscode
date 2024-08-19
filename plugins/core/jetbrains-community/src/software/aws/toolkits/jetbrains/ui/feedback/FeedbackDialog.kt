@@ -31,7 +31,7 @@ import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.services.telemetry.ClientMetadata
 import software.aws.toolkits.jetbrains.utils.notifyInfo
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import software.aws.toolkits.telemetry.FeedbackTelemetry
 import software.aws.toolkits.telemetry.Result
 import java.net.URLEncoder
@@ -48,7 +48,7 @@ abstract class FeedbackDialog(
 
     protected abstract fun notificationTitle(): String
     protected abstract fun productName(): String
-    protected open fun feedbackPrompt(): String = message("feedback.comment.textbox.title", productName())
+    protected open fun feedbackPrompt(): String = AwsCoreBundle.message("feedback.comment.textbox.title", productName())
 
     private val coroutineScope = projectCoroutineScope(project)
     protected var sentiment = initialSentiment
@@ -56,19 +56,21 @@ abstract class FeedbackDialog(
     private val sadIcon = IconUtil.scale(AwsIcons.Misc.FROWN, null, 3f)
     protected var commentText: String = initialComment
     private lateinit var comment: Cell<JBTextArea>
-    private var lengthLimitLabel = JBLabel(message("feedback.comment.textbox.initial.length")).also { it.foreground = UIUtil.getLabelInfoForeground() }
+    private var lengthLimitLabel = JBLabel(AwsCoreBundle.message("feedback.comment.textbox.initial.length")).also {
+        it.foreground = UIUtil.getLabelInfoForeground()
+    }
 
     private val dialogPanel by lazy {
         panel {
             if (isToolkit()) {
                 row {
-                    text(message("feedback.initial.help.text"))
+                    text(AwsCoreBundle.message("feedback.initial.help.text"))
                 }
             }
-            group(message("feedback.connect.with.github.title")) {
+            group(AwsCoreBundle.message("feedback.connect.with.github.title")) {
                 row {
                     icon(AllIcons.Toolwindows.ToolWindowDebugger)
-                    link(message("feedback.report.issue.link")) {
+                    link(AwsCoreBundle.message("feedback.report.issue.link")) {
                         BrowserUtil.browse(
                             "${GITHUB_LINK_BASE}${URLEncoder.encode(
                                 "${comment.component.text}\n\n${getToolkitMetadata()}",
@@ -80,7 +82,7 @@ abstract class FeedbackDialog(
                 row {
                     icon(AllIcons.Actions.IntentionBulbGrey)
 
-                    link(message("feedback.request.feature.link")) {
+                    link(AwsCoreBundle.message("feedback.request.feature.link")) {
                         BrowserUtil.browse(
                             "${GITHUB_LINK_BASE}${URLEncoder.encode(
                                 "${comment.component.text}\n\n${getToolkitMetadata()}",
@@ -91,13 +93,13 @@ abstract class FeedbackDialog(
                 }
                 row {
                     icon(AllIcons.Nodes.Tag)
-                    link(message("feedback.view.source.code.link")) {
+                    link(AwsCoreBundle.message("feedback.view.source.code.link")) {
                         BrowserUtil.browse(TOOLKIT_REPOSITORY_LINK)
                     }
                 }
             }
 
-            group(message("feedback.share.feedback.title")) {
+            group(AwsCoreBundle.message("feedback.share.feedback.title")) {
                 buttonsGroup {
                     row {
                         radioButton("", value = Sentiment.POSITIVE).applyToComponent {
@@ -111,10 +113,10 @@ abstract class FeedbackDialog(
                 }.bind({ sentiment }, { sentiment = it })
 
                 row(feedbackPrompt()) {}
-                row { comment(message("feedback.customer.alert.info")) }
+                row { comment(AwsCoreBundle.message("feedback.customer.alert.info")) }
                 row {
                     comment = textArea().rows(6).columns(52).bindText(::commentText).applyToComponent {
-                        this.emptyText.text = message("feedback.comment.emptyText")
+                        this.emptyText.text = AwsCoreBundle.message("feedback.comment.emptyText")
                         this.lineWrap = true
 
                         this.document.addUndoableEditListener {
@@ -142,7 +144,7 @@ abstract class FeedbackDialog(
     override fun doOKAction() {
         if (okAction.isEnabled) {
             dialogPanel.apply()
-            setOKButtonText(message("feedback.submitting"))
+            setOKButtonText(AwsCoreBundle.message("feedback.submitting"))
             isOKActionEnabled = false
             var result = Result.Succeeded
             coroutineScope.launch {
@@ -154,11 +156,15 @@ abstract class FeedbackDialog(
                         close(OK_EXIT_CODE)
                     }
 
-                    notifyInfo(notificationTitle(), message("feedback.submit_success"), project)
+                    notifyInfo(notificationTitle(), AwsCoreBundle.message("feedback.submit_success"), project)
                 } catch (e: Exception) {
                     withContext(edtContext) {
-                        Messages.showMessageDialog(message("feedback.submit_failed", e), message("feedback.submit_failed_title"), null)
-                        setOKButtonText(message("feedback.submit_button"))
+                        Messages.showMessageDialog(
+                            AwsCoreBundle.message("feedback.submit_failed", e),
+                            AwsCoreBundle.message("feedback.submit_failed_title"),
+                            null
+                        )
+                        setOKButtonText(AwsCoreBundle.message("feedback.submit_button"))
                         isOKActionEnabled = true
                     }
                     result = Result.Failed
@@ -175,7 +181,7 @@ abstract class FeedbackDialog(
 
         return when {
             comment.isEmpty() -> null
-            comment.length >= MAX_LENGTH -> ValidationInfo(message("feedback.validation.comment_too_long"))
+            comment.length >= MAX_LENGTH -> ValidationInfo(AwsCoreBundle.message("feedback.validation.comment_too_long"))
             else -> null
         }
     }
@@ -183,7 +189,7 @@ abstract class FeedbackDialog(
     private fun onTextAreaUpdate(commentText: String) {
         this.commentText = commentText
         val currentLength = this.commentText.length
-        val lengthText = message("feedback.limit.label", MAX_LENGTH - currentLength)
+        val lengthText = AwsCoreBundle.message("feedback.limit.label", MAX_LENGTH - currentLength)
         lengthLimitLabel.text = if (currentLength >= MAX_LENGTH) {
             "<html><font color='#${ColorUtil.toHex(UIUtil.getErrorForeground())}'>$lengthText</font></html>"
         } else {
@@ -194,8 +200,8 @@ abstract class FeedbackDialog(
     init {
         super.init()
 
-        title = message("feedback.title", productName())
-        setOKButtonText(message("feedback.submit_button"))
+        title = AwsCoreBundle.message("feedback.title", productName())
+        setOKButtonText(AwsCoreBundle.message("feedback.submit_button"))
     }
 
     private fun isToolkit(): Boolean = (productName() == "Toolkit")

@@ -21,7 +21,7 @@ import software.aws.toolkits.core.utils.outputStream
 import software.aws.toolkits.core.utils.putNextEntry
 import software.aws.toolkits.jetbrains.core.coroutines.EDT
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineBgContext
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import software.aws.toolkits.telemetry.AmazonqTelemetry
 import java.io.File
 import java.io.FileInputStream
@@ -81,7 +81,7 @@ class FeatureDevSessionContext(val project: Project, val maxProjectSizeBytes: Lo
 
     fun getProjectZip(): ZipCreationResult {
         val zippedProject = runBlocking {
-            withBackgroundProgress(project, message("amazonqFeatureDev.create_plan.background_progress_title")) {
+            withBackgroundProgress(project, AwsCoreBundle.message("amazonqFeatureDev.create_plan.background_progress_title")) {
                 zipFiles(selectedSourceFolder)
             }
         }
@@ -137,7 +137,7 @@ class FeatureDevSessionContext(val project: Project, val maxProjectSizeBytes: Lo
                         files.add(file)
 
                         if (maxProjectSizeBytes != null && totalSize > maxProjectSizeBytes) {
-                            throw RepoSizeLimitError(message("amazonqFeatureDev.content_length.error_text"))
+                            throw RepoSizeLimitError(AwsCoreBundle.message("amazonqFeatureDev.content_length.error_text"))
                         }
                     }
                     return true

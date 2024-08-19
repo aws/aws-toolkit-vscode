@@ -19,7 +19,7 @@ import org.jetbrains.annotations.TestOnly
 import org.jetbrains.concurrency.AsyncPromise
 import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
 import software.aws.toolkits.jetbrains.utils.ui.selected
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import java.awt.Component
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicBoolean
@@ -51,7 +51,7 @@ class AsyncComboBox<T> private constructor(
 
                 if (loading.get() && index == -1) {
                     component.icon = AnimatedIcon.Default.INSTANCE
-                    component.text = message("loading_resource.loading")
+                    component.text = AwsCoreBundle.message("loading_resource.loading")
                 }
 
                 return component
@@ -70,7 +70,7 @@ class AsyncComboBox<T> private constructor(
         renderer = ListCellRenderer { list, value, index, selected, hasFocus ->
             if (loading.get() && index == -1) {
                 val component = JBLabel(AnimatedIcon.Default.INSTANCE)
-                component.text = message("loading_resource.loading")
+                component.text = AwsCoreBundle.message("loading_resource.loading")
 
                 return@ListCellRenderer component
             }

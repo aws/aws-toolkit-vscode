@@ -22,7 +22,7 @@ import software.aws.toolkits.jetbrains.core.MockClientManagerExtension
 import software.aws.toolkits.jetbrains.core.credentials.ConfigFilesFacade
 import software.aws.toolkits.jetbrains.core.region.MockRegionProviderExtension
 import software.aws.toolkits.jetbrains.utils.satisfiesKt
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 
 @ExtendWith(MockKExtension::class)
 class IdcRolePopupTest {
@@ -56,7 +56,7 @@ class IdcRolePopupTest {
 
             assertThat(validation).singleElement().satisfiesKt {
                 assertThat(it.okEnabled).isFalse()
-                assertThat(it.message).contains(message("gettingstarted.setup.error.not_selected"))
+                assertThat(it.message).contains(AwsCoreBundle.message("gettingstarted.setup.error.not_selected"))
             }
         }
     }

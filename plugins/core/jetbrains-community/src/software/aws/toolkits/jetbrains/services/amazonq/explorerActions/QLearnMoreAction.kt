@@ -10,10 +10,10 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.extensions.PluginId
 import software.aws.toolkits.jetbrains.AwsToolkit
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import software.aws.toolkits.telemetry.UiTelemetry
 
-class QLearnMoreAction : AnAction(message("q.learn.more"), "", AllIcons.Actions.Help) {
+class QLearnMoreAction : AnAction(AwsCoreBundle.message("q.learn.more"), "", AllIcons.Actions.Help) {
     override fun actionPerformed(e: AnActionEvent) {
         if (!PluginManager.isPluginInstalled(PluginId.getId(AwsToolkit.Q_PLUGIN_ID))) {
             BrowserUtil.browse("https://plugins.jetbrains.com/plugin/24267-amazon-q")

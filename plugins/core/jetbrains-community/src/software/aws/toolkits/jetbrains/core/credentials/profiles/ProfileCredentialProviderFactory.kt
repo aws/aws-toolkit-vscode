@@ -59,7 +59,7 @@ import software.aws.toolkits.jetbrains.utils.createNotificationExpiringAction
 import software.aws.toolkits.jetbrains.utils.createShowMoreInfoDialogAction
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 
 const val DEFAULT_PROFILE_NAME = "default"
 
@@ -68,7 +68,7 @@ private const val PROFILE_FACTORY_ID = "ProfileCredentialProviderFactory"
 open class ProfileCredentialsIdentifier internal constructor(val profileName: String, override val defaultRegionId: String?, credentialType: CredentialType?) :
     CredentialIdentifierBase(credentialType) {
     override val id = "profile:$profileName"
-    override val displayName = message("credentials.profile.name", profileName)
+    override val displayName = AwsCoreBundle.message("credentials.profile.name", profileName)
     override val factoryId = PROFILE_FACTORY_ID
     override val shortName: String = profileName
 }
@@ -90,9 +90,9 @@ private class ProfileCredentialsIdentifierLegacySso(
     override fun handleValidationException(e: Exception) = ifReAuthNeeded(e) {
         ConnectionState.RequiresUserAction(
             object : InteractiveCredential, CredentialIdentifier by this {
-                override val userActionDisplayMessage = message("credentials.sso.display", displayName)
-                override val userActionShortDisplayMessage = message("credentials.sso.display.short")
-                override val userAction = object : AnAction(message("credentials.sso.action")), DumbAware {
+                override val userActionDisplayMessage = AwsCoreBundle.message("credentials.sso.display", displayName)
+                override val userActionShortDisplayMessage = AwsCoreBundle.message("credentials.sso.display.short")
+                override val userAction = object : AnAction(AwsCoreBundle.message("credentials.sso.action")), DumbAware {
                     override fun actionPerformed(e: AnActionEvent) {
                         invalidateCurrentToken()
 
@@ -118,9 +118,9 @@ class ProfileCredentialsIdentifierSso @TestOnly constructor(
         ifReAuthNeeded(e) {
             ConnectionState.RequiresUserAction(
                 object : InteractiveCredential, CredentialIdentifier by this {
-                    override val userActionDisplayMessage = message("credentials.sso.display", displayName)
-                    override val userActionShortDisplayMessage = message("credentials.sso.display.short")
-                    override val userAction = object : AnAction(message("credentials.sso.login.session", ssoSessionName)), DumbAware {
+                    override val userActionDisplayMessage = AwsCoreBundle.message("credentials.sso.display", displayName)
+                    override val userActionShortDisplayMessage = AwsCoreBundle.message("credentials.sso.display.short")
+                    override val userAction = object : AnAction(AwsCoreBundle.message("credentials.sso.login.session", ssoSessionName)), DumbAware {
                         override fun actionPerformed(e: AnActionEvent) {
                             val session = CredentialManager.getInstance()
                                 .getSsoSessionIdentifiers()
@@ -171,7 +171,7 @@ private inline fun<reified T : Throwable> findUpException(e: Throwable?): Boolea
     return false
 }
 
-private class NeverShowAgain : DumbAwareAction(message("settings.never_show_again")) {
+private class NeverShowAgain : DumbAwareAction(AwsCoreBundle.message("settings.never_show_again")) {
     override fun actionPerformed(e: AnActionEvent) {
         AwsSettings.getInstance().profilesNotification = ProfilesNotification.Never
     }
@@ -281,7 +281,7 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
     }
 
     private fun notifyUserOfLoadFailure(e: Exception) {
-        val loadingFailureMessage = message("credentials.profile.failed_load")
+        val loadingFailureMessage = AwsCoreBundle.message("credentials.profile.failed_load")
 
         val detail = e.message?.let {
             ": $it"
@@ -291,7 +291,7 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
 
         if (AwsSettings.getInstance().profilesNotification != ProfilesNotification.Never) {
             notifyError(
-                title = message("credentials.profile.refresh_ok_title"),
+                title = AwsCoreBundle.message("credentials.profile.refresh_ok_title"),
                 content = "$loadingFailureMessage$detail",
                 notificationActions = listOf(
                     createNotificationExpiringAction(ActionManager.getInstance().getAction("aws.settings.upsertCredentials")),
@@ -302,16 +302,16 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
     }
 
     private fun notifyUserOfResult(newProfiles: Profiles, initialLoad: Boolean) {
-        val refreshTitle = message("credentials.profile.refresh_ok_title")
+        val refreshTitle = AwsCoreBundle.message("credentials.profile.refresh_ok_title")
         val totalProfiles = newProfiles.validProfiles.size + newProfiles.invalidProfiles.size
-        val refreshBaseMessage = message("credentials.profile.refresh_ok_message", totalProfiles)
+        val refreshBaseMessage = AwsCoreBundle.message("credentials.profile.refresh_ok_message", totalProfiles)
 
         // All provides were valid
         if (newProfiles.invalidProfiles.isEmpty()) {
             // Don't report we load creds on start to avoid spam
             if (!initialLoad && AwsSettings.getInstance().profilesNotification == ProfilesNotification.Always) {
                 notifyInfo(
-                    title = message("credentials.profile.refresh_ok_title"),
+                    title = AwsCoreBundle.message("credentials.profile.refresh_ok_title"),
                     content = refreshBaseMessage,
                     notificationActions = listOf(
                         createNotificationExpiringAction(NeverShowAgain())
@@ -326,8 +326,8 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
         if (newProfiles.invalidProfiles.isNotEmpty()) {
             val message = newProfiles.invalidProfiles.values.joinToString("\n")
 
-            val errorDialogTitle = message("credentials.profile.failed_load")
-            val numErrorMessage = message("credentials.profile.refresh_errors", newProfiles.invalidProfiles.size)
+            val errorDialogTitle = AwsCoreBundle.message("credentials.profile.failed_load")
+            val numErrorMessage = AwsCoreBundle.message("credentials.profile.refresh_errors", newProfiles.invalidProfiles.size)
 
             if (AwsSettings.getInstance().profilesNotification != ProfilesNotification.Never) {
                 notifyInfo(
@@ -336,7 +336,7 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
                     notificationActions = listOf(
                         createNotificationExpiringAction(ActionManager.getInstance().getAction("aws.settings.upsertCredentials")),
                         createNotificationExpiringAction(NeverShowAgain()),
-                        createShowMoreInfoDialogAction(message("credentials.invalid.more_info"), errorDialogTitle, numErrorMessage, message)
+                        createShowMoreInfoDialogAction(AwsCoreBundle.message("credentials.invalid.more_info"), errorDialogTitle, numErrorMessage, message)
                     )
                 )
             }
@@ -360,7 +360,7 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
         profile.propertyExists(ProfileProperty.AWS_ACCESS_KEY_ID) -> createBasicProvider(profile)
         profile.propertyExists(ProfileProperty.CREDENTIAL_PROCESS) -> createCredentialProcessProvider(profile)
         else -> {
-            throw IllegalArgumentException(message("credentials.profile.unsupported", profile.name()))
+            throw IllegalArgumentException(AwsCoreBundle.message("credentials.profile.unsupported", profile.name()))
         }
     }
 
@@ -389,7 +389,7 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
                 credentialSourceCredentialProvider(CredentialSourceType.parse(credentialSource.get()), profile)
             }
             else -> {
-                throw IllegalArgumentException(message("credentials.profile.assume_role.missing_source", profile.name()))
+                throw IllegalArgumentException(AwsCoreBundle.message("credentials.profile.assume_role.missing_source", profile.name()))
             }
         }
 

@@ -9,7 +9,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import software.aws.toolkits.core.rules.SystemPropertyHelper
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import java.io.File
 
 class ProfileReaderTest {
@@ -48,7 +48,7 @@ class ProfileReaderTest {
         val (validProfiles, invalidProfiles) = validateAndGetProfiles()
         assertThat(validProfiles).isEmpty()
         assertThat(invalidProfiles.map { it.key to it.value.message })
-            .contains("role" to message("credentials.profile.source_profile_not_found", "role", "source_profile"))
+            .contains("role" to AwsCoreBundle.message("credentials.profile.source_profile_not_found", "role", "source_profile"))
     }
 
     @Test
@@ -77,7 +77,7 @@ class ProfileReaderTest {
         assertThat(validProfiles).isEmpty()
         assertThat(invalidProfiles.map { it.key to it.value.message })
             .contains(
-                "role" to message(
+                "role" to AwsCoreBundle.message(
                     "credentials.profile.circular_profiles",
                     "role",
                     "role->source_profile->source_profile2->source_profile3->source_profile"
@@ -98,7 +98,7 @@ class ProfileReaderTest {
         val (validProfiles, invalidProfiles) = validateAndGetProfiles()
         assertThat(validProfiles).isEmpty()
         assertThat(invalidProfiles.map { it.key to it.value.message })
-            .contains("role" to message("credentials.profile.circular_profiles", "role", "role->role"))
+            .contains("role" to AwsCoreBundle.message("credentials.profile.circular_profiles", "role", "role->role"))
     }
 
     @Test
@@ -113,7 +113,7 @@ class ProfileReaderTest {
         val (validProfiles, invalidProfiles) = validateAndGetProfiles()
         assertThat(validProfiles).isEmpty()
         assertThat(invalidProfiles.map { it.key to it.value.message })
-            .contains("role" to message("credentials.profile.assume_role.missing_source", "role"))
+            .contains("role" to AwsCoreBundle.message("credentials.profile.assume_role.missing_source", "role"))
     }
 
     @Test
@@ -134,7 +134,7 @@ class ProfileReaderTest {
         val (validProfiles, invalidProfiles) = validateAndGetProfiles()
         assertThat(validProfiles).containsKey("source_profile")
         assertThat(invalidProfiles.map { it.key to it.value.message })
-            .contains("role" to message("credentials.profile.assume_role.duplicate_source", "role"))
+            .contains("role" to AwsCoreBundle.message("credentials.profile.assume_role.duplicate_source", "role"))
     }
 
     @Test
@@ -150,7 +150,7 @@ class ProfileReaderTest {
         val (validProfiles, invalidProfiles) = validateAndGetProfiles()
         assertThat(validProfiles).isEmpty()
         assertThat(invalidProfiles.map { it.key to it.value.message })
-            .contains("role" to message("credentials.profile.assume_role.invalid_credential_source", "role"))
+            .contains("role" to AwsCoreBundle.message("credentials.profile.assume_role.invalid_credential_source", "role"))
     }
 
     @Test
@@ -169,8 +169,8 @@ class ProfileReaderTest {
         val (validProfiles, invalidProfiles) = validateAndGetProfiles()
         assertThat(validProfiles).isEmpty()
         assertThat(invalidProfiles.map { it.key to it.value.message })
-            .contains("role" to message("credentials.profile.assume_role.missing_source", "source_profile"))
-            .contains("source_profile" to message("credentials.profile.assume_role.missing_source", "source_profile"))
+            .contains("role" to AwsCoreBundle.message("credentials.profile.assume_role.missing_source", "source_profile"))
+            .contains("source_profile" to AwsCoreBundle.message("credentials.profile.assume_role.missing_source", "source_profile"))
     }
 
     @Test
@@ -310,7 +310,7 @@ class ProfileReaderTest {
         val (validProfiles, invalidProfiles) = validateAndGetProfiles()
         assertThat(validProfiles).isEmpty()
         assertThat(invalidProfiles.map { it.key to it.value.message })
-            .contains("ssoProfile" to message("credentials.ssoSession.validation_error", "ssoProfile", "missingSession"))
+            .contains("ssoProfile" to AwsCoreBundle.message("credentials.ssoSession.validation_error", "ssoProfile", "missingSession"))
     }
 
     @Test
@@ -330,6 +330,6 @@ class ProfileReaderTest {
         val (validProfiles, invalidProfiles) = validateAndGetProfiles()
         assertThat(validProfiles).isEmpty()
         assertThat(invalidProfiles.map { it.key to it.value.message })
-            .contains("ssoProfile" to message("credentials.profile.missing_property", "invalidSession", "sso_start_url"))
+            .contains("ssoProfile" to AwsCoreBundle.message("credentials.profile.missing_property", "invalidSession", "sso_start_url"))
     }
 }

@@ -18,7 +18,7 @@ import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import java.util.concurrent.ConcurrentHashMap
 
 abstract class CredentialManager : SimpleModificationTracker() {
@@ -99,7 +99,7 @@ abstract class CredentialManager : SimpleModificationTracker() {
      * as loading from disk when new values.
      */
     private inner class AwsCredentialProviderProxy(private val providerId: String, private val region: AwsRegion) : AwsCredentialsProvider {
-        override fun resolveCredentials(): AwsCredentials = runUnderProgressIfNeeded(null, message("credentials.retrieving"), cancelable = true) {
+        override fun resolveCredentials(): AwsCredentials = runUnderProgressIfNeeded(null, AwsCoreBundle.message("credentials.retrieving"), cancelable = true) {
             getOrCreateAwsCredentialsProvider(providerId, region).resolveCredentials()
         }
 

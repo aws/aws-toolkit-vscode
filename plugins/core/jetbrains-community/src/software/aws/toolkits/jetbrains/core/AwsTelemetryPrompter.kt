@@ -10,7 +10,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.settings.AwsSettingsSharedConfigurable
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 
 class AwsTelemetryPrompter : ProjectActivity {
     override suspend fun execute(project: Project) {
@@ -20,8 +20,8 @@ class AwsTelemetryPrompter : ProjectActivity {
 
         val notification = Notification(
             "aws.toolkit_telemetry",
-            message("aws.settings.telemetry.prompt.title"),
-            message("aws.settings.telemetry.prompt.message"),
+            AwsCoreBundle.message("aws.settings.telemetry.prompt.title"),
+            AwsCoreBundle.message("aws.settings.telemetry.prompt.message"),
             NotificationType.INFORMATION
         ).also {
             it.setListener { notification, _ ->

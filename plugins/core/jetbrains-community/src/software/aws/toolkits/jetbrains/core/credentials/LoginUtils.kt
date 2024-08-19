@@ -26,7 +26,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBearerTokenProvider
 import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import software.aws.toolkits.telemetry.CredentialSourceId
 import java.io.IOException
 
@@ -114,7 +114,7 @@ sealed interface Login {
             }
 
             val callerIdentity = tryOrNull {
-                runUnderProgressIfNeeded(project, message("settings.states.validating.short"), cancelable = true) {
+                runUnderProgressIfNeeded(project, AwsCoreBundle.message("settings.states.validating.short"), cancelable = true) {
                     AwsClientManager.getInstance().createUnmanagedClient<StsClient>(
                         StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)),
                         Region.AWS_GLOBAL
@@ -203,16 +203,16 @@ fun authAndUpdateConfig(
 }
 
 internal fun ssoErrorMessageFromException(e: Exception) = when (e) {
-    is IllegalStateException -> e.message ?: message("general.unknown_error")
-    is ProcessCanceledException -> message("codewhisperer.credential.login.dialog.exception.cancel_login")
-    is InvalidRequestException -> message("codewhisperer.credential.login.exception.invalid_input")
-    is InvalidGrantException, is SsoOidcException -> e.message ?: message("codewhisperer.credential.login.exception.invalid_grant")
+    is IllegalStateException -> e.message ?: AwsCoreBundle.message("general.unknown_error")
+    is ProcessCanceledException -> AwsCoreBundle.message("codewhisperer.credential.login.dialog.exception.cancel_login")
+    is InvalidRequestException -> AwsCoreBundle.message("codewhisperer.credential.login.exception.invalid_input")
+    is InvalidGrantException, is SsoOidcException -> e.message ?: AwsCoreBundle.message("codewhisperer.credential.login.exception.invalid_grant")
     else -> {
         val baseMessage = when (e) {
             is IOException -> "codewhisperer.credential.login.exception.io"
             else -> "codewhisperer.credential.login.exception.general"
         }
 
-        message(baseMessage, "${e.javaClass.name}: ${e.message}")
+        AwsCoreBundle.message(baseMessage, "${e.javaClass.name}: ${e.message}")
     }
 }

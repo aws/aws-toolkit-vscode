@@ -17,7 +17,7 @@ import com.intellij.ui.ScrollPaneFactory
 import org.slf4j.LoggerFactory
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.help.HelpIds
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import javax.swing.JLabel
 import javax.swing.JTextArea
 
@@ -99,7 +99,7 @@ fun notifyError(title: String, content: String = "", project: Project? = null, n
     notify(NotificationType.ERROR, title, getCleanedContent(content, stripHtml), project, notificationActions)
 
 fun notifyError(
-    title: String = message("aws.notification.title"),
+    title: String = AwsCoreBundle.message("aws.notification.title"),
     content: String = "",
     project: Project? = null,
     listener: NotificationListener? = null,

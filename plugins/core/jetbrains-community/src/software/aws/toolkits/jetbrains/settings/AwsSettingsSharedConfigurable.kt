@@ -10,20 +10,20 @@ import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.layout.selected
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 
 class AwsSettingsSharedConfigurable : BoundConfigurable("AWS"), SearchableConfigurable {
-    val enableTelemetry: JBCheckBox = JBCheckBox(message("aws.settings.telemetry.option"))
-    private val enableAutoUpdate: JBCheckBox = JBCheckBox(message("aws.settings.auto_update.text"))
-    private val enableAutoUpdateNotification: JBCheckBox = JBCheckBox(message("aws.settings.auto_update.notification_enable.text"))
+    val enableTelemetry: JBCheckBox = JBCheckBox(AwsCoreBundle.message("aws.settings.telemetry.option"))
+    private val enableAutoUpdate: JBCheckBox = JBCheckBox(AwsCoreBundle.message("aws.settings.auto_update.text"))
+    private val enableAutoUpdateNotification: JBCheckBox = JBCheckBox(AwsCoreBundle.message("aws.settings.auto_update.notification_enable.text"))
     override fun createPanel() = panel {
-        group(message("aws.settings.global_label")) {
+        group(AwsCoreBundle.message("aws.settings.global_label")) {
             row {
                 cell(enableTelemetry).bindSelected(
                     AwsSettings.getInstance()::isTelemetryEnabled,
                     AwsSettings.getInstance()::isTelemetryEnabled::set
                 )
-                text("<a>${message("general.details")}</a>") {
+                text("<a>${AwsCoreBundle.message("general.details")}</a>") {
                     BrowserUtil.open("https://docs.aws.amazon.com/sdkref/latest/guide/support-maint-idetoolkits.html")
                 }
             }
@@ -41,7 +41,7 @@ class AwsSettingsSharedConfigurable : BoundConfigurable("AWS"), SearchableConfig
                         AwsSettings.getInstance()::isAutoUpdateNotificationEnabled,
                         AwsSettings.getInstance()::isAutoUpdateNotificationEnabled::set
                     ).enabledIf(enableAutoUpdate.selected)
-                        .comment(message("aws.settings.auto_update.notification_enable.tooltip"))
+                        .comment(AwsCoreBundle.message("aws.settings.auto_update.notification_enable.tooltip"))
                 }
             }
         }

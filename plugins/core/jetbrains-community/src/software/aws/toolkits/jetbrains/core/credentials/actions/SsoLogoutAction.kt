@@ -12,15 +12,15 @@ import software.aws.toolkits.jetbrains.core.credentials.ProfileSsoManagedBearerS
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.core.credentials.deleteSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.logoutFromSsoConnection
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 
-class SsoLogoutAction(private val value: AwsBearerTokenConnection) : DumbAwareAction(message("credentials.individual_identity.signout")) {
+class SsoLogoutAction(private val value: AwsBearerTokenConnection) : DumbAwareAction(AwsCoreBundle.message("credentials.individual_identity.signout")) {
     override fun actionPerformed(e: AnActionEvent) {
         if (value is ProfileSsoManagedBearerSsoConnection) {
             val confirmDeletion = MessageDialogBuilder.okCancel(
-                message("gettingstarted.auth.idc.sign.out.confirmation.title"),
-                message("gettingstarted.auth.idc.sign.out.confirmation")
-            ).yesText(message("general.confirm")).ask(e.project)
+                AwsCoreBundle.message("gettingstarted.auth.idc.sign.out.confirmation.title"),
+                AwsCoreBundle.message("gettingstarted.auth.idc.sign.out.confirmation")
+            ).yesText(AwsCoreBundle.message("general.confirm")).ask(e.project)
             if (confirmDeletion) {
                 deleteSsoConnection(value)
             }

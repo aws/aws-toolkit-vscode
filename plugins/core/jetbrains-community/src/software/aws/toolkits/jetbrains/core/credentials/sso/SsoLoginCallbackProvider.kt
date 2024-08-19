@@ -10,7 +10,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.ConfirmUserCodeLoginDialog
 import software.aws.toolkits.jetbrains.utils.computeOnEdt
 import software.aws.toolkits.jetbrains.utils.notifyError
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import software.aws.toolkits.telemetry.AwsTelemetry
 import software.aws.toolkits.telemetry.CredentialType
 import software.aws.toolkits.telemetry.Result
@@ -42,7 +42,7 @@ interface SsoPrompt : SsoLoginCallback {
     }
 
     override fun tokenRetrievalFailure(e: Exception) {
-        e.notifyError(message("credentials.sso.login.failed"))
+        e.notifyError(AwsCoreBundle.message("credentials.sso.login.failed"))
         AwsTelemetry.loginWithBrowser(project = null, result = Result.Failed, credentialType = CredentialType.SsoProfile)
     }
 }
@@ -52,7 +52,7 @@ object DefaultSsoPrompt : SsoPrompt {
         computeOnEdt {
             val result = ConfirmUserCodeLoginDialog(
                 authorization.userCode,
-                message("credentials.sso.login.title"),
+                AwsCoreBundle.message("credentials.sso.login.title"),
                 CredentialType.SsoProfile
             ).showAndGet()
 
@@ -60,7 +60,7 @@ object DefaultSsoPrompt : SsoPrompt {
                 BrowserUtil.browse(authorization.verificationUriComplete)
             } else {
                 AwsTelemetry.loginWithBrowser(project = null, result = Result.Cancelled, credentialType = CredentialType.SsoProfile)
-                throw ProcessCanceledException(IllegalStateException(message("credentials.sso.login.cancelled")))
+                throw ProcessCanceledException(IllegalStateException(AwsCoreBundle.message("credentials.sso.login.cancelled")))
             }
         }
     }
@@ -89,7 +89,7 @@ object DefaultBearerTokenPrompt : BearerTokenPrompt {
         computeOnEdt {
             val codeCopied = ConfirmUserCodeLoginDialog(
                 authorization.userCode,
-                message("credentials.sono.login"),
+                AwsCoreBundle.message("credentials.sono.login"),
                 CredentialType.BearerToken
             ).showAndGet()
 

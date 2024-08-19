@@ -13,7 +13,7 @@ import com.intellij.openapi.util.text.StringUtil
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.UserActivityProviderComponent
 import org.jetbrains.annotations.Nls
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import java.awt.Component
 import java.util.LinkedHashMap
 import java.util.concurrent.CopyOnWriteArrayList
@@ -29,7 +29,7 @@ import javax.swing.event.DocumentEvent
  * Inheriting system env vars is not supported, but rest of UX is generally the same
  */
 class KeyValueTextField(
-    @Nls dialogTitle: String = message("environment.variables.dialog.title")
+    @Nls dialogTitle: String = AwsCoreBundle.message("environment.variables.dialog.title")
 ) : TextFieldWithBrowseButton(), UserActivityProviderComponent {
     private var data = EnvironmentVariablesData.create(emptyMap(), false)
     private val listeners = CopyOnWriteArrayList<ChangeListener>()

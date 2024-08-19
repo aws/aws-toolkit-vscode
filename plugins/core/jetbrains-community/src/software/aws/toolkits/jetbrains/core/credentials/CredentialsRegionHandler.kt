@@ -12,7 +12,7 @@ import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.settings.UseAwsCredentialRegion
 import software.aws.toolkits.jetbrains.utils.notifyInfo
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 
 /**
  * Encapsulates logic for handling of regions when a new credential identifier is selected
@@ -45,18 +45,18 @@ internal class DefaultCredentialsRegionHandler(private val project: Project) : C
 
     private fun promptForRegionChange(defaultCredentialRegion: AwsRegion) {
         notifyInfo(
-            message("aws.notification.title"),
-            message("settings.credentials.prompt_for_default_region_switch", defaultCredentialRegion.id),
+            AwsCoreBundle.message("aws.notification.title"),
+            AwsCoreBundle.message("settings.credentials.prompt_for_default_region_switch", defaultCredentialRegion.id),
             project = project,
             notificationActions = listOf(
-                NotificationAction.createSimpleExpiring(message("settings.credentials.prompt_for_default_region_switch.yes")) {
+                NotificationAction.createSimpleExpiring(AwsCoreBundle.message("settings.credentials.prompt_for_default_region_switch.yes")) {
                     AwsConnectionManager.getInstance(project).changeRegion(defaultCredentialRegion)
                 },
-                NotificationAction.createSimpleExpiring(message("settings.credentials.prompt_for_default_region_switch.always")) {
+                NotificationAction.createSimpleExpiring(AwsCoreBundle.message("settings.credentials.prompt_for_default_region_switch.always")) {
                     AwsSettings.getInstance().useDefaultCredentialRegion = UseAwsCredentialRegion.Always
                     AwsConnectionManager.getInstance(project).changeRegion(defaultCredentialRegion)
                 },
-                NotificationAction.createSimpleExpiring(message("settings.credentials.prompt_for_default_region_switch.never")) {
+                NotificationAction.createSimpleExpiring(AwsCoreBundle.message("settings.credentials.prompt_for_default_region_switch.never")) {
                     AwsSettings.getInstance().useDefaultCredentialRegion = UseAwsCredentialRegion.Never
                 }
             )

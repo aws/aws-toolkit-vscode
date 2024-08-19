@@ -30,7 +30,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileWatcher
 import software.aws.toolkits.jetbrains.ui.AsyncComboBox
 import software.aws.toolkits.jetbrains.utils.ui.selected
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 
 data class IdcRolePopupState(
     var roleInfo: RoleInfo? = null
@@ -45,7 +45,7 @@ class IdcRolePopup(
     private val configFilesFacade: ConfigFilesFacade = DefaultConfigFilesFacade()
 ) : DialogWrapper(project) {
     init {
-        title = message("gettingstarted.setup.idc.role.title")
+        title = AwsCoreBundle.message("gettingstarted.setup.idc.role.title")
         init()
     }
 
@@ -69,7 +69,7 @@ class IdcRolePopup(
 
     override fun createCenterPanel() = panel {
         row {
-            label(message("gettingstarted.setup.idc.roleLabel"))
+            label(AwsCoreBundle.message("gettingstarted.setup.idc.roleLabel"))
         }
 
         row {
@@ -100,7 +100,7 @@ class IdcRolePopup(
 
             cell(combo)
                 .align(AlignX.FILL)
-                .errorOnApply(message("gettingstarted.setup.error.not_selected")) { it.selected() == null }
+                .errorOnApply(AwsCoreBundle.message("gettingstarted.setup.error.not_selected")) { it.selected() == null }
                 .bindItem(state::roleInfo.toNullableProperty())
         }
     }

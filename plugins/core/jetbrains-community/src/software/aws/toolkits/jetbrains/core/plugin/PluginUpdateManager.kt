@@ -29,7 +29,7 @@ import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.settings.AwsSettingsSharedConfigurable
 import software.aws.toolkits.jetbrains.utils.notifyInfo
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import software.aws.toolkits.telemetry.Component
 import software.aws.toolkits.telemetry.Result
 import software.aws.toolkits.telemetry.ToolkitTelemetry
@@ -50,7 +50,7 @@ class PluginUpdateManager : Disposable {
         runInEdt {
             ProgressManager.getInstance().run(object : Task.Backgroundable(
                 null,
-                message("aws.settings.auto_update.progress.message")
+                AwsCoreBundle.message("aws.settings.auto_update.progress.message")
             ) {
                 override fun run(indicator: ProgressIndicator) {
                     checkForUpdates(indicator, AwsPlugin.CORE)
@@ -117,11 +117,11 @@ class PluginUpdateManager : Disposable {
         if (!AwsSettings.getInstance().isAutoUpdateNotificationEnabled) return
         if (plugin == AwsPlugin.CORE) return
         notifyInfo(
-            title = message("aws.notification.auto_update.title", pluginName),
-            content = message("aws.settings.auto_update.notification.message"),
+            title = AwsCoreBundle.message("aws.notification.auto_update.title", pluginName),
+            content = AwsCoreBundle.message("aws.settings.auto_update.notification.message"),
             project = null,
             notificationActions = listOf(
-                NotificationAction.createSimpleExpiring(message("aws.settings.auto_update.notification.yes")) {
+                NotificationAction.createSimpleExpiring(AwsCoreBundle.message("aws.settings.auto_update.notification.yes")) {
                     // TODO: distinguish telemetry
                     ToolkitTelemetry.invokeAction(
                         project = null,
@@ -133,7 +133,7 @@ class PluginUpdateManager : Disposable {
                     )
                     ApplicationManager.getApplication().restart()
                 },
-                NotificationAction.createSimpleExpiring(message("aws.settings.auto_update.notification.no")) {
+                NotificationAction.createSimpleExpiring(AwsCoreBundle.message("aws.settings.auto_update.notification.no")) {
                     // TODO: distinguish telemetry
                     ToolkitTelemetry.invokeAction(
                         project = null,
@@ -144,7 +144,7 @@ class PluginUpdateManager : Disposable {
                         action = "notNow"
                     )
                 },
-                NotificationAction.createSimple(message("aws.notification.auto_update.settings.title")) {
+                NotificationAction.createSimple(AwsCoreBundle.message("aws.notification.auto_update.settings.title")) {
                     // TODO: distinguish telemetry
                     ToolkitTelemetry.invokeAction(
                         project = null,
@@ -162,11 +162,11 @@ class PluginUpdateManager : Disposable {
 
     fun notifyAutoUpdateFeature(project: Project) {
         notifyInfo(
-            title = message("aws.notification.auto_update.feature_intro.title"),
+            title = AwsCoreBundle.message("aws.notification.auto_update.feature_intro.title"),
             project = project,
             notificationActions = listOf(
-                NotificationAction.createSimpleExpiring(message("aws.notification.auto_update.feature_intro.ok")) {},
-                NotificationAction.createSimple(message("aws.notification.auto_update.settings.title")) {
+                NotificationAction.createSimpleExpiring(AwsCoreBundle.message("aws.notification.auto_update.feature_intro.ok")) {},
+                NotificationAction.createSimple(AwsCoreBundle.message("aws.notification.auto_update.settings.title")) {
                     ToolkitTelemetry.invokeAction(
                         project = null,
                         result = Result.Succeeded,

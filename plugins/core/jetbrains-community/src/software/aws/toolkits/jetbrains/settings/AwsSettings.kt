@@ -9,24 +9,24 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import software.aws.toolkits.telemetry.AwsTelemetry
 import software.aws.toolkits.telemetry.UiTelemetry
 import java.util.UUID
 import java.util.prefs.Preferences
 
 enum class ProfilesNotification(private val description: String) {
-    Always(message("settings.profiles.always")),
-    OnFailure(message("settings.profiles.on_failure")),
-    Never(message("settings.profiles.never"));
+    Always(AwsCoreBundle.message("settings.profiles.always")),
+    OnFailure(AwsCoreBundle.message("settings.profiles.on_failure")),
+    Never(AwsCoreBundle.message("settings.profiles.never"));
 
     override fun toString(): String = description
 }
 
 enum class UseAwsCredentialRegion(private val description: String) {
-    Always(message("settings.credentials.prompt_for_default_region_switch.always.description")),
-    Prompt(message("settings.credentials.prompt_for_default_region_switch.ask.description")),
-    Never(message("settings.credentials.prompt_for_default_region_switch.never.description"));
+    Always(AwsCoreBundle.message("settings.credentials.prompt_for_default_region_switch.always.description")),
+    Prompt(AwsCoreBundle.message("settings.credentials.prompt_for_default_region_switch.ask.description")),
+    Never(AwsCoreBundle.message("settings.credentials.prompt_for_default_region_switch.never.description"));
 
     override fun toString(): String = description
 }

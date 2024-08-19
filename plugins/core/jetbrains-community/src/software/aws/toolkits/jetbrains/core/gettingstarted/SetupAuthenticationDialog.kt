@@ -51,7 +51,7 @@ import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
 import software.aws.toolkits.jetbrains.utils.ui.editorNotificationCompoundBorder
 import software.aws.toolkits.jetbrains.utils.ui.selected
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import software.aws.toolkits.telemetry.AuthTelemetry
 import software.aws.toolkits.telemetry.CredentialSourceId
 import software.aws.toolkits.telemetry.FeatureId
@@ -144,11 +144,11 @@ class SetupAuthenticationDialog(
         private set
 
     init {
-        title = message("gettingstarted.setup.title")
+        title = AwsCoreBundle.message("gettingstarted.setup.title")
         init()
 
         // actions don't exist until after init
-        okAction.putValue(Action.NAME, message("gettingstarted.setup.connect"))
+        okAction.putValue(Action.NAME, AwsCoreBundle.message("gettingstarted.setup.connect"))
     }
 
     // called as part of init()
@@ -181,7 +181,7 @@ class SetupAuthenticationDialog(
             wrappers[tab]?.addToTop(
                 BorderLayoutPanel().apply {
                     add(JLabel(notice.message + "\u00a0"), BorderLayout.CENTER)
-                    add(BrowserLink(message("gettingstarted.setup.learnmore"), notice.learnMore), BorderLayout.EAST)
+                    add(BrowserLink(AwsCoreBundle.message("gettingstarted.setup.learnmore"), notice.learnMore), BorderLayout.EAST)
 
                     background = when (notice.type) {
                         SetupAuthenticationNotice.NoticeType.WARNING -> JBUI.CurrentTheme.NotificationWarning.backgroundColor()
@@ -198,9 +198,9 @@ class SetupAuthenticationDialog(
             )
         }
 
-        rootTabPane.add(message("gettingstarted.setup.tabs.idc"), wrappers[SetupAuthenticationTabs.IDENTITY_CENTER])
-        rootTabPane.add(message("gettingstarted.setup.tabs.builderid"), wrappers[SetupAuthenticationTabs.BUILDER_ID])
-        rootTabPane.add(message("gettingstarted.setup.tabs.iam"), wrappers[SetupAuthenticationTabs.IAM_LONG_LIVED])
+        rootTabPane.add(AwsCoreBundle.message("gettingstarted.setup.tabs.idc"), wrappers[SetupAuthenticationTabs.IDENTITY_CENTER])
+        rootTabPane.add(AwsCoreBundle.message("gettingstarted.setup.tabs.builderid"), wrappers[SetupAuthenticationTabs.BUILDER_ID])
+        rootTabPane.add(AwsCoreBundle.message("gettingstarted.setup.tabs.iam"), wrappers[SetupAuthenticationTabs.IAM_LONG_LIVED])
 
         rootTabPane.selectedComponent = wrappers[state.selectedTab.get()]
 
@@ -332,7 +332,7 @@ class SetupAuthenticationDialog(
                 }
 
                 if (existingProfiles.containsKey(profileName)) {
-                    Messages.showErrorDialog(project, message("gettingstarted.setup.iam.profile.exists", profileName), title)
+                    Messages.showErrorDialog(project, AwsCoreBundle.message("gettingstarted.setup.iam.profile.exists", profileName), title)
                     AuthTelemetry.addConnection(
                         project,
                         source = getSourceOfEntry(sourceOfEntry, isFirstInstance, connectionInitiatedFromExplorer),
@@ -347,7 +347,7 @@ class SetupAuthenticationDialog(
                 }
 
                 val callerIdentity = tryOrNull {
-                    runUnderProgressIfNeeded(project, message("settings.states.validating.short"), cancelable = true) {
+                    runUnderProgressIfNeeded(project, AwsCoreBundle.message("settings.states.validating.short"), cancelable = true) {
                         AwsClientManager.getInstance().createUnmanagedClient<StsClient>(
                             StaticCredentialsProvider.create(AwsBasicCredentials.create(state.iamTabState.accessKey, state.iamTabState.secretKey)),
                             Region.AWS_GLOBAL
@@ -358,7 +358,7 @@ class SetupAuthenticationDialog(
                 }
 
                 if (callerIdentity == null) {
-                    Messages.showErrorDialog(project, message("gettingstarted.setup.iam.profile.invalid_credentials"), title)
+                    Messages.showErrorDialog(project, AwsCoreBundle.message("gettingstarted.setup.iam.profile.invalid_credentials"), title)
                     AuthTelemetry.addConnection(
                         project,
                         source = getSourceOfEntry(sourceOfEntry, isFirstInstance, connectionInitiatedFromExplorer),
@@ -397,7 +397,7 @@ class SetupAuthenticationDialog(
 
     private fun iamTab() = panel {
         row {
-            text(message("gettingstarted.setup.iam.notice")) { hyperlinkEvent ->
+            text(AwsCoreBundle.message("gettingstarted.setup.iam.notice")) { hyperlinkEvent ->
                 val actionEvent = AnActionEvent.createFromInputEvent(
                     hyperlinkEvent.inputEvent,
                     ToolkitPlaces.ADD_CONNECTION_DIALOG,
@@ -408,23 +408,23 @@ class SetupAuthenticationDialog(
             }
         }
 
-        row(message("gettingstarted.setup.iam.profile")) {
+        row(AwsCoreBundle.message("gettingstarted.setup.iam.profile")) {
             textField()
-                .comment(message("gettingstarted.setup.iam.profile.comment"))
-                .errorOnApply(message("gettingstarted.setup.error.not_empty")) { it.text.isBlank() }
+                .comment(AwsCoreBundle.message("gettingstarted.setup.iam.profile.comment"))
+                .errorOnApply(AwsCoreBundle.message("gettingstarted.setup.error.not_empty")) { it.text.isBlank() }
                 .bindText(state.iamTabState::profileName)
         }
 
-        row(message("gettingstarted.setup.iam.access_key")) {
+        row(AwsCoreBundle.message("gettingstarted.setup.iam.access_key")) {
             textField()
-                .errorOnApply(message("gettingstarted.setup.error.not_empty")) { it.text.isBlank() }
-                .errorOnApply(message("gettingstarted.setup.iam.access_key.invalid")) { !accessKeyRegex.matches(it.text) }
+                .errorOnApply(AwsCoreBundle.message("gettingstarted.setup.error.not_empty")) { it.text.isBlank() }
+                .errorOnApply(AwsCoreBundle.message("gettingstarted.setup.iam.access_key.invalid")) { !accessKeyRegex.matches(it.text) }
                 .bindText(state.iamTabState::accessKey)
         }
 
-        row(message("gettingstarted.setup.iam.secret_key")) {
+        row(AwsCoreBundle.message("gettingstarted.setup.iam.secret_key")) {
             passwordField()
-                .errorOnApply(message("gettingstarted.setup.error.not_empty")) { it.password.isEmpty() }
+                .errorOnApply(AwsCoreBundle.message("gettingstarted.setup.error.not_empty")) { it.password.isEmpty() }
                 .bindText(state.iamTabState::secretKey)
         }
     }
@@ -448,7 +448,7 @@ class SetupAuthenticationDialog(
             reason = errorType
         )
 
-        val error = message(errorTemplate, e.localizedMessage ?: e::class.java.name)
+        val error = AwsCoreBundle.message(errorTemplate, e.localizedMessage ?: e::class.java.name)
         LOG.error(e) { error }
         Messages.showErrorDialog(project, error, title)
     }
@@ -461,11 +461,11 @@ class SetupAuthenticationDialog(
 class BuilderIdTabPanelBuilder {
     fun build() = panel {
         row {
-            text(message("gettingstarted.setup.builderid.notice"))
+            text(AwsCoreBundle.message("gettingstarted.setup.builderid.notice"))
         }
 
         indent {
-            message("gettingstarted.setup.builderid.bullets").split("\n").forEach {
+            AwsCoreBundle.message("gettingstarted.setup.builderid.bullets").split("\n").forEach {
                 row {
                     text("<icon src='AllIcons.General.InspectionsOK'/>&nbsp;$it")
                 }
@@ -480,29 +480,29 @@ class IdcTabPanelBuilder(
 ) {
     fun build() = panel {
         profileName.ifPresent {
-            row(message("gettingstarted.setup.iam.profile")) {
+            row(AwsCoreBundle.message("gettingstarted.setup.iam.profile")) {
                 textField()
-                    .comment(message("gettingstarted.setup.idc.profile.comment"))
-                    .errorOnApply(message("gettingstarted.setup.error.not_empty")) { it.text.isBlank() }
+                    .comment(AwsCoreBundle.message("gettingstarted.setup.idc.profile.comment"))
+                    .errorOnApply(AwsCoreBundle.message("gettingstarted.setup.error.not_empty")) { it.text.isBlank() }
                     .bindText(profileName.get())
             }
         }
 
-        row(message("gettingstarted.setup.idc.startUrl")) {
+        row(AwsCoreBundle.message("gettingstarted.setup.idc.startUrl")) {
             textField()
-                .comment(message("gettingstarted.setup.idc.startUrl.comment"))
+                .comment(AwsCoreBundle.message("gettingstarted.setup.idc.startUrl.comment"))
                 .align(AlignX.FILL)
-                .errorOnApply(message("gettingstarted.setup.error.not_empty")) { it.text.isBlank() }
-                .errorOnApply(message("gettingstarted.setup.idc.no_builder_id")) { it.text == SONO_URL }
+                .errorOnApply(AwsCoreBundle.message("gettingstarted.setup.error.not_empty")) { it.text.isBlank() }
+                .errorOnApply(AwsCoreBundle.message("gettingstarted.setup.idc.no_builder_id")) { it.text == SONO_URL }
                 .bind({ it.text.trim() }, { t, v -> t.text = v.trim() }, startUrl.toMutableProperty())
         }
 
-        row(message("gettingstarted.setup.idc.region")) {
+        row(AwsCoreBundle.message("gettingstarted.setup.idc.region")) {
             comboBox(
                 AwsRegionProvider.getInstance().allRegionsForService("sso").values,
                 SimpleListCellRenderer.create("null") { it.displayName }
             ).bindItem(region.toNullableProperty())
-                .errorOnApply(message("gettingstarted.setup.error.not_selected")) { it.selected() == null }
+                .errorOnApply(AwsCoreBundle.message("gettingstarted.setup.error.not_selected")) { it.selected() == null }
         }
     }
 }

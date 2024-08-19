@@ -18,7 +18,7 @@ import com.intellij.ui.dsl.gridLayout.HorizontalAlign
 import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.components.BorderLayoutPanel
 import software.aws.toolkits.core.utils.tryOrNull
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import software.aws.toolkits.telemetry.AwsTelemetry
 import software.aws.toolkits.telemetry.CredentialType
 import software.aws.toolkits.telemetry.Result
@@ -33,7 +33,7 @@ class ConfirmUserCodeLoginDialog(
 
     private val pane = panel {
         row {
-            label(message("aws.sso.signing.device.code.copy.dialog.text"))
+            label(AwsCoreBundle.message("aws.sso.signing.device.code.copy.dialog.text"))
         }
 
         row {
@@ -60,7 +60,7 @@ class ConfirmUserCodeLoginDialog(
 
     init {
         title = dialogTitle
-        setOKButtonText(message("aws.sso.signing.device.code"))
+        setOKButtonText(AwsCoreBundle.message("aws.sso.signing.device.code"))
         super.init()
     }
 
@@ -70,7 +70,7 @@ class ConfirmUserCodeLoginDialog(
     }
 }
 
-class CopyUserCodeForLogin(private val authCode: String) : AnAction(message("aws.sso.signing.device.code.copy"), "", AllIcons.Actions.Copy) {
+class CopyUserCodeForLogin(private val authCode: String) : AnAction(AwsCoreBundle.message("aws.sso.signing.device.code.copy"), "", AllIcons.Actions.Copy) {
     override fun actionPerformed(e: AnActionEvent) {
         CopyPasteManager.getInstance().setContents(StringSelection(authCode))
     }

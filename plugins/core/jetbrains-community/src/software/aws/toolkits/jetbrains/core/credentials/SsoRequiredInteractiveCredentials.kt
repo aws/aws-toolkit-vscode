@@ -7,17 +7,17 @@ import com.intellij.openapi.actionSystem.AnAction
 import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROLE_ACCESS_SCOPE
 import software.aws.toolkits.jetbrains.core.credentials.sso.LazyAccessTokenProvider
 import software.aws.toolkits.jetbrains.core.credentials.sso.SsoCache
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 
 interface SsoRequiredInteractiveCredentials : InteractiveCredential {
     val ssoCache: SsoCache
     val ssoUrl: String
     val ssoRegion: String
 
-    override val userActionDisplayMessage: String get() = message("credentials.sso.display", displayName)
-    override val userActionShortDisplayMessage: String get() = message("credentials.sso.display.short")
+    override val userActionDisplayMessage: String get() = AwsCoreBundle.message("credentials.sso.display", displayName)
+    override val userActionShortDisplayMessage: String get() = AwsCoreBundle.message("credentials.sso.display.short")
 
-    override val userAction: AnAction get() = RefreshConnectionAction(message("credentials.sso.action"))
+    override val userAction: AnAction get() = RefreshConnectionAction(AwsCoreBundle.message("credentials.sso.action"))
 
     private val lazyTokenProvider: LazyAccessTokenProvider
         get() = LazyAccessTokenProvider(

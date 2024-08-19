@@ -95,7 +95,7 @@ class DefaultConnectionPinningManager :
             }
 
             // TODO: don't know if we still want to keep this for CodeCatalyst
-//            notifyInfo(message("credentials.switch.notification.title", featuresString, connectionToPin.label))
+//            notifyInfo(AwsCoreBundle.message("credentials.switch.notification.title", featuresString, connectionToPin.label))
         }
 
         if (newConnectionFeatures.isNotEmpty()) {

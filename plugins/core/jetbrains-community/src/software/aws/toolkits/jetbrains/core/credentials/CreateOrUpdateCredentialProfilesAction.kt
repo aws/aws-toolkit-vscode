@@ -20,14 +20,14 @@ import icons.AwsIcons
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.profiles.ProfileFileLocation
 import software.aws.toolkits.core.utils.exists
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import software.aws.toolkits.telemetry.AwsTelemetry
 import java.nio.file.Path
 
 class CreateOrUpdateCredentialProfilesAction @TestOnly constructor(
     private val writer: ConfigFilesFacade
 ) : AnAction(
-    message("configure.toolkit.upsert_credentials.action"),
+    AwsCoreBundle.message("configure.toolkit.upsert_credentials.action"),
     null,
     AwsIcons.Logos.AWS
 ),
@@ -62,7 +62,7 @@ class CreateOrUpdateCredentialProfilesAction @TestOnly constructor(
         // credential file is opened last since it takes precedence over the config file
         val virtualFiles = listOf(writer.configPath.toFile(), writer.credentialsPath.toFile()).filter { it.exists() }.map {
             localFileSystem.refreshAndFindFileByIoFile(it) ?: throw RuntimeException(
-                message(
+                AwsCoreBundle.message(
                     "credentials.could_not_open",
                     it
                 )
@@ -84,7 +84,7 @@ class CreateOrUpdateCredentialProfilesAction @TestOnly constructor(
 
                 if (fileEditorManager.openTextEditor(OpenFileDescriptor(project, it), true) == null) {
                     AwsTelemetry.openCredentials(project, success = false)
-                    throw RuntimeException(message("credentials.could_not_open", it))
+                    throw RuntimeException(AwsCoreBundle.message("credentials.could_not_open", it))
                 }
                 AwsTelemetry.openCredentials(project, success = true)
             }
@@ -93,9 +93,9 @@ class CreateOrUpdateCredentialProfilesAction @TestOnly constructor(
 
     private fun confirm(project: Project, file: Path): Boolean = Messages.showOkCancelDialog(
         project,
-        message("configure.toolkit.upsert_credentials.confirm_file_create", file),
-        message("configure.toolkit.upsert_credentials.confirm_file_create.title"),
-        message("configure.toolkit.upsert_credentials.confirm_file_create.okay"),
+        AwsCoreBundle.message("configure.toolkit.upsert_credentials.confirm_file_create", file),
+        AwsCoreBundle.message("configure.toolkit.upsert_credentials.confirm_file_create.title"),
+        AwsCoreBundle.message("configure.toolkit.upsert_credentials.confirm_file_create.okay"),
         Messages.getCancelButton(),
         AllIcons.General.QuestionDialog,
         null

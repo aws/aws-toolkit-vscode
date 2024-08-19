@@ -31,7 +31,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sso.AccessToken
 import software.aws.toolkits.jetbrains.core.credentials.sso.PKCEAuthorizationGrantToken
 import software.aws.toolkits.jetbrains.core.credentials.sso.PKCEClientRegistration
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.buildUnmanagedSsoOidcClient
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import java.math.BigInteger
 import java.time.Instant
 import java.util.Base64
@@ -191,7 +191,7 @@ internal class ToolkitOAuthCallbackHandler : OAuthCallbackHandlerBase() {
             val errorString = if (error != null && errorDescription != null) {
                 "$error: $errorDescription"
             } else {
-                errorDescription ?: error ?: message("general.unknown_error")
+                errorDescription ?: error ?: AwsCoreBundle.message("general.unknown_error")
             }
 
             mapOf(

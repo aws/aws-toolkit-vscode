@@ -11,10 +11,10 @@ import com.intellij.openapi.project.DumbAware
 import kotlinx.coroutines.launch
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import software.aws.toolkits.telemetry.AwsTelemetry
 
-class RefreshConnectionAction(text: String = message("settings.refresh.description")) :
+class RefreshConnectionAction(text: String = AwsCoreBundle.message("settings.refresh.description")) :
     AnAction(text, null, AllIcons.Actions.Refresh),
     DumbAware {
 

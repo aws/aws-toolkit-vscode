@@ -39,7 +39,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBe
 import software.aws.toolkits.jetbrains.core.credentials.ssoErrorMessageFromException
 import software.aws.toolkits.jetbrains.utils.pluginAwareExecuteOnPooledThread
 import software.aws.toolkits.jetbrains.utils.pollFor
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import software.aws.toolkits.telemetry.AuthTelemetry
 import software.aws.toolkits.telemetry.AwsTelemetry
 import software.aws.toolkits.telemetry.CredentialSourceId
@@ -298,7 +298,7 @@ abstract class LoginBrowser(
     protected fun <T> loginWithBackgroundContext(action: () -> T): Future<T> =
         pluginAwareExecuteOnPooledThread {
             runBlocking {
-                withBackgroundProgress(project, message("credentials.pending.title")) {
+                withBackgroundProgress(project, AwsCoreBundle.message("credentials.pending.title")) {
                     blockingContext {
                         action()
                     }
@@ -324,7 +324,7 @@ abstract class LoginBrowser(
     private fun tryHandleUserCanceledLogin(e: Exception): Boolean {
         if (e !is ProcessCanceledException ||
             e.cause !is IllegalStateException ||
-            e.message?.contains(message("credentials.pending.user_cancel.message")) == false
+            e.message?.contains(AwsCoreBundle.message("credentials.pending.user_cancel.message")) == false
         ) {
             return false
         }

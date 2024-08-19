@@ -28,7 +28,7 @@ import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.services.sts.StsResources
 import software.aws.toolkits.jetbrains.utils.MRUList
 import software.aws.toolkits.jetbrains.utils.pluginAwareExecuteOnPooledThread
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import software.aws.toolkits.telemetry.AwsTelemetry
 import java.util.concurrent.atomic.AtomicReference
 
@@ -188,7 +188,7 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
 
                 promise.setResult(ConnectionState.ValidConnection(credentialsProvider, region))
             } catch (e: Exception) {
-                LOGGER.warn(e) { message("credentials.profile.validation_error", credentialsIdentifier.displayName) }
+                LOGGER.warn(e) { AwsCoreBundle.message("credentials.profile.validation_error", credentialsIdentifier.displayName) }
                 val result = if (credentialsIdentifier is PostValidateInteractiveCredential) {
                     try {
                         credentialsIdentifier.handleValidationException(e)
@@ -240,7 +240,7 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
                     }
                 }
 
-                throw CredentialProviderNotFoundException(message("credentials.profile.not_configured"))
+                throw CredentialProviderNotFoundException(AwsCoreBundle.message("credentials.profile.not_configured"))
             }
         }
 
@@ -318,10 +318,10 @@ sealed class ConnectionState(val displayMessage: String, val isTerminal: Boolean
 
     open val actions: List<AnAction> = emptyList()
 
-    object InitializingToolkit : ConnectionState(message("settings.states.initializing"), isTerminal = false)
+    object InitializingToolkit : ConnectionState(AwsCoreBundle.message("settings.states.initializing"), isTerminal = false)
 
-    object ValidatingConnection : ConnectionState(message("settings.states.validating"), isTerminal = false) {
-        override val shortMessage: String = message("settings.states.validating.short")
+    object ValidatingConnection : ConnectionState(AwsCoreBundle.message("settings.states.validating"), isTerminal = false) {
+        override val shortMessage: String = AwsCoreBundle.message("settings.states.validating.short")
     }
 
     class ValidConnection(val credentials: ToolkitCredentialsProvider, val region: AwsRegion) :
@@ -332,9 +332,9 @@ sealed class ConnectionState(val displayMessage: String, val isTerminal: Boolean
 
     class IncompleteConfiguration(credentials: CredentialIdentifier?, region: AwsRegion?) : ConnectionState(
         when {
-            region == null && credentials == null -> message("settings.none_selected")
-            region == null -> message("settings.regions.none_selected")
-            credentials == null -> message("settings.credentials.none_selected")
+            region == null && credentials == null -> AwsCoreBundle.message("settings.none_selected")
+            region == null -> AwsCoreBundle.message("settings.regions.none_selected")
+            credentials == null -> AwsCoreBundle.message("settings.credentials.none_selected")
             else -> throw IllegalArgumentException("At least one of regionId ($region) or toolkitCredentialsIdentifier ($credentials) must be null")
         },
         isTerminal = true
@@ -343,10 +343,13 @@ sealed class ConnectionState(val displayMessage: String, val isTerminal: Boolean
     }
 
     class InvalidConnection(private val cause: Exception) :
-        ConnectionState(message("settings.states.invalid", ExceptionUtil.getMessage(cause) ?: ExceptionUtil.getThrowableText(cause)), isTerminal = true) {
-        override val shortMessage = message("settings.states.invalid.short")
+        ConnectionState(
+            AwsCoreBundle.message("settings.states.invalid", ExceptionUtil.getMessage(cause) ?: ExceptionUtil.getThrowableText(cause)),
+            isTerminal = true
+        ) {
+        override val shortMessage = AwsCoreBundle.message("settings.states.invalid.short")
 
-        override val actions: List<AnAction> = listOf(RefreshConnectionAction(message("settings.retry")), gettingStartedAction, editCredsAction)
+        override val actions: List<AnAction> = listOf(RefreshConnectionAction(AwsCoreBundle.message("settings.retry")), gettingStartedAction, editCredsAction)
     }
 
     class RequiresUserAction(interactiveCredentials: InteractiveCredential) :

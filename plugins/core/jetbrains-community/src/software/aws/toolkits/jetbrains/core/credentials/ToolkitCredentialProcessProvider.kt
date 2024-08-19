@@ -24,7 +24,7 @@ import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.utils.SdkAutoCloseable
 import software.amazon.awssdk.utils.cache.CachedSupplier
 import software.amazon.awssdk.utils.cache.RefreshResult
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import java.time.Instant
 import java.util.Enumeration
 
@@ -57,17 +57,17 @@ class ToolkitCredentialProcessProvider @TestOnly constructor(
         val output = ExecUtil.execAndGetOutput(cmd, timeout)
 
         if (output.isTimeout) {
-            handleException(message("credentials.profile.credential_process.timeout_exception_prefix", entrypoint), output)
+            handleException(AwsCoreBundle.message("credentials.profile.credential_process.timeout_exception_prefix", entrypoint), output)
         }
 
         if (output.exitCode != 0) {
-            handleException(message("credentials.profile.credential_process.execution_exception_prefix", entrypoint), output)
+            handleException(AwsCoreBundle.message("credentials.profile.credential_process.execution_exception_prefix", entrypoint), output)
         }
 
         val result = try {
             parser.parse(output.stdout)
         } catch (e: Exception) {
-            handleException(message("credentials.profile.credential_process.parse_exception_prefix"), output)
+            handleException(AwsCoreBundle.message("credentials.profile.credential_process.parse_exception_prefix"), output)
         }
         val credentials: AwsCredentials = when (val token = result.sessionToken) {
             null -> AwsBasicCredentials.create(result.accessKeyId, result.secretAccessKey)

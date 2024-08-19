@@ -20,7 +20,7 @@ import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.AwsToolkit.TOOLKIT_PLUGIN_ID
 import software.aws.toolkits.jetbrains.core.plugin.PluginUpdateManager
-import software.aws.toolkits.resources.message
+import software.aws.toolkits.resources.AwsCoreBundle
 import javax.swing.SwingUtilities
 
 class PluginVersionChecker : ApplicationInitializedListener {
@@ -65,13 +65,13 @@ class PluginVersionChecker : ApplicationInitializedListener {
 
         val notificationGroup = SingletonNotificationManager("aws.plugin.version.mismatch", NotificationType.WARNING)
         notificationGroup.notify(
-            message("plugin.incompatible.title"),
-            message("plugin.incompatible.message"),
+            AwsCoreBundle.message("plugin.incompatible.title"),
+            AwsCoreBundle.message("plugin.incompatible.message"),
             null
         ) {
             it.isImportant = true
             it.addAction(
-                NotificationAction.createSimpleExpiring(message("plugin.incompatible.fix")) {
+                NotificationAction.createSimpleExpiring(AwsCoreBundle.message("plugin.incompatible.fix")) {
                     // try update core and disable everything else
                     val coreDescriptor = core.descriptor as? IdeaPluginDescriptor
                     tryOrNull {
