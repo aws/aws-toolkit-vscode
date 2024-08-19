@@ -19,7 +19,7 @@ export class DynamoDbTableNode extends AWSTreeNodeBase implements AWSResourceNod
         this.dynamoDbtable = dynamoDbtable
         this.tooltip = `${this.dynamoDbtable}`
         this.contextValue = 'awsDynamoDbTableNode'
-        this.iconPath = getIcon('aws-dynamoDb-table')
+        this.iconPath = getIcon('aws-redshift-table')
         this.label = this.dynamoDbtable || 'Failed to fetch table details'
         this.command = {
             command: 'aws.dynamoDb.viewTable',
