@@ -319,7 +319,7 @@ class CodeWhispererFileContextProviderTest {
         runReadAction {
             val fileContext = sut.extractFileContext(fixture.editor, psiFiles[0])
 
-            val supplementalContext = runBlocking { sut.extractSupplementalFileContext(psiFiles[0], fileContext) }
+            val supplementalContext = runBlocking { sut.extractSupplementalFileContext(psiFiles[0], fileContext, timeout = 50) }
             assertThat(supplementalContext?.contents).isNotNull.isNotEmpty
         }
 
@@ -365,7 +365,7 @@ class CodeWhispererFileContextProviderTest {
         runReadAction {
             val fileContext = aFileContextInfo(CodeWhispererJava.INSTANCE)
             val supplementalContext = runBlocking {
-                sut.extractSupplementalFileContext(tstFile, fileContext)
+                sut.extractSupplementalFileContext(tstFile, fileContext, 50)
             }
             assertThat(supplementalContext?.contents)
                 .isNotNull

@@ -5,6 +5,8 @@ package software.aws.toolkits.jetbrains.services.codewhisperer
 
 import com.intellij.openapi.editor.VisualPosition
 import com.intellij.openapi.project.Project
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
 import org.gradle.internal.impldep.com.amazonaws.ResponseMetadata.AWS_REQUEST_ID
 import org.mockito.kotlin.mock
 import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata
@@ -225,13 +227,19 @@ fun aRequestContext(
         CodeWhispererAutomatedTriggerType.Unknown()
     }
 
+    val supplementalContextDeferred = runBlocking {
+        async {
+            mySupplementalContextInfo ?: aSupplementalContextInfo()
+        }
+    }
+
     return RequestContext(
         project,
         mock(),
         TriggerTypeInfo(triggerType, automatedTriggerType),
         CaretPosition(Random.nextInt(), Random.nextInt()),
         fileContextInfo = myFileContextInfo ?: aFileContextInfo(),
-        supplementalContext = mySupplementalContextInfo ?: aSupplementalContextInfo(),
+        supplementalContextDeferred = supplementalContextDeferred,
         null,
         LatencyContext(
             Random.nextLong(),

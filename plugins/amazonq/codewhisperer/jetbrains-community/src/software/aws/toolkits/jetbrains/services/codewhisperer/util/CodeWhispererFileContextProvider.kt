@@ -14,6 +14,7 @@ import com.intellij.util.gist.GistManager
 import com.intellij.util.io.DataExternalizer
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
 import org.jetbrains.annotations.VisibleForTesting
 import software.aws.toolkits.core.utils.debug
@@ -83,7 +84,7 @@ private object CodeWhispererCodeChunkExternalizer : DataExternalizer<List<Chunk>
 interface FileContextProvider {
     fun extractFileContext(editor: Editor, psiFile: PsiFile): FileContextInfo
 
-    suspend fun extractSupplementalFileContext(psiFile: PsiFile, fileContext: FileContextInfo): SupplementalContextInfo?
+    suspend fun extractSupplementalFileContext(psiFile: PsiFile, fileContext: FileContextInfo, timeout: Long): SupplementalContextInfo?
 
     suspend fun extractCodeChunksFromFiles(psiFile: PsiFile, fileProducers: List<suspend (PsiFile) -> List<VirtualFile>>): List<Chunk>
 
@@ -108,56 +109,73 @@ class DefaultCodeWhispererFileContextProvider(private val project: Project) : Fi
      * for focal files, e.g. "MainTest.java" -> "Main.java", "test_main.py" -> "main.py"
      * for the most relevant file -> we extract "keywords" from files opened in editor then get the one with the highest similarity with target file
      */
-    override suspend fun extractSupplementalFileContext(psiFile: PsiFile, targetContext: FileContextInfo): SupplementalContextInfo? {
+    override suspend fun extractSupplementalFileContext(psiFile: PsiFile, targetContext: FileContextInfo, timeout: Long): SupplementalContextInfo? {
         val startFetchingTimestamp = System.currentTimeMillis()
         val isTst = isTestFile(psiFile)
-        val language = targetContext.programmingLanguage
-        val group = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
+        return try {
+            withTimeout(timeout) {
+                val language = targetContext.programmingLanguage
+                val group = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
 
-        val supplementalContext = if (isTst) {
-            when (shouldFetchUtgContext(language, group)) {
-                true -> extractSupplementalFileContextForTst(psiFile, targetContext)
-                false -> SupplementalContextInfo.emptyUtgFileContextInfo(targetContext.filename)
-                null -> {
-                    LOG.debug { "UTG is not supporting ${targetContext.programmingLanguage.languageId}" }
-                    null
+                val supplementalContext = if (isTst) {
+                    when (shouldFetchUtgContext(language, group)) {
+                        true -> extractSupplementalFileContextForTst(psiFile, targetContext)
+                        false -> SupplementalContextInfo.emptyUtgFileContextInfo(targetContext.filename)
+                        null -> {
+                            LOG.debug { "UTG is not supporting ${targetContext.programmingLanguage.languageId}" }
+                            null
+                        }
+                    }
+                } else {
+                    when (shouldFetchCrossfileContext(language, group)) {
+                        true -> extractSupplementalFileContextForSrc(psiFile, targetContext)
+                        false -> SupplementalContextInfo.emptyCrossFileContextInfo(targetContext.filename)
+                        null -> {
+                            LOG.debug { "Crossfile is not supporting ${targetContext.programmingLanguage.languageId}" }
+                            null
+                        }
+                    }
                 }
-            }
-        } else {
-            when (shouldFetchCrossfileContext(language, group)) {
-                true -> extractSupplementalFileContextForSrc(psiFile, targetContext)
-                false -> SupplementalContextInfo.emptyCrossFileContextInfo(targetContext.filename)
-                null -> {
-                    LOG.debug { "Crossfile is not supporting ${targetContext.programmingLanguage.languageId}" }
-                    null
-                }
-            }
-        }
 
-        return supplementalContext?.let {
-            if (it.contents.isNotEmpty()) {
-                val logStr = buildString {
-                    append("Successfully fetched supplemental context.")
-                    it.contents.forEachIndexed { index, chunk ->
-                        append(
-                            """
+                return@withTimeout supplementalContext?.let {
+                    if (it.contents.isNotEmpty()) {
+                        val logStr = buildString {
+                            append("Successfully fetched supplemental context.")
+                            it.contents.forEachIndexed { index, chunk ->
+                                append(
+                                    """
                             |
                             | Chunk ${index + 1}:
                             |    path = ${chunk.path},
                             |    score = ${chunk.score},
                             |    contentLength = ${chunk.content.length}
                             |
-                            """.trimMargin()
-                        )
+                                    """.trimMargin()
+                                )
+                            }
+                        }
+
+                        LOG.info { logStr }
+                    } else {
+                        LOG.warn { "Failed to fetch supplemental context, empty list." }
                     }
+
+                    it.copy(latency = System.currentTimeMillis() - startFetchingTimestamp)
                 }
-
-                LOG.info { logStr }
-            } else {
-                LOG.warn { "Failed to fetch supplemental context, empty list." }
             }
-
-            it.copy(latency = System.currentTimeMillis() - startFetchingTimestamp)
+        } catch (e: TimeoutCancellationException) {
+            LOG.debug {
+                "Supplemental context fetch timed out in ${System.currentTimeMillis() - startFetchingTimestamp}ms"
+            }
+            SupplementalContextInfo(
+                isUtg = isTst,
+                contents = emptyList(),
+                latency = System.currentTimeMillis() - startFetchingTimestamp,
+                targetFileName = targetContext.filename,
+                strategy = if (isTst) UtgStrategy.Empty else CrossFileStrategy.Empty
+            )
+        } catch (e: Exception) {
+            throw e
         }
     }
 

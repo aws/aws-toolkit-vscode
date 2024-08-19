@@ -17,6 +17,8 @@ import com.intellij.testFramework.fixtures.CodeInsightTestFixture
 import com.intellij.testFramework.replaceService
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -161,7 +163,17 @@ internal class CodeWhispererCodeCoverageTrackerTestPython : CodeWhispererCodeCov
             mock(),
             mock(),
             FileContextInfo(mock(), pythonFileName, CodeWhispererPython.INSTANCE),
-            SupplementalContextInfo(isUtg = false, contents = emptyList(), targetFileName = "", strategy = CrossFileStrategy.Empty, latency = 0L),
+            runBlocking {
+                async {
+                    SupplementalContextInfo(
+                        isUtg = false,
+                        contents = emptyList(),
+                        targetFileName = "",
+                        strategy = CrossFileStrategy.Empty,
+                        latency = 0L
+                    )
+                }
+            },
             null,
             mock(),
             aString()

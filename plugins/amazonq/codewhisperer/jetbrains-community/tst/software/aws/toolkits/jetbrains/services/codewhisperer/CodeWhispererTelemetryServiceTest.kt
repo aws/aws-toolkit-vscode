@@ -8,6 +8,7 @@ import com.intellij.testFramework.ApplicationRule
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.replaceService
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -233,7 +234,9 @@ class CodeWhispererTelemetryServiceTest {
         )
 
         val supplementalContextInfo = aSupplementalContextInfo()
-        val requestContext = aRequestContext(projectRule.project, mySupplementalContextInfo = supplementalContextInfo)
+        val requestContext = aRequestContext(projectRule.project, mySupplementalContextInfo = supplementalContextInfo).also {
+            runTest { it.awaitSupplementalContext() }
+        }
         val responseContext = aResponseContext()
         val recommendationContext = aRecommendationContext()
         val popupShownDuration = Duration.ofSeconds(Random.nextLong(0, 30))
@@ -365,7 +368,9 @@ class CodeWhispererTelemetryServiceTest {
             expectedPreviousSuggestionState: CodewhispererPreviousSuggestionState?
         ) {
             val supplementalContextInfo = aSupplementalContextInfo()
-            val requestContext = aRequestContext(projectRule.project, mySupplementalContextInfo = supplementalContextInfo)
+            val requestContext = aRequestContext(projectRule.project, mySupplementalContextInfo = supplementalContextInfo).also {
+                runTest { it.awaitSupplementalContext() }
+            }
             val responseContext = aResponseContext()
             val (recommendationContext, sessionContext) = aRecommendationContextAndSessionContext(decisions)
             val hasUserAccept = decisions.any { it == CodewhispererSuggestionState.Accept }
