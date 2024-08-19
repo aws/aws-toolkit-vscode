@@ -70,7 +70,7 @@ describe('DynamoDbUtils', () => {
             } as unknown as ScanOutput
             const scanTableStub = sinon.stub(dynamoDbClient, 'scanTable').resolves(generateRequest(expectedScanResult))
             const tableSchema: dynamoDbUtils.TableSchema = {
-                partitionKey: { name: 'key1', dataType: 'S' },
+                partitionKey: { name: 'age', dataType: 'S' },
             }
             const actualResult = await dynamoDbUtils.getTableContent(
                 { TableName: 'Users', Limit: 5 },
@@ -89,7 +89,7 @@ describe('DynamoDbUtils', () => {
             } as unknown as ScanOutput
             sinon.stub(dynamoDbClient, 'scanTable').resolves(generateRequest(expectedScanResult))
             const tableSchema: dynamoDbUtils.TableSchema = {
-                partitionKey: { name: 'key1', dataType: 'S' },
+                partitionKey: { name: 'age', dataType: 'S' },
             }
             const actualResult = await dynamoDbUtils.getTableContent(
                 { TableName: 'Users', Limit: 5 },
@@ -139,7 +139,7 @@ describe('DynamoDbUtils', () => {
                 Items: [{ age: { N: '25' }, ID: { S: '2' }, name: { S: 'Jane' } }],
             } as unknown as ScanOutput
             const tableSchema: dynamoDbUtils.TableSchema = {
-                partitionKey: { name: 'key1', dataType: 'S' },
+                partitionKey: { name: 'age', dataType: 'S' },
             }
             sinon.stub(dynamoDbClient, 'getTableInformation').resolves(getTableDescriptionResponse())
             sinon.stub(dynamoDbClient, 'queryTable').resolves(generateRequest(expectedQueryResult))

@@ -122,12 +122,16 @@ describe('TableView', () => {
     describe('viewDynamoDbTable', function () {
         it('should view the table', async () => {
             const context = sinon.stub(extContext)
+            const tableSchema: dynamoDbUtils.TableSchema = {
+                partitionKey: { name: 'key1', dataType: 'S' },
+            }
             const node = { dynamoDbtable: 'test-table', regionCode: 'west-us-2' }
-
+            const getTableKeySchemaStub = sinon.stub(dynamoDbUtils, 'getTableKeySchema').resolves(tableSchema)
             const getTableContentStub = sinon.stub(dynamoDbUtils, 'getTableContent').resolves(getExpectedResponse())
 
             await viewDynamoDbTable(context, node)
             assert.ok(getTableContentStub.calledOnce)
+            assert.ok(getTableKeySchemaStub.calledOnce)
         })
     })
 })

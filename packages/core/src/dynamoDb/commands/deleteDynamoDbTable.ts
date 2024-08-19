@@ -40,6 +40,8 @@ export async function deleteDynamoDbTable(
                 await new Promise((resolve) => setTimeout(resolve, 3000)).then(async () => {
                     await node.parentNode.refreshNode()
                 })
+            } else {
+                throw new Error(`Delete failed with error : ${JSON.stringify(response)}`)
             }
         } catch (err) {
             const errorString = `Failed to delete DynamoDB table: ${node.dynamoDbtable}`

@@ -58,11 +58,18 @@ export function getTableColumnsNames(
     tableHeader: RowData[]
 } {
     const tableColumnsNames = new Set<string>()
+    const tableHeader = [] as RowData[]
+    const response = {
+        columnNames: tableColumnsNames,
+        tableHeader: tableHeader,
+    }
+    if (!items.Items || items.Items.length === 0) {
+        return response
+    }
     tableColumnsNames.add(tableSchema.partitionKey.name)
     if (tableSchema.sortKey) {
         tableColumnsNames.add(tableSchema.sortKey.name)
     }
-    const tableHeader = [] as RowData[]
     for (const item of items.Items ?? []) {
         for (const key of Object.keys(item)) {
             if (!tableColumnsNames.has(key)) {
@@ -74,10 +81,7 @@ export function getTableColumnsNames(
         tableHeader.push({ columnDataKey: columnName, title: columnName })
     }
 
-    return {
-        columnNames: tableColumnsNames,
-        tableHeader: tableHeader,
-    }
+    return response
 }
 
 export function getTableItems(tableColumnsNames: Set<string>, items: DynamoDB.Types.ScanOutput) {

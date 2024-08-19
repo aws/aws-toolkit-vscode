@@ -12,6 +12,7 @@ import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 import { ExtContext } from '../../shared/extensions'
 import { viewDynamoDbTable } from '../vue/tableView'
+import { telemetry } from '../../shared/telemetry'
 
 const localize = nls.loadMessageBundle()
 
@@ -23,14 +24,17 @@ export async function searchDynamoDbTables(
     source: string,
     dbData?: { regionName: string }
 ): Promise<void> {
-    const wizard = new SearchDynamoDbTablesWizard(dbData)
-    const response = await wizard.run()
-    if (!response) {
-        throw new CancellationError('user')
-    }
-    await viewDynamoDbTable(context, {
-        dynamoDbtable: response.submenuResponse.data,
-        regionCode: response.submenuResponse.region,
+    await telemetry.dynamodb_openTable.run(async (span) => {
+        const wizard = new SearchDynamoDbTablesWizard(dbData)
+        span.record({ dynamoDbResourceType: 'table', source: source })
+        const response = await wizard.run()
+        if (!response) {
+            throw new CancellationError('user')
+        }
+        await viewDynamoDbTable(context, {
+            dynamoDbtable: response.submenuResponse.data,
+            regionCode: response.submenuResponse.region,
+        })
     })
 }
 

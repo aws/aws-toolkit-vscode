@@ -29,11 +29,10 @@ describe('deleteDynamoDbTable', () => {
     })
     async function testDeleteDynamoDB(confirmed: boolean) {
         const expectedResult = { TableDescription: { TableName: 'Table1' } } as unknown as DeleteTableOutput
-        const parentNode = { refresh: sinon.stub() }
+        const parentNode = { refreshNode: sinon.stub() }
 
         const showConfirmationMessageStub = sinon.stub(utilities, 'showConfirmationMessage').resolves(confirmed)
         dynamoDbTableNode.parentNode = parentNode as unknown as DynamoDbInstanceNode
-
         sinon
             .stub(dynamoDbClient, 'deleteTable')
             .resolves(Promise.resolve(expectedResult) as unknown as PromiseResult<DeleteTableOutput, AWSError>)
@@ -49,7 +48,7 @@ describe('deleteDynamoDbTable', () => {
     })
 
     it('Delete failed after confirmation', async () => {
-        const parentNode = { refresh: sinon.stub() }
+        const parentNode = { refreshNode: sinon.stub() }
 
         const showConfirmationMessageStub = sinon.stub(utilities, 'showConfirmationMessage').resolves(true)
         dynamoDbTableNode.parentNode = parentNode as unknown as DynamoDbInstanceNode
@@ -69,7 +68,7 @@ describe('deleteDynamoDbTable', () => {
     })
 
     it('Delete success after confirmation', async () => {
-        const parentNode = { refresh: sinon.stub() }
+        const parentNode = { refreshNode: sinon.stub() }
         const expectedResult = { TableDescription: { TableName: 'Table1' } } as unknown as DeleteTableOutput
 
         const showConfirmationMessageStub = sinon.stub(utilities, 'showConfirmationMessage').resolves(true)
