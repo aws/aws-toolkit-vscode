@@ -70,6 +70,7 @@ import { securityScanLanguageContext } from './util/securityScanLanguageContext'
 import { registerWebviewErrorHandler } from '../webviews/server'
 import { logAndShowError, logAndShowWebviewError } from '../shared/utilities/logAndShowUtils'
 import { openSettings } from '../shared/settings'
+import { telemetry } from '../shared/telemetry'
 
 let localize: nls.LocalizeFunc
 
@@ -294,15 +295,22 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.commands.registerCommand('aws.amazonq.openEditorAtRange', openEditorAtRange)
     )
 
-    await auth.restore('startup')
-    await auth.clearExtraConnections('startup')
+    // run the auth startup code with context for telemetry
+    await telemetry.function_call.run(
+        async () => {
+            await auth.restore()
+            await auth.clearExtraConnections()
 
-    if (auth.isConnectionExpired()) {
-        auth.showReauthenticatePrompt().catch((e) => {
-            const defaulMsg = localize('AWS.generic.message.error', 'Failed to reauth:')
-            void logAndShowError(localize, e, 'showReauthenticatePrompt', defaulMsg)
-        })
-    }
+            if (auth.isConnectionExpired()) {
+                auth.showReauthenticatePrompt().catch((e) => {
+                    const defaulMsg = localize('AWS.generic.message.error', 'Failed to reauth:')
+                    void logAndShowError(localize, e, 'showReauthenticatePrompt', defaulMsg)
+                })
+            }
+        },
+        { emit: false, functionId: { name: 'activateCwCore' } }
+    )
+
     if (auth.isValidEnterpriseSsoInUse()) {
         await notifyNewCustomizations()
     }

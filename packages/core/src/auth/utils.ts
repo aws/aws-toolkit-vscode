@@ -101,25 +101,30 @@ export async function promptAndUseConnection(...[auth, type]: Parameters<typeof 
     })
 }
 
-export async function signout(auth: Auth, conn: Connection | undefined = auth.activeConnection) {
-    if (conn?.type === 'sso') {
-        // TODO: does deleting the connection make sense UX-wise?
-        // this makes it disappear from the list of available connections
-        await auth.deleteConnection(conn)
+export async function signout(auth: Auth, conn: Connection | undefined = auth.activeConnection): Promise<void> {
+    return telemetry.function_call.run(
+        async () => {
+            if (conn?.type === 'sso') {
+                // TODO: does deleting the connection make sense UX-wise?
+                // this makes it disappear from the list of available connections
+                await auth.deleteConnection(conn)
 
-        const iamConnections = (await auth.listConnections()).filter((c) => c.type === 'iam')
-        const fallbackConn = iamConnections.find((c) => c.id === 'profile:default') ?? iamConnections[0]
-        if (fallbackConn !== undefined) {
-            await auth.useConnection(fallbackConn)
-        }
-    } else {
-        await auth.logout()
+                const iamConnections = (await auth.listConnections()).filter((c) => c.type === 'iam')
+                const fallbackConn = iamConnections.find((c) => c.id === 'profile:default') ?? iamConnections[0]
+                if (fallbackConn !== undefined) {
+                    await auth.useConnection(fallbackConn)
+                }
+            } else {
+                await auth.logout()
 
-        const fallbackConn = (await auth.listConnections()).find((c) => c.type === 'sso')
-        if (fallbackConn !== undefined) {
-            await auth.useConnection(fallbackConn)
-        }
-    }
+                const fallbackConn = (await auth.listConnections()).find((c) => c.type === 'sso')
+                if (fallbackConn !== undefined) {
+                    await auth.useConnection(fallbackConn)
+                }
+            }
+        },
+        { emit: false, functionId: { name: 'signoutAuthUtils' } }
+    )
 }
 
 export const createBuilderIdItem = () =>
@@ -176,20 +181,25 @@ export async function createStartUrlPrompter(title: string, requiredScopes?: str
 }
 
 export async function createBuilderIdConnection(auth: Auth, scopes?: string[]) {
-    const newProfile = createBuilderIdProfile(scopes)
-    const existingConn = (await auth.listConnections()).find(isBuilderIdConnection)
-    if (!existingConn) {
-        return auth.createConnection(newProfile)
-    }
+    return telemetry.function_call.run(
+        async () => {
+            const newProfile = createBuilderIdProfile(scopes)
+            const existingConn = (await auth.listConnections()).find(isBuilderIdConnection)
+            if (!existingConn) {
+                return auth.createConnection(newProfile)
+            }
 
-    const userResponse = await promptLogoutExistingBuilderIdConnection()
-    if (userResponse !== 'signout') {
-        throw new CancellationError('user')
-    }
+            const userResponse = await promptLogoutExistingBuilderIdConnection()
+            if (userResponse !== 'signout') {
+                throw new CancellationError('user')
+            }
 
-    await signout(auth, existingConn)
+            await signout(auth, existingConn)
 
-    return auth.createConnection(newProfile)
+            return auth.createConnection(newProfile)
+        },
+        { emit: false, functionId: { name: 'createBuilderIdConnectionAuthUtils' } }
+    )
 }
 
 /**
@@ -340,14 +350,19 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
     prompter.quickPick.onDidTriggerItemButton(async (e) => {
         // User wants to delete a specific connection
         if (e.button.tooltip === deleteConnection) {
-            telemetry.ui_click.emit({ elementId: 'connection_deleteFromList' })
-            const conn = e.item.data as Connection
+            await telemetry.function_call.run(
+                async () => {
+                    telemetry.ui_click.emit({ elementId: 'connection_deleteFromList' })
+                    const conn = e.item.data as Connection
 
-            // Set prompter in to a busy state so that
-            // tests must wait for refresh to fully complete
-            prompter.busy = true
-            await auth.deleteConnection(conn)
-            refreshPrompter()
+                    // Set prompter in to a busy state so that
+                    // tests must wait for refresh to fully complete
+                    prompter.busy = true
+                    await auth.deleteConnection(conn)
+                    refreshPrompter()
+                },
+                { emit: false, functionId: { name: 'quickPickDeleteConnection' } }
+            )
         }
     })
 

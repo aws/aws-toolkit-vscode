@@ -1066,6 +1066,10 @@
                     "required": false
                 },
                 {
+                    "type": "sessionDuration",
+                    "required": false
+                },
+                {
                     "type": "source",
                     "required": true
                 },
@@ -1077,12 +1081,14 @@
                     "type": "ssoRegistrationExpiresAt",
                     "required": false
                 }
-            ]
+            ],
+            "passive": true
         },
         {
             "name": "function_call",
-            "description": "Represents a function call",
-            "metadata": []
+            "description": "Represents a function call. In most cases this should wrap code with a run(), then you can add context.",
+            "metadata": [],
+            "passive": true
         }
     ]
 }
