@@ -496,15 +496,20 @@ function getInstrumenter(
     const fields = findFieldsToAddToMetric(id.args, id.compositeKey)
 
     return <T extends Callback>(fn: T, ...args: Parameters<T>) =>
-        span.run((span) => {
-            ;(span as Metric<VscodeExecuteCommand>).record({
-                command: id.id,
-                debounceCount,
-                ...fields,
-            })
+        span.run(
+            (span) => {
+                ;(span as Metric<VscodeExecuteCommand>).record({
+                    command: id.id,
+                    debounceCount,
+                    ...fields,
+                })
 
-            return fn(...args)
-        })
+                return fn(...args)
+            },
+            // wrap all command executions with their ID as context for telemetry.
+            // this will give us a better idea on the entrypoints of executions
+            { functionId: { name: id.id, class: 'Commands' } }
+        )
 }
 
 export const unsetSource = 'sourceImproperlySet'

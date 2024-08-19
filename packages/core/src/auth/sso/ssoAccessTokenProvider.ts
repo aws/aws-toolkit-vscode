@@ -42,6 +42,8 @@ import { showInputBox } from '../../shared/ui/inputPrompter'
 import { DevSettings } from '../../shared/settings'
 import { onceChanged } from '../../shared/utilities/functionUtils'
 import { NestedMap } from '../../shared/utilities/map'
+import { asStringifiedStack } from '../../shared/telemetry/spans'
+import { withTelemetryContext } from '../../shared/telemetry/util'
 
 export const authenticationPath = 'sso/authenticated'
 
@@ -60,6 +62,7 @@ export abstract class SsoAccessTokenProvider {
      */
     private static _authSource: string = 'unknown'
     private static logIfChanged = onceChanged((s: string) => getLogger().info(s))
+    private readonly className = 'SsoAccessTokenProvider'
 
     public static set authSource(val: string) {
         SsoAccessTokenProvider._authSource = val
@@ -74,11 +77,28 @@ export abstract class SsoAccessTokenProvider {
 
     public async invalidate(reason: string): Promise<void> {
         getLogger().info(`SsoAccessTokenProvider: invalidate token and registration`)
-        // Use allSettled() instead of all() to ensure all clear() calls are resolved.
-        await Promise.allSettled([
-            this.cache.token.clear(this.tokenCacheKey, 'SsoAccessTokenProvider.invalidate()'),
-            this.cache.registration.clear(this.registrationCacheKey, 'SsoAccessTokenProvider.invalidate()'),
-        ])
+
+        // always emit telemetry when the cache is deleted.
+        // most of the time cache is deleted on cache expiration, this is infrequent and expected.
+        // Any premature scenarios, that are not explicit deletion by the user, are likely bugs.
+        await telemetry.auth_modifyConnection.run(
+            async (span) => {
+                span.record({
+                    source: asStringifiedStack(telemetry.getFunctionStack()),
+                    action: 'deleteSsoCache',
+                    credentialStartUrl: this.profile.startUrl,
+                    sessionDuration: getSessionDuration(this.tokenCacheKey),
+                })
+
+                // Use allSettled() instead of all() to ensure all clear() calls are resolved.
+                await Promise.allSettled([
+                    this.cache.token.clear(this.tokenCacheKey, 'SsoAccessTokenProvider.invalidate()'),
+                    this.cache.registration.clear(this.registrationCacheKey, 'SsoAccessTokenProvider.invalidate()'),
+                ])
+            },
+            { emit: true, functionId: { name: 'invalidate', class: this.className } }
+        )
+
         this.reAuthState.set(this.profile, { reAuthReason: `invalidate():${reason}` })
     }
 
@@ -453,6 +473,7 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
      * will be validated before being returned. Otherwise, a client registration is
      * created and returned.
      */
+    @withTelemetryContext({ name: 'getValidatedClientRegistration', class: 'DeviceFlowAuthorization' })
     override async getValidatedClientRegistration(): Promise<ClientRegistration> {
         const cacheKey = this.registrationCacheKey
         const cachedRegistration = await this.cache.registration.load(cacheKey)
@@ -587,6 +608,7 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
      * will be validated before being returned. Otherwise, a client registration is
      * created and returned.
      */
+    @withTelemetryContext({ name: 'getValidatedClientRegistration', class: 'AuthFlowAuthorization' })
     override async getValidatedClientRegistration(): Promise<ClientRegistration> {
         const cacheKey = this.registrationCacheKey
         const cachedRegistration = await this.cache.registration.load(cacheKey)
@@ -672,6 +694,7 @@ class WebAuthorization extends SsoAccessTokenProvider {
         return this.formatToken(token, registration)
     }
 
+    @withTelemetryContext({ name: 'getValidatedClientRegistration', class: 'WebAuthorization' })
     override async getValidatedClientRegistration(): Promise<ClientRegistration> {
         const cacheKey = this.registrationCacheKey
         const cachedRegistration = await this.cache.registration.load(cacheKey)
