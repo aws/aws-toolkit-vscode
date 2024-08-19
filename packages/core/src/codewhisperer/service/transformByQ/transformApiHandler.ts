@@ -37,7 +37,7 @@ import { CredentialSourceId, telemetry } from '../../../shared/telemetry/telemet
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
-import request from '../../../common/request'
+import request from '../../../shared/request'
 import { JobStoppedError, ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import { writeLogs } from './transformFileHandler'
 import { AuthUtil } from '../../util/authUtil'
@@ -118,11 +118,12 @@ export async function uploadArtifactToS3(
             Math.round(uploadFileByteSize / 1000)
         )
 
-        const apiStartTime = Date.now()
+        const apiStartTime = globals.clock.Date.now()
         const response = await request.fetch('PUT', resp.uploadUrl, {
             body: buffer,
             headers: getHeadersObj(sha256, resp.kmsKeyArn),
         }).response
+        // TODO: remove deprecated metric once BI started using new metrics
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'UploadZip',
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
@@ -142,27 +143,19 @@ export async function uploadArtifactToS3(
             errorMessage = CodeWhispererConstants.selfSignedCertificateError
         }
         getLogger().error(`CodeTransformation: UploadZip error = ${e}`)
-        telemetry.codeTransform_logApiError.emit({
-            codeTransformApiNames: 'UploadZip',
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformApiErrorMessage: errorMessage,
-            codeTransformRequestId: e.requestId ?? '',
-            codeTransformTotalByteSize: (await fs.promises.stat(fileName)).size,
-            result: MetadataResult.Fail,
-            reason: 'UploadToS3Failed',
-        })
         throw new Error(errorMessage)
     }
 }
 
 export async function resumeTransformationJob(jobId: string, userActionStatus: TransformationUserActionStatus) {
     try {
-        const apiStartTime = Date.now()
+        const apiStartTime = globals.clock.Date.now()
         const response = await codeWhisperer.codeWhispererClient.codeModernizerResumeTransformation({
             transformationJobId: jobId,
             userActionStatus, // can be "COMPLETED" or "REJECTED"
         })
         if (response) {
+            // TODO: remove deprecated metric once BI started using new metrics
             telemetry.codeTransform_logApiLatency.emit({
                 codeTransformApiNames: 'ResumeTransformation',
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
@@ -177,15 +170,6 @@ export async function resumeTransformationJob(jobId: string, userActionStatus: T
     } catch (e: any) {
         const errorMessage = `Resuming the job failed due to: ${(e as Error).message}`
         getLogger().error(`CodeTransformation: ResumeTransformation error = ${errorMessage}`)
-        telemetry.codeTransform_logApiError.emit({
-            codeTransformApiNames: 'ResumeTransformation',
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformJobId: jobId,
-            codeTransformApiErrorMessage: errorMessage,
-            codeTransformRequestId: e.requestId ?? '',
-            result: MetadataResult.Fail,
-            reason: 'ResumeTransformationFailed',
-        })
         throw new Error(errorMessage)
     }
 }
@@ -196,11 +180,12 @@ export async function stopJob(jobId: string) {
     }
 
     try {
-        const apiStartTime = Date.now()
+        const apiStartTime = globals.clock.Date.now()
         const response = await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
             transformationJobId: jobId,
         })
         if (response !== undefined) {
+            // TODO: remove deprecated metric once BI started using new metrics
             telemetry.codeTransform_logApiLatency.emit({
                 codeTransformApiNames: 'StopTransformation',
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
@@ -217,15 +202,6 @@ export async function stopJob(jobId: string) {
     } catch (e: any) {
         const errorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: StopTransformation error = ${errorMessage}`)
-        telemetry.codeTransform_logApiError.emit({
-            codeTransformApiNames: 'StopTransformation',
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformJobId: jobId,
-            codeTransformApiErrorMessage: errorMessage,
-            codeTransformRequestId: e.requestId ?? '',
-            result: MetadataResult.Fail,
-            reason: 'StopTransformationFailed',
-        })
         throw new Error('Stop job failed')
     }
 }
@@ -237,7 +213,7 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
     throwIfCancelled()
     let response = undefined
     try {
-        const apiStartTime = Date.now()
+        const apiStartTime = globals.clock.Date.now()
         response = await codeWhisperer.codeWhispererClient.createUploadUrl({
             contentChecksum: sha256,
             contentChecksumType: CodeWhispererConstants.contentChecksumType,
@@ -247,6 +223,7 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
         if (response.$response.requestId) {
             transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
         }
+        // TODO: remove deprecated metric once BI started using new metrics
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'CreateUploadUrl',
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
@@ -258,16 +235,9 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
     } catch (e: any) {
         const errorMessage = `The upload failed due to: ${(e as Error).message}`
         getLogger().error(`CodeTransformation: CreateUploadUrl error: = ${e}`)
-        telemetry.codeTransform_logApiError.emit({
-            codeTransformApiNames: 'CreateUploadUrl',
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformApiErrorMessage: errorMessage,
-            codeTransformRequestId: e.requestId ?? '',
-            result: MetadataResult.Fail,
-            reason: 'CreateUploadUrlFailed',
-        })
         throw new Error(errorMessage)
     }
+
     try {
         await uploadArtifactToS3(payloadFileName, response, sha256, buffer)
     } catch (e: any) {
@@ -275,6 +245,7 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
         getLogger().error(`CodeTransformation: UploadArtifactToS3 error: = ${errorMessage}`)
         throw new Error(errorMessage)
     }
+
     // UploadContext only exists for subsequent uploads, and they will return a uploadId that is NOT
     // the jobId. Only the initial call will uploadId be the jobId
     if (!uploadContext) {
@@ -349,13 +320,21 @@ interface IZipCodeParams {
     modulePath?: string
     zipManifest: ZipManifest | HilZipManifest
 }
+
+interface ZipCodeResult {
+    dependenciesCopied: boolean
+    tempFilePath: string
+    fileSize: number
+}
+
 export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePath, zipManifest }: IZipCodeParams) {
     let tempFilePath = undefined
     let zipStartTime = undefined
     let logFilePath = undefined
+    let dependenciesCopied = false
     try {
         throwIfCancelled()
-        zipStartTime = Date.now()
+        zipStartTime = globals.clock.Date.now()
         const zip = new AdmZip()
 
         // If no modulePath is passed in, we are not uploaded the source folder
@@ -364,6 +343,10 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
             const sourceFiles = getFilesRecursively(modulePath, false)
             let sourceFilesSize = 0
             for (const file of sourceFiles) {
+                if ((await fs.stat(file)).isDirectory()) {
+                    getLogger().info('CodeTransformation: Skipping directory, likely a symlink')
+                    continue
+                }
                 const relativePath = path.relative(modulePath, file)
                 const paddedPath = path.join('sources', relativePath)
                 zip.addLocalFile(file, path.dirname(paddedPath))
@@ -392,10 +375,12 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
                 dependencyFilesSize += (await fs.promises.stat(file)).size
             }
             getLogger().info(`CodeTransformation: dependency files size = ${dependencyFilesSize}`)
+            // TODO: remove deprecated metric once BI started using new metrics
             telemetry.codeTransform_dependenciesCopied.emit({
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 result: MetadataResult.Pass,
             })
+            dependenciesCopied = true
         } else {
             if (zipManifest instanceof ZipManifest) {
                 zipManifest.dependenciesRoot = undefined
@@ -422,7 +407,6 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
     } catch (e: any) {
         telemetry.codeTransform_logGeneralError.emit({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformApiErrorMessage: 'Failed to zip project',
             result: MetadataResult.Fail,
             reason: 'ZipCreationFailed',
         })
@@ -437,7 +421,7 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
 
     const exceedsLimit = zipSize > CodeWhispererConstants.uploadZipSizeLimitInBytes
 
-    // Later, consider adding field for number of source lines of code
+    // TODO: remove deprecated metric once BI started using new metrics
     telemetry.codeTransform_jobCreateZipEndTime.emit({
         codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
         codeTransformTotalByteSize: zipSize,
@@ -455,14 +439,14 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
         })
         throw new ZipExceedsSizeLimitError()
     }
-    return tempFilePath
+    return { dependenciesCopied: dependenciesCopied, tempFilePath: tempFilePath, fileSize: zipSize } as ZipCodeResult
 }
 
 export async function startJob(uploadId: string) {
     const sourceLanguageVersion = `JAVA_${transformByQState.getSourceJDKVersion()}`
     const targetLanguageVersion = `JAVA_${transformByQState.getTargetJDKVersion()}`
     try {
-        const apiStartTime = Date.now()
+        const apiStartTime = globals.clock.Date.now()
         const response = await codeWhisperer.codeWhispererClient.codeModernizerStartCodeTransformation({
             workspaceState: {
                 uploadId: uploadId,
@@ -477,6 +461,7 @@ export async function startJob(uploadId: string) {
         if (response.$response.requestId) {
             transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
         }
+        // TODO: remove deprecated metric once BI started using new metrics
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'StartTransformation',
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
@@ -489,14 +474,6 @@ export async function startJob(uploadId: string) {
     } catch (e: any) {
         const errorMessage = `Starting the job failed due to: ${(e as Error).message}`
         getLogger().error(`CodeTransformation: StartTransformation error = ${errorMessage}`)
-        telemetry.codeTransform_logApiError.emit({
-            codeTransformApiNames: 'StartTransformation',
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformApiErrorMessage: errorMessage,
-            codeTransformRequestId: e.requestId ?? '',
-            result: MetadataResult.Fail,
-            reason: 'StartTransformationFailed',
-        })
         throw new Error(errorMessage)
     }
 }
@@ -609,10 +586,11 @@ export async function getTransformationPlan(jobId: string) {
         response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
         })
-        const apiStartTime = Date.now()
+        const apiStartTime = globals.clock.Date.now()
         if (response.$response.requestId) {
             transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
         }
+        // TODO: remove deprecated metric once BI started using new metrics
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'GetTransformationPlan',
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
@@ -640,6 +618,13 @@ export async function getTransformationPlan(jobId: string) {
         const arrowIcon = getTransformationIcon('upArrow')
 
         let plan = `<style>table {border: 1px solid #424750;}</style>\n\n<a id="top"></a><br><p style="font-size: 24px;"><img src="${logoIcon}" style="margin-right: 15px; vertical-align: middle;"></img><b>${CodeWhispererConstants.planTitle}</b></p><br>`
+        const authType = await getAuthType()
+        const linesOfCode = Number(
+            jobStatistics.find((stat: { name: string; value: string }) => stat.name === 'linesOfCode').value
+        )
+        if (authType === 'iamIdentityCenter' && linesOfCode > CodeWhispererConstants.codeTransformLocThreshold) {
+            plan += CodeWhispererConstants.codeTransformBillingText(linesOfCode)
+        }
         plan += `<div style="display: flex;"><div style="flex: 1; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p>${
             CodeWhispererConstants.planIntroductionMessage
         }</p></div>${getJobStatisticsHtml(jobStatistics)}</div>`
@@ -656,15 +641,6 @@ export async function getTransformationPlan(jobId: string) {
     } catch (e: any) {
         const errorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: GetTransformationPlan error = ${errorMessage}`)
-        telemetry.codeTransform_logApiError.emit({
-            codeTransformApiNames: 'GetTransformationPlan',
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformJobId: jobId,
-            codeTransformApiErrorMessage: errorMessage,
-            codeTransformRequestId: e.requestId ?? '',
-            result: MetadataResult.Fail,
-            reason: 'GetTransformationPlanFailed',
-        })
 
         /* Means API call failed
          * If response is defined, means a display/parsing error occurred, so continue transformation
@@ -681,13 +657,14 @@ export async function getTransformationSteps(jobId: string, handleThrottleFlag: 
         if (handleThrottleFlag) {
             await sleep(2000)
         }
-        const apiStartTime = Date.now()
+        const apiStartTime = globals.clock.Date.now()
         const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
         })
         if (response.$response.requestId) {
             transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
         }
+        // TODO: remove deprecated metric once BI started using new metrics
         telemetry.codeTransform_logApiLatency.emit({
             codeTransformApiNames: 'GetTransformationPlan',
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
@@ -700,15 +677,6 @@ export async function getTransformationSteps(jobId: string, handleThrottleFlag: 
     } catch (e: any) {
         const errorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: GetTransformationPlan error = ${errorMessage}`)
-        telemetry.codeTransform_logApiError.emit({
-            codeTransformApiNames: 'GetTransformationPlan',
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformJobId: jobId,
-            codeTransformApiErrorMessage: errorMessage,
-            codeTransformRequestId: e.requestId ?? '',
-            result: MetadataResult.Fail,
-            reason: 'GetTransformationPlanFailed',
-        })
         throw e
     }
 }
@@ -719,10 +687,11 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
     while (true) {
         throwIfCancelled()
         try {
-            const apiStartTime = Date.now()
+            const apiStartTime = globals.clock.Date.now()
             const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformation({
                 transformationJobId: jobId,
             })
+            // TODO: remove deprecated metric once BI started using new metrics
             telemetry.codeTransform_logApiLatency.emit({
                 codeTransformApiNames: 'GetTransformation',
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
@@ -785,15 +754,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             let errorMessage = (e as Error).message
             errorMessage += ` -- ${transformByQState.getJobFailureMetadata()}`
             getLogger().error(`CodeTransformation: GetTransformation error = ${errorMessage}`)
-            telemetry.codeTransform_logApiError.emit({
-                codeTransformApiNames: 'GetTransformation',
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformJobId: jobId,
-                codeTransformApiErrorMessage: errorMessage,
-                codeTransformRequestId: e.requestId ?? '',
-                result: MetadataResult.Fail,
-                reason: 'GetTransformationFailed',
-            })
             throw e
         }
     }
@@ -853,15 +813,6 @@ export async function downloadResultArchive(
     } catch (e: any) {
         downloadErrorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
-        telemetry.codeTransform_logApiError.emit({
-            codeTransformApiNames: 'ExportResultArchive',
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformJobId: transformByQState.getJobId(),
-            codeTransformApiErrorMessage: downloadErrorMessage,
-            codeTransformRequestId: e.requestId ?? '',
-            result: MetadataResult.Fail,
-            reason: 'ExportResultArchiveFailed',
-        })
         throw e
     } finally {
         cwStreamingClient.destroy()

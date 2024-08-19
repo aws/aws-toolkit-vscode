@@ -61,7 +61,7 @@ import {
 } from './connection'
 import { isSageMaker, isCloud9, isAmazonQ } from '../shared/extensionUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { randomUUID } from '../common/crypto'
+import { randomUUID } from '../shared/crypto'
 
 interface AuthService {
     /**
@@ -742,6 +742,7 @@ export class Auth implements AuthService, ConnectionManager {
             state: profile.metadata.connectionState,
             label: profile.metadata?.label ?? this.getSsoProfileLabel(profile),
             getToken: () => this.getToken(id, provider),
+            getRegistration: () => provider.getClientRegistration(),
         }
     }
 

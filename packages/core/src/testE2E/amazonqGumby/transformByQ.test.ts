@@ -10,10 +10,11 @@ import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import * as codeWhisperer from '../../codewhisperer/client/codewhisperer'
 import assert from 'assert'
 import { getSha256, uploadArtifactToS3, zipCode } from '../../codewhisperer/service/transformByQ/transformApiHandler'
-import request from '../../common/request'
+import request from '../../shared/request'
 import AdmZip from 'adm-zip'
 import { setValidConnection } from '../util/connection'
 import { transformByQState, ZipManifest } from '../../codewhisperer/models/model'
+import globals from '../../shared/extensionGlobals'
 
 describe('transformByQ', async function () {
     let tempDir = ''
@@ -29,11 +30,11 @@ describe('transformByQ', async function () {
         }
         tempDir = path.join(os.tmpdir(), 'gumby-test')
         fs.mkdirSync(tempDir)
-        tempFileName = `testfile-${Date.now()}.txt`
+        tempFileName = `testfile-${globals.clock.Date.now()}.txt`
         tempFilePath = path.join(tempDir, tempFileName)
         fs.writeFileSync(tempFilePath, 'sample content for the test file')
         transformByQState.setProjectPath(tempDir)
-        zippedCodePath = await zipCode({
+        const zipCodeResult = await zipCode({
             dependenciesFolder: {
                 path: tempFilePath,
                 name: tempFileName,
@@ -41,6 +42,7 @@ describe('transformByQ', async function () {
             modulePath: tempDir,
             zipManifest: new ZipManifest(),
         })
+        zippedCodePath = zipCodeResult.tempFilePath
     })
 
     after(async function () {

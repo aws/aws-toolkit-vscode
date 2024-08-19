@@ -400,6 +400,13 @@ export const codeTransformTroubleshootDownloadError =
 export const codeTransformPrereqDoc =
     'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites'
 
+export const codeTransformBillingText = (linesOfCode: number) =>
+    `<p>${linesOfCode} lines of code were submitted for transformation. If you reach the quota for lines of code included in your subscription, you will be charged $${codeTransformBillingRate} for each additional line of code. You might be charged up to $${(linesOfCode * codeTransformBillingRate).toFixed(2)} for this transformation. To avoid being charged, stop the transformation job before it completes. For more information on pricing and quotas, see [Amazon Q Developer pricing](${linkToBillingInfo}).</p>`
+
+export const codeTransformBillingRate = 0.003
+
+export const codeTransformLocThreshold = 100000
+
 export const jobStartedChatMessage =
     'I am starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub. If I run into any issues, I might pause the transformation to get input from you on how to proceed.'
 
@@ -453,6 +460,9 @@ export const buildSucceededChatMessage = 'I was able to build your project and w
 
 export const buildSucceededNotification =
     'Amazon Q was able to build your project and will start transforming your code soon.'
+
+export const absolutePathDetectedMessage = (numPaths: number, buildFile: string, listOfPaths: string) =>
+    `I detected ${numPaths} potential absolute file path(s) in your ${buildFile} file: **${listOfPaths}**. Absolute file paths might cause issues when I build your code. Any errors will show up in the build log.`
 
 export const unsupportedJavaVersionChatMessage = `Sorry, currently I can only upgrade Java 8 or Java 11 projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
@@ -528,6 +538,9 @@ export const noPomXmlFoundNotification = `None of your open projects are support
 
 export const noJavaHomeFoundChatMessage = `Sorry, I couldn\'t locate your Java installation. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
+export const dependencyVersionsErrorMessage =
+    'I could not find any other versions of this dependency in your local Maven repository. Try transforming the dependency to make it compatible with Java 17, and then try transforming this module again.'
+
 export const errorUploadingWithExpiredUrl = `The upload error may have been caused by the expiration of the S3 pre-signed URL that was used to upload code artifacts to Q Code Transformation. The S3 pre-signed URL expires in 30 minutes. This could be caused by any delays introduced by intermediate services in your network infrastructure. Please investigate your network configuration and consider allowlisting 'amazonq-code-transformation-us-east-1-c6160f047e0.s3.amazonaws.com' to skip any scanning that might delay the upload. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootAllowS3Access}).`
 
 export const socketConnectionFailed =
@@ -565,9 +578,7 @@ export const noJavaProjectsFoundChatMessage = `Sorry, I couldn\'t find a project
 
 export const linkToDocsHome = 'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html'
 
-export const linkToPrerequisites = ''
-
-export const linkToMavenTroubleshooting = ''
+export const linkToBillingInfo = 'https://aws.amazon.com/q/developer/pricing/'
 
 export const linkToUploadZipTooLarge =
     'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#project-size-limit'

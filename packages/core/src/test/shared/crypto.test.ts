@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { randomUUID } from '../../common/crypto'
+import { randomUUID } from '../../shared/crypto'
 
 describe('crypto', function () {
     describe('randomUUID()', function () {

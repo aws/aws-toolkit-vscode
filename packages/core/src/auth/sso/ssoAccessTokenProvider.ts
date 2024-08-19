@@ -36,7 +36,7 @@ import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { randomBytes, createHash } from 'crypto'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { randomUUID } from '../../common/crypto'
+import { randomUUID } from '../../shared/crypto'
 import { isRemoteWorkspace, isWebWorkspace } from '../../shared/vscode/env'
 import { showInputBox } from '../../shared/ui/inputPrompter'
 import { DevSettings } from '../../shared/settings'
@@ -117,6 +117,12 @@ export abstract class SsoAccessTokenProvider {
 
     private async runFlow(args?: CreateTokenArgs) {
         const registration = await this.getValidatedClientRegistration()
+        args = {
+            ...args,
+            registrationClientId: registration.clientId,
+            registrationExpiresAt: registration.expiresAt.toISOString(),
+        }
+
         try {
             const result = await this.authorize(registration, args)
 
@@ -143,6 +149,10 @@ export abstract class SsoAccessTokenProvider {
             sessionDuration: getSessionDuration(this.tokenCacheKey),
             credentialType: 'bearerToken',
             credentialSourceId: this.profile.startUrl === builderIdStartUrl ? 'awsId' : 'iamIdentityCenter',
+            credentialStartUrl: this.profile.startUrl,
+            awsRegion: this.profile.region,
+            ssoRegistrationExpiresAt: registration.expiresAt.toISOString(),
+            ssoRegistrationClientId: registration.clientId,
         }
 
         try {
@@ -210,6 +220,9 @@ export abstract class SsoAccessTokenProvider {
                 source: SsoAccessTokenProvider._authSource,
                 isReAuth: args?.isReAuth,
                 reAuthReason: args?.isReAuth ? this.reAuthState.get(this.profile).reAuthReason : undefined,
+                awsRegion: this.profile.region,
+                ssoRegistrationExpiresAt: args?.registrationExpiresAt,
+                ssoRegistrationClientId: args?.registrationClientId,
             })
 
             // Reset source in case there is a case where browser login was called but we forgot to set the source.
@@ -262,6 +275,14 @@ export abstract class SsoAccessTokenProvider {
         }
         return new AuthFlowAuthorization(profile, cache, oidc, reAuthState)
     }
+
+    /**
+     * Returns a client registration for the current profile if it exists, otherwise
+     * undefined.
+     */
+    public async getClientRegistration() {
+        return await this.cache.registration.load(this.registrationCacheKey)
+    }
 }
 
 /**
@@ -271,6 +292,10 @@ export abstract class SsoAccessTokenProvider {
 export type CreateTokenArgs = {
     /** true if the create token flow is for reauthentication */
     isReAuth?: boolean
+
+    /** registration info for telemetry */
+    registrationClientId?: string
+    registrationExpiresAt?: string
 }
 
 const backoffDelayMs = 5000

@@ -6,19 +6,15 @@ import * as vscode from 'vscode'
 import { UnknownError } from '../../shared/errors'
 import { AuthType } from '../auth'
 import { SsoConnection, hasScopes, isAnySsoConnection } from '../connection'
+import { ssoUrlFormatMessage, ssoUrlFormatRegex } from './constants'
 
-export function validateSsoUrl(auth: AuthType, url: string, requiredScopes?: string[]) {
-    const urlFormatError = validateSsoUrlFormat(url)
-    if (urlFormatError) {
-        return urlFormatError
-    }
-
-    return validateIsNewSsoUrlAsync(auth, url, requiredScopes)
-}
-
+/**
+ * Returns an error message if the url is not properly formatted.
+ * Otherwise, returns undefined.
+ */
 export function validateSsoUrlFormat(url: string) {
-    if (!url.match(/^(http|https):\/\//i)) {
-        return 'URLs must start with http:// or https://. Example: https://d-xxxxxxxxxx.awsapps.com/start'
+    if (!ssoUrlFormatRegex.test(url)) {
+        return ssoUrlFormatMessage
     }
 }
 

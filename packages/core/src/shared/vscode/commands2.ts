@@ -489,7 +489,7 @@ function getInstrumenter(
     }
 
     // Throttling occurs regardless of whether or not the instrumenter is invoked
-    const span = telemetryName ? telemetry[telemetryName] : telemetry.vscode_executeCommand
+    const span: Metric = telemetryName ? telemetry[telemetryName] : telemetry.vscode_executeCommand
     const debounceCount = info?.debounceCount !== 0 ? info?.debounceCount : undefined
     TelemetryDebounceInfo.instance.set(id, { startTime: currentTime, debounceCount: 0 })
 

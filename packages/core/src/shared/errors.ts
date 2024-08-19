@@ -9,7 +9,7 @@ import { ServiceException } from '@aws-sdk/smithy-client'
 import { isThrottlingError, isTransientError } from '@smithy/service-error-classification'
 import { Result } from './telemetry/telemetry'
 import { CancellationError } from './utilities/timeoutUtils'
-import { isNonNullable } from './utilities/tsUtils'
+import { hasKey, isNonNullable } from './utilities/tsUtils'
 import type * as nodefs from 'fs'
 import type * as os from 'os'
 import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
@@ -243,9 +243,21 @@ export class ToolkitError extends Error implements ErrorInformation {
     }
 }
 
-export function getErrorMsg(err: Error | undefined): string | undefined {
+/**
+ * Derives an error message from the given error object.
+ * Depending on the Error, the property used to derive the message can vary.
+ *
+ * @param withCause Append the message(s) from the cause chain, recursively.
+ *                  The message(s) are delimited by ' | '. Eg: msg1 | causeMsg1 | causeMsg2
+ */
+export function getErrorMsg(err: Error | undefined, withCause = false): string | undefined {
     if (err === undefined) {
         return undefined
+    }
+
+    const cause = (err as any).cause
+    if (withCause && cause) {
+        return `${err.message}${cause ? ' | ' + getErrorMsg(cause, true) : ''}`
     }
 
     // Non-standard SDK fields added by the OIDC service, to conform to the OAuth spec
@@ -333,7 +345,7 @@ export function getTelemetryResult(error: unknown | undefined): Result {
  */
 export function scrubNames(s: string, username?: string) {
     let r = ''
-    const fileExtRe = /\.[^.\/]{1,4}$/
+    const fileExtRe = /\.[^.\/]+$/
     const slashdot = /^[~.]*[\/\\]*/
 
     /** Allowlisted filepath segments. */
@@ -404,7 +416,7 @@ export function scrubNames(s: string, username?: string) {
  * @param err Error object, or message text
  */
 export function getTelemetryReasonDesc(err: unknown | undefined): string | undefined {
-    const m = typeof err === 'string' ? err : getErrorMsg(err as Error) ?? ''
+    const m = typeof err === 'string' ? err : getErrorMsg(err as Error, true) ?? ''
     const msg = scrubNames(m, _username)
 
     // Truncate to 200 chars.
@@ -773,7 +785,15 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
         return false
     }
 
-    if (isVSCodeProxyError(err) || isSocketTimeoutError(err)) {
+    if (
+        isVSCodeProxyError(err) ||
+        isSocketTimeoutError(err) ||
+        isNonJsonHttpResponse(err) ||
+        isEnoentError(err) ||
+        isEaccesError(err) ||
+        isEbadfError(err) ||
+        isEconnRefusedError(err)
+    ) {
         return true
     }
 
@@ -793,7 +813,14 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
         'EHOSTUNREACH',
         'EADDRINUSE',
         'ENOBUFS', // client side memory issue during http request?
-        'EADDRNOTAVAIL', // port not available/allowed?
+        'EADDRNOTAVAIL', // port not available/allowed?,
+        'SELF_SIGNED_CERT_IN_CHAIN',
+        'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
+        'HPE_INVALID_VERSION',
+        'DEPTH_ZERO_SELF_SIGNED_CERT',
+        'ENOTCONN',
+        '502',
+        'InternalServerException',
     ].includes(err.code)
 }
 
@@ -804,7 +831,7 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
  * Setting ID: http.proxy
  */
 function isVSCodeProxyError(err: Error): boolean {
-    return err.name === 'Error' && err.message.startsWith('Failed to establish a socket connection to proxies')
+    return isError(err, 'Error', 'Failed to establish a socket connection to proxies')
 }
 
 /**
@@ -816,5 +843,66 @@ function isVSCodeProxyError(err: Error): boolean {
  * https://github.com/aws/aws-sdk-js-v3/issues/6271
  */
 function isSocketTimeoutError(err: Error): boolean {
-    return err.name === 'TimeoutError' && err.message.includes('Connection timed out after')
+    return isError(err, 'TimeoutError', 'Connection timed out after')
+}
+
+/**
+ * Expected JSON response from HTTP request, but got an error HTML error page instead.
+ *
+ * Example error message:
+ * "Unexpected token '<', "<html><bod"... is not valid JSON Deserialization error: to see the raw response, inspect the hidden field {error}.$response on this object."
+ */
+function isNonJsonHttpResponse(err: Error): boolean {
+    return isError(err, 'SyntaxError', 'Unexpected token')
+}
+
+/**
+ * We were seeing errors of ENOENT for the oidc FQDN (eg: oidc.us-east-1.amazonaws.com) during the SSO flow.
+ * Our assumption is that this is an intermittent error.
+ */
+function isEnoentError(err: Error): boolean {
+    return isError(err, 'ENOENT', 'getaddrinfo ENOENT')
+}
+
+function isEaccesError(err: Error): boolean {
+    return isError(err, 'EACCES', 'connect EACCES')
+}
+
+function isEbadfError(err: Error): boolean {
+    return isError(err, 'EBADF', 'connect EBADF')
+}
+
+function isEconnRefusedError(err: Error): boolean {
+    return isError(err, 'Error', 'connect ECONNREFUSED')
+}
+
+/** Helper function to assert given error has the expected properties */
+function isError(err: Error, id: string, messageIncludes: string = '') {
+    // It is not always clear if the error has the expected value in the `name` or `code` field
+    // so this checks both.
+    return (err.name === id || (err as any).code === id) && err.message.includes(messageIncludes)
+}
+
+/**
+ * AWS SDK clients may rarely make requests that results in something other than JSON data
+ * being returned (e.g html). This will cause the client to throw a SyntaxError as a result
+ * of attempt to deserialize the non-JSON data.
+ * While the contents of the response may contain sensitive information, there may be a reason
+ * for failure embedded. This function attempts to extract that reason.
+ *
+ * If the reason cannot be found or the error is not a SyntaxError, return undefined.
+ */
+export function getReasonFromSyntaxError(err: Error): string | undefined {
+    if (!(err instanceof SyntaxError)) {
+        return undefined
+    }
+
+    if (hasKey(err, '$response')) {
+        const response = err['$response']
+        if (response && hasKey(response, 'reason')) {
+            return response['reason'] as string
+        }
+    }
+
+    return undefined
 }

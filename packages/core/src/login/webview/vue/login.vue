@@ -278,17 +278,12 @@ import { LoginOption } from './types'
 import { CommonAuthWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { Region } from '../../../shared/regions/endpoints'
+import { ssoUrlFormatRegex, ssoUrlFormatMessage } from '../../../auth/sso/constants'
 
 const client = WebviewClientFactory.create<CommonAuthWebview>()
 
 /** Where the user is currently in the builder id setup process */
 type Stage = 'START' | 'SSO_FORM' | 'CONNECTED' | 'AUTHENTICATING' | 'AWS_PROFILE'
-
-function validateSsoUrlFormat(url: string) {
-    const regex =
-        /^(https?:\/\/(.+)\.awsapps\.com\/start|https?:\/\/identitycenter\.amazonaws\.com\/ssoins-[\da-zA-Z]{16})$/
-    return regex.test(url)
-}
 
 function getCredentialId(loginOption: LoginOption) {
     switch (loginOption) {
@@ -481,10 +476,9 @@ export default defineComponent({
             }
         },
         handleUrlInput() {
-            if (this.startUrl && !validateSsoUrlFormat(this.startUrl)) {
-                this.startUrlError =
-                    'URLs must start with http:// or https://. Example: https://d-xxxxxxxxxx.awsapps.com/start'
-            } else if (this.startUrl && this.existingStartUrls.some(url => url === this.startUrl)) {
+            if (this.startUrl && !ssoUrlFormatRegex.test(this.startUrl)) {
+                this.startUrlError = ssoUrlFormatMessage
+            } else if (this.startUrl && this.existingStartUrls.some((url) => url === this.startUrl)) {
                 this.startUrlError =
                     'A connection for this start URL already exists. Sign out before creating a new one.'
             } else {
@@ -520,7 +514,7 @@ export default defineComponent({
             // to reuse connections in AWS Toolkit & Amazon Q
             const sharedConnections = await client.fetchConnections()
             sharedConnections
-                ?.filter(c => !this.existingStartUrls.includes(c.startUrl))
+                ?.filter((c) => !this.existingStartUrls.includes(c.startUrl))
                 .forEach((connection, index) => {
                     this.importedLogins.push({
                         id: LoginOption.IMPORTED_LOGINS + index,
@@ -535,7 +529,7 @@ export default defineComponent({
             this.$forceUpdate()
         },
         async updateExistingStartUrls() {
-            this.existingStartUrls = (await client.listSsoConnections()).map(conn => conn.startUrl)
+            this.existingStartUrls = (await client.listSsoConnections()).map((conn) => conn.startUrl)
         },
         async getDefaultStartUrl() {
             return await client.getDefaultStartUrl()
@@ -575,7 +569,7 @@ export default defineComponent({
 .logoIcon {
     display: flex;
     flex-direction: row;
-    justify-content: left;
+    justify-content: center;
     align-items: flex-start;
     height: auto;
 }

@@ -28,7 +28,7 @@ import {
     UploadIntent,
 } from '../client/codewhispereruserclient'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import request from '../../common/request'
+import request from '../../shared/request'
 import { ZipMetadata } from '../util/zipUtil'
 import { getNullLogger } from '../../shared/logger/logger'
 import {

@@ -50,6 +50,7 @@ import { MetadataResult } from '../../shared/telemetry/telemetryClient'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
 import {
+    AbsolutePathDetectedError,
     AlternateDependencyVersionsNotFoundError,
     JavaHomeNotSetError,
     JobStartError,
@@ -72,6 +73,7 @@ import { dependencyNoAvailableVersions } from '../../amazonqGumby/models/constan
 import { HumanInTheLoopManager } from '../service/transformByQ/humanInTheLoopManager'
 import { setContext } from '../../shared/vscode/setContext'
 import { makeTemporaryToolkitFolder } from '../../shared'
+import globals from '../../shared/extensionGlobals'
 
 function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
@@ -90,7 +92,7 @@ export async function processTransformFormInput(
     transformByQState.setTargetJDKVersion(toJDKVersion)
 }
 
-async function setMaven() {
+export async function setMaven() {
     let mavenWrapperExecutableName = os.platform() === 'win32' ? 'mvnw.cmd' : 'mvnw'
     const mavenWrapperExecutablePath = path.join(transformByQState.getProjectPath(), mavenWrapperExecutableName)
     if (fs.existsSync(mavenWrapperExecutablePath)) {
@@ -118,6 +120,7 @@ async function validateJavaHome(): Promise<boolean> {
         }
     }
     if (javaVersionUsedByMaven !== transformByQState.getSourceJDKVersion()) {
+        // TODO: remove deprecated metric once BI started using new metrics
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
             codeTransformPreValidationError: 'ProjectJDKDiffersFromMavenJDK',
@@ -168,6 +171,7 @@ export function startInterval() {
 
 export async function startTransformByQ() {
     // Set the default state variables for our store and the UI
+    const transformStartTime = globals.clock.Date.now()
     await setTransformationToRunningState()
 
     try {
@@ -178,7 +182,7 @@ export async function startTransformByQ() {
         const uploadId = await preTransformationUploadCode()
 
         // step 2: StartJob and store the returned jobId in TransformByQState
-        const jobId = await startTransformationJob(uploadId)
+        const jobId = await startTransformationJob(uploadId, transformStartTime)
 
         // step 3 (intermediate step): show transformation-plan.md file
         await pollTransformationStatusUntilPlanReady(jobId)
@@ -232,22 +236,70 @@ export async function finalizeTransformByQ(status: string) {
     }
 }
 
+export async function parseBuildFile() {
+    try {
+        const absolutePaths = ['users/', 'system/', 'volumes/', 'c:\\', 'd:\\']
+        const alias = path.basename(os.homedir())
+        absolutePaths.push(alias)
+        const buildFilePath = path.join(transformByQState.getProjectPath(), 'pom.xml')
+        if (fs.existsSync(buildFilePath)) {
+            const buildFileContents = fs.readFileSync(buildFilePath).toString().toLowerCase()
+            const detectedPaths = []
+            for (const absolutePath of absolutePaths) {
+                if (buildFileContents.includes(absolutePath)) {
+                    detectedPaths.push(absolutePath)
+                }
+            }
+            if (detectedPaths.length > 0) {
+                const warningMessage = CodeWhispererConstants.absolutePathDetectedMessage(
+                    detectedPaths.length,
+                    path.basename(buildFilePath),
+                    detectedPaths.join(', ')
+                )
+                transformByQState.getChatControllers()?.errorThrown.fire({
+                    error: new AbsolutePathDetectedError(warningMessage),
+                    tabID: ChatSessionManager.Instance.getSession().tabID,
+                })
+                getLogger().info('CodeTransformation: absolute path potentially in build file')
+                return warningMessage
+            }
+        }
+    } catch (err: any) {
+        // swallow error
+        getLogger().error(`CodeTransformation: error scanning for absolute paths, tranformation continuing: ${err}`)
+    }
+    return undefined
+}
+
 export async function preTransformationUploadCode() {
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
 
     void vscode.window.showInformationMessage(CodeWhispererConstants.jobStartedNotification)
 
     let uploadId = ''
-    let payloadFilePath = ''
     throwIfCancelled()
     try {
-        payloadFilePath = await zipCode({
-            dependenciesFolder: transformByQState.getDependencyFolderInfo()!,
-            modulePath: transformByQState.getProjectPath(),
-            zipManifest: new ZipManifest(),
+        await telemetry.codeTransform_uploadProject.run(async () => {
+            telemetry.record({ codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId() })
+
+            const zipCodeResult = await zipCode({
+                dependenciesFolder: transformByQState.getDependencyFolderInfo()!,
+                modulePath: transformByQState.getProjectPath(),
+                zipManifest: new ZipManifest(),
+            })
+
+            const payloadFilePath = zipCodeResult.tempFilePath
+            const zipSize = zipCodeResult.fileSize
+            const dependenciesCopied = zipCodeResult.dependenciesCopied
+
+            telemetry.record({
+                codeTransformTotalByteSize: zipSize,
+                codeTransformDependenciesCopied: dependenciesCopied,
+            })
+
+            transformByQState.setPayloadFilePath(payloadFilePath)
+            uploadId = await uploadPayload(payloadFilePath)
         })
-        transformByQState.setPayloadFilePath(payloadFilePath)
-        uploadId = await uploadPayload(payloadFilePath)
     } catch (err) {
         const errorMessage = (err as Error).message
         transformByQState.setJobFailureErrorNotification(
@@ -426,7 +478,7 @@ export async function finishHumanInTheLoop(selectedDependency?: string) {
         const uploadFolderInfo = humanInTheLoopManager.getUploadFolderInfo()
         await prepareProjectDependencies(uploadFolderInfo, uploadFolderInfo.path)
         // zipCode side effects deletes the uploadFolderInfo right away
-        const uploadPayloadFilePath = await zipCode({
+        const uploadResult = await zipCode({
             dependenciesFolder: uploadFolderInfo,
             zipManifest: createZipManifest({
                 hilZipParams: {
@@ -437,7 +489,7 @@ export async function finishHumanInTheLoop(selectedDependency?: string) {
             }),
         })
 
-        await uploadPayload(uploadPayloadFilePath, {
+        await uploadPayload(uploadResult.tempFilePath, {
             transformationUploadContext: {
                 jobId,
                 uploadArtifactType: 'Dependencies',
@@ -480,11 +532,20 @@ export async function finishHumanInTheLoop(selectedDependency?: string) {
     return successfulFeedbackLoop
 }
 
-export async function startTransformationJob(uploadId: string) {
+export async function startTransformationJob(uploadId: string, transformStartTime: number) {
     let jobId = ''
     try {
-        jobId = await startJob(uploadId)
-        getLogger().info(`CodeTransformation: jobId: ${jobId}`)
+        await telemetry.codeTransform_jobStart.run(async () => {
+            telemetry.record({ codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId() })
+
+            jobId = await startJob(uploadId)
+            getLogger().info(`CodeTransformation: jobId: ${jobId}`)
+
+            telemetry.record({
+                codeTransformJobId: jobId,
+                codeTransformRunTimeLatency: calculateTotalLatency(transformStartTime),
+            })
+        })
     } catch (error) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToStartJobNotification}`, error)
         const errorMessage = (error as Error).message

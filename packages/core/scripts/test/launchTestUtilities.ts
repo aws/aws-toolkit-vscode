@@ -10,7 +10,6 @@ import { join, resolve } from 'path'
 import { runTests } from '@vscode/test-electron'
 import { VSCODE_EXTENSION_ID } from '../../src/shared/extensions'
 import { TestOptions } from '@vscode/test-electron/out/runTest'
-import { defaultCachePath } from '@vscode/test-electron/out/download'
 
 const envvarVscodeTestVersion = 'VSCODE_TEST_VERSION'
 
@@ -146,7 +145,7 @@ async function setupVSCodeTestInstance(suite: SuiteName): Promise<string> {
     const downloadOptions = {
         platform,
         version: vsCodeVersion,
-        cachePath: process.env.AWS_TOOLKIT_TEST_CACHE_DIR ?? defaultCachePath,
+        cachePath: process.env.AWS_TOOLKIT_TEST_CACHE_DIR ?? '../../.vscode-test',
     }
 
     const vsCodeExecutablePath = await downloadAndUnzipVSCode(downloadOptions)

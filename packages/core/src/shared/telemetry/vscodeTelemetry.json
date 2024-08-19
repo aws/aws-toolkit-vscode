@@ -270,9 +270,28 @@
             "name": "awsRegion",
             "type": "string",
             "description": "An AWS region."
+        },
+        {
+            "name": "connectionState",
+            "type": "string",
+            "description": "A detailed state of a specific auth connection. Use `authStatus` for a higher level view of an extension's general connection."
         }
     ],
     "metrics": [
+        {
+            "name": "ide_fileSystem",
+            "description": "File System event on execution",
+            "metadata": [
+                {
+                    "type": "action",
+                    "required": true
+                },
+                {
+                    "type": "attempts",
+                    "required": false
+                }
+            ]
+        },
         {
             "name": "vscode_executeCommand",
             "description": "Emitted whenever a registered Toolkit command is executed",
@@ -975,6 +994,17 @@
             ]
         },
         {
+            "name": "ide_editCodeFile",
+            "description": "User opened a code file with the given file extension. Client should DEDUPLICATE this metric (ideally hourly/daily). AWS-specific files should (also) emit `file_editAwsFile`.",
+            "passive": true,
+            "metadata": [
+                {
+                    "type": "filenameExt",
+                    "required": false
+                }
+            ]
+        },
+        {
             "name": "codewhisperer_codePercentage",
             "description": "Percentage of user tokens against suggestions until 5 mins of time",
             "metadata": [
@@ -1014,6 +1044,45 @@
                 }
             ],
             "passive": true
+        },
+        {
+            "name": "auth_modifyConnection",
+            "description": "An auth connection was modified in some way, e.g. deleted, updated",
+            "metadata": [
+                {
+                    "type": "action",
+                    "required": true
+                },
+                {
+                    "type": "authScopes",
+                    "required": false
+                },
+                {
+                    "type": "connectionState",
+                    "required": true
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "source",
+                    "required": true
+                },
+                {
+                    "type": "ssoRegistrationClientId",
+                    "required": false
+                },
+                {
+                    "type": "ssoRegistrationExpiresAt",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "function_call",
+            "description": "Represents a function call",
+            "metadata": []
         }
     ]
 }

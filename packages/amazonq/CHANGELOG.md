@@ -1,3 +1,33 @@
+## 1.21.0 2024-08-15
+
+- **Bug Fix** Q feature dev: update file extension list and minor UI fixes
+
+## 1.20.0 2024-08-08
+
+- **Bug Fix** Amazon Q /dev: include a retry option for the same prompt after folder reselection
+- **Bug Fix** Ignore virtual environment when indexing workspace
+- **Feature** Amazon Q Code Transformation: show pro tier users estimated cost of /transform on projects over 100K lines
+- **Feature** Amazon Q Code Transformation: warn user if absolute file paths are found in the pom.xml
+
+## 1.19.0 2024-08-01
+
+- **Bug Fix** Amazon Q Chat: Fixing issue with an incorrect input cursor position in the prompt text box
+- **Bug Fix** Amazon Q Chat: Fixing issue with the max tabs notification not being dismissible.
+- **Bug Fix** Amazon Q Chat: Showing/hiding the scrollbars is now controlled by the OS settings
+- **Bug Fix** Q chat may stop responding after processing Python/Java code
+- **Feature** Amazon q /dev: i18n support for messaging
+
+## 1.18.0 2024-07-29
+
+- **Bug Fix** Security Scan: Fixed an issue scans were not able to succeed on Java projects with .class files
+- **Bug Fix** FileNotFound error causing early SSO expiration
+
+## 1.17.0 2024-07-25
+
+- **Bug Fix** Amazon Q Dev and Transform introduction text formatted incorrectly
+- **Bug Fix** Amazon Q /dev: update error message for code gen timeout and include backfill for error name
+- **Bug Fix** Sign-in page may fail to render in rare circumstances.
+
 ## 1.16.0 2024-07-18
 
 - **Bug Fix** Amazon q /dev: include granular error handling for code generation failed state

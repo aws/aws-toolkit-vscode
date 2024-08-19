@@ -6,7 +6,7 @@
 import { assertTelemetry } from '../../../testUtil'
 import { AmazonQLoginWebview } from '../../../../login/webview/vue/amazonq/backend_amazonq'
 import { CancellationError } from '../../../../shared/utilities/timeoutUtils'
-import { TelemetryMetadata } from '../../../../login/webview/vue/types'
+import { TelemetryMetadata } from '../../../../auth/connection'
 
 // TODO: remove auth page and tests
 describe('Amazon Q Login', function () {
