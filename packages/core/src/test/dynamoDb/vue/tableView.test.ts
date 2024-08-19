@@ -6,7 +6,11 @@
 import * as sinon from 'sinon'
 import * as assert from 'assert'
 import { ExtContext } from '../../../shared'
+import * as settings from '../../../shared/settings'
+import * as edit from '../../../dynamoDb/utils/editItem'
+import * as utilities from '../../../shared/utilities/messages'
 import * as dynamoDbUtils from '../../../dynamoDb/utils/dynamodb'
+import * as messagesUtils from '../../../shared/utilities/messages'
 import {
     DynamoDbTableWebview,
     DynamoDbTableData,
@@ -132,6 +136,93 @@ describe('TableView', () => {
             await viewDynamoDbTable(context, node)
             assert.ok(getTableContentStub.calledOnce)
             assert.ok(getTableKeySchemaStub.calledOnce)
+        })
+    })
+
+    describe('copyCell', function () {
+        it('should copy the selectedCell to clipboard', async () => {
+            const copyToClipboardStub = sinon.stub(messagesUtils, 'copyToClipboard').resolves()
+            const tableData = sinon.stub(dynamoDbTableData)
+
+            const webView = createWebview(tableData)
+            await webView.copyCell('selectedCell')
+
+            assert.ok(copyToClipboardStub.calledOnce)
+        })
+    })
+
+    describe('copyRow', function () {
+        this.beforeEach(() => {
+            sinon.restore()
+            sandbox = sinon.createSandbox()
+        })
+
+        it('should copy the selectedRow to clipboard', async () => {
+            const copyToClipboardStub = sinon.stub(messagesUtils, 'copyToClipboard').resolves()
+            const tableData = sinon.stub(dynamoDbTableData)
+
+            const webView = createWebview(tableData)
+            await webView.copyRow({ key1: 'value' })
+
+            assert.ok(copyToClipboardStub.calledOnce)
+        })
+    })
+
+    describe('editItem', function () {
+        it('should edit the item', async () => {
+            const editItemStub = sinon.stub(edit, 'editItem').resolves()
+            const tableData = sinon.stub(dynamoDbTableData)
+
+            const webView = createWebview(tableData)
+            await webView.editItem({ key1: 'value' }, { partitionKey: { name: 'key1', dataType: 'S' } })
+
+            assert.ok(editItemStub.calledOnce)
+        })
+    })
+
+    describe('openPageSizeSettings', function () {
+        it('should open page size settings', async () => {
+            const openSettingsStub = sinon.stub(settings, 'openSettings').resolves()
+            const tableData = sinon.stub(dynamoDbTableData)
+
+            const webView = createWebview(tableData)
+            await webView.openPageSizeSettings()
+
+            assert.ok(openSettingsStub.calledOnce)
+        })
+    })
+
+    describe('deleteItem', function () {
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        beforeEach(() => {
+            sinon.restore()
+            sandbox = sinon.createSandbox()
+        })
+
+        it('should not delete if not confirmed', async () => {
+            const showConfirmationMessageStub = sinon.stub(utilities, 'showConfirmationMessage').resolves(false)
+            const tableData = sinon.stub(dynamoDbTableData)
+
+            const webView = createWebview(tableData)
+            await webView.deleteItem({ key1: 'value' }, { partitionKey: { name: 'key1', dataType: 'S' } })
+            assert.ok(showConfirmationMessageStub.calledOnce)
+        })
+
+        it('should delete if confirmed', async () => {
+            const showConfirmationMessageStub = sinon.stub(utilities, 'showConfirmationMessage').resolves(true)
+            const deleteItemStub = sinon.stub(dynamoDbUtils, 'deleteItem').resolves()
+            sinon.stub(dynamoDbUtils, 'getTableContent').resolves(getExpectedResponse())
+
+            const tableData = sinon.stub(dynamoDbTableData)
+            tableData.lastEvaluatedKey = undefined
+            const webView = createWebview(tableData)
+            await webView.deleteItem({ key1: 'value' }, { partitionKey: { name: 'key1', dataType: 'S' } })
+
+            assert.ok(showConfirmationMessageStub.calledOnce)
+            assert.ok(deleteItemStub.calledOnce)
         })
     })
 })
