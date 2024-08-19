@@ -56,14 +56,14 @@ export class DynamoDbTableWebview extends VueWebview {
      * @param {Key} [lastEvaluatedKey] - The key to start scanning from.
      * @returns {DynamoDbTableData} The response object containing the scanned data.
      */
-    public async fetchPageData(lastEvaluatedKey?: Key) {
+    public async fetchPageData(tableSchema: TableSchema, lastEvaluatedKey?: Key) {
         return telemetry.dynamodb_fetchRecords.run(async (span) => {
             const tableRequest: ScanInput = {
                 TableName: this.data.tableName,
                 ExclusiveStartKey: lastEvaluatedKey,
             }
             try {
-                const response = await getDynamoDbTableData(tableRequest, this.data.region)
+                const response = await getDynamoDbTableData(tableRequest, this.data.region, tableSchema)
                 span.emit({ dynamoDbFetchType: 'scan', result: 'Succeeded' })
                 return response
             } catch (err) {
@@ -73,13 +73,18 @@ export class DynamoDbTableWebview extends VueWebview {
         })
     }
 
-    public async queryData(queryRequest: { partitionKey: string; sortKey: string }, lastEvaluatedKey?: Key) {
+    public async queryData(
+        queryRequest: { partitionKey: string; sortKey: string },
+        tableSchema: TableSchema,
+        lastEvaluatedKey?: Key
+    ) {
         return telemetry.dynamodb_fetchRecords.run(async (span) => {
             try {
                 const tableData: TableData = await queryTableContent(
                     queryRequest,
                     this.data.region,
                     this.data.tableName,
+                    tableSchema,
                     lastEvaluatedKey
                 )
                 span.emit({ dynamoDbFetchType: 'query', result: 'Succeeded' })
@@ -137,7 +142,7 @@ export class DynamoDbTableWebview extends VueWebview {
         }
         try {
             await deleteItem(this.data.tableName, selectedRow, tableSchema, this.data.region)
-            return this.fetchPageData(this.data.lastEvaluatedKey)
+            return this.fetchPageData(tableSchema, this.data.lastEvaluatedKey)
         } catch (err) {
             getLogger().error(`Delete action failed on DynamoDB Item`)
             return undefined
@@ -167,7 +172,8 @@ export async function viewDynamoDbTable(context: ExtContext, node: { dynamoDbtab
     const logger: Logger = getLogger()
     await telemetry.dynamodb_openTable.run(async (span) => {
         try {
-            const response = await getDynamoDbTableData({ TableName: node.dynamoDbtable }, node.regionCode)
+            const tableSchema = await getTableKeySchema(node.dynamoDbtable, node.regionCode)
+            const response = await getDynamoDbTableData({ TableName: node.dynamoDbtable }, node.regionCode, tableSchema)
             span.emit({ result: 'Succeeded' })
             const webViewPanel = activePanels.get(node.dynamoDbtable) ?? new Panel(context.extensionContext, response)
             if (!activePanels.has(node.dynamoDbtable)) {
@@ -188,8 +194,13 @@ export async function viewDynamoDbTable(context: ExtContext, node: { dynamoDbtab
     })
 }
 
-export async function getDynamoDbTableData(tableRequest: ScanInput, regionCode: string, currentPage: number = 1) {
-    const tableData: TableData = await getTableContent(tableRequest, regionCode)
+export async function getDynamoDbTableData(
+    tableRequest: ScanInput,
+    regionCode: string,
+    tableSchema: TableSchema,
+    currentPage: number = 1
+) {
+    const tableData: TableData = await getTableContent(tableRequest, regionCode, tableSchema)
     const response: DynamoDbTableData = {
         tableName: tableRequest.TableName,
         region: regionCode,

@@ -69,10 +69,13 @@ describe('DynamoDbUtils', () => {
                 Items: [{ age: { N: '25' }, ID: { S: '2' }, name: { S: 'Jane' } }],
             } as unknown as ScanOutput
             const scanTableStub = sinon.stub(dynamoDbClient, 'scanTable').resolves(generateRequest(expectedScanResult))
-
+            const tableSchema: dynamoDbUtils.TableSchema = {
+                partitionKey: { name: 'key1', dataType: 'S' },
+            }
             const actualResult = await dynamoDbUtils.getTableContent(
                 { TableName: 'Users', Limit: 5 },
                 '',
+                tableSchema,
                 dynamoDbClient
             )
 
@@ -85,10 +88,13 @@ describe('DynamoDbUtils', () => {
                 Items: [],
             } as unknown as ScanOutput
             sinon.stub(dynamoDbClient, 'scanTable').resolves(generateRequest(expectedScanResult))
-
+            const tableSchema: dynamoDbUtils.TableSchema = {
+                partitionKey: { name: 'key1', dataType: 'S' },
+            }
             const actualResult = await dynamoDbUtils.getTableContent(
                 { TableName: 'Users', Limit: 5 },
                 '',
+                tableSchema,
                 dynamoDbClient
             )
 
@@ -132,13 +138,16 @@ describe('DynamoDbUtils', () => {
             const expectedQueryResult = {
                 Items: [{ age: { N: '25' }, ID: { S: '2' }, name: { S: 'Jane' } }],
             } as unknown as ScanOutput
-
+            const tableSchema: dynamoDbUtils.TableSchema = {
+                partitionKey: { name: 'key1', dataType: 'S' },
+            }
             sinon.stub(dynamoDbClient, 'getTableInformation').resolves(getTableDescriptionResponse())
             sinon.stub(dynamoDbClient, 'queryTable').resolves(generateRequest(expectedQueryResult))
             const actualResult = await dynamoDbUtils.queryTableContent(
                 { partitionKey: 'library', sortKey: 'as' },
                 'regionCode',
-                'ableName',
+                'tableName',
+                tableSchema,
                 undefined,
                 dynamoDbClient
             )

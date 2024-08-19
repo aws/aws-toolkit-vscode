@@ -52,10 +52,12 @@ describe('TableView', () => {
             const tableData = sinon.stub(dynamoDbTableData)
             tableData.tableName = 'test-table'
             tableData.region = 'west-us-2'
-
+            const tableSchema: dynamoDbUtils.TableSchema = {
+                partitionKey: { name: 'key1', dataType: 'S' },
+            }
             sinon.stub(dynamoDbUtils, 'getTableContent').resolves(getExpectedResponse())
             const webView = createWebview(tableData)
-            const actualResponse = await webView.fetchPageData()
+            const actualResponse = await webView.fetchPageData(tableSchema)
 
             assert.deepEqual(actualResponse, getExpectedResponse())
         })
@@ -67,10 +69,13 @@ describe('TableView', () => {
             tableData.tableName = 'test-table'
             tableData.region = 'west-us-2'
             tableData.currentPage = 1
+            const tableSchema: dynamoDbUtils.TableSchema = {
+                partitionKey: { name: 'key1', dataType: 'S' },
+            }
 
             sinon.stub(dynamoDbUtils, 'queryTableContent').resolves(getExpectedResponse())
             const webView = createWebview(tableData)
-            const actualResponse = await webView.queryData({ partitionKey: 'library', sortKey: 'as' })
+            const actualResponse = await webView.queryData({ partitionKey: 'library', sortKey: 'as' }, tableSchema)
 
             assert.deepEqual(actualResponse, getExpectedResponse())
         })
@@ -102,8 +107,14 @@ describe('TableView', () => {
 
         it('should get the table data', async () => {
             sinon.stub(dynamoDbUtils, 'getTableContent').resolves(getExpectedResponse())
-
-            const actualResult = await getDynamoDbTableData({ TableName: 'test-table', Limit: 5 }, 'west-us-2')
+            const tableSchema: dynamoDbUtils.TableSchema = {
+                partitionKey: { name: 'key1', dataType: 'S' },
+            }
+            const actualResult = await getDynamoDbTableData(
+                { TableName: 'test-table', Limit: 5 },
+                'west-us-2',
+                tableSchema
+            )
             assert.deepEqual(actualResult, getExpectedResponse())
         })
     })
