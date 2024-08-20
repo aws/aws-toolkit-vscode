@@ -36,10 +36,10 @@ class DynamoDbTableEditorProvider : FileEditorProvider, DumbAware {
                     true
                 )
 
-                DynamodbTelemetry.openTable(project, Result.Succeeded)
+                DynamodbTelemetry.openTable(project = project, result = Result.Succeeded)
             } catch (e: Exception) {
                 e.notifyError(message("dynamodb.viewer.open.failed"))
-                DynamodbTelemetry.openTable(project, Result.Failed)
+                DynamodbTelemetry.openTable(project = project, result = Result.Failed)
             }
         }
     }

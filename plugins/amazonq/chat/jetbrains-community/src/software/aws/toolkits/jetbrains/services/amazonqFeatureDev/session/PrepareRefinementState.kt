@@ -23,6 +23,7 @@ class PrepareRefinementState(
         val startTime = System.currentTimeMillis()
         var result: Result = Result.Succeeded
         var failureReason: String? = null
+        var failureReasonDesc: String? = null
         var zipFileLength: Long? = null
         val nextState: SessionState
         try {
@@ -44,6 +45,7 @@ class PrepareRefinementState(
         } catch (e: Exception) {
             result = Result.Failed
             failureReason = e.javaClass.simpleName
+            failureReasonDesc = e.message
             logger.warn(e) { "$FEATURE_NAME: Code uploading failed: ${e.message}" }
             throw e
         } finally {
@@ -53,6 +55,7 @@ class PrepareRefinementState(
                 amazonqUploadIntent = AmazonqUploadIntent.TASKASSISTPLANNING,
                 result = result,
                 reason = failureReason,
+                reasonDesc = failureReasonDesc,
                 duration = (System.currentTimeMillis() - startTime).toDouble(),
                 credentialStartUrl = getStartUrl(config.featureDevService.project)
             )
