@@ -36,6 +36,9 @@ import { showReauthenticateMessage } from '../../shared/utilities/messages'
 import { showAmazonQWalkthroughOnce } from '../../amazonq/onboardingPage/walkthrough'
 import { setContext } from '../../shared/vscode/setContext'
 import { isInDevEnv } from '../../shared/vscode/env'
+import { openUrl } from '../../shared/utilities/vsCodeUtils'
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
 import { telemetry } from '../../shared/telemetry/telemetry'
 
 /** Backwards compatibility for connections w pre-chat scopes */
@@ -343,6 +346,38 @@ export class AuthUtil {
         if (isAutoTrigger) {
             this.reauthenticatePromptShown = true
         }
+    }
+
+    public async notifySessionConfiguration() {
+        const suppressId = 'amazonQSessionConfigurationMessage'
+        const settings = AmazonQPromptSettings.instance
+        const shouldShow = await settings.isPromptEnabled(suppressId)
+        if (!shouldShow) {
+            return
+        }
+
+        const message = localize(
+            'aws.amazonq.sessionConfiguration.message',
+            'Your maximum session length for Amazon Q can be extended to 90 days by your administrator. For more information, refer to How to extend the session duration for Amazon Q in the IDE in the IAM Identity Center User Guide.'
+        )
+
+        const learnMoreUrl = vscode.Uri.parse(
+            'https://docs.aws.amazon.com/singlesignon/latest/userguide/configure-user-session.html#90-day-extended-session-duration'
+        )
+        await telemetry.toolkit_showNotification.run(async () => {
+            telemetry.record({ id: 'sessionExtension' })
+            void vscode.window.showInformationMessage(message, localizedText.learnMore).then(async (resp) => {
+                await telemetry.toolkit_invokeAction.run(async () => {
+                    if (resp === localizedText.learnMore) {
+                        telemetry.record({ action: 'learnMore' })
+                        await openUrl(learnMoreUrl)
+                    } else {
+                        telemetry.record({ action: 'dismissSessionExtensionNotification' })
+                    }
+                    await settings.disablePrompt(suppressId)
+                })
+            })
+        })
     }
 
     public async notifyReauthenticate(isAutoTrigger?: boolean) {
