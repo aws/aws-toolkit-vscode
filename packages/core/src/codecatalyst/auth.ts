@@ -30,6 +30,7 @@ import { builderIdStartUrl } from '../auth/sso/model'
 import { showReauthenticateMessage } from '../shared/utilities/messages'
 import { ToolkitPromptSettings } from '../shared/settings'
 import { setContext } from '../shared/vscode/setContext'
+import { withTelemetryContext } from '../shared/telemetry/util'
 
 // Secrets stored on the macOS keychain appear as individual entries for each key
 // This is fine so long as the user has only a few accounts. Otherwise this should
@@ -64,6 +65,8 @@ type ConnectionState = {
     onboarded: boolean
     scopeExpired: boolean
 }
+
+const authClassName = 'AuthCodeCatalyst'
 
 export class CodeCatalystAuthenticationProvider {
     public readonly onDidChangeActiveConnection = this.secondaryAuth.onDidChangeActiveConnection
@@ -151,8 +154,8 @@ export class CodeCatalystAuthenticationProvider {
         }
     }
 
-    public async restore(source?: string) {
-        await this.secondaryAuth.restoreConnection(source)
+    public async restore() {
+        await this.secondaryAuth.restoreConnection()
     }
 
     private async accessDeniedExceptionHandler(showReauthPrompt: boolean = true) {
@@ -270,6 +273,7 @@ export class CodeCatalystAuthenticationProvider {
         return this.isConnected() && isIdcSsoConnection(this.activeConnection)
     }
 
+    @withTelemetryContext({ name: 'connectToAwsBuilderId', class: authClassName })
     public async connectToAwsBuilderId(): Promise<SsoConnection> {
         let conn: SsoConnection
         let isConnectionOnboarded: boolean
@@ -295,6 +299,7 @@ export class CodeCatalystAuthenticationProvider {
         return (await this.secondaryAuth.useNewConnection(conn)) as SsoConnection
     }
 
+    @withTelemetryContext({ name: 'connectToEnterpriseSso', class: authClassName })
     public async connectToEnterpriseSso(startUrl: string, region: string): Promise<SsoConnection> {
         let conn: SsoConnection | undefined
         let isConnectionOnboarded: boolean
@@ -331,6 +336,7 @@ export class CodeCatalystAuthenticationProvider {
     /**
      * Try to ensure a specific connection is active.
      */
+    @withTelemetryContext({ name: 'tryConnectTo', class: authClassName })
     public async tryConnectTo(connection: { startUrl: string; region: string }) {
         if (!this.isConnectionValid() || connection.startUrl !== this.activeConnection!.startUrl) {
             if (connection.startUrl === builderIdStartUrl) {
@@ -341,6 +347,7 @@ export class CodeCatalystAuthenticationProvider {
         }
     }
 
+    @withTelemetryContext({ name: 'reauthenticate', class: authClassName })
     public async reauthenticate(conn: SsoConnection) {
         try {
             let connToReauth = conn
