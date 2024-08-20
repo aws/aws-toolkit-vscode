@@ -364,12 +364,20 @@ export class AuthUtil {
         const learnMoreUrl = vscode.Uri.parse(
             'https://docs.aws.amazon.com/singlesignon/latest/userguide/configure-user-session.html#90-day-extended-session-duration'
         )
-        await vscode.window.showInformationMessage(message, localizedText.learnMore).then(async (resp) => {
-            if (resp === localizedText.learnMore) {
-                await openUrl(learnMoreUrl)
-            }
+        await telemetry.toolkit_showNotification.run(async () => {
+            telemetry.record({ id: 'sessionExtension' })
+            void vscode.window.showInformationMessage(message, localizedText.learnMore).then(async (resp) => {
+                await telemetry.toolkit_invokeAction.run(async () => {
+                    if (resp === localizedText.learnMore) {
+                        telemetry.record({ action: 'learnMore' })
+                        await openUrl(learnMoreUrl)
+                    } else {
+                        telemetry.record({ action: 'dismissSessionExtensionNotification' })
+                    }
+                    await settings.disablePrompt(suppressId)
+                })
+            })
         })
-        await settings.disablePrompt(suppressId)
     }
 
     public async notifyReauthenticate(isAutoTrigger?: boolean) {
