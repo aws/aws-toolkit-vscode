@@ -108,6 +108,9 @@ describe('SsoAccessTokenProvider', function () {
 
             assert.strictEqual(await cache.token.load(startUrl), undefined)
             assert.strictEqual(await cache.registration.load({ startUrl, region }), undefined)
+            assertTelemetry(`auth_modifyConnection`, [
+                { action: 'deleteSsoCache', source: 'SsoAccessTokenProvider#invalidate' },
+            ])
         })
     })
 
