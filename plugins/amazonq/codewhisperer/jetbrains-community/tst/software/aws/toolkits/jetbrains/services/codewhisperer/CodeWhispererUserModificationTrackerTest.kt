@@ -17,7 +17,6 @@ import com.intellij.testFramework.junit5.TestDisposable
 import com.intellij.testFramework.replaceService
 import info.debatty.java.stringsimilarity.Levenshtein
 import org.assertj.core.api.Assertions.assertThat
-import org.gradle.internal.impldep.com.amazonaws.ResponseMetadata.AWS_REQUEST_ID
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
@@ -29,6 +28,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
 import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata
+import software.amazon.awssdk.awscore.util.AwsHeader
 import software.amazon.awssdk.http.SdkHttpResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.SendTelemetryEventResponse
 import software.aws.toolkits.core.telemetry.MetricEvent
@@ -82,7 +82,7 @@ class CodeWhispererUserModificationTrackerTest {
                 )
                 this.responseMetadata(
                     DefaultAwsResponseMetadata.create(
-                        mapOf(AWS_REQUEST_ID to steRequestId)
+                        mapOf(AwsHeader.AWS_REQUEST_ID to steRequestId)
                     )
                 )
             }.build()

@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.codemodernizer.utils
 
 import com.intellij.openapi.project.Project
 import com.intellij.serviceContainer.AlreadyDisposedException
+import kotlinx.coroutines.delay
 import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.services.codewhispererruntime.model.AccessDeniedException
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererRuntimeException
@@ -24,7 +25,6 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClien
 import software.aws.toolkits.jetbrains.services.codemodernizer.constants.BILLING_RATE
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.JobId
 import software.aws.toolkits.resources.message
-import java.lang.Thread.sleep
 import java.time.Duration
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
@@ -78,7 +78,7 @@ suspend fun JobId.pollTransformationStatusAndPlan(
         ) {
             try {
                 if (!didSleepOnce) {
-                    sleep(initialSleepDurationMillis)
+                    delay(initialSleepDurationMillis)
                     didSleepOnce = true
                 }
                 if (isDisposed.get()) throw AlreadyDisposedException("The invoker is disposed.")
@@ -86,7 +86,7 @@ suspend fun JobId.pollTransformationStatusAndPlan(
                 val newStatus = transformationResponse?.transformationJob()?.status() ?: throw RuntimeException("Unable to get job status")
                 var newPlan: TransformationPlan? = null
                 if (newStatus in STATES_WHERE_PLAN_EXIST) {
-                    sleep(sleepDurationMillis)
+                    delay(sleepDurationMillis)
                     newPlan = clientAdaptor.getCodeModernizationPlan(this).transformationPlan()
                 }
                 if (newStatus != state) {
@@ -111,7 +111,7 @@ suspend fun JobId.pollTransformationStatusAndPlan(
                 refreshToken(project)
                 return@waitUntil state
             } finally {
-                sleep(sleepDurationMillis)
+                delay(sleepDurationMillis)
             }
         }
     } catch (e: Exception) {

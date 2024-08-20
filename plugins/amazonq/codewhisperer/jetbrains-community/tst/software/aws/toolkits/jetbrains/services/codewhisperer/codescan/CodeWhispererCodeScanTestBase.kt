@@ -14,11 +14,10 @@ import com.intellij.testFramework.ApplicationRule
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.replaceService
 import com.intellij.util.io.systemIndependentPath
-import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
-import org.gradle.internal.impldep.com.amazonaws.ResponseMetadata
 import org.junit.Before
 import org.junit.Rule
+import org.junit.jupiter.api.assertInstanceOf
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doNothing
@@ -29,6 +28,7 @@ import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.whenever
 import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata
+import software.amazon.awssdk.awscore.util.AwsHeader
 import software.amazon.awssdk.services.codewhisperer.model.CodeScanStatus
 import software.amazon.awssdk.services.codewhisperer.model.CreateCodeScanResponse
 import software.amazon.awssdk.services.codewhisperer.model.GetCodeScanResponse
@@ -41,7 +41,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWh
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
-import software.aws.toolkits.jetbrains.utils.isInstanceOf
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.nio.file.Path
@@ -84,7 +83,7 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
     internal lateinit var fakeGetCodeScanResponseFailed: GetCodeScanResponse
 
     internal val metadata: DefaultAwsResponseMetadata = DefaultAwsResponseMetadata.create(
-        mapOf(ResponseMetadata.AWS_REQUEST_ID to CodeWhispererTestUtil.testRequestId)
+        mapOf(AwsHeader.AWS_REQUEST_ID to CodeWhispererTestUtil.testRequestId)
     )
 
     internal lateinit var scanManagerSpy: CodeWhispererCodeScanManager
@@ -327,7 +326,7 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
         assertThat(maxCountLanguage).isEqualTo(payloadLanguage)
     }
 
-    internal fun assertE2ERunsSuccessfully(
+    internal suspend fun assertE2ERunsSuccessfully(
         sessionConfigSpy: CodeScanSessionConfig,
         project: Project,
         expectedTotalLines: Long,
@@ -338,7 +337,6 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
         val codeScanContext = CodeScanSessionContext(project, sessionConfigSpy, CodeWhispererConstants.CodeAnalysisScope.PROJECT)
         val sessionMock = spy(CodeWhispererCodeScanSession(codeScanContext))
         doNothing().`when`(sessionMock).uploadArtifactToS3(any(), any(), any(), any(), isNull(), any())
-        doNothing().`when`(sessionMock).sleepThread()
 
         ToolWindowManager.getInstance(project).registerToolWindow(
             RegisterToolWindowTask(
@@ -346,24 +344,24 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
             )
         )
 
-        runBlocking {
-            val codeScanResponse = sessionMock.run()
-            assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Success>()
-            assertThat(codeScanResponse.issues).hasSize(expectedTotalIssues)
-            assertThat(codeScanResponse.responseContext.codeScanJobId).isEqualTo("jobId")
-            val payloadContext = codeScanResponse.responseContext.payloadContext
-            assertThat(payloadContext.totalLines).isEqualTo(expectedTotalLines)
-            assertThat(payloadContext.totalFiles).isEqualTo(expectedTotalFiles)
-            assertThat(payloadContext.srcPayloadSize).isEqualTo(expectedTotalSize)
-            scanManagerSpy.testRenderResponseOnUIThread(
-                codeScanResponse.issues,
-                codeScanResponse.responseContext.payloadContext.scannedFiles,
-            )
-            assertNotNull(scanManagerSpy.getScanTree().model)
-            val treeModel = scanManagerSpy.getScanTree().model as? CodeWhispererCodeScanTreeModel
-            assertNotNull(treeModel)
-            assertThat(treeModel.getTotalIssuesCount()).isEqualTo(expectedTotalIssues)
-        }
+        val codeScanResponse = sessionMock.run()
+        assertInstanceOf<CodeScanResponse.Success>(codeScanResponse)
+        assertThat(codeScanResponse.issues).hasSize(expectedTotalIssues)
+        assertThat(codeScanResponse.responseContext.codeScanJobId).isEqualTo("jobId")
+
+        val payloadContext = codeScanResponse.responseContext.payloadContext
+        assertThat(payloadContext.totalLines).isEqualTo(expectedTotalLines)
+        assertThat(payloadContext.totalFiles).isEqualTo(expectedTotalFiles)
+        assertThat(payloadContext.srcPayloadSize).isEqualTo(expectedTotalSize)
+
+        scanManagerSpy.testRenderResponseOnUIThread(
+            codeScanResponse.issues,
+            codeScanResponse.responseContext.payloadContext.scannedFiles,
+        )
+        assertNotNull(scanManagerSpy.getScanTree().model)
+        val treeModel = scanManagerSpy.getScanTree().model as? CodeWhispererCodeScanTreeModel
+        assertNotNull(treeModel)
+        assertThat(treeModel.getTotalIssuesCount()).isEqualTo(expectedTotalIssues)
     }
 
     companion object {

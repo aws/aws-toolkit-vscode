@@ -560,7 +560,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
             LOG.error { "Unable to resume job as credentials are invalid" }
             // User is logged in with old or invalid credentials, nothing to do until they log in with valid credentials
         } catch (e: Exception) {
-            LOG.error { "Unable to resume job as an unexpected exception occurred ${e.stackTraceToString()}" }
+            LOG.error(e) { "Unable to resume job as an unexpected exception occurred" }
         } finally {
             isResumingJob.set(false)
         }

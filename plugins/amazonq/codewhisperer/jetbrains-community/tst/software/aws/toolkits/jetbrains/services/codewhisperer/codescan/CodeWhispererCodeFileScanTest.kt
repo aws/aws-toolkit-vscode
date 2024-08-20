@@ -8,8 +8,8 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.replaceService
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.apache.commons.codec.digest.DigestUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -39,6 +39,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionco
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.TOTAL_MILLIS_IN_SECOND
 import software.aws.toolkits.jetbrains.utils.isInstanceOf
+import software.aws.toolkits.jetbrains.utils.isInstanceOfSatisfying
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.File
@@ -325,14 +326,13 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
     }
 
     @Test
-    fun `test run() - happypath`() {
+    fun `test run() - happypath`() = runTest {
         assertNotNull(sessionConfigSpy)
-        runBlocking {
-            val codeScanResponse = codeScanSessionSpy.run()
-            assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Success>()
-            assertThat(codeScanResponse.issues).hasSize(2)
-            assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
-            assertThat(codeScanResponse.responseContext.codeScanJobId).isEqualTo("jobId")
+        val codeScanResponse = codeScanSessionSpy.run()
+        assertThat(codeScanResponse).isInstanceOfSatisfying<CodeScanResponse.Success> {
+            assertThat(it.issues).hasSize(2)
+            assertThat(it.responseContext.payloadContext).isEqualTo(payloadContext)
+            assertThat(it.responseContext.codeScanJobId).isEqualTo("jobId")
         }
 
         val inOrder = inOrder(codeScanSessionSpy)
@@ -353,7 +353,7 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
     }
 
     @Test
-    fun `unsupported languages file scan fail`() {
+    fun `unsupported languages file scan fail`() = runTest {
         scanManagerSpy = Mockito.spy(CodeWhispererCodeScanManager.getInstance(projectRule.project))
         projectRule.project.replaceService(CodeWhispererCodeScanManager::class.java, scanManagerSpy, disposableRule.disposable)
 
@@ -365,9 +365,7 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
         `when`(fileEditorManager.selectedEditor).thenReturn(selectedEditor)
         `when`(selectedEditor.file).thenReturn(virtualFile3)
 
-        runBlocking {
-            scanManagerSpy.runCodeScan(CodeWhispererConstants.CodeAnalysisScope.FILE)
-        }
+        scanManagerSpy.runCodeScan(CodeWhispererConstants.CodeAnalysisScope.FILE)
         // verify that function was run but none of the results/error handling methods were called.
         verify(scanManagerSpy, times(0)).updateFileIssues(any(), any())
         verify(scanManagerSpy, times(0)).handleError(any(), any(), any())
@@ -375,7 +373,7 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
     }
 
     @Test
-    fun `test run() - file scans limit reached`() {
+    fun `test run() - file scans limit reached`() = runTest {
         assertNotNull(sessionConfigSpy)
 
         mockClient.stub {
@@ -396,107 +394,91 @@ class CodeWhispererCodeFileScanTest : CodeWhispererCodeScanTestBase(PythonCodeIn
                     .build()
             )
         }
-        runBlocking {
-            val codeScanResponse = codeScanSessionSpy.run()
-            assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
-            if (codeScanResponse is CodeScanResponse.Failure) {
-                assertThat(codeScanResponse.failureReason).isInstanceOf<CodeWhispererException>()
-                assertThat(codeScanResponse.failureReason.toString()).contains("File Scan Monthly Exceeded")
-                assertThat(codeScanResponse.failureReason.cause.toString()).contains("java.lang.RuntimeException: Something went wrong")
-            }
+        val codeScanResponse = codeScanSessionSpy.run()
+        assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
+        if (codeScanResponse is CodeScanResponse.Failure) {
+            assertThat(codeScanResponse.failureReason).isInstanceOf<CodeWhispererException>()
+            assertThat(codeScanResponse.failureReason.toString()).contains("File Scan Monthly Exceeded")
+            assertThat(codeScanResponse.failureReason.cause.toString()).contains("java.lang.RuntimeException: Something went wrong")
         }
     }
 
     @Test
-    fun `test run() - createCodeScan failed`() {
+    fun `test run() - createCodeScan failed`() = runTest {
         mockClient.stub {
             onGeneric { createCodeScan(any(), any()) }.thenReturn(fakeCreateCodeScanResponseFailed)
         }
 
-        runBlocking {
-            val codeScanResponse = codeScanSessionSpy.run()
-            assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
-            assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
-            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<Exception>()
-        }
+        val codeScanResponse = codeScanSessionSpy.run()
+        assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
+        assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
+        assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<Exception>()
     }
 
     @Test
-    fun `test run() - createCodeScan error`() {
+    fun `test run() - createCodeScan error`() = runTest {
         mockClient.stub {
             onGeneric { createCodeScan(any(), any()) }.thenThrow(CodeWhispererCodeScanServerException::class.java)
         }
 
-        runBlocking {
-            val codeScanResponse = codeScanSessionSpy.run()
-            assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
-            assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
-            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererCodeScanServerException>()
-        }
+        val codeScanResponse = codeScanSessionSpy.run()
+        assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
+        assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
+        assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererCodeScanServerException>()
     }
 
     @Test
-    fun `test run() - getCodeScan failed`() {
+    fun `test run() - getCodeScan failed`() = runTest {
         mockClient.stub {
             onGeneric { getCodeScan(any(), any()) }.thenReturn(fakeGetCodeScanResponseFailed)
         }
 
-        runBlocking {
-            val codeScanResponse = codeScanSessionSpy.run()
-            assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
-            assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
-            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<Exception>()
-        }
+        val codeScanResponse = codeScanSessionSpy.run()
+        assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
+        assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
+        assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<Exception>()
     }
 
     @Test
-    fun `test run() - getCodeScan pending timeout`() {
+    fun `test run() - getCodeScan pending timeout`() = runTest {
         sessionConfigSpy.stub {
             onGeneric { overallJobTimeoutInSeconds() }.thenReturn(5)
         }
         mockClient.stub {
             onGeneric { getCodeScan(any(), any()) }.thenAnswer {
-                runBlocking {
-                    delay(TIMEOUT)
-                }
+                Thread.sleep(TIMEOUT)
                 fakeGetCodeScanResponsePending
             }
         }
 
-        runBlocking {
-            val codeScanResponse = codeScanSessionSpy.run()
-            assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
-            assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
-            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<WaiterTimeoutException>()
-        }
+        val codeScanResponse = codeScanSessionSpy.run()
+        assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
+        assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
+        assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<WaiterTimeoutException>()
     }
 
     @Test
-    fun `test run() - getCodeScan error`() {
+    fun `test run() - getCodeScan error`() = runTest {
         mockClient.stub {
             onGeneric { getCodeScan(any(), any()) }.thenThrow(CodeWhispererCodeScanServerException::class.java)
         }
 
-        runBlocking {
-            val codeScanResponse = codeScanSessionSpy.run()
-            assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
-            assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
-            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererCodeScanServerException>()
-        }
+        val codeScanResponse = codeScanSessionSpy.run()
+        assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
+        assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
+        assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererCodeScanServerException>()
     }
 
     @Test
-    fun `test run() - listCodeScanFindings error`() {
+    fun `test run() - listCodeScanFindings error`() = runTest {
         mockClient.stub {
             onGeneric { listCodeScanFindings(any(), any()) }.thenThrow(CodeWhispererCodeScanServerException::class.java)
         }
 
-        runBlocking {
-            val codeScanResponse = codeScanSessionSpy.run()
-            assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
-            assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
-            assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererCodeScanServerException>()
-        }
+        val codeScanResponse = codeScanSessionSpy.run()
+        assertThat(codeScanResponse).isInstanceOf<CodeScanResponse.Failure>()
+        assertThat(codeScanResponse.responseContext.payloadContext).isEqualTo(payloadContext)
+        assertThat((codeScanResponse as CodeScanResponse.Failure).failureReason).isInstanceOf<CodeWhispererCodeScanServerException>()
     }
 
     companion object {

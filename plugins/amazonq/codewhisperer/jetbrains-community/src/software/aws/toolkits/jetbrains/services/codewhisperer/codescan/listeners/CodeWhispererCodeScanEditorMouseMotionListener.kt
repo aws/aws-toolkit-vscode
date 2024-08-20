@@ -83,7 +83,8 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
     private val issueDataKey = DataKey.create<MutableMap<String, String>>("amazonq.codescan.explainissue")
 
     private fun getHtml(issue: CodeWhispererCodeScanIssue): String {
-        val isFixAvailable = issue.suggestedFixes.isNotEmpty()
+        // not sure why service team allows multiple remediations, but we only show one
+        val suggestedFix = issue.suggestedFixes.firstOrNull()
 
         val cweLinks = if (issue.relatedVulnerabilities.isNotEmpty()) {
             issue.relatedVulnerabilities.joinToString(", ") { cwe ->
@@ -111,7 +112,7 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
                 <tbody>
                     <tr>
                         <td>$cweLinks</td>
-                        <td>${if (isFixAvailable) "<span style=\"color:${additionForegroundColor.getHexString()};\">Yes</span>" else "<span style=\"color:${deletionForegroundColor.getHexString()};\">No</span>"}</td>
+                        <td>${if (suggestedFix != null) "<span style=\"color:${additionForegroundColor.getHexString()};\">Yes</span>" else "<span style=\"color:${deletionForegroundColor.getHexString()};\">No</span>"}</td>
                         <td>$detectorLibraryLink</td>
                     </tr>
                 </tbody>
@@ -128,9 +129,9 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
         <br />
         """.trimIndent()
 
-        val suggestedFixSection = if (isFixAvailable) {
-            val isFixDescriptionAvailable = issue.suggestedFixes[0].description.isNotBlank() &&
-                issue.suggestedFixes[0].description.trim() != "Suggested remediation:"
+        val suggestedFixSection = suggestedFix?.let {
+            val isFixDescriptionAvailable = it.description.isNotBlank() &&
+                it.description.trim() != "Suggested remediation:"
             """
             |<hr />
             |<br />
@@ -138,7 +139,7 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
             |## ${message("codewhisperer.codescan.suggested_fix_label")}
             |
             |```diff
-            |${issue.suggestedFixes[0].code}
+            |${it.code}
             |```
             |
             |${
@@ -147,14 +148,12 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
                         message(
                             "codewhisperer.codescan.suggested_fix_description"
                         )
-                    }\n${issue.suggestedFixes[0].description}"
+                    }\n${it.description}"
                 } else {
                     ""
                 }
             }
             """.trimMargin()
-        } else {
-            ""
         }
 
         return convertMarkdownToHTML(
@@ -165,7 +164,7 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
             |
             |$detectorSection
             |
-            |$suggestedFixSection
+            |${suggestedFixSection.orEmpty()}
             """.trimMargin()
         )
     }
@@ -180,9 +179,9 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
     }
 
     private fun showPopup(issues: List<CodeWhispererCodeScanIssue>, e: EditorMouseEvent, issueIndex: Int = 0) {
-        if (issues == null || issues.isEmpty()) {
+        if (issues.isEmpty()) {
             LOG.debug {
-                "Unable to show popup issue at ${e.logicalPosition} as the issue was null"
+                "Unable to show popup issue at ${e.logicalPosition} as there are no issues"
             }
             return
         }
@@ -396,10 +395,6 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
 
                 val documentContent = document.text
                 val updatedContent = applyPatch(issue.suggestedFixes[0].code, documentContent, issue.file.name)
-                if (updatedContent == null) {
-//                    println(applyPatchToContent(issue.suggestedFixes[0].code, documentContent))
-                    throw Error("Patch apply failed.")
-                }
                 document.replaceString(document.getLineStartOffset(0), document.getLineEndOffset(document.lineCount - 1), updatedContent)
                 PsiDocumentManager.getInstance(issue.project).commitDocument(document)
                 CodeWhispererTelemetryService.getInstance().sendCodeScanIssueApplyFixEvent(issue, Result.Succeeded)

@@ -32,7 +32,7 @@ object Waiters {
         exceptionsToIgnore: Set<KClass<out Exception>> = emptySet(),
         maxDuration: Duration = Duration.ofMinutes(1),
         // The status pulling method to get the latest resource
-        call: () -> T
+        call: suspend () -> T
     ): T? {
         val start = Instant.now()
         var attempt = 0

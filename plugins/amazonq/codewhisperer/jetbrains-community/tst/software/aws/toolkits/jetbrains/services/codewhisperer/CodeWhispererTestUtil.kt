@@ -7,10 +7,10 @@ import com.intellij.openapi.editor.VisualPosition
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
-import org.gradle.internal.impldep.com.amazonaws.ResponseMetadata.AWS_REQUEST_ID
 import org.mockito.kotlin.mock
 import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails
+import software.amazon.awssdk.awscore.util.AwsHeader
 import software.amazon.awssdk.http.SdkHttpResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererRuntimeException
 import software.amazon.awssdk.services.codewhispererruntime.model.Completion
@@ -74,7 +74,7 @@ object CodeWhispererTestUtil {
         Pair("BSD-4-Clause", "testRepo3")
     )
     val metadata: DefaultAwsResponseMetadata = DefaultAwsResponseMetadata.create(
-        mapOf(AWS_REQUEST_ID to testRequestId)
+        mapOf(AwsHeader.AWS_REQUEST_ID to testRequestId)
     )
     val sdkHttpResponse = SdkHttpResponse.builder().headers(
         mapOf(CodeWhispererService.KET_SESSION_ID to listOf(testSessionId))

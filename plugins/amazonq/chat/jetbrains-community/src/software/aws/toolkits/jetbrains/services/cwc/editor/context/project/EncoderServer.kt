@@ -105,7 +105,7 @@ class EncoderServer(val project: Project) : Disposable {
                 return true
             }
         } catch (e: Exception) {
-            logger.warn { "error running encoder server: ${e.stackTraceToString()}" }
+            logger.warn(e) { "error running encoder server:" }
             processHandler?.destroyProcess()
             numberOfRetry.incrementAndGet()
             return false
@@ -183,7 +183,7 @@ class EncoderServer(val project: Project) : Disposable {
                 }
             }
         } catch (e: Exception) {
-            logger.warn { "error downloading artifacts ${e.stackTraceToString()}" }
+            logger.warn(e) { "error downloading artifacts:" }
         }
     }
 
@@ -200,7 +200,7 @@ class EncoderServer(val project: Project) : Disposable {
                 }
             }
         } catch (e: Exception) {
-            logger.warn { "error deleting old artifacts ${e.stackTraceToString()}" }
+            logger.warn(e) { "error deleting old artifacts:" }
         }
     }
 
