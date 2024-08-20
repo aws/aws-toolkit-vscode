@@ -23,7 +23,6 @@ import com.intellij.psi.PsiDocumentManager
 import com.intellij.ui.JBColor
 import com.intellij.ui.awt.RelativePoint
 import com.intellij.ui.components.JBScrollPane
-import com.intellij.util.TimeoutUtil.sleep
 import icons.AwsIcons
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererRuntimeException
 import software.aws.toolkits.core.utils.convertMarkdownToHTML
@@ -39,7 +38,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhisp
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererTelemetryService
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererColorUtil.getHexString
-import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.CODE_SCAN_ISSUE_POPUP_DELAY_IN_SECONDS
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.CODE_SCAN_ISSUE_TITLE_MAX_LENGTH
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.runIfIdcConnectionOrTelemetryEnabled
 import software.aws.toolkits.jetbrains.utils.applyPatch
@@ -377,7 +375,6 @@ class CodeWhispererCodeScanEditorMouseMotionListener(private val project: Projec
         // Only add popup if the issue is still valid. If the issue has gone stale or invalid because
         // the user has made some edits, we don't need to show the popup for the stale or invalid issues.
         if (!issuesInRange.first().isInvalid) {
-            sleep(CODE_SCAN_ISSUE_POPUP_DELAY_IN_SECONDS)
             showPopup(issuesInRange, e)
         }
     }

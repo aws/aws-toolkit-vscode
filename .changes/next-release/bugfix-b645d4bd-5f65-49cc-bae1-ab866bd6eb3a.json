@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix UI freeze that occurs when viewing an Amazon Q code security scanning finding"
+}
