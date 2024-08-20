@@ -9,12 +9,14 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.blockingContext
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.Messages
 import com.intellij.platform.ide.progress.withBackgroundProgress
 import com.intellij.ui.JBColor
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.intellij.lang.annotations.Language
 import org.jetbrains.annotations.VisibleForTesting
 import org.slf4j.event.Level
 import software.aws.toolkits.core.region.AwsRegion
@@ -23,7 +25,6 @@ import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
-import software.aws.toolkits.jetbrains.core.credentials.AuthProfile
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.Login
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
@@ -128,7 +129,7 @@ abstract class LoginBrowser(
 
     abstract fun prepareBrowser(state: BrowserState)
 
-    fun executeJS(jsScript: String) {
+    fun executeJS(@Language("JS") jsScript: String) {
         this.jcefBrowser.cefBrowser.let {
             it.executeJavaScript(jsScript, it.url, 0)
         }
@@ -170,7 +171,7 @@ abstract class LoginBrowser(
     open fun loginBuilderId(scopes: List<String>) {
         val onError: (Exception) -> Unit = { e ->
             stopAndClearBrowserOpenTimer()
-            tryHandleUserCanceledLogin(e)
+            isUserCancellation(e)
             AwsTelemetry.loginWithBrowser(
                 project = null,
                 credentialStartUrl = SONO_URL,
@@ -201,7 +202,7 @@ abstract class LoginBrowser(
         loginWithBackgroundContext {
             Login
                 .BuilderId(scopes, onPendingToken, onError, onSuccess)
-                .loginBuilderId(project)
+                .login(project)
         }
     }
 
@@ -209,22 +210,31 @@ abstract class LoginBrowser(
         // assumes scopes contains either Q or non-Q permissions but not both
         val isReAuth = isReAuth(scopes)
 
-        val onError: (Exception, AuthProfile) -> Unit = { e, profile ->
+        val onError: (Exception) -> Unit = { e ->
             stopAndClearBrowserOpenTimer()
             val message = ssoErrorMessageFromException(e)
-            if (!tryHandleUserCanceledLogin(e)) {
-                LOG.error(e) { "Failed to authenticate: message: $message; profile: $profile" }
+            val result = if (!isUserCancellation(e)) {
+                runInEdt {
+                    Messages.showErrorDialog(jcefBrowser.component, message, "Failed to Authenticate")
+                }
+                executeJS("window.ideClient.reset()")
+                LOG.error(e) { "Failed to authenticate: message: $message; url: $url, region: $region, scopes: $scopes" }
+
+                Result.Failed
+            } else {
+                Result.Cancelled
             }
+
             AwsTelemetry.loginWithBrowser(
                 project = null,
                 credentialStartUrl = url,
                 isReAuth = isReAuth,
-                result = Result.Failed,
+                result = result,
                 reason = message,
                 credentialSourceId = CredentialSourceId.IamIdentityCenter
             )
             AuthTelemetry.addConnection(
-                result = Result.Failed,
+                result = result,
                 credentialSourceId = CredentialSourceId.IamIdentityCenter,
                 reason = message,
                 isReAuth = isReAuth,
@@ -250,18 +260,16 @@ abstract class LoginBrowser(
         loginWithBackgroundContext {
             Login
                 .IdC(url, region, scopes, onPendingToken, onSuccess, onError)
-                .loginIdc(project)
+                .login(project)
         }
     }
 
     open fun loginIAM(profileName: String, accessKey: String, secretKey: String) {
         runInEdt {
-            Login.LongLivedIAM(
+            val result = Login.LongLivedIAM(
                 profileName,
                 accessKey,
-                secretKey
-            ).loginIAM(
-                project,
+                secretKey,
                 { error ->
                     AwsTelemetry.loginWithBrowser(
                         project = null,
@@ -269,29 +277,36 @@ abstract class LoginBrowser(
                         reason = error.message,
                         credentialType = CredentialType.StaticProfile
                     )
+                    LOG.error(error) { "Profile file error" }
+                    Messages.showErrorDialog(jcefBrowser.component, error.message, AwsCoreBundle.message("gettingstarted.auth.failed"))
                 },
                 {
                     AwsTelemetry.loginWithBrowser(
                         project = null,
                         result = Result.Failed,
                         reason = "Profile already exists",
-                        credentialType = CredentialType.StaticProfile
                     )
                 },
-                {
+                { error ->
+                    val reason = "Connection validation error"
                     AwsTelemetry.loginWithBrowser(
                         project = null,
                         result = Result.Failed,
-                        reason = "Connection validation error",
-                        credentialType = CredentialType.StaticProfile
+                        reason = reason,
                     )
+                    LOG.error(error) { reason }
+                    Messages.showErrorDialog(jcefBrowser.component, error.message, AwsCoreBundle.message("gettingstarted.auth.failed"))
                 }
-            )
-            AwsTelemetry.loginWithBrowser(
-                project = null,
-                result = Result.Succeeded,
-                credentialType = CredentialType.StaticProfile
-            )
+            ).login(project)
+
+            // failure already handled
+            if (result) {
+                AwsTelemetry.loginWithBrowser(
+                    project = null,
+                    result = Result.Succeeded,
+                    credentialType = CredentialType.StaticProfile
+                )
+            }
         }
     }
 
@@ -308,7 +323,7 @@ abstract class LoginBrowser(
 
     abstract fun loadWebView(query: JBCefJSQuery)
 
-    protected suspend fun pollForAuthorization(provider: InteractiveBearerTokenProvider): PendingAuthorization? = pollFor {
+    private suspend fun pollForAuthorization(provider: InteractiveBearerTokenProvider): PendingAuthorization? = pollFor {
         provider.pendingAuthorization
     }
 
@@ -321,7 +336,7 @@ abstract class LoginBrowser(
         }
     }
 
-    private fun tryHandleUserCanceledLogin(e: Exception): Boolean {
+    protected fun isUserCancellation(e: Exception): Boolean {
         if (e !is ProcessCanceledException ||
             e.cause !is IllegalStateException ||
             e.message?.contains(AwsCoreBundle.message("credentials.pending.user_cancel.message")) == false

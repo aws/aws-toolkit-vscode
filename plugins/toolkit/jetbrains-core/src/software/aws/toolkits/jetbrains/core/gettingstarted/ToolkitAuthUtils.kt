@@ -38,7 +38,7 @@ fun rolePopupFromConnection(
                     scopes = scopes
                 )
 
-                authAndUpdateConfig(project, profile, configFilesFacade, {}, {}) { e, _ ->
+                authAndUpdateConfig(project, profile, configFilesFacade, {}, {}) { e ->
                     Messages.showErrorDialog(project, e.message, message("gettingstarted.explorer.iam.add"))
                 } ?: return@runInEdt
             } else {

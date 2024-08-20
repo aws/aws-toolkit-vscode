@@ -41,7 +41,7 @@ export class IdeClient {
     }
 
     reset() {
-        this.store.commit('reset')
+        this.store.commit('setStage', 'START')
     }
 
     cancelLogin(): void {
