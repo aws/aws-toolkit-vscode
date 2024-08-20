@@ -19,6 +19,8 @@ import { isValidationExemptMetric } from './exemptMetrics'
 import { isAmazonQ, isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { randomUUID } from '../crypto'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
+import { FunctionEntry } from './spans'
+import { telemetry } from './telemetry'
 
 const legacySettingsTelemetryValueDisable = 'Disable'
 const legacySettingsTelemetryValueEnable = 'Enable'
@@ -274,4 +276,55 @@ export function getOperatingSystem(): 'MAC' | 'WINDOWS' | 'LINUX' {
     } else {
         return 'LINUX'
     }
+}
+
+/**
+ * Decorator that simply wraps the method with a non-emitting telemetry `run()`, automatically
+ * `record()`ing the provided function id for later use by {@link TelemetryTracer.getFunctionStack()}
+ *
+ * This saves us from needing to wrap the entire function:
+ *
+ * **Before:**
+ * ```
+ * class A {
+ *     myMethod() {
+ *         telemetry.function_call.run(() => {
+ *                 ...
+ *             },
+ *             { emit: false, functionId: { name: 'myMethod', class: 'A' } }
+ *         )
+ *     }
+ * }
+ * ```
+ *
+ * **After:**
+ * ```
+ * class A {
+ *     @withTelemetryContext({ name: 'myMethod', class: 'A' })
+ *     myMethod() {
+ *         ...
+ *     }
+ * }
+ * ```
+ */
+export function withTelemetryContext(functionId: FunctionEntry) {
+    function decorator<This, Args extends any[], Return>(
+        originalMethod: (this: This, ...args: Args) => Return,
+        _context: ClassMethodDecoratorContext // we dont need this currently but it keeps the compiler happy
+    ) {
+        function decoratedMethod(this: This, ...args: Args): Return {
+            return telemetry.function_call.run(
+                () => {
+                    // DEVELOPERS: Set a breakpoint here and step in to it to debug the original function
+                    return originalMethod.call(this, ...args)
+                },
+                {
+                    emit: false,
+                    functionId: functionId,
+                }
+            )
+        }
+        return decoratedMethod
+    }
+    return decorator
 }

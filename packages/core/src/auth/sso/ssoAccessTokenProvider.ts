@@ -42,6 +42,7 @@ import { showInputBox } from '../../shared/ui/inputPrompter'
 import { DevSettings } from '../../shared/settings'
 import { onceChanged } from '../../shared/utilities/functionUtils'
 import { NestedMap } from '../../shared/utilities/map'
+import { asStringifiedStack } from '../../shared/telemetry/spans'
 
 export const authenticationPath = 'sso/authenticated'
 
@@ -60,6 +61,7 @@ export abstract class SsoAccessTokenProvider {
      */
     private static _authSource: string = 'unknown'
     private static logIfChanged = onceChanged((s: string) => getLogger().info(s))
+    private readonly className = 'SsoAccessTokenProvider'
 
     public static set authSource(val: string) {
         SsoAccessTokenProvider._authSource = val
@@ -74,11 +76,28 @@ export abstract class SsoAccessTokenProvider {
 
     public async invalidate(reason: string): Promise<void> {
         getLogger().info(`SsoAccessTokenProvider: invalidate token and registration`)
-        // Use allSettled() instead of all() to ensure all clear() calls are resolved.
-        await Promise.allSettled([
-            this.cache.token.clear(this.tokenCacheKey, 'SsoAccessTokenProvider.invalidate()'),
-            this.cache.registration.clear(this.registrationCacheKey, 'SsoAccessTokenProvider.invalidate()'),
-        ])
+
+        // always emit telemetry when the cache is deleted.
+        // most of the time cache is deleted on cache expiration, this is infrequent and expected.
+        // Any premature scenarios, that are not explicit deletion by the user, are likely bugs.
+        await telemetry.auth_modifyConnection.run(
+            async (span) => {
+                span.record({
+                    source: asStringifiedStack(telemetry.getFunctionStack()),
+                    action: 'deleteSsoCache',
+                    credentialStartUrl: this.profile.startUrl,
+                    sessionDuration: this.getSessionDuration(),
+                })
+
+                // Use allSettled() instead of all() to ensure all clear() calls are resolved.
+                await Promise.allSettled([
+                    this.cache.token.clear(this.tokenCacheKey, 'SsoAccessTokenProvider.invalidate()'),
+                    this.cache.registration.clear(this.registrationCacheKey, 'SsoAccessTokenProvider.invalidate()'),
+                ])
+            },
+            { emit: true, functionId: { name: 'invalidate', class: this.className } }
+        )
+
         this.reAuthState.set(this.profile, { reAuthReason: `invalidate():${reason}` })
     }
 
@@ -193,6 +212,10 @@ export abstract class SsoAccessTokenProvider {
 
             throw err
         }
+    }
+
+    getSessionDuration() {
+        return getSessionDuration(this.tokenCacheKey)
     }
 
     protected formatToken(token: SsoToken, registration: ClientRegistration) {
@@ -454,15 +477,20 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
      * created and returned.
      */
     override async getValidatedClientRegistration(): Promise<ClientRegistration> {
-        const cacheKey = this.registrationCacheKey
-        const cachedRegistration = await this.cache.registration.load(cacheKey)
+        return telemetry.function_call.run(
+            async () => {
+                const cacheKey = this.registrationCacheKey
+                const cachedRegistration = await this.cache.registration.load(cacheKey)
 
-        // Clear cached if registration is expired
-        if (cachedRegistration && isExpired(cachedRegistration)) {
-            await this.invalidate('registrationExpired:DeviceCode')
-        }
+                // Clear cached if registration is expired
+                if (cachedRegistration && isExpired(cachedRegistration)) {
+                    await this.invalidate('registrationExpired:DeviceCode')
+                }
 
-        return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+                return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+            },
+            { emit: false, functionId: { name: 'getValidatedClientRegistration', class: 'DeviceFlowAuthorization' } }
+        )
     }
 }
 
@@ -588,15 +616,20 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
      * created and returned.
      */
     override async getValidatedClientRegistration(): Promise<ClientRegistration> {
-        const cacheKey = this.registrationCacheKey
-        const cachedRegistration = await this.cache.registration.load(cacheKey)
+        return telemetry.function_call.run(
+            async () => {
+                const cacheKey = this.registrationCacheKey
+                const cachedRegistration = await this.cache.registration.load(cacheKey)
 
-        // Clear cached if registration is expired or it uses a deprecate auth version (device code)
-        if (cachedRegistration && (isExpired(cachedRegistration) || isDeprecatedAuth(cachedRegistration))) {
-            await this.invalidate('registrationExpired:AuthFlow')
-        }
+                // Clear cached if registration is expired or it uses a deprecate auth version (device code)
+                if (cachedRegistration && (isExpired(cachedRegistration) || isDeprecatedAuth(cachedRegistration))) {
+                    await this.invalidate('registrationExpired:AuthFlow')
+                }
 
-        return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+                return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+            },
+            { emit: false, functionId: { name: 'getValidatedClientRegistration', class: 'AuthFlowAuthorization' } }
+        )
     }
 }
 
@@ -673,14 +706,22 @@ class WebAuthorization extends SsoAccessTokenProvider {
     }
 
     override async getValidatedClientRegistration(): Promise<ClientRegistration> {
-        const cacheKey = this.registrationCacheKey
-        const cachedRegistration = await this.cache.registration.load(cacheKey)
+        return telemetry.function_call.run(
+            async () => {
+                const cacheKey = this.registrationCacheKey
+                const cachedRegistration = await this.cache.registration.load(cacheKey)
 
-        if (cachedRegistration && (isExpired(cachedRegistration) || cachedRegistration.flow !== 'web auth code')) {
-            await this.invalidate('registrationExpired:WebAuth')
-        }
+                if (
+                    cachedRegistration &&
+                    (isExpired(cachedRegistration) || cachedRegistration.flow !== 'web auth code')
+                ) {
+                    await this.invalidate('registrationExpired:WebAuth')
+                }
 
-        return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+                return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+            },
+            { emit: false, functionId: { name: 'getValidatedClientRegistration', class: 'WebAuthorization' } }
+        )
     }
 }
 

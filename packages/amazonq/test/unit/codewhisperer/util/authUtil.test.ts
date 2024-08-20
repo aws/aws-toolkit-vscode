@@ -290,7 +290,7 @@ describe('AuthUtil', async function () {
         )
         await authUtil.secondaryAuth.useNewConnection(conn3)
 
-        await authUtil.clearExtraConnections('test') // method under test
+        await authUtil.clearExtraConnections() // method under test
 
         // Only the conn that AuthUtil is using is remaining
         assert.deepStrictEqual(

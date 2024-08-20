@@ -81,6 +81,7 @@ function createTestTokenProvider() {
         async () => (token = { accessToken: String(++counter), expiresAt: new Date(Date.now() + 1000000) })
     )
     provider.invalidate.callsFake(async () => (token = undefined))
+    provider.getSessionDuration.callsFake(() => 11223355)
 
     return provider
 }

@@ -361,9 +361,8 @@ export class TelemetryTracer extends TelemetryBase {
      * index being the top level call, and the last index being the final
      * nested call.
      *
-     * Ensure that {@link TelemetryTracer.runWithCallEntry()} and/or {@link TelemetrySpan.recordCallEntry()}
-     * have been used before this method is called, otherwise it will return
-     * no useful information.
+     * Ensure that there are uses of {@link TelemetryTracer.run()} with {@link SpanOptions.functionId}
+     * before this method is called, otherwise it will return no useful information.
      *
      * Use {@link asStringifiedStack} to create a stringified version of this stack.
      */
