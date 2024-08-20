@@ -43,7 +43,6 @@ import { DevSettings } from '../../shared/settings'
 import { onceChanged } from '../../shared/utilities/functionUtils'
 import { NestedMap } from '../../shared/utilities/map'
 import { asStringifiedStack } from '../../shared/telemetry/spans'
-import { withTelemetryContext } from '../../shared/telemetry/util'
 
 export const authenticationPath = 'sso/authenticated'
 
@@ -473,17 +472,21 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
      * will be validated before being returned. Otherwise, a client registration is
      * created and returned.
      */
-    @withTelemetryContext({ name: 'getValidatedClientRegistration', class: 'DeviceFlowAuthorization' })
     override async getValidatedClientRegistration(): Promise<ClientRegistration> {
-        const cacheKey = this.registrationCacheKey
-        const cachedRegistration = await this.cache.registration.load(cacheKey)
+        return telemetry.function_call.run(
+            async () => {
+                const cacheKey = this.registrationCacheKey
+                const cachedRegistration = await this.cache.registration.load(cacheKey)
 
-        // Clear cached if registration is expired
-        if (cachedRegistration && isExpired(cachedRegistration)) {
-            await this.invalidate('registrationExpired:DeviceCode')
-        }
+                // Clear cached if registration is expired
+                if (cachedRegistration && isExpired(cachedRegistration)) {
+                    await this.invalidate('registrationExpired:DeviceCode')
+                }
 
-        return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+                return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+            },
+            { emit: false, functionId: { name: 'getValidatedClientRegistration', class: 'DeviceFlowAuthorization' } }
+        )
     }
 }
 
@@ -608,17 +611,21 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
      * will be validated before being returned. Otherwise, a client registration is
      * created and returned.
      */
-    @withTelemetryContext({ name: 'getValidatedClientRegistration', class: 'AuthFlowAuthorization' })
     override async getValidatedClientRegistration(): Promise<ClientRegistration> {
-        const cacheKey = this.registrationCacheKey
-        const cachedRegistration = await this.cache.registration.load(cacheKey)
+        return telemetry.function_call.run(
+            async () => {
+                const cacheKey = this.registrationCacheKey
+                const cachedRegistration = await this.cache.registration.load(cacheKey)
 
-        // Clear cached if registration is expired or it uses a deprecate auth version (device code)
-        if (cachedRegistration && (isExpired(cachedRegistration) || isDeprecatedAuth(cachedRegistration))) {
-            await this.invalidate('registrationExpired:AuthFlow')
-        }
+                // Clear cached if registration is expired or it uses a deprecate auth version (device code)
+                if (cachedRegistration && (isExpired(cachedRegistration) || isDeprecatedAuth(cachedRegistration))) {
+                    await this.invalidate('registrationExpired:AuthFlow')
+                }
 
-        return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+                return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+            },
+            { emit: false, functionId: { name: 'getValidatedClientRegistration', class: 'AuthFlowAuthorization' } }
+        )
     }
 }
 
@@ -694,16 +701,23 @@ class WebAuthorization extends SsoAccessTokenProvider {
         return this.formatToken(token, registration)
     }
 
-    @withTelemetryContext({ name: 'getValidatedClientRegistration', class: 'WebAuthorization' })
     override async getValidatedClientRegistration(): Promise<ClientRegistration> {
-        const cacheKey = this.registrationCacheKey
-        const cachedRegistration = await this.cache.registration.load(cacheKey)
+        return telemetry.function_call.run(
+            async () => {
+                const cacheKey = this.registrationCacheKey
+                const cachedRegistration = await this.cache.registration.load(cacheKey)
 
-        if (cachedRegistration && (isExpired(cachedRegistration) || cachedRegistration.flow !== 'web auth code')) {
-            await this.invalidate('registrationExpired:WebAuth')
-        }
+                if (
+                    cachedRegistration &&
+                    (isExpired(cachedRegistration) || cachedRegistration.flow !== 'web auth code')
+                ) {
+                    await this.invalidate('registrationExpired:WebAuth')
+                }
 
-        return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+                return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+            },
+            { emit: false, functionId: { name: 'getValidatedClientRegistration', class: 'WebAuthorization' } }
+        )
     }
 }
 
