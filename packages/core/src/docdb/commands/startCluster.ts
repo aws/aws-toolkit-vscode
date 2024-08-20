@@ -13,7 +13,7 @@ export function startCluster(node?: DBClusterNode): Promise<void> {
     return telemetry.docdb_startCluster.run(async () => {
         if (node?.arn && node?.regionCode) {
             await node.client.startCluster(node.arn)
-            getLogger().info('docdb:Start cluster: %O', node.name)
+            getLogger().info('docdb: Start cluster: %O', node.name)
             void vscode.window.showInformationMessage(
                 localize('AWS.docdb.startCluster.success', 'Starting cluster: {0}', node.name)
             )

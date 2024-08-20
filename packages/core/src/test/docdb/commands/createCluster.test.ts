@@ -56,11 +56,7 @@ describe('createClusterCommand', function () {
 
         getTestWindow().onDidShowQuickPick(async (picker) => {
             await picker.untilReady()
-            if (picker.title?.includes('instances')) {
-                picker.acceptItem(picker.items[1])
-            } else {
-                picker.acceptItem(picker.items[0])
-            }
+            picker.acceptItem(picker.items[0])
         })
     }
 

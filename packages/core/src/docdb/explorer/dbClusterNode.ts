@@ -73,7 +73,7 @@ export class DBClusterNode extends DBResourceNode {
 
     private getContext() {
         const context = `${DocDBContext.Cluster}-${this.clusterRole}`
-        if (this.status === 'available') {
+        if (this.isAvailable) {
             return `${context}-running`
         } else if (this.status === 'stopped') {
             return `${context}-stopped`
@@ -82,7 +82,7 @@ export class DBClusterNode extends DBResourceNode {
     }
 
     public getDescription(): string | boolean {
-        if (this.status !== 'available') {
+        if (!this.isAvailable) {
             return `${this.clusterRole} cluster • ${this.status}`
         }
         return `${this.clusterRole} cluster`
@@ -125,6 +125,10 @@ export class DBClusterNode extends DBResourceNode {
 
     public get status(): string | undefined {
         return this.cluster.Status
+    }
+
+    public get isAvailable(): boolean {
+        return this.status === 'available'
     }
 
     public async waitUntilStatusChanged(): Promise<boolean> {

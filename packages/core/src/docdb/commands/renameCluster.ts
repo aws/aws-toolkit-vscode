@@ -20,7 +20,7 @@ import { telemetry } from '../../shared/telemetry'
  * Refreshes the node.
  */
 export async function renameCluster(node: DBClusterNode | DBGlobalClusterNode) {
-    getLogger().debug('docdb:RenameCluster called for: %O', node)
+    getLogger().debug('docdb: RenameCluster called for: %O', node)
 
     await telemetry.docdb_renameCluster.run(async () => {
         if (!node) {
@@ -29,7 +29,7 @@ export async function renameCluster(node: DBClusterNode | DBGlobalClusterNode) {
 
         const clusterName = node.name
 
-        if (node.cluster.Status !== 'available') {
+        if (!node.isAvailable) {
             void vscode.window.showErrorMessage(
                 localize('AWS.docdb.deleteCluster.clusterStopped', 'Cluster must be running')
             )
@@ -43,14 +43,14 @@ export async function renameCluster(node: DBClusterNode | DBGlobalClusterNode) {
         })
 
         if (!newClusterName) {
-            getLogger().debug('docdb:RenameCluster cancelled')
+            getLogger().debug('docdb: RenameCluster cancelled')
             throw new ToolkitError('User cancelled renameCluster', { cancelled: true })
         }
 
         try {
             const cluster = await node.renameCluster(newClusterName)
 
-            getLogger().info('docdb:Renamed cluster: %O', cluster)
+            getLogger().info('docdb: Renamed cluster: %O', cluster)
             void vscode.window.showInformationMessage(
                 localize('AWS.docdb.renameCluster.success', 'Updated cluster: {0}', clusterName)
             )
@@ -59,7 +59,7 @@ export async function renameCluster(node: DBClusterNode | DBGlobalClusterNode) {
             node.parent.refresh()
             return cluster
         } catch (e) {
-            getLogger().error(`docdb:Failed to rename cluster ${clusterName}: %s`, e)
+            getLogger().error(`docdb: Failed to rename cluster ${clusterName}: %s`, e)
             void showViewLogsMessage(
                 localize('AWS.docdb.renameCluster.error', 'Failed to rename cluster: {0}', clusterName)
             )

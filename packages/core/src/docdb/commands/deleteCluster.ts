@@ -9,7 +9,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { DBClusterNode } from '../explorer/dbClusterNode'
 import { showQuickPick } from '../../shared/ui/pickerPrompter'
-import { formatDate, formatTime } from '../utils'
+import { formatDate, formatTime } from '../../shared/date'
 import { telemetry } from '../../shared/telemetry'
 import { DBElasticClusterNode } from '../explorer/dbElasticClusterNode'
 
@@ -21,7 +21,7 @@ import { DBElasticClusterNode } from '../explorer/dbElasticClusterNode'
  * Refreshes the cluster node.
  */
 export async function deleteCluster(node: DBClusterNode | DBElasticClusterNode) {
-    getLogger().debug('docdb:DeleteCluster called for: %O', node)
+    getLogger().debug('docdb: DeleteCluster called for: %O', node)
 
     await telemetry.docdb_deleteCluster.run(async (span) => {
         if (!node) {
@@ -44,7 +44,7 @@ export async function deleteCluster(node: DBClusterNode | DBElasticClusterNode) 
             })
         }
 
-        if (!['available', 'active'].includes(node.status!)) {
+        if (!node.isAvailable) {
             void vscode.window.showErrorMessage(
                 localize('AWS.docdb.deleteCluster.clusterStopped', 'Cluster must be running')
             )
@@ -65,18 +65,18 @@ export async function deleteCluster(node: DBClusterNode | DBElasticClusterNode) 
         )
 
         if (takeSnapshot === undefined) {
-            getLogger().debug('docdb:DeleteCluster cancelled')
+            getLogger().debug('docdb: DeleteCluster cancelled')
             throw new ToolkitError('User cancelled deleteCluster wizard', { cancelled: true })
         }
 
         const isConfirmed = await showConfirmationDialog()
         if (!isConfirmed) {
-            getLogger().debug('docdb:DeleteCluster cancelled')
+            getLogger().debug('docdb: DeleteCluster cancelled')
             throw new ToolkitError('User cancelled deleteCluster wizard', { cancelled: true })
         }
 
         try {
-            getLogger().debug(`docdb:Deleting cluster: ${clusterName}`)
+            getLogger().debug(`docdb: Deleting cluster: ${clusterName}`)
 
             let finalSnapshotId: string | undefined = undefined
             if (takeSnapshot) {
@@ -91,10 +91,10 @@ export async function deleteCluster(node: DBClusterNode | DBElasticClusterNode) 
 
             await node.waitUntilStatusChanged()
             node.parent.refresh()
-            getLogger().info('docdb:Deleted cluster: %O', cluster)
+            getLogger().info('docdb: Deleted cluster: %O', cluster)
             return cluster
         } catch (e) {
-            getLogger().error(`docdb:Failed to delete cluster ${clusterName}: %s`, e)
+            getLogger().error(`docdb: Failed to delete cluster ${clusterName}: %s`, e)
             void showViewLogsMessage(
                 localize('AWS.docdb.deleteCluster.error', 'Failed to delete cluster: {0}', clusterName)
             )

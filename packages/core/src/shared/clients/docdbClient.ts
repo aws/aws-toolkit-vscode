@@ -55,7 +55,7 @@ export class DefaultDocumentDBClient {
     }
 
     private async executeCommand<TOutput extends DocDB.ServiceOutputTypes>(command: any): Promise<TOutput> {
-        getLogger().debug(`docdbClient:${command.constructor.name} called`)
+        getLogger().debug(`docdbClient: ${command.constructor.name} called`)
         const client = await this.getClient()
         try {
             return await client.send(command)
@@ -67,7 +67,7 @@ export class DefaultDocumentDBClient {
     private async executeElasticCommand<TOutput extends DocDBElastic.ServiceOutputTypes>(
         command: any
     ): Promise<TOutput> {
-        getLogger().debug(`docdbClient:${command.constructor.name} called`)
+        getLogger().debug(`docdbClient: ${command.constructor.name} called`)
         const client = await this.getElasticClient()
         try {
             return await client.send(command)
@@ -81,7 +81,7 @@ export class DefaultDocumentDBClient {
         engineVersion: string | undefined,
         storageType: string | undefined
     ): Promise<DocDB.OrderableDBInstanceOption[]> {
-        getLogger().debug('docdbClient:ListInstanceClassOptions called')
+        getLogger().debug('docdbClient: ListInstanceClassOptions called')
         const client = await this.getClient()
 
         try {

@@ -33,7 +33,7 @@ export class DBElasticClusterNode extends DBResourceNode {
     }
 
     private getContext() {
-        if (this.status === 'active') {
+        if (this.isAvailable) {
             return `${DocDBContext.ElasticCluster}-running`
         } else if (this.status === 'stopped') {
             return `${DocDBContext.ElasticCluster}-stopped`
@@ -42,7 +42,7 @@ export class DBElasticClusterNode extends DBResourceNode {
     }
 
     public getDescription(): string | boolean {
-        if (this.status !== 'active') {
+        if (!this.isAvailable) {
             return `elastic cluster • ${this.status}`
         }
         return 'elastic cluster'
@@ -64,6 +64,10 @@ export class DBElasticClusterNode extends DBResourceNode {
 
     public get status(): string | undefined {
         return this.cluster.status?.toLowerCase()
+    }
+
+    public get isAvailable(): boolean {
+        return this.status === 'active'
     }
 
     public async waitUntilStatusChanged(): Promise<boolean> {

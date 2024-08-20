@@ -28,13 +28,13 @@ export async function addRegion(node: DBClusterNode | DBGlobalClusterNode): Prom
         let globalClusterName = undefined
 
         if (node.cluster.StorageEncrypted) {
-            void vscode.window.showErrorMessage('Currently supported for unencrypted clusters only.')
+            void vscode.window.showErrorMessage('Encrypted clusters are not supported')
             return
         }
 
         if (node instanceof DBClusterNode) {
             if (node.clusterRole !== 'regional') {
-                void vscode.window.showErrorMessage('Currently supported for standalone clusters only.')
+                void vscode.window.showErrorMessage('Only regional clusters are supported')
                 return
             }
 
@@ -79,7 +79,7 @@ export async function addRegion(node: DBClusterNode | DBGlobalClusterNode): Prom
             }
         }
 
-        if (node.cluster.Status !== 'available') {
+        if (!node.isAvailable) {
             void vscode.window.showErrorMessage(
                 localize('AWS.docdb.deleteCluster.clusterStopped', 'Cluster must be running')
             )
@@ -104,7 +104,7 @@ export async function addRegion(node: DBClusterNode | DBGlobalClusterNode): Prom
                 // Create new global cluster from regional cluster
                 const primaryCluster = node.cluster
 
-                getLogger().info(`docdb:Creating global cluster: ${clusterName}`)
+                getLogger().info(`docdb: Creating global cluster: ${clusterName}`)
                 const globalCluster = await node.client.createGlobalCluster({
                     GlobalClusterIdentifier: response.GlobalClusterName,
                     SourceDBClusterIdentifier: primaryCluster.DBClusterArn,
@@ -134,7 +134,7 @@ export async function addRegion(node: DBClusterNode | DBGlobalClusterNode): Prom
             }
 
             clusterName = response.Cluster.DBClusterIdentifier
-            getLogger().info(`docdb:Creating secondary cluster: ${clusterName} in region ${regionCode}`)
+            getLogger().info(`docdb: Creating secondary cluster: ${clusterName} in region ${regionCode}`)
 
             const client = DefaultDocumentDBClient.create(regionCode)
             const newCluster = await client.createCluster(input)
@@ -148,7 +148,7 @@ export async function addRegion(node: DBClusterNode | DBGlobalClusterNode): Prom
                 )
             }
 
-            getLogger().info('docdb:Created cluster: %O', newCluster)
+            getLogger().info('docdb: Created cluster: %O', newCluster)
             void vscode.window.showInformationMessage(localize('AWS.docdb.addRegion.success', 'Region added'))
 
             if (node instanceof DBClusterNode) {
@@ -157,7 +157,7 @@ export async function addRegion(node: DBClusterNode | DBGlobalClusterNode): Prom
                 node?.refresh()
             }
         } catch (e) {
-            getLogger().error(`docdb:Failed to create cluster ${clusterName}: %s`, e)
+            getLogger().error(`docdb: Failed to create cluster ${clusterName}: %s`, e)
             void showViewLogsMessage(
                 localize('AWS.docdb.createCluster.error', 'Failed to create cluster: {0}', clusterName)
             )

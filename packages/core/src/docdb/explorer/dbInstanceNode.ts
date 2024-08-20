@@ -39,7 +39,7 @@ export class DBInstanceNode extends DBResourceNode {
     }
 
     private getContext(): DocDBNodeContext {
-        if (this.status === 'available') {
+        if (this.isAvailable) {
             return DocDBContext.InstanceAvailable
         }
         return DocDBContext.Instance
@@ -61,6 +61,10 @@ export class DBInstanceNode extends DBResourceNode {
 
     public get status(): string | undefined {
         return this.instance.DBInstanceStatus
+    }
+
+    public get isAvailable(): boolean {
+        return this.status === 'available'
     }
 
     public async waitUntilStatusChanged(): Promise<boolean> {

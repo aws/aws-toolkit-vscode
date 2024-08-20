@@ -19,7 +19,7 @@ import { telemetry } from '../../shared/telemetry'
  * Refreshes the node.
  */
 export async function renameInstance(node: DBInstanceNode) {
-    getLogger().debug('docdb:RenameInstance called for: %O', node)
+    getLogger().debug('docdb: RenameInstance called for: %O', node)
 
     await telemetry.docdb_renameInstance.run(async () => {
         if (!node) {
@@ -28,7 +28,7 @@ export async function renameInstance(node: DBInstanceNode) {
 
         const instanceName = node.instance.DBInstanceIdentifier
 
-        if (node.instance.DBInstanceStatus !== 'available') {
+        if (!node.isAvailable) {
             void vscode.window.showErrorMessage(
                 localize('AWS.docdb.deleteInstance.instanceStopped', 'Instance must be running')
             )
@@ -42,14 +42,14 @@ export async function renameInstance(node: DBInstanceNode) {
         })
 
         if (!newInstanceName) {
-            getLogger().debug('docdb:RenameInstance cancelled')
+            getLogger().debug('docdb: RenameInstance cancelled')
             throw new ToolkitError('User cancelled renameInstance', { cancelled: true })
         }
 
         try {
             const instance = await node.renameInstance(newInstanceName)
 
-            getLogger().info('docdb:Renamed instance: %O', instance)
+            getLogger().info('docdb: Renamed instance: %O', instance)
             void vscode.window.showInformationMessage(
                 localize('AWS.docdb.renameInstance.success', 'Updated instance: {0}', instanceName)
             )
@@ -57,7 +57,7 @@ export async function renameInstance(node: DBInstanceNode) {
             node.refresh()
             return instance
         } catch (e) {
-            getLogger().error(`docdb:Failed to rename instance ${instanceName}: %s`, e)
+            getLogger().error(`docdb: Failed to rename instance ${instanceName}: %s`, e)
             void showViewLogsMessage(
                 localize('AWS.docdb.renameInstance.error', 'Failed to rename instance: {0}', instanceName)
             )

@@ -193,11 +193,11 @@ async function createInstanceClassPrompter(
 function instanceCountItems(defaultCount: number, max: number = MaxInstanceCount): DataQuickPickItem<number>[] {
     const items = []
 
-    for (let index = 0; index <= max; index++) {
+    for (let index = 1; index <= max; index++) {
         const item: DataQuickPickItem<number> = {
             label: index.toString(),
             data: index,
-            description: index === 0 ? '(headless)' : index === defaultCount ? '(recommended)' : undefined,
+            description: index === defaultCount ? '(recommended)' : undefined,
         }
         items.push(item)
     }

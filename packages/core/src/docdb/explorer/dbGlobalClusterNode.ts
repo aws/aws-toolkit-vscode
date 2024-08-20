@@ -44,7 +44,7 @@ export class DBGlobalClusterNode extends DBResourceNode {
         this.contextValue = this.getContext()
         this.iconPath = new vscode.ThemeIcon('globe') //TODO: determine icon for global cluster
         this.description = 'global cluster'
-        this.tooltip = `${this.name}\nEngine: ${this.cluster.EngineVersion}\nStatus: ${this.cluster.Status}`
+        this.tooltip = `${this.name}\nEngine: ${this.cluster.EngineVersion}\nStatus: ${this.cluster.Status} (read-only)`
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
@@ -78,7 +78,7 @@ export class DBGlobalClusterNode extends DBResourceNode {
     }
 
     private getContext() {
-        if (this.status === 'available') {
+        if (this.isAvailable) {
             return `${DocDBContext.GlobalCluster}-running`
         } else if (this.status === 'stopped') {
             return `${DocDBContext.GlobalCluster}-stopped`
@@ -114,6 +114,10 @@ export class DBGlobalClusterNode extends DBResourceNode {
 
     public get status(): string | undefined {
         return this.cluster.Status
+    }
+
+    public get isAvailable(): boolean {
+        return this.status === 'available'
     }
 
     public override copyEndpoint(): Promise<void> {
