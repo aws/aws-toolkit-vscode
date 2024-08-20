@@ -43,7 +43,7 @@ import { DevSettings } from '../../shared/settings'
 import { onceChanged } from '../../shared/utilities/functionUtils'
 import { NestedMap } from '../../shared/utilities/map'
 import { asStringifiedStack } from '../../shared/telemetry/spans'
-import { withTelemetryContext } from '../../shared/telemetry/util'
+// import { withTelemetryContext } from '../../shared/telemetry/util'
 
 export const authenticationPath = 'sso/authenticated'
 
@@ -473,7 +473,7 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
      * will be validated before being returned. Otherwise, a client registration is
      * created and returned.
      */
-    @withTelemetryContext({ name: 'getValidatedClientRegistration', class: 'DeviceFlowAuthorization' })
+    // @withTelemetryContext({ name: 'getValidatedClientRegistration', class: 'DeviceFlowAuthorization' })
     override async getValidatedClientRegistration(): Promise<ClientRegistration> {
         const cacheKey = this.registrationCacheKey
         const cachedRegistration = await this.cache.registration.load(cacheKey)
@@ -608,7 +608,7 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
      * will be validated before being returned. Otherwise, a client registration is
      * created and returned.
      */
-    @withTelemetryContext({ name: 'getValidatedClientRegistration', class: 'AuthFlowAuthorization' })
+    // @withTelemetryContext({ name: 'getValidatedClientRegistration', class: 'AuthFlowAuthorization' })
     override async getValidatedClientRegistration(): Promise<ClientRegistration> {
         const cacheKey = this.registrationCacheKey
         const cachedRegistration = await this.cache.registration.load(cacheKey)
@@ -694,7 +694,7 @@ class WebAuthorization extends SsoAccessTokenProvider {
         return this.formatToken(token, registration)
     }
 
-    @withTelemetryContext({ name: 'getValidatedClientRegistration', class: 'WebAuthorization' })
+    // @withTelemetryContext({ name: 'getValidatedClientRegistration', class: 'WebAuthorization' })
     override async getValidatedClientRegistration(): Promise<ClientRegistration> {
         const cacheKey = this.registrationCacheKey
         const cachedRegistration = await this.cache.registration.load(cacheKey)
