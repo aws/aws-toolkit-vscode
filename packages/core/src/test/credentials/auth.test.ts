@@ -59,11 +59,13 @@ describe('Auth', function () {
                 action: 'updateConnectionState',
                 connectionState: 'valid',
                 source: 'Auth#createConnection,updateConnectionState',
+                sessionDuration: undefined,
             },
             {
                 action: 'updateConnectionState',
                 connectionState: 'invalid',
                 source: 'Auth#deleteConnection,invalidateConnection,updateConnectionState',
+                sessionDuration: 11223355,
             },
         ])
     })
@@ -80,11 +82,13 @@ describe('Auth', function () {
                 action: 'updateConnectionState',
                 connectionState: 'valid',
                 source: 'Auth#createConnection,updateConnectionState',
+                sessionDuration: undefined,
             },
             {
                 action: 'updateConnectionState',
                 connectionState: 'invalid',
                 source: 'Auth#deleteConnection,logout,invalidateConnection,updateConnectionState',
+                sessionDuration: 11223355,
             },
         ])
     })
@@ -113,11 +117,13 @@ describe('Auth', function () {
                 action: 'updateConnectionState',
                 connectionState: 'valid',
                 source: 'Auth#createConnection,updateConnectionState',
+                sessionDuration: undefined,
             },
             {
                 action: 'updateConnectionState',
                 connectionState: 'invalid',
                 source: 'Auth#logout,invalidateConnection,updateConnectionState',
+                sessionDuration: 11223355,
             },
         ])
     })

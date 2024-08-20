@@ -572,11 +572,17 @@ export class Auth implements AuthService, ConnectionManager {
         // state change. We rely on functions higher in the stack to have added their contexts
         // so this event has useful information in the `source` field.
         return telemetry.auth_modifyConnection.run(async (span) => {
+            // if we have an Sso session that became invalid, we will add its session duration to the event
+            const ssoSessionDuration =
+                connectionState === 'invalid' && oldProfile.type === 'sso'
+                    ? this.getSsoTokenProvider(id, oldProfile).getSessionDuration()
+                    : undefined
             span.record({
                 action: 'updateConnectionState',
                 connectionState,
                 source: asStringifiedStack(telemetry.getFunctionStack()),
                 credentialStartUrl: oldProfile.type === 'sso' ? oldProfile.startUrl : undefined,
+                sessionDuration: ssoSessionDuration,
             })
 
             const profile = await this.store.updateMetadata(id, { connectionState })

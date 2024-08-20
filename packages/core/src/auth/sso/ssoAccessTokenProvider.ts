@@ -86,7 +86,7 @@ export abstract class SsoAccessTokenProvider {
                     source: asStringifiedStack(telemetry.getFunctionStack()),
                     action: 'deleteSsoCache',
                     credentialStartUrl: this.profile.startUrl,
-                    sessionDuration: getSessionDuration(this.tokenCacheKey),
+                    sessionDuration: this.getSessionDuration(),
                 })
 
                 // Use allSettled() instead of all() to ensure all clear() calls are resolved.
@@ -212,6 +212,10 @@ export abstract class SsoAccessTokenProvider {
 
             throw err
         }
+    }
+
+    getSessionDuration() {
+        return getSessionDuration(this.tokenCacheKey)
     }
 
     protected formatToken(token: SsoToken, registration: ClientRegistration) {
