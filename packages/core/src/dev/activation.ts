@@ -23,6 +23,7 @@ import { getLogger } from '../shared/logger'
 import { entries } from '../shared/utilities/tsUtils'
 import { getEnvironmentSpecificMemento } from '../shared/utilities/mementos'
 import { setContext } from '../shared'
+import { telemetry } from '../shared/telemetry'
 
 interface MenuOption {
     readonly label: string
@@ -423,10 +424,15 @@ async function deleteSsoConnections() {
 }
 
 async function expireSsoConnections() {
-    const conns = targetAuth.listConnections()
-    const ssoConns = (await conns).filter(isAnySsoConnection)
-    await Promise.all(ssoConns.map((conn) => targetAuth.expireConnection(conn)))
-    void vscode.window.showInformationMessage(`Expired: ${ssoConns.map((c) => c.startUrl).join(', ')}`)
+    return telemetry.function_call.run(
+        async () => {
+            const conns = targetAuth.listConnections()
+            const ssoConns = (await conns).filter(isAnySsoConnection)
+            await Promise.all(ssoConns.map((conn) => targetAuth.expireConnection(conn)))
+            void vscode.window.showInformationMessage(`Expired: ${ssoConns.map((c) => c.startUrl).join(', ')}`)
+        },
+        { emit: false, functionId: { name: 'expireSsoConnectionsDev' } }
+    )
 }
 
 async function showState(path: string) {
