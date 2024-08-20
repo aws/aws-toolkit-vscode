@@ -15,7 +15,9 @@ import { debounce } from 'lodash'
 import { AuthError, AuthFlowState, userCancelled } from '../types'
 import { builderIdStartUrl } from '../../../../auth/sso/model'
 import { ToolkitError } from '../../../../shared/errors'
+import { withTelemetryContext } from '../../../../shared/telemetry/util'
 
+const className = 'AmazonQLoginWebview'
 export class AmazonQLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.amazonq.AmazonCommonAuth'
     public static sourcePath: string = 'vue/src/login/webview/vue/amazonq/index.js'
@@ -102,7 +104,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
              * IMPORTANT: During this process {@link this.onActiveConnectionModified} is triggered. This
              * causes the reauth page to refresh before the user is actually done the whole reauth flow.
              */
-            this.reauthError = await this.ssoSetup('reauthenticate', async () => {
+            this.reauthError = await this.ssoSetup('reauthenticateAmazonQ', async () => {
                 this.storeMetricMetadata({
                     authEnabledFeatures: this.getAuthEnabledFeatures(conn),
                     isReAuth: true,
@@ -156,6 +158,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         return this.authState
     }
 
+    @withTelemetryContext({ name: 'signout', class: className })
     override async signout(): Promise<void> {
         const conn = AuthUtil.instance.secondaryAuth.activeConnection
         if (!isSsoConnection(conn)) {
