@@ -9,7 +9,7 @@ import fs from '../../shared/fs/fs'
 import { ToolkitError, isUserCancelledError } from '../../shared/errors'
 import { assertTreeItem } from '../shared/treeview/testUtil'
 import { getTestWindow } from '../shared/vscode/window'
-import { captureEventOnce } from '../testUtil'
+import { assertTelemetry, captureEventOnce } from '../testUtil'
 import { createBuilderIdProfile, createSsoProfile, createTestAuth } from './testUtil'
 import { toCollection } from '../../shared/utilities/asyncCollection'
 import globals from '../../shared/extensionGlobals'
@@ -54,6 +54,20 @@ describe('Auth', function () {
         const conn = await auth.createConnection(ssoProfile)
         await auth.deleteConnection({ id: conn.id })
         assert.strictEqual((await auth.listConnections()).length, 0)
+        assertTelemetry('auth_modifyConnection', [
+            {
+                action: 'updateConnectionState',
+                connectionState: 'valid',
+                source: 'Auth#createConnection,updateConnectionState',
+                sessionDuration: undefined,
+            },
+            {
+                action: 'updateConnectionState',
+                connectionState: 'invalid',
+                source: 'Auth#deleteConnection,invalidateConnection,updateConnectionState',
+                sessionDuration: 11223355,
+            },
+        ])
     })
 
     it('can delete an active connection', async function () {
@@ -63,6 +77,20 @@ describe('Auth', function () {
         await auth.deleteConnection(auth.activeConnection)
         assert.strictEqual((await auth.listConnections()).length, 0)
         assert.strictEqual(auth.activeConnection, undefined)
+        assertTelemetry('auth_modifyConnection', [
+            {
+                action: 'updateConnectionState',
+                connectionState: 'valid',
+                source: 'Auth#createConnection,updateConnectionState',
+                sessionDuration: undefined,
+            },
+            {
+                action: 'updateConnectionState',
+                connectionState: 'invalid',
+                source: 'Auth#deleteConnection,logout,invalidateConnection,updateConnectionState',
+                sessionDuration: 11223355,
+            },
+        ])
     })
 
     it('does not throw when creating a duplicate connection', async function () {
@@ -84,6 +112,20 @@ describe('Auth', function () {
         await auth.logout()
         assert.strictEqual(auth.activeConnection, undefined)
         assert.strictEqual(auth.activeConnectionEvents.last, undefined)
+        assertTelemetry('auth_modifyConnection', [
+            {
+                action: 'updateConnectionState',
+                connectionState: 'valid',
+                source: 'Auth#createConnection,updateConnectionState',
+                sessionDuration: undefined,
+            },
+            {
+                action: 'updateConnectionState',
+                connectionState: 'invalid',
+                source: 'Auth#logout,invalidateConnection,updateConnectionState',
+                sessionDuration: 11223355,
+            },
+        ])
     })
 
     describe('useConnection', function () {

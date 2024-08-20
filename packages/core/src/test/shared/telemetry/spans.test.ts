@@ -11,6 +11,7 @@ import { assertTelemetry, getMetrics, installFakeClock } from '../../testUtil'
 import { selectFrom } from '../../../shared/utilities/tsUtils'
 import { getAwsServiceError } from '../errors.test'
 import { sleep } from '../../../shared'
+import { withTelemetryContext } from '../../../shared/telemetry/util'
 
 describe('TelemetrySpan', function () {
     let clock: ReturnType<typeof installFakeClock>
@@ -376,10 +377,9 @@ describe('TelemetryTracer', function () {
              * Another class that uses execution context in its calls
              */
             class TestClassB1 {
+                @withTelemetryContext({ name: 'methodJ', class: 'TestClassB1' })
                 async methodJ(): Promise<FunctionEntry[]> {
-                    return telemetry.function_call.run(() => this.methodK(), {
-                        functionId: { name: 'methodJ', class: 'TestClassB1' },
-                    })
+                    return this.methodK()
                 }
 
                 methodK() {
@@ -464,6 +464,19 @@ describe('TelemetryTracer', function () {
                     ]),
                     'A#a1,a2:B#b1,b2'
                 )
+            })
+
+            class TestEmit {
+                @withTelemetryContext({ name: 'doesNotEmit', class: 'TestEmit' })
+                doesNotEmit() {
+                    return
+                }
+            }
+
+            it(`withTelemetryContext does not emit an event on its own`, function () {
+                const inst = new TestEmit()
+                inst.doesNotEmit()
+                assertTelemetry('function_call', [])
             })
         })
     })
