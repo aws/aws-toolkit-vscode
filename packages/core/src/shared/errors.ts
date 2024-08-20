@@ -788,7 +788,7 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
     if (
         isVSCodeProxyError(err) ||
         isSocketTimeoutError(err) ||
-        isNonJsonHttpResponse(err) ||
+        isHttpSyntaxError(err) ||
         isEnoentError(err) ||
         isEaccesError(err) ||
         isEbadfError(err) ||
@@ -849,11 +849,13 @@ function isSocketTimeoutError(err: Error): boolean {
 /**
  * Expected JSON response from HTTP request, but got an error HTML error page instead.
  *
- * Example error message:
- * "Unexpected token '<', "<html><bod"... is not valid JSON Deserialization error: to see the raw response, inspect the hidden field {error}.$response on this object."
+ * IMPORTANT:
+ *
+ * This function is influenced by {@link getReasonFromSyntaxError()} since it modifies the error
+ * message with the real underlying reason, instead of the default "Unexpected token" message.
  */
-function isNonJsonHttpResponse(err: Error): boolean {
-    return isError(err, 'SyntaxError', 'Unexpected token')
+function isHttpSyntaxError(err: Error): boolean {
+    return isError(err, 'SyntaxError', 'SDK Client unexpected error response')
 }
 
 /**
@@ -889,6 +891,9 @@ function isError(err: Error, id: string, messageIncludes: string = '') {
  * of attempt to deserialize the non-JSON data.
  * While the contents of the response may contain sensitive information, there may be a reason
  * for failure embedded. This function attempts to extract that reason.
+ *
+ * Example error message before extracting:
+ * "Unexpected token '<', "<html><bod"... is not valid JSON Deserialization error: to see the raw response, inspect the hidden field {error}.$response on this object."
  *
  * If the reason cannot be found or the error is not a SyntaxError, return undefined.
  */

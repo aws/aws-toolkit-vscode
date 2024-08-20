@@ -492,7 +492,7 @@ describe('util', function () {
             false,
             'Incorrectly indicated as network error'
         )
-        let err = new Error("Unexpected token '<'")
+        let err = new Error('SDK Client unexpected error response: Blah Blah Blah')
         err.name = 'SyntaxError'
         assert.deepStrictEqual(isNetworkError(err), true, 'Did not indicate SyntaxError as network error')
 
