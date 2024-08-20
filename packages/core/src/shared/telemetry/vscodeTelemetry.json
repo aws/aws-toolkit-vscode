@@ -1077,7 +1077,8 @@
                     "type": "ssoRegistrationExpiresAt",
                     "required": false
                 }
-            ]
+            ],
+            "passive": true
         },
         {
             "name": "function_call",
