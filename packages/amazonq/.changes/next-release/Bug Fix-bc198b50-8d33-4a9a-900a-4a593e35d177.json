@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Correct indentation when insert Q chat code at cursor position"
+}
