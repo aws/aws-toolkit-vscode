@@ -9,7 +9,14 @@ import * as os from 'os'
 import { getLogger } from '../logger'
 import { fromExtensionManifest, migrateSetting, Settings } from '../settings'
 import { memoize } from '../utilities/functionUtils'
-import { isInDevEnv, extensionVersion, isAutomation, isRemoteWorkspace } from '../vscode/env'
+import {
+    isInDevEnv,
+    extensionVersion,
+    isAutomation,
+    isRemoteWorkspace,
+    isCloudDesktop,
+    isAmazonInternalOs,
+} from '../vscode/env'
 import { addTypeName } from '../utilities/typeConstructors'
 import globals, { isWeb } from '../extensionGlobals'
 import { mapMetadata } from './telemetryLogger'
@@ -177,18 +184,29 @@ export function getUserAgent(
     return pairs.join(' ')
 }
 
+/**
+ * All the types of ENVs the extension can run in.
+ *
+ * NOTES:
+ * - append `-amzn` for any environment internal to Amazon
+ */
 type EnvType =
     | 'cloud9'
     | 'cloud9-codecatalyst'
+    | 'cloudDesktop-amzn'
     | 'codecatalyst'
     | 'local'
     | 'ec2'
+    | 'ec2-amzn' // ec2 but with an internal Amazon OS
     | 'sagemaker'
     | 'test'
     | 'wsl'
     | 'unknown'
 
-export function getComputeEnvType(): EnvType {
+/**
+ * Returns the identifier for the environment that the extension is running in.
+ */
+export async function getComputeEnvType(): Promise<EnvType> {
     if (isCloud9('classic')) {
         return 'cloud9'
     } else if (isCloud9('codecatalyst')) {
@@ -197,7 +215,13 @@ export function getComputeEnvType(): EnvType {
         return 'codecatalyst'
     } else if (isSageMaker()) {
         return 'sagemaker'
-    } else if (isRemoteWorkspace() && !isInDevEnv()) {
+    } else if (isRemoteWorkspace()) {
+        if (isAmazonInternalOs()) {
+            if (await isCloudDesktop()) {
+                return 'cloudDesktop-amzn'
+            }
+            return 'ec2-amzn'
+        }
         return 'ec2'
     } else if (env.remoteName) {
         return 'wsl'
