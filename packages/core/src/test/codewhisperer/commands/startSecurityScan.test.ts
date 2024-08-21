@@ -7,7 +7,6 @@ import assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as semver from 'semver'
-import * as process from 'process'
 import { DefaultCodeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
 import * as startSecurityScan from '../../../codewhisperer/commands/startSecurityScan'
 import { SecurityPanelViewProvider } from '../../../codewhisperer/views/securityPanelViewProvider'
@@ -32,6 +31,7 @@ import { CodewhispererSecurityScan } from '../../../shared/telemetry/telemetry.g
 import * as errors from '../../../shared/errors'
 import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
 import { getFetchStubWithResponse } from '../../index'
+import { performanceTest } from '../../../shared/performance/performance'
 
 const mockCreateCodeScanResponse = {
     $response: {
@@ -487,14 +487,12 @@ describe('startSecurityScanPerformanceTest', function () {
         })
     }
 
-    it('Should calculate cpu and memory usage for file scans', async function () {
+    performanceTest({}, 'Should calculate cpu and memory usage for file scans', async function () {
         getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
         const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
         const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
 
         await model.CodeScansState.instance.setScansEnabled(true)
-        const startTime = process.hrtime()
-        const startScanCpuUsage = process.cpuUsage()
 
         await startSecurityScan.startSecurityScan(
             mockSecurityPanelViewProvider,
@@ -502,30 +500,6 @@ describe('startSecurityScanPerformanceTest', function () {
             createClient(),
             extensionContext,
             CodeAnalysisScope.FILE
-        )
-
-        // EndScanCpuUsage is the difference of CPU Usage from start of a scan to end of a scan.
-        const EndScanCpuUsage = process.cpuUsage(startScanCpuUsage)
-        const elapsedTime = process.hrtime(startTime)
-        const elapsedSeconds = elapsedTime[0] + elapsedTime[1] / 1e9
-
-        const EndScanCpuUsageByUser = EndScanCpuUsage.user / 1000000 // Convert microseconds to seconds
-        const EndScanCpuUsageBySystem = EndScanCpuUsage.system / 1000000
-
-        const EndScanMemoryUsage = process.memoryUsage().heapTotal
-        const EndScanMemoryUsageInMB = EndScanMemoryUsage / (1024 * 1024) // Converting bytes to MB
-
-        const cpuUsagePercentage = ((EndScanCpuUsageByUser + EndScanCpuUsageBySystem) / elapsedSeconds) * 100
-
-        // These limits are considered after some observations but may vary with machine, OS etc factors.
-        assert(
-            cpuUsagePercentage < 50,
-            `Expected CPU usage should be less than 50% of total CPU%, actual CPU usage is ${cpuUsagePercentage}`
-        )
-
-        assert(
-            EndScanMemoryUsageInMB < 400,
-            'System memory usage for performing a file scan should not be greater than 400 MB'
         )
 
         assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
