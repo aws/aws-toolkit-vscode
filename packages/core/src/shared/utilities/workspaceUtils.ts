@@ -559,7 +559,7 @@ export async function collectFilesForIndex(
 
     const isLanguageSupported = (filename: string) => {
         const k =
-            /\.(js|ts|java|py|rb|cpp|tsx|jsx|cc|c|h|html|json|css|md|php|swift|rs|scala|yaml|tf|sql|sh|go|yml|kt|smithy|config|kts|gradle|cfg|xml|vue)$/i
+            /\.(js|ts|java|py|rb|cpp|tsx|jsx|cc|c|cs|vb|pl|r|m|hs|mts|mjs|h|clj|dart|groovy|lua|rb|jl|ipynb|html|json|css|md|php|swift|rs|scala|yaml|tf|sql|sh|go|yml|kt|smithy|config|kts|gradle|cfg|xml|vue)$/i
         return k.test(filename) || filename.endsWith('Config')
     }
 
