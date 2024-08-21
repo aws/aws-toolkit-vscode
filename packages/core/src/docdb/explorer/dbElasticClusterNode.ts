@@ -64,33 +64,20 @@ export class DBElasticClusterNode extends DBResourceNode {
         return await this.client.deleteElasticCluster(this.arn)
     }
 
-    public get status(): string | undefined {
+    override get status() {
         return this.cluster.status?.toLowerCase()
     }
 
-    public get isAvailable(): boolean {
+    override async getStatus() {
+        const cluster = await this.client.getElasticCluster(this.arn)
+        return cluster?.status
+    }
+
+    override get isAvailable() {
         return this.status === 'active'
     }
 
-    public get isStopped(): boolean {
-        return this.status === 'stopped'
-    }
-
-    public async waitUntilStatusChanged(): Promise<boolean> {
-        const currentStatus = this.status
-
-        await waitUntil(
-            async () => {
-                const cluster = await this.client.getElasticCluster(this.arn)
-                return cluster?.status !== currentStatus
-            },
-            { timeout: 30000, interval: 500, truthy: true }
-        )
-
-        return false
-    }
-
-    public override getConsoleUrl() {
+    override getConsoleUrl() {
         const region = this.regionCode
         return vscode.Uri.parse(
             `https://${region}.console.aws.amazon.com/docdb/home?region=${region}#elastic-cluster-details/${this.arn}`

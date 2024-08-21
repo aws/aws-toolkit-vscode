@@ -80,9 +80,7 @@ export async function addRegion(node: DBClusterNode | DBGlobalClusterNode): Prom
         }
 
         if (!node.isAvailable) {
-            void vscode.window.showErrorMessage(
-                localize('AWS.docdb.deleteCluster.clusterStopped', 'Cluster must be running')
-            )
+            void vscode.window.showErrorMessage(localize('AWS.docdb.clusterStopped', 'Cluster must be running'))
             throw new ToolkitError('Cluster not available', { cancelled: true, code: 'docdbClusterStopped' })
         }
 

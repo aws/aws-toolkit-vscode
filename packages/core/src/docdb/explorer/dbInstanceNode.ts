@@ -60,34 +60,16 @@ export class DBInstanceNode extends DBResourceNode {
         return await this.parent.client.modifyInstance(request)
     }
 
-    public get status(): string | undefined {
+    override get status() {
         return this.instance.DBInstanceStatus
     }
 
-    public get isAvailable(): boolean {
-        return this.status === 'available'
+    override async getStatus() {
+        const instance = await this.parent.client.getInstance(this.instance.DBInstanceIdentifier!)
+        return instance?.DBInstanceStatus
     }
 
-    public get isStopped(): boolean {
-        return this.status === 'stopped'
-    }
-
-    public async waitUntilStatusChanged(): Promise<boolean> {
-        const currentStatus = this.status
-        const instanceId = this.instance.DBInstanceIdentifier!
-
-        await waitUntil(
-            async () => {
-                const instance = await this.parent.client.getInstance(instanceId)
-                return instance?.DBInstanceStatus !== currentStatus
-            },
-            { timeout: 30000, interval: 500, truthy: true }
-        )
-
-        return false
-    }
-
-    public override getConsoleUrl() {
+    override getConsoleUrl() {
         const region = this.regionCode
         return vscode.Uri.parse(
             `https://${region}.console.aws.amazon.com/docdb/home?region=${region}#instance-details/${this.name}`

@@ -112,19 +112,21 @@ export class DBGlobalClusterNode extends DBResourceNode {
         return response
     }
 
-    public get status(): string | undefined {
+    override get status() {
         return this.cluster.Status
     }
 
-    public get isAvailable(): boolean {
-        return this.status === 'available'
+    override async getStatus() {
+        const client = DefaultDocumentDBClient.create(this.regionCode)
+        const [cluster] = await client.listClusters(this.arn)
+        return cluster?.Status
     }
 
-    public override copyEndpoint(): Promise<void> {
+    override copyEndpoint(): Promise<void> {
         return copyToClipboard(this.cluster.GlobalClusterResourceId!, this.name)
     }
 
-    public override getConsoleUrl(): vscode.Uri {
+    override getConsoleUrl(): vscode.Uri {
         const region = this.regionCode
         return vscode.Uri.parse(
             `https://${region}.console.aws.amazon.com/docdb/home?region=${region}#global-cluster-details/${this.name}`

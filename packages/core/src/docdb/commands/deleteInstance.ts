@@ -10,6 +10,7 @@ import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { DBInstanceNode } from '../explorer/dbInstanceNode'
 import { DBClusterNode } from '../explorer/dbClusterNode'
 import { telemetry } from '../../shared/telemetry'
+import { assertNodeAvailable } from '../utils'
 
 /**
  * Deletes a DocumentDB instance.
@@ -22,20 +23,10 @@ export async function deleteInstance(node: DBInstanceNode) {
     getLogger().debug('docdb: DeleteInstance called for: %O', node)
 
     await telemetry.docdb_deleteInstance.run(async () => {
-        if (!node) {
-            throw new ToolkitError('No node specified for DeleteInstance')
-        }
-
+        assertNodeAvailable(node, 'DeleteInstance')
         const parent = node.parent as DBClusterNode
         const client = parent.client
         const instanceName = node.instance.DBInstanceIdentifier ?? ''
-
-        if (!node.isAvailable) {
-            void vscode.window.showErrorMessage(
-                localize('AWS.docdb.deleteInstance.instanceStopped', 'Instance must be running')
-            )
-            throw new ToolkitError('Instance not running', { cancelled: true, code: 'docdbInstanceNotAvailable' })
-        }
 
         if (!parent?.isAvailable) {
             void vscode.window.showErrorMessage(

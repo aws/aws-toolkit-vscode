@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { getLogger, ToolkitError } from '../../shared'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
-import { validateInstanceName } from '../utils'
+import { assertNodeAvailable, validateInstanceName } from '../utils'
 import { DBInstanceNode } from '../explorer/dbInstanceNode'
 import { telemetry } from '../../shared/telemetry'
 
@@ -22,18 +22,8 @@ export async function renameInstance(node: DBInstanceNode) {
     getLogger().debug('docdb: RenameInstance called for: %O', node)
 
     await telemetry.docdb_renameInstance.run(async () => {
-        if (!node) {
-            throw new ToolkitError('No node specified for RenameInstance')
-        }
-
+        assertNodeAvailable(node, 'RenameInstance')
         const instanceName = node.instance.DBInstanceIdentifier
-
-        if (!node.isAvailable) {
-            void vscode.window.showErrorMessage(
-                localize('AWS.docdb.deleteInstance.instanceStopped', 'Instance must be running')
-            )
-            throw new ToolkitError('Instance not available', { cancelled: true, code: 'docdbInstanceNotAvailable' })
-        }
 
         const newInstanceName = await vscode.window.showInputBox({
             prompt: localize('AWS.docdb.renameInstance.prompt', 'New instance name'),

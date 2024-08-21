@@ -12,6 +12,7 @@ import { showQuickPick } from '../../shared/ui/pickerPrompter'
 import { formatDate, formatTime } from '../../shared/date'
 import { telemetry } from '../../shared/telemetry'
 import { DBElasticClusterNode } from '../explorer/dbElasticClusterNode'
+import { assertNodeAvailable } from '../utils'
 
 /**
  * Deletes a DocumentDB cluster.
@@ -24,10 +25,7 @@ export async function deleteCluster(node: DBClusterNode | DBElasticClusterNode) 
     getLogger().debug('docdb: DeleteCluster called for: %O', node)
 
     await telemetry.docdb_deleteCluster.run(async (span) => {
-        if (!node) {
-            throw new ToolkitError('No node specified for DeleteCluster')
-        }
-
+        assertNodeAvailable(node, 'DeleteCluster')
         const clusterName = node.name
         const isRegionalCluster = node instanceof DBClusterNode
 
@@ -42,13 +40,6 @@ export async function deleteCluster(node: DBClusterNode | DBElasticClusterNode) 
                 cancelled: true,
                 code: 'docdbDeletionProtectionInUse',
             })
-        }
-
-        if (!node.isAvailable) {
-            void vscode.window.showErrorMessage(
-                localize('AWS.docdb.deleteCluster.clusterStopped', 'Cluster must be running')
-            )
-            throw new ToolkitError('Cluster not running', { cancelled: true, code: 'docdbClusterStopped' })
         }
 
         const takeSnapshot = await showQuickPick(

@@ -3,7 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
+import { ToolkitError } from '../shared'
 import { localize } from '../shared/utilities/vsCodeUtils'
+import { DBInstanceNode } from './explorer/dbInstanceNode'
+import { DBResourceNode } from './explorer/dbResourceNode'
 
 /**
  * Validates a cluster name for the CreateCluster API.
@@ -131,4 +135,20 @@ export function validateInstanceName(name: string): string | undefined {
 
 export function isSupportedGlobalInstanceClass(instanceClass: string) {
     return /(t3|t4g|r4)/.test(instanceClass) === false
+}
+
+export function assertNodeAvailable(node: DBResourceNode | undefined, action: string) {
+    if (!node) {
+        throw new ToolkitError(`No node specified for ${action}`)
+    }
+
+    if (!node.isAvailable) {
+        if (node instanceof DBInstanceNode) {
+            void vscode.window.showErrorMessage(localize('AWS.docdb.instanceStopped', 'Instance must be running'))
+            throw new ToolkitError('Instance not running', { cancelled: true, code: 'docdbInstanceNotAvailable' })
+        }
+
+        void vscode.window.showErrorMessage(localize('AWS.docdb.clusterStopped', 'Cluster must be running'))
+        throw new ToolkitError('Cluster not running', { cancelled: true, code: 'docdbClusterStopped' })
+    }
 }

@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { getLogger, sleep, ToolkitError } from '../../shared'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
-import { validateClusterName } from '../utils'
+import { assertNodeAvailable, validateClusterName } from '../utils'
 import { DBClusterNode } from '../explorer/dbClusterNode'
 import { DBGlobalClusterNode } from '../explorer/dbGlobalClusterNode'
 import { telemetry } from '../../shared/telemetry'
@@ -23,18 +23,8 @@ export async function renameCluster(node: DBClusterNode | DBGlobalClusterNode) {
     getLogger().debug('docdb: RenameCluster called for: %O', node)
 
     await telemetry.docdb_renameCluster.run(async () => {
-        if (!node) {
-            throw new ToolkitError('No node specified for RenameCluster')
-        }
-
+        assertNodeAvailable(node, 'RenameCluster')
         const clusterName = node.name
-
-        if (!node.isAvailable) {
-            void vscode.window.showErrorMessage(
-                localize('AWS.docdb.deleteCluster.clusterStopped', 'Cluster must be running')
-            )
-            throw new ToolkitError('Cluster not available', { cancelled: true, code: 'docdbClusterStopped' })
-        }
 
         const newClusterName = await vscode.window.showInputBox({
             prompt: localize('AWS.docdb.renameCluster.prompt', 'New cluster name'),

@@ -11,6 +11,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { telemetry } from '../../shared/telemetry'
 import { DBInstanceNode } from '../explorer/dbInstanceNode'
+import { assertNodeAvailable } from '../utils'
 
 /**
  * Reboots a DocumentDB instance.
@@ -20,20 +21,11 @@ export async function rebootInstance(node: DBInstanceNode) {
     getLogger().debug('docdb: RebootInstance called for: %O', node)
 
     await telemetry.docdb_rebootInstance.run(async () => {
-        if (!node) {
-            throw new ToolkitError('No node specified')
-        }
-
-        if (!node.isAvailable) {
-            void vscode.window.showErrorMessage(
-                localize('AWS.docdb.deleteInstance.instanceStopped', 'Instance must be running')
-            )
-            throw new ToolkitError('Instance not available', { cancelled: true, code: 'docdbInstanceNotAvailable' })
-        }
+        assertNodeAvailable(node, 'RebootInstance')
 
         const isConfirmed = await showConfirmationMessage({
             prompt: localize(
-                'AWS.docdb.deleteInstance.prompt',
+                'AWS.docdb.rebootInstance.prompt',
                 'Are you sure you want to reboot instance {0}?',
                 node.name
             ),

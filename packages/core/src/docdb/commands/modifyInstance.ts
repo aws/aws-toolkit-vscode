@@ -13,6 +13,7 @@ import { DBStorageType, DocumentDBClient } from '../../shared/clients/docdbClien
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { telemetry } from '../../shared/telemetry'
+import { assertNodeAvailable } from '../utils'
 
 /**
  * Modifies a DocumentDB instance.
@@ -25,17 +26,7 @@ export async function modifyInstance(node: DBInstanceNode) {
     getLogger().debug('docdb: ModifyInstance called for: %O', node)
 
     await telemetry.docdb_resizeInstance.run(async () => {
-        if (!node) {
-            throw new ToolkitError('No node specified for ModifyInstance')
-        }
-
-        if (!node.isAvailable) {
-            void vscode.window.showErrorMessage(
-                localize('AWS.docdb.modifyInstance.instanceStopped', 'Instance must be running')
-            )
-            throw new ToolkitError('Instance not available', { cancelled: true, code: 'docdbInstanceNotAvailable' })
-        }
-
+        assertNodeAvailable(node, 'ModifyInstance')
         const instanceName = node.instance.DBInstanceIdentifier
         const parent = node.parent
 
