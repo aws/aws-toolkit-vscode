@@ -536,7 +536,7 @@ fun buildDownloadFailureChatContent(downloadFailureReason: DownloadFailureReason
     )
 }
 
-private fun getDownloadedArtifactTextFromType(artifactType: TransformationDownloadArtifactType): String =
+fun getDownloadedArtifactTextFromType(artifactType: TransformationDownloadArtifactType): String =
     when (artifactType) {
         TransformationDownloadArtifactType.CLIENT_INSTRUCTIONS -> "upgraded code"
         TransformationDownloadArtifactType.LOGS -> "build log"

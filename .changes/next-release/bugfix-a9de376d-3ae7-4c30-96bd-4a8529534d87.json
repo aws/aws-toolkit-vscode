@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Amazon Q Code Transformation: show an error notification when download diff fails"
+}

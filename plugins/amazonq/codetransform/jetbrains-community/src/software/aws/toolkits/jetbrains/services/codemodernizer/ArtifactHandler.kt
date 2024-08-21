@@ -27,8 +27,10 @@ import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineBgContext
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.NoTokenInitializedException
 import software.aws.toolkits.jetbrains.services.amazonq.CODE_TRANSFORM_TROUBLESHOOT_DOC_DOWNLOAD_ERROR_OVERVIEW
+import software.aws.toolkits.jetbrains.services.amazonq.CODE_TRANSFORM_TROUBLESHOOT_DOC_DOWNLOAD_EXPIRED
 import software.aws.toolkits.jetbrains.services.codemodernizer.client.GumbyClient
 import software.aws.toolkits.jetbrains.services.codemodernizer.commands.CodeTransformMessageListener
+import software.aws.toolkits.jetbrains.services.codemodernizer.constants.getDownloadedArtifactTextFromType
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerArtifact
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeTransformFailureBuildLog
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeTransformHilDownloadArtifact
@@ -275,9 +277,11 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
     }
 
     fun notifyUnableToDownload(error: DownloadFailureReason) {
-        // Inform chat about failure
+        // Inform about failure
         LOG.error { "Unable to download artifact: $error" }
         CodeTransformMessageListener.instance.onDownloadFailure(error)
+
+        val artifactText = getDownloadedArtifactTextFromType(error.artifactType)
 
         // Display notification balloon if applicable
         when (error) {
@@ -310,8 +314,25 @@ class ArtifactHandler(private val project: Project, private val clientAdaptor: G
                 )
             }
 
-            is DownloadFailureReason.OTHER, is DownloadFailureReason.INVALID_ARTIFACT -> {
-                // No notification, only chat update
+            is DownloadFailureReason.INVALID_ARTIFACT -> {
+                if (error.artifactType == TransformationDownloadArtifactType.CLIENT_INSTRUCTIONS) {
+                    notifyStickyWarn(
+                        message("codemodernizer.notification.warn.download_failed_client_instructions_expired"),
+                        CODE_TRANSFORM_TROUBLESHOOT_DOC_DOWNLOAD_EXPIRED,
+                    )
+                } else {
+                    notifyStickyWarn(
+                        message("codemodernizer.notification.warn.download_failed_invalid_artifact", artifactText),
+                        CODE_TRANSFORM_TROUBLESHOOT_DOC_DOWNLOAD_EXPIRED,
+                    )
+                }
+            }
+
+            is DownloadFailureReason.OTHER -> {
+                notifyStickyWarn(
+                    message("codemodernizer.notification.warn.download_failed_other.content", artifactText, error.errorMessage),
+                    CODE_TRANSFORM_TROUBLESHOOT_DOC_DOWNLOAD_ERROR_OVERVIEW,
+                )
             }
         }
     }
