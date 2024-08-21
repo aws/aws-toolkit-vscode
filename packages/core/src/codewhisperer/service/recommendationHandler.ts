@@ -454,6 +454,7 @@ export class RecommendationHandler {
             this.cancelPaginatedRequest()
             this.clearRecommendations()
             this.disposeInlineCompletion()
+            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.inlineCompletionActive', false)
             await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
             this.disposeCommandOverrides()
             // fix a regression that requires user to hit Esc twice to clear inline ghost text
@@ -621,6 +622,7 @@ export class RecommendationHandler {
                 await vscode.commands.executeCommand(`editor.action.inlineSuggest.trigger`)
                 this.sendPerceivedLatencyTelemetry()
             }
+            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.inlineCompletionActive', true)
         })
     }
 
