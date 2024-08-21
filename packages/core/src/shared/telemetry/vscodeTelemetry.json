@@ -8,13 +8,18 @@
         {
             "name": "documentFormat",
             "type": "string",
-            "allowedValues": ["JSON, YAML"],
+            "allowedValues": [
+                "JSON, YAML"
+            ],
             "description": "SSM Create document format selection"
         },
         {
             "name": "ssmOperation",
             "type": "string",
-            "allowedValues": ["Create", "Update"],
+            "allowedValues": [
+                "Create",
+                "Update"
+            ],
             "description": "SSM Publish Document operation type"
         },
         {
@@ -40,7 +45,11 @@
         {
             "name": "cwsprChatTriggerInteraction",
             "type": "string",
-            "allowedValues": ["hotkeys", "click", "contextMenu"],
+            "allowedValues": [
+                "hotkeys",
+                "click",
+                "contextMenu"
+            ],
             "description": "Identifies the specific interaction that opens the chat panel"
         },
         {
@@ -105,7 +114,11 @@
         {
             "name": "cwsprChatConversationType",
             "type": "string",
-            "allowedValues": ["Chat", "Assign", "Transform"],
+            "allowedValues": [
+                "Chat",
+                "Assign",
+                "Transform"
+            ],
             "description": "Identifies the type of conversation"
         },
         {
@@ -232,7 +245,12 @@
         {
             "name": "cwsprChatCommandType",
             "type": "string",
-            "allowedValues": ["clear", "help", "transform", "auth"],
+            "allowedValues": [
+                "clear",
+                "help",
+                "transform",
+                "auth"
+            ],
             "description": "Type of chat command (/command) executed"
         },
         {
@@ -248,7 +266,11 @@
         {
             "name": "authStatus",
             "type": "string",
-            "allowedValues": ["connected", "notConnected", "expired"],
+            "allowedValues": [
+                "connected",
+                "notConnected",
+                "expired"
+            ],
             "description": "Status of the an auth connection."
         },
         {
@@ -275,6 +297,21 @@
             "name": "connectionState",
             "type": "string",
             "description": "A detailed state of a specific auth connection. Use `authStatus` for a higher level view of an extension's general connection."
+        },
+        {
+            "name": "cpuUsage",
+            "type": "int",
+            "description": "Percentage of cpu usage"
+        },
+        {
+            "name": "heapTotal",
+            "type": "int",
+            "description": "Memory heap usage in MB"
+        },
+        {
+            "name": "functionName",
+            "type": "string",
+            "description": "The name of the function"
         }
     ],
     "metrics": [
@@ -876,7 +913,9 @@
             "description": "User clicked on the thumbs up button to say that they are unsatisfied",
             "unit": "Count",
             "metadata": [
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -888,7 +927,9 @@
             "description": "User clicked on the thumbs down button to say that they are unsatisfied",
             "unit": "Count",
             "metadata": [
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -900,7 +941,9 @@
             "description": "User clicked on the thumbs up button, to mention that they are satisfied",
             "unit": "Count",
             "metadata": [
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -912,7 +955,9 @@
             "description": "User clicked on the thumbs down button to say that they are unsatisfied",
             "unit": "Count",
             "metadata": [
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -924,21 +969,26 @@
             "description": "User reviewed changes",
             "passive": true,
             "metadata": [
-                { "type": "enabled" },
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "enabled"
+                },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
                 }
             ]
         },
-
         {
             "name": "amazonq_startChat",
             "description": "Number of times the user have triggered /dev and started the chat",
             "unit": "Count",
             "metadata": [
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -949,8 +999,13 @@
             "name": "amazonq_endChat",
             "description": "Captures end of the conversation with amazonq /dev",
             "metadata": [
-                { "type": "amazonqConversationId" },
-                { "type": "amazonqEndOfTheConversationLatency", "required": false },
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "amazonqEndOfTheConversationLatency",
+                    "required": false
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -961,9 +1016,15 @@
             "name": "amazonq_approachInvoke",
             "description": "Captures Approach generation process",
             "metadata": [
-                { "type": "amazonqConversationId" },
-                { "type": "amazonqGenerateApproachIteration" },
-                { "type": "amazonqGenerateApproachLatency" },
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "amazonqGenerateApproachIteration"
+                },
+                {
+                    "type": "amazonqGenerateApproachLatency"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -974,7 +1035,10 @@
             "name": "amazonq_startConversationInvoke",
             "description": "Captures startConversation invocation process",
             "metadata": [
-                { "type": "amazonqConversationId", "required": false },
+                {
+                    "type": "amazonqConversationId",
+                    "required": false
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -985,8 +1049,13 @@
             "name": "amazonq_createUpload",
             "description": "Captures createUploadUrl invocation process",
             "metadata": [
-                { "type": "amazonqConversationId" },
-                { "type": "amazonqRepositorySize", "required": false },
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "amazonqRepositorySize",
+                    "required": false
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -1087,7 +1156,20 @@
         {
             "name": "function_call",
             "description": "Represents a function call. In most cases this should wrap code with a run(), then you can add context.",
-            "metadata": [],
+            "metadata": [
+                {
+                    "type": "cpuUsage",
+                    "required": true
+                },
+                {
+                    "type": "heapTotal",
+                    "required": true
+                },
+                {
+                    "type": "functionName",
+                    "required": true
+                }
+            ],
             "passive": true
         }
     ]
