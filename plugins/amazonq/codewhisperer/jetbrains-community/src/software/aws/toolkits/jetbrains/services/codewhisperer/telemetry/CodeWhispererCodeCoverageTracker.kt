@@ -249,6 +249,7 @@ abstract class CodeWhispererCodeCoverageTracker(
             CodewhispererTelemetry.codePercentage(
                 project = null,
                 codewhispererAcceptedTokens = acceptedTokensSize,
+                codewhispererSuggestedTokens = rawAcceptedCharacterCount,
                 codewhispererLanguage = language.toTelemetryType(),
                 codewhispererPercentage = percentage,
                 codewhispererTotalTokens = totalTokensSize,
