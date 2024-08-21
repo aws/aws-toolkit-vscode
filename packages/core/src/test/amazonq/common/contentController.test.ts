@@ -23,7 +23,7 @@ describe('contentController', () => {
                 controller.insertTextAtCursorPosition(
                     'abc\n   def',
                     (editor: vscode.TextEditor, cursorStart: vscode.Position) => {
-                        assert.equal(editor.document.getText(), 'def hello_world():\n    abc\n    def')
+                        assert.equal(editor.document.getText(), 'def hello_world():\n    abc\n       def')
                     }
                 )
             } else {
@@ -39,7 +39,7 @@ describe('contentController', () => {
                 controller.insertTextAtCursorPosition(
                     'abc\n   def',
                     (editor: vscode.TextEditor, cursorStart: vscode.Position) => {
-                        assert.equal(editor.document.getText(), 'def abc\n    defhello_world():\n')
+                        assert.equal(editor.document.getText(), 'def abc\n   defhello_world():\n    ')
                     }
                 )
             } else {
