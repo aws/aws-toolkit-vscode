@@ -41,7 +41,9 @@ export class DBClusterNode extends DBResourceNode {
         this.arn = cluster.DBClusterArn ?? ''
         this.name = cluster.DBClusterIdentifier ?? ''
         this.contextValue = this.getContext()
-        this.iconPath = undefined //TODO: determine icon for regional cluster
+        this.iconPath = new vscode.ThemeIcon(
+            this.isAvailable ? 'layers-active' : this.isStopped ? 'layers-dot' : 'loading~spin'
+        )
         this.description = this.getDescription()
         this.tooltip = `${this.name}${os.EOL}Engine: ${this.cluster.EngineVersion}${os.EOL}Status: ${this.cluster.Status}`
     }
@@ -75,7 +77,7 @@ export class DBClusterNode extends DBResourceNode {
         const context = `${DocDBContext.Cluster}-${this.clusterRole}`
         if (this.isAvailable) {
             return `${context}-running`
-        } else if (this.status === 'stopped') {
+        } else if (this.isStopped) {
             return `${context}-stopped`
         }
         return context
@@ -129,6 +131,10 @@ export class DBClusterNode extends DBResourceNode {
 
     public get isAvailable(): boolean {
         return this.status === 'available'
+    }
+
+    public get isStopped(): boolean {
+        return this.status === 'stopped'
     }
 
     public async waitUntilStatusChanged(): Promise<boolean> {

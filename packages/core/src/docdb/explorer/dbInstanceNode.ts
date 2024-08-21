@@ -27,6 +27,7 @@ export class DBInstanceNode extends DBResourceNode {
         super(parent.client, instance.DBInstanceIdentifier ?? '[Instance]', vscode.TreeItemCollapsibleState.None)
         this.description = this.makeDescription()
         this.contextValue = this.getContext()
+        this.iconPath = this.isAvailable || this.isStopped ? undefined : new vscode.ThemeIcon('loading~spin')
         this.tooltip = `${this.name}\nClass: ${this.instance.DBInstanceClass}\nStatus: ${this.status}`
     }
 
@@ -65,6 +66,10 @@ export class DBInstanceNode extends DBResourceNode {
 
     public get isAvailable(): boolean {
         return this.status === 'available'
+    }
+
+    public get isStopped(): boolean {
+        return this.status === 'stopped'
     }
 
     public async waitUntilStatusChanged(): Promise<boolean> {

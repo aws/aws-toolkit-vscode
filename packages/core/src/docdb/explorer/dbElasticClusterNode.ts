@@ -27,7 +27,9 @@ export class DBElasticClusterNode extends DBResourceNode {
     ) {
         super(client, cluster.clusterName ?? '[Cluster]', vscode.TreeItemCollapsibleState.None)
         this.contextValue = this.getContext()
-        this.iconPath = new vscode.ThemeIcon('layers-dot') //TODO: determine icon for elastic cluster
+        this.iconPath = new vscode.ThemeIcon(
+            this.isAvailable ? 'layers-active' : this.isStopped ? 'layers-dot' : 'loading~spin'
+        )
         this.description = this.getDescription()
         this.tooltip = `${this.name}\nStatus: ${this.status}`
     }
@@ -35,7 +37,7 @@ export class DBElasticClusterNode extends DBResourceNode {
     private getContext() {
         if (this.isAvailable) {
             return `${DocDBContext.ElasticCluster}-running`
-        } else if (this.status === 'stopped') {
+        } else if (this.isStopped) {
             return `${DocDBContext.ElasticCluster}-stopped`
         }
         return DocDBContext.ElasticCluster
@@ -68,6 +70,10 @@ export class DBElasticClusterNode extends DBResourceNode {
 
     public get isAvailable(): boolean {
         return this.status === 'active'
+    }
+
+    public get isStopped(): boolean {
+        return this.status === 'stopped'
     }
 
     public async waitUntilStatusChanged(): Promise<boolean> {
