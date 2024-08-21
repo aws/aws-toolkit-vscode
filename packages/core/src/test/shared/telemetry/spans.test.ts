@@ -96,18 +96,17 @@ describe('TelemetrySpan', function () {
 
 describe('TelemetryTracer', function () {
     let tracer: TelemetryTracer
-    let clock: ReturnType<typeof installFakeClock>
+    let clock: ReturnType<typeof installFakeClock> | undefined
     let sandbox: SinonSandbox
     const metricName = 'test_metric' as MetricName
 
     beforeEach(function () {
         tracer = new TelemetryTracer()
-        clock = installFakeClock()
         sandbox = sinon.createSandbox()
     })
 
     afterEach(function () {
-        clock.uninstall()
+        clock?.uninstall()
         sandbox.restore()
     })
 
@@ -269,11 +268,12 @@ describe('TelemetryTracer', function () {
         })
 
         it('records performance', function () {
+            clock = installFakeClock()
             const { expectedCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
             tracer.run(
                 'function_call',
                 () => {
-                    clock.tick(90)
+                    clock?.tick(90)
                 },
                 {
                     trackPerformance: true,
