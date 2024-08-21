@@ -1069,6 +1069,10 @@
                     "required": false
                 },
                 {
+                    "type": "authStatus",
+                    "required": false
+                },
+                {
                     "type": "connectionState",
                     "required": true
                 },

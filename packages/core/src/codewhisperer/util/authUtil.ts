@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { Auth } from '../../auth/auth'
-import { ToolkitError } from '../../shared/errors'
+import { ToolkitError, runIgnoreNetError } from '../../shared/errors'
 import { getSecondaryAuth, setScopes } from '../../auth/secondaryAuth'
 import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { AmazonQPromptSettings } from '../../shared/settings'
@@ -405,10 +405,18 @@ export class AuthUtil {
      * If this guarantee is not required, use sync method getChatAuthStateSync()
      */
     @withTelemetryContext({ name: 'getChatAuthState', class: authClassName })
-    public async getChatAuthState(): Promise<FeatureAuthState> {
+    public async getChatAuthState(ignoreNetErr: boolean = true): Promise<FeatureAuthState> {
         // The state of the connection may not have been properly validated
         // and the current state we see may be stale, so refresh for latest state.
-        await this.auth.refreshConnectionState(this.conn)
+        if (ignoreNetErr) {
+            await runIgnoreNetError(
+                () => this.auth.refreshConnectionState(this.conn),
+                'getChatAuthState: Cannot refresh connection state due to network error: %s'
+            )
+        } else {
+            await this.auth.refreshConnectionState(this.conn)
+        }
+
         return this.getChatAuthStateSync(this.conn)
     }
 
@@ -525,6 +533,11 @@ export const AuthStates = {
      * Eg: We are currently using Builder ID, but must use Identity Center.
      */
     unsupported: 'unsupported',
+    /**
+     * The current connection exists and isn't expired,
+     * but fetching/refreshing the token resulted in a network error.
+     */
+    connectedWithNetworkError: 'connectedWithNetworkError',
 } as const
 const Features = {
     codewhispererCore: 'codewhispererCore',

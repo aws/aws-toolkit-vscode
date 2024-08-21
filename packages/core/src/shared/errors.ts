@@ -14,6 +14,7 @@ import type * as nodefs from 'fs'
 import type * as os from 'os'
 import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
 import { driveLetterRegex } from './utilities/pathUtils'
+import { getLogger } from './logger/logger'
 
 let _username = 'unknown-user'
 let _isAutomation = false
@@ -910,4 +911,27 @@ export function getReasonFromSyntaxError(err: Error): string | undefined {
     }
 
     return undefined
+}
+
+export function runIgnoreNetError<T>(fn: () => T, logMsg?: string): T | undefined
+export function runIgnoreNetError<T>(fn: () => Promise<T>, logMsg?: string): Promise<T> | undefined
+export function runIgnoreNetError<T>(fn: () => T | Promise<T>, logMsg?: string): T | Promise<T | void> | undefined {
+    const catchErr = (err: unknown) => {
+        if (isNetworkError(err)) {
+            getLogger().error(logMsg ?? 'unknown caller: Network error ignored: %s', err)
+            return
+        }
+
+        throw err
+    }
+
+    try {
+        const result = fn()
+        if (result instanceof Promise) {
+            return result.catch(catchErr)
+        }
+        return result
+    } catch (error) {
+        catchErr(error)
+    }
 }

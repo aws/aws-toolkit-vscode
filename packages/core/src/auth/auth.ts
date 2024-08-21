@@ -13,7 +13,7 @@ import * as localizedText from '../shared/localizedText'
 import { Credentials } from '@aws-sdk/types'
 import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
 import { Timeout } from '../shared/utilities/timeoutUtils'
-import { errorCode, isAwsError, isNetworkError, ToolkitError, UnknownError } from '../shared/errors'
+import { errorCode, isAwsError, isNetworkError, runIgnoreNetError, ToolkitError, UnknownError } from '../shared/errors'
 import { getCache } from './sso/cache'
 import { isNonNullable, Mutable } from '../shared/utilities/tsUtils'
 import { builderIdStartUrl, SsoToken, truncateStartUrl } from './sso/model'
@@ -174,11 +174,7 @@ export class Auth implements AuthService, ConnectionManager {
             return
         }
 
-        try {
-            return await this.useConnection({ id })
-        } catch (err) {
-            getLogger().warn(`auth: failed to restore previous session: %s`, err)
-        }
+        return await this.useConnection({ id }, true)
     }
 
     public async reauthenticate({ id }: Pick<SsoConnection, 'id'>, invalidate?: boolean): Promise<SsoConnection>
@@ -200,11 +196,25 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
-    public async useConnection({ id }: Pick<SsoConnection, 'id'>): Promise<SsoConnection>
-    public async useConnection({ id }: Pick<IamConnection, 'id'>): Promise<IamConnection>
+    /**
+     * Set the active connection and current profile ID based on the passed connection ID.
+     * This will also refresh the state of the connection.
+     *
+     * @param ignoreNetErr Default false. If true, ignore network errors from refreshConnectionState
+     * and use the connection anyways.
+     */
+    public async useConnection({ id }: Pick<SsoConnection, 'id'>, ignoreNetErr?: boolean): Promise<SsoConnection>
+    public async useConnection({ id }: Pick<IamConnection, 'id'>, ignoreNetErr?: boolean): Promise<IamConnection>
     @withTelemetryContext({ name: 'useConnection', class: authClassName })
-    public async useConnection({ id }: Pick<Connection, 'id'>): Promise<Connection> {
-        await this.refreshConnectionState({ id })
+    public async useConnection({ id }: Pick<Connection, 'id'>, ignoreNetErr: boolean = false): Promise<Connection> {
+        if (ignoreNetErr) {
+            await runIgnoreNetError(
+                () => this.refreshConnectionState({ id }),
+                'useConnection: Cannot refresh connection state due to network error: %s'
+            )
+        } else {
+            await this.refreshConnectionState({ id })
+        }
 
         const profile = this.store.getProfile(id)
         if (profile === undefined) {
@@ -601,6 +611,11 @@ export class Auth implements AuthService, ConnectionManager {
         })
     }
 
+    /**
+     * Updates the state of the connection based on a series of validations.
+     * Will throw for network errors encoutered during connection checks, but the state will not be
+     * invalidated for these errors.
+     */
     @withTelemetryContext({ name: 'validateConnection', class: authClassName })
     private async validateConnection<T extends Profile>(id: Connection['id'], profile: StoredProfile<T>) {
         const runCheck = async () => {
@@ -843,6 +858,7 @@ export class Auth implements AuthService, ConnectionManager {
         if (isNetworkError(e)) {
             throw new ToolkitError('Failed to update connection due to networking issues', {
                 cause: e,
+                code: e.code,
             })
         }
     }

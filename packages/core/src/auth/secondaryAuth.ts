@@ -17,6 +17,7 @@ import { indent } from '../shared/utilities/textUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { asStringifiedStack } from '../shared/telemetry/spans'
 import { withTelemetryContext } from '../shared/telemetry/util'
+import { runIgnoreNetError } from '../shared/errors'
 
 export type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId'
 
@@ -297,7 +298,10 @@ export class SecondaryAuth<T extends Connection = Connection> {
             getLogger().warn(`auth (${this.toolId}): saved connection "${this.key}" is not valid`)
             await globalState.update(this.key, undefined)
         } else {
-            await this.auth.refreshConnectionState(conn)
+            await runIgnoreNetError(
+                () => this.auth.refreshConnectionState(conn),
+                'loadSavedConnection: Cannot refresh connection state due to network error: %s'
+            )
             return conn
         }
     }

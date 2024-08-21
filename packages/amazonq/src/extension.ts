@@ -12,6 +12,7 @@ import {
     isAnySsoConnection,
 } from 'aws-core-vscode/auth'
 import {
+    AuthState,
     AuthUtil,
     activate as activateCodeWhisperer,
     shutdown as shutdownCodeWhisperer,
@@ -34,6 +35,7 @@ import {
     globals,
     initialize,
     initializeComputeRegion,
+    isNetworkError,
     messages,
     placeholder,
     setContext,
@@ -141,32 +143,48 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
         }, 1000)
     }
 
-    await telemetry.auth_userState.run(async () => {
-        telemetry.record({ passive: true })
+    try {
+        await telemetry.auth_userState.run(async () => {
+            telemetry.record({ passive: true })
 
-        const firstUse = AuthUtils.ExtensionUse.instance.isFirstUse()
-        const wasUpdated = AuthUtils.ExtensionUse.instance.wasUpdated()
+            const firstUse = AuthUtils.ExtensionUse.instance.isFirstUse()
+            const wasUpdated = AuthUtils.ExtensionUse.instance.wasUpdated()
 
-        if (firstUse) {
-            telemetry.record({ source: ExtStartUpSources.firstStartUp })
-        } else if (wasUpdated) {
-            telemetry.record({ source: ExtStartUpSources.update })
-        } else {
-            telemetry.record({ source: ExtStartUpSources.reload })
-        }
+            if (firstUse) {
+                telemetry.record({ source: ExtStartUpSources.firstStartUp })
+            } else if (wasUpdated) {
+                telemetry.record({ source: ExtStartUpSources.update })
+            } else {
+                telemetry.record({ source: ExtStartUpSources.reload })
+            }
 
-        const authState = (await AuthUtil.instance.getChatAuthState()).codewhispererChat
-        const currConn = AuthUtil.instance.conn
-        if (currConn !== undefined && !isAnySsoConnection(currConn)) {
-            getLogger().error(`Current Amazon Q connection is not SSO, type is: %s`, currConn?.type)
-        }
+            let authState: AuthState = 'disconnected'
+            try {
+                authState = (await AuthUtil.instance.getChatAuthState(false)).codewhispererChat
+            } catch (err) {
+                if (isNetworkError(err)) {
+                    authState = 'connectedWithNetworkError'
+                } else {
+                    throw err
+                }
+            }
+            const currConn = AuthUtil.instance.conn
+            if (currConn !== undefined && !isAnySsoConnection(currConn)) {
+                getLogger().error(`Current Amazon Q connection is not SSO, type is: %s`, currConn?.type)
+            }
 
-        telemetry.record({
-            authStatus: authState === 'connected' || authState === 'expired' ? authState : 'notConnected',
-            authEnabledConnections: AuthUtils.getAuthFormIdsFromConnection(currConn).join(','),
-            ...(await getTelemetryMetadataForConn(currConn)),
+            telemetry.record({
+                authStatus:
+                    authState === 'connected' || authState === 'expired' || authState === 'connectedWithNetworkError'
+                        ? authState
+                        : 'notConnected',
+                authEnabledConnections: AuthUtils.getAuthFormIdsFromConnection(currConn).join(','),
+                ...(await getTelemetryMetadataForConn(currConn)),
+            })
         })
-    })
+    } catch (err) {
+        getLogger().error('Error collecting telemetry for auth_userState: %s', err)
+    }
 }
 
 export async function deactivateCommon() {
