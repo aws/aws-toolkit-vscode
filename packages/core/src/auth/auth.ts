@@ -13,7 +13,7 @@ import * as localizedText from '../shared/localizedText'
 import { Credentials } from '@aws-sdk/types'
 import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
 import { Timeout } from '../shared/utilities/timeoutUtils'
-import { errorCode, isAwsError, isNetworkError, runIgnoreNetError, ToolkitError, UnknownError } from '../shared/errors'
+import { errorCode, isAwsError, isNetworkError, ToolkitError, UnknownError } from '../shared/errors'
 import { getCache } from './sso/cache'
 import { isNonNullable, Mutable } from '../shared/utilities/tsUtils'
 import { builderIdStartUrl, SsoToken, truncateStartUrl } from './sso/model'
@@ -174,7 +174,11 @@ export class Auth implements AuthService, ConnectionManager {
             return
         }
 
-        return await this.useConnection({ id }, true)
+        try {
+            return await this.useConnection({ id })
+        } catch (err) {
+            getLogger().warn(`auth: failed to restore previous session: %s`, err)
+        }
     }
 
     public async reauthenticate({ id }: Pick<SsoConnection, 'id'>, invalidate?: boolean): Promise<SsoConnection>
@@ -196,25 +200,11 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
-    /**
-     * Set the active connection and current profile ID based on the passed connection ID.
-     * This will also refresh the state of the connection.
-     *
-     * @param ignoreNetErr Default false. If true, ignore network errors from refreshConnectionState
-     * and use the connection anyways.
-     */
-    public async useConnection({ id }: Pick<SsoConnection, 'id'>, ignoreNetErr?: boolean): Promise<SsoConnection>
-    public async useConnection({ id }: Pick<IamConnection, 'id'>, ignoreNetErr?: boolean): Promise<IamConnection>
+    public async useConnection({ id }: Pick<SsoConnection, 'id'>): Promise<SsoConnection>
+    public async useConnection({ id }: Pick<IamConnection, 'id'>): Promise<IamConnection>
     @withTelemetryContext({ name: 'useConnection', class: authClassName })
-    public async useConnection({ id }: Pick<Connection, 'id'>, ignoreNetErr: boolean = false): Promise<Connection> {
-        if (ignoreNetErr) {
-            await runIgnoreNetError(
-                () => this.refreshConnectionState({ id }),
-                'useConnection: Cannot refresh connection state due to network error: %s'
-            )
-        } else {
-            await this.refreshConnectionState({ id })
-        }
+    public async useConnection({ id }: Pick<Connection, 'id'>): Promise<Connection> {
+        await this.refreshConnectionState({ id })
 
         const profile = this.store.getProfile(id)
         if (profile === undefined) {

@@ -403,6 +403,9 @@ export class AuthUtil {
      * Asynchronously returns a snapshot of the overall auth state of CodeWhisperer + Chat features.
      * It guarantees the latest state is correct at the risk of modifying connection state.
      * If this guarantee is not required, use sync method getChatAuthStateSync()
+     *
+     * By default, network errors are ignored when determining auth state since they may be silently
+     * recoverable later.
      */
     @withTelemetryContext({ name: 'getChatAuthState', class: authClassName })
     public async getChatAuthState(ignoreNetErr: boolean = true): Promise<FeatureAuthState> {

@@ -913,6 +913,10 @@ export function getReasonFromSyntaxError(err: Error): string | undefined {
     return undefined
 }
 
+/**
+ * Run a function and swallow any network errors that are thrown inside.
+ * Other types of errors are still thrown.
+ */
 export function runIgnoreNetError<T>(fn: () => T, logMsg?: string): T | undefined
 export function runIgnoreNetError<T>(fn: () => Promise<T>, logMsg?: string): Promise<T> | undefined
 export function runIgnoreNetError<T>(fn: () => T | Promise<T>, logMsg?: string): T | Promise<T | void> | undefined {

@@ -14,10 +14,10 @@ import { isNonNullable } from '../shared/utilities/tsUtils'
 import { ToolIdStateKey } from '../shared/globalState'
 import { Connection, getTelemetryMetadataForConn, SsoConnection, StatefulConnection } from './connection'
 import { indent } from '../shared/utilities/textUtilities'
-import { telemetry } from '../shared/telemetry/telemetry'
+import { AuthStatus, telemetry } from '../shared/telemetry/telemetry'
 import { asStringifiedStack } from '../shared/telemetry/spans'
 import { withTelemetryContext } from '../shared/telemetry/util'
-import { runIgnoreNetError } from '../shared/errors'
+import { isNetworkError } from '../shared/errors'
 
 export type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId'
 
@@ -266,14 +266,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
                 this.#savedConnection = await this.loadSavedConnection()
                 this.#onDidChangeActiveConnection.fire(this.activeConnection)
 
-                const conn = this.#activeConnection
-                if (conn) {
-                    telemetry.record({
-                        connectionState: this.auth.getConnectionState(conn),
-                        ...(await getTelemetryMetadataForConn(conn)),
-                    })
-                }
-
+                telemetry.record(await getTelemetryMetadataForConn(this.#savedConnection))
                 return this.#savedConnection
             })
         } catch (err) {
@@ -298,10 +291,34 @@ export class SecondaryAuth<T extends Connection = Connection> {
             getLogger().warn(`auth (${this.toolId}): saved connection "${this.key}" is not valid`)
             await globalState.update(this.key, undefined)
         } else {
-            await runIgnoreNetError(
-                () => this.auth.refreshConnectionState(conn),
-                'loadSavedConnection: Cannot refresh connection state due to network error: %s'
-            )
+            const getAuthStatus = (state: ReturnType<typeof this.auth.getConnectionState>): AuthStatus => {
+                return state === 'invalid' ? 'expired' : 'connected'
+            }
+
+            let connectionState = this.auth.getConnectionState(conn)
+            telemetry.auth_modifyConnection.record({
+                connectionState,
+                authStatus: getAuthStatus(connectionState),
+            })
+
+            try {
+                await this.auth.refreshConnectionState(conn)
+
+                connectionState = this.auth.getConnectionState(conn)
+                telemetry.auth_modifyConnection.record({
+                    connectionState,
+                    authStatus: getAuthStatus(connectionState),
+                })
+            } catch (err) {
+                // The purpose of this function is load a saved connection into memory, not manage the state.
+                // If updating the state fails, then we should delegate downstream to handle getting the proper state.
+                getLogger().error('loadSavedConnection: Failed to refresh connection state: %s', err)
+                if (isNetworkError(err) && connectionState === 'valid') {
+                    telemetry.auth_modifyConnection.record({
+                        authStatus: 'connectedWithNetworkError',
+                    })
+                }
+            }
             return conn
         }
     }
