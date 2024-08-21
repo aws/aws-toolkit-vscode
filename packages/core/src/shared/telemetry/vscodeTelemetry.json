@@ -1005,47 +1005,6 @@
             ]
         },
         {
-            "name": "codewhisperer_codePercentage",
-            "description": "Percentage of user tokens against suggestions until 5 mins of time",
-            "metadata": [
-                {
-                    "type": "codewhispererAcceptedTokens"
-                },
-                {
-                    "type": "codewhispererLanguage"
-                },
-                {
-                    "type": "codewhispererPercentage"
-                },
-                {
-                    "type": "codewhispererTotalTokens"
-                },
-                {
-                    "type": "codewhispererUserInputDetails",
-                    "required": false
-                },
-                {
-                    "type": "codewhispererUserGroup"
-                },
-                {
-                    "type": "reason",
-                    "required": false
-                },
-                {
-                    "type": "successCount"
-                },
-                {
-                    "type": "codewhispererCustomizationArn",
-                    "required": false
-                },
-                {
-                    "type": "credentialStartUrl",
-                    "required": false
-                }
-            ],
-            "passive": true
-        },
-        {
             "name": "auth_modifyConnection",
             "description": "An auth connection was modified in some way, e.g. deleted, updated",
             "metadata": [
