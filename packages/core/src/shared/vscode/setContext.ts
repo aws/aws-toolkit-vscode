@@ -22,6 +22,7 @@ type contextKey =
     | 'aws.explorer.showAuthView'
     | 'aws.toolkit.amazonq.dismissed'
     | 'aws.toolkit.amazonqInstall.dismissed'
+    | 'aws.codewhisperer.inlineCompletionActive'
     // Deprecated/legacy names. New keys should start with "aws.".
     | 'codewhisperer.activeLine'
     | 'gumby.isPlanAvailable'

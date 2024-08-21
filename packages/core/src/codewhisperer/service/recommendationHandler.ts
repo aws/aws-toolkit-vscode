@@ -44,6 +44,7 @@ import { application } from '../util/codeWhispererApplication'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
 import path from 'path'
+import { setContext } from '../../shared/vscode/setContext'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -451,7 +452,7 @@ export class RecommendationHandler {
         try {
             vsCodeState.isCodeWhispererEditing = false
             application()._clearCodeWhispererUIListener.fire()
-            await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.inlineCompletionActive', false)
+            await setContext('aws.codewhisperer.inlineCompletionActive', false)
             this.cancelPaginatedRequest()
             this.clearRecommendations()
             this.disposeInlineCompletion()
@@ -618,12 +619,12 @@ export class RecommendationHandler {
                 await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
                 await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
                 // after the trigger command, inline completion will be active
-                await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.inlineCompletionActive', true)
+                await setContext('aws.codewhisperer.inlineCompletionActive', true)
             }
             if (noSuggestionVisible) {
                 await vscode.commands.executeCommand(`editor.action.inlineSuggest.trigger`)
                 // after the trigger command, inline completion will be active
-                await vscode.commands.executeCommand('setContext', 'aws.codewhisperer.inlineCompletionActive', true)
+                await setContext('aws.codewhisperer.inlineCompletionActive', true)
                 this.sendPerceivedLatencyTelemetry()
             }
         })
