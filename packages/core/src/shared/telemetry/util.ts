@@ -19,7 +19,7 @@ import { isValidationExemptMetric } from './exemptMetrics'
 import { isAmazonQ, isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { randomUUID } from '../crypto'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
-import { FunctionEntry } from './spans'
+import { FunctionEntry, type TelemetryTracer } from './spans'
 import { telemetry } from './telemetry'
 
 const legacySettingsTelemetryValueDisable = 'Disable'
