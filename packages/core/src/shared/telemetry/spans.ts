@@ -23,6 +23,7 @@ import {
     getTelemetryResult,
 } from '../errors'
 import { entries, NumericKeys } from '../utilities/tsUtils'
+import { PerformanceTracker } from '../performance/performance'
 
 const AsyncLocalStorage: typeof AsyncLocalStorageClass =
     require('async_hooks').AsyncLocalStorage ??
@@ -97,6 +98,9 @@ export type SpanOptions = {
     /** True if this span should emit its telemetry events. Defaults to true if undefined. */
     emit?: boolean
 
+    /** True if this span should emit performance metrics acquired when running the function. Defaults to false if undefined */
+    trackPerformance?: boolean
+
     /**
      * Adds a function entry to the span stack.
      *
@@ -134,6 +138,7 @@ export type SpanOptions = {
 export class TelemetrySpan<T extends MetricBase = MetricBase> {
     #startTime?: Date
     #options: SpanOptions
+    #performance?: PerformanceTracker
 
     private readonly state: Partial<T> = {}
     private readonly definition = definitions[this.name] ?? {
@@ -157,6 +162,7 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
             // do emit by default
             emit: options?.emit === undefined ? true : options.emit,
             functionId: options?.functionId,
+            trackPerformance: PerformanceTracker.enabled(this.name, options?.trackPerformance),
         }
     }
 
@@ -195,6 +201,10 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
      */
     public start(): this {
         this.#startTime = new globals.clock.Date()
+        if (this.#options.trackPerformance) {
+            ;(this.#performance ??= new PerformanceTracker(this.name)).start()
+        }
+
         return this
     }
 
@@ -205,6 +215,19 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
      */
     public stop(err?: unknown): void {
         const duration = this.startTime !== undefined ? globals.clock.Date.now() - this.startTime.getTime() : undefined
+
+        if (this.#options.trackPerformance) {
+            // TODO add these to the global metrics, right now it just forces them in the telemetry and ignores the type
+            // if someone enables this action
+            const performanceMetrics = this.#performance?.stop()
+            if (performanceMetrics) {
+                this.record({
+                    cpuUsage: performanceMetrics.cpuUsage,
+                    heapTotal: performanceMetrics.heapTotal,
+                    functionName: this.#options.functionId?.name ?? this.name,
+                } as any)
+            }
+        }
 
         if (this.#options.emit) {
             this.emit({
@@ -307,11 +330,7 @@ export class TelemetryTracer extends TelemetryBase {
      * All changes made to {@link attributes} (via {@link record}) during the execution are
      * reverted after the execution completes.
      */
-    public run<T, U extends MetricName>(
-        name: U,
-        fn: (span: Metric<MetricShapes[U]>) => T,
-        options?: SpanOptions | undefined
-    ): T {
+    public run<T, U extends MetricName>(name: U, fn: (span: Metric<MetricShapes[U]>) => T, options?: SpanOptions): T {
         const span = this.createSpan(name, options).start()
         const frame = this.switchContext(span)
 
