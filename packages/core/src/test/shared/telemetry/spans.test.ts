@@ -12,16 +12,22 @@ import { selectFrom } from '../../../shared/utilities/tsUtils'
 import { getAwsServiceError } from '../errors.test'
 import { sleep } from '../../../shared'
 import { withTelemetryContext } from '../../../shared/telemetry/util'
+import { SinonSandbox } from 'sinon'
+import sinon from 'sinon'
+import { stubPerformance } from '../../utilities/performance'
 
 describe('TelemetrySpan', function () {
     let clock: ReturnType<typeof installFakeClock>
+    let sandbox: SinonSandbox
 
     beforeEach(function () {
         clock = installFakeClock()
+        sandbox = sinon.createSandbox()
     })
 
     afterEach(function () {
         clock.uninstall()
+        sandbox.restore()
     })
 
     it('removes passive and value from the metadata', function () {
@@ -70,14 +76,39 @@ describe('TelemetrySpan', function () {
             { result: 'Succeeded', duration: 100 },
         ])
     })
+
+    it('records performance', function () {
+        const { expectedCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
+        const span = new TelemetrySpan('function_call', {
+            trackPerformance: true,
+        })
+        span.start()
+        clock.tick(90)
+        span.stop()
+        assertTelemetry('function_call', {
+            cpuUsage: expectedCpuUsage,
+            heapTotal: expectedHeapTotal,
+            duration: 90,
+            result: 'Succeeded',
+        })
+    })
 })
 
 describe('TelemetryTracer', function () {
     let tracer: TelemetryTracer
+    let clock: ReturnType<typeof installFakeClock>
+    let sandbox: SinonSandbox
     const metricName = 'test_metric' as MetricName
 
     beforeEach(function () {
         tracer = new TelemetryTracer()
+        clock = installFakeClock()
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(function () {
+        clock.uninstall()
+        sandbox.restore()
     })
 
     describe('record()', function () {
@@ -235,6 +266,26 @@ describe('TelemetryTracer', function () {
             assert.match(metric.awsRegion ?? '', /not-set|\w+-\w+-\d+/)
             assert.match(String(metric.duration) ?? '', /\d+/)
             assert.match(metric.requestId ?? '', /[a-z0-9-]+/)
+        })
+
+        it('records performance', function () {
+            const { expectedCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
+            tracer.run(
+                'function_call',
+                () => {
+                    clock.tick(90)
+                },
+                {
+                    trackPerformance: true,
+                }
+            )
+
+            assertTelemetry('function_call', {
+                cpuUsage: expectedCpuUsage,
+                heapTotal: expectedHeapTotal,
+                duration: 90,
+                result: 'Succeeded',
+            })
         })
 
         describe('nested run()', function () {
