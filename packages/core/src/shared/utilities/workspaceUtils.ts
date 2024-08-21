@@ -386,7 +386,6 @@ export async function collectFiles(
         },
         {
             emit: true,
-            trackPerformance: true,
             functionId: {
                 name: 'collectFiles',
             },

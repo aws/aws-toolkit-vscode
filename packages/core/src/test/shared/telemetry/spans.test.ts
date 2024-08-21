@@ -80,7 +80,7 @@ describe('TelemetrySpan', function () {
     it('records performance', function () {
         const { expectedCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
         const span = new TelemetrySpan('function_call', {
-            trackPerformance: true,
+            emit: true,
         })
         span.start()
         clock.tick(90)
@@ -276,7 +276,7 @@ describe('TelemetryTracer', function () {
                     clock?.tick(90)
                 },
                 {
-                    trackPerformance: true,
+                    emit: true,
                 }
             )
 

@@ -98,9 +98,6 @@ export type SpanOptions = {
     /** True if this span should emit its telemetry events. Defaults to true if undefined. */
     emit?: boolean
 
-    /** True if this span should emit performance metrics acquired when running the function. Defaults to false if undefined */
-    trackPerformance?: boolean
-
     /**
      * Adds a function entry to the span stack.
      *
@@ -137,7 +134,9 @@ export type SpanOptions = {
  */
 export class TelemetrySpan<T extends MetricBase = MetricBase> {
     #startTime?: Date
-    #options: SpanOptions
+    #options: SpanOptions & {
+        trackPerformance: boolean
+    }
     #performance?: PerformanceTracker
 
     private readonly state: Partial<T> = {}
@@ -162,7 +161,10 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
             // do emit by default
             emit: options?.emit === undefined ? true : options.emit,
             functionId: options?.functionId,
-            trackPerformance: PerformanceTracker.enabled(this.name, options?.trackPerformance),
+            trackPerformance: PerformanceTracker.enabled(
+                this.name,
+                this.definition.trackPerformance && (options?.emit ?? false) // only track the performance if we are also emitting
+            ),
         }
     }
 
