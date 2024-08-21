@@ -28,6 +28,12 @@ describe('tech debt', function () {
             semver.lt(minVscode, '1.75.0'),
             'remove AsyncLocalStorage polyfill used in `spans.ts` if Cloud9 is on node 14+'
         )
+
+        // see https://github.com/microsoft/vscode/issues/173861
+        assert.ok(
+            semver.lt(minVscode, '1.93.0'),
+            'keepAlive works properly in vscode 1.93+. Remove src/codewhisperer/client/agent.ts and other code related to https://github.com/aws/aws-toolkit-vscode-staging/pull/1214'
+        )
     })
 
     it('nodejs minimum version', async function () {
