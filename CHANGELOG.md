@@ -1,3 +1,10 @@
+# _3.24_ (2024-08-22)
+- **(Feature)** Add notification for IdC users on extended session
+- **(Bug Fix)** Amazon Q: update login logo styling
+- **(Bug Fix)** Amazon Q Code Transformation: show an error notification when download diff fails
+- **(Bug Fix)** Fix UI freeze that occurs when viewing an Amazon Q code security scanning finding
+- **(Bug Fix)** Fix Q building supplemental context under EDT which might slow or block the UI
+
 # _3.23_ (2024-08-15)
 - **(Bug Fix)** Fix NPE in Rider AWS SAM project wizard ([#4768](https://github.com/aws/aws-toolkit-jetbrains/issues/4768))
 - **(Bug Fix)** Amazon Q Chat: Fix Tab selection scrollbar visibility which causes tabs half visible if there are several tabs open

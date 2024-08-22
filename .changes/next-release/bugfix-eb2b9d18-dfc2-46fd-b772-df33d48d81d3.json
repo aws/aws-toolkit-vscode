@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix Q building supplemental context under EDT which might slow or block the UI"
-}

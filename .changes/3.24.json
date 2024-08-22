@@ -1,0 +1,20 @@
+{
+  "date" : "2024-08-22",
+  "version" : "3.24",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Add notification for IdC users on extended session"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q: update login logo styling"
+  }, {
+    "type" : "bugfix",
+    "description" : "Amazon Q Code Transformation: show an error notification when download diff fails"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix UI freeze that occurs when viewing an Amazon Q code security scanning finding"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix Q building supplemental context under EDT which might slow or block the UI"
+  } ]
+}
