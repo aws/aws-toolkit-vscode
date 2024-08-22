@@ -59,8 +59,10 @@ const nextCommand = Commands.declare('editor.action.inlineSuggest.showNext', () 
 })
 
 const rejectCommand = Commands.declare('aws.amazonq.rejectCodeSuggestion', () => async () => {
+    if (!isCloud9('any')) {
+        await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
+    }
     RecommendationHandler.instance.reportUserDecisions(-1)
-
     await Commands.tryExecute('aws.amazonq.refreshAnnotation')
 })
 
