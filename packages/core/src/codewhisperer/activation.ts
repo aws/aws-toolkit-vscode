@@ -454,6 +454,7 @@ export async function activate(context: ExtContext): Promise<void> {
     }
 
     async function setSubscriptionsforInlineCompletion() {
+        RecommendationHandler.instance.subscribeSuggestionCommands()
         /**
          * Automated trigger
          */
