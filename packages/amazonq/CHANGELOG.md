@@ -1,3 +1,11 @@
+## 1.22.0 2024-08-22
+
+- **Bug Fix** Avoid refreshing code suggestion for paginated response
+- **Bug Fix** Update login logo styling
+- **Bug Fix** Correct indentation when insert Q chat code at cursor position
+- **Feature** Add notification for extended session to IdC users
+- **Feature** Support more programming languages for workspace index
+
 ## 1.21.0 2024-08-15
 
 - **Bug Fix** Q feature dev: update file extension list and minor UI fixes

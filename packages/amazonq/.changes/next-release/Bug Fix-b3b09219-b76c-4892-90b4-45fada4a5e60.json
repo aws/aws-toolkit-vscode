@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Avoid refreshing code suggestion for paginated response"
-}
