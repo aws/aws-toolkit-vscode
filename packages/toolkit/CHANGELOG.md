@@ -1,3 +1,7 @@
+## 3.21.0 2024-08-22
+
+- **Bug Fix** Various backend fixes
+
 ## 3.17.0 2024-07-29
 
 - **Bug Fix** FileNotFound error causing early SSO expiration
