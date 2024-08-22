@@ -18,6 +18,7 @@ import { CancellationError } from '../utilities/timeoutUtils'
 import { ToolkitError } from '../errors'
 import globals from '../extensionGlobals'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
+import { getConfigFileUri } from './utils'
 
 export interface BuildParams {
     readonly template: TemplateItem
@@ -174,15 +175,12 @@ export function registerBuild() {
                 buildFlags = defaultFlags
             }
         } else {
-            // Get samconfig.toml file Uri
-            const samConfigFilename = 'samconfig'
-            const samConfigFile = (
-                await vscode.workspace.findFiles(new vscode.RelativePattern(projectRoot, `**/${samConfigFilename}.*`))
-            )[0]
-            if (samConfigFile) {
+            try {
+                // Get samconfig.toml file Uri
+                const samConfigFile = await getConfigFileUri(projectRoot)
                 buildFlags.push('--config-file', `${samConfigFile.fsPath}`)
-            } else {
-                buildFlags === defaultFlags
+            } catch (error) {
+                buildFlags = defaultFlags
             }
         }
 
