@@ -34,7 +34,7 @@ import { marked } from 'marked'
 import { JSDOM } from 'jsdom'
 import { LspController } from '../../../../amazonq/lsp/lspController'
 
-export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
+export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help' | 'generate-tests'
 
 export class Messenger {
     public constructor(
@@ -339,6 +339,7 @@ export class Messenger {
         ['aws.amazonq.fixCode', 'Fix'],
         ['aws.amazonq.optimizeCode', 'Optimize'],
         ['aws.amazonq.sendToPrompt', 'Send to prompt'],
+        ['aws.amazonq.testCode', 'Generate tests'],
     ])
 
     public sendStaticTextResponse(type: StaticTextResponseType, triggerID: string, tabID: string) {
@@ -375,6 +376,9 @@ export class Messenger {
                 \n\n- When you use Amazon Q, AWS may, for service improvement purposes, store data about your usage and content. You can opt-out of sharing this data by following the steps in AI services opt-out policies. See <a href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/opt-out-IDE.html">here</a>
                 \n\n- Do not enter any confidential, sensitive, or personal information.
                 \n\n*For additional help, visit the [Amazon Q User Guide](${userGuideURL}).*`
+                break
+            case 'generate-tests':
+                message = `I have generated tests for the selected code. I am sending the tests to a new tab.`
                 break
             case 'onboarding-help':
                 message = `### What I can do:
@@ -453,6 +457,14 @@ export class Messenger {
             message = [
                 this.editorContextMenuCommandVerbs.get(command),
                 ` the "${issue.title}" issue in the following code:`,
+                '\n```\n',
+                trimmedCode,
+                '\n```',
+            ].join('')
+        } else if (command === 'aws.amazonq.testCode') {
+            message = [
+                this.editorContextMenuCommandVerbs.get(command),
+                ' the following code:',
                 '\n```\n',
                 trimmedCode,
                 '\n```',

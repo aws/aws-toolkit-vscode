@@ -106,10 +106,6 @@
                         "amazonQWelcomePage": {
                             "type": "boolean",
                             "default": false
-                        },
-                        "amazonQSessionConfigurationMessage": {
-                            "type": "boolean",
-                            "default": false
                         }
                     },
                     "additionalProperties": false
@@ -348,6 +344,10 @@
                 {
                     "command": "aws.amazonq.sendToPrompt",
                     "group": "cw_chat@5"
+                },
+                {
+                    "command": "aws.amazonq.testCode",
+                    "group": "cw_chat@6"
                 }
             ],
             "editor/context": [
@@ -416,6 +416,12 @@
             {
                 "command": "aws.amazonq.sendToPrompt",
                 "title": "%AWS.command.amazonq.sendToPrompt%",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
+            },
+            {
+                "command": "aws.amazonq.testCode",
+                "title": "%AWS.command.amazonq.testCode%",
                 "category": "%AWS.amazonq.title%",
                 "enablement": "aws.codewhisperer.connected"
             },
@@ -594,6 +600,12 @@
                 "key": "win+alt+q",
                 "mac": "cmd+alt+q",
                 "linux": "meta+alt+q"
+            },
+            {
+                "command": "aws.amazonq.testCode",
+                "key": "win+alt+t",
+                "mac": "cmd+alt+t",
+                "linux": "meta+alt+t"
             },
             {
                 "command": "aws.amazonq.invokeInlineCompletion",

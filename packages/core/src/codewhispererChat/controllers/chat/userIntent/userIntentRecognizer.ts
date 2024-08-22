@@ -18,6 +18,7 @@ export class UserIntentRecognizer {
                 return UserIntent.APPLY_COMMON_BEST_PRACTICES
             case 'aws.amazonq.optimizeCode':
                 return UserIntent.IMPROVE_CODE
+            //TODO: Add user intent recognizer for generating tests
             default:
                 return undefined
         }

@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { Event as VSCodeEvent, Uri } from 'vscode'
+import { Event as VSCodeEvent, Uri, workspace as VSCodeWorkspace, window as VSCodeWindow } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { Messenger, StaticTextResponseType } from './messenger/messenger'
@@ -313,6 +313,14 @@ export class ChatController {
         this.sessionStorage.deleteSession(tabID)
     }
 
+    private async openInUntitledDocument(content: string, language?: string) {
+        const document = await VSCodeWorkspace.openTextDocument({
+            language,
+            content,
+        })
+        await VSCodeWindow.showTextDocument(document)
+    }
+
     private async processContextMenuCommand(command: EditorContextCommand) {
         // Just open the chat panel in this case
         if (!this.editorContextExtractor.isCodeBlockSelected() && command.type === 'aws.amazonq.sendToPrompt') {
@@ -361,6 +369,13 @@ export class ChatController {
                     context,
                     command,
                 })
+
+                if (command.type === 'aws.amazonq.testCode') {
+                    void this.generateStaticTextResponse('generate-tests', triggerID)
+                    // TODO: call RTS and get unit test generation
+                    void this.openInUntitledDocument('some test', context?.activeFileContext?.fileLanguage)
+                    return
+                }
 
                 return this.generateResponse(
                     {
@@ -460,6 +475,10 @@ export class ChatController {
         }
     }
 
+    private promptIsAskingToGenerateTests(prompt: PromptMessage): boolean {
+        return prompt.message?.includes('Generate test') ?? false
+    }
+
     private async processPromptMessageAsNewThread(message: PromptMessage) {
         this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
@@ -472,6 +491,13 @@ export class ChatController {
                     type: 'chat_message',
                     context,
                 })
+
+                if (this.promptIsAskingToGenerateTests(message)) {
+                    void this.generateStaticTextResponse('generate-tests', triggerID)
+                    void this.openInUntitledDocument('some test', context?.activeFileContext?.fileLanguage)
+                    return
+                }
+
                 return this.generateResponse(
                     {
                         message: message.message,
