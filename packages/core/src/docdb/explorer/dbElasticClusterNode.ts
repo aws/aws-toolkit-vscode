@@ -11,7 +11,6 @@ import { DBElasticCluster, DocumentDBClient } from '../../shared/clients/docdbCl
 import { DocDBContext } from './docdbContext'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { waitUntil } from '../../shared'
 
 /**
  * An AWS Explorer node representing DocumentDB elastic clusters.

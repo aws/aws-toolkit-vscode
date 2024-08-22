@@ -11,7 +11,6 @@ import { DBResourceNode } from './dbResourceNode'
 import { DBClusterNode } from './dbClusterNode'
 import { ModifyDBInstanceMessage } from '@aws-sdk/client-docdb'
 import { copyToClipboard } from '../../shared/utilities/messages'
-import { waitUntil } from '../../shared'
 
 /**
  * An AWS Explorer node representing a DocumentDB instance.
