@@ -108,7 +108,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                         ClientID: this.clientId,
                         OS: os.platform(),
                         OSVersion: os.release(),
-                        ComputeEnv: getComputeEnvType(),
+                        ComputeEnv: await getComputeEnvType(),
                         ParentProduct: vscode.env.appName,
                         ParentProductVersion: vscode.version,
                         MetricData: batch,
@@ -135,14 +135,14 @@ export class DefaultTelemetryClient implements TelemetryClient {
                     AWSProductVersion: extensionVersion,
                     OS: os.platform(),
                     OSVersion: os.release(),
-                    ComputeEnv: getComputeEnvType(),
+                    ComputeEnv: await getComputeEnvType(),
                     ParentProduct: vscode.env.appName,
                     ParentProductVersion: vscode.version,
                     Comment: feedback.comment,
                     Sentiment: feedback.sentiment,
                 })
                 .promise()
-            this.logger.debug(`ComputeEnv detected for telemetry: ${getComputeEnvType()}`)
+            this.logger.debug(`ComputeEnv detected for telemetry: ${await getComputeEnvType()}`)
             this.logger.info('Successfully posted feedback')
         } catch (err) {
             this.logger.error(`Failed to post feedback: ${err}`)
