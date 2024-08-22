@@ -6,6 +6,7 @@
 import * as semver from 'semver'
 import * as vscode from 'vscode'
 import * as packageJson from '../../../package.json'
+import * as os from 'os'
 import { getLogger } from '../logger'
 import { onceChanged } from '../utilities/functionUtils'
 import { ChildProcess } from '../utilities/childProcess'
@@ -92,6 +93,31 @@ export function isInDevEnv(): boolean {
 
 export function isRemoteWorkspace(): boolean {
     return vscode.env.remoteName === 'ssh-remote'
+}
+
+/**
+ * There is Amazon Linux 2, but additionally an Amazon Linux 2 Internal.
+ * The internal version is for Amazon employees only. And this version can
+ * be used by either EC2 OR CloudDesktop. It is not exclusive to either.
+ *
+ * Use {@link isCloudDesktop()} to know if we are specifically using it.
+ *
+ * Example: `5.10.220-188.869.amzn2int.x86_64`
+ */
+export function isAmazonInternalOs() {
+    return os.release().includes('amzn2int')
+}
+
+/**
+ * Returns true if we are in an internal Amazon Cloud Desktop
+ */
+export async function isCloudDesktop() {
+    if (!isAmazonInternalOs()) {
+        return false
+    }
+
+    // This heuristic is explained in IDE-14524
+    return (await new ChildProcess('/apollo/bin/getmyfabric').run().then((r) => r.exitCode)) === 0
 }
 
 /** Returns true if OS is Windows. */
