@@ -33,6 +33,7 @@ import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeCatalystConn
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.core.credentials.reauthConnectionIfNeeded
 import software.aws.toolkits.jetbrains.core.credentials.sono.CODECATALYST_SCOPES
+import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROLE_ACCESS_SCOPE
 import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.credentials.sso.PendingAuthorization
@@ -154,21 +155,28 @@ abstract class LoginBrowser(
         else -> ""
     }
 
-    private fun isReAuth(scopes: List<String>): Boolean = ToolkitConnectionManager.getInstance(project)
+    private fun isReAuth(scopes: List<String>, requestedStartUrl: String): Boolean = ToolkitConnectionManager.getInstance(project)
         .let {
+            val qConnection = it.activeConnectionForFeature(QConnection.getInstance()) as AwsBearerTokenConnection?
+            val codeCatalystConnection = it.activeConnectionForFeature(CodeCatalystConnection.getInstance()) as AwsBearerTokenConnection?
             if (scopes.toSet().intersect(Q_SCOPES.toSet()).isNotEmpty()) {
-                it.activeConnectionForFeature(QConnection.getInstance()) != null
+                qConnection != null && qConnection.startUrl == requestedStartUrl
             } else if (scopes.toSet().intersect(CODECATALYST_SCOPES.toSet()).isNotEmpty()) {
-                it.activeConnectionForFeature(CodeCatalystConnection.getInstance()) != null
+                codeCatalystConnection != null && codeCatalystConnection.startUrl == requestedStartUrl
             } else {
-                val activeCon = it.activeConnection()
-                val ccCon = it.activeConnectionForFeature(CodeCatalystConnection.getInstance())
-                val qCon = it.activeConnectionForFeature(QConnection.getInstance())
-                activeCon != null && activeCon != ccCon && activeCon != qCon
+                if (it.activeConnection() is AwsBearerTokenConnection) {
+                    val activeCon = it.activeConnection() as? AwsBearerTokenConnection
+                    return activeCon?.scopes?.toSet()?.intersect(IDENTITY_CENTER_ROLE_ACCESS_SCOPE.toSet())?.isNotEmpty() == true &&
+                        activeCon != qConnection &&
+                        activeCon != codeCatalystConnection
+                } else {
+                    return false
+                }
             }
         }
 
     open fun loginBuilderId(scopes: List<String>) {
+        val isReauth = isReAuth(scopes, SONO_URL)
         val onError: (Exception) -> Unit = { e ->
             stopAndClearBrowserOpenTimer()
             isUserCancellation(e)
@@ -177,12 +185,14 @@ abstract class LoginBrowser(
                 credentialStartUrl = SONO_URL,
                 result = Result.Failed,
                 reason = e.message,
-                credentialSourceId = CredentialSourceId.AwsId
+                credentialSourceId = CredentialSourceId.AwsId,
+                isReAuth = isReauth
             )
             AuthTelemetry.addConnection(
                 result = Result.Failed,
                 credentialSourceId = CredentialSourceId.AwsId,
-                reason = e.message
+                reason = e.message,
+                isReAuth = isReauth
             )
         }
         val onSuccess: () -> Unit = {
@@ -191,11 +201,13 @@ abstract class LoginBrowser(
                 project = null,
                 credentialStartUrl = SONO_URL,
                 result = Result.Succeeded,
-                credentialSourceId = CredentialSourceId.AwsId
+                credentialSourceId = CredentialSourceId.AwsId,
+                isReAuth = isReauth
             )
             AuthTelemetry.addConnection(
                 result = Result.Succeeded,
-                credentialSourceId = CredentialSourceId.AwsId
+                credentialSourceId = CredentialSourceId.AwsId,
+                isReAuth = isReauth
             )
         }
 
@@ -208,7 +220,20 @@ abstract class LoginBrowser(
 
     open fun loginIdC(url: String, region: AwsRegion, scopes: List<String>) {
         // assumes scopes contains either Q or non-Q permissions but not both
-        val isReAuth = isReAuth(scopes)
+        val (onError: (Exception) -> Unit, onSuccess: () -> Unit) = getSuccessAndErrorActionsForIdcLogin(scopes, url, region)
+        loginWithBackgroundContext {
+            Login
+                .IdC(url, region, scopes, onPendingToken, onSuccess, onError)
+                .login(project)
+        }
+    }
+
+    fun getSuccessAndErrorActionsForIdcLogin(
+        scopes: List<String>,
+        url: String,
+        region: AwsRegion
+    ): Pair<(Exception) -> Unit, () -> Unit> {
+        val isReAuth = isReAuth(scopes, url)
 
         val onError: (Exception) -> Unit = { e ->
             stopAndClearBrowserOpenTimer()
@@ -257,11 +282,7 @@ abstract class LoginBrowser(
                 credentialSourceId = CredentialSourceId.IamIdentityCenter
             )
         }
-        loginWithBackgroundContext {
-            Login
-                .IdC(url, region, scopes, onPendingToken, onSuccess, onError)
-                .login(project)
-        }
+        return Pair(onError, onSuccess)
     }
 
     open fun loginIAM(profileName: String, accessKey: String, secretKey: String) {
@@ -330,7 +351,7 @@ abstract class LoginBrowser(
     protected fun reauth(connection: ToolkitConnection?) {
         if (connection is AwsBearerTokenConnection) {
             loginWithBackgroundContext {
-                reauthConnectionIfNeeded(project, connection, onPendingToken)
+                reauthConnectionIfNeeded(project, connection, onPendingToken, isReAuth = true)
             }
             stopAndClearBrowserOpenTimer()
         }

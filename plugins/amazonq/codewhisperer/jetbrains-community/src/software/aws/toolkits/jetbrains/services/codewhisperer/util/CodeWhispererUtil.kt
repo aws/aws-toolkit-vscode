@@ -273,7 +273,7 @@ object CodeWhispererUtil {
         val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
         if (connection !is ManagedBearerSsoConnection) return
         pluginAwareExecuteOnPooledThread {
-            reauthConnectionIfNeeded(project, connection)
+            reauthConnectionIfNeeded(project, connection, isReAuth = true)
         }
     }
 

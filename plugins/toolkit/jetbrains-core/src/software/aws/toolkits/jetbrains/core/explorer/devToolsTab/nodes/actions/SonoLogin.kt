@@ -23,7 +23,7 @@ class SonoLogin : DumbAwareAction(AllIcons.Actions.Execute) {
         pluginAwareExecuteOnPooledThread {
             val connectionManager = ToolkitConnectionManager.getInstance(project)
             connectionManager.activeConnectionForFeature(CodeCatalystConnection.getInstance())?.let {
-                reauthConnectionIfNeeded(project, it)
+                reauthConnectionIfNeeded(project, it, isReAuth = true)
                 project.refreshDevToolTree()
             } ?: run {
                 runInEdt {

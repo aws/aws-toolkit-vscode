@@ -22,6 +22,7 @@ import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
+import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBearerTokenProvider
 import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
 import software.aws.toolkits.resources.AwsCoreBundle
@@ -245,3 +246,6 @@ fun messageFromConfigFacadeError(e: Exception): Pair<String, String> {
 
     return errorMessage to errorType
 }
+
+fun getCredentialIdForTelemetry(connection: ToolkitConnection): CredentialSourceId =
+    if (connection.isSono()) CredentialSourceId.AwsId else CredentialSourceId.IamIdentityCenter

@@ -51,7 +51,7 @@ class CodeWhispererUtilTest {
         CodeWhispererUtil.reconnectCodeWhisperer(projectExtension.project)
 
         verify {
-            reauthConnectionIfNeeded(projectExtension.project, mockConnection)
+            reauthConnectionIfNeeded(projectExtension.project, mockConnection, isReAuth = true)
         }
     }
 }

@@ -39,7 +39,7 @@ abstract class SignInToQActionBase(actionName: String) : DumbAwareAction(actionN
         UiTelemetry.click(project, "auth_start_Q")
         val connectionManager = ToolkitConnectionManager.getInstance(project)
         connectionManager.activeConnectionForFeature(QConnection.getInstance())?.let {
-            reauthConnectionIfNeeded(project, it)
+            reauthConnectionIfNeeded(project, it, isReAuth = true)
         } ?: run {
             runInEdt {
                 if (requestCredentialsForQ(project)) {
