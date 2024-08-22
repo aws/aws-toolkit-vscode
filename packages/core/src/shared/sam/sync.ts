@@ -67,7 +67,7 @@ export interface SyncParams {
     readonly skipDependencyLayer?: boolean
 }
 
-enum ParamsSource {
+export enum ParamsSource {
     SpecifyAndSave,
     SamConfig,
     Flags,
@@ -80,7 +80,7 @@ enum BucketSource {
 function workspaceFolderPrompter() {
     const workspaceFolders = vscode.workspace.workspaceFolders
     if (workspaceFolders === undefined) {
-        throw new ToolkitError('No Workspace folder found', { code: "samNoWorkspaceFoldersFound"})
+        throw new ToolkitError('No Workspace folder found', { code: 'samNoWorkspaceFoldersFound' })
     }
     const items = workspaceFolders?.map((workspaceFolder) => {
         return { label: workspaceFolder.uri.path, data: workspaceFolder.uri }
