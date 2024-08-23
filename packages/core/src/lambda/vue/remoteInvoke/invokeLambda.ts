@@ -48,6 +48,7 @@ export interface InitialData {
     InputSamples: SampleRequest[]
     TestEvents?: string[]
     FunctionStackName?: string
+    Source?: string
 }
 
 export interface RemoteInvokeData {
@@ -82,7 +83,7 @@ export class RemoteInvokeWebview extends VueWebview {
         return this.data
     }
 
-    public async invokeLambda(input: string): Promise<void> {
+    public async invokeLambda(input: string, source?: string): Promise<void> {
         let result: Result = 'Succeeded'
 
         this.channel.show()
@@ -107,7 +108,7 @@ export class RemoteInvokeWebview extends VueWebview {
             this.channel.appendLine('')
             result = 'Failed'
         } finally {
-            telemetry.lambda_invokeRemote.emit({ result, passive: false })
+            telemetry.lambda_invokeRemote.emit({ result, passive: false, source: source })
         }
     }
 
@@ -249,9 +250,11 @@ export async function invokeRemoteLambda(
     let resource: any = params.functionNode
     let remoteTestsEventsList: string[] = []
     let stackName: string | undefined = undefined
+    let source: string = 'AwsExplorerRemoteInvoke'
     if (isTreeNode(params.functionNode)) {
         resource = params.functionNode.resource as DeployedResource
         stackName = resource.stackName
+        source = 'AppBuilderRemoteInvoke'
         try {
             remoteTestsEventsList = stackName ? await listRemoteTestEvents(stackName, resource.regionCode) : []
         } catch (err) {
@@ -266,6 +269,7 @@ export async function invokeRemoteLambda(
         InputSamples: inputs,
         TestEvents: remoteTestsEventsList,
         FunctionStackName: stackName,
+        Source: source,
     })
 
     await wv.show({ title: localize('AWS.invokeLambda.title', 'Invoke Lambda {0}', resource.functionName) })

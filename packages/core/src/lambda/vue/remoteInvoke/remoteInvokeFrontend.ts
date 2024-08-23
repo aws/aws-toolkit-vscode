@@ -20,6 +20,7 @@ const defaultInitialData = {
     FunctionMap: [],
     TestEvents: [],
     FunctionStack: '',
+    Source: '',
 }
 
 export default defineComponent({
@@ -109,7 +110,7 @@ export default defineComponent({
         },
 
         async sendInput() {
-            await client.invokeLambda(this.sampleText)
+            await client.invokeLambda(this.sampleText, this.initialData.Source)
         },
 
         loadSampleEvent() {
