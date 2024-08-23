@@ -20,18 +20,20 @@ const fs = require('fs')
 // const core = require('@actions/core')
 // const github = require('@actions/github')
 
-const topics = new Set([
+const types = new Set([
     'build',
     // Don't allow "chore" because it's over-used.
-    // Instead, add a new topic if absolutely needed (if the existing ones can't possibly apply).
+    // Instead, add a new type if absolutely needed (if the existing ones can't possibly apply).
     // 'chore',
     'ci',
     'config',
+    'deps',
     'docs',
     'feat',
     'fix',
     'perf',
     'refactor',
+    'revert',
     'style',
     'telemetry',
     'test',
@@ -42,6 +44,7 @@ const topics = new Set([
 const scopes = new Set([
     'amazonq',
     'core',
+    'explorer',
     'lambda',
     'logs',
     'redshift',
@@ -49,8 +52,10 @@ const scopes = new Set([
     'q-featuredev',
     'q-inlinechat',
     'q-transform',
+    'sam',
     's3',
     'telemetry',
+    'toolkit',
     'ui',
 ])
 void scopes
@@ -58,7 +63,7 @@ void scopes
 /**
  * Checks that a pull request title, or commit message subject, follows the expected format:
  *
- *      topic(scope): message
+ *      type(scope): message
  *
  * Returns undefined if `title` is valid, else an error message.
  */
@@ -70,22 +75,20 @@ function validateTitle(title) {
         return 'missing colon (:) char'
     }
 
-    const topicScope = parts[0]
+    const typeScope = parts[0]
 
-    if (topicScope.startsWith('revert')) {
-        return validateTitle(subject)
-    }
+    const [type, scope] = typeScope.split(/\(([^)]+)\)$/)
 
-    const [topic, scope] = topicScope.split(/\(([^)]+)\)$/)
-
-    if (/\s+/.test(topic)) {
-        return `topic contains whitespace: "${topic}"`
-    } else if (topic === 'chore') {
-        return 'do not use "chore" as a topic. If the existing valid topics are insufficent, add a new topic to the `lintcommit.js` script.'
-    } else if (!topics.has(topic)) {
-        return `invalid topic "${topic}"`
-    } else if (!scope && topicScope.includes('(')) {
-        return `must be formatted like topic(scope):`
+    if (/\s+/.test(type)) {
+        return `type contains whitespace: "${type}"`
+    } else if (type === 'chore') {
+        return 'Do not use "chore" as a type. If the existing valid types are insufficent, add a new type to the `lintcommit.js` script.'
+    } else if (!types.has(type)) {
+        return `invalid type "${type}"`
+    } else if (!scope && typeScope.includes('(')) {
+        return `must be formatted like type(scope):`
+    } else if (!scope && ['feat', 'fix'].includes(type)) {
+        return `"${type}" type must include a scope (example: "${type}(amazonq)")`
     } else if (scope && scope.length > 30) {
         return 'invalid scope (must be <=30 chars)'
     } else if (scope && /[^- a-z0-9]+/.test(scope)) {
@@ -115,14 +118,14 @@ function run() {
     const failReason = validateTitle(title)
     const msg = failReason
         ? `
-Pull request title does not match the [expected format](https://github.com/aws/aws-toolkit-vscode/blob/master/CONTRIBUTING.md#pull-request-title):
+Invalid pull request title: \`${title}\`
 
-* Title: \`${title}\`
-* Reason: ${failReason}
-* Expected format: \`topic(scope): subject...\`
-    * topic: one of (${Array.from(topics).join(', ')})
+* Problem: ${failReason}
+* Expected format: \`type(scope): subject...\`
+    * type: one of (${Array.from(types).join(', ')})
     * scope: lowercase, <30 chars
     * subject: must be <100 chars
+    * documentation: https://github.com/aws/aws-toolkit-vscode/blob/master/CONTRIBUTING.md#pull-request-title
 `
         : `Pull request title matches the [expected format](https://github.com/aws/aws-toolkit-vscode/blob/master/CONTRIBUTING.md#pull-request-title).`
 
@@ -140,27 +143,28 @@ Pull request title does not match the [expected format](https://github.com/aws/a
 
 function _test() {
     const tests = {
-        ' foo(scope): bar': 'topic contains whitespace: " foo"',
+        ' foo(scope): bar': 'type contains whitespace: " foo"',
         'build: update build process': undefined,
         'chore: update dependencies':
-            'do not use "chore" as a topic. If the existing valid topics are insufficent, add a new topic to the `lintcommit.js` script.',
+            'Do not use "chore" as a type. If the existing valid types are insufficent, add a new type to the `lintcommit.js` script.',
         'ci: configure CI/CD': undefined,
         'config: update configuration files': undefined,
+        'deps: bump the aws-sdk group across 1 directory with 5 updates': undefined,
         'docs: update documentation': undefined,
         'feat(foo): add new feature': undefined,
         'feat(foo):': 'empty subject',
-        'feat foo):': 'topic contains whitespace: "feat foo)"',
-        'feat(foo)): sujet': 'invalid topic "feat(foo))"',
-        'feat(foo: sujet': 'invalid topic "feat(foo"',
-        'feat(q foo bar): bar':
-            'do not use "chore" as a topic. If the existing valid topics are insufficent, add a new topic to the `lintcommit.js` script.',
+        'feat foo):': 'type contains whitespace: "feat foo)"',
+        'feat(foo)): sujet': 'invalid type "feat(foo))"',
+        'feat(foo: sujet': 'invalid type "feat(foo"',
         'feat(Q Foo Bar): bar': 'invalid scope (must be lowercase, ascii only): "Q Foo Bar"',
         'feat(scope):': 'empty subject',
         'feat(q foo bar): bar': undefined,
         'feat(foo): x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x ':
             'invalid subject (must be <=100 chars)',
+        'feat: foo': '"feat" type must include a scope (example: "feat(amazonq)")',
+        'fix: foo': '"fix" type must include a scope (example: "fix(amazonq)")',
         'fix(a-b-c): resolve issue': undefined,
-        'foo (scope): bar': 'topic contains whitespace: "foo "',
+        'foo (scope): bar': 'type contains whitespace: "foo "',
         'invalid title': 'missing colon (:) char',
         'perf: optimize performance': undefined,
         'refactor: improve code structure': undefined,

@@ -283,8 +283,8 @@ user's point of view.
 
 The title of your pull request must follow this format (checked by [lintcommit.js](.github/workflows/lintcommit.js)):
 
--   format: `topic(scope): subject...`
--   topic: must be a valid topic (`build`, `ci`, `config`, `docs`, `feat`, `fix`, `perf`, `refactor`, `style`, `telemetry`, `test`, `types`)
+-   format: `type(scope): subject...`
+-   type: must be a valid type (`build`, `ci`, `config`, `deps`, `docs`, `feat`, `fix`, `perf`, `refactor`, `style`, `telemetry`, `test`, `types`)
     -   see [lintcommit.js](.github/workflows/lintcommit.js))
     -   "chore" is intentionally rejected because it tends to be over-used.
     -   user-facing changes should always choose "feat" or "fix", and include a [changelog](#changelog) item.
@@ -320,7 +320,7 @@ guidelines](https://cbea.ms/git-commit/):
 
 -   Subject: single line up to 50-72 characters
     -   Imperative voice ("Fix bug", not "Fixed"/"Fixes"/"Fixing").
-    -   [Formatted as `topic(scope): subject...`](#pull-request-title).
+    -   [Formatted as `type(scope): subject...`](#pull-request-title).
         -   Helps humans _and_ scripts scan and omit ranges of the history at a glance.
 -   Body: describe the change as a [Problem/Solution pair](#pull-request-description).
 
