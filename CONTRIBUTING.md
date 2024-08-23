@@ -279,34 +279,50 @@ user's point of view.
 > -   If there are multiple unrelated changes, run `npm run newChange` for each change.
 > -   Include the feature that the change affects, Q, CodeWhisperer, etc.
 
-### Commit messages
+### Pull request title
 
-Generally your PR description should be a copy-paste of your commit message(s).
-If your PR description provides insight and context, that also should exist in
-the commit message. Source control (Git) is our source-of-truth, not GitHub.
+The title of your pull request must follow this format (checked by [lintcommit.js](.github/workflows/lintcommit.js)):
 
-Follow these [commit message guidelines](https://cbea.ms/git-commit/):
+-   format: `topic(scope): subject...`
+-   topic: must be a valid topic (`build`, `ci`, `config`, `docs`, `feat`, `fix`, `perf`, `refactor`, `style`, `telemetry`, `test`, `types`)
+    -   see [lintcommit.js](.github/workflows/lintcommit.js))
+    -   "chore" is intentionally rejected because it tends to be over-used.
+    -   user-facing changes should always choose "feat" or "fix", and include a [changelog](#changelog) item.
+-   scope: lowercase, <30 chars
+-   subject: must be <100 chars
 
--   Subject: single line up to 50-72 characters
-    -   Imperative voice ("Fix bug", not "Fixed"/"Fixes"/"Fixing").
--   Body: for non-trivial or uncommon changes, explain your motivation for the
-    change and contrast your implementation with previous behavior.
-    -   Often you can save a _lot_ of words by using this simple template:
-        ```
-        Problem: …
-        Solution: …
-        ```
+### Pull request description
 
-A [good commit message](https://git-scm.com/book/en/v2/Distributed-Git-Contributing-to-a-Project)
-has a short subject line and unlimited detail in the body.
+Your PR description should provide a brief "Problem" and "Solution" pair. This
+structure often gives much more clarity, more concisely, than a typical
+paragraph of explanation.
+
+    Problem:
+    Foo does nothing when user clicks it.
+
+    Solution:
+    - Listen to the click event.
+    - Emit telemetry on success/failure.
+
 [Good explanations](https://nav.al/explanations) are acts of creativity. The
 "tiny subject line" constraint reminds you to clarify the essence of the
 commit, and makes the log easy for humans to scan. The commit log is an
 artifact that will outlive most code.
 
-Prefix the subject with `type(topic):` ([conventional
-commits](https://www.conventionalcommits.org/) format): this again helps humans
-(and scripts) scan and omit ranges of the history at a glance.
+### Commit messages
+
+Source control (Git) is our source-of-truth, not GitHub. However since most PRs
+are squash-merged, it's most important that your [pull request description](#pull-request-description)
+is well-formed so that the merged commit has the relevant info.
+
+If you expect your commits to be preserved ("regular merge"), then follow [these
+guidelines](https://cbea.ms/git-commit/):
+
+-   Subject: single line up to 50-72 characters
+    -   Imperative voice ("Fix bug", not "Fixed"/"Fixes"/"Fixing").
+    -   [Formatted as `topic(scope): subject...`](#pull-request-title).
+        -   Helps humans _and_ scripts scan and omit ranges of the history at a glance.
+-   Body: describe the change as a [Problem/Solution pair](#pull-request-description).
 
 ## Tooling
 
