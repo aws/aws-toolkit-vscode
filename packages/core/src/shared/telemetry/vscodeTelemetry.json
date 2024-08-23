@@ -8,18 +8,13 @@
         {
             "name": "documentFormat",
             "type": "string",
-            "allowedValues": [
-                "JSON, YAML"
-            ],
+            "allowedValues": ["JSON, YAML"],
             "description": "SSM Create document format selection"
         },
         {
             "name": "ssmOperation",
             "type": "string",
-            "allowedValues": [
-                "Create",
-                "Update"
-            ],
+            "allowedValues": ["Create", "Update"],
             "description": "SSM Publish Document operation type"
         },
         {
@@ -45,11 +40,7 @@
         {
             "name": "cwsprChatTriggerInteraction",
             "type": "string",
-            "allowedValues": [
-                "hotkeys",
-                "click",
-                "contextMenu"
-            ],
+            "allowedValues": ["hotkeys", "click", "contextMenu"],
             "description": "Identifies the specific interaction that opens the chat panel"
         },
         {
@@ -114,11 +105,7 @@
         {
             "name": "cwsprChatConversationType",
             "type": "string",
-            "allowedValues": [
-                "Chat",
-                "Assign",
-                "Transform"
-            ],
+            "allowedValues": ["Chat", "Assign", "Transform"],
             "description": "Identifies the type of conversation"
         },
         {
@@ -245,12 +232,7 @@
         {
             "name": "cwsprChatCommandType",
             "type": "string",
-            "allowedValues": [
-                "clear",
-                "help",
-                "transform",
-                "auth"
-            ],
+            "allowedValues": ["clear", "help", "transform", "auth"],
             "description": "Type of chat command (/command) executed"
         },
         {
@@ -266,11 +248,7 @@
         {
             "name": "authStatus",
             "type": "string",
-            "allowedValues": [
-                "connected",
-                "notConnected",
-                "expired"
-            ],
+            "allowedValues": ["connected", "notConnected", "expired"],
             "description": "Status of the an auth connection."
         },
         {
@@ -299,9 +277,14 @@
             "description": "A detailed state of a specific auth connection. Use `authStatus` for a higher level view of an extension's general connection."
         },
         {
-            "name": "cpuUsage",
+            "name": "userCpuUsage",
             "type": "int",
-            "description": "Percentage of cpu usage"
+            "description": "Percentage of user cpu usage (user space)"
+        },
+        {
+            "name": "systemCpuUsage",
+            "type": "int",
+            "description": "Percentage of system cpu usage (kernal space)"
         },
         {
             "name": "heapTotal",
@@ -1117,7 +1100,11 @@
             "description": "Represents a function call. In most cases this should wrap code with a run(), then you can add context.",
             "metadata": [
                 {
-                    "type": "cpuUsage",
+                    "type": "userCpuUsage",
+                    "required": true
+                },
+                {
+                    "type": "systemCpuUsage",
                     "required": true
                 },
                 {
