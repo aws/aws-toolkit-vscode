@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fix bug with code indentation and nested list formatting in chat response prompt"
+}
