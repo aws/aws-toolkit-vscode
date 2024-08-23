@@ -28,8 +28,8 @@ node-gradle = "7.0.2"
 telemetryGenerator = "1.0.243"
 testLogger = "4.0.0"
 testRetry = "1.5.10"
-# test-only; platform provides slf4j transitively at runtime. <233, 1.7.36; >=233, 2.0.9
-slf4j = "2.0.9"
+# test-only; platform provides slf4j transitively at runtime
+slf4j = "2.0.16"
 sshd = "2.13.2"
 undercouch-download = "5.2.1"
 wiremock = "3.3.1"

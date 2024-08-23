@@ -190,11 +190,6 @@ dependencies {
     implementation(libs.zjsonpatch)
 
     testFixturesApi(testFixtures(project(":plugin-core:jetbrains-community")))
-    // slf4j is v1.7.36 for <233
-    // in <233, the classpass binding functionality picks up the wrong impl of StaticLoggerBinder (from the maven plugin instead of IDE platform) and causes a NoClassDefFoundError
-    // instead of trying to fix the classpath, since it's built by gradle-intellij-plugin, shove slf4j >= 2.0.9 onto the test classpath, which uses a ServiceLoader and call it done
-    testImplementation(libs.slf4j.api)
-    testRuntimeOnly(libs.slf4j.jdk14)
 }
 
 fun transformXml(document: Document, path: Path) {
