@@ -6,17 +6,17 @@
 import * as vscode from 'vscode'
 import { getIcon } from '../../../icons'
 import { TreeNode } from '../../../treeview/resourceTreeDataProvider'
-import { Lambda } from 'aws-sdk'
-import { DefaultLambdaClient } from '../../../clients/lambdaClient'
 import { createPlaceholderItem } from '../../../treeview/utils'
 import { localize } from 'vscode-nls'
 import { getLogger } from '../../../logger/logger'
 import { ToolkitError } from '../../..'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
+import { DefaultLambdaClient } from '../../../clients/lambdaClient'
 
 export interface DeployedResource {
     stackName: string
     regionCode: string
-    configuration: Lambda.FunctionConfiguration
+    configuration: FunctionConfiguration
 }
 
 // TODO:: Add doc strings to all TreeNodes
@@ -51,9 +51,10 @@ export async function generateDeployedLocalNode(
     regionCode: string,
     stackName: string
 ): Promise<any[]> {
-    let lambdaFunction: Lambda.GetFunctionResponse | undefined
+    let lambdaFunction: any
 
     try {
+        //TODO: update to Lambda SDK v3. Need to pass in credentials correctly to the new client
         lambdaFunction = await new DefaultLambdaClient(regionCode).getFunction(deployedResource.PhysicalResourceId)
         getLogger().debug('Lambda function details:', lambdaFunction)
     } catch (error: any) {
@@ -77,7 +78,7 @@ export async function generateDeployedLocalNode(
     const _deployedResource: DeployedResource = {
         stackName: stackName,
         regionCode: regionCode,
-        configuration: lambdaFunction.Configuration as Lambda.FunctionConfiguration,
+        configuration: lambdaFunction.Configuration as FunctionConfiguration,
     }
     return [new DeployedLambdaNode(_deployedResource)]
 }

@@ -86,6 +86,7 @@
     "AWS.command.appBuilder.openTemplate": "Open Template file",
     "AWS.command.appBuilder.deploy": "Deploy SAM Application",
     "AWS.command.appBuilder.build": "Build SAM template",
+    "AWS.command.appBuilder.searchLogs": "Search logs",
     "AWS.command.refreshappBuilderExplorer": "Refresh Application Builder Explorer",
     "AWS.command.applicationComposer.openDialog": "Open Template with Application Composer...",
     "AWS.command.auth.addConnection": "Add New Connection",

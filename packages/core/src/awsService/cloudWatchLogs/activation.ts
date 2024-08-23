@@ -19,6 +19,11 @@ import { searchLogGroup } from './commands/searchLogGroup'
 import { changeLogSearchParams } from './changeLogSearch'
 import { CloudWatchLogsNode } from './explorer/cloudWatchLogsNode'
 import { loadAndOpenInitialLogStreamFile, LogStreamCodeLensProvider } from './document/logStreamsCodeLensProvider'
+import { DeployedLambdaNode } from '../../shared/applicationBuilder/explorer/nodes/deployedNode'
+import { isTreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { CloudWatchLogsGroupInfo } from './registry/logDataRegistry'
+import { getLogger } from '../../shared/logger/logger'
+import { ToolkitError } from '../../shared'
 
 export async function activate(context: vscode.ExtensionContext, configuration: Settings): Promise<void> {
     const registry = LogDataRegistry.instance
@@ -89,6 +94,25 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
 
         Commands.register('aws.cwl.changeFilterPattern', async () => changeLogSearchParams(registry, 'filterPattern')),
 
-        Commands.register('aws.cwl.changeTimeFilter', async () => changeLogSearchParams(registry, 'timeFilter'))
+        Commands.register('aws.cwl.changeTimeFilter', async () => changeLogSearchParams(registry, 'timeFilter')),
+
+        Commands.register('aws.appBuilder.searchLogs', async (node: DeployedLambdaNode) => {
+            const logGroupPrefix = '/aws/lambda/'
+            try {
+                const logGroupInfo: CloudWatchLogsGroupInfo | undefined = isTreeNode(node)
+                    ? {
+                          regionName: node.resource.regionCode,
+                          groupName:
+                              node.resource.configuration.LoggingConfig?.LogGroup ||
+                              logGroupPrefix + node.resource.configuration.FunctionName,
+                      }
+                    : undefined
+                const source: string = logGroupInfo ? 'AppBuilderSearchLogs' : 'CommandPalette'
+                await searchLogGroup(registry, source, logGroupInfo)
+            } catch (err) {
+                getLogger().error('Failed to search logs: %s', err)
+                throw ToolkitError.chain(err, 'Failed to search logs')
+            }
+        })
     )
 }

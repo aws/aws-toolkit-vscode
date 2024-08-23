@@ -1649,6 +1649,11 @@
                     "group": "2@0"
                 },
                 {
+                    "command": "aws.appBuilder.searchLogs",
+                    "when": "viewItem == awsAppBuilderDeployedNode",
+                    "group": "0@3"
+                },
+                {
                     "command": "aws.deleteCloudFormation",
                     "when": "view == aws.explorer && viewItem == awsCloudFormationNode",
                     "group": "3@5"
@@ -2117,6 +2122,11 @@
                     "command": "aws.invokeLambda",
                     "when": "viewItem == awsAppBuilderDeployedNode",
                     "group": "inline@1"
+                },
+                {
+                    "command": "aws.appBuilder.searchLogs",
+                    "when": "viewItem == awsAppBuilderDeployedNode",
+                    "group": "inline@2"
                 }
             ],
             "aws.toolkit.auth": [
@@ -3654,6 +3664,12 @@
                 "icon": "$(symbol-method)"
             },
             {
+                "command": "aws.appBuilder.searchLogs",
+                "title": "%AWS.command.appBuilder.searchLogs%",
+                "category": "%AWS.title%",
+                "icon": "$(search-view-icon)"
+            },
+            {
                 "command": "aws.appBuilder.deploy",
                 "title": "%AWS.command.appBuilder.deploy%",
                 "category": "%AWS.title%",
@@ -4361,7 +4377,7 @@
     "dependencies": {
         "@amzn/codewhisperer-streaming": "file:../../src.gen/@amzn/codewhisperer-streaming",
         "@aws-sdk/client-cognito-identity": "3.490.0",
-        "@aws-sdk/client-lambda": "3.385.0",
+        "@aws-sdk/client-lambda": "^3.635.0",
         "@aws-sdk/client-sso": "^3.342.0",
         "@aws-sdk/client-sso-oidc": "^3.574.0",
         "@aws-sdk/credential-provider-ini": "3.46.0",
