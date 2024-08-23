@@ -59,8 +59,10 @@ const nextCommand = Commands.declare('editor.action.inlineSuggest.showNext', () 
 })
 
 const rejectCommand = Commands.declare('aws.amazonq.rejectCodeSuggestion', () => async () => {
+    if (!isCloud9('any')) {
+        await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
+    }
     RecommendationHandler.instance.reportUserDecisions(-1)
-
     await Commands.tryExecute('aws.amazonq.refreshAnnotation')
 })
 
@@ -455,7 +457,6 @@ export class RecommendationHandler {
             this.clearRecommendations()
             this.disposeInlineCompletion()
             await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
-            this.disposeCommandOverrides()
             // fix a regression that requires user to hit Esc twice to clear inline ghost text
             // because disposing a provider does not clear the UX
             if (isVscHavingRegressionInlineCompletionApi()) {
@@ -668,8 +669,6 @@ export class RecommendationHandler {
             })
             this.reportUserDecisions(-1)
         } else if (session.recommendations.length > 0) {
-            this.subscribeSuggestionCommands()
-            // await this.startRejectionTimer(editor)
             await this.showRecommendation(0, true)
         }
     }
