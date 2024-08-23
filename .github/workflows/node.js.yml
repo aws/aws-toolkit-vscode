@@ -1,4 +1,4 @@
-# github actions: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+# github actions: https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-nodejs
 # setup-node: https://github.com/actions/setup-node
 
 name: CI
@@ -8,6 +8,19 @@ on:
         branches: [master]
     pull_request:
         branches: [master, feature/*, mynah-dev]
+        # Default = opened + synchronize + reopened.
+        # We also want "edited" so that lint-commits runs when PR title is updated.
+        # https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#pull_request
+        types:
+            - edited
+            - opened
+            - reopened
+            - synchronize
+
+# Cancel old jobs when a pull request is updated.
+concurrency:
+    group: ${{ github.head_ref || github.run_id }}
+    cancel-in-progress: true
 
 jobs:
     lint-commits:
