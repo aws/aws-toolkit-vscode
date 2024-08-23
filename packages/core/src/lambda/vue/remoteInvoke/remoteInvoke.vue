@@ -1,75 +1,116 @@
 /*! * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. * SPDX-License-Identifier: Apache-2.0 */
 
+<script src="./remoteInvokeFrontend" lang="ts"></script>
+<style scoped src="./remoteInvoke.css"></style>
+
 <template>
-    <div class="container button-container" style="justify-content: space-between">
-        <h1>Function {{ initialData.FunctionName }}</h1>
-        <div><button v-on:click="sendInput">Invoke</button></div>
+    <div class="Icontainer">
+        <div><h1>Remote invoke configuration</h1></div>
+        <div class="form-row" style="justify-content: space-between; height: 28px">
+            <div><button class="primary-button" v-on:click="sendInput">Remote Invoke</button></div>
+            <div>
+                <select class="form-row-select" v-model="selectedFunction">
+                    <option disabled value="">Select a Function</option>
+                    <option value="selectedFunction" selected>{{ initialData.FunctionName }}</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <label>Resource ARN</label>
+            <span
+                :style="{ width: '381px', height: '28px', fontWeight: '500', fontSize: '13px', lineHeight: '15.51px' }"
+                >{{ initialData.FunctionArn }}</span
+            >
+        </div>
+        <div class="form-row">
+            <label>Region:</label>
+            <span
+                :style="{ width: '381px', height: '16px', fontWeight: '500', fontSize: '13px', lineHeight: '15.51px' }"
+                >{{ initialData.FunctionRegion }}</span
+            >
+        </div>
+        <div class="form-row">
+            <div><label>Payload:</label></div>
+            <div class="payload-options">
+                <div>
+                    <form>
+                        <div class="formfield">
+                            <input
+                                class="radio-selector"
+                                type="radio"
+                                id="sampleEvents"
+                                value="sampleEvents"
+                                v-model="payload"
+                                name="payload_request"
+                            />
+                            <label class="label-selector" for="sampleEvents">Inline</label><br />
+                        </div>
+                        <div class="formfield">
+                            <input
+                                type="radio"
+                                id="localFile"
+                                value="localFile"
+                                v-model="payload"
+                                name="payload_request"
+                            />
+                            <label class="label-selector" for="localFile"> Local file</label><br />
+                        </div>
+                        <div class="formfield">
+                            <input
+                                type="radio"
+                                id="savedEvents"
+                                value="savedEvents"
+                                v-model="payload"
+                                name="payload_request"
+                            />
+                            <label class="label-selector" for="savedEvents"> Remote saved events</label>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="form-row" v-if="payload === 'sampleEvents'">
+            <label :style="{ fontSize: '13px', fontWeight: 500 }">Sample event</label>
+            <button class="secondary-button" style="width: 140px" @click="loadSampleEvent">Load Sample Event</button>
+        </div>
+        <div v-if="payload === 'localFile'" class="form-row">
+            <div><label>File</label></div>
+            <div>
+                <input type="file" id="file" @change="onFileChange" style="display: none" ref="fileInput" />
+                <button @click="promptForFileLocation" class="secondary-button">Choose file</button>
+                <button @click="reloadFile" class="secondary-button">Reload</button>
+                &nbsp; {{ selectedFile || 'No file selected' }}
+            </div>
+        </div>
+        <div v-if="payload === 'savedEvents'" class="form-row">
+            <div><label>Remote event</label></div>
+            <div class="form-row">
+                <div>
+                    <select class="form-row-event-select" v-model="selectedTestEvent" v-on:change="newSelection">
+                        <option disabled value="">Select an Event</option>
+                        <option v-for="item in initialData.TestEvents">
+                            {{ item }}
+                        </option>
+                    </select>
+                </div>
+                <div style="margin-left: 105px">
+                    <button @click="showNameField" class="secondary-button">Create</button>
+                    <button @click="saveEvent" class="secondary-button">Save</button>
+                </div>
+            </div>
+            <div class="form-row" v-if="showNameInput">
+                <label>Name</label>
+                <input :style="{ zIndex: '2' }" type="text" v-model="newTestEventName" placeholder="Enter event name" />
+            </div>
+            <br />
+            <div class="form-row" v-if="showNameInput">
+                <label :style="{ fontSize: '13px', fontWeight: 500 }">Sample event</label>
+                <button class="secondary-button" style="width: 140px" @click="loadSampleEvent">
+                    Load Sample Event
+                </button>
+            </div>
+        </div>
+        <textarea style="width: 100%; margin-bottom: 10px" rows="5" cols="60" v-model="sampleText"></textarea>
     </div>
-
-    <p style="margin-bottom: 5px; margin-top: 10px; margin-right: 5px">ARN: {{ initialData.FunctionArn }}</p>
-
-    <p style="margin-top: 0">Region: {{ initialData.FunctionRegion }}</p>
-
-    <h3>Select a file to use as payload:</h3>
-    <div>
-        <button v-on:click="promptForFileLocation">Choose File</button>
-        &nbsp; {{ selectedFile }}
-    </div>
-    <br />
-    <h3>Or, use a sample request payload from a template:</h3>
-    <select v-model="selectedSampleRequest" v-on:change="newSelection">
-        <option disabled value="">Select an example input</option>
-        <option v-for="item in initialData.InputSamples" :key="item.name" :value="item.filename">
-            {{ item.name }}
-        </option>
-    </select>
-    <br />
-    <br />
-    <textarea style="width: 100%; margin-bottom: 10px" rows="10" cols="90" v-model="sampleText"></textarea>
 </template>
-
-<script lang="ts">
-import { defineComponent } from 'vue'
-import { WebviewClientFactory } from '../../../webviews/client'
-import saveData from '../../../webviews/mixins/saveData'
-import { RemoteInvokeData, RemoteInvokeWebview } from './invokeLambda'
-
-const client = WebviewClientFactory.create<RemoteInvokeWebview>()
-const defaultInitialData = {
-    FunctionName: '',
-    FunctionArn: '',
-    FunctionRegion: '',
-    InputSamples: [],
-}
-
-export default defineComponent({
-    async created() {
-        this.initialData = (await client.init()) ?? this.initialData
-    },
-    data(): RemoteInvokeData {
-        return {
-            initialData: { ...defaultInitialData },
-            selectedSampleRequest: '',
-            sampleText: '',
-            selectedFile: '',
-        }
-    },
-    methods: {
-        async newSelection() {
-            const resp = await client.getSample(this.selectedSampleRequest)
-            this.sampleText = resp
-        },
-        async promptForFileLocation() {
-            const resp = await client.promptFile()
-            if (resp) {
-                this.sampleText = resp.sample
-                this.selectedFile = resp.selectedFile
-            }
-        },
-        sendInput() {
-            client.invokeLambda(this.sampleText)
-        },
-    },
-    mixins: [saveData],
-})
-</script>

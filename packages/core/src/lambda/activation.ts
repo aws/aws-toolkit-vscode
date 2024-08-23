@@ -15,6 +15,7 @@ import { registerSamInvokeVueCommand } from './vue/configEditor/samInvokeBackend
 import { Commands } from '../shared/vscode/commands2'
 import { DefaultLambdaClient } from '../shared/clients/lambdaClient'
 import { copyLambdaUrl } from './commands/copyLambdaUrl'
+import type { DeployedLambdaNode } from '../shared/applicationBuilder/explorer/nodes/deployedNode'
 
 /**
  * Activates Lambda components.
@@ -27,7 +28,7 @@ export async function activate(context: ExtContext): Promise<void> {
         }),
         Commands.register(
             'aws.invokeLambda',
-            async (node: LambdaFunctionNode) =>
+            async (node: LambdaFunctionNode | DeployedLambdaNode) =>
                 await invokeRemoteLambda(context, { outputChannel: context.outputChannel, functionNode: node })
         ),
         // Capture debug finished events, and delete the temporary directory if it exists

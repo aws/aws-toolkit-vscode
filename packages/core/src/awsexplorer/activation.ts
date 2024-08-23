@@ -32,6 +32,9 @@ import { activateViewsShared, registerToolView } from './activationShared'
 import { isExtensionInstalled } from '../shared/utilities'
 import { CommonAuthViewProvider } from '../login/webview'
 import { setContext } from '../shared'
+import { AppBuilderRootNode } from '../shared/applicationBuilder/explorer/nodes/rootNode'
+import { getOrInstallCli } from '../shared/utilities/cliUtils'
+import { initWalkthroughProjectCommand, walkthroughContextString } from '../shared/applicationBuilder/walkthrough'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -63,7 +66,13 @@ export async function activate(args: {
     })
     globals.context.subscriptions.push(view)
 
+    // recover context variables from global state when activate
+    const walkthroughSelected = globals.globalState.get<string>(walkthroughContextString)
+    if (walkthroughSelected !== undefined) {
+        await setContext(walkthroughContextString, walkthroughSelected)
+    }
     await registerAwsExplorerCommands(args.context, awsExplorer, args.toolkitOutputChannel)
+    await registerAppBuilderCommands(args.context)
 
     telemetry.vscode_activeRegions.emit({ value: args.regionProvider.getExplorerRegions().length })
 
@@ -121,9 +130,23 @@ export async function activate(args: {
             refreshCommands: [refreshAmazonQ, refreshAmazonQRootNode],
         })
     }
+    const appBuilderNode: ToolView[] = [
+        {
+            nodes: [AppBuilderRootNode.instance],
+            view: 'aws.appBuilder',
+            refreshCommands: [AppBuilderRootNode.instance.refreshAppBuilderExplorer],
+        },
+        {
+            nodes: [AppBuilderRootNode.instance],
+            view: 'aws.appBuilderForFileExplorer',
+            refreshCommands: [AppBuilderRootNode.instance.refreshAppBuilderForFileExplorer],
+        },
+    ]
+
     const viewNodes: ToolView[] = [
         ...amazonQViewNode,
         ...codecatalystViewNode,
+        ...appBuilderNode,
         { nodes: [CdkRootNode.instance], view: 'aws.cdk', refreshCommands: [CdkRootNode.instance.refreshCdkExplorer] },
     ]
     for (const viewNode of viewNodes) {
@@ -202,5 +225,50 @@ async function registerAwsExplorerCommands(
             awsExplorer.refresh(element)
         }),
         loadMoreChildrenCommand.register(awsExplorer)
+    )
+}
+
+async function setWalkthrough(walkthroughSelected: string = 'S3'): Promise<void> {
+    await setContext(walkthroughContextString, walkthroughSelected)
+    await globals.globalState.update(walkthroughContextString, walkthroughSelected)
+}
+
+/**
+ *
+ * @param context VScode Context
+ */
+async function registerAppBuilderCommands(context: ExtContext): Promise<void> {
+    context.extensionContext.subscriptions.push(
+        Commands.register('aws.toolkit.installSAMCLI', async () => {
+            await getOrInstallCli('sam-cli', true, true)
+        }),
+        Commands.register('aws.toolkit.installAWSCLI', async () => {
+            await getOrInstallCli('aws-cli', true, true)
+        }),
+        Commands.register('aws.toolkit.installDocker', async () => {
+            await getOrInstallCli('docker', true, true)
+        }),
+        Commands.register('aws.toolkit.lambda.setWalkthroughToAPI', async () => {
+            await setWalkthrough('API')
+        }),
+        Commands.register('aws.toolkit.lambda.setWalkthroughToS3', async () => {
+            await setWalkthrough('S3')
+        }),
+        Commands.register('aws.toolkit.lambda.setWalkthroughToVisual', async () => {
+            await setWalkthrough('Visual')
+        }),
+        Commands.register('aws.toolkit.lambda.setWalkthroughToCustomTemplate', async () => {
+            await setWalkthrough('CustomTemplate')
+        }),
+        Commands.register('aws.toolkit.lambda.initializeWalkthroughProject', async (): Promise<void> => {
+            await initWalkthroughProjectCommand()
+            await globals.globalState.update('aws.toolkit.lambda.walkthroughCompleted', true)
+        }),
+        Commands.register(`aws.toolkit.lambda.openWalkthrough`, async () => {
+            await vscode.commands.executeCommand(
+                'workbench.action.openWalkthrough',
+                'amazonwebservices.aws-toolkit-vscode#aws.toolkit.lambda.walkthrough'
+            )
+        })
     )
 }

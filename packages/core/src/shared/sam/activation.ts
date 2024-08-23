@@ -10,13 +10,7 @@ import globals from '../extensionGlobals'
 
 import * as vscode from 'vscode'
 import { createNewSamApplication, resumeCreateNewSamApp } from '../../lambda/commands/createNewSamApp'
-import { deploySamApplication } from '../../lambda/commands/deploySamApplication'
 import { SamParameterCompletionItemProvider } from '../../lambda/config/samParameterCompletionItemProvider'
-import {
-    DefaultSamDeployWizardContext,
-    SamDeployWizard,
-    SamDeployWizardResponse,
-} from '../../lambda/wizards/samDeployWizard'
 import * as codelensUtils from '../codelens/codeLensUtils'
 import * as csLensProvider from '../codelens/csharpCodeLensProvider'
 import * as javaLensProvider from '../codelens/javaCodeLensProvider'
@@ -41,7 +35,15 @@ import { SamCliSettings } from './cli/samCliSettings'
 import { Commands } from '../vscode/commands2'
 import { registerSync } from './sync'
 import { showExtensionPage } from '../utilities/vsCodeUtils'
-
+import { TreeNode } from '../treeview/resourceTreeDataProvider'
+import { SamAppLocation } from '../applicationBuilder/explorer/samProject'
+import { ResourceNode } from '../applicationBuilder/explorer/nodes/resourceNode'
+import { ToolkitError } from '../errors'
+import { registerBuild } from './build'
+import { runDeploy } from '../../lambda/commands/deploySamApplication'
+import { DataQuickPickItem, createQuickPick } from '../ui/pickerPrompter'
+import { createCommonButtons } from '../ui/buttons'
+import { samDeployUrl } from '../constants'
 const sharedDetectSamCli = shared(detectSamCli)
 
 const supportedLanguages: {
@@ -116,6 +118,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         await resumeCreateNewSamApp(ctx)
     }
 
+    registerBuild()
     registerSync()
 }
 
@@ -137,27 +140,51 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
             // `arg` is one of :
             //  - undefined
             //  - regionNode (selected from AWS Explorer)
-            //  -  Uri to template.yaml (selected from File Explorer)
-
-            const samDeployWizardContext = new DefaultSamDeployWizardContext(ctx)
-            const samDeployWizard = async (): Promise<SamDeployWizardResponse | undefined> => {
-                const wizard = new SamDeployWizard(samDeployWizardContext, arg)
-                return wizard.run()
-            }
-
-            await deploySamApplication(
-                {
-                    samDeployWizard: samDeployWizard,
-                },
-                {
-                    awsContext: ctx.awsContext,
-                    settings,
-                }
-            )
+            //  - Uri to template.yaml (selected from File Explorer)
+            //  - TreeNode (selected from AppBuilder)
+            await runDeploy(arg)
         }),
         Commands.register({ id: 'aws.toggleSamCodeLenses', autoconnect: false }, async () => {
             const toggled = !settings.get('enableCodeLenses', false)
             await settings.update('enableCodeLenses', toggled)
+        }),
+        Commands.register({ id: 'aws.appBuilder.openTemplate', autoconnect: false }, async (arg: TreeNode) => {
+            const uri = (arg.resource as SamAppLocation).samTemplateUri
+            const document = await vscode.workspace.openTextDocument(uri)
+            await vscode.window.showTextDocument(document)
+        }),
+        Commands.register({ id: 'aws.appBuilder.openHandler', autoconnect: false }, async (arg: ResourceNode) => {
+            const folderUri = arg.resource.workspaceFolder.uri
+            let handler: string | undefined
+            let extension = '*'
+            if (arg.resource.resource.Runtime?.includes('java')) {
+                handler = arg.resource.resource.Handler?.split('::')[0]
+                if (handler?.includes('.')) {
+                    handler = handler.split('.')[1]
+                }
+                extension = 'java'
+            } else {
+                handler = arg.resource.resource.Handler?.split('.')[0]
+            }
+            const handlerFile = (
+                await vscode.workspace.findFiles(
+                    new vscode.RelativePattern(folderUri, `**/${handler}.${extension}`),
+                    new vscode.RelativePattern(folderUri, '.aws-sam')
+                )
+            )[0]
+            if (!handlerFile) {
+                throw new ToolkitError(`No handler file found with name "${handler}"`)
+            }
+            const document = await vscode.workspace.openTextDocument(handlerFile)
+            await vscode.window.showTextDocument(document)
+        }),
+        Commands.register({ id: 'aws.appBuilder.deploy', autoconnect: true }, async (arg) => {
+            const params = await (await deployTypePrompt()).prompt()
+            if (params === 'deploy') {
+                await vscode.commands.executeCommand('aws.deploySamApplication', arg)
+            } else if (params === 'sync') {
+                await vscode.commands.executeCommand('aws.samcli.sync', arg)
+            }
         })
     )
 }
@@ -438,4 +465,23 @@ async function promptInstallYamlPlugin(disposables: vscode.Disposable[]) {
         case permanentlySuppress:
             await settings.disablePrompt('yamlExtPrompt')
     }
+}
+
+async function deployTypePrompt() {
+    const items: DataQuickPickItem<string>[] = [
+        {
+            label: 'Deploy',
+            data: 'deploy',
+        },
+        {
+            label: 'Sync',
+            data: 'sync',
+        },
+    ]
+
+    return createQuickPick(items, {
+        title: localize('AWS.appBuilder.deployType.title', 'Select deployment command'),
+        placeholder: 'Press enter to proceed with highlighted option',
+        buttons: createCommonButtons(samDeployUrl),
+    })
 }

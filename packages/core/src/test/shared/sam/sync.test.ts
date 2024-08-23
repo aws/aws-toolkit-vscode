@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import assert from 'assert'
-import { prepareSyncParams, SyncParams, SyncWizard } from '../../../shared/sam/sync'
+import { ParamsSource, prepareSyncParams, SyncParams, SyncWizard } from '../../../shared/sam/sync'
 import {
     createBaseImageTemplate,
     createBaseTemplate,
@@ -24,10 +24,28 @@ describe('SyncWizard', async function () {
 
     it('shows steps in correct order', async function () {
         const tester = await createTester()
-        tester.region.assertShowFirst()
-        tester.template.assertShowSecond()
+        tester.paramsSource.assertShowFirst()
+        const tester2 = await createTester({ paramsSource: ParamsSource.SpecifyAndSave })
+        tester2.template.assertShowFirst()
+        tester2.region.assertShowSecond()
+        tester2.stackName.assertShowThird()
+        tester2.bucketName.assertShow(4)
+    })
+
+    it('shows steps when user chooses to specify the params', async function () {
+        const tester = await createTester({ paramsSource: ParamsSource.SpecifyAndSave })
+        tester.template.assertShowFirst()
+        tester.region.assertShowSecond()
         tester.stackName.assertShowThird()
         tester.bucketName.assertShow(4)
+    })
+
+    it('skips prompts if user chooses samconfig file as params source', async function () {
+        const tester = await createTester({ paramsSource: ParamsSource.SamConfig })
+        tester.template.assertDoesNotShow()
+        tester.region.assertDoesNotShow()
+        tester.stackName.assertDoesNotShow()
+        tester.bucketName.assertDoesNotShow()
     })
 
     it('prompts for ECR repo if template has image-based resource', async function () {

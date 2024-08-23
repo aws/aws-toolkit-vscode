@@ -1,0 +1,141 @@
+.Icontainer {
+    margin-inline: auto;
+    margin-top: 5rem;
+}
+
+h1 {
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+div {
+    width: 521px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    margin-bottom: 10px;
+}
+.form-row-select {
+    width: 387px;
+    height: 28px;
+    border: 1px;
+    border-radius: 5px;
+    gap: 4px;
+    padding: 2px 8px;
+}
+
+.form-row-event-select {
+    width: 244px;
+    height: 28px;
+    border: 1px;
+    border-radius: 5px;
+    gap: 4px;
+    padding: 2px 8px;
+}
+
+.payload-options {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+label {
+    margin-right: 10px;
+}
+
+span,
+select,
+.payload-options {
+    display: block;
+}
+
+textarea {
+    width: 100%;
+    height: 200px;
+}
+
+button {
+    background: #007acc;
+    color: #fff;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+button:last-child {
+    margin-right: 0;
+}
+
+button {
+    margin-right: 10px;
+}
+
+.payload-options-button {
+    display: grid;
+    align-items: center;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+
+.primary-button {
+    background: #007acc;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 1em;
+    margin-right: 10px;
+}
+
+.secondary-button {
+    background: #007acc;
+    color: #fff;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-right: 10px;
+}
+
+button:last-child {
+    margin-right: 0;
+}
+
+.payload-options-buttons {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.radio-selector {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+}
+
+.label-selector {
+    padding-left: 7px;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 15.51px;
+    text-align: center;
+}
+
+.form-row-select {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    margin-bottom: 10px;
+}
+
+.formfield {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
