@@ -32,7 +32,7 @@ jobs:
             - uses: actions/setup-node@v4
               with:
                   node-version: '20'
-            - name: Check PR title and commit message
+            - name: Check PR title
               run: |
                   node "$GITHUB_WORKSPACE/.github/workflows/lintcommit.js"
 
