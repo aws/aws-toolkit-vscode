@@ -18,6 +18,7 @@ import { CancellationError } from '../utilities/timeoutUtils'
 import { ToolkitError } from '../errors'
 import globals from '../extensionGlobals'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
+import { Metric, SamBuild, telemetry } from '../telemetry/telemetry'
 import { getConfigFileUri } from './utils'
 
 export interface BuildParams {
@@ -150,7 +151,10 @@ export class BuildWizard extends Wizard<BuildParams> {
 }
 
 export function registerBuild() {
-    async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
+    async function runBuild(span: Metric<SamBuild>, arg?: TreeNode): Promise<SamBuildResult> {
+        const source = arg ? 'AppBuilderBuild' : 'CommandPalette'
+        span.record({ source: source })
+
         // Prepare Build params
         const buildParams: Partial<BuildParams> = {}
 
@@ -214,8 +218,6 @@ export function registerBuild() {
             id: 'aws.appBuilder.build',
             autoconnect: false,
         },
-        async (arg?: TreeNode | undefined) => {
-            await runBuild(arg)
-        }
+        async (arg?: TreeNode | undefined) => await telemetry.sam_build.run(async (span) => await runBuild(span, arg))
     )
 }
