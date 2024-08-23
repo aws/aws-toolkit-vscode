@@ -10,7 +10,40 @@ on:
         branches: [master, feature/*, mynah-dev]
 
 jobs:
+    lint-commits:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 20
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+            - name: Check PR title and commit message
+              run: |
+                  node "$GITHUB_WORKSPACE/.github/workflows/lintcommit.js"
+
+    lint:
+        needs: lint-commits
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [16.x]
+                vscode-version: [stable]
+        env:
+            NODE_OPTIONS: '--max-old-space-size=8192'
+        steps:
+            - uses: actions/checkout@v4
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - run: npm ci
+            - run: npm run testCompile
+            - run: npm run lint
+
     macos:
+        needs: lint-commits
         name: test macOS
         runs-on: macos-latest
         strategy:
@@ -80,6 +113,7 @@ jobs:
                   token: ${{ secrets.CODECOV_TOKEN }}
 
     web:
+        needs: lint-commits
         name: test Web
         runs-on: ubuntu-latest
         strategy:
@@ -105,6 +139,7 @@ jobs:
                   run: npm run testWeb
 
     windows:
+        needs: lint-commits
         name: test Windows
         runs-on: windows-2019
         strategy:
@@ -135,22 +170,3 @@ jobs:
                   verbose: true
                   file: ./coverage/lcov.info
                   token: ${{ secrets.CODECOV_TOKEN }}
-
-    lint:
-        name: Lint
-        runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                node-version: [16.x]
-                vscode-version: [stable]
-        env:
-            NODE_OPTIONS: '--max-old-space-size=8192'
-        steps:
-            - uses: actions/checkout@v4
-            - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
-              with:
-                  node-version: ${{ matrix.node-version }}
-            - run: npm ci
-            - run: npm run testCompile
-            - run: npm run lint
