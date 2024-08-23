@@ -8,18 +8,13 @@
         {
             "name": "documentFormat",
             "type": "string",
-            "allowedValues": [
-                "JSON, YAML"
-            ],
+            "allowedValues": ["JSON, YAML"],
             "description": "SSM Create document format selection"
         },
         {
             "name": "ssmOperation",
             "type": "string",
-            "allowedValues": [
-                "Create",
-                "Update"
-            ],
+            "allowedValues": ["Create", "Update"],
             "description": "SSM Publish Document operation type"
         },
         {
@@ -45,11 +40,7 @@
         {
             "name": "cwsprChatTriggerInteraction",
             "type": "string",
-            "allowedValues": [
-                "hotkeys",
-                "click",
-                "contextMenu"
-            ],
+            "allowedValues": ["hotkeys", "click", "contextMenu"],
             "description": "Identifies the specific interaction that opens the chat panel"
         },
         {
@@ -114,11 +105,7 @@
         {
             "name": "cwsprChatConversationType",
             "type": "string",
-            "allowedValues": [
-                "Chat",
-                "Assign",
-                "Transform"
-            ],
+            "allowedValues": ["Chat", "Assign", "Transform"],
             "description": "Identifies the type of conversation"
         },
         {
@@ -245,12 +232,7 @@
         {
             "name": "cwsprChatCommandType",
             "type": "string",
-            "allowedValues": [
-                "clear",
-                "help",
-                "transform",
-                "auth"
-            ],
+            "allowedValues": ["clear", "help", "transform", "auth"],
             "description": "Type of chat command (/command) executed"
         },
         {
@@ -266,11 +248,7 @@
         {
             "name": "authStatus",
             "type": "string",
-            "allowedValues": [
-                "connected",
-                "notConnected",
-                "expired"
-            ],
+            "allowedValues": ["connected", "notConnected", "expired"],
             "description": "Status of the an auth connection."
         },
         {
@@ -1129,7 +1107,8 @@
                     "required": true
                 }
             ],
-            "passive": true
+            "passive": true,
+            "trackPerformance": true
         }
     ]
 }

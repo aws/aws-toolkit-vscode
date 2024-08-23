@@ -35,8 +35,8 @@ export class PerformanceTracker {
 
     constructor(private readonly name: string) {}
 
-    static enabled(name: string, trackPerformance?: boolean): boolean {
-        return name === 'function_call' && (trackPerformance ?? false) && !isWeb()
+    static enabled(name: string, trackPerformance: boolean): boolean {
+        return name === 'function_call' && trackPerformance && !isWeb()
     }
 
     start() {
