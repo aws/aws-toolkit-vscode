@@ -71,6 +71,10 @@ function validateTitle(title) {
     const parts = title.split(':')
     const subject = parts.slice(1).join(':').trim()
 
+    if (title.startsWith('Merge')) {
+        return undefined
+    }
+
     if (parts.length < 2) {
         return 'missing colon (:) char'
     }
@@ -172,6 +176,7 @@ function _test() {
         'style: format code': undefined,
         'test: add new tests': undefined,
         'types: add type definitions': undefined,
+        'Merge staging into feature/lambda-get-started': undefined,
     }
 
     let passed = 0
