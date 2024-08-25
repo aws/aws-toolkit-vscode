@@ -211,7 +211,7 @@ describe('collectFiles', function () {
         const workspaceFolder = await createTestWorkspace(fileAmount, { fileNamePrefix, fileContent })
 
         const writeFile = (pathParts: string[], fileContent: string) => {
-            return toFile(fileContent, workspaceFolder.uri.fsPath, ...pathParts)
+            return toFile(fileContent, path.join(workspaceFolder.uri.fsPath, ...pathParts))
         }
 
         sinon.stub(vscode.workspace, 'workspaceFolders').value([workspaceFolder])
@@ -307,18 +307,18 @@ describe('collectFiles', function () {
         const fileContent = ''
         for (const fmt of ['txt', 'md']) {
             // root license files
-            await toFile(fileContent, workspace.uri.fsPath, `license.${fmt}`)
-            await toFile(fileContent, workspace.uri.fsPath, `License.${fmt}`)
-            await toFile(fileContent, workspace.uri.fsPath, `LICENSE.${fmt}`)
+            await toFile(fileContent, path.join(workspace.uri.fsPath, `license.${fmt}`))
+            await toFile(fileContent, path.join(workspace.uri.fsPath, `License.${fmt}`))
+            await toFile(fileContent, path.join(workspace.uri.fsPath, `LICENSE.${fmt}`))
 
             // nested license files
-            await toFile(fileContent, workspace.uri.fsPath, 'src', `license.${fmt}`)
-            await toFile(fileContent, workspace.uri.fsPath, 'src', `License.${fmt}`)
-            await toFile(fileContent, workspace.uri.fsPath, 'src', `LICENSE.${fmt}`)
+            await toFile(fileContent, path.join(workspace.uri.fsPath, `src/license.${fmt}`))
+            await toFile(fileContent, path.join(workspace.uri.fsPath, `src/License.${fmt}`))
+            await toFile(fileContent, path.join(workspace.uri.fsPath, `src/LICENSE.${fmt}`))
         }
 
         // add a non license file too, to make sure it is returned
-        await toFile(fileContent, workspace.uri.fsPath, 'non-license.md')
+        await toFile(fileContent, path.join(workspace.uri.fsPath, 'non-license.md'))
 
         const result = await collectFiles([workspace.uri.fsPath], [workspace], true)
 
@@ -438,7 +438,7 @@ describe('collectFilesForIndex', function () {
         const workspaceFolder = await createTestWorkspace(fileAmount, { fileNamePrefix, fileContent })
 
         const writeFile = (pathParts: string[], fileContent: string) => {
-            return toFile(fileContent, workspaceFolder.uri.fsPath, ...pathParts)
+            return toFile(fileContent, path.join(workspaceFolder.uri.fsPath, ...pathParts))
         }
 
         sinon.stub(vscode.workspace, 'workspaceFolders').value([workspaceFolder])
