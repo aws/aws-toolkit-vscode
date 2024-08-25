@@ -32,27 +32,23 @@ describe('ide_editCodeFile telemetry', function () {
     let jsonUri1: vscode.Uri | undefined
     let jsonUri2: vscode.Uri | undefined
     let tsUri: vscode.Uri | undefined
+    let noiseUri1!: vscode.Uri
+    let noiseUri2!: vscode.Uri
 
     beforeEach(async function () {
         await testUtil.closeAllEditors()
+        const ws = vscode.workspace.workspaceFolders?.[0]
 
-        const jsonFile1 = workspaceUtils.tryGetAbsolutePath(
-            vscode.workspace.workspaceFolders?.[0],
-            'ts-plain-sam-app/tsconfig.json'
-        )
-        jsonUri1 = vscode.Uri.file(jsonFile1)
-
-        const jsonFile2 = workspaceUtils.tryGetAbsolutePath(
-            vscode.workspace.workspaceFolders?.[0],
-            'ts-plain-sam-app/package.json'
-        )
-        jsonUri2 = vscode.Uri.file(jsonFile2)
-
-        const tsFile = workspaceUtils.tryGetAbsolutePath(
-            vscode.workspace.workspaceFolders?.[0],
-            'ts-plain-sam-app/src/app.ts'
-        )
-        tsUri = vscode.Uri.file(tsFile)
+        jsonUri1 = vscode.Uri.file(workspaceUtils.tryGetAbsolutePath(ws, 'ts-plain-sam-app/tsconfig.json'))
+        jsonUri2 = vscode.Uri.file(workspaceUtils.tryGetAbsolutePath(ws, 'ts-plain-sam-app/package.json'))
+        tsUri = vscode.Uri.file(workspaceUtils.tryGetAbsolutePath(ws, 'ts-plain-sam-app/src/app.ts'))
+        // Simulate ~/.vscode/argv.json which is emitted by vscode `onDidOpenTextDocument` event.
+        // filetypes.ts no longer listens to `onDidOpenTextDocument`, but this test protects against
+        // regressions.
+        noiseUri1 = vscode.Uri.file(workspaceUtils.tryGetAbsolutePath(ws, '.vscode/argv.json'))
+        await testUtil.toFile('fake argv.json', noiseUri1)
+        noiseUri2 = vscode.Uri.file(workspaceUtils.tryGetAbsolutePath(ws, 'foo/bar/zub.git'))
+        await testUtil.toFile('fake *.git file', noiseUri2)
     })
 
     after(async function () {
@@ -67,6 +63,14 @@ describe('ide_editCodeFile telemetry', function () {
         await vscode.commands.executeCommand('vscode.open', jsonUri1)
         // Different file, same extension (.json), thus `ide_editCodeFile` should be skipped/deduped.
         await vscode.commands.executeCommand('vscode.open', jsonUri2)
+
+        // Open some "noise" documents WITHOUT showing them in a text editor. This triggers
+        // `onDidOpenTextDocument` but not `onDidChangeActiveTextEditor`. This simulates typical
+        // vscode activity. Noise documents should NOT trigger `ide_editCodeFile` or any similar
+        // metric.
+        await vscode.workspace.openTextDocument(noiseUri1)
+        await vscode.workspace.openTextDocument(noiseUri2)
+
         // Wait for metrics...
         const r1 = await getMetrics(2, 'ide_editCodeFile')
         const m1 = r1?.[0]
@@ -92,10 +96,12 @@ describe('ide_editCodeFile telemetry', function () {
 
 describe('file_editAwsFile telemetry', function () {
     let awsConfigUri: vscode.Uri | undefined
+    let ssmJsonUri: vscode.Uri | undefined
     let cfnUri: vscode.Uri | undefined
 
     beforeEach(async function () {
         await testUtil.closeAllEditors()
+        const ws = vscode.workspace.workspaceFolders?.[0]
 
         // Create a dummy file in ~/.aws on the system.
         // Note: We consider _any_ file in ~/.aws to be an "AWS config" file,
@@ -104,11 +110,8 @@ describe('file_editAwsFile telemetry', function () {
         awsConfigUri = vscode.Uri.file(awsConfigFile)
         await testUtil.toFile('Test file from the aws-toolkit-vscode test suite.', awsConfigFile)
 
-        const cfnFile = workspaceUtils.tryGetAbsolutePath(
-            vscode.workspace.workspaceFolders?.[0],
-            'python3.7-plain-sam-app/template.yaml'
-        )
-        cfnUri = vscode.Uri.file(cfnFile)
+        ssmJsonUri = vscode.Uri.file(workspaceUtils.tryGetAbsolutePath(ws, 'test.ssm.json'))
+        cfnUri = vscode.Uri.file(workspaceUtils.tryGetAbsolutePath(ws, 'python3.7-plain-sam-app/template.yaml'))
     })
 
     after(async function () {
@@ -118,10 +121,7 @@ describe('file_editAwsFile telemetry', function () {
     it('emits when opened by user', async function () {
         await vscode.commands.executeCommand('vscode.open', cfnUri)
         await vscode.commands.executeCommand('vscode.open', awsConfigUri)
-        await vscode.workspace.openTextDocument({
-            content: 'test content for SSM JSON',
-            language: 'ssm-json',
-        })
+        await vscode.commands.executeCommand('vscode.open', ssmJsonUri)
 
         const r = await getMetrics(3, 'file_editAwsFile', 5000)
 
