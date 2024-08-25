@@ -62,8 +62,17 @@ export function isAwsFiletype(doc: vscode.TextDocument): boolean | undefined {
 
 export function activate(): void {
     globals.context.subscriptions.push(
-        // TODO: onDidChangeTextDocument ?
-        vscode.workspace.onDidOpenTextDocument(async (doc: vscode.TextDocument) => {
+        vscode.window.onDidChangeActiveTextEditor(async (editor) => {
+            const doc = editor?.document
+            // Ignore output:// files.
+            // Ignore *.git files (from the builtin git extension).
+            // Ignore ~/.vscode/argv.json (vscode internal file).
+            const isNoise =
+                !doc || doc.uri.scheme === 'git' || doc.uri.scheme === 'output' || doc.fileName.endsWith('argv.json')
+            if (isNoise) {
+                return
+            }
+
             const basename = path.basename(doc.fileName)
             let fileExt: string | undefined = path.extname(doc.fileName).trim()
             fileExt = fileExt !== '' ? fileExt : undefined // Telemetry client will fail on empty string.
@@ -77,11 +86,10 @@ export function activate(): void {
                 const isSameMetricPending = await globals.telemetry.findPendingMetric('ide_editCodeFile', metric, [
                     'filenameExt',
                 ])
-                if (isSameMetricPending) {
-                    return // Avoid redundant/duplicate metrics.
+                if (!isSameMetricPending) {
+                    // Avoid redundant/duplicate metrics.
+                    telemetry.ide_editCodeFile.emit(metric)
                 }
-
-                telemetry.ide_editCodeFile.emit(metric)
             }
 
             const isAwsFileExt = isAwsFiletype(doc)
