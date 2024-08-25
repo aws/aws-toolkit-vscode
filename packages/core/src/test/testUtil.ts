@@ -20,16 +20,16 @@ import { DeclaredCommand } from '../shared/vscode/commands2'
 const testTempDirs: string[] = []
 
 /**
- * Writes the string form of `o` to `filePathParts` as UTF-8 text.
+ * Writes the string form of `o` to `filepath` as UTF-8 text.
  *
- * Creates parent directories in `filePathParts`, if necessary.
+ * Creates parent directories in `filepath`, if necessary.
  */
-export async function toFile(o: any, ...filePathParts: string[]) {
-    const text = o ? o.toString() : ''
-    const filePath = path.join(...filePathParts)
-    const dir = path.dirname(filePath)
+export async function toFile(o: any, filepath: string | vscode.Uri) {
+    const file = typeof filepath === 'string' ? filepath : filepath.fsPath
+    const text = o === undefined ? '' : o.toString()
+    const dir = path.dirname(file)
     await fs2.mkdir(dir)
-    await fs2.writeFile(filePath, text)
+    await fs2.writeFile(file, text)
 }
 
 /**
