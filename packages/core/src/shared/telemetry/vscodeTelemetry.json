@@ -277,9 +277,14 @@
             "description": "A detailed state of a specific auth connection. Use `authStatus` for a higher level view of an extension's general connection."
         },
         {
-            "name": "cpuUsage",
+            "name": "userCpuUsage",
             "type": "int",
-            "description": "Percentage of cpu usage"
+            "description": "Percentage of user cpu usage (user space)"
+        },
+        {
+            "name": "systemCpuUsage",
+            "type": "int",
+            "description": "Percentage of system cpu usage (kernal space)"
         },
         {
             "name": "heapTotal",
@@ -1095,7 +1100,11 @@
             "description": "Represents a function call. In most cases this should wrap code with a run(), then you can add context.",
             "metadata": [
                 {
-                    "type": "cpuUsage",
+                    "type": "userCpuUsage",
+                    "required": true
+                },
+                {
+                    "type": "systemCpuUsage",
                     "required": true
                 },
                 {
