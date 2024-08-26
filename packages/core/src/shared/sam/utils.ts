@@ -7,6 +7,8 @@ import * as vscode from 'vscode'
 import { ToolkitError } from '../errors'
 import path from 'path'
 import { FileSystem } from '../fs/fs'
+import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
+import { TreeNode, isTreeNode } from '../treeview/resourceTreeDataProvider'
 
 /**
  * @description Finds the samconfig.toml file under the provided project folder
@@ -23,6 +25,18 @@ export async function getConfigFileUri(projectRoot: vscode.Uri) {
     if (samConfigFile) {
         return vscode.Uri.file(samConfigFile)
     } else {
-        throw new ToolkitError(`No samconfig.toml file found in ${projectRoot.fsPath}`, { code: "samNoConfigFound"})
+        throw new ToolkitError(`No samconfig.toml file found in ${projectRoot.fsPath}`, { code: 'samNoConfigFound' })
+    }
+}
+
+export function getSource(arg: vscode.Uri | AWSTreeNodeBase | TreeNode | undefined): string | undefined {
+    if (arg instanceof vscode.Uri) {
+        return 'template'
+    } else if (arg instanceof AWSTreeNodeBase) {
+        return 'regionNode'
+    } else if (isTreeNode(arg)) {
+        return 'appBuilderDeploy'
+    } else {
+        return undefined
     }
 }

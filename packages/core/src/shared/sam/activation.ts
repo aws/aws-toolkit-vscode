@@ -44,6 +44,7 @@ import { runDeploy } from '../../lambda/commands/deploySamApplication'
 import { DataQuickPickItem, createQuickPick } from '../ui/pickerPrompter'
 import { createCommonButtons } from '../ui/buttons'
 import { samDeployUrl } from '../constants'
+
 const sharedDetectSamCli = shared(detectSamCli)
 
 const supportedLanguages: {
@@ -136,14 +137,16 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
             { id: 'aws.pickAddSamDebugConfiguration', autoconnect: false },
             codelensUtils.pickAddSamDebugConfiguration
         ),
-        Commands.register({ id: 'aws.deploySamApplication', autoconnect: true }, async (arg) => {
-            // `arg` is one of :
-            //  - undefined
-            //  - regionNode (selected from AWS Explorer)
-            //  - Uri to template.yaml (selected from File Explorer)
-            //  - TreeNode (selected from AppBuilder)
-            await runDeploy(arg)
-        }),
+        Commands.register(
+            { id: 'aws.deploySamApplication', autoconnect: true },
+            async (arg) =>
+                // `arg` is one of :
+                //  - undefined
+                //  - regionNode (selected from AWS Explorer)
+                //  - Uri to template.yaml (selected from File Explorer)
+                //  - TreeNode (selected from AppBuilder)
+                await runDeploy(arg)
+        ),
         Commands.register({ id: 'aws.toggleSamCodeLenses', autoconnect: false }, async () => {
             const toggled = !settings.get('enableCodeLenses', false)
             await settings.update('enableCodeLenses', toggled)

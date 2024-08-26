@@ -49,7 +49,7 @@ import { IamConnection } from '../../auth/connection'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
 import { promptAndUseConnection } from '../../auth/utils'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
-import { getConfigFileUri } from './utils'
+import { getConfigFileUri, getSource } from './utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -749,30 +749,36 @@ export function registerSync() {
         arg: vscode.Uri | AWSTreeNodeBase | TreeNode | undefined,
         validate?: boolean
     ): Promise<SamSyncResult> {
-        telemetry.record({ syncedResources: deployType === 'infra' ? 'AllResources' : 'CodeOnly' })
+        return await telemetry.sam_sync.run(async () => {
+            let source = getSource(arg)
+            telemetry.record({ syncedResources: deployType === 'infra' ? 'AllResources' : 'CodeOnly', source: source })
 
-        const connection = await getAuthOrPrompt()
-        if (connection?.type !== 'iam' || connection?.state !== 'valid') {
-            throw new ToolkitError('Syncing SAM applications requires IAM credentials', {
-                code: 'NoIAMCredentials',
-            })
-        }
-
-        await confirmDevStack()
-        const registry = await globals.templateRegistry
-        const params = await new SyncWizard({ deployType, ...(await prepareSyncParams(arg, validate)) }, registry).run()
-        if (params === undefined) {
-            throw new CancellationError('user')
-        }
-
-        try {
-            await runSamSync({ ...params, connection })
-            return {
-                isSuccess: true,
+            const connection = await getAuthOrPrompt()
+            if (connection?.type !== 'iam' || connection?.state !== 'valid') {
+                throw new ToolkitError('Syncing SAM applications requires IAM credentials', {
+                    code: 'NoIAMCredentials',
+                })
             }
-        } catch (err) {
-            throw ToolkitError.chain(err, 'Failed to sync SAM application', { details: { ...params } })
-        }
+
+            await confirmDevStack()
+            const registry = await globals.templateRegistry
+            const params = await new SyncWizard(
+                { deployType, ...(await prepareSyncParams(arg, validate)) },
+                registry
+            ).run()
+            if (params === undefined) {
+                throw new CancellationError('user')
+            }
+
+            try {
+                await runSamSync({ ...params, connection })
+                return {
+                    isSuccess: true,
+                }
+            } catch (err) {
+                throw ToolkitError.chain(err, 'Failed to sync SAM application', { details: { ...params } })
+            }
+        })
     }
 
     Commands.register(
@@ -780,7 +786,7 @@ export function registerSync() {
             id: 'aws.samcli.sync',
             autoconnect: true,
         },
-        (arg?, validate?: boolean) => telemetry.sam_sync.run(() => runSync('infra', arg, validate))
+        async (arg?, validate?: boolean) => await runSync('infra', arg, validate)
     )
 
     const settings = SamCliSettings.instance

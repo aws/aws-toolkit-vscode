@@ -32,6 +32,8 @@ import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ChildProcess } from '../../shared/utilities/childProcess'
 import { addTelemetryEnvVar } from '../../shared/sam/cli/samCliInvokerUtils'
+import { getSource } from '../../shared/sam/utils'
+import { telemetry } from '../../shared/telemetry'
 
 interface DeployParams {
     readonly paramsSource: ParamsSource
@@ -126,7 +128,6 @@ class DeployWizard extends Wizard<DeployParams> {
 
         if (arg && arg.path) {
             // "Deploy" command was invoked on a template.yaml file.
-
             const templateUri = arg as vscode.Uri
             const templateItem = { uri: templateUri, data: {} } as TemplateItem
             this.form.template.setDefault(templateItem)
@@ -154,7 +155,6 @@ class DeployWizard extends Wizard<DeployParams> {
             })
         } else if (arg && arg.regionCode) {
             // "Deploy" command was invoked on a regionNode.
-
             this.form.template.bindPrompter(() => createTemplatePrompter(registry), {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
@@ -180,7 +180,6 @@ class DeployWizard extends Wizard<DeployParams> {
             })
         } else if (arg && arg.getTreeItem().resourceUri) {
             // "Deploy" command was invoked on a TreeNode on the AppBuilder.
-
             const templateUri = arg.getTreeItem().resourceUri as vscode.Uri
             const templateItem = { uri: templateUri, data: {} } as TemplateItem
             this.form.template.setDefault(templateItem)
@@ -204,7 +203,7 @@ class DeployWizard extends Wizard<DeployParams> {
             })
             this.form.projectRoot.setDefault(() => getProjectRoot(templateItem))
         } else {
-            // "Deploy" command was invoked on the command pallette.
+            // "Deploy" command was invoked on the command palette.
             this.form.template.bindPrompter(() => createTemplatePrompter(registry), {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
@@ -281,70 +280,78 @@ async function getConfigFileUri(projectRoot: vscode.Uri) {
 }
 
 export async function runDeploy(arg: any): Promise<DeployResult> {
-    const connection = await getAuthOrPrompt()
-    if (connection?.type !== 'iam' || connection?.state !== 'valid') {
-        throw new ToolkitError('Deploying SAM applications requires IAM credentials', {
-            code: 'NoIAMCredentials',
-        })
-    }
-    // Prepare Build params
-    const deployParams: Partial<DeployParams> = {}
+    return await telemetry.sam_deploy.run(async () => {
+        let source = getSource(arg)
+        telemetry.record({ source: source })
 
-    const registry = await globals.templateRegistry
-    const params = await new DeployWizard(deployParams, registry, arg).run()
-    if (params === undefined) {
-        throw new CancellationError('user')
-    }
-    const deployFlags: string[] = ['--no-confirm-changeset']
-    const buildFlags: string[] = ['--cached']
-
-    if (params.paramsSource === ParamsSource.SamConfig) {
-        const samConfigFile = await getConfigFileUri(params.projectRoot)
-        deployFlags.push('--config-file', `${samConfigFile.fsPath}`)
-    } else {
-        deployFlags.push('--template', `${params.template.uri.fsPath}`)
-        deployFlags.push('--region', `${params.region}`)
-        deployFlags.push('--stack-name', `${params.stackName}`)
-        params.bucketName ? deployFlags.push('--s3-bucket', `${params.bucketName}`) : deployFlags.push('--resolve-s3')
-        deployFlags.push('--capabilities', 'CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM')
-    }
-
-    if (params.paramsSource === ParamsSource.SpecifyAndSave) {
-        deployFlags.push('--save-params')
-    }
-
-    try {
-        const { path: samCliPath } = await getSamCliPathAndVersion()
-
-        // Create a child process to run the SAM build command
-        const buildProcess = new ChildProcess(samCliPath, ['build', ...buildFlags], {
-            spawnOptions: await addTelemetryEnvVar({
-                cwd: params.projectRoot.fsPath,
-                env: await injectCredentials(connection),
-            }),
-        })
-        // Create a child process to run the SAM deploy command
-        const deployProcess = new ChildProcess(samCliPath, ['deploy', ...deployFlags], {
-            spawnOptions: await addTelemetryEnvVar({
-                cwd: params.projectRoot.fsPath,
-                env: await injectCredentials(connection),
-            }),
-        })
-
-        try {
-            //Run SAM build in Terminal
-            await runInTerminal(buildProcess, 'build')
-        } catch (error) {
-            throw ToolkitError.chain(error, 'Failed to build SAM template', { details: { ...buildFlags } })
+        const connection = await getAuthOrPrompt()
+        if (connection?.type !== 'iam' || connection?.state !== 'valid') {
+            throw new ToolkitError('Deploying SAM applications requires IAM credentials', {
+                code: 'NoIAMCredentials',
+            })
         }
 
-        //Run SAM deploy in Terminal
-        await runInTerminal(deployProcess, 'deploy')
-    } catch (error) {
-        throw ToolkitError.chain(error, 'Failed to deploy SAM template', { details: { ...deployFlags } })
-    }
+        // Prepare Build params
+        const deployParams: Partial<DeployParams> = {}
 
-    return {
-        isSuccess: true,
-    }
+        const registry = await globals.templateRegistry
+        const params = await new DeployWizard(deployParams, registry, arg).run()
+        if (params === undefined) {
+            throw new CancellationError('user')
+        }
+        const deployFlags: string[] = ['--no-confirm-changeset']
+        const buildFlags: string[] = ['--cached']
+
+        if (params.paramsSource === ParamsSource.SamConfig) {
+            const samConfigFile = await getConfigFileUri(params.projectRoot)
+            deployFlags.push('--config-file', `${samConfigFile.fsPath}`)
+        } else {
+            deployFlags.push('--template', `${params.template.uri.fsPath}`)
+            deployFlags.push('--region', `${params.region}`)
+            deployFlags.push('--stack-name', `${params.stackName}`)
+            params.bucketName
+                ? deployFlags.push('--s3-bucket', `${params.bucketName}`)
+                : deployFlags.push('--resolve-s3')
+            deployFlags.push('--capabilities', 'CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM')
+        }
+
+        if (params.paramsSource === ParamsSource.SpecifyAndSave) {
+            deployFlags.push('--save-params')
+        }
+
+        try {
+            const { path: samCliPath } = await getSamCliPathAndVersion()
+
+            // Create a child process to run the SAM build command
+            const buildProcess = new ChildProcess(samCliPath, ['build', ...buildFlags], {
+                spawnOptions: await addTelemetryEnvVar({
+                    cwd: params.projectRoot.fsPath,
+                    env: await injectCredentials(connection),
+                }),
+            })
+            // Create a child process to run the SAM deploy command
+            const deployProcess = new ChildProcess(samCliPath, ['deploy', ...deployFlags], {
+                spawnOptions: await addTelemetryEnvVar({
+                    cwd: params.projectRoot.fsPath,
+                    env: await injectCredentials(connection),
+                }),
+            })
+
+            try {
+                //Run SAM build in Terminal
+                await runInTerminal(buildProcess, 'build')
+            } catch (error) {
+                throw ToolkitError.chain(error, 'Failed to build SAM template', { details: { ...buildFlags } })
+            }
+
+            //Run SAM deploy in Terminal
+            await runInTerminal(deployProcess, 'deploy')
+        } catch (error) {
+            throw ToolkitError.chain(error, 'Failed to deploy SAM template', { details: { ...deployFlags } })
+        }
+
+        return {
+            isSuccess: true,
+        }
+    })
 }
