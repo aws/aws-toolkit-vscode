@@ -300,7 +300,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
 
             let connectionState = this.auth.getConnectionState(conn)
 
-            // This function is expected to be called in the contest of restoreConnection()
+            // This function is expected to be called in the context of restoreConnection()
             telemetry.auth_modifyConnection.record({
                 connectionState,
                 authStatus: getAuthStatus(connectionState),
