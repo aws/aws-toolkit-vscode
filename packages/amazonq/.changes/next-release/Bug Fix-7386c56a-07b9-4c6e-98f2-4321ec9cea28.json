@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fix bug when pasting text from Mynah card with inline code causes new line breaks to form around the inline code text"
+}
