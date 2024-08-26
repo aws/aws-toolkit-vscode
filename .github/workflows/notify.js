@@ -4,7 +4,7 @@
  */
 
 const needsTestFiles =
-    'We have detected that your changes do not add or modify test files. Please add or update tests or indicate why tests are not needed.'
+    'This pull request modifies files in src/ but no tests were added/updated. Confirm whether tests should be added or ensure the PR description explains why tests are not required.'
 
 /**
  * Remind partner teams that tests are required. We don't need to remind them if:
