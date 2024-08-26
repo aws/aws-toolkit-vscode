@@ -33,7 +33,7 @@ export async function getStackName(workspaceFolder: vscode.WorkspaceFolder): Pro
     try {
         const configUris = await getFiles(workspaceFolder, 'samconfig.toml', `**/.aws-sam/**`)
         if (configUris.length === 0) {
-            throw new Error('No samconfig.toml file found.')
+            return {}
         }
 
         const samConfig = await SamConfig.fromUri(configUris[0])

@@ -31,7 +31,7 @@ export class AppNode implements TreeNode {
             const templateResources: ResourceTreeEntity[] = successfulApp.resourceTree
 
             const { stackName, region } = await getStackName(this.location.workspaceFolder)
-            this.stackName = stackName || this.stackName
+            this.stackName = stackName
 
             const listStackResourcesArguments: SamCliListResourcesParameters = {
                 stackName: this.stackName,
