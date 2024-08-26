@@ -11,7 +11,6 @@ const needsTestFiles =
  *  1. They did not change anything in a src directory
  *  2. They already have test files in the PR
  *  3. We've already told them in a previous PR comment
- * fooo
  */
 module.exports = async ({ github, context }) => {
     const owner = context.repo.owner
