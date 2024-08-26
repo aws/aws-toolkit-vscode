@@ -2049,7 +2049,7 @@
                     "group": "inline@2"
                 },
                 {
-                    "command": "aws.launchConfigForm",
+                    "command": "aws.launchDebugConfigForm",
                     "when": "viewItem == awsAppBuilderResourceNode.function",
                     "group": "inline@1"
                 },
@@ -2105,7 +2105,12 @@
                 },
                 {
                     "command": "aws.launchConfigForm",
-                    "when": "viewItem == awsAppBuilderAppNode || viewItem == awsAppBuilderResourceNode.function",
+                    "when": "viewItem == awsAppBuilderAppNode",
+                    "group": "1@2"
+                },
+                {
+                    "command": "aws.launchDebugConfigForm",
+                    "when": "viewItem == awsAppBuilderResourceNode.function",
                     "group": "1@2"
                 },
                 {
@@ -2233,6 +2238,17 @@
                 "title": "%AWS.command.createNewSamApp%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.launchDebugConfigForm",
+                "title": "%AWS.command.launchConfigForm.title%",
+                "category": "%AWS.title%",
+                "icon": "$(play)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

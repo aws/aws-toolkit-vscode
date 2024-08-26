@@ -36,8 +36,33 @@ import globals from '../../../shared/extensionGlobals'
 import { VueWebview } from '../../../webviews/main'
 import { Commands } from '../../../shared/vscode/commands2'
 import { telemetry } from '../../../shared/telemetry/telemetry'
+import { ToolkitError } from '../../../shared'
+import {
+    SamCliRemoteTestEventsParameters,
+    TestEventsOperation,
+    runSamCliRemoteTestEvents,
+} from '../../../shared/sam/cli/samCliRemoteTestEvent'
+import { getSamCliContext } from '../../../shared/sam/cli/samCliContext'
+import { listRemoteTestEvents } from '../remoteInvoke/invokeLambda'
+import { ResourceNode } from '../../../shared/applicationBuilder/explorer/nodes/resourceNode'
 
 const localize = nls.loadMessageBundle()
+
+type Event = {
+    name: string
+    region: string
+    stackName: string
+    event?: string
+}
+
+export interface ResourceData {
+    logicalId: string
+    region: string
+    stackName: string
+    location: string
+    handler: string
+    runtime: string
+}
 
 export type AwsSamDebuggerConfigurationLoose = AwsSamDebuggerConfiguration & {
     invokeTarget: Omit<
@@ -55,7 +80,11 @@ interface SampleQuickPickItem extends vscode.QuickPickItem {
     filename: string
 }
 
-interface LaunchConfigPickItem extends vscode.QuickPickItem {
+export interface initialData {
+    LaunchConfig: LaunchConfigPickItem | undefined
+}
+
+export interface LaunchConfigPickItem extends vscode.QuickPickItem {
     index: number
     config?: AwsSamDebuggerConfiguration
 }
@@ -66,7 +95,8 @@ export class SamInvokeWebview extends VueWebview {
 
     public constructor(
         private readonly extContext: ExtContext, // TODO(sijaden): get rid of `ExtContext`
-        private readonly config?: AwsSamDebuggerConfiguration
+        private readonly config?: AwsSamDebuggerConfiguration,
+        private readonly data?: ResourceData
     ) {
         super(SamInvokeWebview.sourcePath)
     }
@@ -79,11 +109,11 @@ export class SamInvokeWebview extends VueWebview {
         return this.config
     }
 
-    /**
-     * Open a quick pick containing the names of launch configs in the `launch.json` array.
-     * Filter out non-supported launch configs.
-     */
-    public async loadSamLaunchConfig(): Promise<AwsSamDebuggerConfiguration | undefined> {
+    public getResourceData() {
+        return this.data
+    }
+
+    public async getSamLaunchConfigs(): Promise<LaunchConfigPickItem[] | undefined> {
         // TODO: Find a better way to infer this. Might need another arg from the frontend (depends on the context in which the launch config is made?)
         const workspaceFolder = vscode.workspace.workspaceFolders?.length
             ? vscode.workspace.workspaceFolders[0]
@@ -95,6 +125,16 @@ export class SamInvokeWebview extends VueWebview {
         const uri = workspaceFolder.uri
         const launchConfig = new LaunchConfiguration(uri)
         const pickerItems = await getLaunchConfigQuickPickItems(launchConfig, uri)
+        return pickerItems
+    }
+
+    /**
+     * Open a quick pick containing the names of launch configs in the `launch.json` array.
+     * Filter out non-supported launch configs.
+     */
+    public async loadSamLaunchConfig(): Promise<AwsSamDebuggerConfiguration | undefined> {
+        const pickerItems: LaunchConfigPickItem[] = (await this.getSamLaunchConfigs()) || []
+
         if (pickerItems.length === 0) {
             pickerItems.push({
                 index: -1,
@@ -213,13 +253,105 @@ export class SamInvokeWebview extends VueWebview {
         }
     }
 
+    public async getConfigName() {
+        const ib = input.createInputBox({
+            options: {
+                prompt: localize('AWS.lambda.form.debugConfigName', 'Input Name For Debug Configuration'),
+            },
+        })
+        return await input.promptUser({ inputBox: ib })
+    }
+
+    // This method serves as a wrapper around the backend function `openLaunchJsonFile`.
+    // The frontend cannot directly import and invoke backend functions like `openLaunchJsonFile`
+    // because doing so would break the webview environment by introducing server-side logic
+    // into client-side code. Instead, this method acts as an interface or bridge, allowing
+    // the frontend to request the backend to open the launch configuration file without
+    // directly coupling the frontend to backend-specific implementations.
+    public async openLaunchConfig() {
+        await openLaunchJsonFile()
+    }
+
+    public async promptFile() {
+        const fileLocations = await vscode.window.showOpenDialog({
+            openLabel: 'Open',
+        })
+
+        if (!fileLocations || fileLocations.length === 0) {
+            return undefined
+        }
+
+        try {
+            const fileContent = fs.readFileSync(fileLocations[0].fsPath, { encoding: 'utf8' })
+            return {
+                sample: fileContent,
+                selectedFilePath: fileLocations[0].path,
+                selectedFile: this.getFileName(fileLocations[0].path),
+            }
+        } catch (e) {
+            getLogger().error('readFileSync: Failed to read file at path %O', fileLocations[0].fsPath, e)
+            throw ToolkitError.chain(e, 'Failed to read selected file')
+        }
+    }
+
+    public async readFile(filePath: string) {
+        if (!filePath) {
+            return undefined
+        }
+        const fileLocation = vscode.Uri.file(filePath)
+        try {
+            const fileContent = fs.readFileSync(fileLocation.fsPath, { encoding: 'utf8' })
+
+            return {
+                sample: fileContent,
+                selectedFilePath: fileLocation.fsPath,
+                selectedFile: this.getFileName(fileLocation.fsPath),
+            }
+        } catch (e) {
+            getLogger().error('readFileSync: Failed to read file at path %O', fileLocation.fsPath, e)
+            throw ToolkitError.chain(e, 'Failed to read selected file')
+        }
+    }
+
+    private getFileName(filePath: string): string {
+        return path.basename(filePath)
+    }
+
+    public async listRemoteTestEvents(stackName: string, region: string): Promise<string[]> {
+        return await listRemoteTestEvents(stackName, region)
+    }
+
+    public async createRemoteTestEvents(putEvent: Event) {
+        const params: SamCliRemoteTestEventsParameters = {
+            stackName: putEvent.stackName,
+            operation: TestEventsOperation.Put,
+            name: putEvent.name,
+            eventSample: putEvent.event,
+            region: putEvent.region,
+        }
+        return await this.remoteTestEvents(params)
+    }
+    public async getRemoteTestEvents(getEvents: Event) {
+        const params: SamCliRemoteTestEventsParameters = {
+            name: getEvents.name,
+            operation: TestEventsOperation.Get,
+            stackName: getEvents.stackName,
+            region: getEvents.region,
+        }
+        return await this.remoteTestEvents(params)
+    }
+
+    private async remoteTestEvents(params: SamCliRemoteTestEventsParameters) {
+        return await runSamCliRemoteTestEvents(params, getSamCliContext().invoker)
+    }
+
     /**
      * Open a quick pick containing the names of launch configs in the `launch.json` array, plus a "Create New Entry" entry.
      * On selecting a name, overwrite the existing entry in the `launch.json` array and resave the file.
      * On selecting "Create New Entry", prompt the user for a name and save the contents to the end of the `launch.json` array.
      * @param config Config to save
      */
-    public async saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<void> {
+    public async saveLaunchConfig(config: AwsSamDebuggerConfiguration, configName: string): Promise<void> {
         const uri = getUriFromLaunchConfig(config)
         if (!uri) {
             // TODO Localize
@@ -228,7 +360,14 @@ export class SamInvokeWebview extends VueWebview {
             )
             return
         }
+
         const launchConfig = new LaunchConfiguration(uri)
+
+        if (configName) {
+            await this.addNewDebugConfig(launchConfig, config, configName)
+            return
+        }
+
         const launchConfigItems = await getLaunchConfigQuickPickItems(launchConfig, uri)
         const pickerItems = [
             {
@@ -267,7 +406,7 @@ export class SamInvokeWebview extends VueWebview {
             const response = await input.promptUser({ inputBox: ib })
             if (response) {
                 await launchConfig.addDebugConfiguration(finalizeConfig(config, response))
-                await openLaunchJsonFile()
+                await this.openLaunchConfig()
             }
         } else {
             // use existing label
@@ -275,8 +414,17 @@ export class SamInvokeWebview extends VueWebview {
                 finalizeConfig(config, pickerResponse.label),
                 pickerResponse.index
             )
-            await openLaunchJsonFile()
+            await this.openLaunchConfig()
         }
+    }
+
+    private async addNewDebugConfig(
+        launchConfig: LaunchConfiguration,
+        config: AwsSamDebuggerConfiguration,
+        configName: string
+    ): Promise<void> {
+        await launchConfig.addDebugConfiguration(finalizeConfig(config, configName))
+        await this.openLaunchConfig()
     }
 
     /**
@@ -318,6 +466,27 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
                 viewColumn: vscode.ViewColumn.Beside,
             })
         })
+    })
+}
+
+export async function registerSamDebugInvokeVueCommand(context: ExtContext, params: { resource: ResourceNode }) {
+    const launchConfig: AwsSamDebuggerConfiguration | undefined = undefined
+    const resource = params?.resource.resource
+    const webview = new WebviewPanel(context.extensionContext, context, launchConfig, {
+        logicalId: resource.resource.Id ?? '',
+        region: resource.region ?? '',
+        stackName: resource.stackName ?? '',
+        location: resource.location.fsPath,
+        handler: resource.resource.Handler!,
+        runtime: resource.resource.Runtime!,
+    })
+    await telemetry.sam_openConfigUi.run(async (span) => {
+        telemetry.record({ source: 'AppBuilderDebugger' }),
+            await webview.show({
+                title: localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration'),
+                // TODO: make this only open `Beside` when executed via CodeLens
+                viewColumn: vscode.ViewColumn.Beside,
+            })
     })
 }
 

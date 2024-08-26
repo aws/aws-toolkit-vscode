@@ -1,7 +1,3 @@
-form {
-    padding: 15px;
-}
-
 .section-header {
     margin: 0px;
     margin-bottom: 10px;
@@ -47,7 +43,127 @@ textarea {
     margin-bottom: 16px;
 }
 
+.header-buttons {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.header-buttons select,
+.header-buttons button,
+.unsaved {
+    margin-right: 10px;
+}
+
+.unsaved {
+    background-color: #4d4d4d;
+}
+
 #target-type-selector {
     margin-bottom: 15px;
     margin-left: 8px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    margin-bottom: 10px;
+}
+
+.payload-options-button {
+    display: grid;
+    align-items: center;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+
+.payload-options-buttons {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.Icontainer {
+    margin-inline: auto;
+    margin-top: 5rem;
+}
+
+.container {
+    /* max-width: 600px; */
+    width: 574px;
+    height: 824px;
+    top: 18px;
+    /* left: 47.5px; */
+    gap: 20px;
+    margin: auto;
+    /* font-family: Arial, sans-serif; */
+    left: 688px;
+}
+
+.primary-button {
+    background: #007acc;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 1em;
+    margin-right: 10px;
+}
+
+.secondary-button {
+    background: #007acc;
+    color: #fff;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-right: 10px;
+}
+
+.formfield {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.payload-options-buttons {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.radio-selector {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+}
+
+.label-selector {
+    padding-left: 7px;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 15.51px;
+    text-align: center;
+}
+
+.form-row-select {
+    width: 387px;
+    height: 28px;
+    border: 1px;
+    border-radius: 5px;
+    gap: 4px;
+    padding: 2px 8px;
+}
+
+.form-row-event-select {
+    width: 244px;
+    height: 28px;
+    border: 1px;
+    border-radius: 5px;
+    gap: 4px;
+    padding: 2px 8px;
 }

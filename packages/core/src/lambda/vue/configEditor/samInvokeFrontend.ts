@@ -8,12 +8,22 @@
 
 import { defineComponent } from 'vue'
 import { AwsSamDebuggerConfiguration } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
-import { AwsSamDebuggerConfigurationLoose, SamInvokeWebview } from './samInvokeBackend'
+import {
+    AwsSamDebuggerConfigurationLoose,
+    LaunchConfigPickItem,
+    ResourceData,
+    SamInvokeWebview,
+} from './samInvokeBackend'
 import settingsPanel from '../../../webviews/components/settingsPanel.vue'
 import { WebviewClientFactory } from '../../../webviews/client'
 import saveData from '../../../webviews/mixins/saveData'
 
 const client = WebviewClientFactory.create<SamInvokeWebview>()
+
+const savedStatus = {
+    saved: 'SAVED',
+    unsaved: 'UNSAVED',
+}
 
 interface VueDataLaunchPropertyObject {
     value: string
@@ -34,6 +44,18 @@ interface SamInvokeVueData {
     parameters: VueDataLaunchPropertyObject
     containerBuild: boolean
     skipNewImageCheck: boolean
+    loadedConfigs: LaunchConfigPickItem[] | undefined
+    selectedConfig: LaunchConfigPickItem
+    payloadOption: string
+    selectedFile: string
+    selectedFilePath: string
+    selectedTestEvent: string
+    TestEvents: string[]
+    showNameInput: boolean
+    newTestEventName: string
+    newConfigName: string
+    resourceData: ResourceData | undefined
+    savedStatus: string
 }
 
 function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): AwsSamDebuggerConfigurationLoose {
@@ -105,6 +127,14 @@ function initData() {
         parameters: { value: '', errorMsg: '' },
         headers: { value: '', errorMsg: '' },
         stageVariables: { value: '', errorMsg: '' },
+        loadedConfigs: [],
+        selectedConfig: { index: 0, config: undefined, label: 'new-config' },
+        selectedTestEvent: '',
+        TestEvents: [],
+        showNameInput: false,
+        newTestEventName: '',
+        newConfigName: '',
+        savedStatus: savedStatus.unsaved,
     }
 }
 
@@ -114,30 +144,7 @@ export default defineComponent({
         settingsPanel,
     },
     created() {
-        client.init().then(
-            (config) => this.parseConfig(config),
-            (e) => {
-                console.error('client.init failed: %s', (e as Error).message)
-            }
-        )
-
-        client.getRuntimes().then(
-            (runtimes) => {
-                this.runtimes = runtimes
-            },
-            (e) => {
-                console.error('client.getRuntimes failed: %s', (e as Error).message)
-            }
-        )
-
-        client.getCompanyName().then(
-            (o) => {
-                this.company = o
-            },
-            (e) => {
-                console.error('client.getCompanyName failed: %s', (e as Error).message)
-            }
-        )
+        this.setUpWebView()
     },
     mixins: [saveData],
     data(): SamInvokeVueData {
@@ -152,6 +159,11 @@ export default defineComponent({
             ],
             runtimes: [],
             httpMethods: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'],
+            loadedConfigs: [],
+            payloadOption: '',
+            selectedFile: '',
+            selectedFilePath: '',
+            resourceData: undefined,
         }
     },
     methods: {
@@ -171,9 +183,14 @@ export default defineComponent({
         save() {
             const config = this.formatConfig()
             config &&
-                client.saveLaunchConfig(config).catch((e) => {
+                client.saveLaunchConfig(config, this.newConfigName).catch((e) => {
                     console.error('saveLaunchConfig failed: %s', (e as Error).message)
                 })
+            this.savedStatus = savedStatus.saved
+            this.loadConfig()
+        },
+        async create() {
+            this.newConfigName = (await client.getConfigName()) || ''
         },
         loadConfig() {
             client.loadSamLaunchConfig().then(
@@ -182,6 +199,10 @@ export default defineComponent({
                     console.error('client.loadSamLaunchConfig failed: %s', (e as Error).message)
                 }
             )
+        },
+        updateConfig() {
+            this.parseConfig(this.selectedConfig.config)
+            this.savedStatus = savedStatus.saved
         },
         parseConfig(config?: AwsSamDebuggerConfiguration) {
             if (!config) {
@@ -259,6 +280,140 @@ export default defineComponent({
                 }
             }
         },
+        async openLaunchJson() {
+            await client.openLaunchConfig()
+        },
+        onFileChange(event: Event) {
+            const input = event.target as HTMLInputElement
+            if (input.files && input.files.length > 0) {
+                const file = input.files[0]
+                this.selectedFile = file.name
+
+                // Use Blob.text() to read the file as text
+                file.text()
+                    .then((text) => {
+                        this.payload.value = text
+                    })
+                    .catch((error) => {
+                        console.error('Error reading file:', error)
+                    })
+            }
+        },
+        async promptForFileLocation() {
+            const resp = await client.promptFile()
+            if (resp) {
+                this.payload.value = JSON.stringify(JSON.parse(resp.sample), undefined, 4)
+                this.selectedFile = resp.selectedFile
+                this.selectedFilePath = resp.selectedFilePath
+            }
+        },
+        async reloadFile() {
+            if (this.selectedFile) {
+                const resp = await client.readFile(this.selectedFilePath)
+                if (resp) {
+                    this.payload.value = JSON.stringify(JSON.parse(resp.sample), undefined, 4)
+                    this.selectedFile = resp.selectedFile
+                    this.selectedFilePath = resp.selectedFilePath
+                }
+            }
+        },
+        async newSelection() {
+            if (this.resourceData) {
+                const eventData = {
+                    name: this.selectedTestEvent,
+                    region: this.resourceData.region,
+                    stackName: this.resourceData.stackName,
+                }
+                const resp = await client.getRemoteTestEvents(eventData)
+                this.payload.value = JSON.stringify(JSON.parse(resp), undefined, 4)
+            }
+        },
+        async saveEvent() {
+            if (this.resourceData) {
+                const eventData = {
+                    name: this.newTestEventName,
+                    event: this.payload.value,
+                    region: this.resourceData.region,
+                    stackName: this.resourceData.stackName,
+                }
+                await client.createRemoteTestEvents(eventData)
+                this.showNameInput = false
+                this.newTestEventName = ''
+                this.TestEvents = await client.listRemoteTestEvents(
+                    this.resourceData.stackName,
+                    this.resourceData.region
+                )
+            }
+        },
+        showNameField() {
+            this.showNameInput = true
+        },
+        setUpWebView() {
+            client.init().then(
+                (config) => this.parseConfig(config),
+                (e) => {
+                    console.error('client.init failed: %s', (e as Error).message)
+                }
+            )
+
+            client.getResourceData().then(
+                (data) => {
+                    this.resourceData = data
+                    if (this.launchConfig && this.resourceData) {
+                        this.launchConfig.invokeTarget.logicalId = this.resourceData.logicalId
+                        this.launchConfig.invokeTarget.templatePath = this.resourceData.location
+                        this.launchConfig.invokeTarget.lambdaHandler = this.resourceData.handler
+                        if (this.launchConfig.lambda) {
+                            this.launchConfig.lambda.runtime = this.resourceData.runtime
+                        }
+
+                        client.listRemoteTestEvents(this.resourceData.stackName, this.resourceData.region).then(
+                            (events) => {
+                                this.TestEvents = events
+                            },
+                            (e) => {
+                                console.error('client.listRemoteTestEvents failed: %s', (e as Error).message)
+                            }
+                        )
+                    }
+                },
+                (e) => {
+                    console.error('client.getResourceData failed: %s', (e as Error).message)
+                }
+            )
+
+            client.getSamLaunchConfigs().then(
+                (config) => {
+                    this.loadedConfigs = config
+                },
+                (e) => {
+                    console.error('client.loadSamLaunchConfig failed: %s', (e as Error).message)
+                }
+            )
+
+            client.getRuntimes().then(
+                (runtimes) => {
+                    this.runtimes = runtimes
+                },
+                (e) => {
+                    console.error('client.getRuntimes failed: %s', (e as Error).message)
+                }
+            )
+
+            client.getCompanyName().then(
+                (o) => {
+                    this.company = o
+                },
+                (e) => {
+                    console.error('client.getCompanyName failed: %s', (e as Error).message)
+                }
+            )
+        },
+        reset() {
+            this.clearForm()
+            this.resetJsonErrors()
+            this.setUpWebView()
+        },
         formatConfig() {
             this.resetJsonErrors()
 
@@ -314,7 +469,9 @@ export default defineComponent({
         },
         clearForm() {
             const init = initData()
-            Object.keys(init).forEach((k) => (this.$data[k as keyof typeof init] = init[k as keyof typeof init] as any))
+            Object.keys(init).forEach((k) => {
+                ;(this as any)[k] = init[k as keyof typeof init]
+            })
         },
     },
 })

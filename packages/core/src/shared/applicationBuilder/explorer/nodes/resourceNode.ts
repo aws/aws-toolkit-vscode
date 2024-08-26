@@ -38,6 +38,7 @@ export class ResourceNode implements TreeNode {
             workspaceFolder: this.location.workspaceFolder,
             region: this.region,
             stackName: this.stackName,
+            deployedResource: this.deployedResource,
         }
     }
 
