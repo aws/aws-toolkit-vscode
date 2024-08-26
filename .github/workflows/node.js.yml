@@ -5,9 +5,9 @@ name: CI
 
 on:
     push:
-        branches: [master]
+        branches: [master, staging]
     pull_request:
-        branches: [master, feature/*, mynah-dev]
+        branches: [master, feature/*, staging]
         # Default = opened + synchronize + reopened.
         # We also want "edited" so that lint-commits runs when PR title is updated.
         # https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#pull_request
@@ -32,6 +32,12 @@ jobs:
             - uses: actions/setup-node@v4
               with:
                   node-version: '20'
+            - name: Check for tests
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const notify = require('.github/workflows/notify.js')
+                      await notify({github, context})
             - name: Check PR title
               run: |
                   node "$GITHUB_WORKSPACE/.github/workflows/lintcommit.js"
