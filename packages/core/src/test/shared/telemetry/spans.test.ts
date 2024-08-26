@@ -78,7 +78,7 @@ describe('TelemetrySpan', function () {
     })
 
     it('records performance', function () {
-        const { expectedCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
+        const { expectedUserCpuUsage, expectedSystemCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
         const span = new TelemetrySpan('function_call', {
             emit: true,
         })
@@ -86,7 +86,8 @@ describe('TelemetrySpan', function () {
         clock.tick(90)
         span.stop()
         assertTelemetry('function_call', {
-            cpuUsage: expectedCpuUsage,
+            userCpuUsage: expectedUserCpuUsage,
+            systemCpuUsage: expectedSystemCpuUsage,
             heapTotal: expectedHeapTotal,
             duration: 90,
             result: 'Succeeded',
@@ -269,7 +270,7 @@ describe('TelemetryTracer', function () {
 
         it('records performance', function () {
             clock = installFakeClock()
-            const { expectedCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
+            const { expectedUserCpuUsage, expectedSystemCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
             tracer.run(
                 'function_call',
                 () => {
@@ -281,7 +282,8 @@ describe('TelemetryTracer', function () {
             )
 
             assertTelemetry('function_call', {
-                cpuUsage: expectedCpuUsage,
+                userCpuUsage: expectedUserCpuUsage,
+                systemCpuUsage: expectedSystemCpuUsage,
                 heapTotal: expectedHeapTotal,
                 duration: 90,
                 result: 'Succeeded',
