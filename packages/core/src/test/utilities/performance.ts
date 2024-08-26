@@ -6,11 +6,11 @@
 import Sinon from 'sinon'
 
 export function stubPerformance(sandbox: Sinon.SinonSandbox) {
-    const expectedCpuUsage = { user: 10000, system: 2000 }
+    const cpuUsage = { user: 10000, system: 2000 }
     const initialHeapTotal = 1
     const totalNanoseconds = 30000000 // 0.03 seconds
 
-    sandbox.stub(process, 'cpuUsage').returns(expectedCpuUsage)
+    sandbox.stub(process, 'cpuUsage').returns(cpuUsage)
 
     const memoryUsageStub = sandbox.stub(process, 'memoryUsage')
     memoryUsageStub
@@ -21,7 +21,8 @@ export function stubPerformance(sandbox: Sinon.SinonSandbox) {
     sandbox.stub(process, 'hrtime').onCall(0).returns([0, 0]).onCall(1).returns([0, totalNanoseconds])
 
     return {
-        expectedCpuUsage: 40,
+        expectedUserCpuUsage: 33.333333333333336,
+        expectedSystemCpuUsage: 6.666666666666667,
         expectedHeapTotal: 10,
         expectedTotalSeconds: totalNanoseconds / 1e9,
     }
