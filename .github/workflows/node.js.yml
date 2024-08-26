@@ -5,9 +5,9 @@ name: CI
 
 on:
     push:
-        branches: [master]
+        branches: [master, staging]
     pull_request:
-        branches: [master, feature/*, mynah-dev]
+        branches: [master, feature/*, staging]
         # Default = opened + synchronize + reopened.
         # We also want "edited" so that lint-commits runs when PR title is updated.
         # https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#pull_request
