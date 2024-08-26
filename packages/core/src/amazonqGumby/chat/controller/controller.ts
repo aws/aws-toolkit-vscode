@@ -506,5 +506,5 @@ export class GumbyController {
  */
 function extractPath(text: string): string | undefined {
     const resolvedPath = path.resolve(text.trim())
-    return nodefs.existsSync(resolvedPath) && nodefs.lstatSync(resolvedPath).isDirectory() ? resolvedPath : undefined
+    return nodefs.existsSync(resolvedPath) ? resolvedPath : undefined
 }
