@@ -54,8 +54,7 @@ interface Cli {
     exec?: string
 }
 
-// To Create docker in telemetry common repo
-type AwsClis = Extract<ToolId, 'session-manager-plugin' | 'aws-cli' | 'sam-cli'> | 'docker'
+export type AwsClis = Extract<ToolId, 'session-manager-plugin' | 'aws-cli' | 'sam-cli' | 'docker'>
 
 /**
  * CLIs and their full filenames and download paths for their respective OSes
@@ -299,9 +298,7 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
         }
         getLogger().info(`${cli} installation: ${result}`)
         // commented for we need to add docker to toolId type in telemetry. No good way to add it in dev.
-        if (cli !== 'docker') {
-            telemetry.aws_toolInstallation.emit({ result, toolId: cli })
-        }
+        telemetry.aws_toolInstallation.emit({ result, toolId: cli })
     }
 }
 
@@ -526,17 +523,16 @@ export async function getOrInstallCli(cli: AwsClis, confirm: boolean, popup: boo
         const path = await getCliCommand(awsClis[cli])
         // if popup, when tool is detected, show a popup message and return path
         if (path && popup) {
-            void vscode.window.showInformationMessage(
-                localize(
-                    'AWS.cli.cliFoundPrompt',
-                    '{0} CLI exists in your environment, location found: {1}',
-                    awsClis[cli].name,
-                    path
-                )
-            )
+            await showCliFoundPopup(awsClis[cli].name, path)
         }
         return path ?? installCli(cli, confirm)
     }
+}
+
+export async function showCliFoundPopup(cli: string, path: string) {
+    void vscode.window.showInformationMessage(
+        localize('AWS.cli.cliFoundPrompt', '{0} CLI exists in your environment, location found: {1}', cli, path)
+    )
 }
 
 // TODO: uncomment for AWS CLI installation
