@@ -914,15 +914,22 @@ export function getReasonFromSyntaxError(err: Error): string | undefined {
 }
 
 /**
- * Run a function and swallow any network errors that are thrown inside.
- * Other types of errors are still thrown.
+ * Run a function and swallow any errors that are not specified by `shouldThrow`
  */
-export function runIgnoreNetError<T>(fn: () => T, logMsg?: string): T | undefined
-export function runIgnoreNetError<T>(fn: () => Promise<T>, logMsg?: string): Promise<T> | undefined
-export function runIgnoreNetError<T>(fn: () => T | Promise<T>, logMsg?: string): T | Promise<T | void> | undefined {
-    const catchErr = (err: unknown) => {
-        if (isNetworkError(err)) {
-            getLogger().error(logMsg ?? 'unknown caller: Network error ignored: %s', err)
+export function tryRun<T>(fn: () => T, shouldThrow: (err: Error) => boolean, logMsg?: string): T | undefined
+export function tryRun<T>(
+    fn: () => Promise<T>,
+    shouldThrow: (err: Error) => boolean,
+    logMsg?: string
+): Promise<T> | undefined
+export function tryRun<T>(
+    fn: () => T | Promise<T>,
+    shouldThrow: (err: Error) => boolean,
+    logMsg?: string
+): T | Promise<T | void> | undefined {
+    const catchErr = (err: Error) => {
+        if (shouldThrow(err)) {
+            getLogger().error(logMsg ?? 'unknown caller: Error ignored: %s', err)
             return
         }
 
@@ -935,7 +942,7 @@ export function runIgnoreNetError<T>(fn: () => T | Promise<T>, logMsg?: string):
             return result.catch(catchErr)
         }
         return result
-    } catch (error) {
+    } catch (error: any) {
         catchErr(error)
     }
 }

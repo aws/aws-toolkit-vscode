@@ -263,7 +263,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
                     connectionState: 'undefined',
                 })
                 await this.auth.tryAutoConnect()
-                this.#savedConnection = await this.loadSavedConnection()
+                this.#savedConnection = await this._loadSavedConnection()
                 this.#onDidChangeActiveConnection.fire(this.activeConnection)
 
                 telemetry.record(await getTelemetryMetadataForConn(this.#savedConnection))
@@ -274,7 +274,10 @@ export class SecondaryAuth<T extends Connection = Connection> {
         }
     }
 
-    private async loadSavedConnection() {
+    /**
+     * Provides telemetry if called by restoreConnection() (or another auth_modifyConnection context)
+     */
+    private async _loadSavedConnection() {
         // TODO: fix this
         // eslint-disable-next-line aws-toolkits/no-banned-usages
         const globalState = globals.context.globalState
@@ -296,6 +299,8 @@ export class SecondaryAuth<T extends Connection = Connection> {
             }
 
             let connectionState = this.auth.getConnectionState(conn)
+
+            // This function is expected to be called in the contest of restoreConnection()
             telemetry.auth_modifyConnection.record({
                 connectionState,
                 authStatus: getAuthStatus(connectionState),

@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { Auth } from '../../auth/auth'
-import { ToolkitError, runIgnoreNetError } from '../../shared/errors'
+import { ToolkitError, isNetworkError, tryRun } from '../../shared/errors'
 import { getSecondaryAuth, setScopes } from '../../auth/secondaryAuth'
 import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { AmazonQPromptSettings } from '../../shared/settings'
@@ -412,8 +412,9 @@ export class AuthUtil {
         // The state of the connection may not have been properly validated
         // and the current state we see may be stale, so refresh for latest state.
         if (ignoreNetErr) {
-            await runIgnoreNetError(
+            await tryRun(
                 () => this.auth.refreshConnectionState(this.conn),
+                (err: Error) => isNetworkError(err),
                 'getChatAuthState: Cannot refresh connection state due to network error: %s'
             )
         } else {

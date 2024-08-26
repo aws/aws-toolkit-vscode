@@ -248,7 +248,7 @@
         {
             "name": "authStatus",
             "type": "string",
-            "allowedValues": ["connected", "notConnected", "expired"],
+            "allowedValues": ["connected", "notConnected", "expired", "connectedWithNetworkError"],
             "description": "Status of the an auth connection."
         },
         {

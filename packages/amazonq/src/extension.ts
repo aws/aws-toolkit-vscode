@@ -143,8 +143,8 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
         }, 1000)
     }
 
-    try {
-        await telemetry.auth_userState.run(async () => {
+    await telemetry.auth_userState
+        .run(async () => {
             telemetry.record({ passive: true })
 
             const firstUse = AuthUtils.ExtensionUse.instance.isFirstUse()
@@ -160,9 +160,15 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
 
             let authState: AuthState = 'disconnected'
             try {
+                // May call connection validate functions that try to refresh the token.
+                // This could result in network errors.
                 authState = (await AuthUtil.instance.getChatAuthState(false)).codewhispererChat
             } catch (err) {
-                if (isNetworkError(err)) {
+                if (
+                    isNetworkError(err) &&
+                    AuthUtil.instance.conn &&
+                    AuthUtil.instance.auth.getConnectionState(AuthUtil.instance.conn) === 'valid'
+                ) {
                     authState = 'connectedWithNetworkError'
                 } else {
                     throw err
@@ -182,9 +188,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
                 ...(await getTelemetryMetadataForConn(currConn)),
             })
         })
-    } catch (err) {
-        getLogger().error('Error collecting telemetry for auth_userState: %s', err)
-    }
+        .catch((err) => getLogger().error('Error collecting telemetry for auth_userState: %s', err))
 }
 
 export async function deactivateCommon() {
