@@ -3,8 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const needsTestFiles =
+const { parsePRTitle, hasPath, dedupComment } = require('./utils')
+
+const testFilesMessage =
     'This pull request modifies files in src/ but no tests were added/updated. Confirm whether tests should be added or ensure the PR description explains why tests are not required.'
+
+const changelogMessage =
+    'This pull request modifies a feature or fixes a bug, but it does not include a changelog entry. All pull requests that introduce new features or bug fixes must have a corresponding changelog item describing the changes.'
 
 /**
  * Remind partner teams that tests are required. We don't need to remind them if:
@@ -16,6 +21,7 @@ module.exports = async ({ github, context }) => {
     const owner = context.repo.owner
     const repo = context.repo.repo
     const author = context.payload.pull_request.head.repo.owner.login
+    const pullRequestId = context.payload.pull_request.number
 
     const response = await github.rest.repos.compareCommitsWithBasehead({
         owner,
@@ -25,17 +31,10 @@ module.exports = async ({ github, context }) => {
 
     const filenames = response.data.files.map((file) => file.filename)
 
-    // Check if src directory changed
-    const srcFiles = filenames.filter((file) => file.includes('src/'))
-    if (srcFiles.length === 0) {
-        console.log('Did not find src files in the code changes')
-        return
-    }
+    const shouldAddTestFileMessage = requiresTestFilesMessage(filenames)
+    const shouldAddChangelogMessage = requiresChangelogMessage(filenames, context.payload.pull_request.title)
 
-    // Check if test files were added or modified
-    const testFiles = filenames.filter((file) => file.endsWith('.test.ts'))
-    if (testFiles.length > 0) {
-        console.log('Found test files in the code changes')
+    if (!shouldAddTestFileMessage && !shouldAddChangelogMessage) {
         return
     }
 
@@ -43,18 +42,47 @@ module.exports = async ({ github, context }) => {
     const comments = await github.rest.issues.listComments({
         owner,
         repo,
-        issue_number: context.payload.pull_request.number,
+        issue_number: pullRequestId,
     })
 
-    if (comments.data.some((comment) => comment.body.includes(needsTestFiles))) {
-        console.log('Found prior comment indicating tests are needed')
+    if (shouldAddTestFileMessage) {
+        await dedupComment({ github, comments, owner, repo, pullRequestId, message: testFilesMessage })
+    }
+
+    if (shouldAddChangelogMessage) {
+        await dedupComment({ github, comments, owner, repo, pullRequestId, message: changelogMessage })
+    }
+}
+
+/**
+ * Require the changelog message if the scope is fix/feat AND there is no changelog item
+ */
+function requiresChangelogMessage(filenames, title) {
+    try {
+        const { type } = parsePRTitle(title)
+        return !hasPath(filenames, '.changes') && (type === 'fix' || type === 'feat')
+    } catch (e) {
+        console.log(e)
+        return undefined
+    }
+}
+
+/**
+ * Require the test files message if there are changes to source files but aren't any
+ * changes to the test files
+ */
+function requiresTestFilesMessage(filenames) {
+    // Check if src directory changed
+    if (!hasPath(filenames, 'src/')) {
+        console.log('Did not find src files in the code changes')
         return
     }
 
-    await github.rest.issues.createComment({
-        issue_number: context.issue.number,
-        owner,
-        repo,
-        body: needsTestFiles,
-    })
+    // Check if test files were added or modified
+    if (hasPath(filenames, '.test.ts')) {
+        console.log('Found test files in the code changes')
+        return
+    }
+
+    return true
 }
