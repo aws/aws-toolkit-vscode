@@ -18,7 +18,7 @@ import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.testFramework.utils.io.createFile
 import com.intellij.util.io.HttpRequests
 import com.intellij.util.io.delete
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.apache.commons.codec.digest.DigestUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -492,15 +492,13 @@ class CodeWhispererCodeModernizerSessionTest : CodeWhispererCodeModernizerTestBa
     }
 
     @Test
-    fun `CodeModernizer can poll job for status updates`() {
+    fun `CodeModernizer can poll job for status updates`() = runTest {
         doReturn(exampleGetCodeMigrationResponse, *happyPathMigrationResponses.toTypedArray()).whenever(clientAdaptorSpy).getCodeModernizationJob(any())
         doReturn(exampleGetCodeMigrationPlanResponse).whenever(clientAdaptorSpy).getCodeModernizationPlan(any())
         doReturn(exampleStartCodeMigrationResponse).whenever(clientAdaptorSpy).startCodeModernization(any(), any(), any())
 
         doNothing().whenever(testSessionStateSpy).updateJobHistory(any(), any(), any())
-        val result = runBlocking {
-            testSessionSpy.pollUntilJobCompletion(jobId) { _, _ -> }
-        }
+        val result = testSessionSpy.pollUntilJobCompletion(jobId) { _, _ -> }
         assertEquals(CodeModernizerJobCompletedResult.JobCompletedSuccessfully(jobId), result)
 
         // two polls to check status as we 1. check for plan existing and 2. check if job completed
@@ -510,7 +508,7 @@ class CodeWhispererCodeModernizerSessionTest : CodeWhispererCodeModernizerTestBa
     }
 
     @Test
-    fun `CodeModernizer detects partially migrated code`() {
+    fun `CodeModernizer detects partially migrated code`() = runTest {
         doReturn(
             exampleGetCodeMigrationResponse.replace(TransformationStatus.STARTED),
             exampleGetCodeMigrationResponse.replace(TransformationStatus.PLANNED),
@@ -521,9 +519,7 @@ class CodeWhispererCodeModernizerSessionTest : CodeWhispererCodeModernizerTestBa
         doReturn(exampleStartCodeMigrationResponse).whenever(clientAdaptorSpy).startCodeModernization(any(), any(), any())
 
         doNothing().whenever(testSessionStateSpy).updateJobHistory(any(), any(), any())
-        val result = runBlocking {
-            testSessionSpy.pollUntilJobCompletion(jobId) { _, _ -> }
-        }
+        val result = testSessionSpy.pollUntilJobCompletion(jobId) { _, _ -> }
         assertEquals(CodeModernizerJobCompletedResult.JobPartiallySucceeded(jobId, testSessionContextSpy.targetJavaVersion), result)
         verify(clientAdaptorSpy, times(4)).getCodeModernizationJob(any())
         verify(clientAdaptorSpy, atLeastOnce()).getCodeModernizationPlan(any())
