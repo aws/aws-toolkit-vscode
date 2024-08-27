@@ -15,11 +15,12 @@ const needsTestFiles =
 module.exports = async ({ github, context }) => {
     const owner = context.repo.owner
     const repo = context.repo.repo
+    const author = context.payload.pull_request.head.repo.owner.login
 
     const response = await github.rest.repos.compareCommitsWithBasehead({
         owner,
         repo,
-        basehead: `${context.payload.pull_request.base.ref}...${context.payload.pull_request.head.ref}`,
+        basehead: `${owner}:${context.payload.pull_request.base.ref}...${author}:${context.payload.pull_request.head.ref}`,
     })
 
     const filenames = response.data.files.map((file) => file.filename)
