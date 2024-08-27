@@ -34,6 +34,5 @@ function hasPath(filenames, path) {
 
 module.exports = {
     parsePRTitle,
-    dedupComment,
     hasPath,
 }
