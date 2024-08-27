@@ -414,7 +414,7 @@ export class AuthUtil {
         if (ignoreNetErr) {
             await tryRun(
                 () => this.auth.refreshConnectionState(this.conn),
-                (err: Error) => isNetworkError(err),
+                isNetworkError,
                 'getChatAuthState: Cannot refresh connection state due to network error: %s'
             )
         } else {

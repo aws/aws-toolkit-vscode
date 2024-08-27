@@ -927,8 +927,10 @@ export function tryRun<T>(
     shouldThrow: (err: Error) => boolean,
     logMsg?: string
 ): T | Promise<T | void> | undefined {
+    // The function signature pattern will accept both async and non-async types.
+
     const catchErr = (err: Error) => {
-        if (shouldThrow(err)) {
+        if (!shouldThrow(err)) {
             getLogger().error(logMsg ?? 'unknown caller: Error ignored: %s', err)
             return
         }
