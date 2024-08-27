@@ -88,7 +88,7 @@ function validateTitle(title) {
     } else if (subject.length === 0) {
         return 'empty subject'
     } else if (subject.length > 100) {
-        return 'invalid subject (must be <=100 chars)'
+        return 'invalid subject2 (must be <=100 chars)'
     }
 
     return undefined
