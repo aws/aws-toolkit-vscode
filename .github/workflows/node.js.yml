@@ -25,6 +25,8 @@ concurrency:
 jobs:
     lint-commits:
         runs-on: ubuntu-latest
+        permissions:
+            pull-requests: write
         steps:
             - uses: actions/checkout@v4
               with:
@@ -32,13 +34,6 @@ jobs:
             - uses: actions/setup-node@v4
               with:
                   node-version: '20'
-            - name: Check for tests
-              uses: actions/github-script@v7
-              with:
-                  script: |
-                      const notify = require('.github/workflows/notify.js')
-                      await notify({github, context})
-              if: github.event_name == 'pull_request'
             - name: Check PR title
               run: |
                   node "$GITHUB_WORKSPACE/.github/workflows/lintcommit.js"
