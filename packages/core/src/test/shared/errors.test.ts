@@ -16,6 +16,7 @@ import {
     resolveErrorMessageToDisplay,
     scrubNames,
     ToolkitError,
+    tryRun,
     UnknownError,
 } from '../../shared/errors'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
@@ -556,5 +557,51 @@ describe('util', function () {
         assert.deepStrictEqual(scrubNames('unix ~jdoe123/.aws/config failed', fakeUser), 'unix ~x/.aws/config failed')
         assert.deepStrictEqual(scrubNames('unix ../../.aws/config failed', fakeUser), 'unix ../../.aws/config failed')
         assert.deepStrictEqual(scrubNames('unix ~/.aws/config failed', fakeUser), 'unix ~/.aws/config failed')
+    })
+})
+
+describe('errors.tryRun()', function () {
+    it('swallows error from sync fn', function () {
+        const err = new Error('err')
+        tryRun(
+            () => {
+                throw err
+            },
+            () => false
+        )
+    })
+
+    it('swallows error from async fn', async function () {
+        const err = new Error('err')
+        await tryRun(
+            async () => {
+                throw err
+            },
+            () => false
+        )
+    })
+
+    it('throws error from sync fn', function () {
+        const err = new Error('err')
+        assert.throws(() => {
+            tryRun(
+                () => {
+                    throw err
+                },
+                () => true
+            )
+        }, err)
+    })
+
+    it('throws error from async fn', async function () {
+        const err = new Error('err')
+        await assert.rejects(async () => {
+            await tryRun(
+                async () => {
+                    throw err
+                },
+                () => true
+            )
+        }, err)
     })
 })

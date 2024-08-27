@@ -930,12 +930,11 @@ export function tryRun<T>(
     // The function signature pattern will accept both async and non-async types.
 
     const catchErr = (err: Error) => {
-        if (!shouldThrow(err)) {
-            getLogger().error(logMsg ?? 'unknown caller: Error ignored: %s', err)
-            return
+        if (shouldThrow(err)) {
+            throw err
         }
 
-        throw err
+        getLogger().error(logMsg ?? 'unknown caller: Error ignored: %s', err)
     }
 
     try {
