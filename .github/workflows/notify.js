@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const { parsePRTitle, hasPath, dedupComment } = require('./utils')
+const { parsePRTitle, hasPath } = require('./utils')
 
 const testFilesMessage =
     'This pull request modifies files in src/ but no tests were added/updated. Confirm whether tests should be added or ensure the PR description explains why tests are not required.'
@@ -21,7 +21,6 @@ module.exports = async ({ github, context }) => {
     const owner = context.repo.owner
     const repo = context.repo.repo
     const author = context.payload.pull_request.head.repo.owner.login
-    const pullRequestId = context.payload.pull_request.number
 
     const response = await github.rest.repos.compareCommitsWithBasehead({
         owner,
@@ -38,19 +37,13 @@ module.exports = async ({ github, context }) => {
         return
     }
 
-    // Check for prior comments on the PR
-    const comments = await github.rest.issues.listComments({
-        owner,
-        repo,
-        issue_number: pullRequestId,
-    })
-
     if (shouldAddTestFileMessage) {
-        await dedupComment({ github, comments, owner, repo, pullRequestId, message: testFilesMessage })
+        // We can't really block on this one, since its valid to make a change in src/ without adding tests :(        console.error(testFilesMessage)
     }
 
     if (shouldAddChangelogMessage) {
-        await dedupComment({ github, comments, owner, repo, pullRequestId, message: changelogMessage })
+        console.error(changelogMessage)
+        process.exit(1)
     }
 }
 
