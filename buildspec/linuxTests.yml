@@ -3,7 +3,7 @@ version: 0.2
 cache:
   paths:
 #    - '/root/.gradle/caches/**/*'
-    - '/root/.gradle/wrapper/**/*'
+    - '/home/codebuild-user/.gradle/wrapper/**/*'
 
 env:
   variables:
@@ -17,6 +17,7 @@ phases:
       - dnf install -y acl
       - chown -R codebuild-user:codebuild-user /codebuild/output
       - chown -R codebuild-user:codebuild-user /codebuild/local-cache
+      - chown -R codebuild-user:codebuild-user /home/codebuild-user
       - setfacl -m d:o::rwx,o::rwx /root
       - mkdir /tmp/testArtifacts; chmod 777 /tmp/testArtifacts
       - export AWS_CODEARTIFACT_NUGET_LOGFILE=/tmp/testArtifacts/codeArtifactNuGet.log
@@ -35,7 +36,7 @@ phases:
 
       - chmod +x gradlew
       - su codebuild-user -c "./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME check coverageReport --info --console plain --continue"
-      - ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME buildPlugin
+      - su codebuild-user -c "./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME buildPlugin"
       - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
       - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
       - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
