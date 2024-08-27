@@ -38,12 +38,11 @@ module.exports = async ({ github, context }) => {
     }
 
     if (shouldAddTestFileMessage) {
-        console.error(testFilesMessage)
-        process.exit(1)
+        // We can't really block on this one, since its valid to make a change in src/ without adding tests :(        console.error(testFilesMessage)
     }
 
     if (shouldAddChangelogMessage) {
-        console.error(testFilesMessage)
+        console.error(changelogMessage)
         process.exit(1)
     }
 }
