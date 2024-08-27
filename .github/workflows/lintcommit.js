@@ -74,7 +74,7 @@ function validateTitle(title) {
     if (/\s+/.test(type)) {
         return `type contains whitespace: "${type}"`
     } else if (type === 'chore') {
-        return 'Do not use "chore" as a type. If the existing valid types are insufficent, add a new type to the `lintcommit.js` script.'
+        return 'Do not use "chore" as a type. If the existing valid types are insufficient, add a new type to the `lintcommit.js` script.'
     } else if (!types.has(type)) {
         return `invalid type "${type}"`
     } else if (!scope && typeScope.includes('(')) {

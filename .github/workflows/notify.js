@@ -73,7 +73,9 @@ function requiresChangelogMessage(filenames, title) {
  */
 function requiresTestFilesMessage(filenames) {
     // Check if src directory changed
-    if (!hasPath(filenames, 'src/')) {
+    if (hasPath(filenames, '.github/')) {
+        return
+    } else if (!hasPath(filenames, 'src/')) {
         console.log('Did not find src files in the code changes')
         return
     }

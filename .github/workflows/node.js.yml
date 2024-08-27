@@ -22,6 +22,8 @@ concurrency:
     group: ${{ github.head_ref || github.run_id }}
     cancel-in-progress: true
 
+permissions: write-all
+
 jobs:
     lint-commits:
         runs-on: ubuntu-latest
