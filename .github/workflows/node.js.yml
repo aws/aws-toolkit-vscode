@@ -38,6 +38,7 @@ jobs:
                   script: |
                       const notify = require('.github/workflows/notify.js')
                       await notify({github, context})
+              if: github.event_name == 'pull_request'
             - name: Check PR title
               run: |
                   node "$GITHUB_WORKSPACE/.github/workflows/lintcommit.js"
