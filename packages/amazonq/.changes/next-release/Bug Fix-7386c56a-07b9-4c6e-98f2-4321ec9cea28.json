@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Fix bug when pasting text from Mynah card with inline code causes new line breaks to form around the inline code text"
+	"description": "Fix bug where text with inline code copied from Amazon Q Chat had new line breaks around the inline code text"
 }
