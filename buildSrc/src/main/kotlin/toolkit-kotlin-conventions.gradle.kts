@@ -1,9 +1,10 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-// SPDX-License-Identifier: Apache-2.0
-
 import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
-import software.aws.toolkits.gradle.jvmTarget
+import io.gitlab.arturbosch.detekt.DetektPlugin
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
+
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 plugins {
     id("java-library")
@@ -49,26 +50,6 @@ sourceSets {
     }
 }
 
-val javaVersion = project.jvmTarget().get()
-
-tasks.withType<Detekt>().configureEach {
-    jvmTarget = javaVersion.majorVersion
-    dependsOn(":detekt-rules:assemble")
-    include("**/*.kt")
-    exclude("build/**")
-    exclude("**/*.Generated.kt")
-    exclude("**/TelemetryDefinitions.kt")
-}
-
-tasks.withType<DetektCreateBaselineTask>().configureEach {
-    jvmTarget = javaVersion.majorVersion
-    dependsOn(":detekt-rules:assemble")
-    include("**/*.kt")
-    exclude("build/**")
-    exclude("**/*.Generated.kt")
-    exclude("**/TelemetryDefinitions.kt")
-}
-
 project.afterEvaluate {
     tasks.check {
         dependsOn(tasks.detekt, tasks.detektMain, tasks.detektTest)
@@ -76,5 +57,20 @@ project.afterEvaluate {
         tasks.findByName("detektIntegrationTest")?.let {
             dependsOn(it)
         }
+    }
+}
+
+// can't figure out why exclude() doesn't work on the generated source tree, so copy logic from detekt
+project.extensions.getByType(KotlinJvmProjectExtension::class.java).target.compilations.configureEach {
+    val inputSource = kotlinSourceSets
+        .map { it.kotlin.sourceDirectories.filter { !it.path.contains("build") } }
+        .fold(project.files() as FileCollection) { collection, next -> collection.plus(next) }
+
+    tasks.named<Detekt>(DetektPlugin.DETEKT_TASK_NAME + name.capitalize()).configure {
+        setSource(inputSource)
+    }
+
+    tasks.named<DetektCreateBaselineTask>(DetektPlugin.BASELINE_TASK_NAME + name.capitalize()).configure {
+        setSource(inputSource)
     }
 }

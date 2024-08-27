@@ -28,6 +28,10 @@ sourceSets {
 val generateTelemetry = tasks.register<GenerateTelemetry>("generateTelemetry") {
     inputFiles = listOf(file("${project.projectDir}/resources/telemetryOverride.json"))
     outputDirectory = project.layout.buildDirectory.dir("generated-src").get().asFile
+
+    doFirst {
+        outputDirectory.deleteRecursively()
+    }
 }
 
 tasks.compileKotlin {

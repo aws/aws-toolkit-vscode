@@ -25,7 +25,7 @@ mockitoKotlin = "5.4.0"
 mockk = "1.13.10"
 nimbus-jose-jwt = "9.40"
 node-gradle = "7.0.2"
-telemetryGenerator = "1.0.243"
+telemetryGenerator = "1.0.247"
 testLogger = "4.0.0"
 testRetry = "1.5.10"
 # test-only; platform provides slf4j transitively at runtime
