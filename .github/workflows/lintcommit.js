@@ -11,6 +11,7 @@
 //
 
 const fs = require('fs')
+const { parsePRTitle } = require('./utils')
 // This script intentionally avoids github APIs so that:
 //   1. it is locally-debuggable
 //   2. the CI job is fast ("npm install" is slow)
@@ -68,20 +69,7 @@ void scopes
  * Returns undefined if `title` is valid, else an error message.
  */
 function validateTitle(title) {
-    const parts = title.split(':')
-    const subject = parts.slice(1).join(':').trim()
-
-    if (title.startsWith('Merge')) {
-        return undefined
-    }
-
-    if (parts.length < 2) {
-        return 'missing colon (:) char'
-    }
-
-    const typeScope = parts[0]
-
-    const [type, scope] = typeScope.split(/\(([^)]+)\)$/)
+    const { type, scope, subject } = parsePRTitle(title)
 
     if (/\s+/.test(type)) {
         return `type contains whitespace: "${type}"`
