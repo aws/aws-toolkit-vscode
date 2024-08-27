@@ -6,7 +6,7 @@ name: CI
 on:
     push:
         branches: [master, staging]
-    pull_request:
+    pull_request_target:
         branches: [master, feature/*, staging]
         # Default = opened + synchronize + reopened.
         # We also want "edited" so that lint-commits runs when PR title is updated.
@@ -25,6 +25,8 @@ concurrency:
 jobs:
     lint-commits:
         runs-on: ubuntu-latest
+        permissions:
+            pull-requests: write
         steps:
             - uses: actions/checkout@v4
               with:
@@ -38,7 +40,7 @@ jobs:
                   script: |
                       const notify = require('.github/workflows/notify.js')
                       await notify({github, context})
-              if: github.event_name == 'pull_request'
+              if: github.event_name == 'pull_request_target'
             - name: Check PR title
               run: |
                   node "$GITHUB_WORKSPACE/.github/workflows/lintcommit.js"
