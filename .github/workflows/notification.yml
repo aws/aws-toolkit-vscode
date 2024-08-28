@@ -4,6 +4,7 @@
 name: Notifications
 
 on:
+    # `pull_request_target` (as opposed to `pull_request`) gives permissions to comment on PRs.
     pull_request_target:
         branches: [master, feature/*, staging]
         # Default = opened + synchronize + reopened.
