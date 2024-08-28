@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { Auth } from '../../auth/auth'
-import { ToolkitError } from '../../shared/errors'
+import { ToolkitError, isNetworkError, tryRun } from '../../shared/errors'
 import { getSecondaryAuth, setScopes } from '../../auth/secondaryAuth'
 import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { AmazonQPromptSettings } from '../../shared/settings'
@@ -403,12 +403,24 @@ export class AuthUtil {
      * Asynchronously returns a snapshot of the overall auth state of CodeWhisperer + Chat features.
      * It guarantees the latest state is correct at the risk of modifying connection state.
      * If this guarantee is not required, use sync method getChatAuthStateSync()
+     *
+     * By default, network errors are ignored when determining auth state since they may be silently
+     * recoverable later.
      */
     @withTelemetryContext({ name: 'getChatAuthState', class: authClassName })
-    public async getChatAuthState(): Promise<FeatureAuthState> {
+    public async getChatAuthState(ignoreNetErr: boolean = true): Promise<FeatureAuthState> {
         // The state of the connection may not have been properly validated
         // and the current state we see may be stale, so refresh for latest state.
-        await this.auth.refreshConnectionState(this.conn)
+        if (ignoreNetErr) {
+            await tryRun(
+                () => this.auth.refreshConnectionState(this.conn),
+                (err) => !isNetworkError(err),
+                'getChatAuthState: Cannot refresh connection state due to network error: %s'
+            )
+        } else {
+            await this.auth.refreshConnectionState(this.conn)
+        }
+
         return this.getChatAuthStateSync(this.conn)
     }
 
@@ -525,6 +537,11 @@ export const AuthStates = {
      * Eg: We are currently using Builder ID, but must use Identity Center.
      */
     unsupported: 'unsupported',
+    /**
+     * The current connection exists and isn't expired,
+     * but fetching/refreshing the token resulted in a network error.
+     */
+    connectedWithNetworkError: 'connectedWithNetworkError',
 } as const
 const Features = {
     codewhispererCore: 'codewhispererCore',
