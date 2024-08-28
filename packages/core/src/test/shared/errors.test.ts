@@ -525,9 +525,7 @@ describe('util', function () {
         assert(!(responseError instanceof SyntaxError))
         assert(responseError instanceof Error)
         assert(responseError instanceof AwsClientResponseError)
-        assert(responseError.code === AwsClientResponseError.code)
         assert(responseError.message === 'SDK Client unexpected error response: data response code: 500')
-        assert.deepStrictEqual(responseError.cause, syntaxError)
     })
 
     it('scrubNames()', async function () {

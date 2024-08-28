@@ -888,24 +888,22 @@ function isError(err: Error, id: string, messageIncludes: string = '') {
  * Once we extract the real error message from the hidden field `$response.reason` we get messages similar to:
  *  - "SDK Client unexpected error response: data response code: 403, data reason: Forbidden | Unexpected ..."
  */
-export class AwsClientResponseError extends ToolkitError {
-    public static readonly code: string = 'AwsClientResponseError'
-
-    /** Use {@link instanceIf} to create instance. */
+export class AwsClientResponseError extends Error {
+    /** Use {@link isError} to create instance. */
     protected constructor(err: unknown) {
         const underlyingErrorMsg = AwsClientResponseError.tryExtractReasonFromSyntaxError(err)
 
         /**
-         * This condition should never be hit since {@link AwsClientResponseError.instanceIf}
+         * This condition should never be hit since {@link AwsClientResponseError.isError}
          * is the only way to create an instance of this class, due to the constructor not being public.
          *
-         * The following only exists to make the types checker happy.
+         * The following only exists to make the type checker happy.
          */
         if (!(underlyingErrorMsg && err instanceof Error)) {
             throw Error(`Cannot create AwsClientResponseError from ${JSON.stringify(err)}}`)
         }
 
-        super(underlyingErrorMsg, { code: AwsClientResponseError.code, cause: err })
+        super(underlyingErrorMsg)
     }
 
     /**
@@ -922,7 +920,7 @@ export class AwsClientResponseError extends ToolkitError {
     }
 
     /**
-     * Returns the true underlying error message from a SyntaxError, if possible.
+     * Returns the true underlying error message from a `SyntaxError`, if possible.
      * Otherwise returning undefined.
      */
     static tryExtractReasonFromSyntaxError(err: unknown): string | undefined {
