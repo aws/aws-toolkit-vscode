@@ -895,7 +895,13 @@ export class AwsClientResponseError extends ToolkitError {
     protected constructor(err: unknown) {
         const underlyingErrorMsg = AwsClientResponseError.tryExtractReasonFromSyntaxError(err)
 
-        if (!(underlyingErrorMsg && err instanceof SyntaxError)) {
+        /**
+         * This condition should never be hit since {@link AwsClientResponseError.instanceIf}
+         * is the only way to create an instance of this class, due to the constructor not being public.
+         *
+         * The following only exists to make the types checker happy.
+         */
+        if (!(underlyingErrorMsg && err instanceof Error)) {
             throw Error(`Cannot create AwsClientResponseError from ${JSON.stringify(err)}}`)
         }
 
