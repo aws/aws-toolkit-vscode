@@ -14,6 +14,7 @@ import type * as nodefs from 'fs'
 import type * as os from 'os'
 import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
 import { driveLetterRegex } from './utilities/pathUtils'
+import { getLogger } from './logger/logger'
 
 let _username = 'unknown-user'
 let _isAutomation = false
@@ -910,4 +911,39 @@ export function getReasonFromSyntaxError(err: Error): string | undefined {
     }
 
     return undefined
+}
+
+/**
+ * Run a function and swallow any errors that are not specified by `shouldThrow`
+ */
+export function tryRun<T>(fn: () => T, shouldThrow: (err: Error) => boolean, logMsg?: string): T | undefined
+export function tryRun<T>(
+    fn: () => Promise<T>,
+    shouldThrow: (err: Error) => boolean,
+    logMsg?: string
+): Promise<T> | undefined
+export function tryRun<T>(
+    fn: () => T | Promise<T>,
+    shouldThrow: (err: Error) => boolean,
+    logMsg?: string
+): T | Promise<T | void> | undefined {
+    // The function signature pattern will accept both async and non-async types.
+
+    const catchErr = (err: Error) => {
+        if (shouldThrow(err)) {
+            throw err
+        }
+
+        getLogger().error(logMsg ?? 'unknown caller: Error ignored: %s', err)
+    }
+
+    try {
+        const result = fn()
+        if (result instanceof Promise) {
+            return result.catch(catchErr)
+        }
+        return result
+    } catch (error: any) {
+        catchErr(error)
+    }
 }
