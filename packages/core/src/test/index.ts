@@ -23,6 +23,7 @@ export * from './codewhisperer/testUtil'
 export * from './credentials/testUtil'
 export * from './testUtil'
 export * from './amazonqFeatureDev/utils'
+export * from './fake/mockFeatureConfigData'
 
 import request from '../shared/request'
 import { stub } from 'sinon'

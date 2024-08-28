@@ -7,12 +7,7 @@ import { AWSError, Credentials, Service } from 'aws-sdk'
 import globals from '../../shared/extensionGlobals'
 import * as CodeWhispererClient from './codewhispererclient'
 import * as CodeWhispererUserClient from './codewhispereruserclient'
-import {
-    ListAvailableCustomizationsResponse,
-    ListFeatureEvaluationsRequest,
-    ListFeatureEvaluationsResponse,
-    SendTelemetryEventRequest,
-} from './codewhispereruserclient'
+import { ListAvailableCustomizationsResponse, SendTelemetryEventRequest } from './codewhispereruserclient'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
@@ -265,19 +260,6 @@ export class DefaultCodeWhispererClient {
         }
         const response = await (await this.createUserSdkClient()).sendTelemetryEvent(requestWithCommonFields).promise()
         getLogger().debug(`codewhisperer: sendTelemetryEvent requestID: ${response.$response.requestId}`)
-    }
-
-    public async listFeatureEvaluations(): Promise<ListFeatureEvaluationsResponse> {
-        const request: ListFeatureEvaluationsRequest = {
-            userContext: {
-                ideCategory: 'VSCODE',
-                operatingSystem: getOperatingSystem(),
-                product: 'CodeWhisperer', // TODO: update this?
-                clientId: getClientId(globals.globalState),
-                ideVersion: extensionVersion,
-            },
-        }
-        return (await this.createUserSdkClient()).listFeatureEvaluations(request).promise()
     }
 
     /**
