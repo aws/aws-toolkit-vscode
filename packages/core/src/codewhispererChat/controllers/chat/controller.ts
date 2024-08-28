@@ -299,7 +299,7 @@ export class ChatController {
             errorMessage = e.toUpperCase()
         } else if (e instanceof SyntaxError) {
             // Workaround to handle case when LB returns web-page with error and our client doesn't return proper exception
-            errorMessage = AwsClientResponseError.getReasonFromSyntaxError(e) ?? defaultMessage
+            errorMessage = AwsClientResponseError.tryExtractReasonFromSyntaxError(e) ?? defaultMessage
         } else if (e instanceof CodeWhispererStreamingServiceException) {
             errorMessage = e.message
             requestID = e.$metadata.requestId

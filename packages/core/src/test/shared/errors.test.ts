@@ -483,9 +483,10 @@ describe('util', function () {
         assert.deepStrictEqual(getTelemetryReasonDesc(toolkitError), 'ToolkitError Message | Cause Message x/x/x/x.txt')
     })
 
-    function makeSyntaxError() {
+    function makeSyntaxErrorWithSdkClientError() {
         const syntaxError: Error = new SyntaxError('The SyntaxError message')
-        ;(syntaxError as any)['$response'] = { reason: 'The actual underlying error message' }
+        // Under the hood of a SyntaxError may be a hidden field with the real reason for the failure
+        ;(syntaxError as any)['$response'] = { reason: 'SDK Client unexpected error response: data response code: 500' }
         return syntaxError
     }
 
@@ -501,7 +502,7 @@ describe('util', function () {
             'Incorrectly indicated as network error'
         )
 
-        const awsClientResponseError = AwsClientResponseError.instanceIf(makeSyntaxError())
+        const awsClientResponseError = AwsClientResponseError.instanceIf(makeSyntaxErrorWithSdkClientError())
         assert.deepStrictEqual(
             isNetworkError(awsClientResponseError),
             true,
@@ -514,18 +515,18 @@ describe('util', function () {
     })
 
     it('AwsClientResponseError', function () {
-        const syntaxError = makeSyntaxError()
+        const syntaxError = makeSyntaxErrorWithSdkClientError()
 
         assert.deepStrictEqual(
-            AwsClientResponseError.getReasonFromSyntaxError(syntaxError),
-            'The actual underlying error message'
+            AwsClientResponseError.tryExtractReasonFromSyntaxError(syntaxError),
+            'SDK Client unexpected error response: data response code: 500'
         )
         const responseError = AwsClientResponseError.instanceIf(syntaxError)
         assert(!(responseError instanceof SyntaxError))
         assert(responseError instanceof Error)
         assert(responseError instanceof AwsClientResponseError)
         assert(responseError.code === AwsClientResponseError.code)
-        assert(responseError.message === 'The actual underlying error message')
+        assert(responseError.message === 'SDK Client unexpected error response: data response code: 500')
         assert.deepStrictEqual(responseError.cause, syntaxError)
     })
 

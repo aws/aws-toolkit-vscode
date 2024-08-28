@@ -884,14 +884,16 @@ function isError(err: Error, id: string, messageIncludes: string = '') {
  * This class attempts to extract the underlying issue from the SyntaxError.
  *
  * Example SyntaxError message before extracting the underlying issue:
- * "Unexpected token '<', "<html><bod"... is not valid JSON Deserialization error: to see the raw response, inspect the hidden field {error}.$response on this object."
+ *  - "Unexpected token '<', "<html><bod"... is not valid JSON Deserialization error: to see the raw response, inspect the hidden field {error}.$response on this object."
+ * Once we extract the real error message from the hidden field `$response.reason` we get messages similar to:
+ *  - "SDK Client unexpected error response: data response code: 403, data reason: Forbidden | Unexpected ..."
  */
 export class AwsClientResponseError extends ToolkitError {
     public static readonly code: string = 'AwsClientResponseError'
 
     /** Use {@link instanceIf} to create instance. */
     protected constructor(err: unknown) {
-        const underlyingErrorMsg = AwsClientResponseError.getReasonFromSyntaxError(err)
+        const underlyingErrorMsg = AwsClientResponseError.tryExtractReasonFromSyntaxError(err)
 
         if (!(underlyingErrorMsg && err instanceof SyntaxError)) {
             throw Error(`Cannot create AwsClientResponseError from ${JSON.stringify(err)}}`)
@@ -905,7 +907,8 @@ export class AwsClientResponseError extends ToolkitError {
      * Otherwise the original error is returned.
      */
     static instanceIf<T>(err: T): AwsClientResponseError | T {
-        if (AwsClientResponseError.getReasonFromSyntaxError(err)) {
+        const reason = AwsClientResponseError.tryExtractReasonFromSyntaxError(err)
+        if (reason && reason.startsWith('SDK Client unexpected error response: data response code:')) {
             getLogger().debug(`Creating AwsClientResponseError from SyntaxError: %O`, err)
             return new AwsClientResponseError(err)
         }
@@ -916,7 +919,7 @@ export class AwsClientResponseError extends ToolkitError {
      * Returns the true underlying error message from a SyntaxError, if possible.
      * Otherwise returning undefined.
      */
-    static getReasonFromSyntaxError(err: unknown): string | undefined {
+    static tryExtractReasonFromSyntaxError(err: unknown): string | undefined {
         if (!(err instanceof SyntaxError)) {
             return undefined
         }
