@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
+import * as fs from 'fs'
 import * as path from 'path'
 import * as os from 'os'
 import * as codeWhisperer from '../../client/codewhisperer'
@@ -343,7 +343,7 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
             const sourceFiles = getFilesRecursively(modulePath, false)
             let sourceFilesSize = 0
             for (const file of sourceFiles) {
-                if ((await fs.stat(file)).isDirectory()) {
+                if (fs.statSync(file).isDirectory()) {
                     getLogger().info('CodeTransformation: Skipping directory, likely a symlink')
                     continue
                 }

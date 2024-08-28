@@ -3,13 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Customization, FeatureValue } from '../client/codewhispereruserclient'
-import { codeWhispererClient as client } from '../client/codewhisperer'
-import { AuthUtil } from '../util/authUtil'
-import { getLogger } from '../../shared/logger'
-import { isBuilderIdConnection, isIdcSsoConnection } from '../../auth/connection'
-import { CodeWhispererSettings } from '../util/codewhispererSettings'
-import globals from '../../shared/extensionGlobals'
+import {
+    Customization,
+    FeatureValue,
+    ListFeatureEvaluationsRequest,
+    ListFeatureEvaluationsResponse,
+} from '../codewhisperer/client/codewhispereruserclient'
+import { codeWhispererClient as client } from '../codewhisperer/client/codewhisperer'
+import { AuthUtil } from '../codewhisperer/util/authUtil'
+import { getLogger } from './logger'
+import { isBuilderIdConnection, isIdcSsoConnection } from '../auth/connection'
+import { CodeWhispererSettings } from '../codewhisperer/util/codewhispererSettings'
+import globals from './extensionGlobals'
+import { getClientId, getOperatingSystem } from './telemetry/util'
+import { extensionVersion } from './vscode/env'
+import { telemetry } from './telemetry'
 
 export class FeatureContext {
     constructor(
@@ -56,6 +64,19 @@ export class FeatureConfigProvider {
         return this._isDataCollectionGroup
     }
 
+    public async listFeatureEvaluations(): Promise<ListFeatureEvaluationsResponse> {
+        const request: ListFeatureEvaluationsRequest = {
+            userContext: {
+                ideCategory: 'VSCODE',
+                operatingSystem: getOperatingSystem(),
+                product: 'CodeWhisperer', // TODO: update this?
+                clientId: getClientId(globals.globalState),
+                ideVersion: extensionVersion,
+            },
+        }
+        return (await client.createUserSdkClient()).listFeatureEvaluations(request).promise()
+    }
+
     async fetchFeatureConfigs(): Promise<void> {
         if (AuthUtil.instance.isConnectionExpired()) {
             return
@@ -63,7 +84,7 @@ export class FeatureConfigProvider {
 
         getLogger().debug('amazonq: Fetching feature configs')
         try {
-            const response = await client.listFeatureEvaluations()
+            const response = await this.listFeatureEvaluations()
 
             // Overwrite feature configs from server response
             response.featureEvaluations.forEach((evaluation) => {
@@ -71,7 +92,17 @@ export class FeatureConfigProvider {
                     evaluation.feature,
                     new FeatureContext(evaluation.feature, evaluation.variation, evaluation.value)
                 )
+
+                telemetry.aws_featureConfig.run((span) => {
+                    span.record({
+                        id: evaluation.feature,
+                        featureVariation: evaluation.variation,
+                        featureValue: JSON.stringify(evaluation.value),
+                    })
+                })
             })
+            getLogger().info('AB Testing Cohort Assignments %s', JSON.stringify(response.featureEvaluations))
+
             const customizationArnOverride = this.featureConfigs.get(customizationArnOverrideName)?.value?.stringValue
             if (customizationArnOverride !== undefined) {
                 // Double check if server-side wrongly returns a customizationArn to BID users
@@ -152,5 +183,14 @@ export class FeatureConfigProvider {
     // In case of a misconfiguration, it will return a default feature value of Boolean true.
     private getFeatureValueForKey(name: string): FeatureValue {
         return this.featureConfigs.get(name)?.value ?? featureDefinitions.get(name)?.value ?? { boolValue: true }
+    }
+
+    /**
+     * Map of feature configurations.
+     *
+     * @returns {Map<string, FeatureContext>} A Map containing the feature configurations, where the keys are strings representing the feature names, and the values are FeatureContext objects.
+     */
+    public static getFeatureConfigs(): Map<string, FeatureContext> {
+        return FeatureConfigProvider.instance.featureConfigs
     }
 }
