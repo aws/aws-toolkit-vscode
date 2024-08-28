@@ -3,28 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-function parsePRTitle(title) {
-    const parts = title.split(':')
-    const subject = parts.slice(1).join(':').trim()
-
-    if (title.startsWith('Merge')) {
-        return undefined
-    }
-
-    if (parts.length < 2) {
-        return 'missing colon (:) char'
-    }
-
-    const typeScope = parts[0]
-
-    const [type, scope] = typeScope.split(/\(([^)]+)\)$/)
-    return {
-        type,
-        scope,
-        subject,
-    }
-}
-
 /**
  * Create a comment on a PR if one does not already exist
  */
@@ -49,7 +27,6 @@ function hasPath(filenames, path) {
 }
 
 module.exports = {
-    parsePRTitle,
     dedupComment,
     hasPath,
 }

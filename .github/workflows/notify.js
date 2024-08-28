@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const { parsePRTitle, hasPath, dedupComment } = require('./utils')
+const { hasPath, dedupComment } = require('./utils')
 
 const testFilesMessage =
     'This pull request modifies files in src/ but no tests were added/updated. Confirm whether tests should be added or ensure the PR description explains why tests are not required.'
@@ -59,8 +59,7 @@ module.exports = async ({ github, context }) => {
  */
 function requiresChangelogMessage(filenames, title) {
     try {
-        const { type } = parsePRTitle(title)
-        return !hasPath(filenames, '.changes') && (type === 'fix' || type === 'feat')
+        return !hasPath(filenames, '.changes') && (title.startsWith('fix') || title.startsWith('feat'))
     } catch (e) {
         console.log(e)
         return undefined
