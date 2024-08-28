@@ -601,6 +601,11 @@ export class Auth implements AuthService, ConnectionManager {
         })
     }
 
+    /**
+     * Updates the state of the connection based on a series of validations.
+     * Will throw for network errors encoutered during connection checks, but the state will not be
+     * invalidated for these errors.
+     */
     @withTelemetryContext({ name: 'validateConnection', class: authClassName })
     private async validateConnection<T extends Profile>(id: Connection['id'], profile: StoredProfile<T>) {
         const runCheck = async () => {
@@ -843,6 +848,7 @@ export class Auth implements AuthService, ConnectionManager {
         if (isNetworkError(e)) {
             throw new ToolkitError('Failed to update connection due to networking issues', {
                 cause: e,
+                code: e.code,
             })
         }
     }
