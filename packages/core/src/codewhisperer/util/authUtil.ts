@@ -139,7 +139,6 @@ export class AuthUtil {
             // To check valid connection
             if (this.isValidEnterpriseSsoInUse() || (this.isBuilderIdInUse() && !this.isConnectionExpired())) {
                 // start the feature config polling job
-                await vscode.commands.executeCommand('aws.amazonq.fetchFeatureConfigs')
                 await showAmazonQWalkthroughOnce()
             }
             await this.setVscodeContextProps()

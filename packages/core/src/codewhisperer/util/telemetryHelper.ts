@@ -25,7 +25,7 @@ import { isAwsError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 import { session } from './codeWhispererSession'
 import { CodeWhispererSupplementalContext } from '../models/model'
-import { FeatureConfigProvider } from '../service/featureConfigProvider'
+import { FeatureConfigProvider } from '../../shared/featureConfig'
 import { CodeScanRemediationsEventType } from '../client/codewhispereruserclient'
 
 export class TelemetryHelper {

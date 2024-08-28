@@ -5,7 +5,7 @@
 
 import AdmZip from 'adm-zip'
 import os from 'os'
-import fs from 'fs-extra'
+import fs from 'fs'
 import { parsePatch, applyPatches, ParsedDiff } from 'diff'
 import path from 'path'
 import vscode from 'vscode'
@@ -129,7 +129,7 @@ export class DiffModel {
         changedFiles.forEach((file) => {
             const pathToTmpFile = path.join(pathToTmpSrcDir, file.oldFileName!.substring(2))
             // use mkdirsSync to create parent directories in pathToTmpFile too
-            fs.mkdirsSync(path.dirname(pathToTmpFile))
+            fs.mkdirSync(path.dirname(pathToTmpFile), { recursive: true })
             const pathToOldFile = path.join(pathToWorkspace, file.oldFileName!.substring(2))
             // pathToOldFile will not exist for new files such as summary.md
             if (fs.existsSync(pathToOldFile)) {

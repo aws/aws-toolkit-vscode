@@ -18,7 +18,7 @@ import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { parse } from '@aws-sdk/util-arn-parser'
 import { Commands } from '../../shared/vscode/commands2'
 import { vsCodeState } from '../models/model'
-import { FeatureConfigProvider } from '../service/featureConfigProvider'
+import { FeatureConfigProvider } from '../../shared/featureConfig'
 
 /**
  *
