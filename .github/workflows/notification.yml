@@ -4,12 +4,10 @@
 name: Notifications
 
 on:
-    push:
-        branches: [master, staging]
     pull_request_target:
         branches: [master, feature/*, staging]
         # Default = opened + synchronize + reopened.
-        # We also want "edited" so that changelog notification runs when PR title is updated.
+        # We also want "edited" so that changelog notifications runs when PR title is updated.
         # https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#pull_request
         types:
             - edited
@@ -19,11 +17,11 @@ on:
 
 # Cancel old jobs when a pull request is updated.
 concurrency:
-    group: ${{ github.head_ref || github.run_id }}
+    group: ${{ github.workflow }}-${{ github.ref }}
     cancel-in-progress: true
 
 jobs:
-    lint-commits:
+    notify:
         runs-on: ubuntu-latest
         permissions:
             pull-requests: write
