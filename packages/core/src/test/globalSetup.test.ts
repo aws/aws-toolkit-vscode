@@ -24,6 +24,8 @@ import { mapTestErrors, normalizeError, setRunnableTimeout } from './setupUtil'
 import { TelemetryDebounceInfo } from '../shared/vscode/commands2'
 import { disableAwsSdkWarning } from '../shared/awsClientBuilder'
 import { GlobalState } from '../shared/globalState'
+import { FeatureConfigProvider } from '../shared/featureConfig'
+import { mockFeatureConfigsData } from './fake/mockFeatureConfigData'
 
 disableAwsSdkWarning()
 
@@ -44,6 +46,10 @@ export async function mochaGlobalSetup(extensionId: string) {
             await remove(testLogOutput)
         } catch (e) {}
         mkdirpSync(testReportDir)
+
+        sinon.stub(FeatureConfigProvider.prototype, 'listFeatureEvaluations').resolves({
+            featureEvaluations: mockFeatureConfigsData,
+        })
 
         // Shows the full error chain when tests fail
         mapTestErrors(this, normalizeError)
