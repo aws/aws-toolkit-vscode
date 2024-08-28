@@ -472,6 +472,7 @@ export class AuthUtil {
             await telemetry.auth_modifyConnection.run(
                 async () => {
                     telemetry.record({
+                        id: conn.id,
                         connectionState: Auth.instance.getConnectionState(conn) ?? 'undefined',
                         source: asStringifiedStack(telemetry.getFunctionStack()),
                         ...(await getTelemetryMetadataForConn(conn)),

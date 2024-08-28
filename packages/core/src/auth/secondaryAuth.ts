@@ -260,13 +260,22 @@ export class SecondaryAuth<T extends Connection = Connection> {
                 telemetry.record({
                     source: asStringifiedStack(telemetry.getFunctionStack()),
                     action: 'restore',
+                    id: 'undefined',
                     connectionState: 'undefined',
                 })
                 await this.auth.tryAutoConnect()
                 this.#savedConnection = await this._loadSavedConnection()
                 this.#onDidChangeActiveConnection.fire(this.activeConnection)
 
-                telemetry.record(await getTelemetryMetadataForConn(this.#savedConnection))
+                const conn = this.#savedConnection
+                if (conn) {
+                    telemetry.record({
+                        id: conn.id,
+                        connectionState: this.auth.getConnectionState(conn),
+                        ...(await getTelemetryMetadataForConn(conn)),
+                    })
+                }
+
                 return this.#savedConnection
             })
         } catch (err) {
