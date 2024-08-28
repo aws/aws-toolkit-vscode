@@ -16,9 +16,10 @@ import globals from '../../../extensionGlobals'
 
 export async function getAppNodes(): Promise<TreeNode[]> {
     // no active workspace, show buttons in welcomeview
-    if (!vscode.workspace.workspaceFolders) {
+    if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length === 0) {
         return []
     }
+
     const appsFound = await detectSamProjects()
 
     if (appsFound.length === 0) {

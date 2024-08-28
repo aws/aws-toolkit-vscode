@@ -281,7 +281,7 @@ async function getConfigFileUri(projectRoot: vscode.Uri) {
 
 export async function runDeploy(arg: any): Promise<DeployResult> {
     return await telemetry.sam_deploy.run(async () => {
-        let source = getSource(arg)
+        const source = getSource(arg)
         telemetry.record({ source: source })
 
         const connection = await getAuthOrPrompt()

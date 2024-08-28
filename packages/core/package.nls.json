@@ -335,7 +335,7 @@
     "AWS.toolkit.lambda.walkthrough.step1.title": "Iterate locally",
     "AWS.toolkit.lambda.walkthrough.step1.description": "Build your code changes, invoke/debug locally, and view your execution results",
     "AWS.toolkit.lambda.walkthrough.step2.title": "Deploy to AWS",
-    "AWS.toolkit.lambda.walkthrough.step2.description": "Deploy your template to test your application on AWS. You can remotely invoke your function from within VS Code. \n\n AWS credentials AWS credentials are needed to use AWS CLI and AWS SAM CLI to interact with AWS. For information on setting up your credentials, see [Authentication and access credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html). \n\n[Configure credentials](command:aws.toolkit.lambda.walkthrough.credential)",
+    "AWS.toolkit.lambda.walkthrough.step2.description": "Deploy your template to test your application on AWS. You can remotely invoke your function from within VS Code. \n\n AWS credentials are needed to use AWS CLI and AWS SAM CLI to interact with AWS. For information on setting up your credentials, see [Authentication and access credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html). \n\n[Configure credentials](command:aws.toolkit.lambda.walkthrough.credential)",
     "AWS.toolkit.lambda.walkthrough.step3.title": "New command palette additions",
     "AWS.toolkit.lambda.walkthrough.step3.description": "We've added commands for building your template, invoking locally, invoking remotely, viewing your template in Application Composer, and opening the Getting started Walkthrough."
 }

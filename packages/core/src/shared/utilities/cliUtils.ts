@@ -531,7 +531,7 @@ export async function getOrInstallCli(cli: AwsClis, confirm: boolean, popup: boo
 
 export async function showCliFoundPopup(cli: string, path: string) {
     void vscode.window.showInformationMessage(
-        localize('AWS.cli.cliFoundPrompt', '{0} CLI exists in your environment, location found: {1}', cli, path)
+        localize('AWS.cli.cliFoundPrompt', '{0} is already installed (location: {1})', cli, path)
     )
 }
 

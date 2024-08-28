@@ -732,13 +732,11 @@
         "viewsWelcome": [
             {
                 "view": "aws.appBuilderForFileExplorer",
-                "contents": "[Open walkthrough](command:aws.toolkit.lambda.openWalkthrough)\n [Open Folder](command:vscode.openFolder)",
-                "when": "workbenchState == empty"
+                "contents": "[Open walkthrough](command:aws.toolkit.lambda.openWalkthrough)\n [Open Folder](command:vscode.openFolder)"
             },
             {
                 "view": "aws.appBuilder",
-                "contents": "[Open walkthrough](command:aws.toolkit.lambda.openWalkthrough)\n [Open Folder](command:vscode.openFolder)",
-                "when": "workbenchState == empty"
+                "contents": "[Open walkthrough](command:aws.toolkit.lambda.openWalkthrough)\n [Open Folder](command:vscode.openFolder)"
             }
         ],
         "views": {

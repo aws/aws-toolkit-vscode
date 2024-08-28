@@ -750,7 +750,7 @@ export function registerSync() {
         validate?: boolean
     ): Promise<SamSyncResult> {
         return await telemetry.sam_sync.run(async () => {
-            let source = getSource(arg)
+            const source = getSource(arg)
             telemetry.record({ syncedResources: deployType === 'infra' ? 'AllResources' : 'CodeOnly', source: source })
 
             const connection = await getAuthOrPrompt()
