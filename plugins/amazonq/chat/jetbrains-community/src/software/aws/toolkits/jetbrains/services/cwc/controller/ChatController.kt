@@ -367,8 +367,8 @@ class ChatController private constructor(
             triggerId = triggerId,
             message = inputPrompt,
             activeFileContext = fileContext,
-            userIntent = intentRecognizer.getUserIntentFromContextMenuCommand(EditorContextCommand.ExplainCodeScanIssue),
-            TriggerType.CodeScanButton,
+            userIntent = intentRecognizer.getUserIntentFromContextMenuCommand(message.command),
+            triggerType = message.command.triggerType,
             projectContextQueryResult = emptyList()
         )
     }
