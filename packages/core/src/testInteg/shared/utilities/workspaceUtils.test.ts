@@ -18,7 +18,7 @@ import {
 import { getTestWorkspaceFolder } from '../../integrationTestsUtilities'
 import globals from '../../../shared/extensionGlobals'
 import { CodelensRootRegistry } from '../../../shared/fs/codelensRootRegistry'
-import { createTestWorkspace, createTestWorkspaceFolder, toFile } from '../../../test/testUtil'
+import { assertTelemetry, createTestWorkspace, createTestWorkspaceFolder, toFile } from '../../../test/testUtil'
 import sinon from 'sinon'
 
 describe('findParentProjectFile', async function () {
@@ -297,6 +297,12 @@ describe('collectFiles', function () {
             ] satisfies typeof result,
             result
         )
+
+        assertTelemetry('function_call', {
+            totalFiles: 13,
+            totalFileSizeInMB: 0.0002593994140625,
+            functionName: 'collectFiles',
+        })
     })
 
     it('does not return license files', async function () {

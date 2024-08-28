@@ -319,7 +319,7 @@ export async function collectFiles(
     }[]
 > {
     return telemetry.function_call.run(
-        async () => {
+        async (span) => {
             const storage: Awaited<ReturnType<typeof collectFiles>> = []
 
             const workspaceFoldersMapping = getWorkspaceFoldersByPrefixes(workspaceFolders)
@@ -344,11 +344,13 @@ export async function collectFiles(
             }
 
             let totalSizeBytes = 0
+            let totalFiles = 0
             for (const rootPath of sourcePaths) {
                 const allFiles = await vscode.workspace.findFiles(
                     new vscode.RelativePattern(rootPath, '**'),
                     getExcludePattern()
                 )
+                totalFiles += allFiles.length
                 const files = respectGitIgnore ? await filterOutGitignoredFiles(rootPath, allFiles) : allFiles
 
                 for (const file of files) {
@@ -382,6 +384,7 @@ export async function collectFiles(
                     })
                 }
             }
+            span.record({ totalFiles, totalFileSizeInMB: totalSizeBytes / (1024 * 1024) })
             return storage
         },
         {
