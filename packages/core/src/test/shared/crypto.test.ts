@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { randomUUID } from '../../shared/crypto'
+import { isUUID, randomUUID } from '../../shared/crypto'
 
 describe('crypto', function () {
     describe('randomUUID()', function () {
@@ -24,5 +24,23 @@ describe('crypto', function () {
         it('test pattern fails on non-uuid', function () {
             assert(uuidPattern.test('not-a-uuid') === false)
         })
+    })
+
+    describe('isUUID()', function () {
+        assert.equal(isUUID(''), false)
+        assert.equal(isUUID('not-a-uuid'), false)
+        assert.equal(isUUID('47fe01cf-f37a-4e7c-b971'), false)
+        assert.equal(isUUID('47fe01cf_f37a_4e7c-b971-@10fe5897763'), false)
+        // The '9' in '9e7c' must actually be between 1-5 based on the UUID spec: https://stackoverflow.com/a/38191104
+        assert.equal(isUUID('47fe01cf-f37a-9e7c-b971-d10fe5897763'), false)
+        assert.equal(isUUID(' 47fe01cf-f37a-4e7c-b971-d10fe5897763'), false) // leading whitespace
+        assert.equal(isUUID('47fe01cf-f37a-4e7c-b971-d10fe5897763 '), false) // trailing whitespace
+        assert.equal(isUUID('47fe01cf-f37a-4e7c-b971-d10fe5897763z'), false) // one extra character
+        assert.equal(isUUID('47fe01cf-f37a-4e7c-b971-d10fe5897763 blah'), false) // trailing word
+
+        assert.equal(isUUID('47fe01cf-f37a-4e7c-b971-d10fe5897763'), true)
+        // The telemetry services indicates that per postel's law, uppercase is valid to pass in
+        // as they will lowerCase when necessary.
+        assert.equal(isUUID('47fe01cf-f37a-4e7c-b971-d10fe5897763'.toUpperCase()), true)
     })
 })

@@ -30,3 +30,15 @@ export function randomUUID(): `${string}-${string}-${string}-${string}-${string}
 
     return require('crypto').randomUUID()
 }
+
+/**
+ * Returns true if the given string is a UUID
+ *
+ * NOTE: There are different UUID versions, this function does not discriminate between them.
+ * See: https://stackoverflow.com/questions/7905929/how-to-test-valid-uuid-guid
+ */
+export function isUUID(uuid: string): boolean {
+    // pattern match the uuid to a uuid string
+    const uuidv4Pattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    return uuidv4Pattern.test(uuid)
+}
