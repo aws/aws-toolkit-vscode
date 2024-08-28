@@ -295,6 +295,11 @@
             "name": "functionName",
             "type": "string",
             "description": "The name of the function"
+        },
+        {
+            "name": "webviewName",
+            "type": "string",
+            "description": "The name of the webview"
         }
     ],
     "metrics": [
@@ -1118,6 +1123,16 @@
             ],
             "passive": true,
             "trackPerformance": true
+        },
+        {
+            "name": "webview_load",
+            "description": "Represents a webview load event",
+            "metadata": [
+                {
+                    "type": "webviewName",
+                    "required": true
+                }
+            ]
         }
     ]
 }
