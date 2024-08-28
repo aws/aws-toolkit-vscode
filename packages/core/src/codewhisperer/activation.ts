@@ -39,7 +39,6 @@ import {
     connectWithCustomization,
     applySecurityFix,
     signoutCodeWhisperer,
-    fetchFeatureConfigsCmd,
     toggleCodeScans,
     registerToolkitApiCallback,
 } from './commands/basicCommands'
@@ -71,6 +70,7 @@ import { registerWebviewErrorHandler } from '../webviews/server'
 import { logAndShowError, logAndShowWebviewError } from '../shared/utilities/logAndShowUtils'
 import { openSettings } from '../shared/settings'
 import { telemetry } from '../shared/telemetry'
+import { FeatureConfigProvider } from '../shared/featureConfig'
 
 let localize: nls.LocalizeFunc
 
@@ -252,8 +252,6 @@ export async function activate(context: ExtContext): Promise<void> {
         selectCustomizationPrompt.register(),
         // notify new customizations
         notifyNewCustomizationsCmd.register(),
-        // fetch feature configs
-        fetchFeatureConfigsCmd.register(),
         /**
          * On recommendation acceptance
          */
@@ -593,6 +591,10 @@ export async function activate(context: ExtContext): Promise<void> {
             })
         )
     }
+
+    void FeatureConfigProvider.instance.fetchFeatureConfigs().catch((error) => {
+        getLogger().error('Failed to fetch feature configs - %s', error)
+    })
 
     await Commands.tryExecute('aws.amazonq.refreshConnectionCallback')
     container.ready()
