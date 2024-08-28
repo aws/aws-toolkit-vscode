@@ -289,6 +289,7 @@ describe('Auth', function () {
             const networkError = new ToolkitError('test', { code: 'ETIMEDOUT' })
             const expectedError = new ToolkitError('Failed to update connection due to networking issues', {
                 cause: networkError,
+                code: 'ETIMEDOUT',
             })
             const conn = await auth.createConnection(ssoProfile)
             auth.getTestTokenProvider(conn)?.getToken.rejects(networkError)
