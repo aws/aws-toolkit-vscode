@@ -18,7 +18,7 @@ export function stubPerformance(sandbox: Sinon.SinonSandbox) {
         .returns({ heapTotal: initialHeapTotal, arrayBuffers: 0, external: 0, rss: 0, heapUsed: 0 })
     memoryUsageStub.onCall(1).returns({ heapTotal: 10485761, arrayBuffers: 0, external: 0, rss: 0, heapUsed: 0 })
 
-    sandbox.stub(process, 'hrtime').onCall(0).returns([0, 0]).onCall(1).returns([0, totalNanoseconds])
+    sandbox.stub(process, 'hrtime').returns([0, totalNanoseconds])
 
     return {
         expectedUserCpuUsage: 33.333333333333336,
