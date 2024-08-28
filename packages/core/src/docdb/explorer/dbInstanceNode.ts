@@ -11,6 +11,7 @@ import { DBResourceNode } from './dbResourceNode'
 import { DBClusterNode } from './dbClusterNode'
 import { ModifyDBInstanceMessage } from '@aws-sdk/client-docdb'
 import { copyToClipboard } from '../../shared/utilities/messages'
+import { toTitleCase } from '../../shared'
 
 /**
  * An AWS Explorer node representing a DocumentDB instance.
@@ -31,9 +32,9 @@ export class DBInstanceNode extends DBResourceNode {
     }
 
     private makeDescription(): string {
-        const type = this.instance.IsClusterWriter ? 'primary' : 'replica'
+        const type = this.instance.IsClusterWriter ? 'Primary' : 'Replica'
         if (this.getContext() !== DocDBContext.InstanceAvailable) {
-            return `${this.status} ${type} instance`
+            return `${toTitleCase(this.status ?? ' ')} ${type} instance`
         }
         return `${type} instance • ${this.instance.DBInstanceClass}`
     }

@@ -17,6 +17,7 @@ import { DBInstanceNode } from './dbInstanceNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { DBInstance, DocumentDBClient } from '../../shared/clients/docdbClient'
 import { DocDBContext } from './docdbContext'
+import { toTitleCase } from '../../shared'
 
 export type DBClusterRole = 'global' | 'regional' | 'primary' | 'secondary'
 
@@ -83,10 +84,11 @@ export class DBClusterNode extends DBResourceNode {
     }
 
     public getDescription(): string | boolean {
+        const role = toTitleCase(this.clusterRole)
         if (!this.isAvailable) {
-            return `${this.clusterRole} cluster • ${this.status}`
+            return `${role} cluster • ${toTitleCase(this.status ?? ' ')}`
         }
-        return `${this.clusterRole} cluster`
+        return `${role} cluster`
     }
 
     public async createInstance(request: CreateDBInstanceMessage): Promise<DBInstance | undefined> {

@@ -21,6 +21,7 @@ import { modifyInstance } from './commands/modifyInstance'
 import { rebootInstance } from './commands/rebootInstance'
 import { renameInstance } from './commands/renameInstance'
 import { addTag, listTags, removeTag } from './commands/tagCommands'
+import { env, Uri } from 'vscode'
 
 /**
  * Activates DocumentDB components.
@@ -86,6 +87,11 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
         Commands.register('aws.docdb.openBrowser', async (node?: DBResourceNode) => {
             await node?.openInBrowser()
+        }),
+
+        Commands.register('aws.docdb.openHelp', async (node?: DBResourceNode) => {
+            const url = Uri.parse('https://docs.aws.amazon.com/documentdb/latest/developerguide/get-started-guide.html')
+            await env.openExternal(url)
         }),
 
         Commands.register('aws.docdb.copyEndpoint', async (node?: DBResourceNode) => {

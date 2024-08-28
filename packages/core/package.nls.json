@@ -212,6 +212,7 @@
     "AWS.command.docdb.stopCluster": "Stop Cluster",
     "AWS.command.docdb.tags": "Tags...",
     "AWS.command.docdb.open": "Open in Browser",
+    "AWS.command.docdb.openHelp": "Open Getting Started Guide",
     "AWS.command.docdb.copyEndpoint": "Copy Endpoint",
     "AWS.command.docdb.addRegion": "Add region...",
     "AWS.command.resources.copyIdentifier": "Copy Identifier",

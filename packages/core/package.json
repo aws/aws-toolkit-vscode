@@ -2006,7 +2006,8 @@
                 },
                 {
                     "command": "aws.docdb.createCluster",
-                    "when": "view == aws.explorer && viewItem == awsDocDBNode"
+                    "when": "view == aws.explorer && viewItem == awsDocDBNode",
+                    "group": "0@1"
                 },
                 {
                     "command": "aws.docdb.startCluster",
@@ -2072,6 +2073,10 @@
                     "command": "aws.docdb.openBrowser",
                     "when": "viewItem =~ /^awsDocDB-/",
                     "group": "0@1"
+                },
+                {
+                    "command": "aws.docdb.openHelp",
+                    "when": "viewItem == awsDocDBNode"
                 },
                 {
                     "command": "aws.docdb.copyEndpoint",
@@ -3742,6 +3747,17 @@
                 "title": "%AWS.command.docdb.open%",
                 "category": "%AWS.title%",
                 "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB/",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.openHelp",
+                "title": "%AWS.command.docdb.openHelp%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
