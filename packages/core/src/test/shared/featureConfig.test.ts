@@ -4,17 +4,14 @@
  */
 
 import assert from 'assert'
-import {
-    FeatureConfigProvider,
-    featureDefinitions,
-    FeatureEvaluation,
-    ListFeatureEvaluationsResponse,
-} from 'aws-core-vscode/codewhisperer'
-import { createSpyClient } from 'aws-core-vscode/test'
 import sinon from 'sinon'
 import { AWSError, Request } from 'aws-sdk'
+import { FeatureConfigProvider, featureDefinitions } from '../../shared/featureConfig'
+import { ListFeatureEvaluationsResponse } from '../../codewhisperer'
+import { createSpyClient } from '../codewhisperer/testUtil'
+import { mockFeatureConfigsData } from '../fake/mockFeatureConfigData'
 
-describe('CodeWhispererFeatureConfigServiceTest', () => {
+describe('FeatureConfigProvider', () => {
     afterEach(function () {
         sinon.restore()
     })
@@ -35,12 +32,6 @@ describe('CodeWhispererFeatureConfigServiceTest', () => {
     })
 
     it('test getFeatureConfigsTelemetry will return expected string', async () => {
-        const testFeatureContext = {
-            feature: 'testFeature',
-            variation: 'TREATMENT',
-            value: 'testValue',
-        } as FeatureEvaluation
-
         const clientSpy = await createSpyClient()
         sinon.stub(clientSpy, 'listFeatureEvaluations').returns({
             promise: () =>
@@ -48,14 +39,11 @@ describe('CodeWhispererFeatureConfigServiceTest', () => {
                     $response: {
                         requestId: '',
                     },
-                    featureEvaluations: [testFeatureContext],
+                    featureEvaluations: mockFeatureConfigsData,
                 }),
         } as Request<ListFeatureEvaluationsResponse, AWSError>)
 
         await FeatureConfigProvider.instance.fetchFeatureConfigs()
-        assert.strictEqual(
-            FeatureConfigProvider.instance.getFeatureConfigsTelemetry(),
-            `{${testFeatureContext.feature}: ${testFeatureContext.variation}}`
-        )
+        assert.strictEqual(FeatureConfigProvider.instance.getFeatureConfigsTelemetry(), `{testFeature: TREATMENT}`)
     })
 })
