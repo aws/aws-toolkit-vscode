@@ -64,7 +64,7 @@ export class Connector {
     private readonly tabsStorage
     private readonly amazonqCommonsConnector: AmazonQCommonsConnector
 
-    private isUIReady = false
+    isUIReady = false
 
     constructor(props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension
