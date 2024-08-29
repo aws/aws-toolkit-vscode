@@ -58,10 +58,9 @@ export async function activate(ctx: ExtContext): Promise<void> {
                     const conn = authProvider.activeConnection
                     telemetry.record({
                         action: 'forget',
-                        id: conn?.id ?? 'undefined',
                         source: asStringifiedStack(telemetry.getFunctionStack()),
                         connectionState: conn ? authProvider.auth.getConnectionState(conn) : undefined,
-                        ...getTelemetryMetadataForConn(conn),
+                        ...(await getTelemetryMetadataForConn(conn)),
                     })
 
                     await authProvider.secondaryAuth.forgetConnection()

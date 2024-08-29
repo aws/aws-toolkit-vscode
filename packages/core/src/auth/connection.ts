@@ -489,11 +489,13 @@ export interface AwsConnection {
 }
 
 type Writeable<T> = { -readonly [U in keyof T]: T[U] }
-export type TelemetryMetadata = Partial<Writeable<AuthAddConnection | AwsLoginWithBrowser>>
+export type TelemetryMetadata = Partial<Writeable<AuthAddConnection & AwsLoginWithBrowser & AuthModifyConnection>>
 
 export async function getTelemetryMetadataForConn(conn?: Connection): Promise<TelemetryMetadata> {
     if (conn === undefined) {
-        return {}
+        return {
+            id: 'undefined',
+        }
     }
 
     if (isSsoConnection(conn)) {

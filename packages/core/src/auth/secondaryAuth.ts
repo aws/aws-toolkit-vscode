@@ -270,7 +270,6 @@ export class SecondaryAuth<T extends Connection = Connection> {
                 const conn = this.#savedConnection
                 if (conn) {
                     telemetry.record({
-                        id: conn.id,
                         connectionState: this.auth.getConnectionState(conn),
                         ...(await getTelemetryMetadataForConn(conn)),
                     })
