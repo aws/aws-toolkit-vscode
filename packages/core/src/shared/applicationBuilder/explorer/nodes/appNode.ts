@@ -38,6 +38,7 @@ export class AppNode implements TreeNode {
                 stackName: this.stackName,
                 templateFile: this.location.samTemplateUri.fsPath,
                 region: region,
+                projectRoot: this.location.workspaceFolder.uri,
             }
 
             const deployedResources: StackResource[] | undefined = this.stackName

@@ -27,13 +27,15 @@ import { DefaultS3Client } from '../../shared/clients/s3Client'
 import { ToolkitError, globals } from '../../shared'
 import { promptAndUseConnection } from '../../auth/utils'
 import { Auth } from '../../auth'
-import { localize } from 'vscode-nls'
 import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ChildProcess } from '../../shared/utilities/childProcess'
 import { addTelemetryEnvVar } from '../../shared/sam/cli/samCliInvokerUtils'
 import { getSource } from '../../shared/sam/utils'
 import { telemetry } from '../../shared/telemetry'
+
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
 
 interface DeployParams {
     readonly paramsSource: ParamsSource

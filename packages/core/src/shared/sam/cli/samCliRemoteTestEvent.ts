@@ -7,6 +7,8 @@ import * as vscode from 'vscode'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 import path from 'path'
 import * as os from 'os'
+import { Auth } from '../../../auth/auth'
+import { injectCredentials } from '../sync'
 
 export const TestEventsOperation = {
     List: 'list',
@@ -19,6 +21,7 @@ export interface SamCliRemoteTestEventsParameters {
     name?: string
     region?: string
     eventSample?: string
+    projectRoot?: vscode.Uri
 }
 
 export async function runSamCliRemoteTestEvents(
@@ -46,10 +49,18 @@ export async function runSamCliRemoteTestEvents(
         await vscode.workspace.fs.writeFile(tempFileUri, Buffer.from(remoteTestEventsParameters.eventSample, 'utf8'))
         args.push('--file', tempFileUri.fsPath)
     }
+    // try to use connection, ignore if no active iam connection
+    const connection = Auth.instance.activeConnection
 
     const childProcessResult = await invoker.invoke({
         arguments: args,
-        spawnOptions: {},
+        spawnOptions: {
+            env:
+                connection?.type === 'iam' && connection.state === 'valid'
+                    ? await injectCredentials(connection)
+                    : undefined,
+            cwd: remoteTestEventsParameters.projectRoot?.fsPath,
+        },
     })
     logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
 

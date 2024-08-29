@@ -5,11 +5,14 @@
 
 import * as vscode from 'vscode'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
+import { injectCredentials } from '../sync'
+import { Auth } from '../../../auth/auth'
 
 export interface SamCliListResourcesParameters {
     templateFile: string
     stackName: string
     region?: string
+    projectRoot?: vscode.Uri
 }
 
 export async function runSamCliListResource(
@@ -32,9 +35,18 @@ export async function runSamCliListResource(
     }
 
     try {
+        // try to use connection, ignore if no active iam connection
+        const connection = Auth.instance.activeConnection
+
         const childProcessResult = await invoker.invoke({
             arguments: args,
-            spawnOptions: {},
+            spawnOptions: {
+                env:
+                    connection?.type === 'iam' && connection.state === 'valid'
+                        ? await injectCredentials(connection)
+                        : undefined,
+                cwd: listStackResourcesArguments.projectRoot?.fsPath,
+            },
         })
 
         logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
