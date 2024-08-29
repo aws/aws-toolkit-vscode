@@ -8,7 +8,7 @@ import { env, version } from 'vscode'
 import * as os from 'os'
 import { getLogger } from '../logger'
 import { fromExtensionManifest, migrateSetting, Settings } from '../settings'
-import { memoize } from '../utilities/functionUtils'
+import { memoize, once } from '../utilities/functionUtils'
 import {
     isInDevEnv,
     extensionVersion,
@@ -28,6 +28,7 @@ import { randomUUID } from '../crypto'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { FunctionEntry, type TelemetryTracer } from './spans'
 import { telemetry } from './telemetry'
+import { v5 as uuidV5 } from 'uuid'
 
 const legacySettingsTelemetryValueDisable = 'Disable'
 const legacySettingsTelemetryValueEnable = 'Enable'
@@ -89,6 +90,41 @@ export function convertLegacy(value: unknown): boolean {
         throw new TypeError(`Unknown telemetry setting: ${value}`)
     }
 }
+
+/**
+ * Returns an identifier that uniquely identifies a single application
+ * instance/window of a specific IDE. I.e if I have multiple VS Code
+ * windows open each one will have a unique session ID. This session ID
+ * can be used in conjunction with the client ID to differntiate between
+ * different VS Code windows on a users machine.
+ *
+ * ### Rules:
+ *
+ * - On startup of a new application instance, a new session ID must be created.
+ *   - This identifier must be a `UUID`, it is enforced by the telemetry service.
+ * - The session ID must be different from all other IDs on the machine
+ * - A session ID exists until the application instance is terminated.
+ *   It should never be used again after termination.
+ * - All extensions on the same application instance MUST return the same session ID.
+ *   - This will allow us to know which of our extensions (eg Q vs Toolkit) are in the
+ *     same VS Code window.
+ *
+ * `vscode.env.sessionId` behaves as described aboved, EXCEPT its
+ * value looks close to a UUID by does not exactly match it (has additional characters).
+ * As a result we process it through uuidV5 which creates a proper UUID from it.
+ * uuidV5 is idempotent, so as long as `vscode.env.sessionId` returns the same value,
+ * we will get the same UUID.
+ */
+export const getSessionId = once(() => uuidV5(vscode.env.sessionId, sessionIdNonce))
+/**
+ * This is an arbitrary nonce that is used in creating a v5 UUID for Session ID. We only
+ * have this since the spec requires it.
+ * - This should ONLY be used by {@link getSessionId}.
+ * - This value MUST NOT change during runtime, otherwise {@link getSessionId} will lose its
+ *   idempotency. But, if there was a reason to change the value in a PR, it would not be an issue.
+ * - This is exported only for testing.
+ */
+export const sessionIdNonce = '44cfdb20-b30b-4585-a66c-9f48f24f99b5' as const
 
 /**
  * Calculates the clientId for the current profile. This calculation is performed once
