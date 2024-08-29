@@ -1,0 +1,38 @@
+{
+	"date": "2024-08-29",
+	"version": "1.23.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Fix bug when undo inline suggestion causes command not found"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Auth: `SyntaxError` causing unexpected SSO logout"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Code Transformation: allow symlinks for JDK path"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix bug where text with inline code copied from Amazon Q Chat had new line breaks around the inline code text"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix bug with code indentation and nested list formatting in chat response prompt"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix bug when disabled commands does not get filtered in quick actions"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Auth: Users may be silently logged out due to network issues when starting the extension."
+		},
+		{
+			"type": "Feature",
+			"description": "Support AB testing"
+		}
+	]
+}
