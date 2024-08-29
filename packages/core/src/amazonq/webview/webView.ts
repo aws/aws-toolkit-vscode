@@ -21,6 +21,7 @@ import { MessagePublisher } from '../messages/messagePublisher'
 import { TabType } from './ui/storages/tabsStorage'
 import { deactivateInitialViewBadge, shouldShowBadge } from '../util/viewBadgeHandler'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { amazonqMark } from '../../shared/performance/marks'
 
 export class AmazonQChatViewProvider implements WebviewViewProvider {
     public static readonly viewType = 'aws.AmazonQChatView'
@@ -63,6 +64,8 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
             this.extensionContext.extensionUri,
             webviewView.webview
         )
+
+        performance.mark(amazonqMark.open)
 
         // badge is shown, emit telemetry for first time an existing, unscoped user tries Q
         // note: this will fire on any not-properly-scoped Q entry.

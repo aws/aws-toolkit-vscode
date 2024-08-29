@@ -22,6 +22,16 @@ export const createMynahUI = (ideApi: any, amazonQEnabled: boolean) => {
     let mynahUI: MynahUI
     // eslint-disable-next-line prefer-const
     let connector: Connector
+
+    window.addEventListener('error', (e) => {
+        const { error, message } = e
+        ideApi.postMessage({
+            type: 'error',
+            event: connector.isUIReady ? 'webview_error' : 'webview_load',
+            errorMessage: error ? error.toString() : message,
+        })
+    })
+
     const tabsStorage = new TabsStorage({
         onTabTimeout: (tabID) => {
             mynahUI.addChatItem(tabID, {
