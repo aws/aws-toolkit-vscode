@@ -195,8 +195,8 @@ class QWebviewBrowser(val project: Project, private val parentDisposable: Dispos
                 error("QBrowser doesn't support the provided command ${message::class.simpleName}")
             }
 
-            is BrowserMessage.SendTelemetry -> {
-                UiTelemetry.click(project, "auth_continueButton")
+            is BrowserMessage.SendUiClickTelemetry -> {
+                UiTelemetry.click(project, message.signInOptionClicked)
             }
         }
     }

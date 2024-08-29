@@ -13,9 +13,9 @@
             </svg>
         </button>
 
-        <LoginOptions :app="app" v-if="stage === 'START'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage" @login="login"/>
-        <SsoLoginForm :app="app" v-if="stage === 'SSO_FORM'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage" @login="login"/>
-        <AwsProfileForm v-if="stage === 'AWS_PROFILE'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage" @login="login"/>
+        <LoginOptions :app="app" v-if="stage === 'START'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage" @login="login"  @emitUiClickTelemetry="sendUiClickTelemetry"/>
+        <SsoLoginForm :app="app" v-if="stage === 'SSO_FORM'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage" @login="login"  @emitUiClickTelemetry="sendUiClickTelemetry"/>
+        <AwsProfileForm v-if="stage === 'AWS_PROFILE'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage" @login="login" @emitUiClickTelemetry="sendUiClickTelemetry"/>
         <Authenticating v-if="stage === 'AUTHENTICATING'" :selected-login-option="this.selectedLoginOption" @cancel="handleCancelButton"/>
 
         <template v-if="stage === 'CONNECTED'"></template>
@@ -27,7 +27,18 @@ import SsoLoginForm from "./ssoLoginForm.vue";
 import LoginOptions from "./loginOptions.vue";
 import AwsProfileForm from "./awsProfileForm.vue";
 import Authenticating from "./authenticating.vue";
-import {BuilderId, ExistConnection, Feature, IdC, LoginOption, LongLivedIAM, Stage} from "../../model";
+import {BuilderId, ExistConnection, Feature, IdC, LoginIdentifier, LoginOption, LongLivedIAM, Stage} from "../../model";
+
+const authUiClickOptionMap = {
+    [LoginIdentifier.BUILDER_ID]: 'auth_builderIdOption',
+    [LoginIdentifier.ENTERPRISE_SSO]: 'auth_idcOption',
+    [LoginIdentifier.IAM_CREDENTIAL]: 'auth_credentialsOption',
+    [LoginIdentifier.EXISTING_LOGINS]: 'auth_existingAuthOption',
+}
+
+function getUiClickEvent(loginIdentifier: LoginIdentifier) {
+    return (authUiClickOptionMap as any)[loginIdentifier]
+}
 
 export default defineComponent({
     name: 'Login',
@@ -71,6 +82,7 @@ export default defineComponent({
             this.$store.commit('setStage', stage)
         },
         handleBackButtonClick() {
+            window.ideApi.postMessage({command: 'sendUiClickTelemetry', signInOptionClicked: "auth_backButton"})
             if (this.cancellable) {
                 window.ideApi.postMessage({command: 'toggleBrowser'})
             }
@@ -81,7 +93,7 @@ export default defineComponent({
             this.mutateStage('START')
         },
         login(type: LoginOption) {
-            window.ideApi.postMessage({command: 'sendTelemetry'})
+            window.ideApi.postMessage({command: 'sendUiClickTelemetry', signInOptionClicked: "auth_continueButton"})
             this.selectedLoginOption = type
             this.mutateStage('AUTHENTICATING')
             if (type instanceof IdC) {
@@ -103,6 +115,9 @@ export default defineComponent({
             } else if (type instanceof ExistConnection) {
                 window.ideApi.postMessage({ command: 'selectConnection', connectionId:  type.pluginConnectionId})
             }
+        },
+        sendUiClickTelemetry(element: LoginIdentifier) {
+            window.ideApi.postMessage({command: 'sendUiClickTelemetry', signInOptionClicked: getUiClickEvent(element)})
         }
     },
     mounted() {},

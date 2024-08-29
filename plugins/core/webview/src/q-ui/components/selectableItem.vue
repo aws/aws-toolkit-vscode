@@ -2,7 +2,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <template>
-    <div class="item-container" :class="{ selected: isSelected }" @click="toggleSelection" @focus="toggleSelection" tabindex="0">
+    <div class="item-container" :class="{ selected: isSelected }" @click="toggleSelection" @focus="toggleSelectionOnFocus" tabindex="0">
         <div class="icon">
             <svg
                 v-if="loginType === LoginOption.BUILDER_ID"
@@ -86,8 +86,12 @@ export default defineComponent({
     async created() {},
     methods: {
         toggleSelection() {
+            this.$emit('emitUiClickMetric', this.itemId)
             this.$emit('toggle', this.itemId)
         },
+        toggleSelectionOnFocus() {
+            this.$emit('toggle', this.itemId)
+        }
     },
 })
 </script>

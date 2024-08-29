@@ -236,8 +236,8 @@ class ToolkitWebviewBrowser(val project: Project, private val parentDisposable: 
                 reauth(ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeCatalystConnection.getInstance()))
             }
 
-            is BrowserMessage.SendTelemetry -> {
-                UiTelemetry.click(project, "auth_continueButton")
+            is BrowserMessage.SendUiClickTelemetry -> {
+                UiTelemetry.click(project, message.signInOptionClicked)
             }
         }
     }

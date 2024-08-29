@@ -8,6 +8,7 @@
             <div v-for="(connection, index) in this.existConnections" :key="index">
                 <SelectableItem
                     @toggle="toggleItemSelection"
+                    @emitUiClickMetric="emitUiClickMetric"
                     :isSelected="selectedLoginOption === connection.id"
                     :itemId="connection.id"
                     :login-type="this.connectionType(connection)"
@@ -21,6 +22,7 @@
         <div class="title font-amazon bottom-small-gap" v-if="existingLogin.id === -1">Choose a sign-in option:</div>
         <SelectableItem
             @toggle="toggleItemSelection"
+            @emitUiClickMetric="emitUiClickMetric"
             :isSelected="selectedLoginOption === LoginOption.BUILDER_ID"
             :itemId="LoginOption.BUILDER_ID"
             :login-type="LoginOption.BUILDER_ID"
@@ -31,6 +33,7 @@
         <!-- TODO: IdC description undecided -->
         <SelectableItem
             @toggle="toggleItemSelection"
+            @emitUiClickMetric="emitUiClickMetric"
             :isSelected="selectedLoginOption === LoginOption.ENTERPRISE_SSO"
             :itemId="LoginOption.ENTERPRISE_SSO"
             :login-type="LoginOption.ENTERPRISE_SSO"
@@ -85,6 +88,9 @@ export default defineComponent({
     methods: {
         toggleItemSelection(itemId: string) {
             this.selectedLoginOption = itemId
+        },
+        emitUiClickMetric(itemId: string) {
+            this.$emit('emitUiClickTelemetry', itemId)
         },
         handleBackButtonClick() {
             this.$emit('backToMenu')
