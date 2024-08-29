@@ -58,6 +58,10 @@
       "type":"string",
       "pattern":"^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$"
     },
+    "SessionID":{
+      "type":"string",
+      "pattern":"^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$"
+    },
     "Command":{
       "type":"string",
       "max":2000
@@ -207,6 +211,7 @@
         "AWSProduct":{"shape":"AWSProduct"},
         "AWSProductVersion":{"shape":"AWSProductVersion"},
         "ClientID":{"shape":"ClientID"},
+        "SessionID":{"shape":"SessionID"},
         "OS":{"shape":"Value"},
         "OSVersion":{"shape":"Value"},
         "ComputeEnv": {"shape":"ComputeEnv"},

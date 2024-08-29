@@ -133,6 +133,12 @@ export class DefaultTelemetryService {
         getLogger().verbose(`Telemetry is ${value ? 'enabled' : 'disabled'}`)
     }
 
+    private _clientId: string | undefined
+    /** Returns the client ID, creating one if it does not exist. */
+    public get clientId(): string {
+        return (this._clientId ??= getClientId(globals.globalState))
+    }
+
     public get timer(): NodeJS.Timer | undefined {
         return this._timer
     }
@@ -224,8 +230,6 @@ export class DefaultTelemetryService {
 
     private async createDefaultPublisher(): Promise<TelemetryPublisher | undefined> {
         try {
-            // grab our clientId and generate one if it doesn't exist
-            const clientId = getClientId(globals.globalState)
             // grab our Cognito identityId
             const poolId = DefaultTelemetryClient.config.identityPool
             const identityMapJson = globals.globalState.tryGet(
@@ -240,7 +244,7 @@ export class DefaultTelemetryService {
 
             // if we don't have an identity, get one
             if (!identity) {
-                const identityPublisherTuple = await DefaultTelemetryPublisher.fromDefaultIdentityPool(clientId)
+                const identityPublisherTuple = await DefaultTelemetryPublisher.fromDefaultIdentityPool(this.clientId)
 
                 // save it
                 identityMap.set(poolId, identityPublisherTuple.cognitoIdentityId)
@@ -252,7 +256,7 @@ export class DefaultTelemetryService {
                 // return the publisher
                 return identityPublisherTuple.publisher
             } else {
-                return DefaultTelemetryPublisher.fromIdentityId(clientId, identity)
+                return DefaultTelemetryPublisher.fromIdentityId(this.clientId, identity)
             }
         } catch (err) {
             getLogger().error(`Got ${err} while initializing telemetry publisher`)
