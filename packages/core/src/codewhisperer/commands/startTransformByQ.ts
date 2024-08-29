@@ -123,7 +123,7 @@ async function validateJavaHome(): Promise<boolean> {
         // TODO: remove deprecated metric once BI started using new metrics
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformPreValidationError: 'ProjectJDKDiffersFromMavenJDK',
+            codeTransformPreValidationError: 'ProjectJDKDiffersFromBuildSystemJDK',
             result: MetadataResult.Fail,
             reason: `${transformByQState.getSourceJDKVersion()} (project) - ${javaVersionUsedByMaven} (maven)`,
         })
