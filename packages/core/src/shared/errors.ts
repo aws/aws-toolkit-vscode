@@ -789,11 +789,11 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
     if (
         isVSCodeProxyError(err) ||
         isSocketTimeoutError(err) ||
-        isHttpSyntaxError(err) ||
         isEnoentError(err) ||
         isEaccesError(err) ||
         isEbadfError(err) ||
-        isEconnRefusedError(err)
+        isEconnRefusedError(err) ||
+        err instanceof AwsClientResponseError
     ) {
         return true
     }
@@ -848,18 +848,6 @@ function isSocketTimeoutError(err: Error): boolean {
 }
 
 /**
- * Expected JSON response from HTTP request, but got an error HTML error page instead.
- *
- * IMPORTANT:
- *
- * This function is influenced by {@link getReasonFromSyntaxError()} since it modifies the error
- * message with the real underlying reason, instead of the default "Unexpected token" message.
- */
-function isHttpSyntaxError(err: Error): boolean {
-    return isError(err, 'SyntaxError', 'SDK Client unexpected error response')
-}
-
-/**
  * We were seeing errors of ENOENT for the oidc FQDN (eg: oidc.us-east-1.amazonaws.com) during the SSO flow.
  * Our assumption is that this is an intermittent error.
  */
@@ -887,30 +875,69 @@ function isError(err: Error, id: string, messageIncludes: string = '') {
 }
 
 /**
- * AWS SDK clients may rarely make requests that results in something other than JSON data
- * being returned (e.g html). This will cause the client to throw a SyntaxError as a result
+ * AWS SDK clients make requests with the expected result to be JSON data.
+ * But in some cases the request may fail and result in an error HTML page being returned instead
+ * of the JSON. This will cause the client to throw a `SyntaxError` as a result
  * of attempt to deserialize the non-JSON data.
- * While the contents of the response may contain sensitive information, there may be a reason
- * for failure embedded. This function attempts to extract that reason.
  *
- * Example error message before extracting:
- * "Unexpected token '<', "<html><bod"... is not valid JSON Deserialization error: to see the raw response, inspect the hidden field {error}.$response on this object."
+ * But within the `SyntaxError` instance is the real reason for the failure.
+ * This class attempts to extract the underlying issue from the SyntaxError.
  *
- * If the reason cannot be found or the error is not a SyntaxError, return undefined.
+ * Example SyntaxError message before extracting the underlying issue:
+ *  - "Unexpected token '<', "<html><bod"... is not valid JSON Deserialization error: to see the raw response, inspect the hidden field {error}.$response on this object."
+ * Once we extract the real error message from the hidden field, `$response.reason`, we get messages similar to:
+ *  - "SDK Client unexpected error response: data response code: 403, data reason: Forbidden | Unexpected ..."
  */
-export function getReasonFromSyntaxError(err: Error): string | undefined {
-    if (!(err instanceof SyntaxError)) {
+export class AwsClientResponseError extends Error {
+    /** Use {@link instanceIf} to create instance. */
+    protected constructor(err: unknown) {
+        const underlyingErrorMsg = AwsClientResponseError.tryExtractReasonFromSyntaxError(err)
+
+        /**
+         * This condition should never be hit since {@link AwsClientResponseError.instanceIf}
+         * is the only way to create an instance of this class, due to the constructor not being public.
+         *
+         * The following only exists to make the type checker happy.
+         */
+        if (!(underlyingErrorMsg && err instanceof Error)) {
+            throw Error(`Cannot create AwsClientResponseError from ${JSON.stringify(err)}}`)
+        }
+
+        super(underlyingErrorMsg)
+    }
+
+    /**
+     * Resolves an instance of {@link AwsClientResponseError} if the given error matches certain criteria.
+     * Otherwise the original error is returned.
+     */
+    static instanceIf<T>(err: T): AwsClientResponseError | T {
+        const reason = AwsClientResponseError.tryExtractReasonFromSyntaxError(err)
+        if (reason && reason.startsWith('SDK Client unexpected error response: data response code:')) {
+            getLogger().debug(`Creating AwsClientResponseError from SyntaxError: %O`, err)
+            return new AwsClientResponseError(err)
+        }
+        return err
+    }
+
+    /**
+     * Returns the true underlying error message from a `SyntaxError`, if possible.
+     * Otherwise returning undefined.
+     */
+    static tryExtractReasonFromSyntaxError(err: unknown): string | undefined {
+        if (!(err instanceof SyntaxError)) {
+            return undefined
+        }
+
+        // See the class docstring to explain how we know the existence of the following keys
+        if (hasKey(err, '$response')) {
+            const response = err['$response']
+            if (response && hasKey(response, 'reason')) {
+                return response['reason'] as string
+            }
+        }
+
         return undefined
     }
-
-    if (hasKey(err, '$response')) {
-        const response = err['$response']
-        if (response && hasKey(response, 'reason')) {
-            return response['reason'] as string
-        }
-    }
-
-    return undefined
 }
 
 /**
