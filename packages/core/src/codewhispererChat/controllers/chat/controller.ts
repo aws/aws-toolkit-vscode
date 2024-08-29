@@ -48,7 +48,7 @@ import { LspController } from '../../../amazonq/lsp/lspController'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
 import { FeatureConfigProvider } from '../../../shared/featureConfig'
-import { getHttpStatusCode, getReasonFromSyntaxError } from '../../../shared/errors'
+import { getHttpStatusCode, AwsClientResponseError } from '../../../shared/errors'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -299,7 +299,7 @@ export class ChatController {
             errorMessage = e.toUpperCase()
         } else if (e instanceof SyntaxError) {
             // Workaround to handle case when LB returns web-page with error and our client doesn't return proper exception
-            errorMessage = getReasonFromSyntaxError(e) ?? defaultMessage
+            errorMessage = AwsClientResponseError.tryExtractReasonFromSyntaxError(e) ?? defaultMessage
         } else if (e instanceof CodeWhispererStreamingServiceException) {
             errorMessage = e.message
             requestID = e.$metadata.requestId
