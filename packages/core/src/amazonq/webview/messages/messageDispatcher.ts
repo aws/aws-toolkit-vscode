@@ -36,7 +36,7 @@ export function dispatchWebViewMessagesToApps(
         if (msg.type === 'error') {
             const event = msg.event === 'webview_load' ? telemetry.webview_load : telemetry.webview_error
             event.emit({
-                webviewName: 'amazonq',
+                webviewName: 'amazonqChat',
                 result: 'Failed',
                 reasonDesc: msg.errorMessage,
             })
