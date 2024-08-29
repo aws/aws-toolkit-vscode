@@ -133,7 +133,11 @@ export async function uploadArtifactToS3(
         })
         getLogger().info(`CodeTransformation: Status from S3 Upload = ${response.status}`)
     } catch (e: any) {
-        let errorMessage = `The upload failed due to: ${(e as Error).message}. For more information, see the [Amazon Q documentation](${CodeWhispererConstants.codeTransformTroubleshootUploadError})`
+        let errorMessage = `The upload failed due to: ${
+            (e as Error).message
+        }. For more information, see the [Amazon Q documentation](${
+            CodeWhispererConstants.codeTransformTroubleshootUploadError
+        })`
         if (errorMessage.includes('Request has expired')) {
             errorMessage = CodeWhispererConstants.errorUploadingWithExpiredUrl
         } else if (errorMessage.includes('Failed to establish a socket connection')) {
@@ -142,6 +146,7 @@ export async function uploadArtifactToS3(
             errorMessage = CodeWhispererConstants.selfSignedCertificateError
         }
         getLogger().error(`CodeTransformation: UploadZip error = ${e}`)
+        // test commit
         telemetry.codeTransform_logApiError.emit({
             codeTransformApiNames: 'UploadZip',
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
