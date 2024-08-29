@@ -14,7 +14,7 @@ import { DefaultTelemetryService } from './telemetryService'
 import { getLogger } from '../logger'
 import { getComputeRegion, isAmazonQ, isCloud9, productName } from '../extensionUtilities'
 import { openSettingsId, Settings } from '../settings'
-import { TelemetryConfig } from './util'
+import { getSessionId, TelemetryConfig } from './util'
 import { isAutomation, isReleaseVersion } from '../vscode/env'
 import { AWSProduct } from './clienttelemetry'
 import { DefaultTelemetryClient } from './telemetryClient'
@@ -76,6 +76,12 @@ export async function activate(
         }
 
         await globals.telemetry.start()
+
+        if (globals.telemetry.telemetryEnabled) {
+            // Only log the IDs if telemetry is enabled, so that users who have it disabled do not think we are sending events.
+            getLogger().info(`Telemetry Client ID: ${globals.telemetry.clientId}`)
+            getLogger().info(`Telemetry Session ID: ${getSessionId()}`)
+        }
     } catch (e) {
         // Only throw in a production build because:
         //   1. Telemetry must never prevent normal Toolkit operation.

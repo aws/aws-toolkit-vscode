@@ -17,7 +17,7 @@ import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import globals from '../extensionGlobals'
 import { DevSettings } from '../settings'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
-import { getComputeEnvType } from './util'
+import { getComputeEnvType, getSessionId } from './util'
 
 export const accountMetadataKey = 'awsAccount'
 export const regionKey = 'awsRegion'
@@ -106,6 +106,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                         AWSProduct: DefaultTelemetryClient.productName,
                         AWSProductVersion: extensionVersion,
                         ClientID: this.clientId,
+                        SessionID: getSessionId(),
                         OS: os.platform(),
                         OSVersion: os.release(),
                         ComputeEnv: await getComputeEnvType(),
