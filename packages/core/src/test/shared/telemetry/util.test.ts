@@ -9,8 +9,10 @@ import { Settings } from '../../../shared/settings'
 import {
     convertLegacy,
     getClientId,
+    getSessionId,
     getUserAgent,
     platformPair,
+    sessionIdNonce,
     telemetryClientIdEnvKey,
     TelemetryConfig,
 } from '../../../shared/telemetry/util'
@@ -18,6 +20,7 @@ import { extensionVersion } from '../../../shared/vscode/env'
 import { FakeMemento } from '../../fakeExtensionContext'
 import { GlobalState } from '../../../shared/globalState'
 import { randomUUID } from 'crypto'
+import { isUuid } from '../../../shared/crypto'
 
 describe('TelemetryConfig', function () {
     const settingKey = 'aws.telemetry'
@@ -104,6 +107,19 @@ describe('TelemetryConfig', function () {
                 assert.deepStrictEqual(tryConvert(), scenario.expectedSanitizedValue)
             })
         })
+    })
+})
+
+describe('getSessionId', function () {
+    it('returns a stable UUID', function () {
+        const result = getSessionId()
+
+        assert.deepStrictEqual(isUuid(result), true)
+        assert.deepStrictEqual(getSessionId(), result, 'Subsequent call did not return the same UUID')
+    })
+
+    it('nonce is the same as always', function () {
+        assert.deepStrictEqual(sessionIdNonce, '44cfdb20-b30b-4585-a66c-9f48f24f99b5')
     })
 })
 

@@ -56,10 +56,25 @@ describe('Auth', function () {
         assert.strictEqual((await auth.listConnections()).length, 0)
         assertTelemetry('auth_modifyConnection', [
             {
+                action: 'addProfile',
+                connectionState: 'unauthenticated',
+                source: 'Auth#createConnection:ProfileStore#addProfile',
+            },
+            {
+                action: 'getProfile',
+                connectionState: 'unauthenticated',
+                source: 'Auth#createConnection,updateConnectionState:ProfileStore#getProfileOrThrow',
+            },
+            {
                 action: 'updateConnectionState',
                 connectionState: 'valid',
                 source: 'Auth#createConnection,updateConnectionState',
                 sessionDuration: undefined,
+            },
+            {
+                action: 'getProfile',
+                connectionState: 'valid',
+                source: 'Auth#deleteConnection,invalidateConnection:ProfileStore#getProfileOrThrow',
             },
             {
                 action: 'updateConnectionState',
@@ -79,10 +94,25 @@ describe('Auth', function () {
         assert.strictEqual(auth.activeConnection, undefined)
         assertTelemetry('auth_modifyConnection', [
             {
+                action: 'addProfile',
+                connectionState: 'unauthenticated',
+                source: 'Auth#createConnection:ProfileStore#addProfile',
+            },
+            {
+                action: 'getProfile',
+                connectionState: 'unauthenticated',
+                source: 'Auth#createConnection,updateConnectionState:ProfileStore#getProfileOrThrow',
+            },
+            {
                 action: 'updateConnectionState',
                 connectionState: 'valid',
                 source: 'Auth#createConnection,updateConnectionState',
                 sessionDuration: undefined,
+            },
+            {
+                action: 'getProfile',
+                connectionState: 'valid',
+                source: 'Auth#useConnection,refreshConnectionState,validateConnection,updateConnectionState:ProfileStore#getProfileOrThrow',
             },
             {
                 action: 'updateConnectionState',
@@ -114,10 +144,25 @@ describe('Auth', function () {
         assert.strictEqual(auth.activeConnectionEvents.last, undefined)
         assertTelemetry('auth_modifyConnection', [
             {
+                action: 'addProfile',
+                connectionState: 'unauthenticated',
+                source: 'Auth#createConnection:ProfileStore#addProfile',
+            },
+            {
+                action: 'getProfile',
+                connectionState: 'unauthenticated',
+                source: 'Auth#createConnection,updateConnectionState:ProfileStore#getProfileOrThrow',
+            },
+            {
                 action: 'updateConnectionState',
                 connectionState: 'valid',
                 source: 'Auth#createConnection,updateConnectionState',
                 sessionDuration: undefined,
+            },
+            {
+                action: 'getProfile',
+                connectionState: 'valid',
+                source: 'Auth#useConnection,refreshConnectionState,validateConnection,updateConnectionState:ProfileStore#getProfileOrThrow',
             },
             {
                 action: 'updateConnectionState',
