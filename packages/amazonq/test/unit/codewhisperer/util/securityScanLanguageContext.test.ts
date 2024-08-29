@@ -39,6 +39,12 @@ describe('securityScanLanguageContext', function () {
             ['html', false],
             ['r', false],
             ['vb', false],
+            ['xml', false],
+            ['toml', false],
+            ['pip-requirements', false],
+            ['java-properties', false],
+            ['go.mod', false],
+            ['go.sum', false],
         ]
 
         beforeEach(async function () {
@@ -100,6 +106,12 @@ describe('securityScanLanguageContext', function () {
             ['packer', 'tf'],
             ['plaintext', 'plaintext'],
             ['jsonc', 'json'],
+            ['xml', 'plaintext'],
+            ['toml', 'plaintext'],
+            ['pip-requirements', 'plaintext'],
+            ['java-properties', 'plaintext'],
+            ['go.mod', 'plaintext'],
+            ['go.sum', 'plaintext'],
         ]
 
         for (const [securityScanLanguageId, expectedCwsprLanguageId] of securityScanLanguageIds) {
