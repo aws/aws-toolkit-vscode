@@ -28,7 +28,7 @@ import { pageableToCollection, partialClone } from '../../shared/utilities/colle
 import { assertHasProps, isNonNullable, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { getLogger } from '../../shared/logger'
 import { SsoAccessTokenProvider } from './ssoAccessTokenProvider'
-import { ToolkitError, getHttpStatusCode, getReasonFromSyntaxError, isClientFault } from '../../shared/errors'
+import { AwsClientResponseError, isClientFault } from '../../shared/errors'
 import { DevSettings } from '../../shared/settings'
 import { SdkError } from '@aws-sdk/types'
 import { HttpRequest, HttpResponse } from '@smithy/protocol-http'
@@ -90,20 +90,8 @@ export class OidcClient {
         try {
             response = await this.client.createToken(request as CreateTokenRequest)
         } catch (err) {
-            // In rare cases the SDK client may get unexpected data from its API call.
-            // This will throw a SyntaxError that contains the returned data.
-            if (err instanceof SyntaxError) {
-                getLogger().error(`createToken: SSOIDC Client received an unexpected non-JSON response: %O`, err)
-                throw new ToolkitError(
-                    `SDK Client unexpected error response: data response code: ${getHttpStatusCode(err)}, data reason: ${getReasonFromSyntaxError(err)}`,
-                    {
-                        code: `${getHttpStatusCode(err)}`,
-                        cause: err,
-                    }
-                )
-            } else {
-                throw err
-            }
+            const newError = AwsClientResponseError.instanceIf(err)
+            throw newError
         }
         assertHasProps(response, 'accessToken', 'expiresIn')
 
