@@ -256,8 +256,8 @@ export class SecondaryAuth<T extends Connection = Connection> {
     @withTelemetryContext({ name: 'restoreConnection', class: secondaryAuthClassName })
     private async _restoreConnection(): Promise<T | undefined> {
         try {
-            return await telemetry.auth_modifyConnection.run(async () => {
-                telemetry.record({
+            return await telemetry.auth_modifyConnection.run(async (span) => {
+                span.record({
                     source: asStringifiedStack(telemetry.getFunctionStack()),
                     action: 'restore',
                     id: 'undefined',
@@ -269,7 +269,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
 
                 const conn = this.#savedConnection
                 if (conn) {
-                    telemetry.record({
+                    span.record({
                         connectionState: this.auth.getConnectionState(conn),
                         ...(await getTelemetryMetadataForConn(conn)),
                     })

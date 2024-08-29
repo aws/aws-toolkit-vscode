@@ -282,15 +282,15 @@ export class ProfileStore {
     public async addProfile(id: string, profile: IamProfile): Promise<StoredProfile<IamProfile>>
     @withTelemetryContext({ name: 'addProfile', class: profileStoreClassName })
     public async addProfile(id: string, profile: Profile): Promise<StoredProfile> {
-        return telemetry.auth_modifyConnection.run(async () => {
-            telemetry.record({
+        return telemetry.auth_modifyConnection.run(async (span) => {
+            span.record({
                 action: 'addProfile',
                 id,
                 source: asStringifiedStack(telemetry.getFunctionStack()),
             })
 
             const newProfile = this.initMetadata(profile)
-            telemetry.record(getTelemetryForProfile(newProfile))
+            span.record(getTelemetryForProfile(newProfile))
 
             return await this.putProfile(id, newProfile)
         })
@@ -298,8 +298,8 @@ export class ProfileStore {
 
     @withTelemetryContext({ name: 'updateProfile', class: profileStoreClassName })
     public async updateProfile(id: string, profile: Profile): Promise<StoredProfile> {
-        return telemetry.auth_modifyConnection.run(async () => {
-            telemetry.record({
+        return telemetry.auth_modifyConnection.run(async (span) => {
+            span.record({
                 action: 'updateProfile',
                 id,
                 source: asStringifiedStack(telemetry.getFunctionStack()),
@@ -311,7 +311,7 @@ export class ProfileStore {
             }
 
             const newProfile = await this.putProfile(id, { ...oldProfile, ...profile })
-            telemetry.record(getTelemetryForProfile(newProfile))
+            span.record(getTelemetryForProfile(newProfile))
             return newProfile
         })
     }
@@ -324,15 +324,15 @@ export class ProfileStore {
 
     @withTelemetryContext({ name: 'deleteProfile', class: profileStoreClassName })
     public async deleteProfile(id: string): Promise<void> {
-        return telemetry.auth_modifyConnection.run(async () => {
-            telemetry.record({
+        return telemetry.auth_modifyConnection.run(async (span) => {
+            span.record({
                 action: 'deleteProfile',
                 id,
                 source: asStringifiedStack(telemetry.getFunctionStack()),
             })
 
             const data = this.getData()
-            telemetry.record(getTelemetryForProfile(data[id]))
+            span.record(getTelemetryForProfile(data[id]))
             delete (data as Mutable<typeof data>)[id]
 
             await this.updateData(data)
