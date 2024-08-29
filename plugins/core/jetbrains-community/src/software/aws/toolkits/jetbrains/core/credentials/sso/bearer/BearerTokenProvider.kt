@@ -88,7 +88,7 @@ interface BearerTokenProvider : SdkTokenProvider, SdkAutoCloseable, ToolkitBeare
 
 class InteractiveBearerTokenProvider(
     val startUrl: String,
-    region: String,
+    val region: String,
     val scopes: List<String>,
     id: String,
     cache: DiskCache = diskCache

@@ -11,6 +11,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.ConfirmUserCo
 import software.aws.toolkits.jetbrains.utils.computeOnEdt
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.AwsCoreBundle
+import software.aws.toolkits.telemetry.AuthType
 import software.aws.toolkits.telemetry.AwsTelemetry
 import software.aws.toolkits.telemetry.CredentialType
 import software.aws.toolkits.telemetry.Result
@@ -38,12 +39,12 @@ class DefaultSsoLoginCallbackProvider : SsoLoginCallbackProvider {
 
 interface SsoPrompt : SsoLoginCallback {
     override fun tokenRetrieved() {
-        AwsTelemetry.loginWithBrowser(project = null, result = Result.Succeeded, credentialType = CredentialType.SsoProfile)
+        AwsTelemetry.loginWithBrowser(project = null, result = Result.Succeeded, credentialType = CredentialType.SsoProfile, authType = AuthType.DeviceCode)
     }
 
     override fun tokenRetrievalFailure(e: Exception) {
         e.notifyError(AwsCoreBundle.message("credentials.sso.login.failed"))
-        AwsTelemetry.loginWithBrowser(project = null, result = Result.Failed, credentialType = CredentialType.SsoProfile)
+        AwsTelemetry.loginWithBrowser(project = null, result = Result.Failed, credentialType = CredentialType.SsoProfile, authType = AuthType.DeviceCode)
     }
 }
 
@@ -59,7 +60,12 @@ object DefaultSsoPrompt : SsoPrompt {
             if (result) {
                 BrowserUtil.browse(authorization.verificationUriComplete)
             } else {
-                AwsTelemetry.loginWithBrowser(project = null, result = Result.Cancelled, credentialType = CredentialType.SsoProfile)
+                AwsTelemetry.loginWithBrowser(
+                    project = null,
+                    result = Result.Cancelled,
+                    credentialType = CredentialType.SsoProfile,
+                    authType = AuthType.DeviceCode
+                )
                 throw ProcessCanceledException(IllegalStateException(AwsCoreBundle.message("credentials.sso.login.cancelled")))
             }
         }
@@ -76,11 +82,11 @@ object SsoPromptWithBrowserSupport : SsoPrompt {
 
 interface BearerTokenPrompt : SsoLoginCallback {
     override fun tokenRetrieved() {
-        AwsTelemetry.loginWithBrowser(project = null, result = Result.Succeeded, credentialType = CredentialType.BearerToken)
+        AwsTelemetry.loginWithBrowser(project = null, result = Result.Succeeded, credentialType = CredentialType.BearerToken, authType = AuthType.DeviceCode)
     }
 
     override fun tokenRetrievalFailure(e: Exception) {
-        AwsTelemetry.loginWithBrowser(project = null, result = Result.Failed, credentialType = CredentialType.BearerToken)
+        AwsTelemetry.loginWithBrowser(project = null, result = Result.Failed, credentialType = CredentialType.BearerToken, authType = AuthType.DeviceCode)
     }
 }
 
@@ -96,7 +102,12 @@ object DefaultBearerTokenPrompt : BearerTokenPrompt {
             if (codeCopied) {
                 BrowserUtil.browse(authorization.verificationUriComplete)
             } else {
-                AwsTelemetry.loginWithBrowser(project = null, result = Result.Cancelled, credentialType = CredentialType.BearerToken)
+                AwsTelemetry.loginWithBrowser(
+                    project = null,
+                    result = Result.Cancelled,
+                    credentialType = CredentialType.BearerToken,
+                    authType = AuthType.DeviceCode
+                )
             }
         }
     }

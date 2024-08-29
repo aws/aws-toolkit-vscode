@@ -43,6 +43,7 @@ import software.aws.toolkits.jetbrains.utils.pluginAwareExecuteOnPooledThread
 import software.aws.toolkits.jetbrains.utils.pollFor
 import software.aws.toolkits.resources.AwsCoreBundle
 import software.aws.toolkits.telemetry.AuthTelemetry
+import software.aws.toolkits.telemetry.AuthType
 import software.aws.toolkits.telemetry.AwsTelemetry
 import software.aws.toolkits.telemetry.CredentialSourceId
 import software.aws.toolkits.telemetry.CredentialType
@@ -85,22 +86,23 @@ abstract class LoginBrowser(
 
     private var browserOpenTimer: Timer? = null
 
-    private fun startBrowserOpenTimer(credentialSourceId: CredentialSourceId) {
+    private fun startBrowserOpenTimer(startUrl: String, ssoRegion: String) {
         browserOpenTimer = Timer()
         browserOpenTimer?.schedule(
             object : TimerTask() {
                 override fun run() {
                     AwsTelemetry.loginWithBrowser(
                         project = null,
-                        credentialStartUrl = SONO_URL,
+                        credentialStartUrl = startUrl,
                         result = Result.Failed,
                         reason = "Browser authentication idle for more than 15min",
-                        credentialSourceId = credentialSourceId
+                        credentialSourceId = if (startUrl == SONO_URL) CredentialSourceId.AwsId else CredentialSourceId.IamIdentityCenter,
+                        authType = getAuthType(ssoRegion)
                     )
                     AuthTelemetry.addConnection(
                         result = Result.Failed,
                         reason = "Browser authentication idle for more than 15min",
-                        credentialSourceId = credentialSourceId
+                        credentialSourceId = if (startUrl == SONO_URL) CredentialSourceId.AwsId else CredentialSourceId.IamIdentityCenter
                     )
                     stopAndClearBrowserOpenTimer()
                 }
@@ -118,7 +120,7 @@ abstract class LoginBrowser(
     }
 
     protected val onPendingToken: (InteractiveBearerTokenProvider) -> Unit = { provider ->
-        startBrowserOpenTimer(if (provider.startUrl == SONO_URL) CredentialSourceId.AwsId else CredentialSourceId.IamIdentityCenter)
+        startBrowserOpenTimer(provider.startUrl, provider.region)
         projectCoroutineScope(project).launch {
             val authorization = pollForAuthorization(provider)
             if (authorization != null) {
@@ -186,7 +188,8 @@ abstract class LoginBrowser(
                 result = Result.Failed,
                 reason = e.message,
                 credentialSourceId = CredentialSourceId.AwsId,
-                isReAuth = isReauth
+                isReAuth = isReauth,
+                authType = getAuthType()
             )
             AuthTelemetry.addConnection(
                 result = Result.Failed,
@@ -202,7 +205,8 @@ abstract class LoginBrowser(
                 credentialStartUrl = SONO_URL,
                 result = Result.Succeeded,
                 credentialSourceId = CredentialSourceId.AwsId,
-                isReAuth = isReauth
+                isReAuth = isReauth,
+                authType = getAuthType()
             )
             AuthTelemetry.addConnection(
                 result = Result.Succeeded,
@@ -256,7 +260,8 @@ abstract class LoginBrowser(
                 isReAuth = isReAuth,
                 result = result,
                 reason = message,
-                credentialSourceId = CredentialSourceId.IamIdentityCenter
+                credentialSourceId = CredentialSourceId.IamIdentityCenter,
+                authType = getAuthType(region.name)
             )
             AuthTelemetry.addConnection(
                 result = result,
@@ -273,7 +278,8 @@ abstract class LoginBrowser(
                 isReAuth = isReAuth,
                 credentialType = CredentialType.BearerToken,
                 credentialStartUrl = url,
-                credentialSourceId = CredentialSourceId.IamIdentityCenter
+                credentialSourceId = CredentialSourceId.IamIdentityCenter,
+                authType = getAuthType(region.name)
             )
             AuthTelemetry.addConnection(
                 project = null,
@@ -296,7 +302,8 @@ abstract class LoginBrowser(
                         project = null,
                         result = Result.Failed,
                         reason = error.message,
-                        credentialType = CredentialType.StaticProfile
+                        credentialType = CredentialType.StaticProfile,
+                        authType = AuthType.IAM
                     )
                     LOG.error(error) { "Profile file error" }
                     Messages.showErrorDialog(jcefBrowser.component, error.message, AwsCoreBundle.message("gettingstarted.auth.failed"))
@@ -306,6 +313,7 @@ abstract class LoginBrowser(
                         project = null,
                         result = Result.Failed,
                         reason = "Profile already exists",
+                        authType = AuthType.IAM
                     )
                 },
                 { error ->
@@ -314,6 +322,7 @@ abstract class LoginBrowser(
                         project = null,
                         result = Result.Failed,
                         reason = reason,
+                        authType = AuthType.IAM
                     )
                     LOG.error(error) { reason }
                     Messages.showErrorDialog(jcefBrowser.component, error.message, AwsCoreBundle.message("gettingstarted.auth.failed"))
@@ -325,7 +334,8 @@ abstract class LoginBrowser(
                 AwsTelemetry.loginWithBrowser(
                     project = null,
                     result = Result.Succeeded,
-                    credentialType = CredentialType.StaticProfile
+                    credentialType = CredentialType.StaticProfile,
+                    authType = AuthType.IAM
                 )
             }
         }

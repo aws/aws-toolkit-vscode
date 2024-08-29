@@ -19,6 +19,7 @@ import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.components.BorderLayoutPanel
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.resources.AwsCoreBundle
+import software.aws.toolkits.telemetry.AuthType
 import software.aws.toolkits.telemetry.AwsTelemetry
 import software.aws.toolkits.telemetry.CredentialType
 import software.aws.toolkits.telemetry.Result
@@ -66,7 +67,7 @@ class ConfirmUserCodeLoginDialog(
 
     override fun doCancelAction() {
         super.doCancelAction()
-        AwsTelemetry.loginWithBrowser(project = null, result = Result.Cancelled, credentialType = credentialType)
+        AwsTelemetry.loginWithBrowser(project = null, result = Result.Cancelled, credentialType = credentialType, authType = AuthType.DeviceCode)
     }
 }
 

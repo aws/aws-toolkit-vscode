@@ -308,6 +308,15 @@
                 "reloaded"
             ],
             "description": "Toolkit run state."
+        },
+        {
+            "name": "authType",
+            "allowedValues": [
+                "PKCE",
+                "DeviceCode",
+                "IAM"
+            ],
+            "description": "Login is with Legacy device code or newer PKCE flow"
         }
     ],
     "metrics": [
@@ -791,6 +800,9 @@
                 },
                 {
                     "type": "result"
+                },
+                {
+                    "type": "authType"
                 }
             ]
         },
