@@ -39,6 +39,6 @@ export function randomUUID(): `${string}-${string}-${string}-${string}-${string}
  */
 export function isUuid(uuid: string): boolean {
     // NOTE: This pattern must match, or at least be a subset of the "Session ID" pattern in `telemetry/service-2.json`
-    const uuidv4Pattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-    return uuidv4Pattern.test(uuid)
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    return uuidPattern.test(uuid)
 }
