@@ -33,6 +33,16 @@ export function dispatchWebViewMessagesToApps(
             return
         }
 
+        if (msg.type === 'error') {
+            const event = msg.event === 'webview_load' ? telemetry.webview_load : telemetry.webview_error
+            event.emit({
+                webviewName: 'amazonq',
+                result: 'Failed',
+                reasonDesc: msg.errorMessage,
+            })
+            return
+        }
+
         const appMessagePublisher = webViewToAppsMessagePublishers.get(msg.tabType)
         if (appMessagePublisher === undefined) {
             return

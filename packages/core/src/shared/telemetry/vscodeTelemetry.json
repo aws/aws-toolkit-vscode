@@ -1133,6 +1133,16 @@
                     "required": true
                 }
             ]
+        },
+        {
+            "name": "webview_error",
+            "description": "Represents an error that occurs in a webview",
+            "metadata": [
+                {
+                    "type": "webviewName",
+                    "required": true
+                }
+            ]
         }
     ]
 }
