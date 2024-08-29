@@ -579,6 +579,7 @@ export class Auth implements AuthService, ConnectionManager {
                     : undefined
             span.record({
                 action: 'updateConnectionState',
+                id,
                 connectionState,
                 source: asStringifiedStack(telemetry.getFunctionStack()),
                 credentialStartUrl: oldProfile.type === 'sso' ? oldProfile.startUrl : undefined,
