@@ -350,8 +350,9 @@ export async function collectFiles(
                     new vscode.RelativePattern(rootPath, '**'),
                     getExcludePattern()
                 )
-                totalFiles += allFiles.length
+
                 const files = respectGitIgnore ? await filterOutGitignoredFiles(rootPath, allFiles) : allFiles
+                totalFiles += files.length
 
                 for (const file of files) {
                     const relativePath = getWorkspaceRelativePath(file.fsPath, { workspaceFolders })
