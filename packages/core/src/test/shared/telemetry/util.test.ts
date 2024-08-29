@@ -20,7 +20,7 @@ import { extensionVersion } from '../../../shared/vscode/env'
 import { FakeMemento } from '../../fakeExtensionContext'
 import { GlobalState } from '../../../shared/globalState'
 import { randomUUID } from 'crypto'
-import { isUUID } from '../../../shared/crypto'
+import { isUuid } from '../../../shared/crypto'
 
 describe('TelemetryConfig', function () {
     const settingKey = 'aws.telemetry'
@@ -111,10 +111,10 @@ describe('TelemetryConfig', function () {
 })
 
 describe('getSessionId', function () {
-    it('returns a random UUIDv4', function () {
+    it('returns a stable UUID', function () {
         const result = getSessionId()
 
-        assert.deepStrictEqual(isUUID(result), true)
+        assert.deepStrictEqual(isUuid(result), true)
         assert.deepStrictEqual(getSessionId(), result, 'Subsequent call did not return the same UUID')
     })
 

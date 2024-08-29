@@ -105,7 +105,9 @@ export function convertLegacy(value: unknown): boolean {
  * - The session ID must be different from all other IDs on the machine
  * - A session ID exists until the application instance is terminated.
  *   It should never be used again after termination.
- * - All extensions on the same application instance should return the same session ID.
+ * - All extensions on the same application instance MUST return the same session ID.
+ *   - This will allow us to know which of our extensions (eg Q vs Toolkit) are in the
+ *     same VS Code window.
  *
  * `vscode.env.sessionId` behaves as described aboved, EXCEPT its
  * value looks close to a UUID by does not exactly match it (has additional characters).
@@ -115,9 +117,11 @@ export function convertLegacy(value: unknown): boolean {
  */
 export const getSessionId = once(() => uuidV5(vscode.env.sessionId, sessionIdNonce))
 /**
- * This is a nonce that is used in creating a v5 UUID for Session ID.
+ * This is an arbitrary nonce that is used in creating a v5 UUID for Session ID. We only
+ * have this since the spec requires it.
  * - This should ONLY be used by {@link getSessionId}.
- * - This should NEVER change
+ * - This value MUST NOT change during runtime, otherwise {@link getSessionId} will lose its
+ *   idempotency. But, if there was a reason to change the value in a PR, it would not be an issue.
  * - This is exported only for testing.
  */
 export const sessionIdNonce = '44cfdb20-b30b-4585-a66c-9f48f24f99b5' as const
