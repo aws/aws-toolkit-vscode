@@ -228,6 +228,7 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
                     systemCpuUsage: performanceMetrics.systemCpuUsage,
                     heapTotal: performanceMetrics.heapTotal,
                     functionName: this.#options.functionId?.name ?? this.name,
+                    architecture: process.arch,
                 } as any)
             }
         }

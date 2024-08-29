@@ -300,6 +300,21 @@
             "name": "webviewName",
             "type": "string",
             "description": "The name of the webview"
+        },
+        {
+            "name": "architecture",
+            "type": "string",
+            "description": "The CPU architecture"
+        },
+        {
+            "name": "totalFileSizeInMB",
+            "type": "int",
+            "description": "The total size of all files being sent to Amazon Q"
+        },
+        {
+            "name": "totalFiles",
+            "type": "int",
+            "description": "The total number of files being sent to Amazon Q"
         }
     ],
     "metrics": [
@@ -1110,15 +1125,27 @@
             "metadata": [
                 {
                     "type": "userCpuUsage",
-                    "required": true
+                    "required": false
                 },
                 {
                     "type": "systemCpuUsage",
-                    "required": true
+                    "required": false
+                },
+                {
+                    "type": "totalFiles",
+                    "required": false
+                },
+                {
+                    "type": "totalFileSizeInMB",
+                    "required": false
+                },
+                {
+                    "type": "architecture",
+                    "required": false
                 },
                 {
                     "type": "heapTotal",
-                    "required": true
+                    "required": false
                 },
                 {
                     "type": "functionName",
