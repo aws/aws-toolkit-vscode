@@ -1,0 +1,11 @@
+{
+  "date" : "2024-08-29",
+  "version" : "3.25",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Fix bug where text with inline code copied from Amazon Q Chat had new line breaks around the inline code text"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix bug when disabled commands does not get filtered in quick actions"
+  } ]
+}

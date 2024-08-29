@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix bug when disabled commands does not get filtered in quick actions"
-}
