@@ -885,16 +885,16 @@ function isError(err: Error, id: string, messageIncludes: string = '') {
  *
  * Example SyntaxError message before extracting the underlying issue:
  *  - "Unexpected token '<', "<html><bod"... is not valid JSON Deserialization error: to see the raw response, inspect the hidden field {error}.$response on this object."
- * Once we extract the real error message from the hidden field `$response.reason` we get messages similar to:
+ * Once we extract the real error message from the hidden field, `$response.reason`, we get messages similar to:
  *  - "SDK Client unexpected error response: data response code: 403, data reason: Forbidden | Unexpected ..."
  */
 export class AwsClientResponseError extends Error {
-    /** Use {@link isError} to create instance. */
+    /** Use {@link instanceIf} to create instance. */
     protected constructor(err: unknown) {
         const underlyingErrorMsg = AwsClientResponseError.tryExtractReasonFromSyntaxError(err)
 
         /**
-         * This condition should never be hit since {@link AwsClientResponseError.isError}
+         * This condition should never be hit since {@link AwsClientResponseError.instanceIf}
          * is the only way to create an instance of this class, due to the constructor not being public.
          *
          * The following only exists to make the type checker happy.
