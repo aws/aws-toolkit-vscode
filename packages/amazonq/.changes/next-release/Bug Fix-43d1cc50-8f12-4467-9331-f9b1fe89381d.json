@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Fix bug when undo inline suggestion causes command not found"
-}

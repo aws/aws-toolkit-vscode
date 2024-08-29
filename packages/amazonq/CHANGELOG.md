@@ -1,3 +1,14 @@
+## 1.23.0 2024-08-29
+
+- **Bug Fix** Fix bug when undo inline suggestion causes command not found
+- **Bug Fix** Auth: `SyntaxError` causing unexpected SSO logout
+- **Bug Fix** Amazon Q Code Transformation: allow symlinks for JDK path
+- **Bug Fix** Fix bug where text with inline code copied from Amazon Q Chat had new line breaks around the inline code text
+- **Bug Fix** Fix bug with code indentation and nested list formatting in chat response prompt
+- **Bug Fix** Fix bug when disabled commands does not get filtered in quick actions
+- **Bug Fix** Auth: Users may be silently logged out due to network issues when starting the extension.
+- **Feature** Support AB testing
+
 ## 1.22.0 2024-08-22
 
 - **Bug Fix** Avoid refreshing code suggestion for paginated response
