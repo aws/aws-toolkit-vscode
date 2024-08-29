@@ -166,7 +166,7 @@ export async function validateOpenProjects(
             void vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundNotification)
             telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformPreValidationError: 'NonMavenProject',
+                codeTransformPreValidationError: 'UnsupportedBuildSystem',
                 result: MetadataResult.Fail,
                 reason: 'NoPomFileFound',
             })

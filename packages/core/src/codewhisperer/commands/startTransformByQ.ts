@@ -119,7 +119,7 @@ async function validateJavaHome(): Promise<boolean> {
     if (javaVersionUsedByMaven !== transformByQState.getSourceJDKVersion()) {
         telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformPreValidationError: 'ProjectJDKDiffersFromMavenJDK',
+            codeTransformPreValidationError: 'ProjectJDKDiffersFromBuildSystemJDK',
             result: MetadataResult.Fail,
             reason: `${transformByQState.getSourceJDKVersion()} (project) - ${javaVersionUsedByMaven} (maven)`,
         })
