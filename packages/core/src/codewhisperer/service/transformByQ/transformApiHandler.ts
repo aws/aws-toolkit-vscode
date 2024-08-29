@@ -118,19 +118,10 @@ export async function uploadArtifactToS3(
             Math.round(uploadFileByteSize / 1000)
         )
 
-        const apiStartTime = Date.now()
         const response = await request.fetch('PUT', resp.uploadUrl, {
             body: buffer,
             headers: getHeadersObj(sha256, resp.kmsKeyArn),
         }).response
-        telemetry.codeTransform_logApiLatency.emit({
-            codeTransformApiNames: 'UploadZip',
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformUploadId: resp.uploadId,
-            codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-            codeTransformTotalByteSize: uploadFileByteSize,
-            result: MetadataResult.Pass,
-        })
         getLogger().info(`CodeTransformation: Status from S3 Upload = ${response.status}`)
     } catch (e: any) {
         let errorMessage = `The upload failed due to: ${
@@ -152,20 +143,11 @@ export async function uploadArtifactToS3(
 
 export async function resumeTransformationJob(jobId: string, userActionStatus: TransformationUserActionStatus) {
     try {
-        const apiStartTime = Date.now()
         const response = await codeWhisperer.codeWhispererClient.codeModernizerResumeTransformation({
             transformationJobId: jobId,
             userActionStatus, // can be "COMPLETED" or "REJECTED"
         })
         if (response) {
-            telemetry.codeTransform_logApiLatency.emit({
-                codeTransformApiNames: 'ResumeTransformation',
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformJobId: jobId,
-                codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-                codeTransformRequestId: response.$response.requestId,
-                result: MetadataResult.Pass,
-            })
             // always store request ID, but it will only show up in a notification if an error occurs
             return response.transformationStatus
         }
@@ -205,7 +187,6 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
     throwIfCancelled()
     let response = undefined
     try {
-        const apiStartTime = Date.now()
         response = await codeWhisperer.codeWhispererClient.createUploadUrl({
             contentChecksum: sha256,
             contentChecksumType: CodeWhispererConstants.contentChecksumType,
@@ -215,14 +196,6 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
         if (response.$response.requestId) {
             transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
         }
-        telemetry.codeTransform_logApiLatency.emit({
-            codeTransformApiNames: 'CreateUploadUrl',
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-            codeTransformUploadId: response.uploadId,
-            codeTransformRequestId: response.$response.requestId,
-            result: MetadataResult.Pass,
-        })
     } catch (e: any) {
         const errorMessage = `The upload failed due to: ${(e as Error).message}`
         getLogger().error(`CodeTransformation: CreateUploadUrl error: = ${e}`)
@@ -421,7 +394,6 @@ export async function startJob(uploadId: string) {
     const sourceLanguageVersion = `JAVA_${transformByQState.getSourceJDKVersion()}`
     const targetLanguageVersion = `JAVA_${transformByQState.getTargetJDKVersion()}`
     try {
-        const apiStartTime = Date.now()
         const response = await codeWhisperer.codeWhispererClient.codeModernizerStartCodeTransformation({
             workspaceState: {
                 uploadId: uploadId,
@@ -436,14 +408,6 @@ export async function startJob(uploadId: string) {
         if (response.$response.requestId) {
             transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
         }
-        telemetry.codeTransform_logApiLatency.emit({
-            codeTransformApiNames: 'StartTransformation',
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-            codeTransformJobId: response.transformationJobId,
-            codeTransformRequestId: response.$response.requestId,
-            result: MetadataResult.Pass,
-        })
         return response.transformationJobId
     } catch (e: any) {
         const errorMessage = `Starting the job failed due to: ${(e as Error).message}`
@@ -560,18 +524,9 @@ export async function getTransformationPlan(jobId: string) {
         response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
         })
-        const apiStartTime = Date.now()
         if (response.$response.requestId) {
             transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
         }
-        telemetry.codeTransform_logApiLatency.emit({
-            codeTransformApiNames: 'GetTransformationPlan',
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformJobId: jobId,
-            codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-            codeTransformRequestId: response.$response.requestId,
-            result: MetadataResult.Pass,
-        })
 
         const stepZeroProgressUpdates = response.transformationPlan.transformationSteps[0].progressUpdates
 
@@ -623,21 +578,12 @@ export async function getTransformationSteps(jobId: string, handleThrottleFlag: 
         if (handleThrottleFlag) {
             await sleep(2000)
         }
-        const apiStartTime = Date.now()
         const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
         })
         if (response.$response.requestId) {
             transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
         }
-        telemetry.codeTransform_logApiLatency.emit({
-            codeTransformApiNames: 'GetTransformationPlan',
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformJobId: jobId,
-            codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-            codeTransformRequestId: response.$response.requestId,
-            result: MetadataResult.Pass,
-        })
         return response.transformationPlan.transformationSteps.slice(1) // skip step 0 (contains supplemental info)
     } catch (e: any) {
         const errorMessage = (e as Error).message
@@ -652,17 +598,8 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
     while (true) {
         throwIfCancelled()
         try {
-            const apiStartTime = Date.now()
             const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformation({
                 transformationJobId: jobId,
-            })
-            telemetry.codeTransform_logApiLatency.emit({
-                codeTransformApiNames: 'GetTransformation',
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformJobId: jobId,
-                codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-                codeTransformRequestId: response.$response.requestId,
-                result: MetadataResult.Pass,
             })
             status = response.transformationJob.status!
             if (CodeWhispererConstants.validStatesForBuildSucceeded.includes(status)) {
