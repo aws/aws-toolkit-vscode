@@ -49,7 +49,11 @@ describe('tech debt', function () {
     it('remove separate sessions login edge cases', async function () {
         // src/auth/auth.ts:SessionSeparationPrompt
         // forgetConnection() function and calls
-        fixByDate('2024-08-30', 'Remove the edge case code from the commit that this test is a part of.')
+
+        // Monitor telemtry to determine removal or snooze
+        // toolkit_showNotification.id = sessionSeparation
+        // auth_modifyConnection.action = deleteProfile OR auth_modifyConnection.source contains CodeCatalyst
+        fixByDate('2024-9-30', 'Remove the edge case code from the commit that this test is a part of.')
     })
 
     it('remove deprecated code transform metrics', async function () {
