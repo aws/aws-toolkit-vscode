@@ -15,6 +15,7 @@ import {
     isNetworkError,
     resolveErrorMessageToDisplay,
     scrubNames,
+    AwsClientResponseError,
     ToolkitError,
     tryRun,
     UnknownError,
@@ -482,6 +483,13 @@ describe('util', function () {
         assert.deepStrictEqual(getTelemetryReasonDesc(toolkitError), 'ToolkitError Message | Cause Message x/x/x/x.txt')
     })
 
+    function makeSyntaxErrorWithSdkClientError() {
+        const syntaxError: Error = new SyntaxError('The SyntaxError message')
+        // Under the hood of a SyntaxError may be a hidden field with the real reason for the failure
+        ;(syntaxError as any)['$response'] = { reason: 'SDK Client unexpected error response: data response code: 500' }
+        return syntaxError
+    }
+
     it('isNetworkError()', function () {
         assert.deepStrictEqual(
             isNetworkError(new Error('Failed to establish a socket connection to proxies BLAH BLAH BLAH')),
@@ -493,13 +501,31 @@ describe('util', function () {
             false,
             'Incorrectly indicated as network error'
         )
-        let err = new Error('SDK Client unexpected error response: Blah Blah Blah')
-        err.name = 'SyntaxError'
-        assert.deepStrictEqual(isNetworkError(err), true, 'Did not indicate SyntaxError as network error')
 
-        err = new Error('getaddrinfo ENOENT oidc.us-east-1.amazonaws.com')
+        const awsClientResponseError = AwsClientResponseError.instanceIf(makeSyntaxErrorWithSdkClientError())
+        assert.deepStrictEqual(
+            isNetworkError(awsClientResponseError),
+            true,
+            'Did not indicate SyntaxError as network error'
+        )
+
+        const err = new Error('getaddrinfo ENOENT oidc.us-east-1.amazonaws.com')
         ;(err as any).code = 'ENOENT'
         assert.deepStrictEqual(isNetworkError(err), true, 'Did not indicate ENOENT error as network error')
+    })
+
+    it('AwsClientResponseError', function () {
+        const syntaxError = makeSyntaxErrorWithSdkClientError()
+
+        assert.deepStrictEqual(
+            AwsClientResponseError.tryExtractReasonFromSyntaxError(syntaxError),
+            'SDK Client unexpected error response: data response code: 500'
+        )
+        const responseError = AwsClientResponseError.instanceIf(syntaxError)
+        assert(!(responseError instanceof SyntaxError))
+        assert(responseError instanceof Error)
+        assert(responseError instanceof AwsClientResponseError)
+        assert(responseError.message === 'SDK Client unexpected error response: data response code: 500')
     })
 
     it('scrubNames()', async function () {
