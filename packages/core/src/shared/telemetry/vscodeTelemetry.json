@@ -1094,7 +1094,7 @@
                 },
                 {
                     "type": "connectionState",
-                    "required": true
+                    "required": false
                 },
                 {
                     "type": "credentialStartUrl",
@@ -1114,6 +1114,10 @@
                 },
                 {
                     "type": "ssoRegistrationExpiresAt",
+                    "required": false
+                },
+                {
+                    "type": "id",
                     "required": false
                 }
             ],
