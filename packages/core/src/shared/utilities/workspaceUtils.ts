@@ -385,7 +385,6 @@ export async function collectFiles(
                     })
                 }
             }
-            span.record({ totalFiles, totalFileSizeInMB: totalSizeBytes / (1024 * 1024) })
             return storage
         },
         {
