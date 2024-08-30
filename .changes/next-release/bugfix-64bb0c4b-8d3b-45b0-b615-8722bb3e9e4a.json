@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix Runtime Exception when opening a tool window (#4849)"
+}
