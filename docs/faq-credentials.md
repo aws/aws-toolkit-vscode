@@ -1,4 +1,4 @@
-# FAQ / Troubleshooting
+# FAQ / Troubleshooting - Auth/SSO/Credentials
 
 ### AWS Builder ID "Invalid client provided"
 
