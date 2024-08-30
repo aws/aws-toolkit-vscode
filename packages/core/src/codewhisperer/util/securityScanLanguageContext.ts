@@ -34,6 +34,12 @@ export class SecurityScanLanguageContext {
             c: 'c',
             cpp: 'cpp',
             php: 'php',
+            xml: 'plaintext', // xml does not exist in CodewhispererLanguage
+            toml: 'plaintext',
+            'pip-requirements': 'plaintext',
+            'java-properties': 'plaintext',
+            'go.mod': 'plaintext',
+            'go.sum': 'plaintext',
         })
     }
 
