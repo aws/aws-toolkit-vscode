@@ -1,3 +1,6 @@
+# _3.26_ (2024-08-30)
+- **(Bug Fix)** Fix Runtime Exception when opening a tool window ([#4849](https://github.com/aws/aws-toolkit-jetbrains/issues/4849))
+
 # _3.25_ (2024-08-29)
 - **(Bug Fix)** Fix bug where text with inline code copied from Amazon Q Chat had new line breaks around the inline code text
 - **(Bug Fix)** Fix bug when disabled commands does not get filtered in quick actions
