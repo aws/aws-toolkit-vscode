@@ -258,6 +258,12 @@ export const securityScanLanguageIds = [
     'c',
     'cpp',
     'php',
+    'xml',
+    'toml',
+    'pip-requirements',
+    'java-properties',
+    'go.mod',
+    'go.sum',
 ] as const
 
 export type SecurityScanLanguageId = (typeof securityScanLanguageIds)[number]
