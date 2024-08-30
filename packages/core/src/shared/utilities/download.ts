@@ -22,7 +22,6 @@ export async function downloadExportResultArchive(
     exportResultArchiveArgs: ExportResultArchiveCommandInput,
     toPath: string
 ) {
-    let totalDownloadBytes = 0
     const result = await cwStreamingClient.exportResultArchive(exportResultArchiveArgs)
 
     const buffer = []
@@ -36,7 +35,6 @@ export async function downloadExportResultArchive(
             const chunkData = chunk.binaryPayloadEvent
             if (chunkData.bytes) {
                 buffer.push(chunkData.bytes)
-                totalDownloadBytes += chunkData.bytes?.length
             }
         }
     }
