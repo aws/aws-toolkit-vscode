@@ -14,7 +14,6 @@ import { sleep } from '../../../shared'
 import { withTelemetryContext } from '../../../shared/telemetry/util'
 import { SinonSandbox } from 'sinon'
 import sinon from 'sinon'
-import { stubPerformance } from '../../utilities/performance'
 
 describe('TelemetrySpan', function () {
     let clock: ReturnType<typeof installFakeClock>
@@ -78,7 +77,6 @@ describe('TelemetrySpan', function () {
     })
 
     it('records performance', function () {
-        const { expectedUserCpuUsage, expectedSystemCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
         const span = new TelemetrySpan('function_call', {
             emit: true,
         })
@@ -86,9 +84,6 @@ describe('TelemetrySpan', function () {
         clock.tick(90)
         span.stop()
         assertTelemetry('function_call', {
-            userCpuUsage: expectedUserCpuUsage,
-            systemCpuUsage: expectedSystemCpuUsage,
-            heapTotal: expectedHeapTotal,
             duration: 90,
             result: 'Succeeded',
         })
@@ -270,7 +265,6 @@ describe('TelemetryTracer', function () {
 
         it('records performance', function () {
             clock = installFakeClock()
-            const { expectedUserCpuUsage, expectedSystemCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
             tracer.run(
                 'function_call',
                 () => {
@@ -282,9 +276,6 @@ describe('TelemetryTracer', function () {
             )
 
             assertTelemetry('function_call', {
-                userCpuUsage: expectedUserCpuUsage,
-                systemCpuUsage: expectedSystemCpuUsage,
-                heapTotal: expectedHeapTotal,
                 duration: 90,
                 result: 'Succeeded',
             })

@@ -224,9 +224,6 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
             const performanceMetrics = this.#performance?.stop()
             if (performanceMetrics) {
                 this.record({
-                    userCpuUsage: performanceMetrics.userCpuUsage,
-                    systemCpuUsage: performanceMetrics.systemCpuUsage,
-                    heapTotal: performanceMetrics.heapTotal,
                     functionName: this.#options.functionId?.name ?? this.name,
                     architecture: process.arch,
                 } as any)
