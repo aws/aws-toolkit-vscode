@@ -170,7 +170,7 @@ export async function validateOpenProjects(
             // TODO: remove deprecated metric once BI started using new metrics
             telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformPreValidationError: 'NonMavenProject',
+                codeTransformPreValidationError: 'UnsupportedBuildSystem',
                 result: MetadataResult.Fail,
                 reason: 'NoPomFileFound',
             })
