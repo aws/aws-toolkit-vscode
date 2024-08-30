@@ -283,11 +283,11 @@ export async function activate(context: ExtContext): Promise<void> {
             ImportAdderProvider.instance
         ),
         vscode.languages.registerHoverProvider(
-            [...CodeWhispererConstants.platformLanguageIds],
+            [...CodeWhispererConstants.securityScanLanguageIds],
             SecurityIssueHoverProvider.instance
         ),
         vscode.languages.registerCodeActionsProvider(
-            [...CodeWhispererConstants.platformLanguageIds],
+            [...CodeWhispererConstants.securityScanLanguageIds],
             SecurityIssueCodeActionProvider.instance
         ),
         vscode.commands.registerCommand('aws.amazonq.openEditorAtRange', openEditorAtRange)
