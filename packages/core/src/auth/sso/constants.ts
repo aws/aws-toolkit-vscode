@@ -18,3 +18,6 @@ export const ssoUrlProtocolMessage =
 
 export const ssoUrlFormatMessage =
     'URLs must be in the following format. Example: https://d-xxxxxxxxxx.awsapps.com/start (trailing `/` or `/#` allowed)'
+
+export const ssoUrlExistsMessage =
+    'A connection for this start URL already exists. Sign out before creating a new one.'
