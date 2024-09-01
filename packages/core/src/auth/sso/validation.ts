@@ -6,15 +6,15 @@ import * as vscode from 'vscode'
 import { UnknownError } from '../../shared/errors'
 import { AuthType } from '../auth'
 import { SsoConnection, hasScopes, isAnySsoConnection } from '../connection'
-import { ssoUrlFormatMessage, ssoUrlFormatRegex, ssoUrlProtocolMessage, ssoUrlProtocolRegex, ssoUrlExistsMessage } from './constants'
+import { ssoUrlFormatRegex, ssoUrlProtocolRegex, SsoStartUrlErrorMsg } from './constants'
 
 /**
  * Returns an error message if the url is not properly formatted.
  * Otherwise, returns undefined.
  */
 export function validateSsoUrlFormat(url: string) {
-    return !ssoUrlProtocolRegex.test(url) ? ssoUrlProtocolMessage
-        : !ssoUrlFormatRegex.test(url) ? ssoUrlFormatMessage
+    return !ssoUrlProtocolRegex.test(url) ? SsoStartUrlErrorMsg.PROTOCOL
+        : !ssoUrlFormatRegex.test(url) ? SsoStartUrlErrorMsg.FORMAT
         : undefined;
 }
 
@@ -40,7 +40,7 @@ export function validateIsNewSsoUrl(
         const oldConn = existingSsoConns.find((conn) => isSameAuthority(vscode.Uri.parse(conn.startUrl), uri))
 
         if (oldConn && (!requiredScopes || hasScopes(oldConn, requiredScopes))) {
-            return ssoUrlExistsMessage
+            return SsoStartUrlErrorMsg.ALREADY_EXISTS
         }
     } catch (err) {
         return `URL is malformed: ${UnknownError.cast(err).message}`
