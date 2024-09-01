@@ -6,16 +6,16 @@ import * as vscode from 'vscode'
 import { UnknownError } from '../../shared/errors'
 import { AuthType } from '../auth'
 import { SsoConnection, hasScopes, isAnySsoConnection } from '../connection'
-import { ssoUrlFormatMessage, ssoUrlFormatRegex } from './constants'
+import { ssoUrlFormatMessage, ssoUrlFormatRegex, ssoUrlProtocolMessage, ssoUrlProtocolRegex } from './constants'
 
 /**
  * Returns an error message if the url is not properly formatted.
  * Otherwise, returns undefined.
  */
 export function validateSsoUrlFormat(url: string) {
-    if (!ssoUrlFormatRegex.test(url)) {
-        return ssoUrlFormatMessage
-    }
+    return !ssoUrlProtocolRegex.test(url) ? ssoUrlProtocolMessage
+        : !ssoUrlFormatRegex.test(url) ? ssoUrlFormatMessage
+        : undefined;
 }
 
 export async function validateIsNewSsoUrlAsync(

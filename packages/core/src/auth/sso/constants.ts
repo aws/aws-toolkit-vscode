@@ -8,8 +8,13 @@
  * web, node, or vue.
  */
 
+export const ssoUrlProtocolRegex = /^(https?:\/\/)/;
+
 export const ssoUrlFormatRegex =
     /^(https?:\/\/(.+)\.awsapps\.com\/start|https?:\/\/identitycenter\.amazonaws\.com\/ssoins-[\da-zA-Z]{16})\/?#?$/
 
-export const ssoUrlFormatMessage =
+export const ssoUrlProtocolMessage =
     'URLs must start with http:// or https://. Example: https://d-xxxxxxxxxx.awsapps.com/start'
+
+export const ssoUrlFormatMessage =
+    'URLs must be in the following format. Example: https://d-xxxxxxxxxx.awsapps.com/start (trailing `/` or `/#` allowed)'

@@ -278,7 +278,7 @@ import { LoginOption } from './types'
 import { CommonAuthWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { Region } from '../../../shared/regions/endpoints'
-import { ssoUrlFormatRegex, ssoUrlFormatMessage } from '../../../auth/sso/constants'
+import { ssoUrlFormatRegex, ssoUrlFormatMessage, ssoUrlProtocolRegex, ssoUrlProtocolMessage } from '../../../auth/sso/constants'
 
 const client = WebviewClientFactory.create<CommonAuthWebview>()
 
@@ -476,7 +476,9 @@ export default defineComponent({
             }
         },
         handleUrlInput() {
-            if (this.startUrl && !ssoUrlFormatRegex.test(this.startUrl)) {
+            if (this.startUrl && !ssoUrlProtocolRegex.test(this.startUrl)) {
+                this.startUrlError = ssoUrlProtocolMessage
+            } else if (this.startUrl && !ssoUrlFormatRegex.test(this.startUrl)) {
                 this.startUrlError = ssoUrlFormatMessage
             } else if (this.startUrl && this.existingStartUrls.some((url) => url === this.startUrl)) {
                 this.startUrlError =
