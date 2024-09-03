@@ -220,7 +220,7 @@ export class FeatureDevController {
                 reason: message?.selectedOption,
                 userComment: message?.comment,
             })}`,
-            sentiment: 'Negative',
+            sentiment: 'Negative', // The chat UI reports only negative feedback currently.
         })
     }
 
