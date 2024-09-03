@@ -120,14 +120,6 @@ async function validateJavaHome(): Promise<boolean> {
         }
     }
     if (javaVersionUsedByMaven !== transformByQState.getSourceJDKVersion()) {
-        // TODO: remove deprecated metric once BI started using new metrics
-        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformPreValidationError: 'ProjectJDKDiffersFromBuildSystemJDK',
-            result: MetadataResult.Fail,
-            reason: `${transformByQState.getSourceJDKVersion()} (project) - ${javaVersionUsedByMaven} (maven)`,
-        })
-
         // means either javaVersionUsedByMaven is undefined or it does not match the project JDK
         return false
     }

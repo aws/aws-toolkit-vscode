@@ -7,11 +7,7 @@ import { FolderInfo, transformByQState } from '../../models/model'
 import { getLogger } from '../../../shared/logger'
 import * as CodeWhispererConstants from '../../models/constants'
 import { spawnSync } from 'child_process' // Consider using ChildProcess once we finalize all spawnSync calls
-import {
-    CodeTransformBuildCommand,
-    CodeTransformMavenBuildCommand,
-    telemetry,
-} from '../../../shared/telemetry/telemetry'
+import { CodeTransformBuildCommand, telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import { ToolkitError } from '../../../shared/errors'
@@ -81,13 +77,6 @@ function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: 
                 const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
                 errorReason += `-${errorCode}`
             }
-            // TODO: remove deprecated metric once BI started using new metrics
-            telemetry.codeTransform_mvnBuildFailed.emit({
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformMavenBuildCommand: mavenBuildCommand as CodeTransformMavenBuildCommand,
-                result: MetadataResult.Fail,
-                reason: errorReason,
-            })
 
             // Explicitly set metric as failed since no exception was caught
             telemetry.record({ result: MetadataResult.Fail, reason: errorReason })
@@ -153,13 +142,6 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
         } else if (mavenBuildCommand === '.\\mvnw.cmd') {
             mavenBuildCommand = 'mvnw.cmd'
         }
-        // TODO: remove deprecated metric once BI started using new metrics
-        telemetry.codeTransform_mvnBuildFailed.emit({
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformMavenBuildCommand: mavenBuildCommand as CodeTransformMavenBuildCommand,
-            result: MetadataResult.Fail,
-            reason: errorReason,
-        })
         throw new Error('Maven copy-deps error')
     } else {
         transformByQState.appendToErrorLog(`${baseCommand} copy-dependencies succeeded`)

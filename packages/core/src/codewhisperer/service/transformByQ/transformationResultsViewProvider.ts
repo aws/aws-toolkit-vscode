@@ -15,7 +15,6 @@ import { ExportResultArchiveStructure, downloadExportResultArchive } from '../..
 import { getLogger } from '../../../shared/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import * as CodeWhispererConstants from '../../models/constants'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
@@ -364,15 +363,6 @@ export class ProposedTransformationExplorer {
                 getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
                 throw new Error('Error downloading diff')
             } finally {
-                // This metric is emitted when user clicks Download Proposed Changes button
-                // TODO: remove deprecated metric once BI started using new metrics
-                telemetry.codeTransform_vcsViewerClicked.emit({
-                    codeTransformVCSViewerSrcComponents: 'toastNotification',
-                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformJobId: transformByQState.getJobId(),
-                    result: downloadErrorMessage ? MetadataResult.Fail : MetadataResult.Pass,
-                    reason: downloadErrorMessage,
-                })
                 cwStreamingClient.destroy()
             }
 
@@ -396,14 +386,6 @@ export class ProposedTransformationExplorer {
                 transformByQState.setResultArchiveFilePath(pathContainingArchive)
                 await setContext('gumby.isSummaryAvailable', true)
 
-                // This metric is only emitted when placed before showInformationMessage
-                // TODO: remove deprecated metric once BI started using new metrics
-                telemetry.codeTransform_vcsDiffViewerVisible.emit({
-                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformJobId: transformByQState.getJobId(),
-                    result: MetadataResult.Pass,
-                })
-
                 // Do not await this so that the summary reveals without user needing to close this notification
                 void vscode.window.showInformationMessage(CodeWhispererConstants.viewProposedChangesNotification)
                 transformByQState.getChatControllers()?.transformationFinished.fire({
@@ -421,17 +403,6 @@ export class ProposedTransformationExplorer {
                 void vscode.window.showErrorMessage(
                     `${CodeWhispererConstants.errorDeserializingDiffNotification} ${deserializeErrorMessage}`
                 )
-            } finally {
-                // TODO: remove deprecated metric once BI started using new metrics
-                telemetry.codeTransform_jobArtifactDownloadAndDeserializeTime.emit({
-                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformJobId: transformByQState.getJobId(),
-                    codeTransformRunTimeLatency: calculateTotalLatency(deserializeArchiveStartTime),
-                    codeTransformTotalByteSize: exportResultsArchiveSize,
-                    codeTransformRuntimeError: deserializeErrorMessage,
-                    result: deserializeErrorMessage ? MetadataResult.Fail : MetadataResult.Pass,
-                    reason: deserializeErrorMessage ? 'DeserializationFailed' : undefined,
-                })
             }
         })
 
@@ -454,14 +425,6 @@ export class ProposedTransformationExplorer {
                 userChoice: 'Submit',
                 result: MetadataResult.Pass,
             })
-
-            // TODO: remove deprecated metric once BI started using new metrics
-            telemetry.codeTransform_vcsViewerSubmitted.emit({
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformJobId: transformByQState.getJobId(),
-                codeTransformStatus: transformByQState.getStatus(),
-                result: MetadataResult.Pass,
-            })
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.rejectChanges', async () => {
@@ -476,16 +439,6 @@ export class ProposedTransformationExplorer {
                 codeTransformJobId: transformByQState.getJobId(),
                 codeTransformStatus: transformByQState.getStatus(),
                 userChoice: 'Cancel',
-                result: MetadataResult.Pass,
-            })
-
-            // TODO: remove deprecated metric once BI started using new metrics
-            telemetry.codeTransform_vcsViewerCanceled.emit({
-                // eslint-disable-next-line id-length
-                codeTransformPatchViewerCancelSrcComponents: 'cancelButton',
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformJobId: transformByQState.getJobId(),
-                codeTransformStatus: transformByQState.getStatus(),
                 result: MetadataResult.Pass,
             })
         })
