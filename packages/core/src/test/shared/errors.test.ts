@@ -513,6 +513,10 @@ describe('util', function () {
         ;(err as any).code = 'ENOENT'
         assert.deepStrictEqual(isNetworkError(err), true, 'Did not indicate ENOENT error as network error')
 
+        const ebusyErr = new Error('getaddrinfo EBUSY oidc.us-east-1.amazonaws.com')
+        ;(ebusyErr as any).code = 'EBUSY'
+        assert.deepStrictEqual(isNetworkError(ebusyErr), true, 'Did not indicate EBUSY error as network error')
+
         // Response code errors
         let reponseCodeErr = new Error()
         reponseCodeErr.name = '502'

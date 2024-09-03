@@ -794,7 +794,8 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
         isEbadfError(err) ||
         isEconnRefusedError(err) ||
         err instanceof AwsClientResponseError ||
-        isBadResponseCode(err)
+        isBadResponseCode(err) ||
+        isEbusyError(err)
     ) {
         return true
     }
@@ -871,6 +872,11 @@ function isEbadfError(err: Error): boolean {
 
 function isEconnRefusedError(err: Error): boolean {
     return isError(err, 'Error', 'connect ECONNREFUSED')
+}
+
+function isEbusyError(err: Error) {
+    // we were seeing errors with the message 'getaddrinfo EBUSY oidc.us-east-1.amazonaws.com'
+    return isError(err, 'EBUSY', 'getaddrinfo EBUSY')
 }
 
 /** Helper function to assert given error has the expected properties */
