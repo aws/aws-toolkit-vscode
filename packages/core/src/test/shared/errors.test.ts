@@ -512,6 +512,25 @@ describe('util', function () {
         const err = new Error('getaddrinfo ENOENT oidc.us-east-1.amazonaws.com')
         ;(err as any).code = 'ENOENT'
         assert.deepStrictEqual(isNetworkError(err), true, 'Did not indicate ENOENT error as network error')
+
+        // Response code errors
+        let reponseCodeErr = new Error()
+        reponseCodeErr.name = '502'
+        assert.deepStrictEqual(isNetworkError(reponseCodeErr), true, 'Did not indicate 502 error as network error')
+        reponseCodeErr = new Error()
+        reponseCodeErr.name = '503'
+        assert.deepStrictEqual(
+            isNetworkError(reponseCodeErr),
+            false,
+            'Incorrectly indicated 503 error as network error'
+        )
+        reponseCodeErr = new Error()
+        reponseCodeErr.name = '200'
+        assert.deepStrictEqual(
+            isNetworkError(reponseCodeErr),
+            false,
+            'Incorrectly indicated 200 error as network error'
+        )
     })
 
     it('AwsClientResponseError', function () {
