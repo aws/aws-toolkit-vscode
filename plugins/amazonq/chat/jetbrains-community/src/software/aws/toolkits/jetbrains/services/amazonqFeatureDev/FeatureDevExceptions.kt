@@ -12,8 +12,6 @@ class ContentLengthError(override val message: String, override val cause: Throw
 
 class ZipFileError(override val message: String, override val cause: Throwable?) : RuntimeException()
 
-class PlanIterationLimitError(override val message: String, override val cause: Throwable?) : RuntimeException()
-
 class CodeIterationLimitError(override val message: String, override val cause: Throwable?) : RuntimeException()
 
 class MonthlyConversationLimitError(override val message: String, override val cause: Throwable?) : RuntimeException()
@@ -26,9 +24,6 @@ internal fun codeGenerationFailedError(): Nothing =
 
 internal fun uploadCodeError(): Nothing =
     throw FeatureDevException(message("amazonqFeatureDev.exception.upload_code"))
-
-internal fun userMessageNotFound(): Nothing =
-    throw FeatureDevException(message("amazonqFeatureDev.exception.message_not_found"))
 
 internal fun conversationIdNotFound(): Nothing =
     throw FeatureDevException(message("amazonqFeatureDev.exception.conversation_not_found"))

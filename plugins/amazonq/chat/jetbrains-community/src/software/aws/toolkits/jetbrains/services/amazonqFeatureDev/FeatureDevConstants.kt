@@ -7,10 +7,7 @@ const val FEATURE_EVALUATION_PRODUCT_NAME = "FeatureDev"
 
 const val FEATURE_NAME = "Amazon Q Developer Agent for software development"
 
-// Max number of times a user can attempt to retry an approach request if it fails
-const val APPROACH_RETRY_LIMIT = 3
-
-// Max number of times a user can attempt to retry a codegeneration request if it fails
+// Max number of times a user can attempt to retry a code generation request if it fails
 const val CODE_GENERATION_RETRY_LIMIT = 3
 
 // The default retry limit used when the session could not be found

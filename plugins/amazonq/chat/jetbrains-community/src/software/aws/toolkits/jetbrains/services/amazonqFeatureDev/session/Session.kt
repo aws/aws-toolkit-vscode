@@ -3,12 +3,13 @@
 
 package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session
 
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtil
 import software.aws.toolkits.jetbrains.services.amazonq.FeatureDevSessionContext
 import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublisher
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.APPROACH_RETRY_LIMIT
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.CODE_GENERATION_RETRY_LIMIT
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FEATURE_NAME
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.MAX_PROJECT_SIZE_BYTES
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.conversationIdNotFound
@@ -17,8 +18,6 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.FeatureDe
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.resolveAndCreateOrUpdateFile
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.resolveAndDeleteFile
 import software.aws.toolkits.jetbrains.services.cwc.controller.ReferenceLogController
-import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.getStartUrl
-import software.aws.toolkits.telemetry.AmazonqTelemetry
 
 class Session(val tabID: String, val project: Project) {
     var context: FeatureDevSessionContext
@@ -33,7 +32,6 @@ class Session(val tabID: String, val project: Project) {
     private val featureDevService: FeatureDevService
 
     // retry session state vars
-    private var approachRetries: Int
     private var codegenRetries: Int
 
     // Used to keep track of whether the current session/tab is currently authenticating/needs authenticating
@@ -45,16 +43,17 @@ class Session(val tabID: String, val project: Project) {
         featureDevService = FeatureDevService(proxyClient, project)
         _state = ConversationNotStartedState("", tabID)
         isAuthenticating = false
-        approachRetries = APPROACH_RETRY_LIMIT
         codegenRetries = CODE_GENERATION_RETRY_LIMIT
     }
+
+    fun conversationIDLog(conversationId: String) = "$FEATURE_NAME Conversation ID: $conversationId"
 
     /**
      * Preload any events that have to run before a chat message can be sent
      */
     suspend fun preloader(msg: String, messenger: MessagePublisher) {
         if (!preloaderFinished) {
-            setupConversation(msg)
+            setupConversation(msg, messenger)
             preloaderFinished = true
             messenger.sendAsyncEventProgress(tabId = this.tabID, inProgress = true)
             featureDevService.sendFeatureDevEvent(this.conversationId)
@@ -64,23 +63,18 @@ class Session(val tabID: String, val project: Project) {
     /**
      * Starts a conversation with the backend and uploads the repo for the LLMs to be able to use it.
      */
-    private fun setupConversation(msg: String) {
+    private fun setupConversation(msg: String, messenger: MessagePublisher) {
         // Store the initial message when setting up the conversation so that if it fails we can retry with this message
         _latestMessage = msg
 
         _conversationId = featureDevService.createConversation()
-        val sessionStateConfig = getSessionStateConfig().copy(conversationId = this.conversationId)
-        _state = PrepareRefinementState("", tabID, sessionStateConfig)
-    }
+        logger<Session>().info(conversationIDLog(this.conversationId))
 
-    /**
-     * Triggered by the Generate Code follow-up button to move to the code generation phase
-     */
-    fun initCodegen(messenger: MessagePublisher) {
-        this._state = PrepareCodeGenerationState(
+        val sessionStateConfig = getSessionStateConfig().copy(conversationId = this.conversationId)
+        _state = PrepareCodeGenerationState(
             tabID = sessionState.tabID,
             approach = sessionState.approach,
-            config = getSessionStateConfig(),
+            config = sessionStateConfig,
             filePaths = emptyList(),
             deletedFiles = emptyList(),
             references = emptyList(),
@@ -88,9 +82,6 @@ class Session(val tabID: String, val project: Project) {
             uploadId = "", // There is no code gen uploadId so far
             messenger = messenger,
         )
-        this._latestMessage = ""
-
-        AmazonqTelemetry.isApproachAccepted(amazonqConversationId = conversationId, enabled = true, credentialStartUrl = getStartUrl(project = context.project))
     }
 
     /**
@@ -169,13 +160,9 @@ class Session(val tabID: String, val project: Project) {
         get() = this._latestMessage
 
     val retries: Int
-        get() = if (sessionState.phase == SessionStatePhase.CODEGEN) codegenRetries else approachRetries
+        get() = codegenRetries
 
     fun decreaseRetries() {
-        if (sessionState.phase == SessionStatePhase.CODEGEN) {
-            codegenRetries -= 1
-        } else {
-            approachRetries -= 1
-        }
+        codegenRetries -= 1
     }
 }

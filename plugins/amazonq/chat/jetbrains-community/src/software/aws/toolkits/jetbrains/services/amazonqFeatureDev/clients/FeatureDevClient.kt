@@ -7,7 +7,6 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SystemInfo
-import kotlinx.coroutines.future.await
 import software.amazon.awssdk.services.codewhispererruntime.CodeWhispererRuntimeClient
 import software.amazon.awssdk.services.codewhispererruntime.model.ArtifactType
 import software.amazon.awssdk.services.codewhispererruntime.model.ContentChecksumType
@@ -24,16 +23,7 @@ import software.amazon.awssdk.services.codewhispererruntime.model.TaskAssistPlan
 import software.amazon.awssdk.services.codewhispererruntime.model.UploadContext
 import software.amazon.awssdk.services.codewhispererruntime.model.UploadIntent
 import software.amazon.awssdk.services.codewhispererruntime.model.UserContext
-import software.amazon.awssdk.services.codewhispererstreaming.CodeWhispererStreamingAsyncClient
-import software.amazon.awssdk.services.codewhispererstreaming.model.ChatMessage
-import software.amazon.awssdk.services.codewhispererstreaming.model.ChatTriggerType
-import software.amazon.awssdk.services.codewhispererstreaming.model.ConversationState
 import software.amazon.awssdk.services.codewhispererstreaming.model.ExportIntent
-import software.amazon.awssdk.services.codewhispererstreaming.model.GenerateTaskAssistPlanRequest
-import software.amazon.awssdk.services.codewhispererstreaming.model.GenerateTaskAssistPlanResponseHandler
-import software.amazon.awssdk.services.codewhispererstreaming.model.ProgrammingLanguage
-import software.amazon.awssdk.services.codewhispererstreaming.model.UserInputMessage
-import software.amazon.awssdk.services.codewhispererstreaming.model.WorkspaceState
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
@@ -62,7 +52,7 @@ class FeatureDevClient(private val project: Project) {
             when {
                 SystemInfo.isWindows -> OperatingSystem.WINDOWS
                 SystemInfo.isMac -> OperatingSystem.MAC
-                // For now, categorize everything else as "Linux" (Linux/FreeBSD/Solaris/etc)
+                // For now, categorize everything else as "Linux" (Linux/FreeBSD/Solaris/etc.)
                 else -> OperatingSystem.LINUX
             }
 
@@ -79,8 +69,6 @@ class FeatureDevClient(private val project: Project) {
         ?: error("Attempted to use connection while one does not exist")
 
     private fun bearerClient() = connection().getConnectionSettings().awsClient<CodeWhispererRuntimeClient>()
-
-    private fun streamingBearerClient() = connection().getConnectionSettings().awsClient<CodeWhispererStreamingAsyncClient>()
 
     private val amazonQStreamingClient
         get() = AmazonQStreamingClient.getInstance(project)
@@ -116,54 +104,6 @@ class FeatureDevClient(private val project: Project) {
                         .build()
                 )
         }
-
-    suspend fun generateTaskAssistPlan(conversationId: String, uploadId: String, userMessage: String): GenerateTaskAssistPlanResult {
-        val assistantResponse = mutableListOf<String>()
-        var succeededPlanning = true
-
-        val result = streamingBearerClient().generateTaskAssistPlan(
-            GenerateTaskAssistPlanRequest.builder()
-                .conversationState(
-                    ConversationState.builder()
-                        .currentMessage(
-                            ChatMessage.fromUserInputMessage(
-                                UserInputMessage.builder()
-                                    .content(userMessage)
-                                    .build()
-                            )
-                        )
-                        .chatTriggerType(ChatTriggerType.MANUAL)
-                        .conversationId(conversationId)
-                        .build()
-                )
-                .workspaceState(
-                    WorkspaceState.builder()
-                        .programmingLanguage(
-                            ProgrammingLanguage.builder()
-                                .languageName("javascript")
-                                .build()
-                        )
-                        .uploadId(uploadId)
-                        .build()
-                )
-                .build(),
-            GenerateTaskAssistPlanResponseHandler.builder().subscriber(
-                GenerateTaskAssistPlanResponseHandler.Visitor.builder()
-                    .onAssistantResponseEvent {
-                        assistantResponse.add(it.content())
-                    }.onInvalidStateEvent {
-                        assistantResponse.clear()
-                        assistantResponse.add(it.message())
-                        succeededPlanning = false
-                    }
-                    .build()
-            )
-                .build()
-        )
-
-        result.await()
-        return GenerateTaskAssistPlanResult(approach = assistantResponse.joinToString(" "), succeededPlanning = succeededPlanning)
-    }
 
     fun startTaskAssistCodeGeneration(conversationId: String, uploadId: String, userMessage: String): StartTaskAssistCodeGenerationResponse = bearerClient()
         .startTaskAssistCodeGeneration {

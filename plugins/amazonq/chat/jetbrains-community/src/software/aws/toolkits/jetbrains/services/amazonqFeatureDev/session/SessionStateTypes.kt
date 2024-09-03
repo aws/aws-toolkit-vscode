@@ -27,7 +27,6 @@ enum class SessionStatePhase(
     @field:JsonValue val json: String,
 ) {
     INIT("Init"),
-    APPROACH("Approach"),
     CODEGEN("Codegen"),
 }
 

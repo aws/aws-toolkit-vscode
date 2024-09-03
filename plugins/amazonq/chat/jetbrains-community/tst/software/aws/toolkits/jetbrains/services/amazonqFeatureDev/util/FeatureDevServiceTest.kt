@@ -23,13 +23,10 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.CodeIterationL
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.ContentLengthError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FeatureDevException
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FeatureDevTestBase
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.PlanIterationLimitError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.GenerateTaskAssistPlanResult
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.CodeGenerationStreamResult
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.CodeReferenceGenerated
 import software.aws.toolkits.resources.message
-import software.amazon.awssdk.services.codewhispererstreaming.model.ThrottlingException as StreamingThrottlingException
 
 class FeatureDevServiceTest : FeatureDevTestBase() {
     @Rule
@@ -95,41 +92,6 @@ class FeatureDevServiceTest : FeatureDevTestBase() {
         assertThatThrownBy {
             featureDevService.createUploadUrl(testConversationId, testChecksumSha, testContentLength)
         }.isInstanceOf(ContentLengthError::class.java).hasMessage(message("amazonqFeatureDev.content_length.error_text"))
-    }
-
-    @Test
-    fun `test generatePlan`() = runTest {
-        whenever(featureDevClient.generateTaskAssistPlan(testConversationId, testUploadId, userMessage)).thenReturn(exampleGenerateTaskAssistPlanResult)
-
-        val actual = featureDevService.generatePlan(testConversationId, testUploadId, userMessage, 0)
-        assertThat(actual).isInstanceOf(GenerateTaskAssistPlanResult::class.java)
-        assertThat(actual.approach).isEqualTo("Generated approach for plan")
-    }
-
-    @Test(expected = FeatureDevException::class)
-    fun `test generatePlan with error`() = runTest {
-        whenever(featureDevClient.generateTaskAssistPlan(testConversationId, testUploadId, userMessage)).thenThrow(RuntimeException())
-
-        featureDevService.generatePlan(testConversationId, testUploadId, userMessage, 0)
-    }
-
-    @Test
-    fun `test generatePlan with throttling error`() = runTest {
-        whenever(featureDevClient.generateTaskAssistPlan(testConversationId, testUploadId, userMessage)).thenThrow(
-            StreamingThrottlingException.builder()
-                .requestId(testRequestId)
-                .message("limit for number of iterations on an implementation plan")
-                .awsErrorDetails(AwsErrorDetails.builder().errorMessage("Plan Iteration limit").build())
-                .build()
-        )
-        var caughtException: Throwable? = null
-        try {
-            featureDevService.generatePlan(testConversationId, testUploadId, userMessage, 0)
-        } catch (e: Throwable) {
-            caughtException = e
-        }
-        assertThat(caughtException is PlanIterationLimitError).isTrue()
-        assertThat(caughtException).hasMessage(message("amazonqFeatureDev.approach_gen.iteration_limit.error_text"))
     }
 
     @Test

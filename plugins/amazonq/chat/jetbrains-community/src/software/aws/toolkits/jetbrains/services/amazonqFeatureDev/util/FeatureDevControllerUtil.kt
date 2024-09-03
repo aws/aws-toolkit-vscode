@@ -10,21 +10,8 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.Follo
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.SessionStatePhase
 import software.aws.toolkits.resources.message
 
-fun getFollowUpOptions(phase: SessionStatePhase?, interactionSucceeded: Boolean): List<FollowUp> {
+fun getFollowUpOptions(phase: SessionStatePhase?): List<FollowUp> {
     when (phase) {
-        SessionStatePhase.APPROACH -> {
-            return when (interactionSucceeded) {
-                true -> listOf(
-                    FollowUp(
-                        pillText = message("amazonqFeatureDev.follow_up.generate_code"),
-                        type = FollowUpTypes.GENERATE_CODE,
-                        status = FollowUpStatusType.Info,
-                    )
-                )
-
-                false -> emptyList()
-            }
-        }
         SessionStatePhase.CODEGEN -> {
             return listOf(
                 FollowUp(

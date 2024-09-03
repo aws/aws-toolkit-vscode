@@ -59,21 +59,8 @@ class SessionTest : FeatureDevTestBase() {
 
         session.preloader(userMessage, messenger)
         assertThat(session.conversationId).isEqualTo(testConversationId)
-        assertThat(session.sessionState).isInstanceOf(PrepareRefinementState::class.java)
-        verify(featureDevClient, times(1)).createTaskAssistConversation()
-    }
-
-    @Test
-    fun `test initCodegen`() {
-        whenever(featureDevClient.createTaskAssistConversation()).thenReturn(exampleCreateTaskAssistConversationResponse)
-
-        runTest {
-            session.preloader(userMessage, messenger)
-        }
-        session.initCodegen(messenger)
-
-        assertThat(session.latestMessage).isEqualTo("")
         assertThat(session.sessionState).isInstanceOf(PrepareCodeGenerationState::class.java)
+        verify(featureDevClient, times(1)).createTaskAssistConversation()
     }
 
     @Test

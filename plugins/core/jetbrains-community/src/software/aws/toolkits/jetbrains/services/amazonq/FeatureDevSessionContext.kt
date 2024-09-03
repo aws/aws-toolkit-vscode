@@ -81,7 +81,7 @@ class FeatureDevSessionContext(val project: Project, val maxProjectSizeBytes: Lo
 
     fun getProjectZip(): ZipCreationResult {
         val zippedProject = runBlocking {
-            withBackgroundProgress(project, AwsCoreBundle.message("amazonqFeatureDev.create_plan.background_progress_title")) {
+            withBackgroundProgress(project, AwsCoreBundle.message("amazonqFeatureDev.placeholder.generating_code")) {
                 zipFiles(selectedSourceFolder)
             }
         }

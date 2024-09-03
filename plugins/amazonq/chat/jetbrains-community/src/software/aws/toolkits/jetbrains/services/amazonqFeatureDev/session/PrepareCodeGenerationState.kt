@@ -8,6 +8,7 @@ import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.amazonq.messages.MessagePublisher
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FEATURE_NAME
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendAnswerPart
+import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.messages.sendUpdatePlaceholder
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.deleteUploadArtifact
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.util.uploadArtifactToS3
 import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.getStartUrl
@@ -33,7 +34,6 @@ class PrepareCodeGenerationState(
 ) : SessionState {
     override val phase = SessionStatePhase.CODEGEN
     override suspend fun interact(action: SessionStateAction): SessionStateInteraction {
-        messenger.sendAnswerPart(tabId = this.tabID, message = message("amazonqFeatureDev.chat_message.uploading_code"))
         val startTime = System.currentTimeMillis()
         var result: Result = Result.Succeeded
         var failureReason: String? = null
@@ -41,6 +41,9 @@ class PrepareCodeGenerationState(
         var zipFileLength: Long? = null
         val nextState: SessionState
         try {
+            messenger.sendAnswerPart(tabId = this.tabID, message = message("amazonqFeatureDev.chat_message.uploading_code"))
+            messenger.sendUpdatePlaceholder(tabId = this.tabID, newPlaceholder = message("amazonqFeatureDev.chat_message.uploading_code"))
+
             val repoZipResult = config.repoContext.getProjectZip()
             val zipFileChecksum = repoZipResult.checksum
             zipFileLength = repoZipResult.contentLength
@@ -56,7 +59,8 @@ class PrepareCodeGenerationState(
             deleteUploadArtifact(fileToUpload)
 
             this.uploadId = uploadUrlResponse.uploadId()
-
+            messenger.sendAnswerPart(tabId = this.tabID, message = message("amazonqFeatureDev.placeholder.context_gathering_complete"))
+            messenger.sendUpdatePlaceholder(tabId = this.tabID, newPlaceholder = message("amazonqFeatureDev.placeholder.context_gathering_complete"))
             nextState = CodeGenerationState(
                 tabID = this.tabID,
                 approach = "", // No approach needed,

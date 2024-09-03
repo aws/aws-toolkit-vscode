@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients
 
 import com.intellij.testFramework.RuleChain
 import com.intellij.testFramework.replaceService
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -14,12 +13,10 @@ import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
-import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import software.amazon.awssdk.services.codewhispererruntime.CodeWhispererRuntimeClient
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateTaskAssistConversationRequest
@@ -31,7 +28,6 @@ import software.amazon.awssdk.services.codewhispererruntime.model.GetTaskAssistC
 import software.amazon.awssdk.services.codewhispererruntime.model.StartTaskAssistCodeGenerationRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.StartTaskAssistCodeGenerationResponse
 import software.amazon.awssdk.services.codewhispererstreaming.CodeWhispererStreamingAsyncClient
-import software.amazon.awssdk.services.codewhispererstreaming.model.ExportIntent
 import software.amazon.awssdk.services.codewhispererstreaming.model.ExportResultArchiveRequest
 import software.amazon.awssdk.services.codewhispererstreaming.model.ExportResultArchiveResponseHandler
 import software.amazon.awssdk.services.codewhispererstreaming.model.GenerateTaskAssistPlanRequest
@@ -137,39 +133,6 @@ class FeatureDevClientTest : FeatureDevTestBase() {
             assertThat(actual).usingRecursiveComparison().comparingOnlyFields("uploadUrl", "uploadId", "kmsKeyArn")
                 .isEqualTo(exampleCreateUploadUrlResponse)
         }
-    }
-
-    @Test
-    fun `check generateTaskAssistPlan`() = runTest {
-        val requestCaptor = argumentCaptor<GenerateTaskAssistPlanRequest>()
-        val handlerCaptor = argumentCaptor<GenerateTaskAssistPlanResponseHandler>()
-
-        featureDevClient.generateTaskAssistPlan(testConversationId, "test-upload-id", "test-user-message")
-        argumentCaptor<GenerateTaskAssistPlanRequest, GenerateTaskAssistPlanResponseHandler>().apply {
-            verify(streamingBearerClient).generateTaskAssistPlan(requestCaptor.capture(), handlerCaptor.capture())
-            verifyNoInteractions(bearerClient)
-        }
-    }
-
-    @Test
-    fun `check exportTaskAssistResultArchive`() = runTest {
-        whenever(
-            amazonQStreamingClient.exportResultArchive(
-                any<String>(),
-                any<ExportIntent>(),
-                eq(null),
-                any(),
-                any()
-            )
-        ) doReturn exampleExportResultArchiveResponse
-
-        val actual = featureDevClient.exportTaskAssistResultArchive("1234")
-
-        verify(amazonQStreamingClient).exportResultArchive(eq("1234"), eq(ExportIntent.TASK_ASSIST), eq(null), any(), any())
-        verifyNoInteractions(bearerClient)
-        verifyNoInteractions(streamingBearerClient)
-        verifyNoMoreInteractions(amazonQStreamingClient)
-        assertThat(actual).usingRecursiveComparison().isEqualTo(exampleExportResultArchiveResponse)
     }
 
     @Test

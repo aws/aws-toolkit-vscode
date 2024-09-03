@@ -13,8 +13,6 @@ import software.amazon.awssdk.services.codewhispererruntime.model.SendTelemetryE
 import software.amazon.awssdk.services.codewhispererruntime.model.StartTaskAssistCodeGenerationResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.ValidationException
 import software.amazon.awssdk.services.codewhispererstreaming.model.CodeWhispererStreamingException
-import software.amazon.awssdk.services.codewhispererstreaming.model.ServiceQuotaExceededException
-import software.amazon.awssdk.services.codewhispererstreaming.model.ThrottlingException
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
@@ -23,11 +21,9 @@ import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.CodeIterationL
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.ContentLengthError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FEATURE_NAME
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.MonthlyConversationLimitError
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.PlanIterationLimitError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.ZipFileError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.apiError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.FeatureDevClient
-import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.clients.GenerateTaskAssistPlanResult
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.exportParseError
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.CodeGenerationStreamResult
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.session.ExportTaskAssistResultArchiveStreamResult
@@ -35,7 +31,6 @@ import software.aws.toolkits.jetbrains.services.cwc.controller.chat.telemetry.ge
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AmazonqTelemetry
 import software.aws.toolkits.telemetry.Result
-import software.amazon.awssdk.services.codewhispererstreaming.model.ValidationException as StreamingValidationException
 
 private val logger = getLogger<FeatureDevClient>()
 
@@ -107,56 +102,6 @@ class FeatureDevService(val proxyClient: FeatureDevClient, val project: Project)
                 }
             }
             apiError(errMssg, e.cause)
-        }
-    }
-
-    suspend fun generatePlan(
-        conversationId: String,
-        uploadId: String,
-        message: String,
-        currentIteration: Int
-    ): GenerateTaskAssistPlanResult {
-        val startTime = System.currentTimeMillis()
-        var failureReason: String? = null
-        var result: Result = Result.Succeeded
-        try {
-            logger.debug { "Executing generateTaskAssistPlan with conversationId $conversationId" }
-            val generatePlanResult = proxyClient.generateTaskAssistPlan(
-                conversationId,
-                uploadId,
-                message
-            )
-            return generatePlanResult
-        } catch (e: Exception) {
-            logger.warn(e) { "$FEATURE_NAME: Failed to execute planning : ${e.message}" }
-            failureReason = e.javaClass.simpleName
-            result = Result.Failed
-            var errMssg = e.message
-            if (e is CodeWhispererStreamingException) {
-                errMssg = e.awsErrorDetails().errorMessage()
-                logger.warn(e) { "Generate plan failed for request: ${e.requestId()}" }
-
-                if (e is ServiceQuotaExceededException ||
-                    (e is ThrottlingException && e.message?.contains("limit for number of iterations on an implementation plan") == true)
-                ) {
-                    throw PlanIterationLimitError(message("amazonqFeatureDev.approach_gen.iteration_limit.error_text"), e.cause)
-                } else if (e is StreamingValidationException && e.message?.contains("repo size is exceeding the limits") == true) {
-                    throw ContentLengthError(message("amazonqFeatureDev.content_length.error_text"), e.cause)
-                } else if (e is StreamingValidationException && e.message?.contains("zipped file is corrupted") == true) {
-                    throw ZipFileError("The zip file is corrupted", e.cause)
-                }
-            }
-            apiError(errMssg, e.cause)
-        } finally {
-            AmazonqTelemetry.approachInvoke(
-                amazonqConversationId = conversationId,
-                amazonqGenerateApproachIteration = currentIteration.toDouble(),
-                amazonqGenerateApproachLatency = (System.currentTimeMillis() - startTime).toDouble(),
-                result = result,
-                reason = failureReason,
-                duration = (System.currentTimeMillis() - startTime).toDouble(),
-                credentialStartUrl = getStartUrl(project = this.project)
-            )
         }
     }
 
