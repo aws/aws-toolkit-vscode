@@ -616,7 +616,7 @@ export const macJava11HomeHelpChatMessage =
     'To find the JDK path, run the following command in a new terminal:  `/usr/libexec/java_home -v 11`'
 
 export const linuxJavaHomeHelpChatMessage =
-    'To find the JDK path, run the following command in a new terminal: `update-java-alternatives --list"`'
+    'To find the JDK path, run the following command in a new terminal: `update-java-alternatives --list`'
 
 export const projectSizeTooLargeChatMessage = `Sorry, your project size exceeds the Amazon Q Code Transformation upload limit of 2GB. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootProjectSize}).`
 
