@@ -44,6 +44,7 @@ import { examples, logWithConversationId, messageWithConversationId } from '../.
 import { getWorkspaceFoldersByPrefixes } from '../../../shared/utilities/workspaceUtils'
 import { openDeletedDiff, openDiff } from '../../../amazonq/commons/diff'
 import { i18n } from '../../../shared/i18n-helper'
+import globals from '../../../shared/extensionGlobals'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -53,6 +54,7 @@ export interface ChatControllerEventEmitters {
     readonly tabOpened: EventEmitter<any>
     readonly tabClosed: EventEmitter<any>
     readonly processChatItemVotedMessage: EventEmitter<any>
+    readonly processChatItemFeedbackMessage: EventEmitter<any>
     readonly authClicked: EventEmitter<any>
     readonly processResponseBodyLinkClick: EventEmitter<any>
     readonly insertCodeAtPositionClicked: EventEmitter<any>
@@ -109,6 +111,11 @@ export class FeatureDevController {
         this.chatControllerMessageListeners.processChatItemVotedMessage.event((data) => {
             this.processChatItemVotedMessage(data.tabID, data.messageId, data.vote).catch((e) => {
                 getLogger().error('processChatItemVotedMessage failed: %s', (e as Error).message)
+            })
+        })
+        this.chatControllerMessageListeners.processChatItemFeedbackMessage.event((data) => {
+            this.processChatItemFeedbackMessage(data).catch((e) => {
+                getLogger().error('processChatItemFeedbackMessage failed: %s', (e as Error).message)
             })
         })
         this.chatControllerMessageListeners.followUpClicked.event((data) => {
@@ -200,6 +207,21 @@ export class FeatureDevController {
                 }
                 break
         }
+    }
+
+    private async processChatItemFeedbackMessage(message: any) {
+        const session = await this.sessionStorage.getSession(message.tabId)
+
+        await globals.telemetry.postFeedback({
+            comment: `${JSON.stringify({
+                type: 'featuredev-chat-answer-feedback',
+                conversationId: session?.conversationId ?? '',
+                messageId: message?.messageId,
+                reason: message?.selectedOption,
+                userComment: message?.comment,
+            })}`,
+            sentiment: 'Negative',
+        })
     }
 
     private processErrorChatMessage = (err: any, message: any, session: Session | undefined) => {
@@ -429,6 +451,7 @@ export class FeatureDevController {
                 message: i18n('AWS.amazonq.featureDev.pillText.requestingChanges'),
                 type: 'answer-stream',
                 tabID,
+                canBeVoted: true,
             })
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.generatingCode'))
             await session.send(message)
@@ -439,6 +462,7 @@ export class FeatureDevController {
                     message: i18n('AWS.amazonq.featureDev.pillText.unableGenerateChanges'),
                     type: 'answer',
                     tabID: tabID,
+                    canBeVoted: true,
                 })
                 this.messenger.sendAnswer({
                     type: 'system-prompt',
@@ -555,6 +579,7 @@ export class FeatureDevController {
                 type: 'answer',
                 tabID: message.tabID,
                 message: i18n('AWS.amazonq.featureDev.answer.updateCode'),
+                canBeVoted: true,
             })
 
             this.messenger.sendAnswer({
@@ -605,6 +630,7 @@ export class FeatureDevController {
             type: 'answer',
             tabID: message.tabID,
             message: i18n('AWS.amazonq.featureDev.answer.howCodeCanBeImproved'),
+            canBeVoted: true,
         })
 
         this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.featureDev.placeholder.feedback'))
@@ -696,6 +722,7 @@ export class FeatureDevController {
                 tabID: message.tabID,
                 type: 'answer',
                 message: new SelectedFolderNotInWorkspaceFolderError().message,
+                canBeVoted: true,
             })
             this.messenger.sendAnswer({
                 tabID: message.tabID,
@@ -716,6 +743,7 @@ export class FeatureDevController {
                 message: `Changed source root to: ${uri.fsPath}`,
                 type: 'answer',
                 tabID: message.tabID,
+                canBeVoted: true,
             })
             this.messenger.sendAnswer({
                 message: undefined,
@@ -745,6 +773,7 @@ export class FeatureDevController {
             type: 'answer',
             tabID: message.tabID,
             message: examples,
+            canBeVoted: true,
         })
     }
 
