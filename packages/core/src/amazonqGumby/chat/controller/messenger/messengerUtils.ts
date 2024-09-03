@@ -36,17 +36,16 @@ export default class MessengerUtils {
             CodeWhispererConstants.enterJavaHomeChatMessage
         } ${transformByQState.getSourceJDKVersion()}. \n`
         if (os.platform() === 'win32') {
-            javaHomePrompt += CodeWhispererConstants.windowsJavaHomeHelpChatMessage.replace(
-                'JAVA_VERSION_HERE',
-                transformByQState.getSourceJDKVersion()!
-            )
-        } else {
+            javaHomePrompt += CodeWhispererConstants.windowsJavaHomeHelpChatMessage
+        } else if (os.platform() === 'darwin') {
             const jdkVersion = transformByQState.getSourceJDKVersion()
             if (jdkVersion === JDKVersion.JDK8) {
-                javaHomePrompt += ` ${CodeWhispererConstants.nonWindowsJava8HomeHelpChatMessage}`
+                javaHomePrompt += ` ${CodeWhispererConstants.macJava8HomeHelpChatMessage}`
             } else if (jdkVersion === JDKVersion.JDK11) {
-                javaHomePrompt += ` ${CodeWhispererConstants.nonWindowsJava11HomeHelpChatMessage}`
+                javaHomePrompt += ` ${CodeWhispererConstants.macJava11HomeHelpChatMessage}`
             }
+        } else {
+            javaHomePrompt += ` ${CodeWhispererConstants.linuxJavaHomeHelpChatMessage}`
         }
         return javaHomePrompt
     }
