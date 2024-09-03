@@ -191,7 +191,7 @@ class CodeModernizerManager(private val project: Project) : PersistentStateCompo
                         supportedBuildFileNames.joinToString()
                     ),
                     invalidTelemetryReason = InvalidTelemetryReason(
-                        CodeTransformPreValidationError.NonMavenProject,
+                        CodeTransformPreValidationError.UnsupportedBuildSystem,
                         if (isGradleProject(project)) "Gradle build" else "other build"
                     ),
                     buildSystem = if (isGradleProject(project)) CodeTransformBuildSystem.Gradle else CodeTransformBuildSystem.Unknown

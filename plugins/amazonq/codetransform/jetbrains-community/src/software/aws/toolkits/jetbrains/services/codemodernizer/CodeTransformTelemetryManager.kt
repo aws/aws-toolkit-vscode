@@ -18,7 +18,6 @@ import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getAuthType
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getJavaVersionFromProjectSetting
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.getMavenVersion
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.tryGetJdk
-import software.aws.toolkits.telemetry.CodeTransformApiNames
 import software.aws.toolkits.telemetry.CodeTransformArtifactType
 import software.aws.toolkits.telemetry.CodeTransformBuildCommand
 import software.aws.toolkits.telemetry.CodeTransformCancelSrcComponents
@@ -82,30 +81,6 @@ class CodeTransformTelemetryManager(private val project: Project) {
         codeTransformTotalByteSize = payloadSize,
         codeTransformSessionId = sessionId,
         codeTransformRunTimeLatency = calculateTotalLatency(startTime, Instant.now()),
-    )
-
-    @Suppress("UNUSED_PARAMETER")
-    fun apiError(errorMessage: String, apiName: CodeTransformApiNames, jobId: String?) = CodetransformTelemetry.logApiError(
-        reason = errorMessage,
-        codeTransformSessionId = sessionId,
-        codeTransformJobId = jobId,
-    )
-
-    fun logApiLatency(
-        apiName: CodeTransformApiNames,
-        startTime: Instant,
-        codeTransformTotalByteSize: Int? = null,
-        codeTransformUploadId: String? = null,
-        codeTransformJobId: String? = null,
-        codeTransformRequestId: String? = null
-    ) = CodetransformTelemetry.logApiLatency(
-        codeTransformApiNames = apiName,
-        codeTransformSessionId = sessionId,
-        codeTransformRunTimeLatency = calculateTotalLatency(startTime, Instant.now()),
-        codeTransformUploadId = codeTransformUploadId,
-        codeTransformJobId = codeTransformJobId,
-        codeTransformTotalByteSize = codeTransformTotalByteSize,
-        codeTransformRequestId = codeTransformRequestId
     )
 
     fun vcsDiffViewerVisible(jobId: JobId) = CodetransformTelemetry.vcsDiffViewerVisible(
