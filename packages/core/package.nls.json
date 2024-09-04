@@ -294,7 +294,7 @@
     "AWS.amazonq.featureDev.pillText.newTask": "Work on new task",
     "AWS.amazonq.featureDev.pillText.generateCode": "Generate code",
     "AWS.amazonq.featureDev.pillText.generatingCode": "Generating code ...",
-    "AWS.amazonq.featureDev.pillText.generatedCode": "Here's your code. You can choose a file to see a diff with the changes I'm proposing.",
+
     "AWS.amazonq.featureDev.pillText.generatingPlan": "Generating plan ...",
     "AWS.amazonq.featureDev.pillText.requestingChanges": "Requesting changes ...",
     "AWS.amazonq.featureDev.pillText.insertCode": "Insert code",

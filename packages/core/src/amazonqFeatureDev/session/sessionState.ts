@@ -282,14 +282,6 @@ abstract class CodeGenBase {
                     const newFileInfo = registerNewFiles(fs, newFileContents, this.uploadId, workspaceFolders)
                     telemetry.setNumberOfFilesGenerated(newFileInfo.length)
 
-                    if (newFileContents.length !== 0 || deletedFiles.length !== 0) {
-                        messenger.sendAnswer({
-                            message: i18n('AWS.amazonq.featureDev.pillText.generatedCode'),
-                            type: 'answer-part',
-                            tabID: this.tabID,
-                        })
-                    }
-
                     return {
                         newFiles: newFileInfo,
                         deletedFiles: getDeletedFileInfos(deletedFiles, workspaceFolders),
