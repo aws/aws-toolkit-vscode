@@ -506,7 +506,13 @@ describe('startSecurityScanPerformanceTest', function () {
             )
         }
 
-        function assertTests({ commandSpy, securityScanRenderSpy }: { commandSpy: any; securityScanRenderSpy: any }) {
+        function assertTests({
+            commandSpy,
+            securityScanRenderSpy,
+        }: {
+            commandSpy: sinon.SinonSpy
+            securityScanRenderSpy: sinon.SinonSpy
+        }) {
             assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
             assert.ok(securityScanRenderSpy.calledOnce)
             const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)

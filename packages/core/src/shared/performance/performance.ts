@@ -86,38 +86,43 @@ export class PerformanceTracker {
     }
 }
 
-interface PerformanceTest {
-    setup: () => Promise<any>
+interface PerformanceTest<T> {
+    setup: () => Promise<T>
     // function under performance test
     runTests: () => Promise<any>
-    assertTests: (args: any) => any
+    assertTests: (args: T) => any
 }
+
+const defaultPollingUsage = {
+    darwin: {
+        userCpuUsage: 20,
+        systemCpuUsage: 8,
+    },
+    linux: {
+        userCpuUsage: 20,
+        systemCpuUsage: 8,
+    },
+    win32: {
+        userCpuUsage: 28, // this ci seems to have notably higher default cpu usage
+        systemCpuUsage: 8,
+    },
+}[process.platform as 'linux' | 'darwin' | 'win32']
 
 /**
  * Generate a test suite that runs fn options.testRuns times and gets the average performance metrics of all the test runs
  */
-export function performanceTest(options: TestOptions, name: string, fn: () => Promise<PerformanceTest>): Mocha.Suite
-export function performanceTest(options: TestOptions, name: string, fn: () => PerformanceTest): Mocha.Suite
-export function performanceTest(
+export function performanceTest<T>(
     options: TestOptions,
     name: string,
-    fn: () => PerformanceTest | Promise<PerformanceTest>
+    fn: () => Promise<PerformanceTest<T>>
+): Mocha.Suite
+export function performanceTest<T>(options: TestOptions, name: string, fn: () => PerformanceTest<T>): Mocha.Suite
+export function performanceTest<T>(
+    options: TestOptions,
+    name: string,
+    fn: () => PerformanceTest<T> | Promise<PerformanceTest<T>>
 ) {
     const testOption = options[process.platform as 'linux' | 'darwin' | 'win32']
-    const internalOptions = {
-        darwin: {
-            userCpuUsage: 20,
-            systemCpuUsage: 8,
-        },
-        linux: {
-            userCpuUsage: 20,
-            systemCpuUsage: 8,
-        },
-        win32: {
-            userCpuUsage: 28, // this ci seems to have notably higher default cpu usage
-            systemCpuUsage: 8,
-        },
-    }[process.platform as 'linux' | 'darwin' | 'win32']
 
     const totalTestRuns = options.testRuns ?? 10
 
@@ -134,10 +139,16 @@ export function performanceTest(
                     const endCpuUsage = process.cpuUsage()
                     const userCpuUsage = endCpuUsage.user / 1000000
                     const systemCpuUsage = endCpuUsage.system / 1000000
+
+                    // log these messages for now so we can better understand flakiness
                     // eslint-disable-next-line aws-toolkits/no-console-log
-                    console.log(`userCpuUsage: ${userCpuUsage}, systemCpuUsage: ${systemCpuUsage}`)
+                    console.log(
+                        `Waiting until cpu usage stablizies: userCpuUsage: ${userCpuUsage}, systemCpuUsage: ${systemCpuUsage}`
+                    )
+
                     return (
-                        userCpuUsage < internalOptions.userCpuUsage && systemCpuUsage < internalOptions.systemCpuUsage
+                        userCpuUsage < defaultPollingUsage.userCpuUsage &&
+                        systemCpuUsage < defaultPollingUsage.systemCpuUsage
                     )
                 },
                 {
@@ -146,7 +157,9 @@ export function performanceTest(
                 }
             )
             if (!opt) {
-                assert.fail('CPU Usage failed to drop below 15/5')
+                assert.fail(
+                    `CPU Usage failed to drop below user cpu usage: ${defaultPollingUsage.userCpuUsage} and system cpu usage: ${defaultPollingUsage.systemCpuUsage}`
+                )
             }
 
             performanceTracker = new PerformanceTracker(name)
@@ -154,19 +167,23 @@ export function performanceTest(
 
         for (let testRun = 1; testRun <= totalTestRuns; testRun++) {
             it(`${name} - test run ${testRun}`, async () => {
-                const args = await fn()
+                const { setup, runTests, assertTests } = await fn()
 
-                const setup = await args.setup()
+                const setupArgs = await setup()
+
                 performanceTracker?.start()
-                await args.runTests()
+                await runTests()
                 const metrics = performanceTracker?.stop()
                 if (!metrics) {
                     assert.fail('Performance metrics not found')
                 }
+
+                // log these messages for now so we can better understand flakiness
                 // eslint-disable-next-line aws-toolkits/no-console-log
                 console.log(`performanceMetrics: %O`, metrics)
                 testRunMetrics.push(metrics)
-                await args.assertTests(setup)
+
+                await assertTests(setupArgs)
             })
         }
 
