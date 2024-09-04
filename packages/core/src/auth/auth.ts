@@ -58,6 +58,7 @@ import {
     scopesSsoAccountAccess,
     AwsConnection,
     scopesCodeWhispererCore,
+    ProfileNotFoundError,
 } from './connection'
 import { isSageMaker, isCloud9, isAmazonQ } from '../shared/extensionUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
@@ -878,8 +879,22 @@ export class Auth implements AuthService, ConnectionManager {
     @withTelemetryContext({ name: 'handleInvalidCredentials', class: authClassName })
     private async handleInvalidCredentials<T>(id: Connection['id'], refresh: () => Promise<T>): Promise<T> {
         getLogger().info(`auth: Handling invalid credentials of connection: ${id}`)
-        const profile = this.store.getProfile(id)
-        const previousState = profile?.metadata.connectionState
+
+        let profile: StoredProfile
+        try {
+            profile = this.store.getProfileOrThrow(id)
+        } catch (err) {
+            if (err instanceof ProfileNotFoundError) {
+                getLogger().info(
+                    `Auth: deleting connection '${id}' due to error encountered while fetching auth token: %s`,
+                    err
+                )
+                await this.deleteConnection({ id })
+            }
+            throw err
+        }
+
+        const previousState = profile.metadata.connectionState
         await this.updateConnectionState(id, 'invalid')
 
         if (previousState === 'invalid') {
@@ -895,8 +910,7 @@ export class Auth implements AuthService, ConnectionManager {
             const timeout = new Timeout(60000)
             this.#invalidCredentialsTimeouts.set(id, timeout)
 
-            const connLabel =
-                profile?.metadata.label ?? (profile?.type === 'sso' ? this.getSsoProfileLabel(profile) : id)
+            const connLabel = profile.metadata.label ?? (profile.type === 'sso' ? this.getSsoProfileLabel(profile) : id)
             const message = localize(
                 'aws.auth.invalidConnection',
                 'Connection "{0}" is invalid or expired, login again?',

@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Auth: Q stays signed in if the user logs out in other VS Code windows."
+}
