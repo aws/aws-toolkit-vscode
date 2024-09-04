@@ -6,6 +6,7 @@
 import assert from 'assert'
 import { getLogger } from '../logger'
 import { isWeb } from '../extensionGlobals'
+import { waitUntil } from '../utilities/timeoutUtils'
 
 interface PerformanceMetrics {
     /**
@@ -93,13 +94,29 @@ export function performanceTest(options: TestOptions, name: string, fn: () => vo
 export function performanceTest(options: TestOptions, name: string, fn: () => void | Promise<void>) {
     const testOption = options[process.platform as 'linux' | 'darwin' | 'win32']
 
-    const totalTestRuns = options.testRuns ?? 5
+    const totalTestRuns = options.testRuns ?? 10
 
-    return describe(`${name} performance tests`, async () => {
+    return describe(`${name} performance tests`, function () {
         let performanceTracker: PerformanceTracker | undefined
         const testRunMetrics: PerformanceMetrics[] = []
 
-        beforeEach(() => {
+        beforeEach(async () => {
+            this.timeout(60000)
+
+            // Wait until the user/system cpu usage stabilizes on a lower amount
+            await waitUntil(
+                async () => {
+                    const endCpuUsage = process.cpuUsage()
+                    const userCpuUsage = endCpuUsage.user / 1000000
+                    const systemCpuUsage = endCpuUsage.system / 1000000
+                    return userCpuUsage < 15 && systemCpuUsage < 5
+                },
+                {
+                    interval: 5000,
+                    timeout: 60000,
+                }
+            )
+
             performanceTracker = new PerformanceTracker(name)
             performanceTracker.start()
         })
