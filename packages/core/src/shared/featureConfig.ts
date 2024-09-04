@@ -27,17 +27,21 @@ export class FeatureContext {
     ) {}
 }
 
-const testFeatureName = 'testFeature'
-const customizationArnOverrideName = 'customizationArnOverride'
 const featureConfigPollIntervalInMs = 30 * 60 * 1000 // 30 mins
-const dataCollectionFeatureName = 'IDEProjectContextDataCollection'
 
-// TODO: add real feature later
-export const featureDefinitions = new Map([
-    [testFeatureName, new FeatureContext(testFeatureName, 'CONTROL', { stringValue: 'testValue' })],
+export const Features = {
+    customizationArnOverride: 'customizationArnOverride',
+    dataCollectionFeature: 'IDEProjectContextDataCollection',
+    test: 'testFeature',
+} as const
+
+export type FeatureName = (typeof Features)[keyof typeof Features]
+
+export const featureDefinitions = new Map<FeatureName, FeatureContext>([
+    [Features.test, new FeatureContext(Features.test, 'CONTROL', { stringValue: 'testValue' })],
     [
-        customizationArnOverrideName,
-        new FeatureContext(customizationArnOverrideName, 'customizationARN', { stringValue: '' }),
+        Features.customizationArnOverride,
+        new FeatureContext(Features.customizationArnOverride, 'customizationARN', { stringValue: '' }),
     ],
 ])
 
@@ -103,11 +107,12 @@ export class FeatureConfigProvider {
             })
             getLogger().info('AB Testing Cohort Assignments %s', JSON.stringify(response.featureEvaluations))
 
-            const customizationArnOverride = this.featureConfigs.get(customizationArnOverrideName)?.value?.stringValue
+            const customizationArnOverride = this.featureConfigs.get(Features.customizationArnOverride)?.value
+                ?.stringValue
             if (customizationArnOverride !== undefined) {
                 // Double check if server-side wrongly returns a customizationArn to BID users
                 if (isBuilderIdConnection(AuthUtil.instance.conn)) {
-                    this.featureConfigs.delete(customizationArnOverrideName)
+                    this.featureConfigs.delete(Features.customizationArnOverride)
                 } else if (isIdcSsoConnection(AuthUtil.instance.conn)) {
                     let availableCustomizations = undefined
                     try {
@@ -131,12 +136,12 @@ export class FeatureConfigProvider {
                         getLogger().debug(
                             `Customization arn ${customizationArnOverride} not available in listAvailableCustomizations, not using`
                         )
-                        this.featureConfigs.delete(customizationArnOverrideName)
+                        this.featureConfigs.delete(Features.customizationArnOverride)
                     }
                 }
             }
 
-            const dataCollectionValue = this.featureConfigs.get(dataCollectionFeatureName)?.value.stringValue
+            const dataCollectionValue = this.featureConfigs.get(Features.dataCollectionFeature)?.value.stringValue
             if (dataCollectionValue === 'data-collection') {
                 this._isDataCollectionGroup = true
                 // Enable local workspace index by default, for Amzn users.
@@ -172,16 +177,16 @@ export class FeatureConfigProvider {
     // 6) Add a test case for this feature.
     // 7) In case `getXXX()` returns undefined, it should be treated as a default/control group.
     getTestFeature(): string | undefined {
-        return this.getFeatureValueForKey(testFeatureName).stringValue
+        return this.getFeatureValueForKey(Features.test).stringValue
     }
 
     getCustomizationArnOverride(): string | undefined {
-        return this.getFeatureValueForKey(customizationArnOverrideName).stringValue
+        return this.getFeatureValueForKey(Features.customizationArnOverride).stringValue
     }
 
     // Get the feature value for the given key.
     // In case of a misconfiguration, it will return a default feature value of Boolean true.
-    private getFeatureValueForKey(name: string): FeatureValue {
+    private getFeatureValueForKey(name: FeatureName): FeatureValue {
         return this.featureConfigs.get(name)?.value ?? featureDefinitions.get(name)?.value ?? { boolValue: true }
     }
 
@@ -192,5 +197,29 @@ export class FeatureConfigProvider {
      */
     public static getFeatureConfigs(): Map<string, FeatureContext> {
         return FeatureConfigProvider.instance.featureConfigs
+    }
+
+    /**
+     * Retrieves the FeatureContext object for a given feature name.
+     *
+     * @param {string} featureName - The name of the feature.
+     * @returns {FeatureContext | undefined} The FeatureContext object for the specified feature, or undefined if the feature doesn't exist.
+     */
+    public static getFeature(featureName: FeatureName): FeatureContext | undefined {
+        return FeatureConfigProvider.instance.featureConfigs.get(featureName)
+    }
+
+    /**
+     * Checks if a feature is active or not.
+     *
+     * @param {string} featureName - The name of the feature to check.
+     * @returns {boolean} False if the variation is not CONTROL, otherwise True
+     */
+    public static isEnabled(featureName: FeatureName): boolean {
+        const featureContext = FeatureConfigProvider.getFeature(featureName)
+        if (featureContext && featureContext.variation.toLocaleLowerCase() !== 'control') {
+            return true
+        }
+        return false
     }
 }
