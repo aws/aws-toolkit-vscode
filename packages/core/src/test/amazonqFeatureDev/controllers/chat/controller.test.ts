@@ -188,6 +188,7 @@ describe('Controller', () => {
                     tabID,
                     type: 'answer',
                     message: new SelectedFolderNotInWorkspaceFolderError().message,
+                    canBeVoted: true,
                 }),
                 true
             )
