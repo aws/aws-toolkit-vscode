@@ -205,6 +205,14 @@ export function performanceTest<T>(
             const totalDuration =
                 testRunMetrics.reduce((acc, metric) => acc + metric.duration, 0) / testRunMetrics.length
 
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            console.log('Average performance metrics: %O', {
+                userCpuUsage: totalUserCPUUsage,
+                systemCpuUsage: totalSystemCPUUsage,
+                heapTotal: totalMemoryUsage,
+                duration: totalDuration,
+            })
+
             assertPerformanceMetrics(
                 {
                     userCpuUsage: totalUserCPUUsage,
