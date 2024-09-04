@@ -254,8 +254,6 @@ export class GumbyController {
 
     private async validateProjectsWithReplyOnError(message: any): Promise<TransformationCandidateProject[]> {
         let telemetryJavaVersion = JDKToTelemetryValue(JDKVersion.UNSUPPORTED) as CodeTransformJavaSourceVersionsAllowed
-
-        let err
         try {
             const validProjects = await telemetry.codeTransform_validateProject.run(async () => {
                 telemetry.record({
@@ -287,7 +285,6 @@ export class GumbyController {
             } else {
                 this.messenger.sendUnrecoverableErrorResponse('no-project-found', message.tabID)
             }
-            err = e
         }
         return []
     }

@@ -95,6 +95,9 @@ async function getProjectsValidToTransform(
                     const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
                     errorReason += `-${errorCode}`
                 }
+                getLogger().error(
+                    `CodeTransformation: Error in running javap command = ${errorReason}, log = ${errorLog}`
+                )
             } else {
                 const majorVersionIndex = spawnResult.stdout.indexOf('major version: ')
                 const javaVersion = spawnResult.stdout.slice(majorVersionIndex + 15, majorVersionIndex + 17).trim()

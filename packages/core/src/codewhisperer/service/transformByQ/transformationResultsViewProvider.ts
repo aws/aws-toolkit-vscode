@@ -20,7 +20,6 @@ import * as CodeWhispererConstants from '../../models/constants'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { setContext } from '../../../shared/vscode/setContext'
-import globals from '../../../shared/extensionGlobals'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -367,7 +366,6 @@ export class ProposedTransformationExplorer {
             }
 
             let deserializeErrorMessage = undefined
-            const deserializeArchiveStartTime = globals.clock.Date.now()
             let pathContainingArchive = ''
             try {
                 // Download and deserialize the zip

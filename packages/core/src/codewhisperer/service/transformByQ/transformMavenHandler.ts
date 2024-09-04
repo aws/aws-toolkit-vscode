@@ -119,9 +119,6 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
         errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
         errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
         transformByQState.appendToErrorLog(`${baseCommand} copy-dependencies failed: \n ${errorLog}`)
-        getLogger().info(
-            `CodeTransformation: Maven copy-dependencies command ${baseCommand} failed, but still continuing with transformation: ${errorLog}`
-        )
         let errorReason = ''
         if (spawnResult.stdout) {
             errorReason = 'Maven Copy: CopyDependenciesExecutionError'
@@ -135,6 +132,10 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
             const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
             errorReason += `-${errorCode}`
         }
+        getLogger().info(
+            `CodeTransformation: Maven copy-dependencies command ${baseCommand} failed, but still continuing with transformation: ${errorReason}, log: ${errorLog}`
+        )
+
         let mavenBuildCommand = transformByQState.getMavenName()
         // slashes not allowed in telemetry
         if (mavenBuildCommand === './mvnw') {
