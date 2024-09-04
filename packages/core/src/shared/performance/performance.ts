@@ -104,6 +104,20 @@ export function performanceTest(
     fn: () => PerformanceTest | Promise<PerformanceTest>
 ) {
     const testOption = options[process.platform as 'linux' | 'darwin' | 'win32']
+    const internalOptions = {
+        darwin: {
+            userCpuUsage: 20,
+            systemCpuUsage: 8,
+        },
+        linux: {
+            userCpuUsage: 20,
+            systemCpuUsage: 8,
+        },
+        win32: {
+            userCpuUsage: 28, // this ci seems to have notably higher default cpu usage
+            systemCpuUsage: 8,
+        },
+    }[process.platform as 'linux' | 'darwin' | 'win32']
 
     const totalTestRuns = options.testRuns ?? 10
 
@@ -122,7 +136,9 @@ export function performanceTest(
                     const systemCpuUsage = endCpuUsage.system / 1000000
                     // eslint-disable-next-line aws-toolkits/no-console-log
                     console.log(`userCpuUsage: ${userCpuUsage}, systemCpuUsage: ${systemCpuUsage}`)
-                    return userCpuUsage < 20 && systemCpuUsage < 8
+                    return (
+                        userCpuUsage < internalOptions.userCpuUsage && systemCpuUsage < internalOptions.systemCpuUsage
+                    )
                 },
                 {
                     interval: 5000,
