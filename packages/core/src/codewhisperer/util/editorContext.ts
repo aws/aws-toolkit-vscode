@@ -67,7 +67,7 @@ export function getFileRelativePath(editor: vscode.TextEditor): string {
     } else {
         const workspacePath = workspaceFolder.uri.fsPath
         const filePath = editor.document.uri.fsPath
-        relativePath = path.join(path.basename(workspacePath), path.relative(workspacePath, filePath))
+        relativePath = path.relative(workspacePath, filePath)
     }
     // For notebook files, we want to use the programming language for each cell for the code suggestions, so change
     // the filename sent in the request to reflect that language
