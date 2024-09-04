@@ -86,11 +86,15 @@ export class PerformanceTracker {
     }
 }
 
-interface PerformanceTest<T> {
+interface PerformanceTestFunction<T> {
+    // anything you want setup (stubs, etc)
     setup: () => Promise<T>
+
     // function under performance test
-    runTests: () => Promise<any>
-    assertTests: (args: T) => any
+    execute: () => Promise<any>
+
+    // anything you want to verify (assertions, etc)
+    verify: (args: T) => any
 }
 
 const defaultPollingUsage = {
@@ -114,13 +118,17 @@ const defaultPollingUsage = {
 export function performanceTest<T>(
     options: TestOptions,
     name: string,
-    fn: () => Promise<PerformanceTest<T>>
+    fn: () => Promise<PerformanceTestFunction<T>>
 ): Mocha.Suite
-export function performanceTest<T>(options: TestOptions, name: string, fn: () => PerformanceTest<T>): Mocha.Suite
 export function performanceTest<T>(
     options: TestOptions,
     name: string,
-    fn: () => PerformanceTest<T> | Promise<PerformanceTest<T>>
+    fn: () => PerformanceTestFunction<T>
+): Mocha.Suite
+export function performanceTest<T>(
+    options: TestOptions,
+    name: string,
+    fn: () => PerformanceTestFunction<T> | Promise<PerformanceTestFunction<T>>
 ) {
     const testOption = options[process.platform as 'linux' | 'darwin' | 'win32']
 
@@ -167,12 +175,12 @@ export function performanceTest<T>(
 
         for (let testRun = 1; testRun <= totalTestRuns; testRun++) {
             it(`${name} - test run ${testRun}`, async () => {
-                const { setup, runTests, assertTests } = await fn()
+                const { setup, execute, verify } = await fn()
 
                 const setupArgs = await setup()
 
                 performanceTracker?.start()
-                await runTests()
+                await execute()
                 const metrics = performanceTracker?.stop()
                 if (!metrics) {
                     assert.fail('Performance metrics not found')
@@ -183,7 +191,7 @@ export function performanceTest<T>(
                 console.log(`performanceMetrics: %O`, metrics)
                 testRunMetrics.push(metrics)
 
-                await assertTests(setupArgs)
+                await verify(setupArgs)
             })
         }
 
