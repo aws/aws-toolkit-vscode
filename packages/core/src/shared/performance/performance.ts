@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as os from 'os'
 import assert from 'assert'
 import { getLogger } from '../logger'
 import { isWeb } from '../extensionGlobals'
@@ -211,6 +212,13 @@ export function performanceTest<T>(
                 systemCpuUsage: totalSystemCPUUsage,
                 heapTotal: totalMemoryUsage,
                 duration: totalDuration,
+            })
+
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            console.log('OS Specific Metrics: %O', {
+                loadavg: os.loadavg(),
+                cpus: os.cpus(),
+                priority: os.getPriority(),
             })
 
             assertPerformanceMetrics(
