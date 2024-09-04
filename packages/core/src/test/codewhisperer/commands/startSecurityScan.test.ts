@@ -496,6 +496,7 @@ describe('startSecurityScanPerformanceTest', function () {
             return { commandSpy, securityScanRenderSpy }
         }
 
+        // function under performance test
         async function runTests() {
             await startSecurityScan.startSecurityScan(
                 mockSecurityPanelViewProvider,
