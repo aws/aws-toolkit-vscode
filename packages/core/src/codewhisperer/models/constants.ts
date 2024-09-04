@@ -407,7 +407,11 @@ export const codeTransformPrereqDoc =
     'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites'
 
 export const codeTransformBillingText = (linesOfCode: number) =>
-    `<p>${linesOfCode} lines of code were submitted for transformation. If you reach the quota for lines of code included in your subscription, you will be charged $${codeTransformBillingRate} for each additional line of code. You might be charged up to $${(linesOfCode * codeTransformBillingRate).toFixed(2)} for this transformation. To avoid being charged, stop the transformation job before it completes. For more information on pricing and quotas, see [Amazon Q Developer pricing](${linkToBillingInfo}).</p>`
+    `<p>${linesOfCode} lines of code were submitted for transformation. If you reach the quota for lines of code included in your subscription, you will be charged $${codeTransformBillingRate} for each additional line of code. You might be charged up to $${(
+        linesOfCode * codeTransformBillingRate
+    ).toFixed(
+        2
+    )} for this transformation. To avoid being charged, stop the transformation job before it completes. For more information on pricing and quotas, see [Amazon Q Developer pricing](${linkToBillingInfo}).</p>`
 
 export const codeTransformBillingRate = 0.003
 
@@ -603,13 +607,16 @@ export const projectPromptChatMessage =
     'I can upgrade your JAVA_VERSION_HERE. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Transform.'
 
 export const windowsJavaHomeHelpChatMessage =
-    'To find the JDK path, run the following commands in a new IDE terminal: `cd "C:/Program Files/Java"` and then `dir`. If you see your JDK version, run `cd <version>` and then `cd` to show the path.'
+    'To find the JDK path, run the following commands in a new terminal: `cd "C:/Program Files/Java"` and then `dir`. If you see your JDK version, run `cd <version>` and then `cd` to show the path.'
 
-export const nonWindowsJava8HomeHelpChatMessage =
-    'To find the JDK path, run the following command in a new IDE terminal:  `/usr/libexec/java_home -v 1.8`'
+export const macJava8HomeHelpChatMessage =
+    'To find the JDK path, run the following command in a new terminal:  `/usr/libexec/java_home -v 1.8`'
 
-export const nonWindowsJava11HomeHelpChatMessage =
-    'To find the JDK path, run the following command in a new IDE terminal:  `/usr/libexec/java_home -v 11`'
+export const macJava11HomeHelpChatMessage =
+    'To find the JDK path, run the following command in a new terminal:  `/usr/libexec/java_home -v 11`'
+
+export const linuxJavaHomeHelpChatMessage =
+    'To find the JDK path, run the following command in a new terminal: `update-java-alternatives --list`'
 
 export const projectSizeTooLargeChatMessage = `Sorry, your project size exceeds the Amazon Q Code Transformation upload limit of 2GB. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootProjectSize}).`
 
