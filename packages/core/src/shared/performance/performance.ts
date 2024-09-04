@@ -104,7 +104,7 @@ export function performanceTest(options: TestOptions, name: string, fn: () => vo
             this.timeout(60000)
 
             // Wait until the user/system cpu usage stabilizes on a lower amount
-            await waitUntil(
+            const opt = await waitUntil(
                 async () => {
                     const endCpuUsage = process.cpuUsage()
                     const userCpuUsage = endCpuUsage.user / 1000000
@@ -118,6 +118,9 @@ export function performanceTest(options: TestOptions, name: string, fn: () => vo
                     timeout: 60000,
                 }
             )
+            if (!opt) {
+                assert.fail('CPU Usage failed to drop below 15/5')
+            }
 
             performanceTracker = new PerformanceTracker(name)
             performanceTracker.start()
