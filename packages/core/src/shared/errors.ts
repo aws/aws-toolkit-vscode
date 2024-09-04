@@ -793,7 +793,9 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
         isEaccesError(err) ||
         isEbadfError(err) ||
         isEconnRefusedError(err) ||
-        err instanceof AwsClientResponseError
+        err instanceof AwsClientResponseError ||
+        isBadResponseCode(err) ||
+        isEbusyError(err)
     ) {
         return true
     }
@@ -817,10 +819,15 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
         'EADDRNOTAVAIL', // port not available/allowed?,
         'SELF_SIGNED_CERT_IN_CHAIN',
         'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
+        'UNABLE_TO_GET_ISSUER_CERT_LOCALLY',
         'HPE_INVALID_VERSION',
         'DEPTH_ZERO_SELF_SIGNED_CERT',
         'ENOTCONN',
-        '502',
+        'ENETDOWN',
+        'ECONNABORTED',
+        'CERT_HAS_EXPIRED',
+        'EAI_FAIL',
+        '502', // This may be irrelevant as isBadResponseCode() may be all we need
         'InternalServerException',
     ].includes(err.code)
 }
@@ -867,11 +874,33 @@ function isEconnRefusedError(err: Error): boolean {
     return isError(err, 'Error', 'connect ECONNREFUSED')
 }
 
+function isEbusyError(err: Error) {
+    // we were seeing errors with the message 'getaddrinfo EBUSY oidc.us-east-1.amazonaws.com'
+    return isError(err, 'EBUSY', 'getaddrinfo EBUSY')
+}
+
 /** Helper function to assert given error has the expected properties */
 function isError(err: Error, id: string, messageIncludes: string = '') {
     // It is not always clear if the error has the expected value in the `name` or `code` field
     // so this checks both.
     return (err.name === id || (err as any).code === id) && err.message.includes(messageIncludes)
+}
+
+/**
+ * These are the errors explicitly seen in telemetry. We can instead do any non-200 response code
+ * later, but this will give us better visibility in to the actual error codes we are currently getting.
+ */
+const errorResponseCodes = [302, 403, 502]
+
+/**
+ * Returns true if the given error is a bad response code
+ */
+function isBadResponseCode(error: Error) {
+    if (isNaN(Number(error.name))) {
+        return
+    }
+    const statusCode = parseInt(error.name, 10)
+    return errorResponseCodes.includes(statusCode)
 }
 
 /**
