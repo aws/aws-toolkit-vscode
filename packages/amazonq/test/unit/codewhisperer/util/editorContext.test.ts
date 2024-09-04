@@ -2,11 +2,15 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import assert from 'assert'
 import * as codewhispererClient from 'aws-core-vscode/codewhisperer'
 import * as EditorContext from 'aws-core-vscode/codewhisperer'
-import { createMockTextEditor, createMockClientRequest, resetCodeWhispererGlobalVariables } from 'aws-core-vscode/test'
+import {
+    createMockTextEditor,
+    createMockClientRequest,
+    resetCodeWhispererGlobalVariables,
+    openATextEditorWithText,
+} from 'aws-core-vscode/test'
 import { globals } from 'aws-core-vscode/shared'
 import { GenerateCompletionsRequest } from 'aws-core-vscode/codewhisperer'
 
@@ -74,7 +78,7 @@ describe('editorContext', function () {
         })
     })
 
-    describe('getfileNameForRequest', function () {
+    describe('getFileRelativePath', function () {
         it('Should return a new filename with correct extension given a .ipynb file', function () {
             const languageToExtension = new Map<string, string>([
                 ['python', 'py'],
@@ -86,10 +90,17 @@ describe('editorContext', function () {
 
             languageToExtension.forEach((extension, language) => {
                 const editor = createMockTextEditor('', 'test.ipynb', language, 1, 17)
-                const actual = EditorContext.getFileNameForRequest(editor)
+                const actual = EditorContext.getFileRelativePath(editor)
                 const expected = 'test.' + extension
                 assert.strictEqual(actual, expected)
             })
+        })
+
+        it('Should return relative path', async function () {
+            const editor = await openATextEditorWithText('tttt', 'test.py', 'a/b/c')
+            const actual = EditorContext.getFileRelativePath(editor)
+            const expected = 'a/b/c/test.py'
+            assert.strictEqual(actual, expected)
         })
     })
 
