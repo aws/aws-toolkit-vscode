@@ -86,12 +86,23 @@ export class PerformanceTracker {
     }
 }
 
+interface PerformanceTest {
+    setup: () => Promise<any>
+    // function under performance test
+    runTests: () => Promise<any>
+    assertTests: (args: any) => any
+}
+
 /**
  * Generate a test suite that runs fn options.testRuns times and gets the average performance metrics of all the test runs
  */
-export function performanceTest(options: TestOptions, name: string, fn: () => Promise<void>): Mocha.Suite
-export function performanceTest(options: TestOptions, name: string, fn: () => void): Mocha.Suite
-export function performanceTest(options: TestOptions, name: string, fn: () => void | Promise<void>) {
+export function performanceTest(options: TestOptions, name: string, fn: () => Promise<PerformanceTest>): Mocha.Suite
+export function performanceTest(options: TestOptions, name: string, fn: () => PerformanceTest): Mocha.Suite
+export function performanceTest(
+    options: TestOptions,
+    name: string,
+    fn: () => PerformanceTest | Promise<PerformanceTest>
+) {
     const testOption = options[process.platform as 'linux' | 'darwin' | 'win32']
 
     const totalTestRuns = options.testRuns ?? 10
@@ -123,22 +134,23 @@ export function performanceTest(options: TestOptions, name: string, fn: () => vo
             }
 
             performanceTracker = new PerformanceTracker(name)
-            performanceTracker.start()
-        })
-
-        afterEach(() => {
-            const metrics = performanceTracker?.stop()
-            if (!metrics) {
-                assert.fail('Performance metrics not found')
-            }
-            // eslint-disable-next-line aws-toolkits/no-console-log
-            console.log(`performanceMetrics: %O`, metrics)
-            testRunMetrics.push(metrics)
         })
 
         for (let testRun = 1; testRun <= totalTestRuns; testRun++) {
             it(`${name} - test run ${testRun}`, async () => {
-                await fn()
+                const args = await fn()
+
+                const setup = await args.setup()
+                performanceTracker?.start()
+                await args.runTests()
+                const metrics = performanceTracker?.stop()
+                if (!metrics) {
+                    assert.fail('Performance metrics not found')
+                }
+                await args.assertTests(setup)
+                // eslint-disable-next-line aws-toolkits/no-console-log
+                console.log(`performanceMetrics: %O`, metrics)
+                testRunMetrics.push(metrics)
             })
         }
 

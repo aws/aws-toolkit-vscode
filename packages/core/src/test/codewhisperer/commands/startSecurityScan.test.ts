@@ -487,28 +487,40 @@ describe('startSecurityScanPerformanceTest', function () {
         })
     }
 
-    performanceTest({}, 'Should calculate cpu and memory usage for file scans', async function () {
-        getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
-        const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
-        const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
+    performanceTest({}, 'Should calculate cpu and memory usage for file scans', function () {
+        async function setup() {
+            getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
+            const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
+            const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
+            await model.CodeScansState.instance.setScansEnabled(true)
+            return { commandSpy, securityScanRenderSpy }
+        }
 
-        await model.CodeScansState.instance.setScansEnabled(true)
+        async function runTests() {
+            await startSecurityScan.startSecurityScan(
+                mockSecurityPanelViewProvider,
+                editor,
+                createClient(),
+                extensionContext,
+                CodeAnalysisScope.FILE
+            )
+        }
 
-        await startSecurityScan.startSecurityScan(
-            mockSecurityPanelViewProvider,
-            editor,
-            createClient(),
-            extensionContext,
-            CodeAnalysisScope.FILE
-        )
+        function assertTests({ commandSpy, securityScanRenderSpy }: { commandSpy: any; securityScanRenderSpy: any }) {
+            assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
+            assert.ok(securityScanRenderSpy.calledOnce)
+            const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
+            assert.strictEqual(warnings.length, 0)
+            assertTelemetry('codewhisperer_securityScan', {
+                codewhispererCodeScanScope: 'FILE',
+                passive: true,
+            })
+        }
 
-        assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
-        assert.ok(securityScanRenderSpy.calledOnce)
-        const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
-        assert.strictEqual(warnings.length, 0)
-        assertTelemetry('codewhisperer_securityScan', {
-            codewhispererCodeScanScope: 'FILE',
-            passive: true,
-        })
+        return {
+            setup,
+            runTests,
+            assertTests,
+        }
     })
 })
