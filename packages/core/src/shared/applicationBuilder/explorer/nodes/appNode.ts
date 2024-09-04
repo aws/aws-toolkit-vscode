@@ -21,7 +21,10 @@ import * as path from 'path'
 export class AppNode implements TreeNode {
     public readonly id = this.location.samTemplateUri.toString()
     public readonly resource = this.location
-    public readonly label = `${this.location.workspaceFolder.name}/${path.relative(this.location.workspaceFolder.uri.fsPath, this.location.samTemplateUri.fsPath)}`
+    public readonly label = path.join(
+        this.location.workspaceFolder.name,
+        path.relative(this.location.workspaceFolder.uri.fsPath, this.location.samTemplateUri.fsPath)
+    )
     private stackName: string = ''
     public constructor(private readonly location: SamAppLocation) {}
 
