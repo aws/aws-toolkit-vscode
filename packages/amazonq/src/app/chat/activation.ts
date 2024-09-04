@@ -5,9 +5,8 @@
 
 import * as vscode from 'vscode'
 import { ExtensionContext, window } from 'vscode'
-import { Auth } from 'aws-core-vscode/auth'
 import { telemetry } from 'aws-core-vscode/telemetry'
-import { CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
+import { AuthUtil, CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
 import { Commands, placeholder, funcUtil } from 'aws-core-vscode/shared'
 import * as amazonq from 'aws-core-vscode/amazonq'
 
@@ -81,7 +80,7 @@ async function setupAuthNotification() {
 
     async function tryShowNotification() {
         // Do not show the notification if the IDE starts and user is already authenticated.
-        if (Auth.instance.activeConnection) {
+        if (AuthUtil.instance.isConnected()) {
             notificationDisplayed = true
         }
 
