@@ -122,7 +122,7 @@ export function performanceTest(
                     const systemCpuUsage = endCpuUsage.system / 1000000
                     // eslint-disable-next-line aws-toolkits/no-console-log
                     console.log(`userCpuUsage: ${userCpuUsage}, systemCpuUsage: ${systemCpuUsage}`)
-                    return userCpuUsage < 15 && systemCpuUsage < 5
+                    return userCpuUsage < 20 && systemCpuUsage < 8
                 },
                 {
                     interval: 5000,
@@ -147,10 +147,10 @@ export function performanceTest(
                 if (!metrics) {
                     assert.fail('Performance metrics not found')
                 }
-                await args.assertTests(setup)
                 // eslint-disable-next-line aws-toolkits/no-console-log
                 console.log(`performanceMetrics: %O`, metrics)
                 testRunMetrics.push(metrics)
+                await args.assertTests(setup)
             })
         }
 
