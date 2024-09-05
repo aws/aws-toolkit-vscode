@@ -245,6 +245,6 @@ export class Messenger {
      * Opens a new task tab.
      */
     public openNewTask() {
-        this.dispatcher.sendOpenNewTask(new OpenNewTabMessage())
+        this.dispatcher.sendOpenNewTask(new OpenNewTabMessage('tabName', 'tabType'))
     }
 }
