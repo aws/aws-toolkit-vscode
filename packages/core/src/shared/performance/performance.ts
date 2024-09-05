@@ -87,15 +87,15 @@ export class PerformanceTracker {
     }
 }
 
-interface PerformanceTestFunction<T> {
+interface PerformanceTestFunction<TSetup, TExecute> {
     // anything you want setup (stubs, etc)
-    setup: () => Promise<T>
+    setup: () => Promise<TSetup>
 
     // function under performance test
-    execute: () => Promise<any>
+    execute: (args: TSetup) => Promise<TExecute>
 
     // anything you want to verify (assertions, etc)
-    verify: (args: T) => any
+    verify: (setup: TSetup, execute: TExecute) => Promise<void> | void
 }
 
 const defaultPollingUsage = {
@@ -116,20 +116,10 @@ const defaultPollingUsage = {
 /**
  * Generate a test suite that runs fn options.testRuns times and gets the average performance metrics of all the test runs
  */
-export function performanceTest<T>(
+export function performanceTest<TSetup, TExecute>(
     options: TestOptions,
     name: string,
-    fn: () => Promise<PerformanceTestFunction<T>>
-): Mocha.Suite
-export function performanceTest<T>(
-    options: TestOptions,
-    name: string,
-    fn: () => PerformanceTestFunction<T>
-): Mocha.Suite
-export function performanceTest<T>(
-    options: TestOptions,
-    name: string,
-    fn: () => PerformanceTestFunction<T> | Promise<PerformanceTestFunction<T>>
+    fn: () => PerformanceTestFunction<TSetup, TExecute>
 ) {
     const testOption = options[process.platform as 'linux' | 'darwin' | 'win32']
 
@@ -176,12 +166,12 @@ export function performanceTest<T>(
 
         for (let testRun = 1; testRun <= totalTestRuns; testRun++) {
             it(`${name} - test run ${testRun}`, async () => {
-                const { setup, execute, verify } = await fn()
+                const { setup, execute, verify } = fn()
 
-                const setupArgs = await setup()
+                const setupResp = await setup()
 
                 performanceTracker?.start()
-                await execute()
+                const execResp = await execute(setupResp)
                 const metrics = performanceTracker?.stop()
                 if (!metrics) {
                     assert.fail('Performance metrics not found')
@@ -192,7 +182,7 @@ export function performanceTest<T>(
                 console.log(`performanceMetrics: %O`, metrics)
                 testRunMetrics.push(metrics)
 
-                await verify(setupArgs)
+                await verify(setupResp, execResp)
             })
         }
 
