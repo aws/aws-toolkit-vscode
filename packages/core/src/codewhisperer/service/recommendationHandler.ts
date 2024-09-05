@@ -201,7 +201,10 @@ export class RecommendationHandler {
                 }
             }
         } else {
-            session.requestContext = await EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)
+            session.requestContext = await EditorContext.buildGenerateRecommendationRequest(
+                editor as vscode.TextEditor,
+                config.isSuggestionsWithCodeReferencesEnabled
+            )
         }
         const request = session.requestContext.request
 

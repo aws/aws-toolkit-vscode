@@ -132,7 +132,10 @@ export async function buildListRecommendationRequest(
     }
 }
 
-export async function buildGenerateRecommendationRequest(editor: vscode.TextEditor): Promise<{
+export async function buildGenerateRecommendationRequest(
+    editor: vscode.TextEditor,
+    allowCodeWithReference: boolean
+): Promise<{
     request: codewhispererClient.GenerateRecommendationsRequest
     supplementalMetadata: CodeWhispererSupplementalContext | undefined
 }> {
@@ -150,6 +153,9 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
         request: {
             fileContext: fileContext,
             maxResults: CodeWhispererConstants.maxRecommendations,
+            referenceTrackerConfiguration: {
+                recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
+            },
             supplementalContexts: supplementalContexts?.supplementalContextItems ?? [],
         },
         supplementalMetadata: supplementalContexts,
