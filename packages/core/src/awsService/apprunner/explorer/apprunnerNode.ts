@@ -12,14 +12,14 @@ import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
 import { getPaginatedAwsCallIter } from '../../../shared/utilities/collectionUtils'
 import { AppRunner } from 'aws-sdk'
 import globals from '../../../shared/extensionGlobals'
+import { PollingSet } from '../../../shared/utilities/pollingSet'
 
 const localize = nls.loadMessageBundle()
-
 const pollingInterval = 20000
+
 export class AppRunnerNode extends AWSTreeNodeBase {
     private readonly serviceNodes: Map<AppRunner.ServiceId, AppRunnerServiceNode> = new Map()
-    private readonly pollingNodes: Set<string> = new Set()
-    private pollTimer?: NodeJS.Timeout
+    private readonly pollingSet: PollingSet<string> = new PollingSet(pollingInterval)
 
     public constructor(
         public override readonly regionCode: string,
@@ -79,7 +79,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
                 if (this.serviceNodes.has(summary.ServiceArn)) {
                     this.serviceNodes.get(summary.ServiceArn)!.update(summary)
                     if (summary.Status !== 'OPERATION_IN_PROGRESS') {
-                        this.pollingNodes.delete(summary.ServiceArn)
+                        this.pollingSet.delete(summary.ServiceArn)
                         this.clearPollTimer()
                     }
                 } else {
@@ -92,27 +92,29 @@ export class AppRunnerNode extends AWSTreeNodeBase {
         deletedNodeArns.forEach(this.deleteNode.bind(this))
     }
 
+    // TODO: generalize this method.
     private clearPollTimer(): void {
-        if (this.pollingNodes.size === 0 && this.pollTimer) {
-            globals.clock.clearInterval(this.pollTimer)
-            this.pollTimer = undefined
+        if (this.pollingSet.isEmpty() && this.pollingSet.hasTimer()) {
+            globals.clock.clearInterval(this.pollingSet.pollTimer)
+            this.pollingSet.pollTimer = undefined
         }
     }
 
     public startPolling(id: string): void {
-        this.pollingNodes.add(id)
-        this.pollTimer = this.pollTimer ?? globals.clock.setInterval(this.refresh.bind(this), pollingInterval)
+        this.pollingSet.add(id)
+        this.pollingSet.pollTimer =
+            this.pollingSet.pollTimer ?? globals.clock.setInterval(this.refresh.bind(this), pollingInterval)
     }
 
     public stopPolling(id: string): void {
-        this.pollingNodes.delete(id)
+        this.pollingSet.delete(id)
         this.serviceNodes.get(id)?.refresh()
         this.clearPollTimer()
     }
 
     public deleteNode(id: string): void {
         this.serviceNodes.delete(id)
-        this.pollingNodes.delete(id)
+        this.pollingSet.delete(id)
     }
 
     public async createService(request: AppRunner.CreateServiceRequest): Promise<void> {

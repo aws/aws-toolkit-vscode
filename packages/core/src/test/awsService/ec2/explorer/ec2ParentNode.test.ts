@@ -159,7 +159,7 @@ describe('ec2ParentNode', function () {
         getInstanceStub.resolves(mapToInstanceCollection(instances))
 
         await testNode.updateChildren()
-        assert.strictEqual(testNode.pollingNodes.size, 1)
+        assert.strictEqual(testNode.pollingSet.pollingNodes.size, 1)
         getInstanceStub.restore()
     })
 
@@ -183,7 +183,7 @@ describe('ec2ParentNode', function () {
     it('does refresh explorer when timer goes and status changed', async function () {
         sinon.assert.notCalled(refreshStub)
         const statusUpdateStub = sinon.stub(Ec2Client.prototype, 'getInstanceStatus').resolves('running')
-        testNode.pollingNodes.add('0')
+        testNode.pollingSet.pollingNodes.add('0')
         await clock.tickAsync(6000)
         sinon.assert.called(refreshStub)
         statusUpdateStub.restore()
@@ -201,7 +201,7 @@ describe('ec2ParentNode', function () {
         await testNode.updateChildren()
 
         assert.strictEqual(testNode.isPolling(), true)
-        testNode.pollingNodes.delete('0')
+        testNode.pollingSet.pollingNodes.delete('0')
         await clock.tickAsync(6000)
         assert.strictEqual(testNode.isPolling(), false)
         sinon.assert.calledOn(clearTimerStub, testNode)

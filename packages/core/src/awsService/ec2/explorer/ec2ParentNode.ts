@@ -10,6 +10,7 @@ import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { Ec2InstanceNode } from './ec2InstanceNode'
 import { Ec2Client } from '../../../shared/clients/ec2Client'
 import { updateInPlace } from '../../../shared/utilities/collectionUtils'
+import { PollingSet } from '../../../shared/utilities/pollingSet'
 
 export const parentContextValue = 'awsEc2ParentNode'
 export type Ec2Node = Ec2InstanceNode | Ec2ParentNode
@@ -20,8 +21,9 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
     protected readonly placeHolderMessage = '[No EC2 Instances Found]'
     protected ec2InstanceNodes: Map<string, Ec2InstanceNode>
     public override readonly contextValue: string = parentContextValue
-    public pollingNodes: Set<string> = new Set<string>()
-    private pollTimer?: NodeJS.Timeout
+    // private readonly pollingNodes: Set<string> = new Set<string>()
+    // private pollTimer?: NodeJS.Timeout
+    public readonly pollingSet: PollingSet<string> = new PollingSet(pollingInterval)
 
     public constructor(
         public override readonly regionCode: string,
@@ -56,21 +58,21 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
     }
 
     public isPolling(): boolean {
-        return this.pollingNodes.size !== 0
+        return !this.pollingSet.isEmpty()
     }
 
     public startPolling(newNode: string) {
-        this.pollingNodes.add(newNode)
-        this.pollTimer =
-            this.pollTimer ?? globals.clock.setInterval(this.updatePollingNodes.bind(this), pollingInterval)
+        this.pollingSet.add(newNode)
+        this.pollingSet.pollTimer =
+            this.pollingSet.pollTimer ?? globals.clock.setInterval(this.updatePollingNodes.bind(this), pollingInterval)
     }
 
     private checkForPendingNodes() {
-        this.pollingNodes.forEach(async (instanceId) => {
+        this.pollingSet.pollingNodes.forEach(async (instanceId) => {
             const childNode = this.ec2InstanceNodes.get(instanceId)!
             await childNode.updateStatus()
             if (!childNode.isPending()) {
-                this.pollingNodes.delete(instanceId)
+                this.pollingSet.pollingNodes.delete(instanceId)
                 childNode.refreshNode()
             }
         })
@@ -84,8 +86,8 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
     }
 
     public clearPollTimer() {
-        globals.clock.clearInterval(this.pollTimer!)
-        this.pollTimer = undefined
+        globals.clock.clearInterval(this.pollingSet.pollTimer!)
+        this.pollingSet.pollTimer = undefined
     }
 
     public async clearChildren() {
