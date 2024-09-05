@@ -23,7 +23,11 @@
             "envFile": "${workspaceFolder}/.local.env",
             "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
             "preLaunchTask": "extensionInit",
-            "postDebugTask": "extensionTerminate"
+            "postDebugTask": "extensionTerminate",
+            "presentation": {
+                "group": "1_Extension",
+                "order": 1
+            }
         },
         {
             /** Handles the entire process of building and running the toolkit extension in the browser. **/
@@ -44,7 +48,11 @@
             **/
             "resolveSourceMapLocations": ["!**/node_modules/**", "!**/vs/**", "!**/extensions/**"],
             "preLaunchTask": "webRun",
-            "postDebugTask": "webRunTerminate"
+            "postDebugTask": "webRunTerminate",
+            "presentation": {
+                "group": "1_Extension",
+                "order": 3
+            }
         },
         {
             "name": "Test Lint",
@@ -52,7 +60,11 @@
             "request": "launch",
             "program": "${workspaceFolder}/scripts/lint/testLint.ts",
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
+            "preLaunchTask": "${defaultBuildTask}",
+            "presentation": {
+                "group": "7_TestLint",
+                "order": 3
+            }
         }
         // ---- We do not need the following currently, and we want to reduce clutter. Re-enable if necessary ----
         // {
