@@ -217,7 +217,7 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
             throw new CancellationError('user')
         }
 
-        const timeout = new Timeout(600000)
+        const timeout = new Timeout(1200000)
         const progress = await showMessageWithCancel(
             localize('AWS.cli.installProgress', 'Installing: {0} CLI', cliToInstall.name),
             timeout

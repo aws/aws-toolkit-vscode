@@ -244,13 +244,13 @@ async function registerAppBuilderCommands(context: ExtContext): Promise<void> {
     const source = 'AppBuilderWalkthrough'
     context.extensionContext.subscriptions.push(
         Commands.register('aws.toolkit.installSAMCLI', async () => {
-            await getOrInstallCliWrapper('sam-cli', source, context)
+            await getOrInstallCliWrapper('sam-cli', source)
         }),
         Commands.register('aws.toolkit.installAWSCLI', async () => {
-            await getOrInstallCliWrapper('aws-cli', source, context)
+            await getOrInstallCliWrapper('aws-cli', source)
         }),
         Commands.register('aws.toolkit.installDocker', async () => {
-            await getOrInstallCliWrapper('docker', source, context)
+            await getOrInstallCliWrapper('docker', source)
         }),
         Commands.register('aws.toolkit.lambda.setWalkthroughToAPI', async () => {
             await setWalkthrough('API')

@@ -18,17 +18,18 @@ import { createSingleFileDialog } from '../ui/common/openDialog'
 import { fs } from '../fs/fs'
 import path from 'path'
 import { telemetry } from '../telemetry'
-import { ExtContext } from '../extensions'
 
 import { minSamCliVersionForAppBuilderSupport } from '../sam/cli/samCliValidator'
-import { getSamCliVersion } from '../sam/cli/samCliContext'
+import { SamCliInfoInvocation } from '../sam/cli/samCliInfo'
 import { openUrl } from '../utilities/vsCodeUtils'
 import { getOrInstallCli, awsClis, AwsClis } from '../utilities/cliUtils'
 import { getPattern } from '../utilities/downloadPatterns'
+import { addFolderToWorkspace } from '../utilities/workspaceUtils'
 
 const localize = nls.loadMessageBundle()
 const serverlessLandUrl = 'https://serverlessland.com/'
 export const walkthroughContextString = 'aws.toolkit.lambda.walkthroughSelected'
+export const templateToOpenAppComposer = 'aws.toolkit.appComposer.templateToOpenOnStart'
 const defaultTemplateName = 'template.yaml'
 const serverlessLandOwner = 'aws-samples'
 const serverlessLandRepo = 'serverless-patterns'
@@ -125,7 +126,7 @@ class RuntimeLocationWizard extends Wizard<{
 
         form.realDir.bindPrompter((state) => createSingleFileDialog(options), {
             showWhen: (state) => state.dir !== undefined && state.dir === 'file-selector',
-            setDefault: (state) => (state.dir ? vscode.Uri.parse(state.dir) : undefined),
+            setDefault: (state) => (state.dir ? vscode.Uri.file(state.dir) : undefined),
         })
 
         // option2:workspce filepath returned
@@ -213,32 +214,23 @@ async function openProjectInWorkspace(projectUri: vscode.Uri): Promise<void> {
         }
     }
 
-    // if no template, just add dir to workspace
+    // Open template file, and after update workspace folder
     if (templateUri) {
-        // Open template file, and appcomposer
         await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')
         await vscode.commands.executeCommand('explorer.openToSide', templateUri)
-        await vscode.commands.executeCommand('aws.openInApplicationComposer', templateUri)
+        // set global key to template to be opened, appComposer will open them upon reload
+        await globals.globalState.update(templateToOpenAppComposer, [templateUri.fsPath])
     }
 
-    // check if project exist in workspace, if exist, return
-    const wsFolder = vscode.workspace.workspaceFolders
-    if (wsFolder) {
-        for (const folder of wsFolder) {
-            getLogger().info(`checking ${projectUri.fsPath} vs ${folder.uri.fsPath}`)
-            if (projectUri.fsPath === folder.uri.fsPath) {
-                return
-            }
-            const relative = path.relative(folder.uri.fsPath, projectUri.fsPath)
-            if (relative && !relative.startsWith('..') && !path.isAbsolute(relative)) {
-                //project dir exist in opened workspace
-                return
-            }
-        }
+    // if extension is reloaded here, this function will never return (killed)
+    await addFolderToWorkspace({ uri: projectUri, name: path.basename(projectUri.fsPath) }, true)
+
+    // Open template file
+    if (templateUri) {
+        // extension not reloaded, set to false
+        await globals.globalState.update(templateToOpenAppComposer, undefined)
+        await vscode.commands.executeCommand('aws.openInApplicationComposer', templateUri)
     }
-    getLogger().info(`Project directory ${projectUri.fsPath} doesn't belong to active workspace, adding to workspace`)
-    // add project dir to workspace
-    vscode.workspace.updateWorkspaceFolders(0, 0, { uri: projectUri })
 }
 
 /**
@@ -287,10 +279,13 @@ export async function initWalkthroughProjectCommand() {
     }
 }
 
-export async function getOrUpdateOrInstallSAMCli(source: string, context: ExtContext) {
+export async function getOrUpdateOrInstallSAMCli(source: string) {
     try {
-        const samCliVersion = await getSamCliVersion(context.samCliContext())
         // find sam
+        const samPath = await getOrInstallCli('sam-cli', true, true)
+        // check version
+        const samCliVersion = (await new SamCliInfoInvocation(samPath).execute()).version
+
         if (semver.lt(samCliVersion, minSamCliVersionForAppBuilderSupport)) {
             // sam found but version too low
             const updateInstruction = localize(
@@ -309,13 +304,9 @@ export async function getOrUpdateOrInstallSAMCli(source: string, context: ExtCon
             if (selection === updateInstruction) {
                 void openUrl(vscode.Uri.parse(awsClis['sam-cli'].manualInstallLink))
             }
-        } else {
-            // sam normal version
-            await getOrInstallCli('sam-cli', true, true)
         }
-    } catch {
-        // sam is not found, error handled inside
-        await getOrInstallCli('sam-cli', true, true)
+    } catch (err) {
+        throw ToolkitError.chain(err, 'Failed to install or detect SAM')
     } finally {
         telemetry.record({ source: source, toolId: 'sam-cli' })
     }
@@ -327,10 +318,10 @@ export async function getOrUpdateOrInstallSAMCli(source: string, context: ExtCon
  * @param source to be added in telemetry
  * @param context the extension context
  */
-export async function getOrInstallCliWrapper(toolId: AwsClis, source: string, context: ExtContext) {
+export async function getOrInstallCliWrapper(toolId: AwsClis, source: string) {
     await telemetry.appBuilder_installTool.run(async () => {
         if (toolId === 'sam-cli') {
-            await getOrUpdateOrInstallSAMCli(source, context)
+            await getOrUpdateOrInstallSAMCli(source)
             return
         }
         try {

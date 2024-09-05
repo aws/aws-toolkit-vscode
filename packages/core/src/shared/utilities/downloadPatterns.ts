@@ -23,27 +23,35 @@ async function fetchUrl(owner: string, repoName: string, assetName: string): Pro
     return Buffer.from(await response.arrayBuffer())
 }
 
-async function unzipPattern(buffer: Buffer, outputDir: string, removeTopDir: boolean): Promise<void> {
+async function unzipPattern(buffer: Buffer, outputDir: vscode.Uri, removeTopDir: boolean): Promise<void> {
     const zip = new AdmZip(buffer)
     const zipEntries = zip.getEntries()
 
     try {
         await Promise.all(
             zipEntries.map(async (entry) => {
-                entry.entryName
                 let subPath = entry.entryName
+                // Admzip won't change path sep based on system type
+                const pathArray = entry.entryName.split('/')
                 if (removeTopDir) {
-                    const pathArray = entry.entryName.split(path.sep)
+                    // remove top dir
                     pathArray.shift()
-                    subPath = pathArray.join(path.sep)
                 }
-                const entryPath = path.join(outputDir, subPath)
+                subPath = pathArray.join(path.sep)
+                const entryPath = vscode.Uri.joinPath(outputDir, subPath)
 
-                if (entry.isDirectory) {
-                    await fs.mkdir(entryPath)
+                if (!(await fs.existsDir(entryPath))) {
+                    if (entry.isDirectory) {
+                        await fs.mkdir(entryPath)
+                    } else {
+                        const fileData = entry.getData()
+                        await fs.writeFile(entryPath, fileData)
+                    }
                 } else {
-                    const fileData = entry.getData()
-                    await fs.writeFile(entryPath, fileData)
+                    if (!entry.isDirectory) {
+                        // the file we are creating has the same name of an exising dir
+                        getLogger().warn(`${entryPath.fsPath} skipped: Existing folder has conflicting name`)
+                    }
                 }
             })
         )
@@ -61,6 +69,6 @@ export async function getPattern(
     removeTopDir: boolean = false
 ) {
     const data = await fetchUrl(owner, repoName, assetName)
-    await unzipPattern(data, outputDir.fsPath, removeTopDir)
-    getLogger().info(`Decompressed files are saved in ${outputDir}`)
+    await unzipPattern(data, outputDir, removeTopDir)
+    getLogger().info(`Decompressed files are saved in ${outputDir.fsPath}`)
 }

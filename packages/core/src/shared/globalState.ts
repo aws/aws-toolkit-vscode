@@ -67,6 +67,7 @@ type globalKey =
     | 'telemetryId'
     | 'aws.toolkit.lambda.walkthroughSelected'
     | 'aws.toolkit.lambda.walkthroughCompleted'
+    | 'aws.toolkit.appComposer.templateToOpenOnStart'
 
 /**
  * Extension-local (not visible to other vscode extensions) shared state which persists after IDE
