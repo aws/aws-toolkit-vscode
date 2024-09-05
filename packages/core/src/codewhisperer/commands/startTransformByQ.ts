@@ -720,10 +720,10 @@ export async function postTransformationJob() {
 
     // Note: IntelliJ implementation of ResultStatusMessage includes additional metadata such as jobId.
     telemetry.codeTransform_totalRunTime.emit({
+        buildSystemVersion: mavenVersionInfoMessage,
         codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
         codeTransformResultStatusMessage: resultStatusMessage,
         codeTransformRunTimeLatency: durationInMs,
-        codeTransformLocalMavenVersion: mavenVersionInfoMessage,
         codeTransformLocalJavaVersion: javaVersionInfoMessage,
         result: resultStatusMessage === TransformByQStatus.Succeeded ? MetadataResult.Pass : MetadataResult.Fail,
         reason: resultStatusMessage,
