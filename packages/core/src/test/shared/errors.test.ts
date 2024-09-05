@@ -540,53 +540,58 @@ describe('util', function () {
         )
     })
 
-    it('AwsClientResponseError', function () {
-        let syntaxError = makeSyntaxErrorWithSdkClientError()
+    describe('AwsClientResponseError', function () {
+        it('handles the happy path cases', function () {
+            const syntaxError = makeSyntaxErrorWithSdkClientError()
 
-        assert.deepStrictEqual(
-            AwsClientResponseError.tryExtractReasonFromSyntaxError(syntaxError),
-            'SDK Client unexpected error response: data response code: 500'
-        )
-        const responseError = AwsClientResponseError.instanceIf(syntaxError)
-        assert(!(responseError instanceof SyntaxError))
-        assert(responseError instanceof Error)
-        assert(responseError instanceof AwsClientResponseError)
-        assert(responseError.message === 'SDK Client unexpected error response: data response code: 500')
+            assert.deepStrictEqual(
+                AwsClientResponseError.tryExtractReasonFromSyntaxError(syntaxError),
+                'SDK Client unexpected error response: data response code: 500'
+            )
+            const responseError = AwsClientResponseError.instanceIf(syntaxError)
+            assert(!(responseError instanceof SyntaxError))
+            assert(responseError instanceof Error)
+            assert(responseError instanceof AwsClientResponseError)
+            assert(responseError.message === 'SDK Client unexpected error response: data response code: 500')
+        })
 
-        // The SyntaxError message does not mention it has an underlying error
-        syntaxError = makeSyntaxErrorWithSdkClientError()
-        syntaxError.message = 'This does not mention a "$response" field existing'
-        assert(!(AwsClientResponseError.instanceIf(syntaxError) instanceof AwsClientResponseError))
-        assert.equal(syntaxError, AwsClientResponseError.instanceIf(syntaxError))
+        it('gracefully handles a SyntaxError with missing fields', function () {
+            let syntaxError = makeSyntaxErrorWithSdkClientError()
 
-        // No '$response' field in SyntaxError
-        syntaxError = makeSyntaxErrorWithSdkClientError()
-        delete (syntaxError as any)['$response']
-        assertIsAwsClientResponseError(syntaxError, `No '$response' field in SyntaxError | ${syntaxError.message}`)
-        syntaxError = makeSyntaxErrorWithSdkClientError()
-        ;(syntaxError as any)['$response'] = undefined
-        assertIsAwsClientResponseError(syntaxError, `No '$response' field in SyntaxError | ${syntaxError.message}`)
+            // No message about a '$response' field existing
+            syntaxError.message = 'This does not mention a "$response" field existing'
+            assert(!(AwsClientResponseError.instanceIf(syntaxError) instanceof AwsClientResponseError))
+            assert.equal(syntaxError, AwsClientResponseError.instanceIf(syntaxError))
 
-        // No 'reason' in '$response'
-        syntaxError = makeSyntaxErrorWithSdkClientError()
-        let response = (syntaxError as any)['$response']
-        delete response['reason']
-        assertIsAwsClientResponseError(
-            syntaxError,
-            `No 'reason' field in '$response' | ${JSON.stringify(response)} | ${syntaxError.message}`
-        )
-        syntaxError = makeSyntaxErrorWithSdkClientError()
-        response = (syntaxError as any)['$response']
-        response['reason'] = undefined
-        assertIsAwsClientResponseError(
-            syntaxError,
-            `No 'reason' field in '$response' | ${JSON.stringify(response)} | ${syntaxError.message}`
-        )
+            // No '$response' field in SyntaxError
+            syntaxError = makeSyntaxErrorWithSdkClientError()
+            delete (syntaxError as any)['$response']
+            assertIsAwsClientResponseError(syntaxError, `No '$response' field in SyntaxError | ${syntaxError.message}`)
+            syntaxError = makeSyntaxErrorWithSdkClientError()
+            ;(syntaxError as any)['$response'] = undefined
+            assertIsAwsClientResponseError(syntaxError, `No '$response' field in SyntaxError | ${syntaxError.message}`)
 
-        function assertIsAwsClientResponseError(e: Error, expectedMessage: string) {
-            assert.deepStrictEqual(AwsClientResponseError.tryExtractReasonFromSyntaxError(e), expectedMessage)
-            assert(AwsClientResponseError.instanceIf(e) instanceof AwsClientResponseError)
-        }
+            // No 'reason' in '$response'
+            syntaxError = makeSyntaxErrorWithSdkClientError()
+            let response = (syntaxError as any)['$response']
+            delete response['reason']
+            assertIsAwsClientResponseError(
+                syntaxError,
+                `No 'reason' field in '$response' | ${JSON.stringify(response)} | ${syntaxError.message}`
+            )
+            syntaxError = makeSyntaxErrorWithSdkClientError()
+            response = (syntaxError as any)['$response']
+            response['reason'] = undefined
+            assertIsAwsClientResponseError(
+                syntaxError,
+                `No 'reason' field in '$response' | ${JSON.stringify(response)} | ${syntaxError.message}`
+            )
+
+            function assertIsAwsClientResponseError(e: Error, expectedMessage: string) {
+                assert.deepStrictEqual(AwsClientResponseError.tryExtractReasonFromSyntaxError(e), expectedMessage)
+                assert(AwsClientResponseError.instanceIf(e) instanceof AwsClientResponseError)
+            }
+        })
     })
 
     it('scrubNames()', async function () {
