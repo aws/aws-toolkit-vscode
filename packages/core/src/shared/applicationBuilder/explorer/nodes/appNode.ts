@@ -10,6 +10,7 @@ import * as vscode from 'vscode'
 import { getLogger } from '../../../logger'
 import { ResourceTreeEntity, SamAppLocation, getApp, getStackName } from '../samProject'
 import { ResourceNode, generateResourceNodes } from './resourceNode'
+import { generateStackNode } from './deployedStack'
 import { TreeNode } from '../../../treeview/resourceTreeDataProvider'
 import { createPlaceholderItem } from '../../../treeview/utils'
 import { getIcon } from '../../../icons'
@@ -46,6 +47,7 @@ export class AppNode implements TreeNode {
                       invoker: getSamCliContext().invoker,
                   })
                 : undefined
+            resources.push(...generateStackNode(this.location, this.stackName, region))
             resources.push(
                 ...generateResourceNodes(this.location, templateResources, this.stackName, region, deployedResources)
             )

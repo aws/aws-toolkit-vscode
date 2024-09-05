@@ -609,8 +609,8 @@ export async function runSamSync(args: SyncParams) {
             env: await injectCredentials(args.connection),
         }),
     })
-
     await runInTerminal(sam, 'sync')
+    await SamConfig.writeGlobal(args.projectRoot, args.stackName, args.region)
 }
 
 export const getWorkspaceUri = (template: TemplateItem) => vscode.workspace.getWorkspaceFolder(template.uri)?.uri

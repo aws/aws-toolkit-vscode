@@ -38,13 +38,8 @@ export async function getStackName(workspaceFolder: vscode.WorkspaceFolder): Pro
 
         const samConfig = await SamConfig.fromUri(configUris[0])
 
-        let stackName = await samConfig.getParam('deploy', 'stack_name')
-        let region = await samConfig.getParam('deploy', 'region')
-
-        if (!stackName) {
-            stackName = await samConfig.getParam('global', 'stack_name')
-            region = await samConfig.getParam('global', 'region')
-        }
+        const stackName = await samConfig.getParam('global', 'stack_name')
+        const region = await samConfig.getParam('global', 'region')
 
         if (!stackName && !region) {
             return {}

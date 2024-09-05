@@ -27,6 +27,7 @@ import { DefaultS3Client } from '../../shared/clients/s3Client'
 import { ToolkitError, globals } from '../../shared'
 import { promptAndUseConnection } from '../../auth/utils'
 import { Auth } from '../../auth'
+import { SamConfig } from '../../shared/sam/config'
 import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ChildProcess } from '../../shared/utilities/childProcess'
@@ -348,10 +349,10 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
 
             //Run SAM deploy in Terminal
             await runInTerminal(deployProcess, 'deploy')
+            await SamConfig.writeGlobal(params.projectRoot, params.stackName, params.region)
         } catch (error) {
             throw ToolkitError.chain(error, 'Failed to deploy SAM template', { details: { ...deployFlags } })
         }
-
         return {
             isSuccess: true,
         }
