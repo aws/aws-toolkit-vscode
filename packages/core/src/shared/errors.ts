@@ -941,7 +941,7 @@ export class AwsClientResponseError extends Error {
      */
     static instanceIf<T>(err: T): AwsClientResponseError | T {
         const reason = AwsClientResponseError.tryExtractReasonFromSyntaxError(err)
-        if (reason && reason.startsWith('SDK Client unexpected error response: data response code:')) {
+        if (reason) {
             getLogger().debug(`Creating AwsClientResponseError from SyntaxError: %O`, err)
             return new AwsClientResponseError(err)
         }
@@ -953,16 +953,31 @@ export class AwsClientResponseError extends Error {
      * Otherwise returning undefined.
      */
     static tryExtractReasonFromSyntaxError(err: unknown): string | undefined {
-        if (!(err instanceof SyntaxError)) {
+        if (
+            !(
+                err instanceof SyntaxError &&
+                err.message.includes('inspect the hidden field {error}.$response on this object')
+            )
+        ) {
             return undefined
         }
 
         // See the class docstring to explain how we know the existence of the following keys
-        if (hasKey(err, '$response')) {
+        if (hasKey(err, '$response') && err['$response'] !== undefined) {
             const response = err['$response']
-            if (response && hasKey(response, 'reason')) {
-                return response['reason'] as string
+            if (response) {
+                if (hasKey(response, 'reason') && response['reason'] !== undefined) {
+                    return response['reason'] as string
+                } else {
+                    // We were seeing some cases in telemetry where a syntax error made it all the way to this point
+                    // but then may have not had a 'reason'.
+                    return `No 'reason' field in '$response' | ${JSON.stringify(response)} | ${err.message}`
+                }
             }
+        } else {
+            // We were seeing some cases in telemetry where a syntax error made it all the way to this point
+            // but then may have not had a '$response'.
+            return `No '$response' field in SyntaxError | ${err.message}`
         }
 
         return undefined
