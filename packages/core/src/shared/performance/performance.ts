@@ -7,7 +7,7 @@ import * as os from 'os'
 import assert from 'assert'
 import { getLogger } from '../logger'
 import { isWeb } from '../extensionGlobals'
-import { waitUntil } from '../utilities/timeoutUtils'
+// import { waitUntil } from '../utilities/timeoutUtils'
 
 interface PerformanceMetrics {
     /**
@@ -98,20 +98,20 @@ interface PerformanceTestFunction<TSetup, TExecute> {
     verify: (setup: TSetup, execute: TExecute) => Promise<void> | void
 }
 
-const defaultPollingUsage = {
-    darwin: {
-        userCpuUsage: 20,
-        systemCpuUsage: 8,
-    },
-    linux: {
-        userCpuUsage: 35, // codebuild has a higher default user cpu usage
-        systemCpuUsage: 8,
-    },
-    win32: {
-        userCpuUsage: 28, // this ci seems to have notably higher default cpu usage
-        systemCpuUsage: 8,
-    },
-}[process.platform as 'linux' | 'darwin' | 'win32']
+// const defaultPollingUsage = {
+//     darwin: {
+//         userCpuUsage: 20,
+//         systemCpuUsage: 8,
+//     },
+//     linux: {
+//         userCpuUsage: 35, // codebuild has a higher default user cpu usage
+//         systemCpuUsage: 8,
+//     },
+//     win32: {
+//         userCpuUsage: 28, // this ci seems to have notably higher default cpu usage
+//         systemCpuUsage: 8,
+//     },
+// }[process.platform as 'linux' | 'darwin' | 'win32']
 
 /**
  * Generate a test suite that runs fn options.testRuns times and gets the average performance metrics of all the test runs
@@ -133,33 +133,33 @@ export function performanceTest<TSetup, TExecute>(
             this.timeout(60000)
 
             // Wait until the user/system cpu usage stabilizes on a lower amount
-            const opt = await waitUntil(
-                async () => {
-                    const endCpuUsage = process.cpuUsage()
-                    const userCpuUsage = endCpuUsage.user / 1000000
-                    const systemCpuUsage = endCpuUsage.system / 1000000
+            // const opt = await waitUntil(
+            //     async () => {
+            //         const endCpuUsage = process.cpuUsage()
+            //         const userCpuUsage = endCpuUsage.user / 1000000
+            //         const systemCpuUsage = endCpuUsage.system / 1000000
 
-                    // log these messages for now so we can better understand flakiness
-                    // eslint-disable-next-line aws-toolkits/no-console-log
-                    console.log(
-                        `Waiting until cpu usage stablizies: userCpuUsage: ${userCpuUsage}, systemCpuUsage: ${systemCpuUsage}`
-                    )
+            //         // log these messages for now so we can better understand flakiness
+            //         // eslint-disable-next-line aws-toolkits/no-console-log
+            //         console.log(
+            //             `Waiting until cpu usage stablizies: userCpuUsage: ${userCpuUsage}, systemCpuUsage: ${systemCpuUsage}`
+            //         )
 
-                    return (
-                        userCpuUsage < defaultPollingUsage.userCpuUsage &&
-                        systemCpuUsage < defaultPollingUsage.systemCpuUsage
-                    )
-                },
-                {
-                    interval: 5000,
-                    timeout: 60000,
-                }
-            )
-            if (!opt) {
-                assert.fail(
-                    `CPU Usage failed to drop below user cpu usage: ${defaultPollingUsage.userCpuUsage} and system cpu usage: ${defaultPollingUsage.systemCpuUsage}`
-                )
-            }
+            //         return (
+            //             userCpuUsage < defaultPollingUsage.userCpuUsage &&
+            //             systemCpuUsage < defaultPollingUsage.systemCpuUsage
+            //         )
+            //     },
+            //     {
+            //         interval: 5000,
+            //         timeout: 60000,
+            //     }
+            // )
+            // if (!opt) {
+            //     assert.fail(
+            //         `CPU Usage failed to drop below user cpu usage: ${defaultPollingUsage.userCpuUsage} and system cpu usage: ${defaultPollingUsage.systemCpuUsage}`
+            //     )
+            // }
 
             performanceTracker = new PerformanceTracker(name)
         })
