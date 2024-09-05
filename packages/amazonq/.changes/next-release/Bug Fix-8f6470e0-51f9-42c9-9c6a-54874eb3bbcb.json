@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Network errors causing premature SSO logout"
-}
