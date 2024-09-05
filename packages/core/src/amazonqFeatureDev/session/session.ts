@@ -41,6 +41,15 @@ export class Session {
     // Used to keep track of whether or not the current session is currently authenticating/needs authenticating
     public isAuthenticating: boolean
 
+    /**
+     * Creates a new Session instance.
+     * @constructor
+     * @param {SessionConfig} config - The configuration for the session.
+     * @param {Messenger} messenger - The messenger used for communication.
+     * @param {string} tabID - The ID of the tab associated with this session.
+     * @param {Omit<SessionState, 'uploadId'>} initialState - The initial state of the session.
+     * @param {FeatureDevClient} proxyClient - The client used for feature development.
+     */
     constructor(
         public readonly config: SessionConfig,
         private messenger: Messenger,
@@ -61,6 +70,12 @@ export class Session {
     /**
      * Preload any events that have to run before a chat message can be sent
      */
+    /**
+     * Preloads events that need to run before a chat message can be sent.
+     * @param {string} msg - The message to be sent.
+     * @returns {Promise<void>}
+     * @throws {Error} If there's an issue during preloading.
+     */
     async preloader(msg: string) {
         if (!this.preloaderFinished) {
             await this.setupConversation(msg)
@@ -74,6 +89,13 @@ export class Session {
      * setupConversation
      *
      * Starts a conversation with the backend and uploads the repo for the LLMs to be able to use it.
+     */
+    /**
+     * Sets up a conversation with the backend and uploads the repo for the LLMs to use.
+     * @private
+     * @param {string} msg - The initial message for the conversation.
+     * @returns {Promise<void>}
+     * @throws {Error} If there's an issue setting up the conversation.
      */
     private async setupConversation(msg: string) {
         // Store the initial message when setting up the conversation so that if it fails we can retry with this message
@@ -94,11 +116,20 @@ export class Session {
         )
     }
 
+    /**
+     * Updates the workspace root folder.
+     * @param {string} workspaceRootFolder - The new workspace root folder path.
+     */
     updateWorkspaceRoot(workspaceRootFolder: string) {
         this.config.workspaceRoots = [workspaceRootFolder]
         this._state && this._state.updateWorkspaceRoot && this._state.updateWorkspaceRoot(workspaceRootFolder)
     }
 
+    /**
+     * Retrieves the session state configuration.
+     * @private
+     * @returns {Omit<SessionStateConfig, 'uploadId'>} The session state configuration without the uploadId.
+     */
     private getSessionStateConfig(): Omit<SessionStateConfig, 'uploadId'> {
         return {
             workspaceRoots: this.config.workspaceRoots,
@@ -109,7 +140,9 @@ export class Session {
     }
 
     /**
-     * Triggered by the Generate Code follow up button to move to the code generation phase
+     * Initializes the code generation phase.
+     * Triggered by the Generate Code follow up button to move to the code generation phase.
+     * @throws {Error} If there's an issue initializing the code generation phase.
      */
     initCodegen(): void {
         this._state = new PrepareCodeGenState(
@@ -135,6 +168,11 @@ export class Session {
         })
     }
 
+    /**
+     * Sends a message and processes the next interaction.
+     * @param {string} msg - The message to be sent.
+     * @returns {Promise<Interaction>} The result of the next interaction.
+     */
     async send(msg: string): Promise<Interaction> {
         // When the task/"thing to do" hasn't been set yet, we want it to be the incoming message
         if (this.task === '' && msg) {
@@ -146,6 +184,12 @@ export class Session {
         return this.nextInteraction(msg)
     }
 
+    /**
+     * Processes the next interaction based on the current state.
+     * @private
+     * @param {string} msg - The message for the interaction.
+     * @returns {Promise<Interaction>} The result of the interaction.
+     */
     private async nextInteraction(msg: string) {
         const resp = await this.state.interact({
             task: this.task,
@@ -173,6 +217,14 @@ export class Session {
         return resp.interaction
     }
 
+    /**
+     * Updates the file paths in the messenger.
+     * @param {string} tabID - The ID of the tab.
+     * @param {NewFileInfo[]} filePaths - Array of new file information.
+     * @param {DeletedFileInfo[]} deletedFiles - Array of deleted file information.
+     * @param {string} messageId - The ID of the message.
+     * @returns {Promise<void>}
+     */
     public async updateFilesPaths(
         tabID: string,
         filePaths: NewFileInfo[],
@@ -182,6 +234,11 @@ export class Session {
         this.messenger.updateFileComponent(tabID, filePaths, deletedFiles, messageId)
     }
 
+    /**
+     * Inserts changes into the file system and updates reference logs.
+     * @returns {Promise<void>}
+     * @throws {Error} If there's an issue writing files or deleting files.
+     */
     public async insertChanges() {
         for (const filePath of this.state.filePaths?.filter((i) => !i.rejected) ?? []) {
             const absolutePath = path.join(filePath.workspaceFolder.uri.fsPath, filePath.relativePath)
@@ -204,6 +261,11 @@ export class Session {
         }
     }
 
+    /**
+     * Gets the current state of the session.
+     * @returns {SessionState | Omit<SessionState, 'uploadId'>} The current state of the session.
+     * @throws {Error} If the state has not been initialized.
+     */
     get state() {
         if (!this._state) {
             throw new Error("State should be initialized before it's read")
@@ -211,6 +273,11 @@ export class Session {
         return this._state
     }
 
+    /**
+     * Gets the upload ID of the current session.
+     * @returns {string} The upload ID.
+     * @throws {Error} If the upload ID has not been initialized.
+     */
     get uploadId() {
         if (!('uploadId' in this.state)) {
             throw new Error("UploadId has to be initialized before it's read")
@@ -218,6 +285,10 @@ export class Session {
         return this.state.uploadId
     }
 
+    /**
+     * Gets the number of retries left based on the current development phase.
+     * @returns {number} The number of retries left.
+     */
     get retries() {
         switch (this.state.phase) {
             case DevPhase.APPROACH:
@@ -229,6 +300,9 @@ export class Session {
         }
     }
 
+    /**
+     * Decreases the number of retries based on the current development phase.
+     */
     decreaseRetries() {
         switch (this.state.phase) {
             case DevPhase.APPROACH:
@@ -239,6 +313,11 @@ export class Session {
                 break
         }
     }
+    /**
+     * Gets the conversation ID of the current session.
+     * @returns {string} The conversation ID.
+     * @throws {ConversationIdNotFoundError} If the conversation ID is not set.
+     */
     get conversationId() {
         if (!this._conversationId) {
             throw new ConversationIdNotFoundError()
@@ -246,15 +325,27 @@ export class Session {
         return this._conversationId
     }
 
-    // Used for cases where it is not needed to have conversationId
+    /**
+     * Gets the conversation ID of the current session without throwing an error if it's not set.
+     * Used for cases where it is not needed to have conversationId.
+     * @returns {string | undefined} The conversation ID, or undefined if not set.
+     */
     get conversationIdUnsafe() {
         return this._conversationId
     }
 
+    /**
+     * Gets the latest message sent in the session.
+     * @returns {string} The latest message.
+     */
     get latestMessage() {
         return this._latestMessage
     }
 
+    /**
+     * Gets the telemetry helper for the session.
+     * @returns {TelemetryHelper} The telemetry helper.
+     */
     get telemetry() {
         return this._telemetry
     }

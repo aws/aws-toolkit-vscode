@@ -24,8 +24,23 @@ import { FeatureAuthState } from '../../../../codewhisperer'
 import { CodeReference } from '../../../../codewhispererChat/view/connector/connector'
 import { i18n } from '../../../../shared/i18n-helper'
 export class Messenger {
+    /**
+     * Creates an instance of Messenger.
+     * @constructor
+     * @param {AppToWebViewMessageDispatcher} dispatcher - The dispatcher for sending messages to the web view.
+     */
     public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}
 
+    /**
+     * Sends an answer message to the web view.
+     * @param {Object} params - The parameters for the answer message.
+     * @param {string} [params.message] - The message content.
+     * @param {MessengerTypes} params.type - The type of the message.
+     * @param {ChatItemAction[]} [params.followUps] - The follow-up actions for the message.
+     * @param {string} params.tabID - The ID of the tab to send the message to.
+     * @param {boolean} [params.canBeVoted] - Whether the message can be voted on.
+     * @param {boolean} [params.snapToTop] - Whether the message should snap to the top of the view.
+     */
     public sendAnswer(params: {
         message?: string
         type: MessengerTypes
@@ -49,6 +64,10 @@ export class Messenger {
         )
     }
 
+    /**
+     * Sends a feedback prompt to the user.
+     * @param {string} tabID - The ID of the tab to send the feedback prompt to.
+     */
     public sendFeedback(tabID: string) {
         this.sendAnswer({
             message: undefined,
@@ -64,6 +83,10 @@ export class Messenger {
         })
     }
 
+    /**
+     * Sends a monthly limit error message.
+     * @param {string} tabID - The ID of the tab to send the error message to.
+     */
     public sendMonthlyLimitError(tabID: string) {
         this.sendAnswer({
             type: 'answer',
@@ -73,6 +96,14 @@ export class Messenger {
         this.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.placeholder.chatInputDisabled'))
     }
 
+    /**
+     * Sends an error message to the user.
+     * @param {string} errorMessage - The error message to send.
+     * @param {string} tabID - The ID of the tab to send the error message to.
+     * @param {number} retries - The number of retries left.
+     * @param {string} [conversationId] - The ID of the conversation.
+     * @param {boolean} [showDefaultMessage] - Whether to show the default message or the provided error message.
+     */
     public sendErrorMessage(
         errorMessage: string,
         tabID: string,
@@ -110,6 +141,14 @@ export class Messenger {
         })
     }
 
+    /**
+     * Sends a code result message.
+     * @param {NewFileInfo[]} filePaths - Array of new file information.
+     * @param {DeletedFileInfo[]} deletedFiles - Array of deleted file information.
+     * @param {CodeReference[]} references - Array of code references.
+     * @param {string} tabID - The ID of the tab to send the code result to.
+     * @param {string} uploadId - The ID of the upload.
+     */
     public sendCodeResult(
         filePaths: NewFileInfo[],
         deletedFiles: DeletedFileInfo[],
@@ -120,10 +159,23 @@ export class Messenger {
         this.dispatcher.sendCodeResult(new CodeResultMessage(filePaths, deletedFiles, references, tabID, uploadId))
     }
 
+    /**
+     * Sends an asynchronous event progress message.
+     * @param {string} tabID - The ID of the tab to send the progress message to.
+     * @param {boolean} inProgress - Whether the event is in progress.
+     * @param {string | undefined} message - The progress message.
+     */
     public sendAsyncEventProgress(tabID: string, inProgress: boolean, message: string | undefined) {
         this.dispatcher.sendAsyncEventProgress(new AsyncEventProgressMessage(tabID, inProgress, message))
     }
 
+    /**
+     * Updates the file component in the UI.
+     * @param {string} tabID - The ID of the tab to update.
+     * @param {NewFileInfo[]} filePaths - Array of new file information.
+     * @param {DeletedFileInfo[]} deletedFiles - Array of deleted file information.
+     * @param {string} messageId - The ID of the message.
+     */
     public updateFileComponent(
         tabID: string,
         filePaths: NewFileInfo[],
@@ -133,20 +185,40 @@ export class Messenger {
         this.dispatcher.updateFileComponent(new FileComponent(tabID, filePaths, deletedFiles, messageId))
     }
 
+    /**
+     * Sends an update to the placeholder text.
+     * @param {string} tabID - The ID of the tab to update.
+     * @param {string} newPlaceholder - The new placeholder text.
+     */
     public sendUpdatePlaceholder(tabID: string, newPlaceholder: string) {
         this.dispatcher.sendPlaceholder(new UpdatePlaceholderMessage(tabID, newPlaceholder))
     }
 
+    /**
+     * Sends a message to enable or disable chat input.
+     * @param {string} tabID - The ID of the tab to update.
+     * @param {boolean} enabled - Whether the chat input should be enabled.
+     */
     public sendChatInputEnabled(tabID: string, enabled: boolean) {
         this.dispatcher.sendChatInputEnabled(new ChatInputEnabledMessage(tabID, enabled))
     }
 
+    /**
+     * Sends an authentication update message.
+     * @param {boolean} featureDevEnabled - Whether the feature development is enabled.
+     * @param {string[]} authenticatingTabIDs - Array of tab IDs that are authenticating.
+     */
     public sendAuthenticationUpdate(featureDevEnabled: boolean, authenticatingTabIDs: string[]) {
         this.dispatcher.sendAuthenticationUpdate(
             new AuthenticationUpdateMessage(featureDevEnabled, authenticatingTabIDs)
         )
     }
 
+    /**
+     * Sends an authentication needed exception message.
+     * @param {FeatureAuthState} credentialState - The current credential state.
+     * @param {string} tabID - The ID of the tab to send the message to.
+     */
     public async sendAuthNeededExceptionMessage(credentialState: FeatureAuthState, tabID: string) {
         let authType: AuthFollowUpType = 'full-auth'
         let message = AuthMessageDataMap[authType].message
@@ -169,6 +241,9 @@ export class Messenger {
         this.dispatcher.sendAuthNeededExceptionMessage(new AuthNeededException(message, authType, tabID))
     }
 
+    /**
+     * Opens a new task tab.
+     */
     public openNewTask() {
         this.dispatcher.sendOpenNewTask(new OpenNewTabMessage())
     }

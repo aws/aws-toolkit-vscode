@@ -20,6 +20,16 @@ import { ChatSessionStorage } from './storages/chatSession'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { debounce } from 'lodash'
 
+/**
+ * Initializes the Amazon Q Feature Development functionality.
+ * This function sets up the necessary components for the feature, including event emitters,
+ * messenger, and controller. It configures the chat interface and integrates with VS Code.
+ *
+ * @param {AmazonQAppInitContext} appContext - The context for initializing the Amazon Q app.
+ *        It contains necessary information and utilities for setting up the feature,
+ *        such as the VS Code extension context and AWS SDK clients.
+ * @returns {void}
+ */
 export function init(appContext: AmazonQAppInitContext) {
     const featureDevChatControllerEventEmitters: ChatControllerEventEmitters = {
         processHumanChatMessage: new vscode.EventEmitter<any>(),
@@ -46,7 +56,21 @@ export function init(appContext: AmazonQAppInitContext) {
         appContext.onDidChangeAmazonQVisibility.event
     )
 
+    /**
+     * Provides a TextDocumentContentProvider for the Amazon Q Feature Development functionality.
+     * This class implements the vscode.TextDocumentContentProvider interface to handle
+     * custom URI schemes for the feature.
+     */
     const featureDevProvider = new (class implements vscode.TextDocumentContentProvider {
+        /**
+         * Provides the content of a text document for the Amazon Q Feature Development functionality.
+         * This method is part of the vscode.TextDocumentContentProvider interface implementation.
+         * It retrieves the content of a document based on the provided URI, which includes a tabID parameter.
+         *
+         * @param {vscode.Uri} uri - The URI of the document to provide content for.
+         * @returns {Promise<string>} A promise that resolves to the content of the document.
+         * @throws {TabIdNotFoundError} If the tabID is not found in the URI.
+         */
         async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
             const params = fromQueryToParameters(uri.query)
 
@@ -82,6 +106,11 @@ export function init(appContext: AmazonQAppInitContext) {
         'featuredev'
     )
 
+    /**
+     * A debounced function to handle authentication updates for Amazon Q Feature Development.
+     * This function checks the authentication state, updates authenticating sessions,
+     * and sends authentication updates to the messenger.
+     */
     const debouncedEvent = debounce(async () => {
         const authenticated = (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'
         let authenticatingSessionIDs: string[] = []

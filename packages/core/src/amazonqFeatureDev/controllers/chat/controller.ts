@@ -75,6 +75,9 @@ type fileClickedMessage = {
     filePath: string
     actionName: string
 }
+/**
+ * Controller for Amazon Q Feature Development functionality.
+ */
 export class FeatureDevController {
     private readonly messenger: Messenger
     private readonly sessionStorage: ChatSessionStorage
@@ -82,6 +85,13 @@ export class FeatureDevController {
     private authController: AuthController
     private contentController: EditorContentController
 
+    /**
+     * Constructs a new FeatureDevController.
+     * @param {ChatControllerEventEmitters} chatControllerMessageListeners - Event emitters for chat controller messages.
+     * @param {Messenger} messenger - Messenger for communication.
+     * @param {ChatSessionStorage} sessionStorage - Storage for chat sessions.
+     * @param {vscode.Event<boolean>} onDidChangeAmazonQVisibility - Event that fires when Amazon Q visibility changes.
+     */
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerEventEmitters,
         messenger: Messenger,
@@ -168,6 +178,13 @@ export class FeatureDevController {
         })
     }
 
+    /**
+     * Processes a voted chat item message.
+     * @param {string} tabId - The ID of the tab.
+     * @param {string} messageId - The ID of the message.
+     * @param {string} vote - The vote given to the message.
+     * @returns {Promise<void>}
+     */
     private async processChatItemVotedMessage(tabId: string, messageId: string, vote: string) {
         const session = await this.sessionStorage.getSession(tabId)
 
@@ -345,6 +362,11 @@ export class FeatureDevController {
     }
 
     // TODO add type
+    /**
+     * Processes a user chat message.
+     * @param {any} message - The user's chat message.
+     * @returns {Promise<void>}
+     */
     private async processUserChatMessage(message: any) {
         if (message.message === undefined) {
             this.messenger.sendErrorMessage('chatMessage should be set', message.tabID, 0, undefined)
@@ -391,6 +413,13 @@ export class FeatureDevController {
 
     /**
      * Handle a regular incoming message when a user is in the approach phase
+     */
+    /**
+     * Handles the approach generation phase.
+     * @param {Session} session - The current chat session.
+     * @param {string} message - The user's message.
+     * @param {string} tabID - The ID of the current tab.
+     * @returns {Promise<void>}
      */
     private async onApproachGeneration(session: Session, message: string, tabID: string) {
         await session.preloader(message)
@@ -439,6 +468,13 @@ export class FeatureDevController {
 
     /**
      * Handle a regular incoming message when a user is in the code generation phase
+     */
+    /**
+     * Handles the code generation phase.
+     * @param {Session} session - The current chat session.
+     * @param {string} message - The user's message.
+     * @param {string} tabID - The ID of the current tab.
+     * @returns {Promise<void>}
      */
     private async onCodeGeneration(session: Session, message: string, tabID: string) {
         getLogger().info(logWithConversationId(session.conversationId))
@@ -536,6 +572,11 @@ export class FeatureDevController {
     }
 
     // TODO add type
+    /**
+     * Handles the event when the generate code button is clicked.
+     * @param {any} message - The message associated with the generate code event.
+     * @returns {Promise<void>}
+     */
     private async generateCodeClicked(message: any) {
         let session
         try {
@@ -556,6 +597,11 @@ export class FeatureDevController {
     }
 
     // TODO add type
+    /**
+     * Inserts code based on the provided message.
+     * @param {any} message - The message containing code insertion details.
+     * @returns {Promise<void>}
+     */
     private async insertCode(message: any) {
         let session
         try {
@@ -615,6 +661,11 @@ export class FeatureDevController {
         }
     }
 
+    /**
+     * Provides feedback and regenerates code based on the message.
+     * @param {any} message - The message containing feedback and regeneration details.
+     * @returns {Promise<void>}
+     */
     private async provideFeedbackAndRegenerateCode(message: any) {
         const session = await this.sessionStorage.getSession(message.tabID)
         telemetry.amazonq_isProvideFeedbackForCodeGen.emit({
@@ -636,6 +687,11 @@ export class FeatureDevController {
         this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.featureDev.placeholder.feedback'))
     }
 
+    /**
+     * Retries a request based on the provided message.
+     * @param {any} message - The message containing retry details.
+     * @returns {Promise<void>}
+     */
     private async retryRequest(message: any) {
         let session
         try {
@@ -664,6 +720,11 @@ export class FeatureDevController {
         }
     }
 
+    /**
+     * Gets the follow-up options based on the current session phase.
+     * @param {SessionStatePhase | undefined} phase - The current session phase.
+     * @returns {ChatItemAction[]} An array of follow-up options.
+     */
     private getFollowUpOptions(phase: SessionStatePhase | undefined): ChatItemAction[] {
         switch (phase) {
             case DevPhase.APPROACH:
@@ -694,6 +755,11 @@ export class FeatureDevController {
         }
     }
 
+    /**
+     * Modifies the default source folder based on the provided message.
+     * @param {any} message - The message containing modification details.
+     * @returns {Promise<void>}
+     */
     private async modifyDefaultSourceFolder(message: any) {
         const session = await this.sessionStorage.getSession(message.tabID)
 
@@ -768,6 +834,10 @@ export class FeatureDevController {
         })
     }
 
+    /**
+     * Handles initial examples for the chat.
+     * @param {any} message - The message containing initial example details.
+     */
     private initialExamples(message: any) {
         this.messenger.sendAnswer({
             type: 'answer',
@@ -777,6 +847,11 @@ export class FeatureDevController {
         })
     }
 
+    /**
+     * Handles the event when a file is clicked in the chat interface.
+     * @param {fileClickedMessage} message - The message containing file click details.
+     * @returns {Promise<void>}
+     */
     private async fileClicked(message: fileClickedMessage) {
         // TODO: add Telemetry here
         const tabId: string = message.tabID
@@ -804,6 +879,11 @@ export class FeatureDevController {
         )
     }
 
+    /**
+     * Opens a diff view based on the provided message.
+     * @param {OpenDiffMessage} message - The message containing diff details.
+     * @returns {Promise<void>}
+     */
     private async openDiff(message: OpenDiffMessage) {
         const tabId: string = message.tabID
         const zipFilePath: string = message.filePath
@@ -827,11 +907,21 @@ export class FeatureDevController {
         }
     }
 
+    /**
+     * Stops the current response based on the provided message.
+     * @param {any} message - The message containing stop response details.
+     * @returns {Promise<void>}
+     */
     private async stopResponse(message: any) {
         const session = await this.sessionStorage.getSession(message.tabID)
         session.state.tokenSource.cancel()
     }
 
+    /**
+     * Handles the event when a tab is opened.
+     * @param {any} message - The message containing tab open details.
+     * @returns {Promise<void>}
+     */
     private async tabOpened(message: any) {
         let session: Session | undefined
         try {
@@ -863,6 +953,10 @@ export class FeatureDevController {
         }
     }
 
+    /**
+     * Handles the authentication click event.
+     * @param {any} message - The message containing authentication details.
+     */
     private authClicked(message: any) {
         this.authController.handleAuth(message.authType)
 
@@ -876,10 +970,19 @@ export class FeatureDevController {
         this.messenger.sendChatInputEnabled(message.tabID, false)
     }
 
+    /**
+     * Handles the event when a tab is closed.
+     * @param {any} message - The message containing tab close details.
+     */
     private tabClosed(message: any) {
         this.sessionStorage.deleteSession(message.tabID)
     }
 
+    /**
+     * Handles the creation of a new task.
+     * @param {any} message - The message containing new task details.
+     * @returns {Promise<void>}
+     */
     private async newTask(message: any) {
         // Old session for the tab is ending, delete it so we can create a new one for the message id
         await this.closeSession(message)
@@ -896,6 +999,11 @@ export class FeatureDevController {
         this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.featureDev.placeholder.describe'))
     }
 
+    /**
+     * Closes the current session.
+     * @param {any} message - The message containing session close details.
+     * @returns {Promise<void>}
+     */
     private async closeSession(message: any) {
         this.messenger.sendAnswer({
             type: 'answer',

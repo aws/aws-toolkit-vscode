@@ -45,10 +45,19 @@ import { collectFiles, getWorkspaceFoldersByPrefixes } from '../../shared/utilit
 import { i18n } from '../../shared/i18n-helper'
 import { Messenger } from '../controllers/chat/messenger/messenger'
 
+/**
+ * Represents the initial state of a conversation that has not yet started.
+ * @implements {Omit<SessionState, 'uploadId'>}
+ */
 export class ConversationNotStartedState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
     public readonly phase = DevPhase.INIT
 
+    /**
+     * Creates an instance of ConversationNotStartedState.
+     * @param {string} approach - The approach for the conversation.
+     * @param {string} tabID - The ID of the tab associated with this state.
+     */
     constructor(
         public approach: string,
         public tabID: string
@@ -57,14 +66,31 @@ export class ConversationNotStartedState implements Omit<SessionState, 'uploadId
         this.approach = ''
     }
 
+    /**
+     * Attempts to interact with the conversation in its not started state.
+     * @param {SessionStateAction} _action - The action to perform.
+     * @returns {Promise<SessionStateInteraction>} A promise that always throws an IllegalStateTransition.
+     * @throws {IllegalStateTransition} Always throws this error as interaction is not allowed in this state.
+     */
     async interact(_action: SessionStateAction): Promise<SessionStateInteraction> {
         throw new IllegalStateTransition()
     }
 }
 
+/**
+ * Represents the state of preparing for refinement in a conversation.
+ * @implements {Omit<SessionState, 'uploadId'>}
+ */
 export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
     public readonly phase = DevPhase.APPROACH
+
+    /**
+     * Creates an instance of PrepareRefinementState.
+     * @param {Omit<SessionStateConfig, 'uploadId'>} config - The configuration for the session state.
+     * @param {string} approach - The approach for the conversation.
+     * @param {string} tabID - The ID of the tab associated with this state.
+     */
     constructor(
         private config: Omit<SessionStateConfig, 'uploadId'>,
         public approach: string,
@@ -73,10 +99,19 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
 
+    /**
+     * Updates the workspace root.
+     * @param {string} workspaceRoot - The new workspace root.
+     */
     updateWorkspaceRoot(workspaceRoot: string) {
         this.config.workspaceRoots = [workspaceRoot]
     }
 
+    /**
+     * Interacts with the prepare refinement state.
+     * @param {SessionStateAction} action - The action to perform.
+     * @returns {Promise<SessionStateInteraction>} A promise that resolves to the next state interaction.
+     */
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         const uploadId = await telemetry.amazonq_createUpload.run(async (span) => {
             span.record({
@@ -104,12 +139,23 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
     }
 }
 
+/**
+ * Represents the refinement state of a conversation.
+ * @implements {SessionState}
+ */
 export class RefinementState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
     public readonly conversationId: string
     public readonly uploadId: string
     public readonly phase = DevPhase.APPROACH
 
+    /**
+     * Creates an instance of RefinementState.
+     * @param {SessionStateConfig} config - The configuration for the session state.
+     * @param {string} approach - The approach for the conversation.
+     * @param {string} tabID - The ID of the tab associated with this state.
+     * @param {number} currentIteration - The current iteration of the refinement process.
+     */
     constructor(
         private config: SessionStateConfig,
         public approach: string,
@@ -121,6 +167,11 @@ export class RefinementState implements SessionState {
         this.uploadId = config.uploadId
     }
 
+    /**
+     * Interacts with the refinement state.
+     * @param {SessionStateAction} action - The action to perform.
+     * @returns {Promise<SessionStateInteraction>} A promise that resolves to the next state interaction.
+     */
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         return telemetry.amazonq_approachInvoke.run(async (span) => {
             if (action.msg && action.msg.includes('MOCK CODE')) {
@@ -228,6 +279,9 @@ function getDeletedFileInfos(deletedFiles: string[], workspaceFolders: CurrentWs
         .filter(isPresent)
 }
 
+/**
+ * Abstract base class for code generation states.
+ */
 abstract class CodeGenBase {
     private pollCount = 180
     private requestDelay = 10000
@@ -236,6 +290,11 @@ abstract class CodeGenBase {
     public readonly conversationId: string
     public readonly uploadId: string
 
+    /**
+     * Creates an instance of CodeGenBase.
+     * @param {SessionStateConfig} config - The configuration for the session state.
+     * @param {string} tabID - The ID of the tab associated with this state.
+     */
     constructor(
         protected config: SessionStateConfig,
         public tabID: string
@@ -245,6 +304,16 @@ abstract class CodeGenBase {
         this.uploadId = config.uploadId
     }
 
+    /**
+     * Generates code based on the provided parameters.
+     * @param {Object} params - The parameters for code generation.
+     * @param {VirtualFileSystem} params.fs - The virtual file system.
+     * @param {string} params.codeGenerationId - The ID of the code generation process.
+     * @param {TelemetryHelper} params.telemetry - The telemetry helper.
+     * @param {CurrentWsFolders} params.workspaceFolders - The current workspace folders.
+     * @returns {Promise<{newFiles: NewFileInfo[], deletedFiles: DeletedFileInfo[], references: CodeReference[], codeGenerationRemainingIterationCount?: number, codeGenerationTotalIterationCount?: number}>} A promise that resolves to the generated code information.
+     * @throws {ToolkitError} If there's an error during code generation.
+     */
     async generateCode({
         messenger,
         fs,
@@ -355,7 +424,24 @@ abstract class CodeGenBase {
     }
 }
 
+/**
+ * Represents the state of code generation in a conversation.
+ * @extends {CodeGenBase}
+ * @implements {SessionState}
+ */
 export class CodeGenState extends CodeGenBase implements SessionState {
+    /**
+     * Creates an instance of CodeGenState.
+     * @param {SessionStateConfig} config - The configuration for the session state.
+     * @param {string} approach - The approach for the conversation.
+     * @param {NewFileInfo[]} filePaths - The paths of new files.
+     * @param {DeletedFileInfo[]} deletedFiles - The information about deleted files.
+     * @param {CodeReference[]} references - The code references.
+     * @param {string} tabID - The ID of the tab associated with this state.
+     * @param {number} currentIteration - The current iteration of the code generation process.
+     * @param {number} [codeGenerationRemainingIterationCount] - The remaining number of iterations for code generation.
+     * @param {number} [codeGenerationTotalIterationCount] - The total number of iterations for code generation.
+     */
     constructor(
         config: SessionStateConfig,
         public approach: string,
@@ -370,6 +456,11 @@ export class CodeGenState extends CodeGenBase implements SessionState {
         super(config, tabID)
     }
 
+    /**
+     * Interacts with the code generation state.
+     * @param {SessionStateAction} action - The action to perform.
+     * @returns {Promise<SessionStateInteraction>} A promise that resolves to the next state interaction.
+     */
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         return telemetry.amazonq_codeGenerationInvoke.run(async (span) => {
             try {
@@ -433,6 +524,10 @@ export class CodeGenState extends CodeGenBase implements SessionState {
     }
 }
 
+/**
+ * Represents a mock code generation state for testing purposes.
+ * @implements {SessionState}
+ */
 export class MockCodeGenState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
     public filePaths: NewFileInfo[]
@@ -440,6 +535,12 @@ export class MockCodeGenState implements SessionState {
     public readonly conversationId: string
     public readonly uploadId: string
 
+    /**
+     * Creates an instance of MockCodeGenState.
+     * @param {SessionStateConfig} config - The configuration for the session state.
+     * @param {string} approach - The approach for the conversation.
+     * @param {string} tabID - The ID of the tab associated with this state.
+     */
     constructor(
         private config: SessionStateConfig,
         public approach: string,
@@ -452,6 +553,11 @@ export class MockCodeGenState implements SessionState {
         this.uploadId = randomUUID()
     }
 
+    /**
+     * Interacts with the mock code generation state.
+     * @param {SessionStateAction} action - The action to perform.
+     * @returns {Promise<SessionStateInteraction>} A promise that resolves to the next state interaction.
+     */
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         // in a `mockcodegen` state, we should read from the `mock-data` folder and output
         // every file retrieved in the same shape the LLM would
@@ -519,11 +625,28 @@ export class MockCodeGenState implements SessionState {
     }
 }
 
+/**
+ * Represents the state of preparing for code generation.
+ * @implements {SessionState}
+ */
 export class PrepareCodeGenState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
     public readonly phase = DevPhase.CODEGEN
     public uploadId: string
     public conversationId: string
+
+    /**
+     * Creates an instance of PrepareCodeGenState.
+     * @param {SessionStateConfig} config - The configuration for the session state.
+     * @param {string} approach - The approach for the conversation.
+     * @param {NewFileInfo[]} filePaths - The paths of new files.
+     * @param {DeletedFileInfo[]} deletedFiles - The information about deleted files.
+     * @param {CodeReference[]} references - The code references.
+     * @param {string} tabID - The ID of the tab associated with this state.
+     * @param {number} currentIteration - The current iteration of the code generation process.
+     * @param {number} [codeGenerationRemainingIterationCount] - The remaining number of iterations for code generation.
+     * @param {number} [codeGenerationTotalIterationCount] - The total number of iterations for code generation.
+     */
     constructor(
         private config: SessionStateConfig,
         public approach: string,
@@ -540,10 +663,19 @@ export class PrepareCodeGenState implements SessionState {
         this.conversationId = config.conversationId
     }
 
+    /**
+     * Updates the workspace root.
+     * @param {string} workspaceRoot - The new workspace root.
+     */
     updateWorkspaceRoot(workspaceRoot: string) {
         this.config.workspaceRoots = [workspaceRoot]
     }
 
+    /**
+     * Interacts with the prepare code generation state.
+     * @param {SessionStateAction} action - The action to perform.
+     * @returns {Promise<SessionStateInteraction>} A promise that resolves to the next state interaction.
+     */
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         action.messenger.sendAnswer({
             message: 'Uploading code ...',
