@@ -620,10 +620,13 @@ export function fromExtensionManifest<T extends TypeDescriptor & Partial<Section
  */
 export const toolkitPrompts = settingsProps['aws.suppressPrompts']
 type toolkitPromptName = keyof typeof toolkitPrompts
-export class ToolkitPromptSettings extends Settings.define(
-    'aws.suppressPrompts',
-    toRecord(keys(toolkitPrompts), () => Boolean)
-) {
+export class ToolkitPromptSettings
+    extends Settings.define(
+        'aws.suppressPrompts',
+        toRecord(keys(toolkitPrompts), () => Boolean)
+    )
+    implements PromptSettings
+{
     public async isPromptEnabled(promptName: toolkitPromptName): Promise<boolean> {
         try {
             return !this._getOrThrow(promptName, false)
@@ -650,10 +653,13 @@ export class ToolkitPromptSettings extends Settings.define(
 
 export const amazonQPrompts = settingsProps['amazonQ.suppressPrompts']
 type amazonQPromptName = keyof typeof amazonQPrompts
-export class AmazonQPromptSettings extends Settings.define(
-    'amazonQ.suppressPrompts',
-    toRecord(keys(amazonQPrompts), () => Boolean)
-) {
+export class AmazonQPromptSettings
+    extends Settings.define(
+        'amazonQ.suppressPrompts',
+        toRecord(keys(amazonQPrompts), () => Boolean)
+    )
+    implements PromptSettings
+{
     public async isPromptEnabled(promptName: amazonQPromptName): Promise<boolean> {
         try {
             return !this._getOrThrow(promptName, false)
@@ -676,6 +682,18 @@ export class AmazonQPromptSettings extends Settings.define(
     public static get instance() {
         return (this.#instance ??= new this())
     }
+}
+
+/**
+ * Use cautiously as this is misleading. Ideally we create a type
+ * which is the intersection of the types (only the values that occur
+ * in each are selected), but idk how to do that.
+ */
+type AllPromptNames = amazonQPromptName | toolkitPromptName
+
+export interface PromptSettings {
+    isPromptEnabled(promptName: AllPromptNames): Promise<boolean>
+    disablePrompt(promptName: AllPromptNames): Promise<void>
 }
 
 const experiments = settingsProps['aws.experiments']

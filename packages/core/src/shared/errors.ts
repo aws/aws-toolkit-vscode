@@ -880,7 +880,7 @@ function isEbusyError(err: Error) {
 }
 
 /** Helper function to assert given error has the expected properties */
-function isError(err: Error, id: string, messageIncludes: string = '') {
+export function isError(err: Error, id: string, messageIncludes: string = '') {
     // It is not always clear if the error has the expected value in the `name` or `code` field
     // so this checks both.
     return (err.name === id || (err as any).code === id) && err.message.includes(messageIncludes)
@@ -981,6 +981,65 @@ export class AwsClientResponseError extends Error {
         }
 
         return undefined
+    }
+}
+
+/**
+ * Represents a generalized error that happened during a disk cache operation.
+ *
+ * For example, when SSO refreshes a token a disk cache error can occur when it
+ * attempts to read/write the disk cache. These errors can be recoverable and do not
+ * imply that the SSO session is stale. So by wrapping those errors in an instance of
+ * this class it will help to distinguish them.
+ */
+export class DiskCacheError extends Error {
+    #code: string | undefined
+
+    /** Use {@link DiskCacheError.instanceIf()} to create an instance */
+    protected constructor(message: string, options?: { code?: string }) {
+        super(message)
+        this.#code = options?.code
+    }
+
+    /**
+     * We are seeing these errors in telemetry, but they have no error message attached.
+     * The best we can do is assume these are filesystem errors in the context that we see them.
+     */
+    private static fileSystemErrorsWithoutMessage = ['EACCES', 'EBADF']
+
+    /**
+     * Return an instance of {@link DiskCacheError} that consists of the properties from the
+     * given error IF certain conditions are met. Otherwise, the original error is returned.
+     *
+     * - Also returns the original error if it is already a {@link DiskCacheError}.
+     */
+    public static instanceIf<T>(err: T): DiskCacheError | T {
+        if (!(err instanceof Error) || err instanceof DiskCacheError) {
+            return err
+        }
+
+        const errorId = (err as any).code ?? err.name
+
+        if (DiskCacheError.fileSystemErrorsWithoutMessage.includes(errorId)) {
+            // The error message will probably be blank
+            const message = err.message ? err.message : 'No msg'
+            return new DiskCacheError(message, { code: errorId })
+        }
+
+        // These are errors we were seeing in telemetry
+        if (
+            isError(err, 'ENOSPC', 'no space left on device') ||
+            isError(err, 'EPERM', 'operation not permitted') ||
+            isError(err, 'EBUSY', 'resource busy or locked')
+        ) {
+            return new DiskCacheError(err.message, { code: errorId })
+        }
+
+        return err // the error does no meet the conditions to be a DiskCacheError
+    }
+
+    public get code() {
+        return this.#code
     }
 }
 
