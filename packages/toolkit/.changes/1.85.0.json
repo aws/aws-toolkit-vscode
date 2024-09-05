@@ -1,0 +1,18 @@
+{
+	"date": "2023-08-17",
+	"version": "1.85.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "IAM Identity Center (SSO): misleading \"Permission set\" warning for scope-based SSO/IdC connection"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "auth: remote workspaces use the global state, showing incorrect profile info"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: Improve file context fetching for Python Typescript Javascript source files"
+		}
+	]
+}

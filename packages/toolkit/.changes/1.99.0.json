@@ -1,0 +1,22 @@
+{
+	"date": "2023-11-17",
+	"version": "1.99.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: status bar lists options when clicked and shows suggestion state"
+		},
+		{
+			"type": "Feature",
+			"description": "Don't show \"invalid settings.json\" message if settings.json is valid but unwritable"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: faster code completion by enabling HTTP connection reuse for completions API"
+		},
+		{
+			"type": "Feature",
+			"description": "Connect to Amazon CodeCatalyst Dev Environments with IAM Identity Center"
+		}
+	]
+}

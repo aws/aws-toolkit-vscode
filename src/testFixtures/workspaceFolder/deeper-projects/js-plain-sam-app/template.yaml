@@ -1,7 +1,0 @@
-Resources:
-    SourceCodeBesidePackageJson:
-        Type: AWS::Serverless::Function
-        Properties:
-            CodeUri: src
-            Handler: app.projectDeepInWorkspace
-            Runtime: nodejs14.x

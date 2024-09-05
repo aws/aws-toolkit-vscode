@@ -1,0 +1,12 @@
+{
+    "files.exclude": {},
+    "search.exclude": {
+        "dist": true,
+        "node_modules": true
+    },
+    "files.watcherExclude": {},
+    "typescript.preferences.importModuleSpecifier": "relative",
+    "javascript.preferences.importModuleSpecifier": "relative",
+    "typescript.tsdk": "../../node_modules/typescript/lib",
+    "npm.packageManager": "npm"
+}

@@ -1,0 +1,14 @@
+{
+	"date": "2024-07-08",
+	"version": "3.13.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Add warning message for drag and drop bug on VS Code 1.91.0"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeCatalyst: always show Dev Environment timeout warning as modal prompt"
+		}
+	]
+}

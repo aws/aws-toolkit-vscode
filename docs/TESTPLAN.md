@@ -41,8 +41,12 @@ The test suite has the following categories of tests:
 -   E2E Tests: **slow** tests
     -   Live in `src/testE2E`
     -   These tests are heavier than Integration tests.
+    -   Some E2E tests have a more complicated architecture, described in [TEST_E2E](./TEST_E2E.md)
 
 ## Test files
+
+Currently, most if not all testing code lives in the subproject `packages/core/`.
+For more information, see [arch_develop.md](./arch_develop.md#monorepo-structure)
 
 -   `src/test/` : unit tests
     -   `src/test/globalSetup.test.ts` :
@@ -81,6 +85,7 @@ modifications/workarounds in `src/test/testRunner.ts`.
 -   Testing AWS SDK client functionality is cumbersome, verbose, and low-yield.
 -   Test code uses multiple “mocking” frameworks, which is confusing, error-prone, hard to onboard, and hard to use.
 -   Coverage not counted for integ tests (because of unresolved tooling issue).
+-   [Backlog](https://github.com/aws/aws-toolkit-vscode/blob/0f3685ab0dc8af3a214136ebfa233829d5d72b2c/src/shared/telemetry/exemptMetrics.ts) of metrics that do not pass validation but are temporarily exempted to not fail CI.
 
 ## Window
 
@@ -99,7 +104,7 @@ Checking the state works well if user interactions are not required by the code 
 To handle this, test code can register event handler that listen for when a certain type of UI element is shown. For example, if we wanted to always accept the first item of a quick pick we can do this:
 
 ```ts
-getTestWindow().onDidShowQuickPick(async picker => {
+getTestWindow().onDidShowQuickPick(async (picker) => {
     // Some pickers load items asychronously
     // Wait until the picker is not busy before accepting an item
     await picker.untilReady()
@@ -116,3 +121,9 @@ const secondPicker = await pickers.next()
 ```
 
 Exceptions thrown within one of these handlers will cause the current test to fail. This allows you to make assertions within the callback without worrying about causing the test to hang.
+
+## Common issues
+
+### Stubbing VSCode outside of core
+
+-   Stubbing VSCode imports (like executeCommand) does not work outside of core. For now you will need to put any tests that require spying/stubbing VSCode imports in core until we move more source files into the amazon q package

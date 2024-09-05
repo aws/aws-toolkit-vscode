@@ -1,0 +1,26 @@
+{
+	"date": "2023-12-06",
+	"version": "2.2.0",
+	"entries": [
+		{
+			"type": "Breaking Change",
+			"description": "validate that pom.xml is in root directory of project, not anywhere in project"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "AWS Toolkit submenus appear in other extension views #4111"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeCatalyst: \"No handler found\" error may occur when opening `vscode://` URI #4105"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: Security scans for Java no longer require build artifacts"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q: Input prompt gets wrapped to new line which avoids focusing"
+		}
+	]
+}
