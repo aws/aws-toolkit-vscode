@@ -14,13 +14,11 @@ import { PollingSet } from '../../../shared/utilities/pollingSet'
 export const parentContextValue = 'awsEc2ParentNode'
 export type Ec2Node = Ec2InstanceNode | Ec2ParentNode
 
-const pollingInterval = 5000
-
 export class Ec2ParentNode extends AWSTreeNodeBase {
     protected readonly placeHolderMessage = '[No EC2 Instances Found]'
     protected ec2InstanceNodes: Map<string, Ec2InstanceNode>
     public override readonly contextValue: string = parentContextValue
-    public readonly pollingSet: PollingSet<string> = new PollingSet(pollingInterval, this.updatePendingNodes.bind(this))
+    public readonly pollingSet: PollingSet<string> = new PollingSet(5000, this.updatePendingNodes.bind(this))
 
     public constructor(
         public override readonly regionCode: string,
