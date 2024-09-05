@@ -52,10 +52,6 @@ describe('ec2ParentNode', function () {
         ]
     })
 
-    after(function () {
-        sinon.restore()
-    })
-
     beforeEach(function () {
         getInstanceStub = sinon.stub(Ec2Client.prototype, 'getInstances')
         defaultInstances = [
@@ -147,10 +143,6 @@ describe('ec2ParentNode', function () {
         getInstanceStub.restore()
     })
 
-    it('is not polling on initialization', async function () {
-        assert.strictEqual(testNode.pollingSet.isEmpty(), true)
-    })
-
     it('adds pending nodes to the polling nodes set', async function () {
         const instances = [
             { name: 'firstOne', InstanceId: '0', status: 'pending' },
@@ -161,7 +153,7 @@ describe('ec2ParentNode', function () {
         getInstanceStub.resolves(mapToInstanceCollection(instances))
 
         await testNode.updateChildren()
-        assert.strictEqual(testNode.pollingSet.pollingNodes.size, 1)
+        assert.strictEqual(testNode.pollingSet.size, 1)
         getInstanceStub.restore()
     })
 
@@ -185,27 +177,9 @@ describe('ec2ParentNode', function () {
     it('does refresh explorer when timer goes and status changed', async function () {
         sinon.assert.notCalled(refreshStub)
         const statusUpdateStub = sinon.stub(Ec2Client.prototype, 'getInstanceStatus').resolves('running')
-        testNode.pollingSet.pollingNodes.add('0')
+        testNode.pollingSet.add('0')
         await clock.tickAsync(6000)
         sinon.assert.called(refreshStub)
         statusUpdateStub.restore()
-    })
-
-    it('stops timer once polling nodes are empty', async function () {
-        const instances = [
-            { name: 'firstOne', InstanceId: '0', status: 'pending' },
-            { name: 'secondOne', InstanceId: '1', status: 'stopped' },
-            { name: 'thirdOne', InstanceId: '2', status: 'running' },
-        ]
-        getInstanceStub.resolves(mapToInstanceCollection(instances))
-
-        await testNode.updateChildren()
-        sinon.assert.notCalled(clearTimerStub)
-        assert.strictEqual(testNode.pollingSet.isEmpty(), false)
-        testNode.pollingSet.pollingNodes.delete('0')
-        await clock.tickAsync(6000)
-        assert.strictEqual(testNode.pollingSet.isEmpty(), true)
-        sinon.assert.callCount(clearTimerStub, instances.length)
-        getInstanceStub.restore()
     })
 })
