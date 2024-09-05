@@ -533,6 +533,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         }
 
         const runtimeFamily = getFamily(runtime)
+        const region = this.ctx.awsContext.getCredentialDefaultRegion()
         const documentUri =
             vscode.window.activeTextEditor?.document.uri ??
             // XXX: don't know what URI to choose...
@@ -616,6 +617,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 timeoutSec: lambdaTimeout,
                 environmentVariables: { ...config.lambda?.environmentVariables },
             },
+            region: region,
             awsCredentials: awsCredentials,
             parameterOverrides: parameterOverrideArr,
             useIkpdb: isCloud9() || !!(config as any).useIkpdb,

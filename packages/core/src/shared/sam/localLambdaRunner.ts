@@ -206,6 +206,7 @@ async function invokeLambdaHandler(
             containerEnvFile: config.containerEnvFile,
             extraArgs: config.sam?.localArguments,
             name: config.name,
+            region: config.region,
         })
 
         return config
@@ -247,6 +248,7 @@ async function invokeLambdaHandler(
                 config.sam?.skipNewImageCheck ?? ((await isImageLambdaConfig(config)) || config.sam?.containerBuild),
             parameterOverrides: config.parameterOverrides,
             name: config.name,
+            region: config.region,
         }
 
         // sam local invoke ...
