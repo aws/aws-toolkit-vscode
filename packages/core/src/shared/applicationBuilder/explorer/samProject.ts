@@ -59,7 +59,7 @@ export async function getStackName(workspaceFolder: vscode.WorkspaceFolder): Pro
 
 export async function getApp(location: SamAppLocation): Promise<SamApp> {
     const samTemplate = await CloudFormation.tryLoad(location.samTemplateUri)
-    const templateResources = getResourceEntity(samTemplate.template?.Resources)
+    const templateResources = getResourceEntity(samTemplate.template)
     const apiEventResources: ResourceTreeEntity[] = []
     for (const resource of templateResources) {
         if (resource.Events) {
@@ -72,14 +72,14 @@ export async function getApp(location: SamAppLocation): Promise<SamApp> {
     return { location, resourceTree }
 }
 
-function getResourceEntity(resources: any): ResourceTreeEntity[] {
+function getResourceEntity(template: any): ResourceTreeEntity[] {
     const resourceTree: ResourceTreeEntity[] = []
 
-    for (const [logicalId, resource] of Object.entries(resources) as [string, any][]) {
+    for (const [logicalId, resource] of Object.entries(template?.Resources) as [string, any][]) {
         const resourceEntity: ResourceTreeEntity = {
             Id: logicalId,
             Type: resource.Type,
-            Runtime: resource.Properties ? resource.Properties.Runtime : undefined,
+            Runtime: resource.Properties?.Runtime ?? template?.Globals?.Function?.Runtime,
             Handler: resource.Properties ? resource.Properties.Handler : undefined,
             Events: resource.Properties.Events ? getEvents(resource.Properties.Events) : undefined,
         }

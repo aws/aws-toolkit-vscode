@@ -39,7 +39,7 @@ function createParamsSourcePrompter() {
             data: ParamsSource.Specify,
         },
         {
-            label: 'Use default values from samconfig',
+            label: 'Use default values',
             data: ParamsSource.Samconfig,
             description: 'cached = true, parallel = true, use_container = true',
         },
@@ -167,7 +167,7 @@ export function registerBuild() {
         const projectRoot = params.projectRoot
 
         let buildFlags: string[] = []
-        const defaultFlags: string[] = ['--cached', '--parallel', '--save-params']
+        const defaultFlags: string[] = ['--cached', '--parallel', '--save-params', '--use-container']
 
         if (params.paramsSource === ParamsSource.Specify) {
             const flagItems = await buildFlagsPrompter()
