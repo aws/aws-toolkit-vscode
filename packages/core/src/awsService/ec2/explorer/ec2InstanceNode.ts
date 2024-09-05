@@ -96,6 +96,6 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
 
     public async refreshNode(): Promise<void> {
         await this.updateStatus()
-        Commands.vscode().execute('aws.refreshAwsExplorerNode', this)
+        vscode.commands.executeCommand('aws.refreshAwsExplorerNode', this)
     }
 }
