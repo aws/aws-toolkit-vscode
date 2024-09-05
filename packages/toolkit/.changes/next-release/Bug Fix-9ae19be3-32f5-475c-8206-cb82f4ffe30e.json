@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fix SyntaxError causing premature expiration (edge case)"
+}
