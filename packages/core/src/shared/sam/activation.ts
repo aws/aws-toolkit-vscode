@@ -166,6 +166,12 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
                     handler = handler.split('.')[1]
                 }
                 extension = 'java'
+            } else if (arg.resource.resource.Runtime?.includes('dotnet')) {
+                handler = arg.resource.resource.Handler?.split('::')[1]
+                if (handler?.includes('.')) {
+                    handler = handler.split('.')[1]
+                }
+                extension = 'cs'
             } else {
                 handler = arg.resource.resource.Handler?.split('.')[0]
             }
