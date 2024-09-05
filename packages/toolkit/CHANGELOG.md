@@ -1,3 +1,8 @@
+## 3.23.0 2024-09-05
+
+- **Bug Fix** Network errors causing premature SSO logout
+- **Bug Fix** Fix SyntaxError causing premature expiration (edge case)
+
 ## 3.22.0 2024-08-29
 
 - **Bug Fix** Auth: `SyntaxError` causing unexpected SSO logout
