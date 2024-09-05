@@ -16,11 +16,11 @@ export class PollingSet<T> extends Set<T> {
     }
 
     public isActive(): boolean {
-        return this.size != 0
+        return this.size !== 0
     }
 
     public hasTimer(): boolean {
-        return this.pollTimer != undefined
+        return this.pollTimer !== undefined
     }
 
     public clearTimer(): void {

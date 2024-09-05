@@ -58,7 +58,7 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
             await childNode.updateStatus()
             if (!childNode.isPending()) {
                 this.pollingSet.delete(instanceId)
-                childNode.refreshNode()
+                await childNode.refreshNode()
             }
         })
     }

@@ -33,9 +33,9 @@ describe('pollingSet', function () {
     })
 
     it('inherits basic set properties', function () {
-        let pollingSet = new PollingSet(0, () => {})
-        let item1 = { id: 1 }
-        let item2 = { id: 2 }
+        const pollingSet = new PollingSet(0, () => {})
+        const item1 = { id: 1 }
+        const item2 = { id: 2 }
 
         pollingSet.add(item1)
         assert.strictEqual(pollingSet.size, 1)
@@ -48,12 +48,12 @@ describe('pollingSet', function () {
     })
 
     it('does not poll on initialization', async function () {
-        let pollingSet = new PollingSet(0, () => {})
+        const pollingSet = new PollingSet(0, () => {})
         assert.strictEqual(pollingSet.isActive(), false)
     })
 
     it('does not trigger prematurely', async function () {
-        let action = sinon.spy()
+        const action = sinon.spy()
         pollingSet = new PollingSet(10, action)
         sinon.assert.notCalled(action)
         pollingSet.start('item')
@@ -80,7 +80,7 @@ describe('pollingSet', function () {
 
         pollingSet.delete('2')
 
-        await clock.tick(20)
+        await clock.tickAsync(20)
 
         assert.strictEqual(pollingSet.isActive(), false)
         sinon.assert.callCount(clearStub, 2)
@@ -94,9 +94,9 @@ describe('pollingSet', function () {
         pollingSet.add('2')
 
         sinon.assert.callCount(action, 0)
-        await clock.tick(11)
+        await clock.tickAsync(11)
         sinon.assert.callCount(action, 1)
-        await clock.tick(22)
+        await clock.tickAsync(22)
         sinon.assert.callCount(action, 3)
     })
 })

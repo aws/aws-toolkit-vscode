@@ -45,7 +45,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
     }
 
     public isPending(): boolean {
-        return this.getStatus() != 'running' && this.getStatus() != 'stopped'
+        return this.getStatus() !== 'running' && this.getStatus() !== 'stopped'
     }
 
     public async updateStatus() {
@@ -96,6 +96,6 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
 
     public async refreshNode(): Promise<void> {
         await this.updateStatus()
-        vscode.commands.executeCommand('aws.refreshAwsExplorerNode', this)
+        await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', this)
     }
 }
