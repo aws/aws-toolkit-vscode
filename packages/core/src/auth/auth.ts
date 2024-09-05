@@ -13,7 +13,7 @@ import * as localizedText from '../shared/localizedText'
 import { Credentials } from '@aws-sdk/types'
 import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
 import { Timeout } from '../shared/utilities/timeoutUtils'
-import { errorCode, isAwsError, isNetworkError, ToolkitError, UnknownError } from '../shared/errors'
+import { DiskCacheError, errorCode, isAwsError, isNetworkError, ToolkitError, UnknownError } from '../shared/errors'
 import { getCache } from './sso/cache'
 import { isNonNullable, Mutable } from '../shared/utilities/tsUtils'
 import { builderIdStartUrl, SsoToken, truncateStartUrl } from './sso/model'
@@ -652,7 +652,7 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private async handleSsoTokenError(id: Connection['id'], err: unknown) {
-        this.throwOnNetworkError(err)
+        this.throwOnRecoverableError(err)
 
         this.#validationErrors.set(id, UnknownError.cast(err))
         getLogger().info(`auth: Handling validation error of connection: ${id}`)
@@ -830,7 +830,7 @@ export class Auth implements AuthService, ConnectionManager {
     @withTelemetryContext({ name: '_getToken', class: authClassName })
     private async _getToken(id: Connection['id'], provider: SsoAccessTokenProvider): Promise<SsoToken> {
         const token = await provider.getToken().catch((err) => {
-            this.throwOnNetworkError(err)
+            this.throwOnRecoverableError(err)
 
             this.#validationErrors.set(id, err)
         })
@@ -842,14 +842,23 @@ export class Auth implements AuthService, ConnectionManager {
      * Auth processes can fail due to reasons outside of authentication actually being expired.
      * We do not want to intepret these failures as invalid/expired auth tokens.
      *
-     * We use this to check if the given error is unanticipated. If it is we throw,
-     * expecting the caller to not change the state of the connection.
+     * We use this to check if the given error is recoverable, meaning retrying getToken at
+     * a later time could succeed. If it is recoverable, we throw, expecting the caller to not
+     * change the state of the connection.
      */
-    private throwOnNetworkError(e: unknown) {
+    private throwOnRecoverableError(e: unknown) {
         if (isNetworkError(e)) {
             throw new ToolkitError('Failed to update connection due to networking issues', {
                 cause: e,
                 code: e.code,
+            })
+        }
+
+        const possibleCacheError = DiskCacheError.instanceIf(e)
+        if (possibleCacheError instanceof DiskCacheError) {
+            throw new ToolkitError('Failed to update connection due to file system operation failures', {
+                cause: possibleCacheError,
+                code: possibleCacheError.code,
             })
         }
     }
