@@ -9,6 +9,7 @@ import path from 'path'
 import { FileSystem } from '../fs/fs'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { TreeNode, isTreeNode } from '../treeview/resourceTreeDataProvider'
+import * as CloudFormation from '../cloudformation/cloudformation'
 
 /**
  * @description Finds the samconfig.toml file under the provided project folder
@@ -39,4 +40,21 @@ export function getSource(arg: vscode.Uri | AWSTreeNodeBase | TreeNode | undefin
     } else {
         return undefined
     }
+}
+
+export async function isDotnetRuntime(templateUri: vscode.Uri): Promise<boolean> {
+    const samTemplate = await CloudFormation.tryLoad(templateUri)
+
+    if (!samTemplate.template?.Resources) {
+        return false
+    }
+    for (const resource of Object.values(samTemplate.template.Resources)) {
+        if (resource?.Type === 'AWS::Serverless::Function') {
+            if (resource.Properties?.Runtime && resource.Properties?.Runtime.startsWith('dotnet')) {
+                return true
+            }
+        }
+    }
+    const globalRuntime = samTemplate.template.Globals?.Function?.Runtime as string
+    return globalRuntime ? globalRuntime.startsWith('dotnet') : false
 }

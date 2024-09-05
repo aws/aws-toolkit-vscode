@@ -19,7 +19,7 @@ import { ToolkitError } from '../errors'
 import globals from '../extensionGlobals'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
 import { Metric, SamBuild, telemetry } from '../telemetry/telemetry'
-import { getConfigFileUri } from './utils'
+import { getConfigFileUri, isDotnetRuntime } from './utils'
 
 export interface BuildParams {
     readonly template: TemplateItem
@@ -185,6 +185,13 @@ export function registerBuild() {
                 buildFlags.push('--config-file', `${samConfigFile.fsPath}`)
             } catch (error) {
                 buildFlags = defaultFlags
+            }
+        }
+
+        if (await isDotnetRuntime(params.template.uri)) {
+            buildFlags.push('--mount-with', 'WRITE')
+            if (!buildFlags.includes('--use-container')) {
+                buildFlags.push('--use-container')
             }
         }
 
