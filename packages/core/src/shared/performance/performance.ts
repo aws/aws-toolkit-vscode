@@ -104,7 +104,7 @@ const defaultPollingUsage = {
         systemCpuUsage: 8,
     },
     linux: {
-        userCpuUsage: 20,
+        userCpuUsage: 35, // codebuild has a higher default user cpu usage
         systemCpuUsage: 8,
     },
     win32: {
