@@ -34,17 +34,10 @@ import { extensionVersion } from '../../shared/vscode/env'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 
 /**
- * Creates and returns a FeatureDevProxyClient.
- * This function initializes the client with necessary configurations including authentication,
- * API settings, and retry options.
- *
- * @returns {Promise<FeatureDevProxyClient>} A promise that resolves to a configured FeatureDevProxyClient
- */
-/**
  * Creates and configures a FeatureDevProxyClient for Amazon Q Feature Development.
  *
- * This function sets up the client with the necessary authentication, configuration,
- * and AWS SDK options required for interacting with the Feature Development service.
+ * This function sets up the client with the necessary authentication, configuration, API settings, and retry options.
+ * Also AWS SDK options required for interacting with the Feature Development service.
  *
  * @returns {Promise<FeatureDevProxyClient>} A promise that resolves to a configured FeatureDevProxyClient.
  * @throws {Error} If there's an issue creating the client, such as authentication failures or SDK errors.
