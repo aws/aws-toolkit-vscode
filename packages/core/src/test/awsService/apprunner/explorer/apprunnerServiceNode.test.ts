@@ -14,6 +14,7 @@ import { asyncGenerator } from '../../../../shared/utilities/collectionUtils'
 import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
 import { stub } from '../../../utilities/stubber'
 import { getLabel } from '../../../../shared/treeview/utils'
+import { PollingSet } from '../../../../shared/utilities/pollingSet'
 
 describe('AppRunnerServiceNode', function () {
     let mockApprunnerClient: ReturnType<typeof stub<DefaultAppRunnerClient>>

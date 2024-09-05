@@ -11,15 +11,13 @@ import * as nls from 'vscode-nls'
 import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
 import { getPaginatedAwsCallIter } from '../../../shared/utilities/collectionUtils'
 import { AppRunner } from 'aws-sdk'
-import globals from '../../../shared/extensionGlobals'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
 
 const localize = nls.loadMessageBundle()
-const pollingInterval = 20000
 
 export class AppRunnerNode extends AWSTreeNodeBase {
     private readonly serviceNodes: Map<AppRunner.ServiceId, AppRunnerServiceNode> = new Map()
-    private readonly pollingSet: PollingSet<string> = new PollingSet(pollingInterval)
+    private readonly pollingSet: PollingSet<string> = new PollingSet(20000, this.refresh.bind(this))
 
     public constructor(
         public override readonly regionCode: string,
@@ -80,7 +78,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
                     this.serviceNodes.get(summary.ServiceArn)!.update(summary)
                     if (summary.Status !== 'OPERATION_IN_PROGRESS') {
                         this.pollingSet.delete(summary.ServiceArn)
-                        this.clearPollTimer()
+                        this.pollingSet.clearTimer()
                     }
                 } else {
                     this.serviceNodes.set(summary.ServiceArn, new AppRunnerServiceNode(this, this.client, summary))
@@ -92,24 +90,14 @@ export class AppRunnerNode extends AWSTreeNodeBase {
         deletedNodeArns.forEach(this.deleteNode.bind(this))
     }
 
-    // TODO: generalize this method.
-    private clearPollTimer(): void {
-        if (this.pollingSet.isEmpty() && this.pollingSet.hasTimer()) {
-            globals.clock.clearInterval(this.pollingSet.pollTimer)
-            this.pollingSet.pollTimer = undefined
-        }
+    public startPollingNode(id: string): void {
+        this.pollingSet.start(id)
     }
 
-    public startPolling(id: string): void {
-        this.pollingSet.add(id)
-        this.pollingSet.pollTimer =
-            this.pollingSet.pollTimer ?? globals.clock.setInterval(this.refresh.bind(this), pollingInterval)
-    }
-
-    public stopPolling(id: string): void {
+    public stopPollingNode(id: string): void {
         this.pollingSet.delete(id)
         this.serviceNodes.get(id)?.refresh()
-        this.clearPollTimer()
+        this.pollingSet.clearTimer()
     }
 
     public deleteNode(id: string): void {

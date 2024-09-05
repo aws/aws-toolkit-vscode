@@ -17,6 +17,7 @@ import { EC2 } from 'aws-sdk'
 import { AsyncCollection } from '../../../../shared/utilities/asyncCollection'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import { installFakeClock } from '../../../testUtil'
+import { PollingSet } from '../../../../shared/utilities/pollingSet'
 
 describe('ec2ParentNode', function () {
     let testNode: Ec2ParentNode
@@ -44,7 +45,7 @@ describe('ec2ParentNode', function () {
         client = new Ec2Client(testRegion)
         clock = installFakeClock()
         refreshStub = sinon.stub(Ec2InstanceNode.prototype, 'refreshNode')
-        clearTimerStub = sinon.stub(Ec2ParentNode.prototype, 'clearPollTimer')
+        clearTimerStub = sinon.stub(PollingSet.prototype, 'clearTimer')
         defaultInstances = [
             { name: 'firstOne', InstanceId: '0' },
             { name: 'secondOne', InstanceId: '1' },
@@ -73,6 +74,7 @@ describe('ec2ParentNode', function () {
 
         testNode = new Ec2ParentNode(testRegion, testPartition, client)
         refreshStub.resetHistory()
+        clearTimerStub.resetHistory()
     })
 
     afterEach(function () {
@@ -146,7 +148,7 @@ describe('ec2ParentNode', function () {
     })
 
     it('is not polling on initialization', async function () {
-        assert.strictEqual(testNode.isPolling(), false)
+        assert.strictEqual(testNode.pollingSet.isEmpty(), true)
     })
 
     it('adds pending nodes to the polling nodes set', async function () {
@@ -195,16 +197,15 @@ describe('ec2ParentNode', function () {
             { name: 'secondOne', InstanceId: '1', status: 'stopped' },
             { name: 'thirdOne', InstanceId: '2', status: 'running' },
         ]
-
         getInstanceStub.resolves(mapToInstanceCollection(instances))
 
         await testNode.updateChildren()
-
-        assert.strictEqual(testNode.isPolling(), true)
+        sinon.assert.notCalled(clearTimerStub)
+        assert.strictEqual(testNode.pollingSet.isEmpty(), false)
         testNode.pollingSet.pollingNodes.delete('0')
         await clock.tickAsync(6000)
-        assert.strictEqual(testNode.isPolling(), false)
-        sinon.assert.calledOn(clearTimerStub, testNode)
+        assert.strictEqual(testNode.pollingSet.isEmpty(), true)
+        sinon.assert.callCount(clearTimerStub, instances.length)
         getInstanceStub.restore()
     })
 })

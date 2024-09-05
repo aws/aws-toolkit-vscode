@@ -40,7 +40,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         this.tooltip = `${this.name}\n${this.InstanceId}\n${this.instance.status}\n${this.arn}`
 
         if (this.isPending()) {
-            this.parent.startPolling(this.InstanceId)
+            this.parent.pollingSet.start(this.InstanceId)
         }
     }
 

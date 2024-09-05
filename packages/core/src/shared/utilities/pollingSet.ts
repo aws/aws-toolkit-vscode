@@ -9,7 +9,10 @@ export class PollingSet<T> {
     public readonly pollingNodes: Set<T>
     public pollTimer?: NodeJS.Timeout
 
-    public constructor(private readonly interval: number) {
+    public constructor(
+        private readonly interval: number,
+        private readonly action: () => void
+    ) {
         this.pollingNodes = new Set<T>()
     }
 
@@ -31,5 +34,24 @@ export class PollingSet<T> {
 
     public hasTimer(): boolean {
         return this.pollTimer != undefined
+    }
+
+    public clearTimer(): void {
+        if (this.isEmpty() && this.hasTimer()) {
+            globals.clock.clearInterval(this.pollTimer)
+            this.pollTimer = undefined
+        }
+    }
+
+    public start(id: T): void {
+        this.add(id)
+        this.pollTimer =
+            this.pollTimer ??
+            globals.clock.setInterval(() => {
+                this.action()
+                if (this.isEmpty()) {
+                    this.clearTimer()
+                }
+            }, this.interval)
     }
 }
