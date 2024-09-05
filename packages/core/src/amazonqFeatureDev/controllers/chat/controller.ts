@@ -412,9 +412,6 @@ export class FeatureDevController {
     }
 
     /**
-     * Handle a regular incoming message when a user is in the approach phase
-     */
-    /**
      * Handles the approach generation phase.
      * @param {Session} session - The current chat session.
      * @param {string} message - The user's message.
@@ -466,9 +463,6 @@ export class FeatureDevController {
         this.messenger.sendAsyncEventProgress(tabID, false, undefined)
     }
 
-    /**
-     * Handle a regular incoming message when a user is in the code generation phase
-     */
     /**
      * Handles the code generation phase.
      * @param {Session} session - The current chat session.

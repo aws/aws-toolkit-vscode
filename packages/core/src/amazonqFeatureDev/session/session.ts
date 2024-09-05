@@ -68,9 +68,6 @@ export class Session {
     }
 
     /**
-     * Preload any events that have to run before a chat message can be sent
-     */
-    /**
      * Preloads events that need to run before a chat message can be sent.
      * @param {string} msg - The message to be sent.
      * @returns {Promise<void>}
@@ -85,11 +82,6 @@ export class Session {
         }
     }
 
-    /**
-     * setupConversation
-     *
-     * Starts a conversation with the backend and uploads the repo for the LLMs to be able to use it.
-     */
     /**
      * Sets up a conversation with the backend and uploads the repo for the LLMs to use.
      * @private

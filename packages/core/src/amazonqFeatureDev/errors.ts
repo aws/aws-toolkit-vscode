@@ -8,7 +8,6 @@ import { featureName } from './constants'
 import { uploadCodeError } from './userFacingText'
 import { i18n } from '../shared/i18n-helper'
 
-/** Error thrown when the conversation ID is not found */
 /**
  * Error thrown when the conversation ID is not found.
  * @extends ToolkitError
@@ -21,7 +20,6 @@ export class ConversationIdNotFoundError extends ToolkitError {
     }
 }
 
-/** Error thrown when the tab ID is not found */
 /**
  * Error thrown when the tab ID is not found.
  * @extends ToolkitError
@@ -36,7 +34,6 @@ export class TabIdNotFoundError extends ToolkitError {
     }
 }
 
-/** Error thrown when the UI panel fails to load */
 /**
  * Error thrown when the UI panel fails to load.
  * @extends ToolkitError
@@ -47,7 +44,6 @@ export class PanelLoadError extends ToolkitError {
     }
 }
 
-/** Error thrown when the workspace folder is not found */
 /**
  * Error thrown when the workspace folder is not found.
  * @extends ToolkitError

@@ -19,7 +19,6 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
 
 export const uploadCodeError = `I'm sorry, I couldn’t upload your workspace artifacts to Amazon S3 to help you with this task. You might need to allow access to the S3 bucket. For more information, see the [Amazon Q documentation](${manageAccessGuideURL}) or contact your network or organization administrator.`
 
-// Utils for logging and showing customer facing conversation id text
 /**
  * Creates a message with the conversation ID if provided.
  * @param {string} [conversationId] - The conversation ID to include in the message.

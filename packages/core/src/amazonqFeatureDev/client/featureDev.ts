@@ -10,7 +10,6 @@ import { ServiceOptions } from '../../shared/awsClientBuilder'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger'
 import * as FeatureDevProxyClient from './featuredevproxyclient'
-import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 import { featureName } from '../constants'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
 import {
@@ -32,8 +31,8 @@ import { LLMResponseType } from '../types'
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
 import { extensionVersion } from '../../shared/vscode/env'
+import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 
-// Create a client for featureDev proxy client based off of aws sdk v2
 /**
  * Creates and returns a FeatureDevProxyClient.
  * This function initializes the client with necessary configurations including authentication,
@@ -401,9 +400,6 @@ export class FeatureDevClient {
      *
      * No need to fail currently if the event fails in the request. In addition, currently there is no need for a return value.
      *
-     * @param conversationId
-     */
-    /**
      * Sends a feature development telemetry event.
      *
      * @param {string} conversationId - The ID of the conversation associated with the telemetry event.
