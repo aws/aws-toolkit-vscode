@@ -44,6 +44,7 @@ import { runDeploy } from '../../lambda/commands/deploySamApplication'
 import { DataQuickPickItem, createQuickPick } from '../ui/pickerPrompter'
 import { createCommonButtons } from '../ui/buttons'
 import { samDeployUrl } from '../constants'
+import { OpenTemplateParams, OpenTemplateWizard } from '../applicationBuilder/explorer/openTemplate'
 
 const sharedDetectSamCli = shared(detectSamCli)
 
@@ -152,8 +153,11 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
             await settings.update('enableCodeLenses', toggled)
         }),
         Commands.register({ id: 'aws.appBuilder.openTemplate', autoconnect: false }, async (arg: TreeNode) => {
-            const uri = (arg.resource as SamAppLocation).samTemplateUri
-            const document = await vscode.workspace.openTextDocument(uri)
+            const templateUri = arg ? (arg.resource as SamAppLocation).samTemplateUri : await promptUserForTemplate()
+            if (!templateUri) {
+                return
+            }
+            const document = await vscode.workspace.openTextDocument(templateUri)
             await vscode.window.showTextDocument(document)
         }),
         Commands.register({ id: 'aws.appBuilder.openHandler', autoconnect: false }, async (arg: ResourceNode) => {
@@ -196,6 +200,13 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
             }
         })
     )
+}
+async function promptUserForTemplate() {
+    const registry = await globals.templateRegistry
+    const openTemplateParams: Partial<OpenTemplateParams> = {}
+
+    const param = await new OpenTemplateWizard(openTemplateParams, registry).run()
+    return param?.template.uri
 }
 
 async function activateCodeLensRegistry(context: ExtContext) {
