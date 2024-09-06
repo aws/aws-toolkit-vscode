@@ -1,0 +1,18 @@
+{
+	"date": "2024-03-07",
+	"version": "2.13.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "fix(CodeTransform): Updating commands for copying dependencies"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "\"Failed to access settings\" error when restarting multiple vscode instances"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q: Fix code snippet borders, action button border radius, text alignment and overlay UI issues"
+		}
+	]
+}

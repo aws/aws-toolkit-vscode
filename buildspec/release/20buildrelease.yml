@@ -1,0 +1,38 @@
+version: 0.2
+
+env:
+    variables:
+        NODE_OPTIONS: '--max-old-space-size=8192'
+
+phases:
+    pre_build:
+        commands:
+            - aws codeartifact login --tool npm --domain "$TOOLKITS_CODEARTIFACT_DOMAIN" --domain-owner "$TOOLKITS_ACCOUNT_ID" --repository "$TOOLKITS_CODEARTIFACT_REPO"
+            - test -n "${TARGET_EXTENSION}"
+    install:
+        runtime-versions:
+            nodejs: 16
+
+        commands:
+            - apt-get update
+            - apt-get install -y libgtk-3-dev libxss1 xvfb
+            - apt-get install -y libnss3-dev libasound2
+            - apt-get install -y libasound2-plugins
+    build:
+        commands:
+            - echo "TARGET_EXTENSION=${TARGET_EXTENSION}"
+            # --unsafe-perm is needed because we run as root
+            - npm ci --unsafe-perm
+            - npm run package -w packages/${TARGET_EXTENSION}
+            - cp packages/${TARGET_EXTENSION}/package.json ./package.json
+            - NUM_VSIX=$(ls -1q *.vsix | wc -l)
+            - |
+                if [ "$NUM_VSIX" != "1" ]; then
+                  echo "Number of .vsix to release is not exactly 1, it is: ${NUM_VSIX}"
+                  exit 1
+                fi
+
+artifacts:
+    files:
+        - '*.vsix'
+        - package.json

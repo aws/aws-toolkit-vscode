@@ -24,15 +24,19 @@ const unlink = util.promisify(fs.unlink)
 // to be run before `npm install`.
 async function rdelete(p: string) {
     const stats = await stat(p)
-    if (stats.isFile()) {
+    if (!stats.isFile() && !stats.isDirectory()) {
+        throw new Error(`Could not delete '${p}' because it is neither a file nor directory`)
+    }
+
+    try {
         await unlink(p)
-    } else if (stats.isDirectory()) {
-        const promises = (await readdir(p)).map(child => rdelete(path.join(p, child)))
+    } catch {
+        // Unlink should only fail if it is a non-empty directory that is NOT a symbolic link.
+        // stats.isSymoblicLink() does not seem to detect symbolic links to folders?
+        const promises = (await readdir(p)).map((child) => rdelete(path.join(p, child)))
 
         await Promise.all(promises)
         await rmdir(p)
-    } else {
-        throw new Error(`Could not delete '${p}' because it is neither a file nor directory`)
     }
 }
 
@@ -72,7 +76,7 @@ async function getGenerated(): Promise<string[]> {
     try {
         const data = JSON.parse(await readFile(p, 'utf-8'))
 
-        if (!Array.isArray(data) || !data.every(d => typeof d === 'string')) {
+        if (!Array.isArray(data) || !data.every((d) => typeof d === 'string')) {
             throw new Error('File manifest was not an array of strings')
         }
 
@@ -83,7 +87,7 @@ async function getGenerated(): Promise<string[]> {
     }
 }
 
-;(async () => {
+void (async () => {
     const args = process.argv.slice(2).concat(await getGenerated())
     await Promise.all(args.map(tryDeleteRelative))
 })()

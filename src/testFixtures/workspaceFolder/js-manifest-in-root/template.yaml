@@ -1,7 +1,0 @@
-Resources:
-    SourceCodeTwoFoldersDeep:
-        Type: AWS::Serverless::Function
-        Properties:
-            CodeUri: .
-            Handler: src/subfolder/app.handlerTwoFoldersDeep
-            Runtime: nodejs14.x

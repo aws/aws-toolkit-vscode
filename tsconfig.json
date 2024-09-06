@@ -1,25 +1,21 @@
+// This tsconfig is for root TS scripts, e.g. those in scripts/
+// If you are looking for the base config for subprojects, see packages/tsconfig.packages.json
 {
     "compilerOptions": {
-        "baseUrl": ".",
-        "paths": {
-            "*": ["types/*"],
-            "@sinonjs/fake-timers": ["node_modules/@types/sinonjs__fake-timers"]
-        },
-        "incremental": true,
-        "module": "commonjs",
-        "target": "es6",
-        "outDir": "dist",
-        "sourceMap": true,
-        "moduleResolution": "node",
+        "module": "node16",
+        "target": "es2021",
+        "moduleResolution": "node16",
         "rootDir": ".",
         "resolveJsonModule": true,
         "strict": true,
         "noUnusedLocals": true,
         "noImplicitOverride": true,
-        "lib": ["dom", "es6", "esnext.asynciterable"],
-        "skipLibCheck": true,
+        "lib": ["dom", "es2021"],
         "forceConsistentCasingInFileNames": true,
-        "jsx": "preserve"
-    },
-    "exclude": ["node_modules", ".vscode-test", "src/testFixtures", "dist"]
+        "jsx": "preserve",
+        "esModuleInterop": true,
+        "incremental": true,
+        "noEmitOnError": true,
+        "skipLibCheck": true
+    }
 }

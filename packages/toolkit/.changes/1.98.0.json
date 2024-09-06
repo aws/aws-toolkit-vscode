@@ -1,0 +1,18 @@
+{
+	"date": "2023-11-09",
+	"version": "1.98.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer, CodeCatalyst may require login again after Switching VSCode workspaces"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "\"Scanning CloudFormation templates...\" message `Cancel` button does not fully stop the scan"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "ECS: `SimulatePrincipalPolicy` permission is no longer required for users to run `exec command`"
+		}
+	]
+}

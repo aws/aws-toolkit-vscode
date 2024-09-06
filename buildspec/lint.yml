@@ -1,0 +1,39 @@
+version: 0.2
+
+# Run unprivileged for most phases (except those marked "run-as: root").
+run-as: codebuild-user
+
+env:
+    variables:
+        # Implicitly passed by the AWS automation pipeline:
+        # VSCODE_TEST_VERSION
+        # GITHUB_READONLY_TOKEN
+        AWS_TOOLKIT_TEST_NO_COLOR: '1'
+
+phases:
+    install:
+        run-as: root
+        runtime-versions:
+            nodejs: 16
+        commands:
+            - bash buildspec/shared/linux-install.sh
+
+    pre_build:
+        commands:
+            - export HOME=/home/codebuild-user
+            - bash buildspec/shared/linux-pre_build.sh
+
+    build:
+        commands:
+            - export HOME=/home/codebuild-user
+            - npm run testCompile
+            - npm run lint
+            - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
+            - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
+            - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
+
+reports:
+    unit-test:
+        files:
+            - '*'
+        base-directory: '.test-reports'
