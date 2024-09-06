@@ -1,0 +1,22 @@
+{
+	"date": "2023-08-31",
+	"version": "1.87.0",
+	"entries": [
+		{
+			"type": "Breaking Change",
+			"description": "Minimum required VS Code version is now 1.68"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CloudWatch Logs: \"Search Log Group\" shows multiple progress popups"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CloudWatch Logs: \"View Full Log Stream\" is limited to 1000 events instead of the `aws.cwl.limit` user setting"
+		},
+		{
+			"type": "Feature",
+			"description": "Telemetry setting description includes a details link"
+		}
+	]
+}

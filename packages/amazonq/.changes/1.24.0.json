@@ -1,0 +1,34 @@
+{
+	"date": "2024-09-05",
+	"version": "1.24.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Network errors causing premature SSO logout"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix SyntaxError causing premature expiration (edge case)"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Code Transformation: show instructions for finding JDK path on Linux"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "UI: 'Start using Amazon Q' may display even if the user is signed in."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Add getFeature and isEnabled utility methods to FeatureConfigProvider"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q /dev: include in progress state agent in code generation"
+		},
+		{
+			"type": "Feature",
+			"description": "Reduce workspace CPU indexing time by 50%"
+		}
+	]
+}

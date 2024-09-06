@@ -1,0 +1,14 @@
+{
+	"date": "2024-07-29",
+	"version": "1.18.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Security Scan: Fixed an issue scans were not able to succeed on Java projects with .class files"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "FileNotFound error causing early SSO expiration"
+		}
+	]
+}

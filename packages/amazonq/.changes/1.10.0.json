@@ -1,0 +1,30 @@
+{
+	"date": "2024-06-21",
+	"version": "1.10.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Security Scan: Fixes an issue where project-scans time out for larger projects."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /dev command: Fix file rejections for files outside of src/"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Feature Development: update /dev welcome message"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Fixed broken code blocks with typewriter text in list items."
+		},
+		{
+			"type": "Feature",
+			"description": "UX: New style for the login window"
+		},
+		{
+			"type": "Removal",
+			"description": "Auth: No longer share SSO sessions with AWS Toolkit."
+		}
+	]
+}

@@ -1,0 +1,18 @@
+{
+	"date": "2023-12-19",
+	"version": "2.4.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q: `/dev` command may fail with \"Conversation id must exist\""
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer supports code generation for Iac languages without external extensions"
+		},
+		{
+			"type": "Feature",
+			"description": "Code Transform Telemetry includes additional metadata"
+		}
+	]
+}

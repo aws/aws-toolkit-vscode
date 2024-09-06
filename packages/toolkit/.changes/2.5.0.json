@@ -1,0 +1,58 @@
+{
+	"date": "2024-01-11",
+	"version": "2.5.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: Fixes a bug where accepting a recommendation in AWS Cloud9 will trigger another suggestion"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q: correct code selection range for one-line selections"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: Security Scan Log output is blank if log level is not \"verbose\"."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Fixed code block text background"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Transform: delete temp files we create when no longer needed"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Transform: make copy-dependencies command less error prone"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: fix incorrect error handling causing TypeError .includes is not a function"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q: \"Transformation Hub\" is always visible, even if Transform feature is not enabled or used"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: add select customization action to notification"
+		},
+		{
+			"type": "Feature",
+			"description": "feat(sam): python 3.12 support for SAM, lambda"
+		},
+		{
+			"type": "Feature",
+			"description": "Browser: Enable generic global commands in ellipses menus, e.g. About Toolkit, Report Toolkit Issue, etc."
+		},
+		{
+			"type": "Removal",
+			"description": "Commands: Remove redundant 'View Quick Start' command from appearing in non-Cloud9 versions of the toolkit."
+		},
+		{
+			"type": "Removal",
+			"description": "Amazon Q, CodeWhisperer: Remove 'Switch Connections' menu item, and only show 'Add new connection' when not signed in."
+		}
+	]
+}

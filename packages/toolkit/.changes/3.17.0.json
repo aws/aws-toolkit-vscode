@@ -1,0 +1,10 @@
+{
+	"date": "2024-07-29",
+	"version": "3.17.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "FileNotFound error causing early SSO expiration"
+		}
+	]
+}

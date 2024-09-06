@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "baseUrl": ".",
+        "incremental": true,
+        "module": "node16",
+        "target": "es2021",
+        "outDir": "dist",
+        "lib": ["dom", "es2021"],
+        "sourceMap": true,
+        "moduleResolution": "node16",
+        "resolveJsonModule": true,
+        "strict": true,
+        "noUnusedLocals": true,
+        "skipLibCheck": true
+    },
+    "include": ["lib/**/*", "test/**/*", "index.ts"]
+}

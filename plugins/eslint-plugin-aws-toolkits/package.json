@@ -1,0 +1,18 @@
+{
+    "name": "eslint-plugin-aws-toolkits",
+    "version": "1.0.0",
+    "description": "Local custom lint rules for AWS Toolkit VSCode",
+    "main": "dist/index.js",
+    "scripts": {
+        "build": "tsc",
+        "test": "npm run build && mocha dist/test --recursive",
+        "clean": "ts-node ../../scripts/clean.ts dist"
+    },
+    "devDependencies": {
+        "mocha": "^10.1.0"
+    },
+    "engines": {
+        "npm": "^10.1.0"
+    },
+    "license": "Apache-2.0"
+}
