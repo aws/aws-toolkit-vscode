@@ -827,7 +827,7 @@ class DiskCacheErrorMessage {
 
         function showMessage() {
             return showViewLogsMessage(
-                `File system related error during SSO cache operation:\n"${getErrorMsg(error, true)}"`,
+                `File system related error during SSO cache operation:\n"${getErrorMsg(error, { withCause: true, withId: true })}"`,
                 'error',
                 [dontShow]
             )

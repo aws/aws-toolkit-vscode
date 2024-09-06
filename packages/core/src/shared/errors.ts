@@ -250,15 +250,15 @@ export class ToolkitError extends Error implements ErrorInformation {
  *
  * @param withCause Append the message(s) from the cause chain, recursively.
  *                  The message(s) are delimited by ' | '. Eg: msg1 | causeMsg1 | causeMsg2
+ * @param withId Prefix the message with the id of the error, this will be something like
+ *                 the `code` or `name` property.
  */
-export function getErrorMsg(err: Error | undefined, withCause = false): string | undefined {
+export function getErrorMsg(
+    err: Error | undefined,
+    opts?: { withCause?: boolean; withId?: boolean }
+): string | undefined {
     if (err === undefined) {
         return undefined
-    }
-
-    const cause = (err as any).cause
-    if (withCause && cause) {
-        return `${err.message}${cause ? ' | ' + getErrorMsg(cause, true) : ''}`
     }
 
     // Non-standard SDK fields added by the OIDC service, to conform to the OAuth spec
@@ -286,10 +286,24 @@ export function getErrorMsg(err: Error | undefined, withCause = false): string |
     //      }
     const anyDesc = (err as any).error_description
     const errDesc = typeof anyDesc === 'string' ? anyDesc.trim() : ''
-    const msg = errDesc !== '' ? errDesc : err.message?.trim()
+    let msg = errDesc !== '' ? errDesc : err.message?.trim()
 
     if (typeof msg !== 'string') {
         return undefined
+    }
+
+    // prepend id to message
+    const errorId = getErrorId(err)
+    // If a generic error does not have the `name` field explicitly set, it will return a generic 'Error' name.
+    // So we skip if that is that case since it is useless.
+    if (opts?.withId && errorId && errorId !== 'Error') {
+        msg = `${errorId}: ${msg}`
+    }
+
+    // append the cause's message
+    const cause = (err as any).cause
+    if (opts?.withCause && cause) {
+        return `${msg}${cause ? ' | ' + getErrorMsg(cause, opts) : ''}`
     }
 
     return msg
@@ -417,7 +431,7 @@ export function scrubNames(s: string, username?: string) {
  * @param err Error object, or message text
  */
 export function getTelemetryReasonDesc(err: unknown | undefined): string | undefined {
-    const m = typeof err === 'string' ? err : getErrorMsg(err as Error, true) ?? ''
+    const m = typeof err === 'string' ? err : getErrorMsg(err as Error, { withCause: true, withId: true }) ?? ''
     const msg = scrubNames(m, _username)
 
     // Truncate to 200 chars.
@@ -566,6 +580,16 @@ export function isAwsError(error: unknown): error is AWSError & { error_descript
 
 function hasCode<T>(error: T): error is T & { code: string } {
     return typeof (error as { code?: unknown }).code === 'string'
+}
+
+/**
+ * Returns the identifier the given error.
+ * Depending on the implementation, the identifier may exist on a
+ * different property.
+ */
+export function getErrorId(error: Error): string {
+    // prioritize code over the name
+    return hasCode(error) ? error.code : error.name
 }
 
 function hasTime(error: Error): error is typeof error & { time: Date } {
