@@ -300,6 +300,12 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     credentialStartUrl: AuthUtil.instance.startUrl,
                 })
 
+                action.tokenSource?.token.onCancellationRequested(() => {
+                    if (action.tokenSource) {
+                        this.tokenSource = action.tokenSource
+                    }
+                })
+
                 action.telemetry.setGenerateCodeIteration(this.currentIteration)
                 action.telemetry.setGenerateCodeLastInvocationTime()
                 const codeGenerationId = randomUUID()
@@ -363,10 +369,10 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     this.currentIteration + 1,
                     this.codeGenerationRemainingIterationCount,
                     this.codeGenerationTotalIterationCount,
-                    this.tokenSource,
                     this.currentCodeGenerationId,
                     action.uploadHistory,
-                    codeGenerationId
+                    codeGenerationId,
+                    this.tokenSource
                 )
                 return {
                     nextState,
@@ -489,10 +495,10 @@ export class PrepareCodeGenState implements SessionState {
 
         public codeGenerationRemainingIterationCount?: number,
         public codeGenerationTotalIterationCount?: number,
-        public superTokenSource?: vscode.CancellationTokenSource,
         public currentCodeGenerationId?: string,
         public uploadHistory: UploadHistory = {},
-        public codeGenerationId?: string
+        public codeGenerationId?: string,
+        public superTokenSource?: vscode.CancellationTokenSource
     ) {
         this.tokenSource = superTokenSource || new vscode.CancellationTokenSource()
         this.uploadId = config.uploadId

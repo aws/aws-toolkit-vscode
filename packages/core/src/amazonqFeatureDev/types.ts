@@ -88,8 +88,8 @@ export interface SessionStateAction {
     messenger: Messenger
     fs: VirtualFileSystem
     telemetry: TelemetryHelper
-    tokenSource?: CancellationTokenSource
     uploadHistory?: UploadHistory
+    tokenSource?: CancellationTokenSource
 }
 
 export type NewFileZipContents = { zipFilePath: string; fileContent: string }

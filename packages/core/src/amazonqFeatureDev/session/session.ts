@@ -132,6 +132,7 @@ export class Session {
             telemetry: this.telemetry,
             tokenSource: this.state.tokenSource,
             uploadHistory: this.state.uploadHistory,
+            tokenSource: this.state.tokenSource,
         })
 
         if (resp.nextState) {
