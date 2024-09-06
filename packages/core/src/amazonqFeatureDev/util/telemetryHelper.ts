@@ -8,9 +8,6 @@ import { getLogger } from '../../shared/logger/logger'
 import { AmazonqApproachInvoke, AmazonqCodeGenerationInvoke, Metric } from '../../shared/telemetry/telemetry'
 import { LLMResponseType } from '../types'
 
-/**
- * Helper class for managing telemetry data for Amazon Q Feature Development.
- */
 export class TelemetryHelper {
     public generateApproachIteration: number
     public generateApproachLastInvocationTime: number
@@ -93,16 +90,10 @@ export class TelemetryHelper {
         this.generateCodeIteration = generateCodeIteration
     }
 
-    /**
-     * Sets the last invocation time for generating approach.
-     */
     public setGenerateApproachLastInvocationTime() {
         this.generateApproachLastInvocationTime = performance.now()
     }
 
-    /**
-     * Sets the last invocation time for generating code.
-     */
     public setGenerateCodeLastInvocationTime() {
         this.generateCodeLastInvocationTime = performance.now()
     }

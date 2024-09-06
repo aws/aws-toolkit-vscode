@@ -241,9 +241,6 @@ export class Messenger {
         this.dispatcher.sendAuthNeededExceptionMessage(new AuthNeededException(message, authType, tabID))
     }
 
-    /**
-     * Opens a new task tab.
-     */
     public openNewTask() {
         this.dispatcher.sendOpenNewTask(new OpenNewTabMessage('tabName', 'tabType'))
     }

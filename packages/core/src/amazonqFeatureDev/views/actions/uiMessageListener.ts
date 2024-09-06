@@ -91,6 +91,10 @@ export class UIMessageListener {
         })
     }
 
+    private chatItemFeedback(msg: any) {
+        this.featureDevControllerEventsEmitters?.processChatItemFeedbackMessage.fire(msg)
+    }
+
     /**
      * Processes a chat message from the user.
      * @private

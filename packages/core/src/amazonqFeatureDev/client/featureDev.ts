@@ -34,7 +34,7 @@ import { extensionVersion } from '../../shared/vscode/env'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 
 /**
- * Creates and configures a FeatureDevProxyClient for Amazon Q Feature Development.
+ * Creates and configures a FeatureDevProxyClient client based off of AWS SDK v2.
  *
  * This function sets up the client with the necessary authentication, configuration, API settings, and retry options.
  * Also AWS SDK options required for interacting with the Feature Development service.
@@ -72,11 +72,6 @@ const streamResponseErrors: Record<string, number> = {
     InternalServerException: 500,
 }
 
-/**
- * Represents a client for interacting with Amazon Q Feature Development service.
- * This class provides methods for various operations such as creating conversations,
- * generating plans, and managing code generations.
- */
 export class FeatureDevClient {
     /**
      * Retrieves a FeatureDevProxyClient.

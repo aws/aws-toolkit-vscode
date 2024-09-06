@@ -75,9 +75,7 @@ type fileClickedMessage = {
     filePath: string
     actionName: string
 }
-/**
- * Controller for Amazon Q Feature Development functionality.
- */
+
 export class FeatureDevController {
     private readonly messenger: Messenger
     private readonly sessionStorage: ChatSessionStorage
@@ -412,7 +410,7 @@ export class FeatureDevController {
     }
 
     /**
-     * Handles the approach generation phase.
+     * Handle a regular incoming message when a user is in the approach phase
      * @param {Session} session - The current chat session.
      * @param {string} message - The user's message.
      * @param {string} tabID - The ID of the current tab.
@@ -464,7 +462,7 @@ export class FeatureDevController {
     }
 
     /**
-     * Handles the code generation phase.
+     * Handle a regular incoming message when a user is in the code generation phase
      * @param {Session} session - The current chat session.
      * @param {string} message - The user's message.
      * @param {string} tabID - The ID of the current tab.
