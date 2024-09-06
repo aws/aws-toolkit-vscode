@@ -2,20 +2,25 @@ module.exports = {
     root: true,
     parser: '@typescript-eslint/parser',
     parserOptions: {
-        project: './tsconfig.json',
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        project: ['./packages/*/tsconfig.json', './plugins/*/tsconfig.json'],
         tsconfigRootDir: __dirname,
     },
     env: {
         node: true,
         mocha: true,
+        es2024: true,
     },
-    plugins: ['@typescript-eslint', 'header', 'no-null'],
+    plugins: ['@typescript-eslint', 'unicorn', 'header', 'security-node', 'aws-toolkits'],
     extends: [
         'eslint:recommended',
         'plugin:@typescript-eslint/eslint-recommended',
         'plugin:@typescript-eslint/recommended-requiring-type-checking',
         'plugin:@typescript-eslint/recommended',
-        'prettier',
+        // "Add this as the _last_ item in the extends array, so that eslint-config-prettier has the
+        // opportunity to override other configs." https://github.com/prettier/eslint-plugin-prettier
+        'plugin:prettier/recommended',
     ],
     rules: {
         curly: 2, // Enforce braces on "if"/"for"/etc.
@@ -50,6 +55,8 @@ module.exports = {
                 // modifiers: ['requiresQuotes'],
             },
         ],
+        // Avoid accidental use of "==" instead of "===".
+        eqeqeq: 'error',
         // TODO reenable this rule (by removing this off)
         'no-async-promise-executor': 'off',
         // TODO reenable this rule (by removing this off)
@@ -85,29 +92,60 @@ module.exports = {
         // TODO reenable this rule, tests mostly break this one (by changing off to error)
         // This currently produces 700 non fixable by --fix errors
         'sort-imports': 'off',
-        // TODO rennable this rule (by removing this off)
-        // namespaces are not great and we should stop using them
-        '@typescript-eslint/no-namespace': 'off',
-        // Turn this on by removing off when we fix namespaces
-        'no-inner-declarations': 'off',
+        '@typescript-eslint/no-namespace': 'error',
         // This is off because prettier takes care of it
         'no-extra-semi': 'off',
-        'no-null/no-null': 'error',
         '@typescript-eslint/no-empty-function': 'off',
+        // Disallows returning e.g. Promise<…|never> which signals that an exception may be thrown.
+        // https://stackoverflow.com/q/64230626/152142
+        '@typescript-eslint/no-redundant-type-constituents': 'off',
         '@typescript-eslint/no-unused-vars': 'off',
-        // New rules --> New TODOs
+        '@typescript-eslint/no-floating-promises': 'error', // Promises must catch errors or be awaited.
         '@typescript-eslint/no-var-requires': 'off', // Should be able to remove with the full migration of SDK v3
         '@typescript-eslint/no-unsafe-member-access': 'off', // use typeguard before accessing a member
         '@typescript-eslint/no-unsafe-assignment': 'off', // 112 errors, similar to above
         '@typescript-eslint/no-unsafe-return': 'off', // 26 errors, similar to above
         '@typescript-eslint/no-unsafe-call': 'off', // 24 errors, need types for imported constructors
         '@typescript-eslint/restrict-template-expressions': 'off', // 294 errors, forces template literals to be a certain type
-        '@typescript-eslint/no-floating-promises': 'off', // 274 errors, promises should catch errors or be awaited
         '@typescript-eslint/ban-ts-comment': 'off', // 27 errors, bans compiler error exceptions
         '@typescript-eslint/explicit-module-boundary-types': 'off', // Remove this once 'explicit-function-return-type' is on
         // Do not check loops so while(true) works. Potentially reevalute this.
         'no-constant-condition': ['error', { checkLoops: false }],
         'no-empty': 'off',
+
+        // Rules from https://github.com/sindresorhus/eslint-plugin-unicorn
+        // TODO: 'unicorn/no-useless-promise-resolve-reject': 'error',
+        // TODO: 'unicorn/prefer-at': 'error',
+        // TODO: 'unicorn/prefer-event-target': 'error',
+        // TODO: 'unicorn/prefer-negative-index': 'error',
+        // TODO: 'unicorn/prefer-string-slice': 'error',
+        // TODO: 'unicorn/prefer-regexp-test': 'error',
+        // TODO: 'unicorn/prefer-ternary': 'error',
+        // TODO(?): 'unicorn/custom-error-definition': 'error',
+        // TODO(?): 'unicorn/prefer-json-parse-buffer': 'error',
+        // TODO: ESM modules https://github.com/sindresorhus/eslint-plugin-unicorn/blob/main/docs/rules/prefer-module.md
+        // 'unicorn/prefer-module': 'error',
+        'unicorn/no-abusive-eslint-disable': 'error',
+        'unicorn/no-null': 'error',
+        'unicorn/no-unnecessary-polyfills': 'error',
+        'unicorn/no-useless-spread': 'error',
+        'unicorn/prefer-array-some': 'error',
+        'unicorn/prefer-blob-reading-methods': 'error',
+        'unicorn/prefer-code-point': 'error',
+        'unicorn/prefer-date-now': 'error',
+        'unicorn/prefer-dom-node-text-content': 'error',
+        'unicorn/prefer-includes': 'error',
+        'unicorn/prefer-keyboard-event-key': 'error',
+        'unicorn/prefer-modern-dom-apis': 'error',
+        'unicorn/prefer-modern-math-apis': 'error',
+        'unicorn/prefer-native-coercion-functions': 'error',
+        // 'unicorn/prefer-node-protocol': 'error',
+        // 'unicorn/prefer-object-from-entries': 'error',
+        'unicorn/prefer-reflect-apply': 'error',
+        'unicorn/prefer-string-trim-start-end': 'error',
+        'unicorn/prefer-type-error': 'error',
+        'security-node/detect-child-process': 'error',
+
         'header/header': [
             'error',
             'block',
@@ -116,6 +154,32 @@ module.exports = {
                     'Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.\\r?\\n \\* SPDX-License-Identifier: Apache-2.0',
             },
             { lineEndings: 'unix' },
+        ],
+
+        'aws-toolkits/no-only-in-tests': 'error',
+        'aws-toolkits/no-await-on-vscode-msg': 'error',
+        'aws-toolkits/no-banned-usages': 'error',
+        'aws-toolkits/no-incorrect-once-usage': 'error',
+        'aws-toolkits/no-string-exec-for-child-process': 'error',
+        'aws-toolkits/no-console-log': 'error',
+
+        'no-restricted-imports': [
+            'error',
+            {
+                patterns: [
+                    {
+                        group: ['**/core/dist/*'],
+                        message:
+                            "Avoid importing from the core lib's dist/ folders; please use directly from the core lib defined exports.",
+                    },
+                ],
+            },
+            // The following will place an error on the `fs-extra` import since we do not want it to be used for browser compatibility reasons.
+            // {
+            //     name: 'fs-extra',
+            //     message:
+            //         'Avoid fs-extra, use shared/fs/fs.ts. Notify the Toolkit team if your required functionality is not available.',
+            // },
         ],
     },
 }

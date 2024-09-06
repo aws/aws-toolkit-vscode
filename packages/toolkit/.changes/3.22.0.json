@@ -1,0 +1,14 @@
+{
+	"date": "2024-08-29",
+	"version": "3.22.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Auth: `SyntaxError` causing unexpected SSO logout"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Auth: Users may be silently logged out due to network issues when starting the extension."
+		}
+	]
+}

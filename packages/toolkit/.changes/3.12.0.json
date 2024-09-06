@@ -1,0 +1,14 @@
+{
+	"date": "2024-06-27",
+	"version": "3.12.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Step functions language server activates when editing ASL documents from previous session"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Step functions language server activation fails"
+		}
+	]
+}

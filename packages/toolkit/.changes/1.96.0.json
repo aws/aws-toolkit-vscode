@@ -1,0 +1,46 @@
+{
+	"date": "2023-10-26",
+	"version": "1.96.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "SAM debugging: \"Invalid (or missing) template file\" may occur even when a valid template.yaml is specified by `invokeTarget.templatePath` in the launch config. #2614"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Redshift: The output message is not clear when a sql query is successful but returns no record."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Redshift: Re-launched connection wizard shows the old (stale) connection."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "`AWS: Add SAM Debug Configuration` command only works the first time it is invoked."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Improved performance of CloudFormation file watcher startup"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Output panel always opens at VS Code launch."
+		},
+		{
+			"type": "Feature",
+			"description": "Detect and notify about invalid settings.json #3910"
+		},
+		{
+			"type": "Feature",
+			"description": "Redshift: \"Create Notebook\" opens an untitled document instead of prompting to \"Save As\""
+		},
+		{
+			"type": "Feature",
+			"description": "CloudWatch Logs: Preserve quickpick menu position when loading more items."
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: reduce auto-suggestions when there is immediate right context"
+		}
+	]
+}

@@ -1,0 +1,10 @@
+{
+	"date": "2024-01-25",
+	"version": "2.7.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Add invalid auth handling to Application Composer's Sync button"
+		}
+	]
+}

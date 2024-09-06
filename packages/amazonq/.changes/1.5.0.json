@@ -1,0 +1,26 @@
+{
+	"date": "2024-05-17",
+	"version": "1.5.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Security Scan: Fixes an issue when scanning projects with binary files"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fixes an issue where the /dev chat wouldn't let customers modify the source folder when exceeding the size limit"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Security Scan: Improved error notifications"
+		},
+		{
+			"type": "Feature",
+			"description": "Security Scan: Added custom command to run the security scan."
+		},
+		{
+			"type": "Feature",
+			"description": "Security Scan: \"View details\" and \"Explain\" options can now be accessed from the problems panel"
+		}
+	]
+}
