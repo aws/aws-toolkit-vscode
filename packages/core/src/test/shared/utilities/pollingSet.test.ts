@@ -65,11 +65,11 @@ describe('pollingSet', function () {
     })
 
     it('stops timer once polling set is empty', async function () {
-        let pollingSet = new PollingSet(10, () => {})
+        const pollingSet = new PollingSet(10, () => {})
         pollingSet.start('1')
         pollingSet.add('2')
 
-        let clearStub = sinon.stub(pollingSet, 'clearTimer')
+        const clearStub = sinon.stub(pollingSet, 'clearTimer')
         sinon.assert.notCalled(clearStub)
         assert.strictEqual(pollingSet.isActive(), true)
 
@@ -88,7 +88,7 @@ describe('pollingSet', function () {
     })
 
     it('runs action once per interval', async function () {
-        let action = sinon.spy()
+        const action = sinon.spy()
         pollingSet = new PollingSet(10, action)
         pollingSet.start('1')
         pollingSet.add('2')
