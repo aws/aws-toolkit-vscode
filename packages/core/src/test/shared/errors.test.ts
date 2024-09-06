@@ -482,33 +482,27 @@ describe('util', function () {
         assert.deepStrictEqual(getErrorMsg(awsErr), 'aws error desc 1')
 
         // Arg withCause=true
-        awsErr = new TestAwsError('ValidationException', 'aws validation msg 1', new Date())
         let toolkitError = new ToolkitError('ToolkitError Message')
-        assert.deepStrictEqual(getErrorMsg(toolkitError, { withCause: true }), 'ToolkitError Message')
+        assert.deepStrictEqual(getErrorMsg(toolkitError, true), 'ToolkitError Message')
 
+        awsErr = new TestAwsError('ValidationException', 'aws validation msg 1', new Date())
         toolkitError = new ToolkitError('ToolkitError Message', { cause: awsErr })
         assert.deepStrictEqual(
-            getErrorMsg(toolkitError, { withCause: true }),
-            `ToolkitError Message | aws validation msg 1`
+            getErrorMsg(toolkitError, true),
+            `ToolkitError Message | ValidationException: aws validation msg 1`
         )
 
-        const nestedNestedToolkitError = new ToolkitError('C')
-        const nestedToolkitError = new ToolkitError('B', { cause: nestedNestedToolkitError })
-        toolkitError = new ToolkitError('A', { cause: nestedToolkitError })
-        assert.deepStrictEqual(getErrorMsg(toolkitError, { withCause: true }), `A | B | C`)
+        const nestedNestedToolkitError = new Error('C')
+        nestedNestedToolkitError.name = 'NameC'
+        const nestedToolkitError = new ToolkitError('B', { cause: nestedNestedToolkitError, code: 'CodeB' })
+        toolkitError = new ToolkitError('A', { cause: nestedToolkitError, code: 'CodeA' })
+        assert.deepStrictEqual(getErrorMsg(toolkitError, true), `CodeA: A | CodeB: B | NameC: C`)
 
-        // Arg withCause=true, withId=true
-        const cError = new Error('C')
-        cError.name = 'NameC'
-        const bError = new ToolkitError('B', { cause: cError, code: 'CodeB' })
-        const aError = new ToolkitError('A', { cause: bError, code: 'CodeA' })
-        assert.deepStrictEqual(getErrorMsg(aError, { withCause: true, withId: true }), `CodeA: A | CodeB: B | NameC: C`)
-
-        // withId=true excludes the generic 'Error' id
-        const errorWithGenericName = new Error('B') // note this does not set a value for `name`
-        assert.deepStrictEqual(getErrorMsg(errorWithGenericName, { withId: true }), `B`)
-        errorWithGenericName.name = 'NameB' // now we set a `name`
-        assert.deepStrictEqual(getErrorMsg(errorWithGenericName, { withId: true }), `NameB: B`)
+        // Arg withCause=true excludes the generic 'Error' id
+        const errorWithGenericName = new Error('A') // note this does not set a value for `name`, by default it is 'Error'
+        assert.deepStrictEqual(getErrorMsg(errorWithGenericName, true), `A`)
+        errorWithGenericName.name = 'NameA' // now we set a `name`
+        assert.deepStrictEqual(getErrorMsg(errorWithGenericName, true), `NameA: A`)
     })
 
     it('getTelemetryReasonDesc()', () => {

@@ -250,13 +250,8 @@ export class ToolkitError extends Error implements ErrorInformation {
  *
  * @param withCause Append the message(s) from the cause chain, recursively.
  *                  The message(s) are delimited by ' | '. Eg: msg1 | causeMsg1 | causeMsg2
- * @param withId Prefix the message with the id of the error, this will be something like
- *                 the `code` or `name` property.
  */
-export function getErrorMsg(
-    err: Error | undefined,
-    opts?: { withCause?: boolean; withId?: boolean }
-): string | undefined {
+export function getErrorMsg(err: Error | undefined, withCause: boolean = false): string | undefined {
     if (err === undefined) {
         return undefined
     }
@@ -292,18 +287,17 @@ export function getErrorMsg(
         return undefined
     }
 
-    // prepend id to message
-    const errorId = getErrorId(err)
-    // If a generic error does not have the `name` field explicitly set, it will return a generic 'Error' name.
-    // So we skip if that is that case since it is useless.
-    if (opts?.withId && errorId && errorId !== 'Error') {
-        msg = `${errorId}: ${msg}`
-    }
-
     // append the cause's message
-    const cause = (err as any).cause
-    if (opts?.withCause && cause) {
-        return `${msg}${cause ? ' | ' + getErrorMsg(cause, opts) : ''}`
+    if (withCause) {
+        const errorId = getErrorId(err)
+        // - prepend id to message
+        // - If a generic error does not have the `name` field explicitly set, it returns a generic 'Error' name. So skip since it is useless.
+        if (errorId && errorId !== 'Error') {
+            msg = `${errorId}: ${msg}`
+        }
+
+        const cause = (err as any).cause
+        return `${msg}${cause ? ' | ' + getErrorMsg(cause, withCause) : ''}`
     }
 
     return msg
@@ -431,7 +425,7 @@ export function scrubNames(s: string, username?: string) {
  * @param err Error object, or message text
  */
 export function getTelemetryReasonDesc(err: unknown | undefined): string | undefined {
-    const m = typeof err === 'string' ? err : getErrorMsg(err as Error, { withCause: true, withId: true }) ?? ''
+    const m = typeof err === 'string' ? err : getErrorMsg(err as Error, true) ?? ''
     const msg = scrubNames(m, _username)
 
     // Truncate message as these strings can be very long.
