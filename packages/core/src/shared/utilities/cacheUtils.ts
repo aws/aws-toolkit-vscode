@@ -19,14 +19,14 @@ import type { MapSync } from './map'
  *
  * Look to use {@link MapSync} instead if you need atomicity.
  */
-export interface KeyedCache<T, K = string> {
+export interface KeyedCache<V, K = string> {
     /**
      * Attempts to read data stored at {@link key}.
      *
      * @param key Target key to read from.
-     * @returns `T` on success, `undefined` if {@link key} doesn't exist.
+     * @returns `V` on success, `undefined` if {@link key} doesn't exist.
      */
-    load(key: K): Promise<T | undefined>
+    load(key: K): Promise<V | undefined>
 
     /**
      * Writes {@link data} to {@link key}.
@@ -34,7 +34,7 @@ export interface KeyedCache<T, K = string> {
      * @param key Target key to write to.
      * @param data Data to write.
      */
-    save(key: K, data: T): Promise<void>
+    save(key: K, data: V): Promise<void>
 
     /**
      * Deletes data stored at {@link key}, if any.
@@ -50,7 +50,7 @@ export interface KeyedCache<T, K = string> {
  *
  * If the item does not exist, {@link fn} is executed. The result is saved using {@link key}.
  */
-export async function loadOr<T, K>(cache: KeyedCache<T, K>, key: K, fn: () => Promise<T>): Promise<T> {
+export async function loadOr<V, K>(cache: KeyedCache<V, K>, key: K, fn: () => Promise<V>): Promise<V> {
     const data = await cache.load(key)
 
     if (data === undefined) {
@@ -69,16 +69,20 @@ export async function loadOr<T, K>(cache: KeyedCache<T, K>, key: K, fn: () => Pr
  * Transform functions are not invoked if the specified key does not exist in the cache.
  *
  * @param cache Target cache. The original is _not_ affected.
- * @param get Function applied to all **read** operations from the cache.
- * @param set Function applied to all **write** operations from the cache.
+ * @param loadTransform Function applied to all **read** operations from the cache.
+ * @param saveTransform Function applied to all **write** operations from the cache.
  */
-export function mapCache<T, U, K>(cache: KeyedCache<T, K>, get: (data: T) => U, set: (data: U) => T): KeyedCache<U, K> {
-    const getIf = (data?: T) => (data !== undefined ? get(data) : undefined)
+export function mapCache<V, Vt, K>(
+    cache: KeyedCache<V, K>,
+    loadTransform: (data: V) => Vt,
+    saveTransform: (data: Vt) => V
+): KeyedCache<Vt, K> {
+    const getIf = (data?: V) => (data !== undefined ? loadTransform(data) : undefined)
 
     return {
         clear: (key, reason) => cache.clear(key, reason),
         load: (key) => cache.load(key).then(getIf),
-        save: (key, data) => cache.save(key, set(data)),
+        save: (key, data) => cache.save(key, saveTransform(data)),
     }
 }
 
@@ -92,10 +96,10 @@ export function mapCache<T, U, K>(cache: KeyedCache<T, K>, get: (data: T) => U, 
  * @param mapKey Function that should describe how a key `K` is mapped to the file system.
  * @param logger Optional logger callback. Omitting this parameter disables logging.
  */
-export function createDiskCache<T, K>(
+export function createDiskCache<V, K>(
     mapKey: (key: K) => string,
     logger?: (message: string) => void
-): KeyedCache<T, K> {
+): KeyedCache<V, K> {
     function log(msg: string, key: K): void {
         if (logger) {
             const keyMessage = typeof key === 'object' ? JSON.stringify(key) : key

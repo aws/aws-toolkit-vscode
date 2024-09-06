@@ -19,6 +19,7 @@ import {
     ToolkitError,
     tryRun,
     UnknownError,
+    DiskCacheError,
 } from '../../shared/errors'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { UnauthorizedException } from '@aws-sdk/client-sso'
@@ -484,7 +485,10 @@ describe('util', function () {
     })
 
     function makeSyntaxErrorWithSdkClientError() {
-        const syntaxError: Error = new SyntaxError('The SyntaxError message')
+        // The following error messages are not arbitrary, changing them can break functionality
+        const syntaxError: Error = new SyntaxError(
+            'Unexpected token \'<\', "<html><bod"... is not valid JSON Deserialization error: to see the raw response, inspect the hidden field {error}.$response on this object.'
+        )
         // Under the hood of a SyntaxError may be a hidden field with the real reason for the failure
         ;(syntaxError as any)['$response'] = { reason: 'SDK Client unexpected error response: data response code: 500' }
         return syntaxError
@@ -512,20 +516,153 @@ describe('util', function () {
         const err = new Error('getaddrinfo ENOENT oidc.us-east-1.amazonaws.com')
         ;(err as any).code = 'ENOENT'
         assert.deepStrictEqual(isNetworkError(err), true, 'Did not indicate ENOENT error as network error')
+
+        const ebusyErr = new Error('getaddrinfo EBUSY oidc.us-east-1.amazonaws.com')
+        ;(ebusyErr as any).code = 'EBUSY'
+        assert.deepStrictEqual(isNetworkError(ebusyErr), true, 'Did not indicate EBUSY error as network error')
+
+        // Response code errors
+        let reponseCodeErr = new Error()
+        reponseCodeErr.name = '502'
+        assert.deepStrictEqual(isNetworkError(reponseCodeErr), true, 'Did not indicate 502 error as network error')
+        reponseCodeErr = new Error()
+        reponseCodeErr.name = '503'
+        assert.deepStrictEqual(
+            isNetworkError(reponseCodeErr),
+            false,
+            'Incorrectly indicated 503 error as network error'
+        )
+        reponseCodeErr = new Error()
+        reponseCodeErr.name = '200'
+        assert.deepStrictEqual(
+            isNetworkError(reponseCodeErr),
+            false,
+            'Incorrectly indicated 200 error as network error'
+        )
     })
 
-    it('AwsClientResponseError', function () {
-        const syntaxError = makeSyntaxErrorWithSdkClientError()
+    describe('AwsClientResponseError', function () {
+        it('handles the happy path cases', function () {
+            const syntaxError = makeSyntaxErrorWithSdkClientError()
 
-        assert.deepStrictEqual(
-            AwsClientResponseError.tryExtractReasonFromSyntaxError(syntaxError),
-            'SDK Client unexpected error response: data response code: 500'
-        )
-        const responseError = AwsClientResponseError.instanceIf(syntaxError)
-        assert(!(responseError instanceof SyntaxError))
-        assert(responseError instanceof Error)
-        assert(responseError instanceof AwsClientResponseError)
-        assert(responseError.message === 'SDK Client unexpected error response: data response code: 500')
+            assert.deepStrictEqual(
+                AwsClientResponseError.tryExtractReasonFromSyntaxError(syntaxError),
+                'SDK Client unexpected error response: data response code: 500'
+            )
+            const responseError = AwsClientResponseError.instanceIf(syntaxError)
+            assert(!(responseError instanceof SyntaxError))
+            assert(responseError instanceof Error)
+            assert(responseError instanceof AwsClientResponseError)
+            assert(responseError.message === 'SDK Client unexpected error response: data response code: 500')
+        })
+
+        it('gracefully handles a SyntaxError with missing fields', function () {
+            let syntaxError = makeSyntaxErrorWithSdkClientError()
+
+            // No message about a '$response' field existing
+            syntaxError.message = 'This does not mention a "$response" field existing'
+            assert(!(AwsClientResponseError.instanceIf(syntaxError) instanceof AwsClientResponseError))
+            assert.equal(syntaxError, AwsClientResponseError.instanceIf(syntaxError))
+
+            // No '$response' field in SyntaxError
+            syntaxError = makeSyntaxErrorWithSdkClientError()
+            delete (syntaxError as any)['$response']
+            assertIsAwsClientResponseError(syntaxError, `No '$response' field in SyntaxError | ${syntaxError.message}`)
+            syntaxError = makeSyntaxErrorWithSdkClientError()
+            ;(syntaxError as any)['$response'] = undefined
+            assertIsAwsClientResponseError(syntaxError, `No '$response' field in SyntaxError | ${syntaxError.message}`)
+
+            // No 'reason' in '$response'
+            syntaxError = makeSyntaxErrorWithSdkClientError()
+            let response = (syntaxError as any)['$response']
+            delete response['reason']
+            assertIsAwsClientResponseError(
+                syntaxError,
+                `No 'reason' field in '$response' | ${JSON.stringify(response)} | ${syntaxError.message}`
+            )
+            syntaxError = makeSyntaxErrorWithSdkClientError()
+            response = (syntaxError as any)['$response']
+            response['reason'] = undefined
+            assertIsAwsClientResponseError(
+                syntaxError,
+                `No 'reason' field in '$response' | ${JSON.stringify(response)} | ${syntaxError.message}`
+            )
+
+            function assertIsAwsClientResponseError(e: Error, expectedMessage: string) {
+                assert.deepStrictEqual(AwsClientResponseError.tryExtractReasonFromSyntaxError(e), expectedMessage)
+                assert(AwsClientResponseError.instanceIf(e) instanceof AwsClientResponseError)
+            }
+        })
+    })
+
+    describe(`${DiskCacheError.name}`, function () {
+        function assertIsDiskCacheError(err: unknown, expected: { message: string; code: string }) {
+            const cacheError = DiskCacheError.instanceIf(err)
+            assert(cacheError instanceof DiskCacheError)
+            assert.deepStrictEqual(cacheError.message, expected.message)
+            assert.deepStrictEqual(cacheError.code, expected.code)
+        }
+
+        it('returns the original error on non-disk cache errors', function () {
+            const nonDiskCacheError = new Error('I am not a disk cache error')
+            nonDiskCacheError.name = 'NotADiskCacheError'
+
+            const result = DiskCacheError.instanceIf(nonDiskCacheError)
+
+            assert.deepStrictEqual(result instanceof DiskCacheError, false)
+            assert.deepStrictEqual(result, nonDiskCacheError)
+        })
+
+        it('errors without a message', function () {
+            const eacces = new Error()
+            eacces.name = 'EACCES'
+            assertIsDiskCacheError(eacces, { message: 'No msg', code: 'EACCES' })
+
+            const ebadf = new Error()
+            ebadf.name = 'EBADF'
+            assertIsDiskCacheError(ebadf, { message: 'No msg', code: 'EBADF' })
+        })
+
+        /**
+         * The error message is part of the heuristic to determine if certain errors
+         * can be a {@link DiskCacheError}. This asserts that if the message changes, the
+         * error can no longer be a {@link DiskCacheError}.
+         */
+        function assertExpectedMessageRequired(error: Error) {
+            error.message = 'Not the expected message'
+            assert.deepStrictEqual(DiskCacheError.instanceIf(error) instanceof DiskCacheError, false)
+            assert.deepStrictEqual(DiskCacheError.instanceIf(error), error)
+        }
+
+        it('ENOSPC', function () {
+            const error = new Error('Blah blah no space left on device blah blah')
+            error.name = 'ENOSPC'
+            assertIsDiskCacheError(error, {
+                message: 'Blah blah no space left on device blah blah',
+                code: 'ENOSPC',
+            })
+            assertExpectedMessageRequired(error)
+        })
+
+        it('EPERM', function () {
+            const error = new Error('Blah blah operation not permitted blah blah')
+            error.name = 'EPERM'
+            assertIsDiskCacheError(error, {
+                message: 'Blah blah operation not permitted blah blah',
+                code: 'EPERM',
+            })
+            assertExpectedMessageRequired(error)
+        })
+
+        it('EBUSY', function () {
+            const error = new Error('Blah blah resource busy or locked blah blah')
+            error.name = 'EBUSY'
+            assertIsDiskCacheError(error, {
+                message: 'Blah blah resource busy or locked blah blah',
+                code: 'EBUSY',
+            })
+            assertExpectedMessageRequired(error)
+        })
     })
 
     it('scrubNames()', async function () {

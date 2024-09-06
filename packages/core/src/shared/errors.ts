@@ -793,7 +793,9 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
         isEaccesError(err) ||
         isEbadfError(err) ||
         isEconnRefusedError(err) ||
-        err instanceof AwsClientResponseError
+        err instanceof AwsClientResponseError ||
+        isBadResponseCode(err) ||
+        isEbusyError(err)
     ) {
         return true
     }
@@ -817,10 +819,15 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
         'EADDRNOTAVAIL', // port not available/allowed?,
         'SELF_SIGNED_CERT_IN_CHAIN',
         'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
+        'UNABLE_TO_GET_ISSUER_CERT_LOCALLY',
         'HPE_INVALID_VERSION',
         'DEPTH_ZERO_SELF_SIGNED_CERT',
         'ENOTCONN',
-        '502',
+        'ENETDOWN',
+        'ECONNABORTED',
+        'CERT_HAS_EXPIRED',
+        'EAI_FAIL',
+        '502', // This may be irrelevant as isBadResponseCode() may be all we need
         'InternalServerException',
     ].includes(err.code)
 }
@@ -867,11 +874,33 @@ function isEconnRefusedError(err: Error): boolean {
     return isError(err, 'Error', 'connect ECONNREFUSED')
 }
 
+function isEbusyError(err: Error) {
+    // we were seeing errors with the message 'getaddrinfo EBUSY oidc.us-east-1.amazonaws.com'
+    return isError(err, 'EBUSY', 'getaddrinfo EBUSY')
+}
+
 /** Helper function to assert given error has the expected properties */
-function isError(err: Error, id: string, messageIncludes: string = '') {
+export function isError(err: Error, id: string, messageIncludes: string = '') {
     // It is not always clear if the error has the expected value in the `name` or `code` field
     // so this checks both.
     return (err.name === id || (err as any).code === id) && err.message.includes(messageIncludes)
+}
+
+/**
+ * These are the errors explicitly seen in telemetry. We can instead do any non-200 response code
+ * later, but this will give us better visibility in to the actual error codes we are currently getting.
+ */
+const errorResponseCodes = [302, 403, 502]
+
+/**
+ * Returns true if the given error is a bad response code
+ */
+function isBadResponseCode(error: Error) {
+    if (isNaN(Number(error.name))) {
+        return
+    }
+    const statusCode = parseInt(error.name, 10)
+    return errorResponseCodes.includes(statusCode)
 }
 
 /**
@@ -912,7 +941,7 @@ export class AwsClientResponseError extends Error {
      */
     static instanceIf<T>(err: T): AwsClientResponseError | T {
         const reason = AwsClientResponseError.tryExtractReasonFromSyntaxError(err)
-        if (reason && reason.startsWith('SDK Client unexpected error response: data response code:')) {
+        if (reason) {
             getLogger().debug(`Creating AwsClientResponseError from SyntaxError: %O`, err)
             return new AwsClientResponseError(err)
         }
@@ -924,19 +953,93 @@ export class AwsClientResponseError extends Error {
      * Otherwise returning undefined.
      */
     static tryExtractReasonFromSyntaxError(err: unknown): string | undefined {
-        if (!(err instanceof SyntaxError)) {
+        if (
+            !(
+                err instanceof SyntaxError &&
+                err.message.includes('inspect the hidden field {error}.$response on this object')
+            )
+        ) {
             return undefined
         }
 
         // See the class docstring to explain how we know the existence of the following keys
-        if (hasKey(err, '$response')) {
+        if (hasKey(err, '$response') && err['$response'] !== undefined) {
             const response = err['$response']
-            if (response && hasKey(response, 'reason')) {
-                return response['reason'] as string
+            if (response) {
+                if (hasKey(response, 'reason') && response['reason'] !== undefined) {
+                    return response['reason'] as string
+                } else {
+                    // We were seeing some cases in telemetry where a syntax error made it all the way to this point
+                    // but then may have not had a 'reason'.
+                    return `No 'reason' field in '$response' | ${JSON.stringify(response)} | ${err.message}`
+                }
             }
+        } else {
+            // We were seeing some cases in telemetry where a syntax error made it all the way to this point
+            // but then may have not had a '$response'.
+            return `No '$response' field in SyntaxError | ${err.message}`
         }
 
         return undefined
+    }
+}
+
+/**
+ * Represents a generalized error that happened during a disk cache operation.
+ *
+ * For example, when SSO refreshes a token a disk cache error can occur when it
+ * attempts to read/write the disk cache. These errors can be recoverable and do not
+ * imply that the SSO session is stale. So by wrapping those errors in an instance of
+ * this class it will help to distinguish them.
+ */
+export class DiskCacheError extends Error {
+    #code: string | undefined
+
+    /** Use {@link DiskCacheError.instanceIf()} to create an instance */
+    protected constructor(message: string, options?: { code?: string }) {
+        super(message)
+        this.#code = options?.code
+    }
+
+    /**
+     * We are seeing these errors in telemetry, but they have no error message attached.
+     * The best we can do is assume these are filesystem errors in the context that we see them.
+     */
+    private static fileSystemErrorsWithoutMessage = ['EACCES', 'EBADF']
+
+    /**
+     * Return an instance of {@link DiskCacheError} that consists of the properties from the
+     * given error IF certain conditions are met. Otherwise, the original error is returned.
+     *
+     * - Also returns the original error if it is already a {@link DiskCacheError}.
+     */
+    public static instanceIf<T>(err: T): DiskCacheError | T {
+        if (!(err instanceof Error) || err instanceof DiskCacheError) {
+            return err
+        }
+
+        const errorId = (err as any).code ?? err.name
+
+        if (DiskCacheError.fileSystemErrorsWithoutMessage.includes(errorId)) {
+            // The error message will probably be blank
+            const message = err.message ? err.message : 'No msg'
+            return new DiskCacheError(message, { code: errorId })
+        }
+
+        // These are errors we were seeing in telemetry
+        if (
+            isError(err, 'ENOSPC', 'no space left on device') ||
+            isError(err, 'EPERM', 'operation not permitted') ||
+            isError(err, 'EBUSY', 'resource busy or locked')
+        ) {
+            return new DiskCacheError(err.message, { code: errorId })
+        }
+
+        return err // the error does no meet the conditions to be a DiskCacheError
+    }
+
+    public get code() {
+        return this.#code
     }
 }
 
