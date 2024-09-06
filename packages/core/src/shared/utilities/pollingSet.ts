@@ -30,15 +30,15 @@ export class PollingSet<T> extends Set<T> {
         }
     }
 
+    private poll() {
+        this.action()
+        if (!this.isActive()) {
+            this.clearTimer()
+        }
+    }
+
     public start(id: T): void {
         this.add(id)
-        this.pollTimer =
-            this.pollTimer ??
-            globals.clock.setInterval(() => {
-                this.action()
-                if (!this.isActive()) {
-                    this.clearTimer()
-                }
-            }, this.interval)
+        this.pollTimer = this.pollTimer ?? globals.clock.setInterval(() => this.poll(), this.interval)
     }
 }
