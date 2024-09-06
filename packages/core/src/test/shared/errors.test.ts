@@ -19,7 +19,6 @@ import {
     ToolkitError,
     tryRun,
     UnknownError,
-    DiskCacheError,
     getErrorId,
 } from '../../shared/errors'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
@@ -28,6 +27,7 @@ import { AWSError } from 'aws-sdk'
 import { AccessDeniedException } from '@aws-sdk/client-sso-oidc'
 import { OidcClient } from '../../auth/sso/clients'
 import { SamCliError } from '../../shared/sam/cli/samCliInvokerUtils'
+import { DiskCacheError } from '../../shared/utilities/cacheUtils'
 
 class TestAwsError extends Error implements AWSError {
     constructor(
@@ -258,7 +258,7 @@ describe('ToolkitError', function () {
         it('maintains the prototype chain with a constructor', function () {
             const OopsieError = class extends ToolkitError.named('OopsieError') {
                 public constructor() {
-                    super('oopsies')
+                    super('oopsies', { code: 'OopsieErrorCode' })
                 }
             }
 
@@ -267,6 +267,7 @@ describe('ToolkitError', function () {
             assert.ok(error instanceof OopsieError)
             assert.strictEqual(error.cause, undefined)
             assert.strictEqual(error.message, 'oopsies')
+            assert.strictEqual(error.code, 'OopsieErrorCode')
         })
 
         it('maintains the prototype chain without a constructor', function () {
@@ -282,6 +283,15 @@ describe('ToolkitError', function () {
             assert.strictEqual(error.name, 'MyError')
             assert.strictEqual(error.fault, 'foo')
             assert.strictEqual(error.cause?.message, 'oops')
+        })
+    })
+
+    describe(`${DiskCacheError.name}`, function () {
+        it(`subclasses ${ToolkitError.named.name}()`, function () {
+            const dce = new DiskCacheError('foo')
+            assert.strictEqual(dce instanceof ToolkitError, true)
+            assert.strictEqual(dce.code, 'DiskCacheError')
+            assert.strictEqual(dce.name, 'DiskCacheError')
         })
     })
 })
@@ -615,76 +625,6 @@ describe('util', function () {
                 assert.deepStrictEqual(AwsClientResponseError.tryExtractReasonFromSyntaxError(e), expectedMessage)
                 assert(AwsClientResponseError.instanceIf(e) instanceof AwsClientResponseError)
             }
-        })
-    })
-
-    describe(`${DiskCacheError.name}`, function () {
-        function assertIsDiskCacheError(err: unknown, expected: { message: string; code: string }) {
-            const cacheError = DiskCacheError.instanceIf(err)
-            assert(cacheError instanceof DiskCacheError)
-            assert.deepStrictEqual(cacheError.message, expected.message)
-            assert.deepStrictEqual(cacheError.code, expected.code)
-        }
-
-        it('returns the original error on non-disk cache errors', function () {
-            const nonDiskCacheError = new Error('I am not a disk cache error')
-            nonDiskCacheError.name = 'NotADiskCacheError'
-
-            const result = DiskCacheError.instanceIf(nonDiskCacheError)
-
-            assert.deepStrictEqual(result instanceof DiskCacheError, false)
-            assert.deepStrictEqual(result, nonDiskCacheError)
-        })
-
-        it('errors without a message', function () {
-            const eacces = new Error()
-            eacces.name = 'EACCES'
-            assertIsDiskCacheError(eacces, { message: 'No msg', code: 'EACCES' })
-
-            const ebadf = new Error()
-            ebadf.name = 'EBADF'
-            assertIsDiskCacheError(ebadf, { message: 'No msg', code: 'EBADF' })
-        })
-
-        /**
-         * The error message is part of the heuristic to determine if certain errors
-         * can be a {@link DiskCacheError}. This asserts that if the message changes, the
-         * error can no longer be a {@link DiskCacheError}.
-         */
-        function assertExpectedMessageRequired(error: Error) {
-            error.message = 'Not the expected message'
-            assert.deepStrictEqual(DiskCacheError.instanceIf(error) instanceof DiskCacheError, false)
-            assert.deepStrictEqual(DiskCacheError.instanceIf(error), error)
-        }
-
-        it('ENOSPC', function () {
-            const error = new Error('Blah blah no space left on device blah blah')
-            error.name = 'ENOSPC'
-            assertIsDiskCacheError(error, {
-                message: 'Blah blah no space left on device blah blah',
-                code: 'ENOSPC',
-            })
-            assertExpectedMessageRequired(error)
-        })
-
-        it('EPERM', function () {
-            const error = new Error('Blah blah operation not permitted blah blah')
-            error.name = 'EPERM'
-            assertIsDiskCacheError(error, {
-                message: 'Blah blah operation not permitted blah blah',
-                code: 'EPERM',
-            })
-            assertExpectedMessageRequired(error)
-        })
-
-        it('EBUSY', function () {
-            const error = new Error('Blah blah resource busy or locked blah blah')
-            error.name = 'EBUSY'
-            assertIsDiskCacheError(error, {
-                message: 'Blah blah resource busy or locked blah blah',
-                code: 'EBUSY',
-            })
-            assertExpectedMessageRequired(error)
         })
     })
 
