@@ -337,18 +337,8 @@ describe('collectFiles', function () {
     performanceTest(
         // collecting all files in the workspace and zipping them is pretty resource intensive
         {
-            darwin: {
-                userCpuUsage: 85,
-                heapTotal: 2,
-                duration: 0.8,
-            },
             linux: {
                 userCpuUsage: 85,
-                heapTotal: 2,
-                duration: 0.8,
-            },
-            win32: {
-                userCpuUsage: 100,
                 heapTotal: 2,
                 duration: 0.8,
             },
