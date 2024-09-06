@@ -1,0 +1,18 @@
+{
+	"date": "2023-10-12",
+	"version": "1.94.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: improve auto-suggestions for additional languages"
+		},
+		{
+			"type": "Feature",
+			"description": "StepFunctions: Support rendering SFN graph with ItemProcessor field"
+		},
+		{
+			"type": "Feature",
+			"description": "auth: Adding or switching connections in CodeWhisperer, CodeCatalyst and Explorer is now faster and requires fewer steps"
+		}
+	]
+}

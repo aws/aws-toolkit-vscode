@@ -8,6 +8,11 @@ codebase and sending pull requests.
 
 ## Getting Started
 
+This project is set up as a typescript monorepo. The documentation throughout this project
+is referring to the subprojects [`packages/toolkit/`](./packages/toolkit/) and [`packages/core/`](./packages/core/).
+See [arch_develop.md](./docs/arch_develop.md#monorepo-structure) to understand the
+structure of this package before contributing.
+
 ### Find things to do
 
 If you're looking for ideas about where to contribute, consider
@@ -24,6 +29,8 @@ To develop this project, install these dependencies:
 -   [Git](https://git-scm.com/downloads)
     -   (optional) Set `git blame` to ignore noise-commits: `git config blame.ignoreRevsFile .git-blame-ignore-revs`
 -   [AWS `git secrets`](https://github.com/awslabs/git-secrets)
+-   [TypeScript + Webpack Problem Matcher](https://marketplace.visualstudio.com/items?itemName=amodio.tsl-problem-matcher)
+    -   Not installing will result in the following error during building: `Error: Invalid problemMatcher reference: $ts-webpack-watch`
 -   (optional) [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
 -   (optional) [Docker](https://docs.docker.com/get-docker/)
 
@@ -34,6 +41,9 @@ Then clone the repository and install NPM packages:
     npm install
 
 ### Run
+
+Due to the monorepo structure of the project, you must have the `aws-toolkit-vscode/packages/toolkit` folder open as root folder in the workspace.
+The easiest way to open the project: File > Open Workspace from File > choose `aws-toolkit-vscode/aws-toolkit-vscode.code-workspace`
 
 To run the extension from VSCode as a Node.js app:
 
@@ -79,10 +89,30 @@ You can also use these NPM tasks (see `npm run` for the full list):
 
 ### Guidelines
 
+-   Architecture: [arch_overview.md](./docs/arch_overview.md)
 -   Project patterns and practices: [CODE_GUIDELINES.md](./docs/CODE_GUIDELINES.md)
 -   [VS Code Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+    -   [Webview guidance](https://code.visualstudio.com/api/ux-guidelines/webviews)
 -   [VS Code API Documentation](https://code.visualstudio.com/api/references/vscode-api)
 -   [VS Code Extension Capabilities](https://code.visualstudio.com/api/extension-capabilities/common-capabilities)
+
+### Prerelease artifacts
+
+-   CI automatically publishes GitHub [prereleases](https://github.com/aws/aws-toolkit-vscode/releases)
+    for `master` and `feature/x` branches, including `.vsix` artifacts which can
+    be used to test the latest build for that branch. Each prerelease and its
+    artifact are continually updated from the HEAD of its branch.
+-   PR artifacts: each pull request is processed by an AWS CodeBuild job which
+    runs all tests and provides the build result via the _Details_ link as shown
+    below.
+    -   <img src="./docs/images/ci-artifact.png" alt="CI artifact" width="512"/>
+
+### Debug failing integration tests
+
+-   Check for recent changes in each of these projects:
+    -   https://github.com/microsoft/vscode-python (releases)
+    -   https://github.com/aws/aws-sam-cli/releases
+    -   https://github.com/aws/aws-sam-cli-app-templates/ (`master` branch, not releases!)
 
 ### Technical notes
 
@@ -102,7 +132,7 @@ You can also use these NPM tasks (see `npm run` for the full list):
 
     1. Declare a global unhandledRejection handler.
         ```ts
-        process.on('unhandledRejection', e => {
+        process.on('unhandledRejection', (e) => {
             getLogger('channel').error(
                 localize(
                     'AWS.channel.aws.toolkit.activation.error',
@@ -119,12 +149,23 @@ You can also use these NPM tasks (see `npm run` for the full list):
     2. Put a breakpoint on it.
     3. Run all tests.
 
+---
+
+### Web Mode
+
+The AWS Toolkit VSCode extension has a support (with limited functionality) for running in a web browser, eg [vscode.dev](https://vscode.dev).
+
+See [web.md](./docs/web.md) for working with the web mode implementation of the extension.
+
+---
+
 ### Test
 
 See [TESTPLAN.md](./docs/TESTPLAN.md) to understand the project's test
 structure, mechanics and philosophy.
 
-You can run tests directly from VSCode:
+You can run tests directly from VSCode. Due to the monorepo structure of the project, you must have the `aws-toolkit-vscode/packages/toolkit` folder open as root folder in the workspace.
+The easiest way to open the project: File > Open Workspace from File > choose `aws-toolkit-vscode/aws-toolkit-vscode.code-workspace`
 
 1. Select `View > Debug`, or select the Debug pane from the sidebar.
 2. From the dropdown at the top of the Debug pane, select the `Extension Tests` configuration.
@@ -147,11 +188,11 @@ To run a single test in VSCode, do any one of:
 
     -   Unix/macOS/POSIX shell:
         ```
-        TEST_FILE=src/test/foo.test npm run test
+        TEST_FILE=src/test/foo.test.ts npm run test
         ```
     -   Powershell:
         ```
-        $Env:TEST_FILE = "src/test/foo.test"; npm run test
+        $Env:TEST_FILE = "src/test/foo.test.ts"; npm run test
         ```
 
 -   To run all tests in a particular subdirectory, you can edit
@@ -160,25 +201,24 @@ To run a single test in VSCode, do any one of:
     rootTestsPath: __dirname + '/shared/sam/debugger/'
     ```
 
+#### Run all tests in a specific folder
+
+To run tests against a specific folder in VSCode, do any one of:
+
+-   Add the TEST_DIR environment variable to one of the testing launch configs and run it
+-   Run in your terminal
+    -   Unix/macOS/POSIX shell:
+        ```
+        TEST_DIR=src/test/foo npm run test
+        ```
+    -   Powershell:
+        ```
+        $Env:TEST_DIR = "src/test/foo"; npm run test
+        ```
+
 ### Coverage report
 
-You can find the coverage report at `./coverage/index.html` after running the tests. Tests ran from the workspace launch config won't generate a coverage report automatically because it can break file watching. A few manual steps are needed instead:
-
--   Run the command `Tasks: Run Build Task` if not already active
--   Instrument built code with `npm run instrument`
--   Exercise the code (`Extension Tests`, `Integration Tests`, etc.)
--   Generate a report with `npm run report`
-
-### Prerelease artifacts
-
--   CI automatically publishes GitHub [prereleases](https://github.com/aws/aws-toolkit-vscode/releases)
-    for `master` and `feature/x` branches, including `.vsix` artifacts which can
-    be used to test the latest build for that branch. Each prerelease and its
-    artifact are continually updated from the HEAD of its branch.
--   PR artifacts: each pull request is processed by an AWS CodeBuild job which
-    runs all tests and provides the build result via the _Details_ link as shown
-    below.
-    -   <img src="./docs/images/ci-artifact.png" alt="CI artifact" width="512"/>
+You can find the coverage report at `./coverage/amazonq/lcov-report/index.html` and `./coverage/core/lcov-report/index.html` after running the tests. Tests ran from the workspace launch config won't generate a coverage report automatically because it can break file watching.
 
 ### CodeCatalyst Blueprints
 
@@ -198,40 +238,91 @@ To send a pull request:
 2. Modify the source; focus on the specific change you are contributing. If you also reformat all the code, it will be hard for us to focus on your change.
     - Read the [project guidelines](#guidelines), this is very important for non-trivial changes.
 3. Commit to your fork [using clear commit messages](#commit-messages).
-4. Update the changelog by running `npm run newChange`.
-    - Note: the main purpose of the `newChange` task is to avoid merge conflicts.
+4. Update the [changelog](#changelog).
 5. [Create a pull request](https://help.github.com/articles/creating-a-pull-request/).
 6. Pay attention to any CI failures reported in the pull request.
 
-### Commit messages
+### Changelog
 
-Generally your PR description should be a copy-paste of your commit message(s).
-If your PR description provides insight and context, that also should exist in
-the commit message. Source control (Git) is our source-of-truth, not GitHub.
+Pull requests that change **customer-impacting behavior** must include a changelog item(s). Run one
+or both of the following commands:
 
-Follow these [commit message guidelines](https://cbea.ms/git-commit/):
+-   For changes relevant to Amazon Q:
+    ```
+    npm run newChange -w packages/amazonq
+    ```
+-   For changes relevant to AWS Toolkit:
+    ```
+    npm run newChange -w packages/toolkit
+    ```
 
--   Subject: single line up to 50-72 characters
-    -   Imperative voice ("Fix bug", not "Fixed"/"Fixes"/"Fixing").
--   Body: for non-trivial or uncommon changes, explain your motivation for the
-    change and contrast your implementation with previous behavior.
+The audience for the changelog is _the user_. The changelog is presented to users by VSCode and the
+marketplace. It is a "micro-blog" for advertising improvements to users. It is the _primary_ way of
+communicating changes to customers. Please consider this when writing changelog entries.
 
-    -   Often you can save a _lot_ of words by using this simple template:
-        ```
-        Problem: …
-        Solution: …
-        ```
+Mentioning low-level details like "function x now takes argument y", will not be useful, because it
+doesn't say what that means in terms of the user experience. Instead, describe the effect from the
+user's point of view.
 
-A [good commit message](https://git-scm.com/book/en/v2/Distributed-Git-Contributing-to-a-Project)
-has a short subject line and unlimited detail in the body.
+> [!TIP]
+>
+> -   Describe the change in a way that is _meaningful to the customer_. If you can't describe the _customer impact_ then it probably shouldn't be in the changelog.
+>     -   ✅ `Connection wizard sometimes shows the old (stale) connection`
+>     -   ✅ `Faster startup after VSCode restarts`
+>     -   ❌ `Remove the cache when the connection wizard is re-launched` (code internals are not relevant to customers)
+>     -   ❌ `Update telemetry definitions` (not customer-impacting)
+> -   "Bug Fix" changes should describe the _problem being fixed_. Don't say "Fixed" in the
+>     description, it's redundant. Example:
+>     -   ❌ `Fixed S3 bug which caused filenames to be uppercase`
+>     -   ✅ `S3 filenames are always uppercase`
+> -   To update an _existing_ changelog item, just edit its `.changes/next-release/….json` file, you don't need to re-run `npm run newChange`.
+> -   If there are multiple unrelated changes, run `npm run newChange` for each change.
+> -   Include the feature that the change affects, Q, CodeWhisperer, etc.
+
+### Pull request title
+
+The title of your pull request must follow this format (checked by [lintcommit.js](.github/workflows/lintcommit.js)):
+
+-   format: `type(scope): subject...`
+-   type: must be a valid type (`build`, `ci`, `config`, `deps`, `docs`, `feat`, `fix`, `perf`, `refactor`, `style`, `telemetry`, `test`, `types`)
+    -   see [lintcommit.js](.github/workflows/lintcommit.js))
+    -   "chore" is intentionally rejected because it tends to be over-used.
+    -   user-facing changes should always choose "feat" or "fix", and include a [changelog](#changelog) item.
+-   scope: lowercase, <30 chars
+-   subject: must be <100 chars
+
+### Pull request description
+
+Your PR description should provide a brief "Problem" and "Solution" pair. This
+structure often gives much more clarity, more concisely, than a typical
+paragraph of explanation.
+
+    Problem:
+    Foo does nothing when user clicks it.
+
+    Solution:
+    - Listen to the click event.
+    - Emit telemetry on success/failure.
+
 [Good explanations](https://nav.al/explanations) are acts of creativity. The
 "tiny subject line" constraint reminds you to clarify the essence of the
 commit, and makes the log easy for humans to scan. The commit log is an
 artifact that will outlive most code.
 
-Prefix the subject with `type(topic):` ([conventional
-commits](https://www.conventionalcommits.org/) format): this again helps humans
-(and scripts) scan and omit ranges of the history at a glance.
+### Commit messages
+
+Source control (Git) is our source-of-truth, not GitHub. However since most PRs
+are squash-merged, it's most important that your [pull request description](#pull-request-description)
+is well-formed so that the merged commit has the relevant info.
+
+If you expect your commits to be preserved ("regular merge"), then follow [these
+guidelines](https://cbea.ms/git-commit/):
+
+-   Subject: single line up to 50-72 characters
+    -   Imperative voice ("Fix bug", not "Fixed"/"Fixes"/"Fixing").
+    -   [Formatted as `type(scope): subject...`](#pull-request-title).
+        -   Helps humans _and_ scripts scan and omit ranges of the history at a glance.
+-   Body: describe the change as a [Problem/Solution pair](#pull-request-description).
 
 ## Tooling
 
@@ -241,24 +332,52 @@ generating SDKs, etc.
 
 ### Toolkit developer settings (`aws.dev.*`)
 
-The [DevSettngs](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/shared/settings.ts#L553) class defines various developer-only settings that change the behavior of the
+The [DevSettings](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/shared/settings.ts#L553) class defines various developer-only settings that change the behavior of the
 Toolkit for testing and development purposes. To use a setting just add it to
 your `settings.json`. At runtime, if the Toolkit reads any of these settings,
 the "AWS" statusbar item will [change its color](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/credentials/awsCredentialsStatusBarItem.ts#L45).
 
-The setting `aws.dev.forceDevMode` will take precedence over all dev settings and enable dev mode on `"aws.dev.forceDevMode": true` or disable on `"aws.dev.forceDevMode": false`.
+The `aws.dev.forceDevMode` setting enables or disables Toolkit "dev mode". Without this setting, the presence of any other `aws.dev.*` setting defined in `DevSettings` implicitly enables "dev mode".
 
 ### Logging
 
-The `aws.dev.logfile` setting allows you to set the path of the logfile. This makes it easy to
-follow and filter the logfile using shell tools like `tail` and `grep`. For example in
-settings.json,
-
+-   Use `getLogger()` to log debugging messages, warnings, etc.
+    -   Example: `getLogger().error('topic: widget failed: %O', { foo: 'bar', baz: 42 })`
+-   Log messages are written to the extension Output channel, which you can view in vscode by visiting the "Output" panel and selecting `AWS Toolkit Logs` or `Amazon Q Logs`.
+-   Use the `aws.dev.logfile` setting to set the logfile path to a fixed location, so you can follow
+    and filter logs using shell tools like `tail` and `grep`. For example in settings.json,
+    ```
     "aws.dev.logfile": "~/awstoolkit.log",
-
-then following the log with:
-
+    ```
+    then you can tail the logfile in your terminal:
+    ```
     tail -F ~/awstoolkit.log
+    ```
+-   Use the `AWS (Developer): Watch Logs` command to watch and filter Toolkit logs (including
+    telemetry) in VSCode.
+    -   Only available if you enabled "dev mode" (`aws.dev.forceDevMode` setting, see above).
+    -   Enter text in the Debug Console filter box to show only log messages with that text. <br/>
+        <img src="./docs/images/debug-console-filter.png" alt="VSCode Debug Console" width="320"/>
+
+#### Enabling Debug Logs
+
+How to enable more detailed debug logs in the extensions.
+If you need to report an issue attach these to give the most detailed information.
+
+1. Open the Command Palette (`cmd/ctrl` + `shift` + `p`), then search for "View Logs". Choose the correct option for the extension you want, eg: `AWS: View Logs` or `Amazon Q: View Logs`
+   ![](./docs/images/logsView.png)
+2. Click the gear icon on the bottom right and select `Debug`
+   ![](./docs/images/logsSetDebug.png)
+3. Click the gear icon again and select `Set As Default`. This will ensure we stay in `Debug` until explicitly changed
+   ![](./docs/images/logsSetDefault.png)
+4. Open the Command Palette again and select `Reload Window`.
+5. Now you should see additional `[debug]` prefixed logs in the output.
+   ![](./docs/images/logsDebugLog.png)
+
+### Telemetry
+
+-   See [docs/telemetry.md](./docs/telemetry.md) for guidelines on developing telemetry in this project.
+-   To watch Toolkit telemetry events, use the `AWS (Developer): Watch Logs` command (see [Logging](#logging) above) and enter "telemetry" in the Debug Console filter box.
 
 ### Service Endpoints
 
@@ -272,18 +391,116 @@ Example:
 }
 ```
 
-### Telemetry and Automation
+<a name="codecatalyst-settings">Overrides specifically for CodeCatalyst can be set using the `aws.dev.codecatalystService` setting. This is a JSON object consisting of keys/values required to override API calls to CodeCatalyst: `region`, `endpoint`, `hostname`, and `gitHostname`. If this setting is present, then all keys need to be explicitly provided.</a>
 
-Metrics are only emitted if the extension is assumed to be ran from an actual user rather than automation scripts.
-This condition is checked through an environment variable `AWS_TOOLKIT_AUTOMATION` which is set by test entry points.
-If any truthy value is present, telemetry will be dropped if the current build is not a release version. Utility functions,
-such as `assertTelemetry`, can be used to test specific telemetry emits even in automation.
+Example:
+
+```json
+"aws.dev.codecatalystService": {
+    "region": "us-west-2",
+    "endpoint": "https://codecatalyst-gamma.example.com",
+    "hostname": "integ.stage.example.com",
+    "gitHostname": "git.gamma.source.example.com",
+}
+```
+
+<a name="codewhisperer-settings">Overrides specifically for CodeWhisperer/Amazon Q can be set using the `aws.dev.codewhispererService` setting. This is a JSON object consisting of keys/values required to override API calls to CodeWhisperer/Amazon Q: `region` and `endpoint`. If this setting is present, then all keys need to be explicitly provided.</a>
+
+Example:
+
+```json
+"aws.dev.codewhispererService": {
+    "region": "us-west-2",
+    "endpoint": "https://codewhisperer-gamma.example.com"
+}
+```
+
+### Environment variables
+
+Environment variables can be used to modify the behaviour of VSCode. The following are environment variables that can be used to configure the extension:
+
+#### General AWS
+
+-   `AWS_ACCESS_KEY_ID`: The AWS access key associated with an IAM account. If defined, this environment variable overrides the value for the profile setting aws_access_key_id. For more information see [environment variables to configure the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+-   `AWS_SECRET_ACCESS_KEY`: The secret key associated with the access key. This is essentially the "password" for the access key. If defined, this environment variable overrides the value for the profile setting aws_secret_access_key. For more information see [environment variables to configure the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+-   `AWS_REGION`: The AWS Region to send the request to. If defined, this environment variable overrides the values in the environment variable AWS_DEFAULT_REGION and the profile setting region. For more information see [environment variables to configure the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+-   `AWS_SDK_LOAD_CONFIG`: Controls how the AWS SDK for javascript loads it's configuration when initialized. If the AWS_SDK_LOAD_CONFIG environment variable has been set to a truthy value, the SDK for JavaScript automatically searches for a config file when it loads. For more information see [the shared config file documentation](https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-region.html#setting-region-config-file)
+-   `AWS_SHARED_CREDENTIALS_FILE`: The location of the file that the AWS CLI uses to store access keys. The default path is `~/.aws/credentials`
+-   `AWS_CONFIG_FILE`: The location of the file that the AWS CLI uses to store configuration profiles. The default path is `~/.aws/config`
+
+#### General OS
+
+-   `HOME`: The home directory location for the current user in Linux and other Unix-like operating systems.
+-   `SSH_AUTH_SOCK`: The location of a UNIX domain socket used by ssh-agent and SSH clients for agent-based authentication
+-   `USERPROFILE`: The absolute path to the profile folder for the current user in Windows
+-   `HOMEPATH`: The path to the home directory for the current user in Windows, without including the drive letter
+-   `PROGRAMFILES/PROGRAMFILES(X86)`: The default installation directory for Windows
+-   `WINDIR`: The location of the Windows installation directory
+-   `PATH`: The set of directories where executable programs live
+
+#### Codecatalyst
+
+-   `__DEV_ENVIRONMENT_ID`: The ID of the running development environment. Automatically set when running the toolkit in Codecatalyst
+-   `__DEV_ENVIRONMENT_PROJECT_NAME`: The project name associated with the running development environment. Automatically set when running the toolkit in Codecatalyst
+-   `__DEV_ENVIRONMENT_SPACE_NAME`: The space name associated with the running development environment. Automatically set when running the toolkit in Codecatalyst
+-   `__DEV_ENVIRONMENT_ORGANIZATION_NAME`: The organization name associated with the running development environment. Automatically set when running the toolkit in Codecatalyst
+
+The following are environment variable versions of the user `settings.json` overrides mentioned [here](#codecatalyst-settings). These will always override the toolkit defaults and those defined in `settings.json`.
+Unlike the user setting overrides, not all of these environment variables have to be set to make use of them.
+
+-   `__CODECATALYST_REGION`: for aws.dev.codecatalystService.region
+-   `__CODECATALYST_ENDPOINT`: for aws.dev.codecatalystService.endpoint
+-   `__CODECATALYST_HOSTNAME`: for aws.dev.codecatalystService.hostname
+-   `__CODECATALYST_GIT_HOSTNAME`: for aws.dev.codecatalystService.gitHostname
+
+#### Codewhisperer/Amazon Q
+
+The following are environment variable versions of the user `settings.json` overrides mentioned [here](#codewhisperer-settings). These will always override the toolkit defaults and those defined in `settings.json`.
+Unlike the user setting overrides, not all of these environment variables have to be set to make use of them.
+
+-   `__CODEWHISPERER_REGION`: for aws.dev.codewhispererService.region
+-   `__CODEWHISPERER_ENDPOINT`: for aws.dev.codewhispererService.endpoint
+
+#### Lambda
+
+-   `AUTH_UTIL_LAMBDA_ARN`: The Auth Util Lambda is used to log into using Builder ID/IdC automatically when running e2e tests. This is the arn that points to the auth util lambda.
+
+#### ECS
+
+-   `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`: The relative HTTP URL endpoint for the SDK to use when making a request for credentials. The value is appended to the default Amazon ECS hostname of 169.254.170.2. For more information see [container credential provider](https://docs.aws.amazon.com/sdkref/latest/guide/feature-container-credentials.html)
+-   `AWS_CONTAINER_CREDENTIALS_FULL_URI`: The full HTTP URL endpoint for the SDK to use when making a request for credentials. This includes both the scheme and the host. For more information see [container credential provider](https://docs.aws.amazon.com/sdkref/latest/guide/feature-container-credentials.html)
+
+#### Step functions
+
+-   `SSMDOCUMENT_LANGUAGESERVER_PORT`: The port the ssm document language server should start debugging on
+
+#### CI/Testing
+
+-   `GITHUB_ACTION`: The name of the current GitHub Action workflow step that is running
+-   `CODEBUILD_BUILD_ID`: The unique ID of the current CodeBuild build that is executing
+-   `AWS_TOOLKIT_AUTOMATION`: If tests are currently being ran
+-   `TEST_SSO_STARTURL`: The start url you want to use on E2E tests
+-   `TEST_SSO_REGION`: The region for the start url you want to use on E2E tests
+-   `AWS_TOOLKIT_TEST_NO_COLOR`: If the tests should include colour in their output
+-   `DEVELOPMENT_PATH`: The path to the aws toolkit vscode project
+-   `TEST_DIR` - The directory where the test runner should find the tests
 
 ### SAM/CFN ("goformation") JSON schema
 
 See [docs/cfn-schema-support.md](./docs/cfn-schema-support.md) for how to fix
 and improve the JSON schema that provides auto-completion and syntax checking
 of SAM and CloudFormation `template.yaml` files.
+
+### Custom Lint Rules
+
+The package.json 'devDependencies' includes `eslint-plugin-aws-toolkits`. This is a local eslint plugin where we define custom lint rules. Additional lint rules and tests for lint rules can be added to this plugin:
+
+1. Define a new rule in `plugins/eslint-plugin-aws-toolkits/lib/rules`.
+2. Create a test for your rule in `plugins/eslint-plugin-aws-toolkits/test/rules` and run with `npm run test` in the root directory of `eslint-plugin-aws-toolkits`.
+3. Register your rule in `plugins/eslint-plugin-aws-toolkits/index.ts`.
+4. Enable your rule in `.eslintrc`.
+
+Writing lint rules can be tricky if you are unfamiliar with the process. Use an AST viewer such as https://astexplorer.net/
 
 ### AWS SDK generator
 
@@ -345,7 +562,13 @@ requests just from the model/types.
 
 ### Webview dev-server
 
-Webviews can be hot-reloaded (updated without restarting the extension) by running a developer server provided by webpack. This server is started automatically when running the `Extension` launch configuration. You can also start it by running `npm serve`. Note that only frontend components will be updated; if you change backend code you will still need to restart the development extension.
+Webviews can be refreshed to show changes to `.vue` code when running in Debug mode. You do not have to
+reload the Debug VS Code window.
+
+-   Use `Command Palette` -> `Reload Webviews`
+-   Only the frontend `.vue` changes will be reflected. If changing any backend code you must restart Debug mode.
+
+This works by continuously building the final Vue webview files (`webpack watch`) and then serving them through a local server (`webpack serve`). Whenever a webview is loaded it will grab the latest build from the server.
 
 ### Font generation
 
@@ -354,22 +577,17 @@ For extensions to contribute their own codicons, VSCode requires a font file as 
 As a simple example, let's say I wanted to add a new icon for CloudWatch log streams. I would do the following:
 
 1. Place the icon in `resources/icons/aws/cloudwatch`. I'l name the icon `log-stream.svg`.
-1. Use `npm run generatePackage` to update `package.json`. Commit this change with the new icon.
+1. Use `npm run generateIcons` to update `package.json`. Commit this change with the new icon.
 1. You can now use the icon in the Toolkit:
 
     ```ts
     getIcon('aws-cloudwatch-log-stream')
     ```
 
-### Beta artifacts
-
-The Toolkit codebase contains logic in `src/dev/beta.ts` to support development during private betas. Creating a beta artifact requires a _stable_ URL to source Toolkit builds from. This URL should be added to `src/dev/config.ts`. Subsequent Toolkit artifacts will have their version set to `1.999.0` with a commit hash. Builds will automatically query the URL to check for a new build once a day and on every reload.
-
 ### VSCode Marketplace
 
 The [marketplace page](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.aws-toolkit-vscode)
-is defined in `README.quickstart.vscode.md` (which replaces `README.md` during
-the release automation). The `vsce` package tool always [replaces relative image paths](https://github.com/microsoft/vscode-vsce/blob/9478dbd11ea2e7adb23ec72923e889c7bb215263/src/package.ts#L885)
+is defined in `packages/toolkit/README.md`. The `vsce` package tool always [replaces relative image paths](https://github.com/microsoft/vscode-vsce/blob/9478dbd11ea2e7adb23ec72923e889c7bb215263/src/package.ts#L885)
 with URLs pointing to `HEAD` on GitHub (`https://github.com/aws/aws-toolkit-vscode/raw/HEAD/…/foo.gif`).
 
 Note therefore:
@@ -379,21 +597,9 @@ Note therefore:
 2. `HEAD` implies that the URL depends on the current _default branch_ (i.e.
    `master`). Changes to other branches won't affect the marketplace page.
 
-## Using new vscode APIs
+### Importing icons from other projects
 
-The minimum required vscode version specified in [package.json](https://github.com/aws/aws-toolkit-vscode/blob/07119655109bb06105a3f53bbcd86b812b32cdbe/package.json#L16)
-is decided by the version of vscode running in Cloud9 and other vscode-compatible targets.
-
-But you can still use the latest vscode APIs, by checking the current running vscode version. For example, to use a vscode 1.64 API:
-
-1. Check the vscode version: `semver.gte(vscode.version, '1.64.0')`
-2. Disable the feature if is too old. That could mean just skipping the code entirely, or showing a different UI.
-
-Full example: https://github.com/aws/aws-toolkit-vscode/blob/7cb97a2ef0a765862d21842693967070b0dcdd49/src/shared/credentials/defaultCredentialSelectionDataProvider.ts#L54-L76
-
-## Importing icons from other open source repos
-
-If you are contribuing visual assets from other open source repos, the source repo must have a compatible license (such as MIT), and we need to document the source of the images. Follow these steps:
+If you are contribuing visual assets from other open source repos, the source repo must have a compatible license (such as MIT), and we need to document the source of the images. Follow these steps ([example: #227](https://github.com/aws/aws-toolkit-vscode/pull/227)):
 
 1. Use a separate location in this repo for every repo/organization where images are sourced from. See `resources/icons/vscode` as an example.
 1. Copy the source repo's licence into this destination location's LICENSE.txt file
@@ -409,7 +615,41 @@ If you are contribuing visual assets from other open source repos, the source re
 
 1. Add an entry [here](docs/icons.md#third-party) summarizing the new destination location, where the assets were sourced from, and a brief rationale.
 
-[PR #227](https://github.com/aws/aws-toolkit-vscode/pull/227) shows an example.
+## Using new vscode APIs
+
+The minimum required vscode version specified in [package.json](https://github.com/aws/aws-toolkit-vscode/blob/07119655109bb06105a3f53bbcd86b812b32cdbe/package.json#L16)
+is decided by the version of vscode running in Cloud9 and other vscode-compatible targets.
+
+But you can still use the latest vscode APIs, by checking the current running vscode version. For example, to use a vscode 1.64 API:
+
+1. Check the vscode version: `semver.gte(vscode.version, '1.64.0')`
+2. Disable the feature if is too old. That could mean just skipping the code entirely, or showing a different UI.
+
+Full example: https://github.com/aws/aws-toolkit-vscode/blob/7cb97a2ef0a765862d21842693967070b0dcdd49/src/shared/credentials/defaultCredentialSelectionDataProvider.ts#L54-L76
+
+## Preview Releases and Experiments
+
+There are several ways to make pre-production changes available on a "preview" or "experimental" basis:
+
+-   **Experimental features:** settings defined in [aws.experiments](https://github.com/aws/aws-toolkit-vscode/blob/4dcee33931693380739eaa5d44e92fa4545a9666/package.json#L228-L241)
+    are available in the vscode settings UI so that customers **can discover and enable them.**
+    This mechanism is intended for non-production features which are ready for
+    early access / preview feedback from interested customers.
+-   **Developer-only features:** the `aws.dev.forceDevMode` setting can be used as
+    a condition to enable features only for users who have
+    `"aws.dev.forceDevMode": true` in their settings. These features are intended
+    to be part of the mainline branch, but are _not_ presented to customers in the
+    VSCode settings UI. Example: [EC2 commands were gated on `aws.isDevMode`](https://github.com/aws/aws-toolkit-vscode/blob/4dcee33931693380739eaa5d44e92fa4545a9666/package.json#L1115-L1126)
+    so the functionality could be merged to mainline while it was under development.
+-   **Beta artifacts:** For a "private beta" launch, `src/dev/beta.ts` contains
+    logic to check a hardcoded, stable URL serving the latest `.vsix` build for
+    the private beta. The hardcoded URL defined in [`dev/config.ts:betaUrl`](https://github.com/aws/aws-toolkit-vscode/blob/d9c27234c0732b021d07e184a865213d6efde8ec/src/dev/config.ts#L9)
+    also forces the Toolkit to declare version `99.0` (since "private beta" has no semver and to
+    avoid unwanted auto-updating from VSCode marketplace). Beta builds of the Toolkit automatically
+    query the URL once per session per day.
+    -   Beta users may want to run the `Extensions: Disable Auto Update for All Extensions` command
+        [disable VSCode's auto-update feature](https://code.visualstudio.com/docs/editor/extension-marketplace#_extension-autoupdate),
+        to avoid ovewriting the beta Toolkit with the marketplace release.
 
 ## Code of Conduct
 

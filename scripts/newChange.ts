@@ -50,7 +50,7 @@ const contents: NewChange = {
 }
 const fileName = `${type}-${crypto.randomUUID()}.json`
 const path = join(directory, fileName)
-fs.writeFileSync(path, JSON.stringify(contents, undefined, '\t'))
+fs.writeFileSync(path, JSON.stringify(contents, undefined, '\t') + '\n')
 
 console.log(`Change log written to ${path}`)
 child_process.execSync(`git add ${directory}`)
