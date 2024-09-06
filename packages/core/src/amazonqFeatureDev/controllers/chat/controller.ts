@@ -84,7 +84,7 @@ export class FeatureDevController {
     private contentController: EditorContentController
 
     /**
-     * Constructs a new FeatureDevController.
+     * FeatureDevController constructor.
      * @param {ChatControllerEventEmitters} chatControllerMessageListeners - Event emitters for chat controller messages.
      * @param {Messenger} messenger - Messenger for communication.
      * @param {ChatSessionStorage} sessionStorage - Storage for chat sessions.
@@ -180,7 +180,7 @@ export class FeatureDevController {
      * Processes a voted chat item message.
      * @param {string} tabId - The ID of the tab.
      * @param {string} messageId - The ID of the message.
-     * @param {string} vote - The vote given to the message.
+     * @param {string} vote - The vote could be even 'upvote' or 'downvote' given to the message.
      * @returns {Promise<void>}
      */
     private async processChatItemVotedMessage(tabId: string, messageId: string, vote: string) {
@@ -359,7 +359,6 @@ export class FeatureDevController {
         }
     }
 
-    // TODO add type
     /**
      * Processes a user chat message.
      * @param {any} message - The user's chat message.

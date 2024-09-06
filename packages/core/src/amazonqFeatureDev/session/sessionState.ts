@@ -424,11 +424,6 @@ abstract class CodeGenBase {
     }
 }
 
-/**
- * Represents the state of code generation in a conversation.
- * @extends {CodeGenBase}
- * @implements {SessionState}
- */
 export class CodeGenState extends CodeGenBase implements SessionState {
     /**
      * Creates an instance of CodeGenState.

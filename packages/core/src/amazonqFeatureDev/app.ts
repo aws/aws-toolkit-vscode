@@ -21,7 +21,7 @@ import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { debounce } from 'lodash'
 
 /**
- * Initializes the Amazon Q Feature Development functionality.
+ *
  * This function sets up the necessary components for the feature, including event emitters,
  * messenger, and controller. It configures the chat interface and integrates with VS Code.
  *

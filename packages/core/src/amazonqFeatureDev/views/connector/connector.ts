@@ -203,10 +203,6 @@ export class AuthenticationUpdateMessage {
     }
 }
 
-/**
- * Represents an exception for when authentication is needed.
- * @extends UiMessage
- */
 export class AuthNeededException extends UiMessage {
     readonly message: string
     readonly authType: AuthFollowUpType
@@ -235,10 +231,6 @@ export interface ChatMessageProps {
     readonly snapToTop: boolean
 }
 
-/**
- * Represents a chat message.
- * @extends UiMessage
- */
 export class ChatMessage extends UiMessage {
     readonly message: string | undefined
     readonly messageType: ChatItemType
