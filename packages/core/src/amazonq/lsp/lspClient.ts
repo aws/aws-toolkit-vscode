@@ -173,7 +173,7 @@ export async function activate(extensionContext: ExtensionContext) {
             handledSchemaProtocols: ['file', 'untitled'], // language server only loads file-URI. Fetching schemas with other protocols ('http'...) are made on the client.
             provideFormatter: false, // tell the server to not provide formatting capability and ignore the `aws.stepfunctions.asl.format.enable` setting.
             // this is used by LSP to determine index cache path, move to this folder so that when extension updates index is not deleted.
-            extensionPath: path.join(fs.getUserHomeDir(), '.aws', 'amazonq', 'cache', 'VSCode'),
+            extensionPath: path.join(fs.getUserHomeDir(), '.aws', 'amazonq', 'cache'),
         },
     }
 
