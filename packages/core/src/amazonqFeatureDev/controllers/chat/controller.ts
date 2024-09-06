@@ -349,6 +349,13 @@ export class FeatureDevController {
             await session.send(message)
             const filePaths = session.state.filePaths ?? []
             const deletedFiles = session.state.deletedFiles ?? []
+
+            // Only add the follow up accept/deny buttons when the tab hasn't been closed/request hasn't been cancelled
+            if (session?.state.tokenSource.token.isCancellationRequested) {
+                this.workOnNewTask(message)
+                return
+            }
+
             if (filePaths.length === 0 && deletedFiles.length === 0) {
                 this.messenger.sendAnswer({
                     message: i18n('AWS.amazonq.featureDev.pillText.unableGenerateChanges'),
@@ -372,11 +379,6 @@ export class FeatureDevController {
                 })
                 // Lock the chat input until they explicitly click retry
                 this.messenger.sendChatInputEnabled(tabID, false)
-                return
-            }
-
-            // Only add the follow up accept/deny buttons when the tab hasn't been closed/request hasn't been cancelled
-            if (session?.state.tokenSource.token.isCancellationRequested) {
                 return
             }
 
@@ -429,7 +431,31 @@ export class FeatureDevController {
             }
         }
     }
+    private workOnNewTask(message: any) {
+        this.messenger.sendAnswer({
+            type: 'system-prompt',
+            tabID: message.tabID,
+            followUps: [
+                {
+                    pillText: i18n('AWS.amazonq.featureDev.pillText.newTask'),
+                    type: FollowUpTypes.NewTask,
+                    status: 'info',
+                },
+                {
+                    pillText: i18n('AWS.amazonq.featureDev.pillText.closeSession'),
+                    type: FollowUpTypes.CloseSession,
+                    status: 'info',
+                },
+            ],
+        })
 
+        // Ensure that chat input is enabled so that they can provide additional iterations if they choose
+        this.messenger.sendChatInputEnabled(message.tabID, true)
+        this.messenger.sendUpdatePlaceholder(
+            message.tabID,
+            i18n('AWS.amazonq.featureDev.placeholder.additionalImprovements')
+        )
+    }
     // TODO add type
     private async insertCode(message: any) {
         let session
@@ -449,7 +475,6 @@ export class FeatureDevController {
                 result: 'Succeeded',
             })
             await session.insertChanges()
-
             this.messenger.sendAnswer({
                 type: 'answer',
                 tabID: message.tabID,
@@ -457,27 +482,7 @@ export class FeatureDevController {
                 canBeVoted: true,
             })
 
-            this.messenger.sendAnswer({
-                type: 'system-prompt',
-                tabID: message.tabID,
-                followUps: [
-                    {
-                        pillText: i18n('AWS.amazonq.featureDev.pillText.newTask'),
-                        type: FollowUpTypes.NewTask,
-                        status: 'info',
-                    },
-                    {
-                        pillText: i18n('AWS.amazonq.featureDev.pillText.closeSession'),
-                        type: FollowUpTypes.CloseSession,
-                        status: 'info',
-                    },
-                ],
-            })
-
-            this.messenger.sendUpdatePlaceholder(
-                message.tabID,
-                i18n('AWS.amazonq.featureDev.placeholder.additionalImprovements')
-            )
+            this.workOnNewTask(message)
         } catch (err: any) {
             this.messenger.sendErrorMessage(
                 createUserFacingErrorMessage(`Failed to insert code changes: ${err.message}`),
@@ -693,6 +698,13 @@ export class FeatureDevController {
     }
 
     private async stopResponse(message: any) {
+        this.messenger.sendAnswer({
+            message: i18n('AWS.amazonq.featureDev.pillText.stoppedCodeGeneration'),
+            type: 'answer-part',
+            tabID: message.tabID,
+        })
+        this.workOnNewTask(message)
+
         const session = await this.sessionStorage.getSession(message.tabID)
         session.state.tokenSource.cancel()
     }

@@ -121,7 +121,7 @@ function getDeletedFileInfos(deletedFiles: string[], workspaceFolders: CurrentWs
 abstract class CodeGenBase {
     private pollCount = 180
     private requestDelay = 10000
-    readonly tokenSource: vscode.CancellationTokenSource
+    public tokenSource: vscode.CancellationTokenSource
     public phase: SessionStatePhase = DevPhase.CODEGEN
     public readonly conversationId: string
     public readonly uploadId: string
@@ -267,6 +267,10 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     credentialStartUrl: AuthUtil.instance.startUrl,
                 })
 
+                action.tokenSource?.token.onCancellationRequested(() => {
+                    if (action.tokenSource) this.tokenSource = action.tokenSource
+                })
+
                 action.telemetry.setGenerateCodeIteration(this.currentIteration)
                 action.telemetry.setGenerateCodeLastInvocationTime()
 
@@ -276,15 +280,17 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     action.msg
                 )
 
-                action.messenger.sendAnswer({
-                    message: i18n('AWS.amazonq.featureDev.pillText.generatingCode'),
-                    type: 'answer-part',
-                    tabID: this.tabID,
-                })
-                action.messenger.sendUpdatePlaceholder(
-                    this.tabID,
-                    i18n('AWS.amazonq.featureDev.pillText.generatingCode')
-                )
+                if (!this.tokenSource.token.isCancellationRequested) {
+                    action.messenger.sendAnswer({
+                        message: i18n('AWS.amazonq.featureDev.pillText.generatingCode'),
+                        type: 'answer-part',
+                        tabID: this.tabID,
+                    })
+                    action.messenger.sendUpdatePlaceholder(
+                        this.tabID,
+                        i18n('AWS.amazonq.featureDev.pillText.generatingCode')
+                    )
+                }
 
                 const codeGeneration = await this.generateCode({
                     messenger: action.messenger,
@@ -310,7 +316,8 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     this.tabID,
                     this.currentIteration + 1,
                     this.codeGenerationRemainingIterationCount,
-                    this.codeGenerationTotalIterationCount
+                    this.codeGenerationTotalIterationCount,
+                    this.tokenSource
                 )
                 return {
                     nextState,
@@ -411,10 +418,10 @@ export class MockCodeGenState implements SessionState {
 }
 
 export class PrepareCodeGenState implements SessionState {
-    public tokenSource: vscode.CancellationTokenSource
     public readonly phase = DevPhase.CODEGEN
     public uploadId: string
     public conversationId: string
+    public tokenSource: vscode.CancellationTokenSource
     constructor(
         private config: SessionStateConfig,
         public filePaths: NewFileInfo[],
@@ -423,9 +430,10 @@ export class PrepareCodeGenState implements SessionState {
         public tabID: string,
         private currentIteration: number,
         public codeGenerationRemainingIterationCount?: number,
-        public codeGenerationTotalIterationCount?: number
+        public codeGenerationTotalIterationCount?: number,
+        public superTokenSource?: vscode.CancellationTokenSource
     ) {
-        this.tokenSource = new vscode.CancellationTokenSource()
+        this.tokenSource = superTokenSource || new vscode.CancellationTokenSource()
         this.uploadId = config.uploadId
         this.conversationId = config.conversationId
     }

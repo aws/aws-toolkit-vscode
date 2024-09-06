@@ -130,6 +130,7 @@ export class Session {
             fs: this.config.fs,
             messenger: this.messenger,
             telemetry: this.telemetry,
+            tokenSource: this.state.tokenSource,
         })
 
         if (resp.nextState) {
