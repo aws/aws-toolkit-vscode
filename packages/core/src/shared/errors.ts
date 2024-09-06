@@ -434,8 +434,8 @@ export function getTelemetryReasonDesc(err: unknown | undefined): string | undef
     const m = typeof err === 'string' ? err : getErrorMsg(err as Error, { withCause: true, withId: true }) ?? ''
     const msg = scrubNames(m, _username)
 
-    // Truncate to 200 chars.
-    return msg && msg.length > 0 ? msg.substring(0, 200) : undefined
+    // Truncate message as these strings can be very long.
+    return msg && msg.length > 0 ? msg.substring(0, 350) : undefined
 }
 
 export function getTelemetryReason(error: unknown | undefined): string | undefined {
