@@ -1,6 +1,16 @@
 out
-resources/endpoints.json
 CHANGELOG.md
-src/shared/telemetry/service-2.json
+.github/PULL_REQUEST_TEMPLATE.md
 .changes
+*.d.ts
+*.gen.ts
+dist
+src.gen/**
+
+# Duplicate entries because prettier can be ran from root or within the workspace/subpackage.
+# TODO: Avoid this.
+src/shared/telemetry/service-2.json
 src/testFixtures/**
+
+packages/core/src/shared/telemetry/service-2.json
+packages/core/src/testFixtures/**

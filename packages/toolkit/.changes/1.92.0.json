@@ -1,0 +1,18 @@
+{
+	"date": "2023-09-29",
+	"version": "1.92.0",
+	"entries": [
+		{
+			"type": "Deprecation",
+			"description": "SAM: removed support for Node.js 12.x [Lambda runtime](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html)"
+		},
+		{
+			"type": "Deprecation",
+			"description": "SAM: removed support for .NET core 3.1 [Lambda runtime](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html)"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: new onboarding tutorial for first-time users"
+		}
+	]
+}

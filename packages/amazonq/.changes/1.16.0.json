@@ -1,0 +1,18 @@
+{
+	"date": "2024-07-18",
+	"version": "1.16.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon q /dev: include granular error handling for code generation failed state"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Code Transformation: always show build logs from last job run"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Unexpected SSO expiration on Windows due to EPERM"
+		}
+	]
+}

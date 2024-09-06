@@ -1,0 +1,1183 @@
+{
+    "types": [
+        {
+            "name": "amazonGenerateApproachLatency",
+            "type": "double",
+            "description": "The time it takes to generate approach response"
+        },
+        {
+            "name": "documentFormat",
+            "type": "string",
+            "allowedValues": ["JSON, YAML"],
+            "description": "SSM Create document format selection"
+        },
+        {
+            "name": "ssmOperation",
+            "type": "string",
+            "allowedValues": ["Create", "Update"],
+            "description": "SSM Publish Document operation type"
+        },
+        {
+            "name": "starterTemplate",
+            "type": "string",
+            "description": "Starter template chosen during create document"
+        },
+        {
+            "name": "command",
+            "type": "string",
+            "description": "The id of a VS Code command"
+        },
+        {
+            "name": "debounceCount",
+            "type": "int",
+            "description": "Number of times the telemetry event was debounced before emission"
+        },
+        {
+            "name": "cli",
+            "type": "string",
+            "description": "Installed CLI"
+        },
+        {
+            "name": "cwsprChatTriggerInteraction",
+            "type": "string",
+            "allowedValues": ["hotkeys", "click", "contextMenu"],
+            "description": "Identifies the specific interaction that opens the chat panel"
+        },
+        {
+            "name": "cwsprChatConversationId",
+            "type": "string",
+            "description": "Unique identifier for each conversation"
+        },
+        {
+            "name": "cwsprChatUserIntent",
+            "type": "string",
+            "allowedValues": [
+                "suggestAlternateImplementation",
+                "applyCommonBestPractices",
+                "improveCode",
+                "showExample",
+                "citeSources",
+                "explainLineByLine",
+                "explainCodeSelection"
+            ],
+            "description": "Explict user intent associated with a chat message"
+        },
+        {
+            "name": "cwsprChatHasCodeSnippet",
+            "type": "boolean",
+            "description": "true if user has selected code snippet, false otherwise."
+        },
+        {
+            "name": "cwsprChatHasProjectContext",
+            "type": "boolean",
+            "description": "true if query has project level context, false otherwise."
+        },
+        {
+            "name": "cwsprChatProjectContextQueryMs",
+            "type": "int",
+            "description": "Query latency in ms for local project context"
+        },
+        {
+            "name": "amazonqIndexFileSizeInMB",
+            "type": "int",
+            "description": "The sum of file sizes that were indexed in MB"
+        },
+        {
+            "name": "amazonqIndexFileCount",
+            "type": "int",
+            "description": "Number of files indexed"
+        },
+        {
+            "name": "amazonqIndexMemoryUsageInMB",
+            "type": "int",
+            "description": "Memory usage of LSP server"
+        },
+        {
+            "name": "amazonqIndexCpuUsagePercentage",
+            "type": "int",
+            "description": "CPU used by LSP server as a percentage of all available CPUs on the system"
+        },
+        {
+            "name": "cwsprChatProgrammingLanguage",
+            "type": "string",
+            "description": "Programming language associated with the message"
+        },
+        {
+            "name": "cwsprChatConversationType",
+            "type": "string",
+            "allowedValues": ["Chat", "Assign", "Transform"],
+            "description": "Identifies the type of conversation"
+        },
+        {
+            "name": "cwsprChatMessageId",
+            "type": "string",
+            "description": "Unique identifier for each message in an conversation"
+        },
+        {
+            "name": "cwsprChatActiveEditorTotalCharacters",
+            "type": "int",
+            "description": "Total number of characters in the active editor"
+        },
+        {
+            "name": "cwsprChatActiveEditorImportCount",
+            "type": "int",
+            "description": "Number of import statements in the active editor"
+        },
+        {
+            "name": "cwsprChatResponseCodeSnippetCount",
+            "type": "int",
+            "description": "Number of code snippets in response"
+        },
+        {
+            "name": "cwsprChatResponseCode",
+            "type": "int",
+            "description": "HTTP response code for message API invocation"
+        },
+        {
+            "name": "cwsprChatResponseErrorReason",
+            "type": "string",
+            "description": "Client error reason when processing response stream"
+        },
+        {
+            "name": "cwsprChatSourceLinkCount",
+            "type": "int",
+            "description": "Number of links in response"
+        },
+        {
+            "name": "cwsprChatReferencesCount",
+            "type": "int",
+            "description": "Number of references in response"
+        },
+        {
+            "name": "cwsprChatFollowUpCount",
+            "type": "int",
+            "description": "Number of follow ups in response"
+        },
+        {
+            "name": "cwsprChatTimeToFirstChunk",
+            "type": "int",
+            "description": "Time taken in ms to get back the first chunk"
+        },
+        {
+            "name": "cwsprChatTimeBetweenChunks",
+            "type": "string",
+            "description": "Time (list of int) taken in ms between chunks"
+        },
+        {
+            "name": "cwsprChatFullResponseLatency",
+            "type": "int",
+            "description": "Time taken to get the full response in ms"
+        },
+        {
+            "name": "cwsprChatResponseLength",
+            "type": "int",
+            "description": "Number of characters in response"
+        },
+        {
+            "name": "cwsprChatRequestLength",
+            "type": "int",
+            "description": "Number of characters in request"
+        },
+        {
+            "name": "cwsprChatInteractionType",
+            "allowedValues": [
+                "insertAtCursor",
+                "copySnippet",
+                "copy",
+                "clickLink",
+                "clickFollowUp",
+                "hoverReference",
+                "upvote",
+                "downvote",
+                "clickBodyLink"
+            ],
+            "type": "string",
+            "description": "Indicates the specific interaction type with a message in a conversation"
+        },
+        {
+            "name": "cwsprChatInteractionTarget",
+            "type": "string",
+            "description": "Identifies the entity within the message that user interacts with."
+        },
+        {
+            "name": "cwsprChatCodeBlockIndex",
+            "type": "int",
+            "description": "Index of the code block inside a message in the conversation."
+        },
+        {
+            "name": "cwsprChatTotalCodeBlocks",
+            "type": "int",
+            "description": "Total number of code blocks inside a message in the conversation."
+        },
+        {
+            "name": "cwsprChatAcceptedCharactersLength",
+            "type": "int",
+            "description": "Count of code characters copied to the editor"
+        },
+        {
+            "name": "cwsprChatAcceptedNumberOfLines",
+            "type": "int",
+            "description": "Count of lines of code copied to the editor"
+        },
+        {
+            "name": "cwsprChatHasReference",
+            "type": "boolean",
+            "description": "True if the code snippet that user interacts with has a reference."
+        },
+        {
+            "name": "cwsprChatModificationPercentage",
+            "type": "double",
+            "description": "% of characters edited by user after copying/inserting code from a message"
+        },
+        {
+            "name": "cwsprChatCommandType",
+            "type": "string",
+            "allowedValues": ["clear", "help", "transform", "auth"],
+            "description": "Type of chat command (/command) executed"
+        },
+        {
+            "name": "cwsprChatCommandName",
+            "type": "string",
+            "description": "Type of chat command name executed"
+        },
+        {
+            "name": "codewhispererUserInputDetails",
+            "type": "string",
+            "description": "A JSON serialized string of user input details."
+        },
+        {
+            "name": "authStatus",
+            "type": "string",
+            "allowedValues": ["connected", "notConnected", "expired", "connectedWithNetworkError"],
+            "description": "Status of the an auth connection."
+        },
+        {
+            "name": "authEnabledFeatures",
+            "type": "string",
+            "description": "Comma-delimited list of features for which auth is enabled."
+        },
+        {
+            "name": "authEnabledConnections",
+            "type": "string",
+            "description": "Comma-delimited list of enabled auths."
+        },
+        {
+            "name": "authScopes",
+            "type": "string",
+            "description": "Comma-delimited list of scopes that user has."
+        },
+        {
+            "name": "awsRegion",
+            "type": "string",
+            "description": "An AWS region."
+        },
+        {
+            "name": "connectionState",
+            "type": "string",
+            "description": "A detailed state of a specific auth connection. Use `authStatus` for a higher level view of an extension's general connection."
+        },
+        {
+            "name": "userCpuUsage",
+            "type": "int",
+            "description": "Percentage of user cpu usage (user space)"
+        },
+        {
+            "name": "systemCpuUsage",
+            "type": "int",
+            "description": "Percentage of system cpu usage (kernal space)"
+        },
+        {
+            "name": "heapTotal",
+            "type": "int",
+            "description": "Memory heap usage in MB"
+        },
+        {
+            "name": "functionName",
+            "type": "string",
+            "description": "The name of the function"
+        },
+        {
+            "name": "webviewName",
+            "type": "string",
+            "description": "The name of the webview"
+        },
+        {
+            "name": "architecture",
+            "type": "string",
+            "description": "The CPU architecture"
+        },
+        {
+            "name": "totalFileSizeInMB",
+            "type": "int",
+            "description": "The total size of all files being sent to Amazon Q"
+        },
+        {
+            "name": "totalFiles",
+            "type": "int",
+            "description": "The total number of files being sent to Amazon Q"
+        }
+    ],
+    "metrics": [
+        {
+            "name": "ide_fileSystem",
+            "description": "File System event on execution",
+            "metadata": [
+                {
+                    "type": "action",
+                    "required": true
+                },
+                {
+                    "type": "attempts",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "vscode_executeCommand",
+            "description": "Emitted whenever a registered Toolkit command is executed",
+            "passive": true,
+            "metadata": [
+                {
+                    "type": "command"
+                },
+                {
+                    "type": "debounceCount",
+                    "required": false
+                },
+                {
+                    "type": "duration"
+                },
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "reason",
+                    "required": false
+                },
+                {
+                    "type": "source",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "aws_autoUpdateBeta",
+            "description": "Emitted whenever the Toolkit checks, and potentially installs, a beta version",
+            "passive": true
+        },
+        {
+            "name": "aws_installCli",
+            "description": "Called after attempting to install a local copy of a missing CLI",
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "cli"
+                }
+            ]
+        },
+        {
+            "name": "ssm_createDocument",
+            "description": "An SSM Document is created locally",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "documentFormat",
+                    "required": false
+                },
+                {
+                    "type": "starterTemplate",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "ssm_deleteDocument",
+            "description": "An SSM Document is deleted",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "ssm_executeDocument",
+            "description": "An SSM Document is deleted",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "ssm_openDocument",
+            "description": "An SSM Document is opened locally",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "ssm_publishDocument",
+            "description": "SSM Document related metrics for create and update",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "ssmOperation"
+                }
+            ]
+        },
+        {
+            "name": "ssm_updateDocumentVersion",
+            "description": "SSM Document related metrics for updating document default version",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "stepfunctions_createStateMachineFromTemplate",
+            "description": ""
+        },
+        {
+            "name": "stepfunctions_downloadStateMachineDefinition",
+            "description": "",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "stepfunctions_executeStateMachine",
+            "description": "",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "stepfunctions_executeStateMachineView",
+            "description": ""
+        },
+        {
+            "name": "stepfunctions_previewstatemachine",
+            "description": ""
+        },
+        {
+            "name": "vscode_activeRegions",
+            "description": "Record the number of active regions at startup and when regions are added/removed",
+            "unit": "Count",
+            "passive": true
+        },
+        {
+            "name": "aws_showExplorerErrorDetails",
+            "description": "Called when getting more details about errors thrown by the explorer",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "aws_showRegion",
+            "description": "Records a call to add a region to the explorer"
+        },
+        {
+            "name": "aws_hideRegion",
+            "description": "Records a call to remove a region from the explorer"
+        },
+        {
+            "name": "sam_detect",
+            "description": "Called when detecting the location of the SAM CLI",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ],
+            "passive": true
+        },
+        {
+            "name": "cdk_explorerDisabled",
+            "description": "Called when expanding the CDK explorer is disabled"
+        },
+        {
+            "name": "cdk_explorerEnabled",
+            "description": "Called when the CDK explorer is enabled"
+        },
+        {
+            "name": "cdk_appExpanded",
+            "description": "Called when the CDK explorer is expanded"
+        },
+        {
+            "name": "cdk_provideFeedback",
+            "description": "Called when providing feedback for CDK"
+        },
+        {
+            "name": "cdk_help",
+            "description": "Called when clicking on help for CDK"
+        },
+        {
+            "name": "cdk_refreshExplorer",
+            "description": "Called when refreshing the CDK explorer"
+        },
+        {
+            "name": "redshift_executeQuery",
+            "description": "Called when redshift query is executed"
+        },
+        {
+            "name": "redshift_listDatabases",
+            "description": "Called when redshift listDatabases API is called"
+        },
+        {
+            "name": "redshift_listSchemas",
+            "description": "Called when redshift listSchemas API is called"
+        },
+        {
+            "name": "redshift_listTables",
+            "description": "Called when redshift listTables API is called"
+        },
+        {
+            "name": "sam_attachDebugger",
+            "description": "Called after trying to attach a debugger to a local sam invoke",
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "lambdaPackageType"
+                },
+                {
+                    "type": "runtime"
+                },
+                {
+                    "type": "attempts"
+                },
+                {
+                    "type": "duration"
+                },
+                {
+                    "type": "lambdaArchitecture",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "sam_openConfigUi",
+            "description": "Called after opening the SAM Config UI"
+        },
+        {
+            "name": "amazonq_openChat",
+            "description": "When user opens CWSPR chat panel"
+        },
+        {
+            "name": "amazonq_enterFocusChat",
+            "description": "When chat panel comes into focus"
+        },
+        {
+            "name": "amazonq_exitFocusChat",
+            "description": "When chat panel goes out of focus"
+        },
+        {
+            "name": "amazonq_closeChat",
+            "description": "When chat panel is closed"
+        },
+        {
+            "name": "amazonq_startConversation",
+            "description": "When user starts a new conversation",
+            "metadata": [
+                {
+                    "type": "cwsprChatConversationId"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatTriggerInteraction"
+                },
+                {
+                    "type": "cwsprChatUserIntent",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatHasCodeSnippet",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatProgrammingLanguage",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatConversationType"
+                },
+                {
+                    "type": "cwsprChatHasProjectContext",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatProjectContextQueryMs",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_indexWorkspace",
+            "description": "Indexing of local workspace",
+            "metadata": [
+                {
+                    "type": "duration"
+                },
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "amazonqIndexFileSizeInMB"
+                },
+                {
+                    "type": "amazonqIndexFileCount"
+                },
+                {
+                    "type": "amazonqIndexMemoryUsageInMB",
+                    "required": false
+                },
+                {
+                    "type": "amazonqIndexCpuUsagePercentage",
+                    "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_addMessage",
+            "description": "When a message is added to the conversation",
+            "metadata": [
+                {
+                    "type": "cwsprChatConversationId"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatMessageId"
+                },
+                {
+                    "type": "cwsprChatTriggerInteraction"
+                },
+                {
+                    "type": "cwsprChatUserIntent",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatHasCodeSnippet",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatProgrammingLanguage",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatActiveEditorTotalCharacters",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatActiveEditorImportCount",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatResponseCodeSnippetCount",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatResponseCode"
+                },
+                {
+                    "type": "cwsprChatSourceLinkCount",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatReferencesCount",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatFollowUpCount",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatTimeToFirstChunk"
+                },
+                {
+                    "type": "cwsprChatTimeBetweenChunks"
+                },
+                {
+                    "type": "cwsprChatFullResponseLatency"
+                },
+                {
+                    "type": "cwsprChatRequestLength"
+                },
+                {
+                    "type": "cwsprChatResponseLength",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatConversationType"
+                },
+                {
+                    "type": "cwsprChatHasProjectContext",
+                    "required": false
+                },
+                {
+                    "type": "codewhispererCustomizationArn",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_messageResponseError",
+            "description": "When an error has occured in response to a prompt",
+            "metadata": [
+                {
+                    "type": "cwsprChatConversationId",
+                    "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatTriggerInteraction"
+                },
+                {
+                    "type": "cwsprChatUserIntent",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatHasCodeSnippet",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatProgrammingLanguage",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatActiveEditorTotalCharacters",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatActiveEditorImportCount",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatResponseCode"
+                },
+                {
+                    "type": "cwsprChatRequestLength"
+                },
+                {
+                    "type": "cwsprChatConversationType"
+                },
+                {
+                    "type": "cwsprChatResponseErrorReason",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_interactWithMessage",
+            "description": "When a user interacts with a message in the conversation",
+            "metadata": [
+                {
+                    "type": "cwsprChatConversationId"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatMessageId"
+                },
+                {
+                    "type": "cwsprChatInteractionType"
+                },
+                {
+                    "type": "cwsprChatInteractionTarget",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatAcceptedCharactersLength",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatAcceptedNumberOfLines",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatHasReference",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatCodeBlockIndex",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatTotalCodeBlocks",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatHasProjectContext",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_modifyCode",
+            "description": "% of code modified by the user after copying/inserting code from a message",
+            "metadata": [
+                {
+                    "type": "cwsprChatConversationId"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatMessageId"
+                },
+                {
+                    "type": "cwsprChatModificationPercentage"
+                }
+            ]
+        },
+        {
+            "name": "amazonq_enterFocusConversation",
+            "description": "When a conversation comes into focus",
+            "metadata": [
+                {
+                    "type": "cwsprChatConversationId"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_exitFocusConversation",
+            "description": "When a conversation goes out of focus",
+            "metadata": [
+                {
+                    "type": "cwsprChatConversationId"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_runCommand",
+            "description": "When a chat command is executed",
+            "metadata": [
+                {
+                    "type": "cwsprChatCommandType"
+                },
+                {
+                    "type": "cwsprChatCommandName",
+                    "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_codeGenerationThumbsUp",
+            "description": "User clicked on the thumbs up button to say that they are unsatisfied",
+            "unit": "Count",
+            "metadata": [
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_codeGenerationThumbsDown",
+            "description": "User clicked on the thumbs down button to say that they are unsatisfied",
+            "unit": "Count",
+            "metadata": [
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_approachThumbsUp",
+            "description": "User clicked on the thumbs up button, to mention that they are satisfied",
+            "unit": "Count",
+            "metadata": [
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_approachThumbsDown",
+            "description": "User clicked on the thumbs down button to say that they are unsatisfied",
+            "unit": "Count",
+            "metadata": [
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_isReviewedChanges",
+            "description": "User reviewed changes",
+            "passive": true,
+            "metadata": [
+                {
+                    "type": "enabled"
+                },
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_startChat",
+            "description": "Number of times the user have triggered /dev and started the chat",
+            "unit": "Count",
+            "metadata": [
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_endChat",
+            "description": "Captures end of the conversation with amazonq /dev",
+            "metadata": [
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "amazonqEndOfTheConversationLatency",
+                    "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_approachInvoke",
+            "description": "Captures Approach generation process",
+            "metadata": [
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "amazonqGenerateApproachIteration"
+                },
+                {
+                    "type": "amazonqGenerateApproachLatency"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_startConversationInvoke",
+            "description": "Captures startConversation invocation process",
+            "metadata": [
+                {
+                    "type": "amazonqConversationId",
+                    "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_createUpload",
+            "description": "Captures createUploadUrl invocation process",
+            "metadata": [
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "amazonqRepositorySize",
+                    "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "ide_editCodeFile",
+            "description": "User opened a code file with the given file extension. Client should DEDUPLICATE this metric (ideally hourly/daily). AWS-specific files should (also) emit `file_editAwsFile`.",
+            "passive": true,
+            "metadata": [
+                {
+                    "type": "filenameExt",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "auth_modifyConnection",
+            "description": "An auth connection was modified in some way, e.g. deleted, updated",
+            "metadata": [
+                {
+                    "type": "action",
+                    "required": true
+                },
+                {
+                    "type": "authScopes",
+                    "required": false
+                },
+                {
+                    "type": "authStatus",
+                    "required": false
+                },
+                {
+                    "type": "connectionState",
+                    "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "sessionDuration",
+                    "required": false
+                },
+                {
+                    "type": "source",
+                    "required": true
+                },
+                {
+                    "type": "ssoRegistrationClientId",
+                    "required": false
+                },
+                {
+                    "type": "ssoRegistrationExpiresAt",
+                    "required": false
+                },
+                {
+                    "type": "id",
+                    "required": false
+                }
+            ],
+            "passive": true
+        },
+        {
+            "name": "function_call",
+            "description": "Represents a function call. In most cases this should wrap code with a run(), then you can add context.",
+            "metadata": [
+                {
+                    "type": "userCpuUsage",
+                    "required": false
+                },
+                {
+                    "type": "systemCpuUsage",
+                    "required": false
+                },
+                {
+                    "type": "totalFiles",
+                    "required": false
+                },
+                {
+                    "type": "totalFileSizeInMB",
+                    "required": false
+                },
+                {
+                    "type": "architecture",
+                    "required": false
+                },
+                {
+                    "type": "heapTotal",
+                    "required": false
+                },
+                {
+                    "type": "functionName",
+                    "required": true
+                }
+            ],
+            "passive": true,
+            "trackPerformance": true
+        },
+        {
+            "name": "webview_load",
+            "description": "Represents a webview load event",
+            "metadata": [
+                {
+                    "type": "webviewName",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "webview_error",
+            "description": "Represents an error that occurs in a webview",
+            "metadata": [
+                {
+                    "type": "webviewName",
+                    "required": true
+                }
+            ]
+        }
+    ]
+}

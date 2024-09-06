@@ -1,0 +1,14 @@
+{
+	"date": "2024-05-13",
+	"version": "3.3.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "UX: Added keyboard navigation to login screen."
+		},
+		{
+			"type": "Feature",
+			"description": "New SSO Authorization Code flow for faster logins"
+		}
+	]
+}

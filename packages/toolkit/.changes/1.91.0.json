@@ -1,0 +1,14 @@
+{
+	"date": "2023-09-22",
+	"version": "1.91.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "SAM: Debugging a nodejs Lambda always hits breakpoint in nodejs async_hooks module before reaching the user-specified breakpoint"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: fixed case where 'CodeWhisperer' status bar stuck loading"
+		}
+	]
+}

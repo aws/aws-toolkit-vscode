@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "ec2 explorer nodes periodically poll for updates"
+}

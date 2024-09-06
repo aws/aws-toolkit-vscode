@@ -1,0 +1,10 @@
+{
+	"date": "2023-09-08",
+	"version": "1.89.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: show \"Reconnect\" instead of \"Start\" for expired connections to make reconnecting easier"
+		}
+	]
+}

@@ -1,0 +1,87 @@
+// See https://go.microsoft.com/fwlink/?LinkId=733558
+// for the documentation about the tasks.json format
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            // Single build task to enable parallel tasks
+            "label": "build",
+            "dependsOn": ["watch", "webpackWatch"]
+        },
+        {
+            "label": "watch",
+            "type": "npm",
+            "script": "watch",
+            "problemMatcher": "$tsc-watch",
+            "isBackground": true
+        },
+        {
+            "label": "webpackWatch",
+            "command": "npm run webpackDev -- --watch",
+            "type": "shell",
+            "isBackground": true,
+            "problemMatcher": "$ts-webpack-watch"
+        },
+        {
+            "label": "testsBuildWatch",
+            "command": "npm run compileDev -- --watch",
+            "detail": "Build that is sufficient for Web mode tests",
+            "type": "shell",
+            "isBackground": true,
+            "problemMatcher": "$ts-webpack-watch"
+        },
+        /**
+        After we stop debugging our browser, we also want to stop the web server.
+        When this task is ran it will stop the web server.
+
+        From: https://stackoverflow.com/a/60330174
+        **/
+        {
+            "label": "webRunTerminateCore",
+            "command": "echo ${input:webRunTerminateCore}",
+            "type": "shell"
+        },
+        {
+            "type": "npm",
+            "script": "lint",
+            "problemMatcher": "$eslint-stylish"
+        },
+        {
+            "type": "npm",
+            "script": "lintfix",
+            "problemMatcher": "$eslint-stylish"
+        },
+        {
+            "type": "npm",
+            "script": "compile",
+            "dependsOn": ["Kill Tasks"],
+            "problemMatcher": "$tsc"
+        },
+        {
+            "type": "npm",
+            "script": "clean",
+            "dependsOn": ["Kill Tasks"],
+            "problemMatcher": []
+        },
+        {
+            "label": "Kill Tasks",
+            "type": "process",
+            "command": "${input:killTasks}",
+            "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id": "killTasks",
+            "type": "command",
+            "command": "workbench.action.tasks.terminate",
+            "args": "terminateAll"
+        },
+        {
+            "id": "webRunTerminateCore",
+            "type": "command",
+            "command": "workbench.action.tasks.terminate",
+            "args": "webRun"
+        }
+    ]
+}

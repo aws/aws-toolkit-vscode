@@ -1,0 +1,38 @@
+{
+	"date": "2023-12-15",
+	"version": "2.3.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Help > View Toolkit Logs opens an empty file if other menu items were interacted with first."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: Increase polling frequency for security scans."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Opening a CodeCatalyst dev env triggers a builder ID login in certain situations."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q: Fixed an issue where sometimes /transform won't appear when switching between idC/builder id"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q: 'Switch to Q Chat' button not working for some users."
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer security scans support ruby files."
+		},
+		{
+			"type": "Feature",
+			"description": "The `aws.samcli.enableCodeLenses` setting now enables/disables SAM codelenses in `template.yaml` files, in addition to source code files."
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer security scans now support Go files."
+		}
+	]
+}
