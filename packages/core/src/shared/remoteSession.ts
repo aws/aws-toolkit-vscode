@@ -184,12 +184,7 @@ export async function handleMissingTool(tools: Err<MissingTool[]>) {
 export async function getDeniedSsmActions(client: IamClient, roleArn: string): Promise<IAM.EvaluationResult[]> {
     const deniedActions = await client.getDeniedActions({
         PolicySourceArn: roleArn,
-        ActionNames: [
-            'ssmmessages:CreateControlChannel',
-            'ssmmessages:CreateDataChannel',
-            'ssmmessages:OpenControlChannel',
-            'ssmmessages:OpenDataChannel',
-        ],
+        ActionNames: minimumSsmActions,
     })
 
     return deniedActions
