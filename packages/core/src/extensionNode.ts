@@ -240,7 +240,7 @@ export async function activate(context: vscode.ExtensionContext) {
         if (stacktrace !== undefined && stacktrace.length > 40) {
             stacktrace.length = 40
         }
-        getLogger('channel').error(
+        getLogger().error(
             localize(
                 'AWS.channel.aws.toolkit.activation.error',
                 'Error Activating {0} Toolkit: {1} \n{2}',
