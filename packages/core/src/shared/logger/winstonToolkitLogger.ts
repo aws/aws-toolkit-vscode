@@ -44,7 +44,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     }
 
     public enableDebugConsole(): void {
-        this.logToDebugConsole()
+        this.logToConsole()
     }
 
     public setLogLevel(logLevel: LogLevel) {
@@ -74,7 +74,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         this.logger.add(fileTransport)
     }
 
-    public logToOutputChannel(outputChannel: vscode.OutputChannel, stripAnsi: boolean): void {
+    public logToOutputChannel(outputChannel: vscode.OutputChannel, stripAnsi: boolean = false): void {
         const outputChannelTransport: winston.transport = new OutputChannelTransport({
             outputChannel,
             stripAnsi,
@@ -82,16 +82,6 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         const channelUri: vscode.Uri = vscode.Uri.parse(`channel://${outputChannel.name}`)
         outputChannelTransport.on('logged', (obj: any) => this.parseLogObject(channelUri, obj))
         this.logger.add(outputChannelTransport)
-    }
-
-    public logToDebugConsole(): void {
-        const debugConsoleTransport = new OutputChannelTransport({
-            name: 'DebugConsole',
-            outputChannel: vscode.debug.activeDebugConsole,
-        })
-        const debugConsoleUri: vscode.Uri = vscode.Uri.parse('console://debug')
-        debugConsoleTransport.on('logged', (obj: any) => this.parseLogObject(debugConsoleUri, obj))
-        this.logger.add(debugConsoleTransport)
     }
 
     public logToConsole(): void {

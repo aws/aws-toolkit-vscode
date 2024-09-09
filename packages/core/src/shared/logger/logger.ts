@@ -84,18 +84,19 @@ export function compareLogLevel(l1: LogLevel, l2: LogLevel): number {
 
 /**
  * Gets the logger if it has been initialized
- * @param type Gets the logger type:
- * * `'main'` or `undefined`: Main logger; default impl: logs to log file and log output channel
- * * `'channel'`: Channel Logger; default impl: logs to the `main` channels and the `AWS Toolkit` output channel
- * * `'debug'`: Debug Console Logger; default impl: logs to the `channel` channels and the currently-active VS Code Debug Console pane.
+ * the logger is of `'main'` or `undefined`: Main logger; default impl: logs to log file and log output channel
  */
-export function getLogger(type?: keyof typeof toolkitLoggers): Logger {
-    const logger = toolkitLoggers[type ?? 'main']
+export function getLogger(): Logger {
+    const logger = toolkitLoggers['main']
     if (!logger) {
         return new ConsoleLogger()
     }
 
     return logger
+}
+
+export function getDebugConsoleLogger(): Logger {
+    return toolkitLoggers['debugConsole'] ?? new ConsoleLogger()
 }
 
 export class NullLogger implements Logger {
@@ -187,7 +188,7 @@ export class ConsoleLogger implements Logger {
     public enableDebugConsole(): void {}
 }
 
-export function getNullLogger(type?: 'channel' | 'debugConsole' | 'main'): Logger {
+export function getNullLogger(type?: 'debugConsole' | 'main'): Logger {
     return new NullLogger()
 }
 /**
@@ -195,6 +196,6 @@ export function getNullLogger(type?: 'channel' | 'debugConsole' | 'main'): Logge
  * The Extension is expected to call this only once per log type.
  * Tests should call this to set up a logger prior to executing code that accesses a logger.
  */
-export function setLogger(logger: Logger | undefined, type?: 'channel' | 'debugConsole' | 'main') {
+export function setLogger(logger: Logger | undefined, type?: 'debugConsole' | 'main') {
     toolkitLoggers[type ?? 'main'] = logger
 }
