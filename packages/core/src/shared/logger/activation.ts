@@ -51,7 +51,7 @@ export async function activate(
         makeLogger({
             logLevel: chanLogLevel,
             outputChannels: [outputChannel, logChannel],
-            useDebugConsole: true,
+            useConsoleLog: true,
         }),
         'debugConsole'
     )
