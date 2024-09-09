@@ -7,7 +7,7 @@ import * as proc from 'child_process'
 import { pushIf } from '../../utilities/collectionUtils'
 import * as nls from 'vscode-nls'
 import { fileExists } from '../../filesystemUtilities'
-import { getLogger, Logger } from '../../logger'
+import { getLogger, getDebugConsoleLogger, Logger } from '../../logger'
 import { ChildProcess } from '../../utilities/childProcess'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { removeAnsi } from '../../utilities/textUtilities'
@@ -74,13 +74,13 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                     rejectOnError: true,
                     timeout: params.timeout,
                     onStdout: (text: string): void => {
-                        getLogger('debugConsole').info(text, { raw: true })
+                        getDebugConsoleLogger().info(text, { raw: true })
                         // If we have a timeout (as we do on debug) refresh the timeout as we receive text
                         params.timeout?.refresh()
                         this.logger.verbose('SAM: pid %d: stdout: %s', childProcess.pid(), removeAnsi(text))
                     },
                     onStderr: (text: string): void => {
-                        getLogger('debugConsole').info(text, { raw: true })
+                        getDebugConsoleLogger().info(text, { raw: true })
                         // If we have a timeout (as we do on debug) refresh the timeout as we receive text
                         params.timeout?.refresh()
                         this.logger.verbose('SAM: pid %d: stderr: %s', childProcess.pid(), removeAnsi(text))
