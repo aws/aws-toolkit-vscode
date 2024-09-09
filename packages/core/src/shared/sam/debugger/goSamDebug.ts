@@ -192,7 +192,7 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
         let repoPath: string = path.join(goPath, 'src', delveRepo)
 
         if (!getDelveVersion(repoPath, true)) {
-            getLogger('channel').info(
+            getLogger().info(
                 localize(
                     'AWS.sam.debugger.godelve.download',
                     'The Delve repo was not found in your GOPATH. Downloading in a temporary directory...'
@@ -249,15 +249,15 @@ async function installDebugger(debuggerPath: string): Promise<boolean> {
 
         const childProcess = new ChildProcess(installScript.path, [], { spawnOptions: installScript.options })
         const install = await childProcess.run({
-            onStdout: (text: string) => getLogger('channel').info(`[Delve install script] -> ${text}`),
-            onStderr: (text: string) => getLogger('channel').error(`[Delve install script] -> ${text}`),
+            onStdout: (text: string) => getLogger().info(`[Delve install script] -> ${text}`),
+            onStderr: (text: string) => getLogger().error(`[Delve install script] -> ${text}`),
         })
 
         const code = install.exitCode
         if (!fs.existsSync(path.join(debuggerPath, 'dlv'))) {
             throw new Error(`Install script did not generate the Delve binary: exit code ${code}`)
         } else if (code) {
-            getLogger('channel').warn(`Install script did not sucessfully run, using old Delve binary...`)
+            getLogger().warn(`Install script did not sucessfully run, using old Delve binary...`)
         } else {
             getLogger().info(`Installed Delve debugger in ${debuggerPath}`)
         }
