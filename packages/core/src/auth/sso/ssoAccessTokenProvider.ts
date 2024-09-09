@@ -20,7 +20,9 @@ import { hasProps, hasStringProps, RequiredProps, selectFrom } from '../../share
 import { OidcClient } from './clients'
 import { loadOr } from '../../shared/utilities/cacheUtils'
 import {
+    DiskCacheError,
     ToolkitError,
+    getErrorMsg,
     getRequestId,
     getTelemetryReason,
     getTelemetryReasonDesc,
@@ -33,15 +35,18 @@ import { AwsLoginWithBrowser, AwsRefreshCredentials, telemetry } from '../../sha
 import { indent, toBase64URL } from '../../shared/utilities/textUtilities'
 import { AuthSSOServer } from './server'
 import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
-import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
+import { getIdeProperties, isAmazonQ, isCloud9 } from '../../shared/extensionUtilities'
 import { randomBytes, createHash } from 'crypto'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { randomUUID } from '../../shared/crypto'
 import { isRemoteWorkspace, isWebWorkspace } from '../../shared/vscode/env'
 import { showInputBox } from '../../shared/ui/inputPrompter'
-import { DevSettings } from '../../shared/settings'
+import { AmazonQPromptSettings, DevSettings, PromptSettings, ToolkitPromptSettings } from '../../shared/settings'
 import { onceChanged } from '../../shared/utilities/functionUtils'
 import { NestedMap } from '../../shared/utilities/map'
+import { asStringifiedStack } from '../../shared/telemetry/spans'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
+import _ from 'lodash'
 
 export const authenticationPath = 'sso/authenticated'
 
@@ -60,6 +65,7 @@ export abstract class SsoAccessTokenProvider {
      */
     private static _authSource: string = 'unknown'
     private static logIfChanged = onceChanged((s: string) => getLogger().info(s))
+    private readonly className = 'SsoAccessTokenProvider'
 
     public static set authSource(val: string) {
         SsoAccessTokenProvider._authSource = val
@@ -74,11 +80,28 @@ export abstract class SsoAccessTokenProvider {
 
     public async invalidate(reason: string): Promise<void> {
         getLogger().info(`SsoAccessTokenProvider: invalidate token and registration`)
-        // Use allSettled() instead of all() to ensure all clear() calls are resolved.
-        await Promise.allSettled([
-            this.cache.token.clear(this.tokenCacheKey, 'SsoAccessTokenProvider.invalidate()'),
-            this.cache.registration.clear(this.registrationCacheKey, 'SsoAccessTokenProvider.invalidate()'),
-        ])
+
+        // always emit telemetry when the cache is deleted.
+        // most of the time cache is deleted on cache expiration, this is infrequent and expected.
+        // Any premature scenarios, that are not explicit deletion by the user, are likely bugs.
+        await telemetry.auth_modifyConnection.run(
+            async (span) => {
+                span.record({
+                    source: asStringifiedStack(telemetry.getFunctionStack()),
+                    action: 'deleteSsoCache',
+                    credentialStartUrl: this.profile.startUrl,
+                    sessionDuration: this.getSessionDuration(),
+                })
+
+                // Use allSettled() instead of all() to ensure all clear() calls are resolved.
+                await Promise.allSettled([
+                    this.cache.token.clear(this.tokenCacheKey, 'SsoAccessTokenProvider.invalidate()'),
+                    this.cache.registration.clear(this.registrationCacheKey, 'SsoAccessTokenProvider.invalidate()'),
+                ])
+            },
+            { emit: true, functionId: { name: 'invalidate', class: this.className } }
+        )
+
         this.reAuthState.set(this.profile, { reAuthReason: `invalidate():${reason}` })
     }
 
@@ -169,6 +192,25 @@ export abstract class SsoAccessTokenProvider {
 
             return refreshed
         } catch (err) {
+            const possibleCacheError = DiskCacheError.instanceIf(err)
+            if (possibleCacheError instanceof DiskCacheError) {
+                /**
+                 * Background:
+                 * - During token refresh when saving to our filesystem/cache there are sometimes file system
+                 *   related errors.
+                 * - When these errors ocurr it will cause the token refresh process to fail, and the users SSO
+                 *   connection to become invalid.
+                 * - Because these filesystem errors do not indicate the SSO session is actually stale,
+                 *   we want to catch these filesystem errors and not invalidate the users SSO connection since a
+                 *   subsequent attempt to refresh may succeed.
+                 * - To give the user a chance to resolve their filesystem related issue, we want to point them
+                 *   to the logs where the error was logged. Hopefully they can use this information to fix the issue,
+                 *   or at least hint for them to provide the logs in a bug report.
+                 */
+                void DiskCacheErrorMessage.instance.showMessageThrottled(possibleCacheError)
+                throw possibleCacheError
+            }
+
             if (!isNetworkError(err)) {
                 const reason = getTelemetryReason(err)
                 telemetry.aws_refreshCredentials.emit({
@@ -193,6 +235,10 @@ export abstract class SsoAccessTokenProvider {
 
             throw err
         }
+    }
+
+    getSessionDuration() {
+        return getSessionDuration(this.tokenCacheKey)
     }
 
     protected formatToken(token: SsoToken, registration: ClientRegistration) {
@@ -454,15 +500,20 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
      * created and returned.
      */
     override async getValidatedClientRegistration(): Promise<ClientRegistration> {
-        const cacheKey = this.registrationCacheKey
-        const cachedRegistration = await this.cache.registration.load(cacheKey)
+        return telemetry.function_call.run(
+            async () => {
+                const cacheKey = this.registrationCacheKey
+                const cachedRegistration = await this.cache.registration.load(cacheKey)
 
-        // Clear cached if registration is expired
-        if (cachedRegistration && isExpired(cachedRegistration)) {
-            await this.invalidate('registrationExpired:DeviceCode')
-        }
+                // Clear cached if registration is expired
+                if (cachedRegistration && isExpired(cachedRegistration)) {
+                    await this.invalidate('registrationExpired:DeviceCode')
+                }
 
-        return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+                return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+            },
+            { emit: false, functionId: { name: 'getValidatedClientRegistration', class: 'DeviceFlowAuthorization' } }
+        )
     }
 }
 
@@ -588,15 +639,20 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
      * created and returned.
      */
     override async getValidatedClientRegistration(): Promise<ClientRegistration> {
-        const cacheKey = this.registrationCacheKey
-        const cachedRegistration = await this.cache.registration.load(cacheKey)
+        return telemetry.function_call.run(
+            async () => {
+                const cacheKey = this.registrationCacheKey
+                const cachedRegistration = await this.cache.registration.load(cacheKey)
 
-        // Clear cached if registration is expired or it uses a deprecate auth version (device code)
-        if (cachedRegistration && (isExpired(cachedRegistration) || isDeprecatedAuth(cachedRegistration))) {
-            await this.invalidate('registrationExpired:AuthFlow')
-        }
+                // Clear cached if registration is expired or it uses a deprecate auth version (device code)
+                if (cachedRegistration && (isExpired(cachedRegistration) || isDeprecatedAuth(cachedRegistration))) {
+                    await this.invalidate('registrationExpired:AuthFlow')
+                }
 
-        return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+                return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+            },
+            { emit: false, functionId: { name: 'getValidatedClientRegistration', class: 'AuthFlowAuthorization' } }
+        )
     }
 }
 
@@ -673,14 +729,22 @@ class WebAuthorization extends SsoAccessTokenProvider {
     }
 
     override async getValidatedClientRegistration(): Promise<ClientRegistration> {
-        const cacheKey = this.registrationCacheKey
-        const cachedRegistration = await this.cache.registration.load(cacheKey)
+        return telemetry.function_call.run(
+            async () => {
+                const cacheKey = this.registrationCacheKey
+                const cachedRegistration = await this.cache.registration.load(cacheKey)
 
-        if (cachedRegistration && (isExpired(cachedRegistration) || cachedRegistration.flow !== 'web auth code')) {
-            await this.invalidate('registrationExpired:WebAuth')
-        }
+                if (
+                    cachedRegistration &&
+                    (isExpired(cachedRegistration) || cachedRegistration.flow !== 'web auth code')
+                ) {
+                    await this.invalidate('registrationExpired:WebAuth')
+                }
 
-        return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+                return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
+            },
+            { emit: false, functionId: { name: 'getValidatedClientRegistration', class: 'WebAuthorization' } }
+        )
     }
 }
 
@@ -719,4 +783,54 @@ type ReAuthStateKey = Pick<SsoProfile, 'identifier' | 'startUrl'>
 type ReAuthStateValue = {
     // the latest reason for why the connection was moved in to a "needs reauth" state
     reAuthReason?: string
+}
+
+/**
+ * Singleton class that manages showing the user a message during
+ * failures that ocurr during SSO disk cache operations.
+ *
+ * Background:
+ * - We need this {@link DiskCacheErrorMessage} specifically as a singleton since we want to ensure
+ *   that only 1 instance of this message appears at a time. There are cases where it shows multiple messages
+ *   if not used as a singleton.
+ */
+class DiskCacheErrorMessage {
+    static #instance: DiskCacheErrorMessage
+    static get instance() {
+        return (this.#instance ??= new DiskCacheErrorMessage())
+    }
+
+    /**
+     * Show a `"don't show again"`-able message which tells the user about a file system related error
+     * with the sso cache.
+     */
+    public showMessageThrottled(error: Error) {
+        return this._showMessageThrottled(error)
+    }
+    private _showMessageThrottled = _.throttle(async (error: Error) => this._showMessage(error), 60_000, {
+        leading: true,
+    })
+    private async _showMessage(error: Error) {
+        const dontShow = 'Never warn again'
+
+        const promptSettings: PromptSettings = isAmazonQ()
+            ? AmazonQPromptSettings.instance
+            : ToolkitPromptSettings.instance
+
+        // We know 'ssoCacheError' is in all extension prompt settings
+        if (await promptSettings.isPromptEnabled('ssoCacheError')) {
+            const result = await showMessage()
+            if (result === dontShow) {
+                await promptSettings.disablePrompt('ssoCacheError')
+            }
+        }
+
+        function showMessage() {
+            return showViewLogsMessage(
+                `File system related error during SSO cache operation:\n"${getErrorMsg(error, true)}"`,
+                'error',
+                [dontShow]
+            )
+        }
+    }
 }

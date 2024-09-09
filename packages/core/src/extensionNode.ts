@@ -122,29 +122,35 @@ export async function activate(context: vscode.ExtensionContext) {
             await setContext('aws.isSageMaker', true)
         }
 
-        // Clean up remaining logins after codecatalyst activated and ran its cleanup.
-        // Because we are splitting auth sessions by extension, we can't use Amazon Q
-        // connections anymore.
-        // TODO: Remove after some time?
-        for (const conn of await Auth.instance.listConnections()) {
-            if (isSsoConnection(conn) && hasScopes(conn, codeWhispererCoreScopes)) {
-                getLogger().debug(
-                    `forgetting connection: ${conn.id} with starturl/scopes: ${conn.startUrl} / %O`,
-                    conn.scopes
-                )
-                await Auth.instance.forgetConnection(conn)
-                await SessionSeparationPrompt.instance.showForCommand('aws.toolkit.auth.manageConnections')
-            }
-        }
+        // wrap auth related setup in a context for telemetry
+        await telemetry.function_call.run(
+            async () => {
+                // Clean up remaining logins after codecatalyst activated and ran its cleanup.
+                // Because we are splitting auth sessions by extension, we can't use Amazon Q
+                // connections anymore.
+                // TODO: Remove after some time?
+                for (const conn of await Auth.instance.listConnections()) {
+                    if (isSsoConnection(conn) && hasScopes(conn, codeWhispererCoreScopes)) {
+                        getLogger().debug(
+                            `forgetting connection: ${conn.id} with starturl/scopes: ${conn.startUrl} / %O`,
+                            conn.scopes
+                        )
+                        await Auth.instance.forgetConnection(conn)
+                        await SessionSeparationPrompt.instance.showForCommand('aws.toolkit.auth.manageConnections')
+                    }
+                }
 
-        // Display last prompt if connections were forgotten in prior sessions
-        // but the user did not interact or sign in again. Useful in case the user misses it the first time.
-        await SessionSeparationPrompt.instance.showAnyPreviousPrompt()
+                // Display last prompt if connections were forgotten in prior sessions
+                // but the user did not interact or sign in again. Useful in case the user misses it the first time.
+                await SessionSeparationPrompt.instance.showAnyPreviousPrompt()
+
+                // MUST restore CW/Q auth so that we can see if this user is already a Q user.
+                await AuthUtil.instance.restore()
+            },
+            { emit: false, functionId: { name: 'activate', class: 'ExtensionNodeCore' } }
+        )
 
         await activateCloudFormationTemplateRegistry(context)
-
-        // MUST restore CW/Q auth so that we can see if this user is already a Q user.
-        await AuthUtil.instance.restore()
 
         await activateAwsExplorer({
             context: extContext,

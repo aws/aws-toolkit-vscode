@@ -1,3 +1,32 @@
+## 1.24.0 2024-09-05
+
+- **Bug Fix** Network errors causing premature SSO logout
+- **Bug Fix** Fix SyntaxError causing premature expiration (edge case)
+- **Bug Fix** Amazon Q Code Transformation: show instructions for finding JDK path on Linux
+- **Bug Fix** UI: 'Start using Amazon Q' may display even if the user is signed in.
+- **Bug Fix** Add getFeature and isEnabled utility methods to FeatureConfigProvider
+- **Feature** Amazon Q /dev: include in progress state agent in code generation
+- **Feature** Reduce workspace CPU indexing time by 50%
+
+## 1.23.0 2024-08-29
+
+- **Bug Fix** Fix bug when undo inline suggestion causes command not found
+- **Bug Fix** Auth: `SyntaxError` causing unexpected SSO logout
+- **Bug Fix** Amazon Q Code Transformation: allow symlinks for JDK path
+- **Bug Fix** Fix bug where text with inline code copied from Amazon Q Chat had new line breaks around the inline code text
+- **Bug Fix** Fix bug with code indentation and nested list formatting in chat response prompt
+- **Bug Fix** Fix bug when disabled commands does not get filtered in quick actions
+- **Bug Fix** Auth: Users may be silently logged out due to network issues when starting the extension.
+- **Feature** Support AB testing
+
+## 1.22.0 2024-08-22
+
+- **Bug Fix** Avoid refreshing code suggestion for paginated response
+- **Bug Fix** Update login logo styling
+- **Bug Fix** Correct indentation when insert Q chat code at cursor position
+- **Feature** Add notification for extended session to IdC users
+- **Feature** Support more programming languages for workspace index
+
 ## 1.21.0 2024-08-15
 
 - **Bug Fix** Q feature dev: update file extension list and minor UI fixes

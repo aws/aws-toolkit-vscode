@@ -14,7 +14,10 @@ import { isNonNullable } from '../shared/utilities/tsUtils'
 import { ToolIdStateKey } from '../shared/globalState'
 import { Connection, getTelemetryMetadataForConn, SsoConnection, StatefulConnection } from './connection'
 import { indent } from '../shared/utilities/textUtilities'
-import { telemetry } from '../shared/telemetry/telemetry'
+import { AuthStatus, telemetry } from '../shared/telemetry/telemetry'
+import { asStringifiedStack } from '../shared/telemetry/spans'
+import { withTelemetryContext } from '../shared/telemetry/util'
+import { isNetworkError } from '../shared/errors'
 
 export type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId'
 
@@ -78,6 +81,8 @@ export function getAllConnectionsInUse(auth: Auth): StatefulConnection[] {
 const onDidChangeConnectionsEmitter = new vscode.EventEmitter<void>()
 export const onDidChangeConnections = onDidChangeConnectionsEmitter.event
 
+// Variable must be declared outside of class to work with decorators
+const secondaryAuthClassName = 'SecondaryAuth'
 /**
  * Enables a tool to bind to a connection independently from the global {@link Auth} service.
  *
@@ -187,6 +192,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
      * Globally deletes the connection that this secondary auth is using,
      * effectively doing a signout.
      */
+    @withTelemetryContext({ name: 'deleteConnection', class: secondaryAuthClassName })
     public async deleteConnection() {
         if (this.activeConnection) {
             await this.auth.deleteConnection(this.activeConnection)
@@ -228,6 +234,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
         this.#onDidChangeActiveConnection.fire(undefined)
     }
 
+    @withTelemetryContext({ name: 'useNewConnection', class: secondaryAuthClassName })
     public async useNewConnection(conn: T): Promise<T> {
         await this.saveConnection(conn)
         if (this.auth.activeConnection === undefined) {
@@ -245,21 +252,24 @@ export class SecondaryAuth<T extends Connection = Connection> {
 
     // Used to lazily restore persisted connections.
     // Kind of clunky. We need an async module loader layer to make things ergonomic.
-    public readonly restoreConnection: (source?: string) => Promise<T | undefined> = once(async (source?: string) => {
+    public readonly restoreConnection: typeof this._restoreConnection = once(async () => this._restoreConnection())
+    @withTelemetryContext({ name: 'restoreConnection', class: secondaryAuthClassName })
+    private async _restoreConnection(): Promise<T | undefined> {
         try {
-            return await telemetry.auth_modifyConnection.run(async () => {
-                telemetry.record({
-                    source,
+            return await telemetry.auth_modifyConnection.run(async (span) => {
+                span.record({
+                    source: asStringifiedStack(telemetry.getFunctionStack()),
                     action: 'restore',
+                    id: 'undefined',
                     connectionState: 'undefined',
                 })
                 await this.auth.tryAutoConnect()
-                this.#savedConnection = await this.loadSavedConnection()
+                this.#savedConnection = await this._loadSavedConnection()
                 this.#onDidChangeActiveConnection.fire(this.activeConnection)
 
-                const conn = this.#activeConnection
+                const conn = this.#savedConnection
                 if (conn) {
-                    telemetry.record({
+                    span.record({
                         connectionState: this.auth.getConnectionState(conn),
                         ...(await getTelemetryMetadataForConn(conn)),
                     })
@@ -270,9 +280,12 @@ export class SecondaryAuth<T extends Connection = Connection> {
         } catch (err) {
             getLogger().warn(`auth (${this.toolId}): failed to restore connection: %s`, err)
         }
-    })
+    }
 
-    private async loadSavedConnection() {
+    /**
+     * Provides telemetry if called by restoreConnection() (or another auth_modifyConnection context)
+     */
+    private async _loadSavedConnection() {
         // TODO: fix this
         // eslint-disable-next-line aws-toolkits/no-banned-usages
         const globalState = globals.context.globalState
@@ -289,7 +302,36 @@ export class SecondaryAuth<T extends Connection = Connection> {
             getLogger().warn(`auth (${this.toolId}): saved connection "${this.key}" is not valid`)
             await globalState.update(this.key, undefined)
         } else {
-            await this.auth.refreshConnectionState(conn)
+            const getAuthStatus = (state: ReturnType<typeof this.auth.getConnectionState>): AuthStatus => {
+                return state === 'invalid' ? 'expired' : 'connected'
+            }
+
+            let connectionState = this.auth.getConnectionState(conn)
+
+            // This function is expected to be called in the context of restoreConnection()
+            telemetry.auth_modifyConnection.record({
+                connectionState,
+                authStatus: getAuthStatus(connectionState),
+            })
+
+            try {
+                await this.auth.refreshConnectionState(conn)
+
+                connectionState = this.auth.getConnectionState(conn)
+                telemetry.auth_modifyConnection.record({
+                    connectionState,
+                    authStatus: getAuthStatus(connectionState),
+                })
+            } catch (err) {
+                // The purpose of this function is load a saved connection into memory, not manage the state.
+                // If updating the state fails, then we should delegate downstream to handle getting the proper state.
+                getLogger().error('loadSavedConnection: Failed to refresh connection state: %s', err)
+                if (isNetworkError(err) && connectionState === 'valid') {
+                    telemetry.auth_modifyConnection.record({
+                        authStatus: 'connectedWithNetworkError',
+                    })
+                }
+            }
             return conn
         }
     }
@@ -309,28 +351,38 @@ export class SecondaryAuth<T extends Connection = Connection> {
  * Note: This should exist in connection.ts or utils.ts, but due to circular dependencies, it must go here.
  */
 export async function addScopes(conn: SsoConnection, extraScopes: string[], auth = Auth.instance) {
-    const oldScopes = conn.scopes ?? []
-    const newScopes = Array.from(new Set([...oldScopes, ...extraScopes]))
+    return telemetry.function_call.run(
+        async () => {
+            const oldScopes = conn.scopes ?? []
+            const newScopes = Array.from(new Set([...oldScopes, ...extraScopes]))
 
-    const updatedConn = await setScopes(conn, newScopes, auth)
+            const updatedConn = await setScopes(conn, newScopes, auth)
 
-    try {
-        return await auth.reauthenticate(updatedConn, false)
-    } catch (e) {
-        // We updated the connection scopes pre-emptively, but if there is some issue (e.g. user cancels,
-        // InvalidGrantException, etc), then we need to revert to the old connection scopes. Otherwise,
-        // this could soft-lock users into a broken connection that cannot be re-authenticated without
-        // first deleting the connection.
-        await setScopes(conn, oldScopes, auth)
-        throw e
-    }
+            try {
+                return await auth.reauthenticate(updatedConn, false)
+            } catch (e) {
+                // We updated the connection scopes pre-emptively, but if there is some issue (e.g. user cancels,
+                // InvalidGrantException, etc), then we need to revert to the old connection scopes. Otherwise,
+                // this could soft-lock users into a broken connection that cannot be re-authenticated without
+                // first deleting the connection.
+                await setScopes(conn, oldScopes, auth)
+                throw e
+            }
+        },
+        { emit: false, functionId: { name: 'addScopesSecondaryAuth' } }
+    )
 }
 
 export function setScopes(conn: SsoConnection, scopes: string[], auth = Auth.instance): Promise<SsoConnection> {
-    return auth.updateConnection(conn, {
-        type: 'sso',
-        scopes,
-        startUrl: conn.startUrl,
-        ssoRegion: conn.ssoRegion,
-    })
+    return telemetry.function_call.run(
+        () => {
+            return auth.updateConnection(conn, {
+                type: 'sso',
+                scopes,
+                startUrl: conn.startUrl,
+                ssoRegion: conn.ssoRegion,
+            })
+        },
+        { emit: false, functionId: { name: 'setScopesSecondaryAuth' } }
+    )
 }

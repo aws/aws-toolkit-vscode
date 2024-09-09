@@ -11,16 +11,23 @@ import { assertTelemetry, getMetrics, installFakeClock } from '../../testUtil'
 import { selectFrom } from '../../../shared/utilities/tsUtils'
 import { getAwsServiceError } from '../errors.test'
 import { sleep } from '../../../shared'
+import { withTelemetryContext } from '../../../shared/telemetry/util'
+import { SinonSandbox } from 'sinon'
+import sinon from 'sinon'
+import { stubPerformance } from '../../utilities/performance'
 
 describe('TelemetrySpan', function () {
     let clock: ReturnType<typeof installFakeClock>
+    let sandbox: SinonSandbox
 
     beforeEach(function () {
         clock = installFakeClock()
+        sandbox = sinon.createSandbox()
     })
 
     afterEach(function () {
         clock.uninstall()
+        sandbox.restore()
     })
 
     it('removes passive and value from the metadata', function () {
@@ -69,14 +76,39 @@ describe('TelemetrySpan', function () {
             { result: 'Succeeded', duration: 100 },
         ])
     })
+
+    it('records performance', function () {
+        const { expectedUserCpuUsage, expectedSystemCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
+        const span = new TelemetrySpan('function_call', {
+            emit: true,
+        })
+        span.start()
+        clock.tick(90)
+        span.stop()
+        assertTelemetry('function_call', {
+            userCpuUsage: expectedUserCpuUsage,
+            systemCpuUsage: expectedSystemCpuUsage,
+            heapTotal: expectedHeapTotal,
+            duration: 90,
+            result: 'Succeeded',
+        })
+    })
 })
 
 describe('TelemetryTracer', function () {
     let tracer: TelemetryTracer
+    let clock: ReturnType<typeof installFakeClock> | undefined
+    let sandbox: SinonSandbox
     const metricName = 'test_metric' as MetricName
 
     beforeEach(function () {
         tracer = new TelemetryTracer()
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(function () {
+        clock?.uninstall()
+        sandbox.restore()
     })
 
     describe('record()', function () {
@@ -236,6 +268,28 @@ describe('TelemetryTracer', function () {
             assert.match(metric.requestId ?? '', /[a-z0-9-]+/)
         })
 
+        it('records performance', function () {
+            clock = installFakeClock()
+            const { expectedUserCpuUsage, expectedSystemCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
+            tracer.run(
+                'function_call',
+                () => {
+                    clock?.tick(90)
+                },
+                {
+                    emit: true,
+                }
+            )
+
+            assertTelemetry('function_call', {
+                userCpuUsage: expectedUserCpuUsage,
+                systemCpuUsage: expectedSystemCpuUsage,
+                heapTotal: expectedHeapTotal,
+                duration: 90,
+                result: 'Succeeded',
+            })
+        })
+
         describe('nested run()', function () {
             const nestedName = 'nested_metric' as MetricName
 
@@ -376,10 +430,9 @@ describe('TelemetryTracer', function () {
              * Another class that uses execution context in its calls
              */
             class TestClassB1 {
+                @withTelemetryContext({ name: 'methodJ', class: 'TestClassB1' })
                 async methodJ(): Promise<FunctionEntry[]> {
-                    return telemetry.function_call.run(() => this.methodK(), {
-                        functionId: { name: 'methodJ', class: 'TestClassB1' },
-                    })
+                    return this.methodK()
                 }
 
                 methodK() {
@@ -464,6 +517,19 @@ describe('TelemetryTracer', function () {
                     ]),
                     'A#a1,a2:B#b1,b2'
                 )
+            })
+
+            class TestEmit {
+                @withTelemetryContext({ name: 'doesNotEmit', class: 'TestEmit' })
+                doesNotEmit() {
+                    return
+                }
+            }
+
+            it(`withTelemetryContext does not emit an event on its own`, function () {
+                const inst = new TestEmit()
+                inst.doesNotEmit()
+                assertTelemetry('function_call', [])
             })
         })
     })

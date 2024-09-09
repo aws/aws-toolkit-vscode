@@ -248,7 +248,7 @@
         {
             "name": "authStatus",
             "type": "string",
-            "allowedValues": ["connected", "notConnected", "expired"],
+            "allowedValues": ["connected", "notConnected", "expired", "connectedWithNetworkError"],
             "description": "Status of the an auth connection."
         },
         {
@@ -275,6 +275,46 @@
             "name": "connectionState",
             "type": "string",
             "description": "A detailed state of a specific auth connection. Use `authStatus` for a higher level view of an extension's general connection."
+        },
+        {
+            "name": "userCpuUsage",
+            "type": "int",
+            "description": "Percentage of user cpu usage (user space)"
+        },
+        {
+            "name": "systemCpuUsage",
+            "type": "int",
+            "description": "Percentage of system cpu usage (kernal space)"
+        },
+        {
+            "name": "heapTotal",
+            "type": "int",
+            "description": "Memory heap usage in MB"
+        },
+        {
+            "name": "functionName",
+            "type": "string",
+            "description": "The name of the function"
+        },
+        {
+            "name": "webviewName",
+            "type": "string",
+            "description": "The name of the webview"
+        },
+        {
+            "name": "architecture",
+            "type": "string",
+            "description": "The CPU architecture"
+        },
+        {
+            "name": "totalFileSizeInMB",
+            "type": "int",
+            "description": "The total size of all files being sent to Amazon Q"
+        },
+        {
+            "name": "totalFiles",
+            "type": "int",
+            "description": "The total number of files being sent to Amazon Q"
         }
     ],
     "metrics": [
@@ -876,7 +916,9 @@
             "description": "User clicked on the thumbs up button to say that they are unsatisfied",
             "unit": "Count",
             "metadata": [
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -888,7 +930,9 @@
             "description": "User clicked on the thumbs down button to say that they are unsatisfied",
             "unit": "Count",
             "metadata": [
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -900,7 +944,9 @@
             "description": "User clicked on the thumbs up button, to mention that they are satisfied",
             "unit": "Count",
             "metadata": [
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -912,7 +958,9 @@
             "description": "User clicked on the thumbs down button to say that they are unsatisfied",
             "unit": "Count",
             "metadata": [
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -924,21 +972,26 @@
             "description": "User reviewed changes",
             "passive": true,
             "metadata": [
-                { "type": "enabled" },
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "enabled"
+                },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
                 }
             ]
         },
-
         {
             "name": "amazonq_startChat",
             "description": "Number of times the user have triggered /dev and started the chat",
             "unit": "Count",
             "metadata": [
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -949,8 +1002,13 @@
             "name": "amazonq_endChat",
             "description": "Captures end of the conversation with amazonq /dev",
             "metadata": [
-                { "type": "amazonqConversationId" },
-                { "type": "amazonqEndOfTheConversationLatency", "required": false },
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "amazonqEndOfTheConversationLatency",
+                    "required": false
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -961,9 +1019,15 @@
             "name": "amazonq_approachInvoke",
             "description": "Captures Approach generation process",
             "metadata": [
-                { "type": "amazonqConversationId" },
-                { "type": "amazonqGenerateApproachIteration" },
-                { "type": "amazonqGenerateApproachLatency" },
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "amazonqGenerateApproachIteration"
+                },
+                {
+                    "type": "amazonqGenerateApproachLatency"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -974,7 +1038,10 @@
             "name": "amazonq_startConversationInvoke",
             "description": "Captures startConversation invocation process",
             "metadata": [
-                { "type": "amazonqConversationId", "required": false },
+                {
+                    "type": "amazonqConversationId",
+                    "required": false
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -985,8 +1052,13 @@
             "name": "amazonq_createUpload",
             "description": "Captures createUploadUrl invocation process",
             "metadata": [
-                { "type": "amazonqConversationId" },
-                { "type": "amazonqRepositorySize", "required": false },
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "amazonqRepositorySize",
+                    "required": false
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -1005,47 +1077,6 @@
             ]
         },
         {
-            "name": "codewhisperer_codePercentage",
-            "description": "Percentage of user tokens against suggestions until 5 mins of time",
-            "metadata": [
-                {
-                    "type": "codewhispererAcceptedTokens"
-                },
-                {
-                    "type": "codewhispererLanguage"
-                },
-                {
-                    "type": "codewhispererPercentage"
-                },
-                {
-                    "type": "codewhispererTotalTokens"
-                },
-                {
-                    "type": "codewhispererUserInputDetails",
-                    "required": false
-                },
-                {
-                    "type": "codewhispererUserGroup"
-                },
-                {
-                    "type": "reason",
-                    "required": false
-                },
-                {
-                    "type": "successCount"
-                },
-                {
-                    "type": "codewhispererCustomizationArn",
-                    "required": false
-                },
-                {
-                    "type": "credentialStartUrl",
-                    "required": false
-                }
-            ],
-            "passive": true
-        },
-        {
             "name": "auth_modifyConnection",
             "description": "An auth connection was modified in some way, e.g. deleted, updated",
             "metadata": [
@@ -1058,11 +1089,19 @@
                     "required": false
                 },
                 {
+                    "type": "authStatus",
+                    "required": false
+                },
+                {
                     "type": "connectionState",
-                    "required": true
+                    "required": false
                 },
                 {
                     "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "sessionDuration",
                     "required": false
                 },
                 {
@@ -1076,14 +1115,69 @@
                 {
                     "type": "ssoRegistrationExpiresAt",
                     "required": false
+                },
+                {
+                    "type": "id",
+                    "required": false
                 }
             ],
             "passive": true
         },
         {
             "name": "function_call",
-            "description": "Represents a function call",
-            "metadata": []
+            "description": "Represents a function call. In most cases this should wrap code with a run(), then you can add context.",
+            "metadata": [
+                {
+                    "type": "userCpuUsage",
+                    "required": false
+                },
+                {
+                    "type": "systemCpuUsage",
+                    "required": false
+                },
+                {
+                    "type": "totalFiles",
+                    "required": false
+                },
+                {
+                    "type": "totalFileSizeInMB",
+                    "required": false
+                },
+                {
+                    "type": "architecture",
+                    "required": false
+                },
+                {
+                    "type": "heapTotal",
+                    "required": false
+                },
+                {
+                    "type": "functionName",
+                    "required": true
+                }
+            ],
+            "passive": true,
+            "trackPerformance": true
+        },
+        {
+            "name": "webview_load",
+            "description": "Represents a webview load event",
+            "metadata": [
+                {
+                    "type": "webviewName",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "webview_error",
+            "description": "Represents an error that occurs in a webview",
+            "metadata": [
+                {
+                    "type": "webviewName",
+                    "required": true
+                }
+            ]
         }
     ]
 }

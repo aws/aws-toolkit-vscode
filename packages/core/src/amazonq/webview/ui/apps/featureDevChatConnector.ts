@@ -287,7 +287,12 @@ export class Connector {
     }
 
     sendFeedback = (tabId: string, feedbackPayload: FeedbackPayload): void | undefined => {
-        // TODO implement telemetry
+        this.sendMessageToExtension({
+            command: 'chat-item-feedback',
+            ...feedbackPayload,
+            tabType: 'featuredev',
+            tabID: tabId,
+        })
     }
 
     onChatItemVoted = (tabId: string, messageId: string, vote: string): void | undefined => {

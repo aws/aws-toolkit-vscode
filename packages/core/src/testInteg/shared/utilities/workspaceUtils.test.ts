@@ -10,6 +10,7 @@ import * as vscode from 'vscode'
 import * as fs from 'fs'
 import {
     collectFiles,
+    collectFilesForIndex,
     findParentProjectFile,
     getWorkspaceFoldersByPrefixes,
     getWorkspaceRelativePath,
@@ -17,7 +18,7 @@ import {
 import { getTestWorkspaceFolder } from '../../integrationTestsUtilities'
 import globals from '../../../shared/extensionGlobals'
 import { CodelensRootRegistry } from '../../../shared/fs/codelensRootRegistry'
-import { createTestWorkspace, createTestWorkspaceFolder, toFile } from '../../../test/testUtil'
+import { assertTelemetry, createTestWorkspace, createTestWorkspaceFolder, toFile } from '../../../test/testUtil'
 import sinon from 'sinon'
 
 describe('findParentProjectFile', async function () {
@@ -210,7 +211,7 @@ describe('collectFiles', function () {
         const workspaceFolder = await createTestWorkspace(fileAmount, { fileNamePrefix, fileContent })
 
         const writeFile = (pathParts: string[], fileContent: string) => {
-            return toFile(fileContent, workspaceFolder.uri.fsPath, ...pathParts)
+            return toFile(fileContent, path.join(workspaceFolder.uri.fsPath, ...pathParts))
         }
 
         sinon.stub(vscode.workspace, 'workspaceFolders').value([workspaceFolder])
@@ -296,6 +297,12 @@ describe('collectFiles', function () {
             ] satisfies typeof result,
             result
         )
+
+        assertTelemetry('function_call', {
+            totalFiles: 8,
+            totalFileSizeInMB: 0.0002593994140625,
+            functionName: 'collectFiles',
+        })
     })
 
     it('does not return license files', async function () {
@@ -306,18 +313,18 @@ describe('collectFiles', function () {
         const fileContent = ''
         for (const fmt of ['txt', 'md']) {
             // root license files
-            await toFile(fileContent, workspace.uri.fsPath, `license.${fmt}`)
-            await toFile(fileContent, workspace.uri.fsPath, `License.${fmt}`)
-            await toFile(fileContent, workspace.uri.fsPath, `LICENSE.${fmt}`)
+            await toFile(fileContent, path.join(workspace.uri.fsPath, `license.${fmt}`))
+            await toFile(fileContent, path.join(workspace.uri.fsPath, `License.${fmt}`))
+            await toFile(fileContent, path.join(workspace.uri.fsPath, `LICENSE.${fmt}`))
 
             // nested license files
-            await toFile(fileContent, workspace.uri.fsPath, 'src', `license.${fmt}`)
-            await toFile(fileContent, workspace.uri.fsPath, 'src', `License.${fmt}`)
-            await toFile(fileContent, workspace.uri.fsPath, 'src', `LICENSE.${fmt}`)
+            await toFile(fileContent, path.join(workspace.uri.fsPath, `src/license.${fmt}`))
+            await toFile(fileContent, path.join(workspace.uri.fsPath, `src/License.${fmt}`))
+            await toFile(fileContent, path.join(workspace.uri.fsPath, `src/LICENSE.${fmt}`))
         }
 
         // add a non license file too, to make sure it is returned
-        await toFile(fileContent, workspace.uri.fsPath, 'non-license.md')
+        await toFile(fileContent, path.join(workspace.uri.fsPath, 'non-license.md'))
 
         const result = await collectFiles([workspace.uri.fsPath], [workspace], true)
 
@@ -423,6 +430,78 @@ describe('getWorkspaceFoldersByPrefixes', function () {
             orderedKeys[1].substring(orderedKeys[1].length - 2),
             '_2',
             `Incorrect prefix for second workspace [${orderedKeys[1]}]`
+        )
+    })
+})
+
+describe('collectFilesForIndex', function () {
+    it('returns all files in the workspace not excluded by gitignore and is a supported programming language', async function () {
+        // these variables are a manual selection of settings for the test in order to test the collectFiles function
+        const fileAmount = 3
+        const fileNamePrefix = 'file'
+        const fileContent = 'test content'
+
+        const workspaceFolder = await createTestWorkspace(fileAmount, { fileNamePrefix, fileContent })
+
+        const writeFile = (pathParts: string[], fileContent: string) => {
+            return toFile(fileContent, path.join(workspaceFolder.uri.fsPath, ...pathParts))
+        }
+
+        sinon.stub(vscode.workspace, 'workspaceFolders').value([workspaceFolder])
+        const gitignoreContent = `file2
+            # different formats of prefixes
+            /build
+            node_modules
+
+            #some comment
+
+            range_file[0-5]
+            `
+        await writeFile(['.gitignore'], gitignoreContent)
+
+        await writeFile(['build', `ignored1`], fileContent)
+        await writeFile(['build', `ignored2`], fileContent)
+
+        await writeFile(['node_modules', `ignored1`], fileContent)
+        await writeFile(['node_modules', `ignored2`], fileContent)
+
+        await writeFile([`range_file0`], fileContent)
+        await writeFile([`range_file9`], fileContent)
+
+        const gitignore2 = 'folder1\n'
+        await writeFile(['src', '.gitignore'], gitignore2)
+        await writeFile(['src', 'folder2', 'a.js'], fileContent)
+        await writeFile(['src', 'folder2', 'b.cs'], fileContent)
+        await writeFile(['src', 'folder2', 'c.bin'], fileContent)
+        await writeFile(['src', 'folder2', 'd.pyc'], fileContent)
+
+        const gitignore3 = `negate_test*
+            !negate_test[0-5]`
+        await writeFile(['src', 'folder3', '.gitignore'], gitignore3)
+        await writeFile(['src', 'folder3', 'negate_test1'], fileContent)
+        await writeFile(['src', 'folder3', 'negate_test6'], fileContent)
+
+        const result = (await collectFilesForIndex([workspaceFolder.uri.fsPath], [workspaceFolder], true))
+            // for some reason, uri created inline differ in subfields, so skipping them from assertion
+            .map(({ fileUri, ...r }) => ({ ...r }))
+
+        result.sort((l, r) => l.relativeFilePath.localeCompare(r.relativeFilePath))
+
+        // non-posix filePath check here is important.
+        assert.deepStrictEqual(
+            [
+                {
+                    workspaceFolder,
+                    relativeFilePath: path.join('src', 'folder2', 'a.js'),
+                    fileSizeBytes: 12,
+                },
+                {
+                    workspaceFolder,
+                    relativeFilePath: path.join('src', 'folder2', 'b.cs'),
+                    fileSizeBytes: 12,
+                },
+            ] satisfies typeof result,
+            result
         )
     })
 })

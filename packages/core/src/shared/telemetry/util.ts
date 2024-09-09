@@ -8,8 +8,15 @@ import { env, version } from 'vscode'
 import * as os from 'os'
 import { getLogger } from '../logger'
 import { fromExtensionManifest, migrateSetting, Settings } from '../settings'
-import { memoize } from '../utilities/functionUtils'
-import { isInDevEnv, extensionVersion, isAutomation, isRemoteWorkspace } from '../vscode/env'
+import { memoize, once } from '../utilities/functionUtils'
+import {
+    isInDevEnv,
+    extensionVersion,
+    isAutomation,
+    isRemoteWorkspace,
+    isCloudDesktop,
+    isAmazonInternalOs,
+} from '../vscode/env'
 import { addTypeName } from '../utilities/typeConstructors'
 import globals, { isWeb } from '../extensionGlobals'
 import { mapMetadata } from './telemetryLogger'
@@ -19,6 +26,9 @@ import { isValidationExemptMetric } from './exemptMetrics'
 import { isAmazonQ, isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { randomUUID } from '../crypto'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
+import { FunctionEntry, type TelemetryTracer } from './spans'
+import { telemetry } from './telemetry'
+import { v5 as uuidV5 } from 'uuid'
 
 const legacySettingsTelemetryValueDisable = 'Disable'
 const legacySettingsTelemetryValueEnable = 'Enable'
@@ -80,6 +90,41 @@ export function convertLegacy(value: unknown): boolean {
         throw new TypeError(`Unknown telemetry setting: ${value}`)
     }
 }
+
+/**
+ * Returns an identifier that uniquely identifies a single application
+ * instance/window of a specific IDE. I.e if I have multiple VS Code
+ * windows open each one will have a unique session ID. This session ID
+ * can be used in conjunction with the client ID to differntiate between
+ * different VS Code windows on a users machine.
+ *
+ * ### Rules:
+ *
+ * - On startup of a new application instance, a new session ID must be created.
+ *   - This identifier must be a `UUID`, it is enforced by the telemetry service.
+ * - The session ID must be different from all other IDs on the machine
+ * - A session ID exists until the application instance is terminated.
+ *   It should never be used again after termination.
+ * - All extensions on the same application instance MUST return the same session ID.
+ *   - This will allow us to know which of our extensions (eg Q vs Toolkit) are in the
+ *     same VS Code window.
+ *
+ * `vscode.env.sessionId` behaves as described aboved, EXCEPT its
+ * value looks close to a UUID by does not exactly match it (has additional characters).
+ * As a result we process it through uuidV5 which creates a proper UUID from it.
+ * uuidV5 is idempotent, so as long as `vscode.env.sessionId` returns the same value,
+ * we will get the same UUID.
+ */
+export const getSessionId = once(() => uuidV5(vscode.env.sessionId, sessionIdNonce))
+/**
+ * This is an arbitrary nonce that is used in creating a v5 UUID for Session ID. We only
+ * have this since the spec requires it.
+ * - This should ONLY be used by {@link getSessionId}.
+ * - This value MUST NOT change during runtime, otherwise {@link getSessionId} will lose its
+ *   idempotency. But, if there was a reason to change the value in a PR, it would not be an issue.
+ * - This is exported only for testing.
+ */
+export const sessionIdNonce = '44cfdb20-b30b-4585-a66c-9f48f24f99b5' as const
 
 /**
  * Calculates the clientId for the current profile. This calculation is performed once
@@ -175,18 +220,29 @@ export function getUserAgent(
     return pairs.join(' ')
 }
 
+/**
+ * All the types of ENVs the extension can run in.
+ *
+ * NOTES:
+ * - append `-amzn` for any environment internal to Amazon
+ */
 type EnvType =
     | 'cloud9'
     | 'cloud9-codecatalyst'
+    | 'cloudDesktop-amzn'
     | 'codecatalyst'
     | 'local'
     | 'ec2'
+    | 'ec2-amzn' // ec2 but with an internal Amazon OS
     | 'sagemaker'
     | 'test'
     | 'wsl'
     | 'unknown'
 
-export function getComputeEnvType(): EnvType {
+/**
+ * Returns the identifier for the environment that the extension is running in.
+ */
+export async function getComputeEnvType(): Promise<EnvType> {
     if (isCloud9('classic')) {
         return 'cloud9'
     } else if (isCloud9('codecatalyst')) {
@@ -195,7 +251,13 @@ export function getComputeEnvType(): EnvType {
         return 'codecatalyst'
     } else if (isSageMaker()) {
         return 'sagemaker'
-    } else if (isRemoteWorkspace() && !isInDevEnv()) {
+    } else if (isRemoteWorkspace()) {
+        if (isAmazonInternalOs()) {
+            if (await isCloudDesktop()) {
+                return 'cloudDesktop-amzn'
+            }
+            return 'ec2-amzn'
+        }
         return 'ec2'
     } else if (env.remoteName) {
         return 'wsl'
@@ -274,4 +336,55 @@ export function getOperatingSystem(): 'MAC' | 'WINDOWS' | 'LINUX' {
     } else {
         return 'LINUX'
     }
+}
+
+/**
+ * Decorator that simply wraps the method with a non-emitting telemetry `run()`, automatically
+ * `record()`ing the provided function id for later use by {@link TelemetryTracer.getFunctionStack()}
+ *
+ * This saves us from needing to wrap the entire function:
+ *
+ * **Before:**
+ * ```
+ * class A {
+ *     myMethod() {
+ *         telemetry.function_call.run(() => {
+ *                 ...
+ *             },
+ *             { emit: false, functionId: { name: 'myMethod', class: 'A' } }
+ *         )
+ *     }
+ * }
+ * ```
+ *
+ * **After:**
+ * ```
+ * class A {
+ *     @withTelemetryContext({ name: 'myMethod', class: 'A' })
+ *     myMethod() {
+ *         ...
+ *     }
+ * }
+ * ```
+ */
+export function withTelemetryContext(functionId: FunctionEntry) {
+    function decorator<This, Args extends any[], Return>(
+        originalMethod: (this: This, ...args: Args) => Return,
+        _context: ClassMethodDecoratorContext // we dont need this currently but it keeps the compiler happy
+    ) {
+        function decoratedMethod(this: This, ...args: Args): Return {
+            return telemetry.function_call.run(
+                () => {
+                    // DEVELOPERS: Set a breakpoint here and step in to it to debug the original function
+                    return originalMethod.call(this, ...args)
+                },
+                {
+                    emit: false,
+                    functionId: functionId,
+                }
+            )
+        }
+        return decoratedMethod
+    }
+    return decorator
 }

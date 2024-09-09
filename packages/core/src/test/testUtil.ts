@@ -20,16 +20,16 @@ import { DeclaredCommand } from '../shared/vscode/commands2'
 const testTempDirs: string[] = []
 
 /**
- * Writes the string form of `o` to `filePathParts` as UTF-8 text.
+ * Writes the string form of `o` to `filepath` as UTF-8 text.
  *
- * Creates parent directories in `filePathParts`, if necessary.
+ * Creates parent directories in `filepath`, if necessary.
  */
-export async function toFile(o: any, ...filePathParts: string[]) {
-    const text = o ? o.toString() : ''
-    const filePath = path.join(...filePathParts)
-    const dir = path.dirname(filePath)
+export async function toFile(o: any, filepath: string | vscode.Uri) {
+    const file = typeof filepath === 'string' ? filepath : filepath.fsPath
+    const text = o === undefined ? '' : o.toString()
+    const dir = path.dirname(file)
     await fs2.mkdir(dir)
-    await fs2.writeFile(filePath, text)
+    await fs2.writeFile(file, text)
 }
 
 /**
@@ -248,9 +248,13 @@ export function assertTelemetry<K extends MetricName>(
     const query = { metricName: name }
     const metadata = globals.telemetry.logger.query(query)
 
-    // succeeds if no results found, but none were expected
-    if (Array.isArray(expected) && expected.length === 0 && metadata.length === 0) {
-        return
+    // When an empty expected array was given
+    if (Array.isArray(expected) && expected.length === 0) {
+        if (metadata.length === 0) {
+            // succeeds if no results found, but none were expected
+            return
+        }
+        assert.fail(`Expected no metrics for "${name}", but some exist`)
     }
 
     assert.ok(metadata.length > 0, `telemetry metric not found: "${name}"`)

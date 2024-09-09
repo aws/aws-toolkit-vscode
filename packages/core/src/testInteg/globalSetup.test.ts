@@ -15,6 +15,7 @@ import * as sinon from 'sinon'
 import * as tokenProvider from '../auth/sso/ssoAccessTokenProvider'
 import * as testUtil from '../test/testUtil'
 import { DeviceFlowAuthorization } from '../auth/sso/ssoAccessTokenProvider'
+import { globals } from '../shared'
 
 // ASSUMPTION: Tests are not run concurrently
 
@@ -57,6 +58,10 @@ export async function mochaGlobalTeardown(this: Mocha.Context) {
 }
 
 export const mochaHooks = {
+    beforeEach(this: Mocha.Context) {
+        globals.telemetry.clearRecords()
+        globals.telemetry.logger.clear()
+    },
     afterEach(this: Mocha.Context) {
         patchWindow()
     },

@@ -1,0 +1,26 @@
+{
+	"date": "2024-08-22",
+	"version": "1.22.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Avoid refreshing code suggestion for paginated response"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Update login logo styling"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Correct indentation when insert Q chat code at cursor position"
+		},
+		{
+			"type": "Feature",
+			"description": "Add notification for extended session to IdC users"
+		},
+		{
+			"type": "Feature",
+			"description": "Support more programming languages for workspace index"
+		}
+	]
+}

@@ -34,6 +34,7 @@ import { AuthSSOServer } from '../../../auth/sso/server'
 import { getLogger } from '../../../shared/logger/logger'
 
 export abstract class CommonAuthWebview extends VueWebview {
+    private readonly className = 'CommonAuthWebview'
     private metricMetadata: TelemetryMetadata = {}
 
     // authSource should be set by whatever triggers the auth page flow.
@@ -126,7 +127,13 @@ export abstract class CommonAuthWebview extends VueWebview {
             }
         }
 
-        const result = await runSetup()
+        // Add context to our telemetry by adding the methodName argument to the function stack
+        const result = await telemetry.function_call.run(
+            async () => {
+                return runSetup()
+            },
+            { emit: false, functionId: { name: methodName, class: this.className } }
+        )
 
         if (postMetrics) {
             this.storeMetricMetadata(this.getResultForMetrics(result))
