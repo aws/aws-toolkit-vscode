@@ -52,7 +52,7 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
             spawnOptions: await addTelemetryEnvVar(options?.spawnOptions),
         })
 
-        getLogger('channel').info(localize('AWS.running.command', 'Command: {0}', `${this.childProcess}`))
+        getLogger().info(localize('AWS.running.command', 'Command: {0}', `${this.childProcess}`))
         log.verbose(`running: ${this.childProcess}`)
         return await this.childProcess.run({
             onStdout: (text, context) => {

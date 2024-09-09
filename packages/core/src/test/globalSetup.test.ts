@@ -138,7 +138,6 @@ function setupTestLogger(): TestLogger {
     // That way, we don't have to worry about which channel is being logged to for inspection.
     const logger = new TestLogger()
     setLogger(logger, 'main')
-    setLogger(logger, 'channel')
     setLogger(logger, 'debugConsole')
 
     return logger
@@ -148,7 +147,6 @@ function teardownTestLogger(testName: string) {
     writeLogsToFile(testName)
 
     setLogger(undefined, 'main')
-    setLogger(undefined, 'channel')
     setLogger(undefined, 'debugConsole')
 }
 

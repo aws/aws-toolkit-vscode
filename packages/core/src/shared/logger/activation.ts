@@ -46,16 +46,6 @@ export async function activate(
 
     setLogger(mainLogger)
 
-    // Logs to "AWS Toolkit" output channel.
-    setLogger(
-        makeLogger({
-            logLevel: chanLogLevel,
-            logPaths: logUri ? [logUri] : undefined,
-            outputChannels: [outputChannel, logChannel],
-        }),
-        'channel'
-    )
-
     // Logs to vscode Debug Console.
     setLogger(
         makeLogger({

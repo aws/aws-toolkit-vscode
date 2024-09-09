@@ -62,7 +62,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
         const childProcess = new ChildProcess(params.command, params.args, {
             spawnOptions: await addTelemetryEnvVar(options),
         })
-        getLogger('channel').info('AWS.running.command', 'Command: {0}', `${childProcess}`)
+        getLogger().info('AWS.running.command', 'Command: {0}', `${childProcess}`)
         // "sam local invoke", "sam local start-api", etc.
         const samCommandName = `sam ${params.args[0]} ${params.args[1]}`
 
@@ -97,7 +97,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                     },
                 })
                 .catch((error) => {
-                    getLogger('channel').error(
+                    getLogger().error(
                         localize('AWS.samcli.error', 'Error running command "{0}": {1}', samCommandName, error.message)
                     )
                     reject(error)
