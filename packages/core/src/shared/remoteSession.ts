@@ -35,6 +35,9 @@ const minimumSsmActions = [
     'ssmmessages:CreateDataChannel',
     'ssmmessages:OpenControlChannel',
     'ssmmessages:OpenDataChannel',
+    'ssm:DescribeAssociation',
+    'ssm:ListAssociations',
+    'ssm:UpdateInstanceInformation',
 ]
 
 export async function openRemoteTerminal(options: vscode.TerminalOptions, onClose: () => void) {
