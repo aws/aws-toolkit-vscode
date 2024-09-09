@@ -814,6 +814,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.launchDebugConfigForm",
+                    "when": "false"
+                },
+                {
                     "command": "aws.apig.invokeRemoteRestApi",
                     "when": "false"
                 },
