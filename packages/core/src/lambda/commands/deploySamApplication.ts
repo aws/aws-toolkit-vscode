@@ -158,7 +158,7 @@ async function buildOperation(params: {
     invoker: SamCliProcessInvoker
 }): Promise<boolean> {
     try {
-        getLogger('channel').info(localize('AWS.samcli.deploy.workflow.init', 'Building SAM Application...'))
+        getLogger().info(localize('AWS.samcli.deploy.workflow.init', 'Building SAM Application...'))
 
         const buildDestination = getBuildRootFolder(params.deployParameters.deployRootFolder)
 
@@ -173,7 +173,7 @@ async function buildOperation(params: {
 
         return true
     } catch (err) {
-        getLogger('channel').warn(
+        getLogger().warn(
             localize(
                 'AWS.samcli.build.failedBuild',
                 '"sam build" failed: {0}',
@@ -200,7 +200,7 @@ async function packageOperation(
         )
     }
 
-    getLogger('channel').info(
+    getLogger().info(
         localize(
             'AWS.samcli.deploy.workflow.packaging',
             'Packaging SAM Application to S3 Bucket: {0}',
@@ -232,7 +232,7 @@ async function deployOperation(params: {
     invoker: SamCliProcessInvoker
 }): Promise<void> {
     try {
-        getLogger('channel').info(
+        getLogger().info(
             localize(
                 'AWS.samcli.deploy.workflow.stackName.initiated',
                 'Deploying SAM Application to CloudFormation Stack: {0}',
@@ -273,13 +273,13 @@ async function deploy(params: {
     window: WindowFunctions
 }): Promise<void> {
     globals.outputChannel.show(true)
-    getLogger('channel').info(localize('AWS.samcli.deploy.workflow.start', 'Starting SAM Application deployment...'))
+    getLogger().info(localize('AWS.samcli.deploy.workflow.start', 'Starting SAM Application deployment...'))
 
     const buildSuccessful = await buildOperation(params)
     await packageOperation(params, buildSuccessful)
     await deployOperation(params)
 
-    getLogger('channel').info(
+    getLogger().info(
         localize(
             'AWS.samcli.deploy.workflow.success',
             'Deployed SAM Application to CloudFormation Stack: {0}',
@@ -311,10 +311,10 @@ function enhanceAwsCloudFormationInstructions(
 }
 
 function outputDeployError(error: Error) {
-    getLogger('channel').error(error)
+    getLogger().error(error)
 
     globals.outputChannel.show(true)
-    getLogger('channel').error('AWS.samcli.deploy.general.error', 'Error deploying a SAM Application. {0}', checklogs())
+    getLogger().error('AWS.samcli.deploy.general.error', 'Error deploying a SAM Application. {0}', checklogs())
 }
 
 function getDefaultWindowFunctions(): WindowFunctions {
