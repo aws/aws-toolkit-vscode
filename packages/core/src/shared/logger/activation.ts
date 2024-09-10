@@ -20,7 +20,6 @@ import { getUserAgent } from '../telemetry/util'
 export async function activate(
     extensionContext: vscode.ExtensionContext,
     contextPrefix: string,
-    outputChannel: vscode.LogOutputChannel,
     logChannel: vscode.LogOutputChannel
 ): Promise<void> {
     const settings = Settings.instance.getSection('aws')
@@ -50,7 +49,7 @@ export async function activate(
     setLogger(
         makeLogger({
             logLevel: chanLogLevel,
-            outputChannels: [outputChannel, logChannel],
+            outputChannels: [logChannel],
             useConsoleLog: true,
         }),
         'debugConsole'
