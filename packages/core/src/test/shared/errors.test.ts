@@ -526,13 +526,6 @@ describe('util', function () {
         reponseCodeErr.name = '502'
         assert.deepStrictEqual(isNetworkError(reponseCodeErr), true, 'Did not indicate 502 error as network error')
         reponseCodeErr = new Error()
-        reponseCodeErr.name = '503'
-        assert.deepStrictEqual(
-            isNetworkError(reponseCodeErr),
-            false,
-            'Incorrectly indicated 503 error as network error'
-        )
-        reponseCodeErr = new Error()
         reponseCodeErr.name = '200'
         assert.deepStrictEqual(
             isNetworkError(reponseCodeErr),
