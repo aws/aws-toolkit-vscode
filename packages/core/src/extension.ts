@@ -92,10 +92,8 @@ export async function activateCommon(
     })
 
     // Setup the logger
-    const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit', { log: true })
     const toolkitLogChannel = vscode.window.createOutputChannel('AWS Toolkit Logs', { log: true })
-    await activateLogger(context, contextPrefix, toolkitOutputChannel, toolkitLogChannel)
-    globals.outputChannel = toolkitOutputChannel
+    await activateLogger(context, contextPrefix, toolkitLogChannel)
     globals.logOutputChannel = toolkitLogChannel
 
     if (homeDirLogs.length > 0) {
@@ -103,7 +101,7 @@ export async function activateCommon(
     }
 
     if (isCloud9()) {
-        vscode.window.withProgress = wrapWithProgressForCloud9(globals.outputChannel)
+        vscode.window.withProgress = wrapWithProgressForCloud9(globals.logOutputChannel)
         context.subscriptions.push(
             Commands.register('aws.quickStart', async () => {
                 try {
