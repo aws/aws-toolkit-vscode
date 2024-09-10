@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from '../shared/extensionGlobals'
-
 import * as vscode from 'vscode'
 import { getLogger } from '../shared/logger'
 import { cast, Optional } from '../shared/utilities/typeConstructors'
@@ -18,6 +16,7 @@ import { AuthStatus, telemetry } from '../shared/telemetry/telemetry'
 import { asStringifiedStack } from '../shared/telemetry/spans'
 import { withTelemetryContext } from '../shared/telemetry/util'
 import { isNetworkError } from '../shared/errors'
+import globals from '../shared/extensionGlobals'
 
 export type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId'
 
@@ -214,10 +213,14 @@ export class SecondaryAuth<T extends Connection = Connection> {
         return !!this.activeConnection && this.auth.getConnectionState(this.activeConnection) === 'invalid'
     }
 
+    public get state() {
+        return this.auth.getStateMemento()
+    }
+
     public async saveConnection(conn: T) {
         // TODO: fix this
         // eslint-disable-next-line aws-toolkits/no-banned-usages
-        await globals.context.globalState.update(this.key, conn.id)
+        await this.state.update(this.key, conn.id)
         this.#savedConnection = conn
         this.#onDidChangeActiveConnection.fire(this.activeConnection)
     }
@@ -251,7 +254,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
     public async clearSavedConnection() {
         // TODO: fix this
         // eslint-disable-next-line aws-toolkits/no-banned-usages
-        await globals.context.globalState.update(this.key, undefined)
+        await this.state.update(this.key, undefined)
         this.#savedConnection = undefined
         this.#onDidChangeActiveConnection.fire(this.activeConnection)
     }
@@ -326,9 +329,6 @@ export class SecondaryAuth<T extends Connection = Connection> {
      * Provides telemetry if called by restoreConnection() (or another auth_modifyConnection context)
      */
     private async _loadSavedConnection() {
-        // TODO: fix this
-        // eslint-disable-next-line aws-toolkits/no-banned-usages
-        const globalState = globals.context.globalState
         const id = this.getStateConnectionId()
         if (id === undefined) {
             return
@@ -337,10 +337,10 @@ export class SecondaryAuth<T extends Connection = Connection> {
         const conn = await this.auth.getConnection({ id })
         if (conn === undefined) {
             getLogger().warn(`auth (${this.toolId}): removing saved connection "${this.key}" as it no longer exists`)
-            await globalState.update(this.key, undefined)
+            await this.state.update(this.key, undefined)
         } else if (!this.isUsable(conn)) {
             getLogger().warn(`auth (${this.toolId}): saved connection "${this.key}" is not valid`)
-            await globalState.update(this.key, undefined)
+            await this.state.update(this.key, undefined)
         } else {
             const getAuthStatus = (state: ReturnType<typeof this.auth.getConnectionState>): AuthStatus => {
                 return state === 'invalid' ? 'expired' : 'connected'
@@ -377,7 +377,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
     }
 
     private getStateConnectionId() {
-        return cast(globals.globalState.get(this.key), Optional(String))
+        return cast(this.state.get(this.key), Optional(String))
     }
 }
 
