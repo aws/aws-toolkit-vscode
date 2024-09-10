@@ -829,6 +829,7 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
         'EAI_FAIL',
         '502', // This may be irrelevant as isBadResponseCode() may be all we need
         'InternalServerException',
+        'ERR_SSL_WRONG_VERSION_NUMBER',
     ].includes(err.code)
 }
 
@@ -890,7 +891,7 @@ export function isError(err: Error, id: string, messageIncludes: string = '') {
  * These are the errors explicitly seen in telemetry. We can instead do any non-200 response code
  * later, but this will give us better visibility in to the actual error codes we are currently getting.
  */
-const errorResponseCodes = [302, 403, 502]
+const errorResponseCodes = [302, 403, 404, 502, 503]
 
 /**
  * Returns true if the given error is a bad response code
