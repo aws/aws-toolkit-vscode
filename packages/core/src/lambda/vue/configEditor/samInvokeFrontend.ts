@@ -175,10 +175,16 @@ export default defineComponent({
         },
         launch() {
             const config = this.formatConfig()
-            config &&
-                client.invokeLaunchConfig(config).catch((e) => {
-                    console.error('invokeLaunchConfig failed: %s', (e as Error).message)
-                })
+
+            if (!config) {
+                return // Exit early if config is not available
+            }
+
+            const source = this.resourceData?.source
+
+            client.invokeLaunchConfig(config, source).catch((e: Error) => {
+                console.error(`invokeLaunchConfig failed: ${e.message}`)
+            })
         },
         save() {
             const config = this.formatConfig()

@@ -62,6 +62,7 @@ export interface ResourceData {
     location: string
     handler: string
     runtime: string
+    source: string
 }
 
 export type AwsSamDebuggerConfigurationLoose = AwsSamDebuggerConfiguration & {
@@ -432,7 +433,7 @@ export class SamInvokeWebview extends VueWebview {
      * TODO: Post validation failures back to webview?
      * @param config Config to invoke
      */
-    public async invokeLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<void> {
+    public async invokeLaunchConfig(config: AwsSamDebuggerConfiguration, source?: string): Promise<void> {
         const finalConfig = finalizeConfig(
             resolveWorkspaceFolderVariable(undefined, config),
             'Editor-Created Debug Config'
@@ -446,7 +447,7 @@ export class SamInvokeWebview extends VueWebview {
         // (Cloud9 also doesn't currently have variable resolution support anyways)
         if (isCloud9()) {
             const provider = new SamDebugConfigProvider(this.extContext)
-            await provider.resolveDebugConfiguration(folder, finalConfig)
+            await provider.resolveDebugConfiguration(folder, finalConfig, undefined, source)
         } else {
             // startDebugging on VS Code goes through the whole resolution chain
             await vscode.debug.startDebugging(folder, finalConfig)
@@ -472,6 +473,7 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
 export async function registerSamDebugInvokeVueCommand(context: ExtContext, params: { resource: ResourceNode }) {
     const launchConfig: AwsSamDebuggerConfiguration | undefined = undefined
     const resource = params?.resource.resource
+    const source = 'AppBuilderLocalInvoke'
     const webview = new WebviewPanel(context.extensionContext, context, launchConfig, {
         logicalId: resource.resource.Id ?? '',
         region: resource.region ?? '',
@@ -479,6 +481,7 @@ export async function registerSamDebugInvokeVueCommand(context: ExtContext, para
         location: resource.location.fsPath,
         handler: resource.resource.Handler!,
         runtime: resource.resource.Runtime!,
+        source: source,
     })
     await telemetry.sam_openConfigUi.run(async (span) => {
         telemetry.record({ source: 'AppBuilderDebugger' }),
