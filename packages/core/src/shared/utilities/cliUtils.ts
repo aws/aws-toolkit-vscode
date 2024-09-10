@@ -89,10 +89,20 @@ export const awsClis: { [cli in AwsClis]: Cli } = {
         command: {
             windows: [
                 'sam.cmd',
+                'sam.exe',
                 path.join('C:', 'Program Files', 'Amazon', 'AWSSAMCLI', 'bin', 'sam.cmd'),
+                path.join('C:', 'Program Files', 'Amazon', 'AWSSAMCLI', 'bin', 'sam.exe'),
                 path.join('C:', 'Program Files (x86)', 'Amazon', 'AWSSAMCLI', 'bin', 'sam.cmd'),
+                path.join('C:', 'Program Files (x86)', 'Amazon', 'AWSSAMCLI', 'bin', 'sam.exe'),
             ],
-            unix: ['sam', path.join('/', 'usr', 'bin', 'sam'), path.join('/', 'usr', 'local', 'bin', 'sam')],
+            unix: [
+                'sam',
+                path.join('/', 'usr', 'bin', 'sam'),
+                path.join('/', 'usr', 'local', 'bin', 'sam'),
+                path.join('/', 'opt', 'homebrew', 'bin', 'sam'),
+                path.join('/', 'home', 'linuxbrew', '.linuxbrew', 'bin', 'sam'),
+                path.join('${process.env.HOME}', '.linuxbrew', 'bin', 'sam'),
+            ],
         },
         source: {
             macos: {
@@ -167,12 +177,17 @@ export const awsClis: { [cli in AwsClis]: Cli } = {
  * @param confirmBefore Prompt before starting install?
  * @returns CLI Path
  */
-export async function installCli(cli: AwsClis, confirm: boolean): Promise<string | never> {
+export async function installCli(
+    cli: AwsClis,
+    confirm: boolean,
+    skipPostInstallValidation: boolean = false
+): Promise<string | never> {
     const cliToInstall = awsClis[cli]
     if (!cliToInstall) {
         throw new InstallerError(`Invalid not found for CLI: ${cli}`)
     }
     let result: Result = 'Succeeded'
+    let reason: string = ''
 
     let tempDir: string | undefined
 
@@ -241,6 +256,10 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
         } finally {
             timeout.dispose()
         }
+
+        if (skipPostInstallValidation) {
+            return cliToInstall.name
+        }
         // validate
         if (cli === 'session-manager-plugin') {
             if (!cliPath || !(await hasCliCommand(cliToInstall, false))) {
@@ -259,6 +278,7 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
 
         return cliPath
     } catch (err) {
+        const error = err as Error
         if (CancellationError.isUserCancelled(err)) {
             result = 'Cancelled'
             getLogger().info(`Cancelled installation for: ${cli}`)
@@ -277,7 +297,7 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
                     void openUrl(vscode.Uri.parse(cliToInstall.manualInstallLink))
                 }
             })
-
+        reason = error.message
         throw err
     } finally {
         if (tempDir) {
@@ -298,7 +318,7 @@ export async function installCli(cli: AwsClis, confirm: boolean): Promise<string
         }
         getLogger().info(`${cli} installation: ${result}`)
         // commented for we need to add docker to toolId type in telemetry. No good way to add it in dev.
-        telemetry.aws_toolInstallation.emit({ result, toolId: cli })
+        telemetry.aws_toolInstallation.emit({ result, reason, toolId: cli })
     }
 }
 
@@ -320,9 +340,11 @@ export async function getCliCommand(cli: Cli): Promise<string | undefined> {
 async function hasCliCommand(cli: Cli, global: boolean): Promise<string | undefined> {
     const commands = getOsCommands(cli)
     for (const command of commands ? commands : []) {
-        const cmd = global ? path.parse(command).base : path.join(getToolkitLocalCliPath(), command)
-        const result = await new ChildProcess(cmd, ['--version']).run()
-        return result.exitCode === 0 ? cmd : undefined
+        const cmd = global ? command : path.join(getToolkitLocalCliPath(), command)
+        const result = await new ChildProcess(cmd, ['--version']).run({ spawnOptions: { env: process.env } })
+        if (result.exitCode === 0) {
+            return cmd
+        }
     }
 }
 
@@ -486,12 +508,12 @@ async function installGui(
 ): Promise<string | undefined> {
     progress.report({ message: msgDownloading })
     const TimedProcess = ChildProcess.extend({ timeout, rejectOnError: true, rejectOnErrorCode: true })
-    progress.report({ message: msgInstallingLocal })
 
     return handleError(install())
 
     async function install() {
         const guiInstaller = await downloadCliSource(awsClis[cli], tempDir, timeout)
+        progress.report({ message: msgInstallingLocal })
         getLogger('channel').info(`Installing ${cli} from ${guiInstaller}...`)
 
         if (!guiInstaller) {
@@ -517,15 +539,17 @@ async function installGui(
  * @throws {@link CancellationError} if the install times out or the user cancels
  */
 export async function getOrInstallCli(cli: AwsClis, confirm: boolean, popup: boolean = false): Promise<string> {
+    // docker will work after restart in windows, and docker MacOS dmg installer will exit on window popup. Ignore checking for Docker
+    const skipPostInstallValidation = cli === 'docker'
     if (DevSettings.instance.get('forceInstallTools', false)) {
-        return installCli(cli, confirm)
+        return installCli(cli, confirm, skipPostInstallValidation)
     } else {
         const path = await getCliCommand(awsClis[cli])
         // if popup, when tool is detected, show a popup message and return path
         if (path && popup) {
             await showCliFoundPopup(awsClis[cli].name, path)
         }
-        return path ?? installCli(cli, confirm)
+        return path ?? installCli(cli, confirm, skipPostInstallValidation)
     }
 }
 
