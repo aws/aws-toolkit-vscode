@@ -703,10 +703,11 @@ export class FeatureDevController {
             type: 'answer-part',
             tabID: message.tabID,
         })
-        this.workOnNewTask(message)
 
         const session = await this.sessionStorage.getSession(message.tabID)
         session.state.tokenSource.cancel()
+
+        this.workOnNewTask(message)
     }
 
     private async tabOpened(message: any) {
