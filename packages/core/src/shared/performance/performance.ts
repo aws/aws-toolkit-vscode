@@ -135,8 +135,7 @@ export function performanceTest<TSetup, TExecute>(
                 }
 
                 // log these messages for now so we can better understand flakiness
-                // eslint-disable-next-line aws-toolkits/no-console-log
-                console.log(`performanceMetrics: %O`, metrics)
+                getLogger().info(`performanceMetrics: %O`, metrics)
                 testRunMetrics.push(metrics)
 
                 await verify(setupResp, execResp)
@@ -144,30 +143,31 @@ export function performanceTest<TSetup, TExecute>(
         }
 
         after(async () => {
-            const totalUserCPUUsage =
-                testRunMetrics.reduce((acc, metric) => acc + metric.userCpuUsage, 0) / testRunMetrics.length
-            const totalSystemCPUUsage =
-                testRunMetrics.reduce((acc, metric) => acc + metric.systemCpuUsage, 0) / testRunMetrics.length
-            const totalMemoryUsage =
-                testRunMetrics.reduce((acc, metric) => acc + metric.heapTotal, 0) / testRunMetrics.length
-            const totalDuration =
-                testRunMetrics.reduce((acc, metric) => acc + metric.duration, 0) / testRunMetrics.length
+            // use median since its more resistant to outliers
+            const middle = Math.floor(testRunMetrics.length / 2)
+            const medianUserCPUUsage = [...testRunMetrics].sort((a, b) => a.userCpuUsage - b.userCpuUsage)[middle]
+                .userCpuUsage
+            const medianTotalSystemCPUUsage = [...testRunMetrics].sort((a, b) => a.systemCpuUsage - b.systemCpuUsage)[
+                middle
+            ].systemCpuUsage
+            const medianTotalMemoryUsage = [...testRunMetrics].sort((a, b) => a.heapTotal - b.heapTotal)[middle]
+                .heapTotal
+            const medianTotalDuration = [...testRunMetrics].sort((a, b) => a.duration - b.duration)[middle].duration
 
             // log these messages for now so we can better understand flakiness
-            // eslint-disable-next-line aws-toolkits/no-console-log
-            console.log('Average performance metrics: %O', {
-                userCpuUsage: totalUserCPUUsage,
-                systemCpuUsage: totalSystemCPUUsage,
-                heapTotal: totalMemoryUsage,
-                duration: totalDuration,
+            getLogger().info('Median performance metrics: %O', {
+                userCpuUsage: medianUserCPUUsage,
+                systemCpuUsage: medianTotalSystemCPUUsage,
+                heapTotal: medianTotalMemoryUsage,
+                duration: medianTotalDuration,
             })
 
             assertPerformanceMetrics(
                 {
-                    userCpuUsage: totalUserCPUUsage,
-                    systemCpuUsage: totalSystemCPUUsage,
-                    duration: totalDuration,
-                    heapTotal: totalMemoryUsage,
+                    userCpuUsage: medianUserCPUUsage,
+                    systemCpuUsage: medianTotalSystemCPUUsage,
+                    duration: medianTotalDuration,
+                    heapTotal: medianTotalMemoryUsage,
                 },
                 name,
                 testOption
