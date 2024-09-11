@@ -46,22 +46,12 @@ export async function activate(
 
     setLogger(mainLogger)
 
-    // Logs to "AWS Toolkit" output channel.
-    setLogger(
-        makeLogger({
-            logLevel: chanLogLevel,
-            logPaths: logUri ? [logUri] : undefined,
-            outputChannels: [outputChannel, logChannel],
-        }),
-        'channel'
-    )
-
     // Logs to vscode Debug Console.
     setLogger(
         makeLogger({
             logLevel: chanLogLevel,
             outputChannels: [outputChannel, logChannel],
-            useDebugConsole: true,
+            useConsoleLog: true,
         }),
         'debugConsole'
     )
@@ -81,27 +71,21 @@ export async function activate(
  * @param opts.logLevel Log messages at or above this level
  * @param opts.logPaths Array of paths to output log entries to
  * @param opts.outputChannels Array of output channels to log entries to
- * @param opts.useDebugConsole If true, outputs log entries to `vscode.debug.activeDebugConsole`
  * @param opts.useConsoleLog If true, outputs log entries to the nodejs or browser devtools console.
  */
 export function makeLogger(opts: {
     logLevel: LogLevel
     logPaths?: vscode.Uri[]
     outputChannels?: vscode.OutputChannel[]
-    useDebugConsole?: boolean
     useConsoleLog?: boolean
 }): Logger {
     const logger = new WinstonToolkitLogger(opts.logLevel)
     // debug console can show ANSI colors, output channels can not
-    const stripAnsi = opts.useDebugConsole ?? false
     for (const logPath of opts.logPaths ?? []) {
         logger.logToFile(logPath)
     }
     for (const outputChannel of opts.outputChannels ?? []) {
-        logger.logToOutputChannel(outputChannel, stripAnsi)
-    }
-    if (opts.useDebugConsole) {
-        logger.logToDebugConsole()
+        logger.logToOutputChannel(outputChannel)
     }
     if (opts.useConsoleLog) {
         logger.logToConsole()

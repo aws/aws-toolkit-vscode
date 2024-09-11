@@ -5,9 +5,8 @@
 
 import * as path from 'path'
 
-import { ConversationNotStartedState, PrepareCodeGenState, PrepareRefinementState } from './sessionState'
+import { ConversationNotStartedState, PrepareCodeGenState } from './sessionState'
 import {
-    DevPhase,
     type DeletedFileInfo,
     type Interaction,
     type NewFileInfo,
@@ -19,20 +18,20 @@ import { referenceLogText } from '../constants'
 import fs from '../../shared/fs/fs'
 import { Messenger } from '../controllers/chat/messenger/messenger'
 import { FeatureDevClient } from '../client/featureDev'
-import { approachRetryLimit, codeGenRetryLimit } from '../limits'
+import { codeGenRetryLimit } from '../limits'
 import { SessionConfig } from './sessionConfigFactory'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceLogViewProvider'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
+import { getLogger } from '../../shared'
+import { logWithConversationId } from '../userFacingText'
 
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
     private task: string = ''
-    private approach: string = ''
     private proxyClient: FeatureDevClient
     private _conversationId?: string
-    private approachRetries: number
     private codeGenRetries: number
     private preloaderFinished = false
     private _latestMessage: string = ''
@@ -45,13 +44,12 @@ export class Session {
         public readonly config: SessionConfig,
         private messenger: Messenger,
         public readonly tabID: string,
-        initialState: Omit<SessionState, 'uploadId'> = new ConversationNotStartedState('', tabID),
+        initialState: Omit<SessionState, 'uploadId'> = new ConversationNotStartedState(tabID),
         proxyClient: FeatureDevClient = new FeatureDevClient()
     ) {
         this._state = initialState
         this.proxyClient = proxyClient
 
-        this.approachRetries = approachRetryLimit
         this.codeGenRetries = codeGenRetryLimit
 
         this._telemetry = new TelemetryHelper()
@@ -81,16 +79,22 @@ export class Session {
 
         await telemetry.amazonq_startConversationInvoke.run(async (span) => {
             this._conversationId = await this.proxyClient.createConversation()
+            getLogger().info(logWithConversationId(this.conversationId))
+
             span.record({ amazonqConversationId: this._conversationId, credentialStartUrl: AuthUtil.instance.startUrl })
         })
 
-        this._state = new PrepareRefinementState(
+        this._state = new PrepareCodeGenState(
             {
                 ...this.getSessionStateConfig(),
                 conversationId: this.conversationId,
+                uploadId: '',
             },
-            '',
-            this.tabID
+            [],
+            [],
+            [],
+            this.tabID,
+            0
         )
     }
 
@@ -106,33 +110,6 @@ export class Session {
             proxyClient: this.proxyClient,
             conversationId: this.conversationId,
         }
-    }
-
-    /**
-     * Triggered by the Generate Code follow up button to move to the code generation phase
-     */
-    initCodegen(): void {
-        this._state = new PrepareCodeGenState(
-            {
-                ...this.getSessionStateConfig(),
-                conversationId: this.conversationId,
-                uploadId: this.uploadId,
-            },
-            this.approach,
-            [],
-            [],
-            [],
-            this.tabID,
-            0
-        )
-        this._latestMessage = ''
-
-        telemetry.amazonq_isApproachAccepted.emit({
-            amazonqConversationId: this.conversationId,
-            enabled: true,
-            result: 'Succeeded',
-            credentialStartUrl: AuthUtil.instance.startUrl,
-        })
     }
 
     async send(msg: string): Promise<Interaction> {
@@ -156,18 +133,11 @@ export class Session {
         })
 
         if (resp.nextState) {
-            // Approach may have been changed after the interaction
-            const newApproach = this.state.approach
-
             // Cancel the request before moving to a new state
             this.state.tokenSource.cancel()
 
             // Move to the next state
             this._state = resp.nextState
-
-            // If approach was changed then we need to set it in the next state and this state
-            this.state.approach = newApproach
-            this.approach = newApproach
         }
 
         return resp.interaction
@@ -219,25 +189,11 @@ export class Session {
     }
 
     get retries() {
-        switch (this.state.phase) {
-            case DevPhase.APPROACH:
-                return this.approachRetries
-            case DevPhase.CODEGEN:
-                return this.codeGenRetries
-            default:
-                return this.approachRetries
-        }
+        return this.codeGenRetries
     }
 
     decreaseRetries() {
-        switch (this.state.phase) {
-            case DevPhase.APPROACH:
-                this.approachRetries -= 1
-                break
-            case DevPhase.CODEGEN:
-                this.codeGenRetries -= 1
-                break
-        }
+        this.codeGenRetries -= 1
     }
     get conversationId() {
         if (!this._conversationId) {

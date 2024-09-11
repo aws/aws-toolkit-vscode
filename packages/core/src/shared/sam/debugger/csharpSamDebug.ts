@@ -112,7 +112,7 @@ async function _installDebugger({ debuggerPath }: InstallDebuggerArgs): Promise<
     await ensureDir(debuggerPath)
 
     try {
-        getLogger('channel').info(
+        getLogger().info(
             localize(
                 'AWS.samcli.local.invoke.debugger.install',
                 'Installing .NET Core Debugger to {0}...',
@@ -173,7 +173,7 @@ async function _installDebugger({ debuggerPath }: InstallDebuggerArgs): Promise<
             throw new Error(`command failed (exit code: ${install.exitCode}): ${installCommand}`)
         }
     } catch (err) {
-        getLogger('channel').info(
+        getLogger().info(
             localize(
                 'AWS.samcli.local.invoke.debugger.install.failed',
                 'Error installing .NET Core Debugger: {0}',
