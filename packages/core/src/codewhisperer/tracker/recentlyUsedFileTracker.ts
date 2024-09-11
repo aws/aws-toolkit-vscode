@@ -8,7 +8,7 @@ import { LRUCache } from 'lru-cache'
 import { isTextDocument } from '../../shared/utilities/editorUtilities'
 
 /**
- * Naive most recently opened files as VSCode doesn't expose its API which is used when clicking [ctrl] + [tab]
+ * Naive most recently opened files cache as VSCode doesn't expose its API which is used when clicking [ctrl] + [tab]
  * Related feature request https://github.com/microsoft/vscode/issues/136878
  * VSCode src code https://github.com/microsoft/vscode/blob/298e7037f027bf5e6add0e0eecaeda10e0195411/src/vs/workbench/browser/parts/editor/editorQuickAccess.ts#L265
  */
