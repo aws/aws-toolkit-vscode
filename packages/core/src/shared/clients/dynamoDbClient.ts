@@ -5,6 +5,7 @@
 
 import { DynamoDB } from 'aws-sdk'
 import globals from '../extensionGlobals'
+import { ListTablesOutput } from 'aws-sdk/clients/dynamodb'
 
 /**
  * A client for interacting with AWS DynamoDB.
@@ -23,10 +24,22 @@ export class DynamoDbClient {
      */
     public async *getTables(request: DynamoDB.Types.ListTablesInput = {}) {
         const sdkClient = await this.createSdkClient()
-        const response = await sdkClient.listTables(request).promise()
-        if (response.TableNames) {
-            yield* response.TableNames
-        }
+        let lastEvaluatedTableName: string | undefined = undefined
+
+        do {
+            const response: ListTablesOutput = await sdkClient
+                .listTables({
+                    ...request,
+                    ExclusiveStartTableName: lastEvaluatedTableName,
+                })
+                .promise()
+
+            if (response.TableNames) {
+                yield* response.TableNames
+            }
+
+            lastEvaluatedTableName = response.LastEvaluatedTableName
+        } while (lastEvaluatedTableName)
     }
 
     /**

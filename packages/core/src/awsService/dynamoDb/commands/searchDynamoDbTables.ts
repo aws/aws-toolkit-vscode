@@ -26,7 +26,7 @@ export async function searchDynamoDbTables(
 ): Promise<void> {
     await telemetry.dynamodb_openTable.run(async (span) => {
         const wizard = new SearchDynamoDbTablesWizard(dbData)
-        span.record({ dynamoDbResourceType: 'table', source: source })
+        span.record({ source })
         const response = await wizard.run()
         if (!response) {
             throw new CancellationError('user')
