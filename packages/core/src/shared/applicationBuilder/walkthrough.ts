@@ -183,7 +183,7 @@ async function genWalkthroughProject(
             'Yes',
             'No'
         )
-        if (choice === 'No') {
+        if (choice !== 'Yes') {
             throw new ToolkitError(`${defaultTemplateName} already exist`)
         }
     }
@@ -220,6 +220,12 @@ async function openProjectInWorkspace(projectUri: vscode.Uri): Promise<void> {
         await vscode.commands.executeCommand('explorer.openToSide', templateUri)
         // set global key to template to be opened, appComposer will open them upon reload
         await globals.globalState.update(templateToOpenAppComposer, [templateUri.fsPath])
+    }
+
+    // Open Readme if exist
+    if (await fs.exists(vscode.Uri.joinPath(projectUri, 'README.md'))) {
+        await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')
+        await vscode.commands.executeCommand('markdown.showPreviewToSide', vscode.Uri.joinPath(projectUri, 'README.md'))
     }
 
     // if extension is reloaded here, this function will never return (killed)
