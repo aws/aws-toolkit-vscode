@@ -109,6 +109,7 @@ export class Session {
             workspaceFolders: this.config.workspaceFolders,
             proxyClient: this.proxyClient,
             conversationId: this.conversationId,
+            currentCodeGenerationId: this.currentCodeGenerationId as string,
         }
     }
 
@@ -137,9 +138,13 @@ export class Session {
 
         if (resp.nextState) {
             // Cancel the request before moving to a new state
+<<<<<<< HEAD
             if (!this.state?.tokenSource?.token.isCancellationRequested) {
                 this.state?.tokenSource?.cancel()
             }
+=======
+            this.state?.tokenSource?.cancel()
+>>>>>>> 4742b3c59 (refactor(amazonqFeatureDev): include updated rts model)
 
             // Move to the next state
             this._state = resp.nextState

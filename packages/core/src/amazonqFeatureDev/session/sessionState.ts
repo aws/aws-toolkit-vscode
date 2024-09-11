@@ -147,6 +147,7 @@ abstract class CodeGenBase {
         public tabID: string
     ) {
         this.tokenSource = new vscode.CancellationTokenSource()
+        this.isCancellationRequested = false
         this.conversationId = config.conversationId
         this.uploadId = config.uploadId
         this.currentCodeGenerationId = config.currentCodeGenerationId || EmptyCodeGenID
@@ -304,6 +305,9 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     if (action.tokenSource) {
                         this.tokenSource = action.tokenSource
                     }
+                    this.isCancellationRequested = true
+                    action.tokenSource?.dispose()
+                    action.tokenSource = undefined
                 })
 
                 action.telemetry.setGenerateCodeIteration(this.currentIteration)
@@ -492,7 +496,6 @@ export class PrepareCodeGenState implements SessionState {
         public references: CodeReference[],
         public tabID: string,
         public currentIteration: number,
-
         public codeGenerationRemainingIterationCount?: number,
         public codeGenerationTotalIterationCount?: number,
         public currentCodeGenerationId?: string,
