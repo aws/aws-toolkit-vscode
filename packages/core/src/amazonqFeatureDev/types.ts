@@ -61,7 +61,6 @@ export interface SessionState {
     readonly phase?: SessionStatePhase
     readonly uploadId: string
     readonly currentCodeGenerationId?: string
-    approach: string
     tokenSource?: CancellationTokenSource
     readonly tabID: string
     interact(action: SessionStateAction): Promise<SessionStateInteraction>
