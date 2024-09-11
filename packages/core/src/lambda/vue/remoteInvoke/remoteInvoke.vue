@@ -43,6 +43,7 @@
                                 value="sampleEvents"
                                 v-model="payload"
                                 name="payload_request"
+                                checked
                             />
                             <label class="label-selector" for="sampleEvents">Inline</label><br />
                         </div>
