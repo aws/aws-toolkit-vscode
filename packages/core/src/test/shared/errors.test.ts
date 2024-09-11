@@ -20,6 +20,7 @@ import {
     tryRun,
     UnknownError,
     DiskCacheError,
+    getErrorId,
 } from '../../shared/errors'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { UnauthorizedException } from '@aws-sdk/client-sso'
@@ -447,6 +448,22 @@ describe('util', function () {
         )
     })
 
+    it('getErrorId', function () {
+        let error = new Error()
+        assert.deepStrictEqual(getErrorId(error), 'Error')
+
+        error = new Error()
+        error.name = 'MyError'
+        assert.deepStrictEqual(getErrorId(error), 'MyError')
+
+        error = new ToolkitError('', { code: 'MyCode' })
+        assert.deepStrictEqual(getErrorId(error), 'MyCode')
+
+        // `code` takes priority over `name`
+        error = new ToolkitError('', { code: 'MyCode', name: 'MyError' })
+        assert.deepStrictEqual(getErrorId(error), 'MyCode')
+    })
+
     it('getErrorMsg()', function () {
         assert.deepStrictEqual(
             getErrorMsg(
@@ -465,23 +482,36 @@ describe('util', function () {
         assert.deepStrictEqual(getErrorMsg(awsErr), 'aws error desc 1')
 
         // Arg withCause=true
-        awsErr = new TestAwsError('ValidationException', 'aws validation msg 1', new Date())
         let toolkitError = new ToolkitError('ToolkitError Message')
         assert.deepStrictEqual(getErrorMsg(toolkitError, true), 'ToolkitError Message')
 
+        awsErr = new TestAwsError('ValidationException', 'aws validation msg 1', new Date())
         toolkitError = new ToolkitError('ToolkitError Message', { cause: awsErr })
-        assert.deepStrictEqual(getErrorMsg(toolkitError, true), `ToolkitError Message | aws validation msg 1`)
+        assert.deepStrictEqual(
+            getErrorMsg(toolkitError, true),
+            `ToolkitError Message | ValidationException: aws validation msg 1`
+        )
 
-        const nestedNestedToolkitError = new ToolkitError('C')
-        const nestedToolkitError = new ToolkitError('B', { cause: nestedNestedToolkitError })
-        toolkitError = new ToolkitError('A', { cause: nestedToolkitError })
-        assert.deepStrictEqual(getErrorMsg(toolkitError, true), `A | B | C`)
+        const nestedNestedToolkitError = new Error('C')
+        nestedNestedToolkitError.name = 'NameC'
+        const nestedToolkitError = new ToolkitError('B', { cause: nestedNestedToolkitError, code: 'CodeB' })
+        toolkitError = new ToolkitError('A', { cause: nestedToolkitError, code: 'CodeA' })
+        assert.deepStrictEqual(getErrorMsg(toolkitError, true), `CodeA: A | CodeB: B | NameC: C`)
+
+        // Arg withCause=true excludes the generic 'Error' id
+        const errorWithGenericName = new Error('A') // note this does not set a value for `name`, by default it is 'Error'
+        assert.deepStrictEqual(getErrorMsg(errorWithGenericName, true), `A`)
+        errorWithGenericName.name = 'NameA' // now we set a `name`
+        assert.deepStrictEqual(getErrorMsg(errorWithGenericName, true), `NameA: A`)
     })
 
     it('getTelemetryReasonDesc()', () => {
         const err = new Error('Cause Message a/b/c/d.txt')
-        const toolkitError = new ToolkitError('ToolkitError Message', { cause: err })
-        assert.deepStrictEqual(getTelemetryReasonDesc(toolkitError), 'ToolkitError Message | Cause Message x/x/x/x.txt')
+        const toolkitError = new ToolkitError('ToolkitError Message', { cause: err, code: 'CodeA' })
+        assert.deepStrictEqual(
+            getTelemetryReasonDesc(toolkitError),
+            'CodeA: ToolkitError Message | Cause Message x/x/x/x.txt'
+        )
     })
 
     function makeSyntaxErrorWithSdkClientError() {
