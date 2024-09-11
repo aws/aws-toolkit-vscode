@@ -14,6 +14,14 @@ export function isTextEditor(editor: vscode.TextEditor): boolean {
     return scheme !== 'debug' && scheme !== 'output' && scheme !== 'vscode-terminal'
 }
 
+export function isTextDocument(document: vscode.TextDocument): boolean {
+    if (!document) {
+        return false
+    }
+    const scheme = document.uri.scheme
+    return scheme !== 'git'
+}
+
 export function getTabSizeSetting(): number {
     return Settings.instance.getSection('editor').get('tabSize', defaultTabSize)
 }
