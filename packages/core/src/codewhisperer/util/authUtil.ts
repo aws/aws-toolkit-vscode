@@ -135,7 +135,7 @@ export class AuthUtil {
             ])
 
             await setContext('aws.codewhisperer.connected', this.isConnected())
-            await setContext('aws.isInternalUser', this.startUrl === 'https://amzn.awsapps.com/start')
+            await setContext('aws.isInternalUser', this.isInternalAmazonUser())
 
             // To check valid connection
             if (this.isValidEnterpriseSsoInUse() || (this.isBuilderIdInUse() && !this.isConnectionExpired())) {
@@ -152,7 +152,7 @@ export class AuthUtil {
         }
 
         await setContext('aws.codewhisperer.connected', this.isConnected())
-        await setContext('aws.isInternalUser', this.startUrl === 'https://amzn.awsapps.com/start')
+        await setContext('aws.isInternalUser', this.isInternalAmazonUser())
         const doShowAmazonQLoginView = !this.isConnected() || this.isConnectionExpired()
         await setContext('aws.amazonq.showLoginView', doShowAmazonQLoginView)
         await setContext('aws.codewhisperer.connectionExpired', this.isConnectionExpired())
@@ -196,6 +196,10 @@ export class AuthUtil {
 
     public isBuilderIdInUse(): boolean {
         return this.conn !== undefined && isBuilderIdConnection(this.conn)
+    }
+
+    public isInternalAmazonUser(): boolean {
+        return this.isConnected() && this.startUrl === 'https://amzn.awsapps.com/start'
     }
 
     @withTelemetryContext({ name: 'connectToAwsBuilderId', class: authClassName })

@@ -34,7 +34,7 @@ import { marked } from 'marked'
 import { JSDOM } from 'jsdom'
 import { LspController } from '../../../../amazonq/lsp/lspController'
 
-export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help' | 'generate-tests'
+export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
 export class Messenger {
     public constructor(
