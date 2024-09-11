@@ -173,14 +173,6 @@ export class Ec2ConnectionManager {
         }
     }
 
-    public async cleanUpState(keyPair: SshKeyPair): Promise<void> {
-        const timeout = new Timeout(5000)
-        timeout.onCompletion(async () => {
-            await keyPair.delete()
-        })
-        await showMessageWithCancel('Cleaning up state associated with connection', timeout)
-    }
-
     public async tryOpenRemoteConnection(selection: Ec2Selection): Promise<void> {
         await this.checkForStartSessionError(selection)
 
@@ -189,7 +181,7 @@ export class Ec2ConnectionManager {
 
         try {
             await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, '/', remoteEnv.vscPath, remoteUser)
-            await this.cleanUpState(remoteEnv.keyPair)
+            // await this.cleanUpState(remoteEnv.keyPair)
         } catch (err) {
             this.throwGeneralConnectionError(selection, err as Error)
         }
@@ -245,7 +237,7 @@ export class Ec2ConnectionManager {
 
     public async configureSshKeys(selection: Ec2Selection, remoteUser: string): Promise<SshKeyPair> {
         const keyPath = path.join(globals.context.globalStorageUri.fsPath, `aws-ec2-key`)
-        const keyPair = await SshKeyPair.getSshKeyPair(keyPath)
+        const keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
         await this.sendSshKeyToInstance(selection, keyPair, remoteUser)
         return keyPair
     }

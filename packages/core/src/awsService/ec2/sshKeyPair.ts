@@ -5,21 +5,31 @@
 import * as fs from 'fs-extra'
 import { ToolkitError } from '../../shared/errors'
 import { ChildProcess } from '../../shared/utilities/childProcess'
+import { Timeout } from '../../shared/utilities/timeoutUtils'
 
 export class SshKeyPair {
     private publicKeyPath: string
+    private lifeTimeout: Timeout
     private deleted: boolean = false
 
-    private constructor(private keyPath: string) {
+    private constructor(
+        private keyPath: string,
+        lifetime: number
+    ) {
         this.publicKeyPath = `${keyPath}.pub`
+        this.lifeTimeout = new Timeout(lifetime)
+
+        this.lifeTimeout.onCompletion(async () => {
+            await this.delete()
+        })
     }
 
-    public static async getSshKeyPair(keyPath: string) {
+    public static async getSshKeyPair(keyPath: string, lifetime: number) {
         const keyExists = await fs.pathExists(keyPath)
         if (!keyExists) {
             await SshKeyPair.generateSshKeyPair(keyPath)
         }
-        return new SshKeyPair(keyPath)
+        return new SshKeyPair(keyPath, lifetime)
     }
 
     public static async generateSshKeyPair(keyPath: string): Promise<void> {
