@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Improve workspace indexing by only index files that are changed since last indexing"
+}
