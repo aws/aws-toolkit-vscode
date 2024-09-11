@@ -74,10 +74,13 @@ export function createSecurityDiagnostic(securityIssue: CodeScanIssue) {
         vscode.DiagnosticSeverity.Warning
     )
     securityDiagnostic.source = codewhispererDiagnosticSourceLabel
-    securityDiagnostic.code = {
-        value: securityIssue.detectorId,
-        target: vscode.Uri.parse(securityIssue.recommendation.url),
-    }
+    const detectorUrl = securityIssue.recommendation.url
+    securityDiagnostic.code = detectorUrl
+        ? {
+              value: securityIssue.detectorId,
+              target: vscode.Uri.parse(detectorUrl),
+          }
+        : securityIssue.detectorId
     securityDiagnostic.findingId = securityIssue.findingId
     return securityDiagnostic
 }
