@@ -135,6 +135,7 @@ export class AuthUtil {
             ])
 
             await setContext('aws.codewhisperer.connected', this.isConnected())
+            await setContext('aws.isInternalUser', this.startUrl === 'https://amzn.awsapps.com/start')
 
             // To check valid connection
             if (this.isValidEnterpriseSsoInUse() || (this.isBuilderIdInUse() && !this.isConnectionExpired())) {
@@ -151,6 +152,7 @@ export class AuthUtil {
         }
 
         await setContext('aws.codewhisperer.connected', this.isConnected())
+        await setContext('aws.isInternalUser', this.startUrl === 'https://amzn.awsapps.com/start')
         const doShowAmazonQLoginView = !this.isConnected() || this.isConnectionExpired()
         await setContext('aws.amazonq.showLoginView', doShowAmazonQLoginView)
         await setContext('aws.codewhisperer.connectionExpired', this.isConnectionExpired())

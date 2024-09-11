@@ -106,14 +106,6 @@
                         "amazonQWelcomePage": {
                             "type": "boolean",
                             "default": false
-                        },
-                        "amazonQSessionConfigurationMessage": {
-                            "type": "boolean",
-                            "default": false
-                        },
-                        "ssoCacheError": {
-                            "type": "boolean",
-                            "default": false
                         }
                     },
                     "additionalProperties": false
@@ -350,11 +342,12 @@
                     "group": "cw_chat@4"
                 },
                 {
-                    "command": "aws.amazonq.sendToPrompt",
-                    "group": "cw_chat@5"
+                    "command": "aws.amazonq.testCode",
+                    "group": "cw_chat@5",
+                    "when": "aws.codewhisperer.connected && aws.isInternalUser"
                 },
                 {
-                    "command": "aws.amazonq.testCode",
+                    "command": "aws.amazonq.sendToPrompt",
                     "group": "cw_chat@6"
                 }
             ],
@@ -431,7 +424,7 @@
                 "command": "aws.amazonq.testCode",
                 "title": "%AWS.command.amazonq.testCode%",
                 "category": "%AWS.amazonq.title%",
-                "enablement": "aws.codewhisperer.connected"
+                "enablement": "aws.codewhisperer.connected && aws.isInternalUser"
             },
             {
                 "command": "aws.amazonq.reconnect",
@@ -613,7 +606,8 @@
                 "command": "aws.amazonq.testCode",
                 "key": "win+alt+t",
                 "mac": "cmd+alt+t",
-                "linux": "meta+alt+t"
+                "linux": "meta+alt+t",
+                "when": "aws.codewhisperer.connected && aws.isInternalUser"
             },
             {
                 "command": "aws.amazonq.invokeInlineCompletion",

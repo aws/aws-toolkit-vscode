@@ -6,6 +6,7 @@
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import { EditorContextCommand } from '../../../commands/registerCommands'
 import { PromptMessage } from '../model'
+import { AuthUtil } from '../../../../codewhisperer/util/authUtil'
 
 export class UserIntentRecognizer {
     public getFromContextMenuCommand(command: EditorContextCommand): UserIntent | undefined {
@@ -18,7 +19,8 @@ export class UserIntentRecognizer {
                 return UserIntent.APPLY_COMMON_BEST_PRACTICES
             case 'aws.amazonq.optimizeCode':
                 return UserIntent.IMPROVE_CODE
-            //TODO: Add user intent recognizer for generating tests
+            case 'aws.amazonq.testCode':
+                return UserIntent.GENERATE_UNIT_TESTS
             default:
                 return undefined
         }
@@ -37,6 +39,11 @@ export class UserIntentRecognizer {
             return UserIntent.APPLY_COMMON_BEST_PRACTICES
         } else if (prompt.message.startsWith('Optimize')) {
             return UserIntent.IMPROVE_CODE
+        } else if (
+            prompt.message.startsWith('Generate unit tests') &&
+            AuthUtil.instance.startUrl === 'https://amzn.awsapps.com/start'
+        ) {
+            return UserIntent.GENERATE_UNIT_TESTS
         }
         return undefined
     }
