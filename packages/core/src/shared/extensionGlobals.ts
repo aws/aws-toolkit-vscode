@@ -178,8 +178,19 @@ interface ToolkitGlobals {
     readonly globalState: GlobalState
     /** Decides the prefix for package.json extension parameters, e.g. commands, 'setContext' values, etc. */
     contextPrefix: string
+
+    //
     // TODO: make the rest of these readonly (or delete them)
+    //
+
+    /**
+     * For "normal" messages, to show output from various application features (the result of
+     * a Lambda invocation, "sam build" output, etc.).
+     */
     outputChannel: OutputChannel
+    /**
+     * Log messages. Use `outputChannel` for application messages.
+     */
     logOutputChannel: OutputChannel
     loginManager: LoginManager
     awsContextCommands: AwsContextCommands
