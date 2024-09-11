@@ -446,7 +446,18 @@ export class GumbyController {
                 this.messenger.sendStaticTextResponse('java-home-not-set', message.tabID)
                 this.messenger.sendChatInputEnabled(message.tabID, true)
                 this.messenger.sendUpdatePlaceholder(message.tabID, 'Enter the path to your Java installation.')
-                return
+                // const fileUri = await vscode.window.showOpenDialog({
+                //     canSelectMany: false, // Allow only one file to be selected
+                //     openLabel: 'Select', // Label for the open button
+                // })
+
+                // if (!fileUri || fileUri.length === 0) {
+                //     // User canceled the dialog
+                //     vscode.window.showErrorMessage("User closed the file open dialog")
+                //     return
+                // }
+                // vscode.window.showInformationMessage("User selected file: " + fileUri[0].fsPath)
+                // return
             }
             throw err
         }
