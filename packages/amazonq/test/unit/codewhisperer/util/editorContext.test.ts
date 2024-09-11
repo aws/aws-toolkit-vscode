@@ -2,6 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as path from 'path'
 import assert from 'assert'
 import * as codewhispererClient from 'aws-core-vscode/codewhisperer'
 import * as EditorContext from 'aws-core-vscode/codewhisperer'
@@ -97,9 +98,9 @@ describe('editorContext', function () {
         })
 
         it('Should return relative path', async function () {
-            const editor = await openATextEditorWithText('tttt', 'test.py', 'a/b/c')
+            const editor = await openATextEditorWithText('tttt', 'test.py', 'a')
             const actual = EditorContext.getFileRelativePath(editor)
-            const expected = 'a/b/c/test.py'
+            const expected = path.join('a', 'test.py')
             assert.strictEqual(actual, expected)
         })
     })
