@@ -10,9 +10,13 @@ import { featureName } from '../constants'
 import { UploadCodeError } from '../errors'
 
 /**
- * uploadCode
- *
- * uses a presigned url and files checksum to transfer data to s3 through http.
+ * Uploads code to a specified URL.
+ * @param {string} url - The URL to upload the code to.
+ * @param {Buffer} buffer - The buffer containing the code to be uploaded.
+ * @param {string} checksumSha256 - The SHA256 checksum of the code.
+ * @param {string} [kmsKeyArn] - Optional. The ARN of the KMS key for server-side encryption.
+ * @returns {Promise<void>}
+ * @throws {UploadCodeError} If the upload fails.
  */
 export async function uploadCode(url: string, buffer: Buffer, checksumSha256: string, kmsKeyArn?: string) {
     try {

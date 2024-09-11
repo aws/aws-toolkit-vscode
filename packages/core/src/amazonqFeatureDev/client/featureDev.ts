@@ -10,7 +10,6 @@ import { ServiceOptions } from '../../shared/awsClientBuilder'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger'
 import * as FeatureDevProxyClient from './featuredevproxyclient'
-import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 import { featureName } from '../constants'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
 import {
@@ -32,8 +31,17 @@ import { LLMResponseType } from '../types'
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
 import { extensionVersion } from '../../shared/vscode/env'
+import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 
-// Create a client for featureDev proxy client based off of aws sdk v2
+/**
+ * Creates and configures a FeatureDevProxyClient client based off of AWS SDK v2.
+ *
+ * This function sets up the client with the necessary authentication, configuration, API settings, and retry options.
+ * Also AWS SDK options required for interacting with the Feature Development service.
+ *
+ * @returns {Promise<FeatureDevProxyClient>} A promise that resolves to a configured FeatureDevProxyClient.
+ * @throws {Error} If there's an issue creating the client, such as authentication failures or SDK errors.
+ */
 export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClient> {
     const bearerToken = await AuthUtil.instance.getBearerToken()
     const cwsprConfig = getCodewhispererConfig()
@@ -65,13 +73,28 @@ const streamResponseErrors: Record<string, number> = {
 }
 
 export class FeatureDevClient {
-    public async getClient() {
+    /**
+     * Retrieves a FeatureDevProxyClient.
+     * This method ensures that a new client is created for each request to maintain a fresh bearer token.
+     *
+     * @returns {Promise<FeatureDevProxyClient>} A promise that resolves to a new FeatureDevProxyClient
+     * @throws {Error} If there's an issue retrieving the client.
+     */
+    public async getClient(): Promise<FeatureDevProxyClient> {
         // Should not be stored for the whole session.
         // Client has to be reinitialized for each request so we always have a fresh bearerToken
         return await createFeatureDevProxyClient()
     }
 
-    public async createConversation() {
+    /**
+     * Creates a new conversation for the Amazon Q Feature Development service.
+     *
+     * @returns {Promise<string>} A promise that resolves to the created conversation ID.
+     * @throws {MonthlyConversationLimitError} If the monthly conversation limit has been exceeded.
+     * @throws {ApiError} If there's an API-related error during the conversation creation.
+     * @throws {UnknownApiError} If an unknown error occurs during the process.
+     */
+    public async createConversation(): Promise<string> {
         try {
             const client = await this.getClient()
             getLogger().debug(`Executing createTaskAssistConversation with {}`)
@@ -96,6 +119,15 @@ export class FeatureDevClient {
         }
     }
 
+    /**
+     * Creates an upload URL for source code artifacts.
+     *
+     * @param {string} conversationId - The ID of the conversation associated with this upload.
+     * @param {string} contentChecksumSha256 - The SHA-256 checksum of the content to be uploaded.
+     * @param {number} contentLength - The length of the content to be uploaded.
+     * @returns {Promise<{ uploadId: string, uploadUrl: string }>} A promise that resolves to an object containing the upload ID and URL.
+     * @throws {Error} If there's an error in creating the upload URL.
+     */
     public async createUploadUrl(conversationId: string, contentChecksumSha256: string, contentLength: number) {
         try {
             const client = await this.getClient()
@@ -132,6 +164,16 @@ export class FeatureDevClient {
             throw new UnknownApiError(e instanceof Error ? e.message : 'Unknown error', 'CreateUploadUrl')
         }
     }
+    /**
+     * Generates a plan based on the user's message and workspace state.
+     *
+     * @param {string} conversationId - The ID of the conversation.
+     * @param {string} uploadId - The ID of the uploaded workspace state.
+     * @param {string} userMessage - The user's input message.
+     * @returns {Promise<{ responseType: 'EMPTY'; approach?: string } | { responseType: 'VALID' | 'INVALID_STATE'; approach: string }>}
+     *          A promise that resolves to an object containing the response type and approach.
+     * @throws {Error} If there's an error in generating the plan.
+     */
     public async generatePlan(
         conversationId: string,
         uploadId: string,
@@ -204,6 +246,16 @@ export class FeatureDevClient {
         }
     }
 
+    /**
+     * Starts the code generation process based on the conversation and workspace state.
+     *
+     * @param {string} conversationId - The ID of the conversation.
+     * @param {string} uploadId - The ID of the uploaded workspace state.
+     * @param {string} message - The user's input message for code generation.
+     * @returns {Promise<any>} A promise that resolves to the response from the code generation service.
+     * @throws {CodeIterationLimitError} If the code generation limit is exceeded.
+     * @throws {Error} If there's an error in starting the code generation process.
+     */
     public async startCodeGeneration(conversationId: string, uploadId: string, message: string) {
         try {
             const client = await this.getClient()
@@ -242,6 +294,14 @@ export class FeatureDevClient {
         }
     }
 
+    /**
+     * Retrieves the code generation results for a given conversation and code generation ID.
+     *
+     * @param {string} conversationId - The ID of the conversation.
+     * @param {string} codeGenerationId - The ID of the code generation task.
+     * @returns {Promise<any>} A promise that resolves to the code generation results.
+     * @throws {ToolkitError} If there's an error in retrieving the code generation results.
+     */
     public async getCodeGeneration(conversationId: string, codeGenerationId: string) {
         try {
             const client = await this.getClient()
@@ -263,6 +323,13 @@ export class FeatureDevClient {
         }
     }
 
+    /**
+     * Exports the result archive for a given conversation.
+     *
+     * @param {string} conversationId - The ID of the conversation to export the result archive for.
+     * @returns {Promise<{ newFiles: Record<string, string>, deletedFiles: string[], references: any[] }>} A promise that resolves to an object containing new files, deleted files, and references.
+     * @throws {ToolkitError} If there's an error in exporting the result archive or if the response is empty.
+     */
     public async exportResultArchive(conversationId: string) {
         try {
             const streamingClient = await createCodeWhispererChatStreamingClient()
@@ -321,7 +388,10 @@ export class FeatureDevClient {
      *
      * No need to fail currently if the event fails in the request. In addition, currently there is no need for a return value.
      *
-     * @param conversationId
+     * Sends a feature development telemetry event.
+     *
+     * @param {string} conversationId - The ID of the conversation associated with the telemetry event.
+     * @returns {Promise<void>}
      */
     public async sendFeatureDevTelemetryEvent(conversationId: string) {
         try {

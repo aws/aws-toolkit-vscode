@@ -22,7 +22,14 @@ import { isCodeFile } from '../../shared/filetypes'
 const getSha256 = (file: Buffer) => createHash('sha256').update(file).digest('base64')
 
 /**
- * given the root path of the repo it zips its files in memory and generates a checksum for it.
+ * Prepares repository data by zipping files and generating a checksum.
+ * @param {string[]} repoRootPaths - The root paths of the repository.
+ * @param {CurrentWsFolders} workspaceFolders - The current workspace folders.
+ * @param {TelemetryHelper} telemetry - The telemetry helper instance.
+ * @param {Metric<AmazonqCreateUpload>} span - The metric span for Amazon Q create upload.
+ * @returns {Promise<{zipFileBuffer: Buffer, zipFileChecksum: string}>} A promise that resolves to an object containing the zip file buffer and its checksum.
+ * @throws {ContentLengthError} If the content length exceeds the maximum allowed size.
+ * @throws {PrepareRepoFailedError} If the preparation of the repository data fails.
  */
 export async function prepareRepoData(
     repoRootPaths: string[],
@@ -63,15 +70,18 @@ export async function prepareRepoData(
         const iterator = ignoredExtensionMap.entries()
 
         for (let i = 0; i < ignoredExtensionMap.size; i++) {
-            const [key, value] = iterator.next().value
-            await amznTelemetry.amazonq_bundleExtensionIgnored.run(async (bundleSpan) => {
-                const event = {
-                    filenameExt: key,
-                    count: value,
-                }
+            const nextValue = iterator.next().value
+            if (nextValue) {
+                const [key, value] = nextValue
+                await amznTelemetry.amazonq_bundleExtensionIgnored.run(async (bundleSpan) => {
+                    const event = {
+                        filenameExt: key,
+                        count: value,
+                    }
 
-                bundleSpan.record(event)
-            })
+                    bundleSpan.record(event)
+                })
+            }
         }
 
         telemetry.setRepositorySize(totalBytes)
@@ -92,11 +102,11 @@ export async function prepareRepoData(
 }
 
 /**
- * gets the absolute path from a zip path
- * @param zipFilePath the path in the zip file
- * @param workspacesByPrefix the workspaces with generated prefixes
- * @param workspaceFolders all workspace folders
- * @returns all possible path info
+ * Gets the absolute path from a zip path.
+ * @param {string} zipFilePath - The path in the zip file.
+ * @param {{ [prefix: string]: vscode.WorkspaceFolder } | undefined} workspacesByPrefix - The workspaces with generated prefixes.
+ * @param {CurrentWsFolders} workspaceFolders - All workspace folders.
+ * @returns {{absolutePath: string, relativePath: string, workspaceFolder: vscode.WorkspaceFolder}} All possible path info.
  */
 export function getPathsFromZipFilePath(
     zipFilePath: string,
