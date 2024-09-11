@@ -146,6 +146,19 @@ describe('Ec2ConnectClient', function () {
         })
     })
 
+    describe('cleanUpState', async function () {
+        it('deletes ssh key pair after X seconds of connection estalished', async function () {
+            sinon.stub(SshKeyPair, 'generateSshKeyPair')
+            const deleteKeyPair = sinon.stub(SshKeyPair.prototype, 'delete')
+            const mockKeys = await SshKeyPair.getSshKeyPair('')
+            sinon.assert.notCalled(deleteKeyPair)
+            await client.cleanUpState(mockKeys)
+            sinon.assert.calledOnce(deleteKeyPair)
+
+            sinon.restore()
+        })
+    })
+
     describe('getRemoteUser', async function () {
         let getTargetPlatformNameStub: sinon.SinonStub<[target: string], Promise<string>>
 

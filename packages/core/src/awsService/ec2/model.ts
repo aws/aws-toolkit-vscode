@@ -173,16 +173,12 @@ export class Ec2ConnectionManager {
         }
     }
 
-    private async cleanUpState(keyPair: SshKeyPair): Promise<void> {
+    public async cleanUpState(keyPair: SshKeyPair): Promise<void> {
         const timeout = new Timeout(5000)
         timeout.onCompletion(async () => {
             await keyPair.delete()
         })
-        try {
-            await timeout.promisify()
-        } catch (err) {
-            // Silence timeout error
-        }
+        await showMessageWithCancel('Cleaning up state associated with connection', timeout)
     }
 
     public async tryOpenRemoteConnection(selection: Ec2Selection): Promise<void> {
