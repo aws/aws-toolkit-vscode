@@ -20,15 +20,17 @@ describe('SshKeyUtility', async function () {
         keyPair = await SshKeyPair.getSshKeyPair(keyPath)
     })
 
+    beforeEach(async function () {
+        keyPair = await SshKeyPair.getSshKeyPair(keyPath)
+    })
+
     after(async function () {
         await tryRemoveFolder(temporaryDirectory)
     })
 
-    describe('generateSshKeys', async function () {
-        it('generates key in target file', async function () {
-            const contents = await fs.readFile(keyPath, 'utf-8')
-            assert.notStrictEqual(contents.length, 0)
-        })
+    it('generates key in target file', async function () {
+        const contents = await fs.readFile(keyPath, 'utf-8')
+        assert.notStrictEqual(contents.length, 0)
     })
 
     it('properly names the public key', function () {
@@ -45,5 +47,19 @@ describe('SshKeyUtility', async function () {
         await SshKeyPair.getSshKeyPair(keyPath)
         sinon.assert.notCalled(generateStub)
         sinon.restore()
+    })
+
+    it('deletes keys', async function () {
+        const pubKeyExistsBefore = await fs.pathExists(keyPair.getPublicKeyPath())
+        const privateKeyExistsBefore = await fs.pathExists(keyPair.getPrivateKeyPath())
+
+        await keyPair.delete()
+
+        const pubKeyExistsAfter = await fs.pathExists(keyPair.getPublicKeyPath())
+        const privateKeyExistsAfter = await fs.pathExists(keyPair.getPrivateKeyPath())
+
+        assert.strictEqual(pubKeyExistsBefore && privateKeyExistsBefore, true)
+        assert.strictEqual(pubKeyExistsAfter && privateKeyExistsAfter, false)
+        assert(keyPair.isDeleted())
     })
 })

@@ -8,6 +8,8 @@ import { ChildProcess } from '../../shared/utilities/childProcess'
 
 export class SshKeyPair {
     private publicKeyPath: string
+    private deleted: boolean = false
+
     private constructor(private keyPath: string) {
         this.publicKeyPath = `${keyPath}.pub`
     }
@@ -32,6 +34,10 @@ export class SshKeyPair {
         return this.publicKeyPath
     }
 
+    public getPrivateKeyPath(): string {
+        return this.keyPath
+    }
+
     public async getPublicKey(): Promise<string> {
         const contents = await fs.readFile(this.publicKeyPath, 'utf-8')
         return contents
@@ -40,5 +46,11 @@ export class SshKeyPair {
     public async delete(): Promise<void> {
         await fs.remove(this.publicKeyPath)
         await fs.remove(this.keyPath)
+
+        this.deleted = true
+    }
+
+    public isDeleted(): boolean {
+        return this.deleted
     }
 }
