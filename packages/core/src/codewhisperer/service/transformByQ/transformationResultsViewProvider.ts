@@ -5,7 +5,7 @@
 
 import AdmZip from 'adm-zip'
 import os from 'os'
-import fs from 'fs-extra'
+import fs from 'fs'
 import { parsePatch, applyPatches, ParsedDiff } from 'diff'
 import path from 'path'
 import vscode from 'vscode'
@@ -15,7 +15,6 @@ import { ExportResultArchiveStructure, downloadExportResultArchive } from '../..
 import { getLogger } from '../../../shared/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import * as CodeWhispererConstants from '../../models/constants'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
@@ -128,7 +127,7 @@ export class DiffModel {
         changedFiles.forEach((file) => {
             const pathToTmpFile = path.join(pathToTmpSrcDir, file.oldFileName!.substring(2))
             // use mkdirsSync to create parent directories in pathToTmpFile too
-            fs.mkdirsSync(path.dirname(pathToTmpFile))
+            fs.mkdirSync(path.dirname(pathToTmpFile), { recursive: true })
             const pathToOldFile = path.join(pathToWorkspace, file.oldFileName!.substring(2))
             // pathToOldFile will not exist for new files such as summary.md
             if (fs.existsSync(pathToOldFile)) {
@@ -320,19 +319,32 @@ export class ProposedTransformationExplorer {
                 transformByQState.getJobId(),
                 'ExportResultsArchive.zip'
             )
-
+            let exportResultsArchiveSize = 0
             let downloadErrorMessage = undefined
 
             const cwStreamingClient = await createCodeWhispererChatStreamingClient()
             try {
-                await downloadExportResultArchive(
-                    cwStreamingClient,
-                    {
-                        exportId: transformByQState.getJobId(),
-                        exportIntent: ExportIntent.TRANSFORMATION,
-                    },
-                    pathToArchive
-                )
+                await telemetry.codeTransform_downloadArtifact.run(async () => {
+                    telemetry.record({
+                        codeTransformArtifactType: 'ClientInstructions',
+                        codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+                        codeTransformJobId: transformByQState.getJobId(),
+                    })
+
+                    await downloadExportResultArchive(
+                        cwStreamingClient,
+                        {
+                            exportId: transformByQState.getJobId(),
+                            exportIntent: ExportIntent.TRANSFORMATION,
+                        },
+                        pathToArchive
+                    )
+
+                    // Update downloaded artifact size
+                    exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
+
+                    telemetry.record({ codeTransformTotalByteSize: exportResultsArchiveSize })
+                })
             } catch (e: any) {
                 // user can retry the download
                 downloadErrorMessage = (e as Error).message
@@ -348,32 +360,12 @@ export class ProposedTransformationExplorer {
                 })
                 await setContext('gumby.reviewState', TransformByQReviewStatus.NotStarted)
                 getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
-                telemetry.codeTransform_logApiError.emit({
-                    codeTransformApiNames: 'ExportResultArchive',
-                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformJobId: transformByQState.getJobId(),
-                    codeTransformApiErrorMessage: downloadErrorMessage,
-                    codeTransformRequestId: e.requestId ?? '',
-                    result: MetadataResult.Fail,
-                    reason: 'ExportResultArchiveFailed',
-                })
                 throw new Error('Error downloading diff')
             } finally {
-                // This metric is emitted when user clicks Download Proposed Changes button
-                telemetry.codeTransform_vcsViewerClicked.emit({
-                    codeTransformVCSViewerSrcComponents: 'toastNotification',
-                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformJobId: transformByQState.getJobId(),
-                    result: downloadErrorMessage ? MetadataResult.Fail : MetadataResult.Pass,
-                    reason: downloadErrorMessage,
-                })
                 cwStreamingClient.destroy()
             }
 
-            const exportResultsArchiveSize = (await fs.promises.stat(pathToArchive)).size
-
             let deserializeErrorMessage = undefined
-            const deserializeArchiveStartTime = Date.now()
             let pathContainingArchive = ''
             try {
                 // Download and deserialize the zip
@@ -392,13 +384,6 @@ export class ProposedTransformationExplorer {
                 transformByQState.setResultArchiveFilePath(pathContainingArchive)
                 await setContext('gumby.isSummaryAvailable', true)
 
-                // This metric is only emitted when placed before showInformationMessage
-                telemetry.codeTransform_vcsDiffViewerVisible.emit({
-                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformJobId: transformByQState.getJobId(),
-                    result: MetadataResult.Pass,
-                })
-
                 // Do not await this so that the summary reveals without user needing to close this notification
                 void vscode.window.showInformationMessage(CodeWhispererConstants.viewProposedChangesNotification)
                 transformByQState.getChatControllers()?.transformationFinished.fire({
@@ -416,16 +401,6 @@ export class ProposedTransformationExplorer {
                 void vscode.window.showErrorMessage(
                     `${CodeWhispererConstants.errorDeserializingDiffNotification} ${deserializeErrorMessage}`
                 )
-            } finally {
-                telemetry.codeTransform_jobArtifactDownloadAndDeserializeTime.emit({
-                    codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                    codeTransformJobId: transformByQState.getJobId(),
-                    codeTransformRunTimeLatency: calculateTotalLatency(deserializeArchiveStartTime),
-                    codeTransformTotalByteSize: exportResultsArchiveSize,
-                    codeTransformRuntimeError: deserializeErrorMessage,
-                    result: deserializeErrorMessage ? MetadataResult.Fail : MetadataResult.Pass,
-                    reason: deserializeErrorMessage ? 'DeserializationFailed' : undefined,
-                })
             }
         })
 
@@ -438,10 +413,14 @@ export class ProposedTransformationExplorer {
                 tabID: ChatSessionManager.Instance.getSession().tabID,
             })
             await reset()
-            telemetry.codeTransform_vcsViewerSubmitted.emit({
+
+            telemetry.codeTransform_viewArtifact.emit({
+                codeTransformArtifactType: 'ClientInstructions',
+                codeTransformVCSViewerSrcComponents: 'toastNotification',
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),
                 codeTransformStatus: transformByQState.getStatus(),
+                userChoice: 'Submit',
                 result: MetadataResult.Pass,
             })
         })
@@ -450,12 +429,14 @@ export class ProposedTransformationExplorer {
             diffModel.rejectChanges()
             await reset()
             telemetry.ui_click.emit({ elementId: 'transformationHub_rejectChanges' })
-            telemetry.codeTransform_vcsViewerCanceled.emit({
-                // eslint-disable-next-line id-length
-                codeTransformPatchViewerCancelSrcComponents: 'cancelButton',
+
+            telemetry.codeTransform_viewArtifact.emit({
+                codeTransformArtifactType: 'ClientInstructions',
+                codeTransformVCSViewerSrcComponents: 'toastNotification',
                 codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                 codeTransformJobId: transformByQState.getJobId(),
                 codeTransformStatus: transformByQState.getStatus(),
+                userChoice: 'Cancel',
                 result: MetadataResult.Pass,
             })
         })

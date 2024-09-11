@@ -1,5 +1,6 @@
 out
 CHANGELOG.md
+.github/PULL_REQUEST_TEMPLATE.md
 .changes
 *.d.ts
 *.gen.ts

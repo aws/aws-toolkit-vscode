@@ -14,14 +14,29 @@ import { DefaultTelemetryPublisher } from './telemetryPublisher'
 import { TelemetryFeedback } from './telemetryClient'
 import { TelemetryPublisher } from './telemetryPublisher'
 import { accountMetadataKey, AccountStatus, computeRegionKey } from './telemetryClient'
-import { TelemetryLogger } from './telemetryLogger'
+import { MetadataObj, TelemetryLogger, mapMetadata } from './telemetryLogger'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { getClientId, validateMetricEvent } from './util'
-import { telemetry } from './telemetry'
+import { telemetry, MetricBase } from './telemetry'
 import fs from '../fs/fs'
+import * as collectionUtil from '../utilities/collectionUtils'
 
 export type TelemetryService = ClassToInterfaceType<DefaultTelemetryService>
+
+// This has obvious overlap with telemetryLogger.ts.
+// But that searches for fields by name rather than value.
+// TODO: unify these interfaces.
+export interface MetricQuery {
+    /** Metric name to match against pending items. */
+    readonly name: string
+
+    /** Metric data (names and values). */
+    readonly metadata: MetadataObj
+
+    /** Exclude metadata items matching these keys. */
+    readonly equalityKey?: string[]
+}
 
 export class DefaultTelemetryService {
     public static readonly telemetryCognitoIdKey = 'telemetryId'
@@ -49,12 +64,11 @@ export class DefaultTelemetryService {
      * Use {@link create}() to create an instance of this class.
      */
     protected constructor(
-        private readonly context: ExtensionContext,
         private readonly awsContext: AwsContext,
         private readonly computeRegion?: string,
         publisher?: TelemetryPublisher
     ) {
-        this.persistFilePath = path.join(context.globalStorageUri.fsPath, 'telemetryCache')
+        this.persistFilePath = path.join(globals.context.globalStorageUri.fsPath, 'telemetryCache')
 
         this.startTime = new globals.clock.Date()
 
@@ -70,14 +84,9 @@ export class DefaultTelemetryService {
      * This exists since we need to first ensure the global storage
      * path exists before creating the instance.
      */
-    static async create(
-        context: ExtensionContext,
-        awsContext: AwsContext,
-        computeRegion?: string,
-        publisher?: TelemetryPublisher
-    ) {
-        await DefaultTelemetryService.ensureGlobalStorageExists(context)
-        return new DefaultTelemetryService(context, awsContext, computeRegion, publisher)
+    static async create(awsContext: AwsContext, computeRegion?: string, publisher?: TelemetryPublisher) {
+        await DefaultTelemetryService.ensureGlobalStorageExists(globals.context)
+        return new DefaultTelemetryService(awsContext, computeRegion, publisher)
     }
 
     public get logger(): TelemetryLogger {
@@ -122,6 +131,12 @@ export class DefaultTelemetryService {
             }
         }
         getLogger().verbose(`Telemetry is ${value ? 'enabled' : 'disabled'}`)
+    }
+
+    private _clientId: string | undefined
+    /** Returns the client ID, creating one if it does not exist. */
+    public get clientId(): string {
+        return (this._clientId ??= getClientId(globals.globalState))
     }
 
     public get timer(): NodeJS.Timer | undefined {
@@ -215,12 +230,11 @@ export class DefaultTelemetryService {
 
     private async createDefaultPublisher(): Promise<TelemetryPublisher | undefined> {
         try {
-            // grab our clientId and generate one if it doesn't exist
-            const clientId = getClientId(this.context.globalState)
             // grab our Cognito identityId
             const poolId = DefaultTelemetryClient.config.identityPool
-            const identityMapJson = this.context.globalState.get<string>(
+            const identityMapJson = globals.globalState.tryGet(
                 DefaultTelemetryService.telemetryCognitoIdKey,
+                String,
                 '[]'
             )
             // Maps don't cleanly de/serialize with JSON.parse/stringify so we need to do it ourselves
@@ -230,11 +244,11 @@ export class DefaultTelemetryService {
 
             // if we don't have an identity, get one
             if (!identity) {
-                const identityPublisherTuple = await DefaultTelemetryPublisher.fromDefaultIdentityPool(clientId)
+                const identityPublisherTuple = await DefaultTelemetryPublisher.fromDefaultIdentityPool(this.clientId)
 
                 // save it
                 identityMap.set(poolId, identityPublisherTuple.cognitoIdentityId)
-                await this.context.globalState.update(
+                await globals.globalState.update(
                     DefaultTelemetryService.telemetryCognitoIdKey,
                     JSON.stringify(Array.from(identityMap.entries()))
                 )
@@ -242,7 +256,7 @@ export class DefaultTelemetryService {
                 // return the publisher
                 return identityPublisherTuple.publisher
             } else {
-                return DefaultTelemetryPublisher.fromIdentityId(clientId, identity)
+                return DefaultTelemetryPublisher.fromIdentityId(this.clientId, identity)
             }
         } catch (err) {
             getLogger().error(`Got ${err} while initializing telemetry publisher`)
@@ -348,7 +362,7 @@ export class DefaultTelemetryService {
     }
 
     /**
-     * Queries the current pending (not flushed) metrics.
+     * Queries current pending (not flushed) metrics.
      *
      * @note The underlying metrics queue may be updated or flushed at any time while this iterates.
      */
@@ -358,6 +372,67 @@ export class DefaultTelemetryService {
                 yield m
             }
         }
+    }
+
+    /**
+     * Decides if two metrics are equal, by comparing:
+     * - `MetricDatum.MetricName`
+     * - `MetricDatum.Metadata` fields specified by `equalityKey`
+     *
+     * Note: these `MetricDatum` fields are NOT compared:
+     * - EpochTimestamp
+     * - Unit
+     * - Value
+     * - Passive
+     *
+     * @param metric1 Metric query (name, data, and equalityKey)
+     * @param metric2 Metric
+     *
+     */
+    public isMetricEqual(metric1: MetricQuery, metric2: MetricDatum): boolean {
+        if (metric1.name !== metric2.MetricName) {
+            return false
+        }
+        const equalityKey = metric1.equalityKey ?? metric2.Metadata?.map((o) => o.Value ?? '').filter((o) => !!o) ?? []
+        for (const k of equalityKey) {
+            // XXX: wrap with String() because findPendingMetric() may cast `MetricBase` to `MetadataObj`.
+            // TODO: fix this (use proper types instead of this hack).
+            const val1 = String(metric1.metadata[k])
+            // const val1 = metric1.Metadata?.find((o) => o.Key === k)?.Value
+            const val2 = metric2.Metadata?.find((o) => o.Key === k)?.Value
+            if (val1 !== val2) {
+                return false
+            }
+        }
+        return true
+    }
+
+    /**
+     * Searches current pending (not flushed) metrics for the first item "equal to" `metric`.
+     *
+     * @note The underlying metrics queue may be updated or flushed at any time while this iterates.
+     *
+     * @param name Metric name (ignored if `metric` is `MetricDatum`; required if `metric` is `MetricBase`)
+     * @param metric Metric or metadata
+     * @param equalityKey Fields that determine "equality".
+     *
+     */
+    public async findPendingMetric(
+        name: string,
+        metric: MetricDatum | MetricBase,
+        equalityKey: string[]
+    ): Promise<MetricDatum | undefined> {
+        const metric_ = metric as MetricDatum
+        const isData = !metric_.MetricName
+        const data = isData ? (metric as MetadataObj) : mapMetadata([])(metric_.Metadata ?? [])
+        name = isData ? name : metric_.MetricName
+        const query: MetricQuery = {
+            name: name,
+            metadata: data,
+            equalityKey: equalityKey,
+        }
+        const found = await collectionUtil.first(this.findIter((m) => this.isMetricEqual(query, m)))
+        return found
     }
 }
 

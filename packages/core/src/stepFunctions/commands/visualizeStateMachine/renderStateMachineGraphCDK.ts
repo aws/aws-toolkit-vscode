@@ -23,7 +23,7 @@ function isLocationResource(obj: unknown): obj is { location: vscode.Uri } {
  */
 export const renderCdkStateMachineGraph = Commands.declare(
     'aws.cdk.renderStateMachineGraph',
-    (memento: vscode.Memento, manager: AslVisualizationCDKManager) => async (input?: unknown) => {
+    (manager: AslVisualizationCDKManager) => async (input?: unknown) => {
         const resource = isTreeNode(input) ? unboxTreeNode(input, isLocationResource) : undefined
         const resourceUri = resource?.location ?? (await new PreviewStateMachineCDKWizard().run())?.resource.location
 
@@ -31,6 +31,6 @@ export const renderCdkStateMachineGraph = Commands.declare(
             return
         }
 
-        await manager.visualizeStateMachine(memento, resourceUri)
+        await manager.visualizeStateMachine(resourceUri)
     }
 )

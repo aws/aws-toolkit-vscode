@@ -104,7 +104,7 @@ Checking the state works well if user interactions are not required by the code 
 To handle this, test code can register event handler that listen for when a certain type of UI element is shown. For example, if we wanted to always accept the first item of a quick pick we can do this:
 
 ```ts
-getTestWindow().onDidShowQuickPick(async picker => {
+getTestWindow().onDidShowQuickPick(async (picker) => {
     // Some pickers load items asychronously
     // Wait until the picker is not busy before accepting an item
     await picker.untilReady()
@@ -121,3 +121,9 @@ const secondPicker = await pickers.next()
 ```
 
 Exceptions thrown within one of these handlers will cause the current test to fail. This allows you to make assertions within the callback without worrying about causing the test to hang.
+
+## Common issues
+
+### Stubbing VSCode outside of core
+
+-   Stubbing VSCode imports (like executeCommand) does not work outside of core. For now you will need to put any tests that require spying/stubbing VSCode imports in core until we move more source files into the amazon q package

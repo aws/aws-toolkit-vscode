@@ -9,6 +9,7 @@ import { Auth } from '../auth/auth'
 import * as localizedText from '../shared/localizedText'
 import { getSecondaryAuth, setScopes } from '../auth/secondaryAuth'
 import { getLogger } from '../shared/logger'
+import globals from '../shared/extensionGlobals'
 import { ToolkitError, isAwsError } from '../shared/errors'
 import { MetricName, MetricShapes, telemetry } from '../shared/telemetry/telemetry'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
@@ -29,6 +30,7 @@ import { builderIdStartUrl } from '../auth/sso/model'
 import { showReauthenticateMessage } from '../shared/utilities/messages'
 import { ToolkitPromptSettings } from '../shared/settings'
 import { setContext } from '../shared/vscode/setContext'
+import { withTelemetryContext } from '../shared/telemetry/util'
 
 // Secrets stored on the macOS keychain appear as individual entries for each key
 // This is fine so long as the user has only a few accounts. Otherwise this should
@@ -64,18 +66,16 @@ type ConnectionState = {
     scopeExpired: boolean
 }
 
+const authClassName = 'AuthCodeCatalyst'
+
 export class CodeCatalystAuthenticationProvider {
     public readonly onDidChangeActiveConnection = this.secondaryAuth.onDidChangeActiveConnection
     public readonly onAccessDeniedException = onAccessDeniedException
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChange = this.onDidChangeEmitter.event
 
-    private readonly mementoKey = 'codecatalyst.connections'
-
     public constructor(
         protected readonly storage: CodeCatalystAuthStorage,
-        protected readonly memento: vscode.Memento,
-
         public readonly auth = Auth.instance,
         public readonly secondaryAuth = getSecondaryAuth(
             auth,
@@ -251,9 +251,7 @@ export class CodeCatalystAuthenticationProvider {
                 await upgrade()
             }
 
-            await this.secondaryAuth.useNewConnection(conn)
-
-            return conn
+            return (await this.secondaryAuth.useNewConnection(conn)) as SsoConnection
         }
 
         if (isUpgradeableConnection(conn)) {
@@ -275,7 +273,8 @@ export class CodeCatalystAuthenticationProvider {
         return this.isConnected() && isIdcSsoConnection(this.activeConnection)
     }
 
-    public async connectToAwsBuilderId() {
+    @withTelemetryContext({ name: 'connectToAwsBuilderId', class: authClassName })
+    public async connectToAwsBuilderId(): Promise<SsoConnection> {
         let conn: SsoConnection
         let isConnectionOnboarded: boolean
 
@@ -297,10 +296,11 @@ export class CodeCatalystAuthenticationProvider {
             await this.promptOnboarding()
         }
 
-        return this.secondaryAuth.useNewConnection(conn)
+        return (await this.secondaryAuth.useNewConnection(conn)) as SsoConnection
     }
 
-    public async connectToEnterpriseSso(startUrl: string, region: string) {
+    @withTelemetryContext({ name: 'connectToEnterpriseSso', class: authClassName })
+    public async connectToEnterpriseSso(startUrl: string, region: string): Promise<SsoConnection> {
         let conn: SsoConnection | undefined
         let isConnectionOnboarded: boolean
 
@@ -330,13 +330,13 @@ export class CodeCatalystAuthenticationProvider {
             await this.promptOnboarding()
         }
 
-        await this.secondaryAuth.useNewConnection(conn)
-        return conn
+        return (await this.secondaryAuth.useNewConnection(conn)) as SsoConnection
     }
 
     /**
      * Try to ensure a specific connection is active.
      */
+    @withTelemetryContext({ name: 'tryConnectTo', class: authClassName })
     public async tryConnectTo(connection: { startUrl: string; region: string }) {
         if (!this.isConnectionValid() || connection.startUrl !== this.activeConnection!.startUrl) {
             if (connection.startUrl === builderIdStartUrl) {
@@ -347,14 +347,14 @@ export class CodeCatalystAuthenticationProvider {
         }
     }
 
+    @withTelemetryContext({ name: 'reauthenticate', class: authClassName })
     public async reauthenticate(conn: SsoConnection) {
         try {
             let connToReauth = conn
             // Sanity check - connections with other scopes should have been forced out at this point.
             if (!hasExactScopes(conn, defaultScopes)) {
                 const newConn = await setScopes(conn, defaultScopes)
-                await this.secondaryAuth.useNewConnection(newConn)
-                connToReauth = newConn
+                connToReauth = await this.secondaryAuth.useNewConnection(newConn)
             }
 
             return await this.auth.reauthenticate(connToReauth)
@@ -364,7 +364,7 @@ export class CodeCatalystAuthenticationProvider {
     }
 
     private getStates(): Record<string, ConnectionState> {
-        return this.memento.get(this.mementoKey, {} as Record<string, ConnectionState>)
+        return globals.globalState.tryGet<Record<string, ConnectionState>>('codecatalyst.connections', Object, {})
     }
 
     public tryGetConnectionState(conn: SsoConnection): ConnectionState | undefined {
@@ -380,7 +380,7 @@ export class CodeCatalystAuthenticationProvider {
     }
 
     private async setConnectionState(conn: SsoConnection, state: ConnectionState) {
-        await this.memento.update(this.mementoKey, {
+        await globals.globalState.update('codecatalyst.connections', {
             ...this.getStates(),
             [conn.id]: state,
         })
@@ -424,7 +424,7 @@ export class CodeCatalystAuthenticationProvider {
         return CodeCatalystAuthenticationProvider.#instance
     }
 
-    public static fromContext(ctx: Pick<vscode.ExtensionContext, 'secrets' | 'globalState'>) {
-        return (this.#instance ??= new this(new CodeCatalystAuthStorage(ctx.secrets), ctx.globalState))
+    public static fromContext(ctx: Pick<vscode.ExtensionContext, 'secrets'>) {
+        return (this.#instance ??= new this(new CodeCatalystAuthStorage(ctx.secrets)))
     }
 }

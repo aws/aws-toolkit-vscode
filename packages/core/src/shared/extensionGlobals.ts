@@ -134,6 +134,8 @@ function proxyGlobals(globals_: ToolkitGlobals): ToolkitGlobals {
 let globals = proxyGlobals(resolveGlobalsObject())
 
 export function checkDidReload(context: ExtensionContext): boolean {
+    // TODO: fix this
+    // eslint-disable-next-line aws-toolkits/no-banned-usages
     return !!context.globalState.get<string>('ACTIVATION_LAUNCH_PATH_KEY')
 }
 
@@ -147,6 +149,7 @@ export function initialize(context: ExtensionContext, isWeb: boolean = false): T
         context,
         clock: copyClock(),
         didReload: checkDidReload(context),
+        // eslint-disable-next-line aws-toolkits/no-banned-usages
         globalState: new GlobalState(context.globalState),
         manifestPaths: {} as ToolkitGlobals['manifestPaths'],
         visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],
@@ -175,8 +178,19 @@ interface ToolkitGlobals {
     readonly globalState: GlobalState
     /** Decides the prefix for package.json extension parameters, e.g. commands, 'setContext' values, etc. */
     contextPrefix: string
+
+    //
     // TODO: make the rest of these readonly (or delete them)
+    //
+
+    /**
+     * For "normal" messages, to show output from various application features (the result of
+     * a Lambda invocation, "sam build" output, etc.).
+     */
     outputChannel: OutputChannel
+    /**
+     * Log messages. Use `outputChannel` for application messages.
+     */
     logOutputChannel: OutputChannel
     loginManager: LoginManager
     awsContextCommands: AwsContextCommands

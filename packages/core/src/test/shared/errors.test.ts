@@ -10,12 +10,17 @@ import {
     formatError,
     getErrorMsg,
     getTelemetryReason,
+    getTelemetryReasonDesc,
     getTelemetryResult,
     isNetworkError,
     resolveErrorMessageToDisplay,
     scrubNames,
+    AwsClientResponseError,
     ToolkitError,
+    tryRun,
     UnknownError,
+    DiskCacheError,
+    getErrorId,
 } from '../../shared/errors'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { UnauthorizedException } from '@aws-sdk/client-sso'
@@ -443,6 +448,22 @@ describe('util', function () {
         )
     })
 
+    it('getErrorId', function () {
+        let error = new Error()
+        assert.deepStrictEqual(getErrorId(error), 'Error')
+
+        error = new Error()
+        error.name = 'MyError'
+        assert.deepStrictEqual(getErrorId(error), 'MyError')
+
+        error = new ToolkitError('', { code: 'MyCode' })
+        assert.deepStrictEqual(getErrorId(error), 'MyCode')
+
+        // `code` takes priority over `name`
+        error = new ToolkitError('', { code: 'MyCode', name: 'MyError' })
+        assert.deepStrictEqual(getErrorId(error), 'MyCode')
+    })
+
     it('getErrorMsg()', function () {
         assert.deepStrictEqual(
             getErrorMsg(
@@ -451,36 +472,229 @@ describe('util', function () {
             'unauthorized message'
         )
         assert.deepStrictEqual(getErrorMsg(undefined), undefined)
-        const err = new TestAwsError('ValidationException', 'aws validation msg 1', new Date())
-        assert.deepStrictEqual(getErrorMsg(err), 'aws validation msg 1')
-        ;(err as any).error_description = ''
-        assert.deepStrictEqual(getErrorMsg(err), 'aws validation msg 1')
-        ;(err as any).error_description = {}
-        assert.deepStrictEqual(getErrorMsg(err), 'aws validation msg 1')
-        ;(err as any).error_description = 'aws error desc 1'
-        assert.deepStrictEqual(getErrorMsg(err), 'aws error desc 1')
+        let awsErr = new TestAwsError('ValidationException', 'aws validation msg 1', new Date())
+        assert.deepStrictEqual(getErrorMsg(awsErr), 'aws validation msg 1')
+        ;(awsErr as any).error_description = ''
+        assert.deepStrictEqual(getErrorMsg(awsErr), 'aws validation msg 1')
+        ;(awsErr as any).error_description = {}
+        assert.deepStrictEqual(getErrorMsg(awsErr), 'aws validation msg 1')
+        ;(awsErr as any).error_description = 'aws error desc 1'
+        assert.deepStrictEqual(getErrorMsg(awsErr), 'aws error desc 1')
+
+        // Arg withCause=true
+        let toolkitError = new ToolkitError('ToolkitError Message')
+        assert.deepStrictEqual(getErrorMsg(toolkitError, true), 'ToolkitError Message')
+
+        awsErr = new TestAwsError('ValidationException', 'aws validation msg 1', new Date())
+        toolkitError = new ToolkitError('ToolkitError Message', { cause: awsErr })
+        assert.deepStrictEqual(
+            getErrorMsg(toolkitError, true),
+            `ToolkitError Message | ValidationException: aws validation msg 1`
+        )
+
+        const nestedNestedToolkitError = new Error('C')
+        nestedNestedToolkitError.name = 'NameC'
+        const nestedToolkitError = new ToolkitError('B', { cause: nestedNestedToolkitError, code: 'CodeB' })
+        toolkitError = new ToolkitError('A', { cause: nestedToolkitError, code: 'CodeA' })
+        assert.deepStrictEqual(getErrorMsg(toolkitError, true), `CodeA: A | CodeB: B | NameC: C`)
+
+        // Arg withCause=true excludes the generic 'Error' id
+        const errorWithGenericName = new Error('A') // note this does not set a value for `name`, by default it is 'Error'
+        assert.deepStrictEqual(getErrorMsg(errorWithGenericName, true), `A`)
+        errorWithGenericName.name = 'NameA' // now we set a `name`
+        assert.deepStrictEqual(getErrorMsg(errorWithGenericName, true), `NameA: A`)
     })
+
+    it('getTelemetryReasonDesc()', () => {
+        const err = new Error('Cause Message a/b/c/d.txt')
+        const toolkitError = new ToolkitError('ToolkitError Message', { cause: err, code: 'CodeA' })
+        assert.deepStrictEqual(
+            getTelemetryReasonDesc(toolkitError),
+            'CodeA: ToolkitError Message | Cause Message x/x/x/x.txt'
+        )
+    })
+
+    function makeSyntaxErrorWithSdkClientError() {
+        // The following error messages are not arbitrary, changing them can break functionality
+        const syntaxError: Error = new SyntaxError(
+            'Unexpected token \'<\', "<html><bod"... is not valid JSON Deserialization error: to see the raw response, inspect the hidden field {error}.$response on this object.'
+        )
+        // Under the hood of a SyntaxError may be a hidden field with the real reason for the failure
+        ;(syntaxError as any)['$response'] = { reason: 'SDK Client unexpected error response: data response code: 500' }
+        return syntaxError
+    }
 
     it('isNetworkError()', function () {
         assert.deepStrictEqual(
             isNetworkError(new Error('Failed to establish a socket connection to proxies BLAH BLAH BLAH')),
             true,
-            'Did not return "true" on a VS Code Proxy error'
+            'Did not VS Code Proxy error as network error'
         )
         assert.deepStrictEqual(
             isNetworkError(new Error('I am NOT a network error')),
             false,
             'Incorrectly indicated as network error'
         )
+
+        const awsClientResponseError = AwsClientResponseError.instanceIf(makeSyntaxErrorWithSdkClientError())
+        assert.deepStrictEqual(
+            isNetworkError(awsClientResponseError),
+            true,
+            'Did not indicate SyntaxError as network error'
+        )
+
+        const err = new Error('getaddrinfo ENOENT oidc.us-east-1.amazonaws.com')
+        ;(err as any).code = 'ENOENT'
+        assert.deepStrictEqual(isNetworkError(err), true, 'Did not indicate ENOENT error as network error')
+
+        const ebusyErr = new Error('getaddrinfo EBUSY oidc.us-east-1.amazonaws.com')
+        ;(ebusyErr as any).code = 'EBUSY'
+        assert.deepStrictEqual(isNetworkError(ebusyErr), true, 'Did not indicate EBUSY error as network error')
+
+        // Response code errors
+        let reponseCodeErr = new Error()
+        reponseCodeErr.name = '502'
+        assert.deepStrictEqual(isNetworkError(reponseCodeErr), true, 'Did not indicate 502 error as network error')
+        reponseCodeErr = new Error()
+        reponseCodeErr.name = '200'
+        assert.deepStrictEqual(
+            isNetworkError(reponseCodeErr),
+            false,
+            'Incorrectly indicated 200 error as network error'
+        )
+    })
+
+    describe('AwsClientResponseError', function () {
+        it('handles the happy path cases', function () {
+            const syntaxError = makeSyntaxErrorWithSdkClientError()
+
+            assert.deepStrictEqual(
+                AwsClientResponseError.tryExtractReasonFromSyntaxError(syntaxError),
+                'SDK Client unexpected error response: data response code: 500'
+            )
+            const responseError = AwsClientResponseError.instanceIf(syntaxError)
+            assert(!(responseError instanceof SyntaxError))
+            assert(responseError instanceof Error)
+            assert(responseError instanceof AwsClientResponseError)
+            assert(responseError.message === 'SDK Client unexpected error response: data response code: 500')
+        })
+
+        it('gracefully handles a SyntaxError with missing fields', function () {
+            let syntaxError = makeSyntaxErrorWithSdkClientError()
+
+            // No message about a '$response' field existing
+            syntaxError.message = 'This does not mention a "$response" field existing'
+            assert(!(AwsClientResponseError.instanceIf(syntaxError) instanceof AwsClientResponseError))
+            assert.equal(syntaxError, AwsClientResponseError.instanceIf(syntaxError))
+
+            // No '$response' field in SyntaxError
+            syntaxError = makeSyntaxErrorWithSdkClientError()
+            delete (syntaxError as any)['$response']
+            assertIsAwsClientResponseError(syntaxError, `No '$response' field in SyntaxError | ${syntaxError.message}`)
+            syntaxError = makeSyntaxErrorWithSdkClientError()
+            ;(syntaxError as any)['$response'] = undefined
+            assertIsAwsClientResponseError(syntaxError, `No '$response' field in SyntaxError | ${syntaxError.message}`)
+
+            // No 'reason' in '$response'
+            syntaxError = makeSyntaxErrorWithSdkClientError()
+            let response = (syntaxError as any)['$response']
+            delete response['reason']
+            assertIsAwsClientResponseError(
+                syntaxError,
+                `No 'reason' field in '$response' | ${JSON.stringify(response)} | ${syntaxError.message}`
+            )
+            syntaxError = makeSyntaxErrorWithSdkClientError()
+            response = (syntaxError as any)['$response']
+            response['reason'] = undefined
+            assertIsAwsClientResponseError(
+                syntaxError,
+                `No 'reason' field in '$response' | ${JSON.stringify(response)} | ${syntaxError.message}`
+            )
+
+            function assertIsAwsClientResponseError(e: Error, expectedMessage: string) {
+                assert.deepStrictEqual(AwsClientResponseError.tryExtractReasonFromSyntaxError(e), expectedMessage)
+                assert(AwsClientResponseError.instanceIf(e) instanceof AwsClientResponseError)
+            }
+        })
+    })
+
+    describe(`${DiskCacheError.name}`, function () {
+        function assertIsDiskCacheError(err: unknown, expected: { message: string; code: string }) {
+            const cacheError = DiskCacheError.instanceIf(err)
+            assert(cacheError instanceof DiskCacheError)
+            assert.deepStrictEqual(cacheError.message, expected.message)
+            assert.deepStrictEqual(cacheError.code, expected.code)
+        }
+
+        it('returns the original error on non-disk cache errors', function () {
+            const nonDiskCacheError = new Error('I am not a disk cache error')
+            nonDiskCacheError.name = 'NotADiskCacheError'
+
+            const result = DiskCacheError.instanceIf(nonDiskCacheError)
+
+            assert.deepStrictEqual(result instanceof DiskCacheError, false)
+            assert.deepStrictEqual(result, nonDiskCacheError)
+        })
+
+        it('errors without a message', function () {
+            const eacces = new Error()
+            eacces.name = 'EACCES'
+            assertIsDiskCacheError(eacces, { message: 'No msg', code: 'EACCES' })
+
+            const ebadf = new Error()
+            ebadf.name = 'EBADF'
+            assertIsDiskCacheError(ebadf, { message: 'No msg', code: 'EBADF' })
+        })
+
+        /**
+         * The error message is part of the heuristic to determine if certain errors
+         * can be a {@link DiskCacheError}. This asserts that if the message changes, the
+         * error can no longer be a {@link DiskCacheError}.
+         */
+        function assertExpectedMessageRequired(error: Error) {
+            error.message = 'Not the expected message'
+            assert.deepStrictEqual(DiskCacheError.instanceIf(error) instanceof DiskCacheError, false)
+            assert.deepStrictEqual(DiskCacheError.instanceIf(error), error)
+        }
+
+        it('ENOSPC', function () {
+            const error = new Error('Blah blah no space left on device blah blah')
+            error.name = 'ENOSPC'
+            assertIsDiskCacheError(error, {
+                message: 'Blah blah no space left on device blah blah',
+                code: 'ENOSPC',
+            })
+            assertExpectedMessageRequired(error)
+        })
+
+        it('EPERM', function () {
+            const error = new Error('Blah blah operation not permitted blah blah')
+            error.name = 'EPERM'
+            assertIsDiskCacheError(error, {
+                message: 'Blah blah operation not permitted blah blah',
+                code: 'EPERM',
+            })
+            assertExpectedMessageRequired(error)
+        })
+
+        it('EBUSY', function () {
+            const error = new Error('Blah blah resource busy or locked blah blah')
+            error.name = 'EBUSY'
+            assertIsDiskCacheError(error, {
+                message: 'Blah blah resource busy or locked blah blah',
+                code: 'EBUSY',
+            })
+            assertExpectedMessageRequired(error)
+        })
     })
 
     it('scrubNames()', async function () {
         const fakeUser = 'jdoe123'
         assert.deepStrictEqual(scrubNames('', fakeUser), '')
-        assert.deepStrictEqual(scrubNames('a ./ b', fakeUser), 'a ././ b') // TODO: fix this
-        assert.deepStrictEqual(scrubNames('a ../ b', fakeUser), 'a .././ b') // TODO: fix this
-        assert.deepStrictEqual(scrubNames('a /.. b', fakeUser), 'a /.. b') // TODO: fix this
-        assert.deepStrictEqual(scrubNames('a //..// b', fakeUser), 'a //..//.// b') // TODO: fix this
+        assert.deepStrictEqual(scrubNames('a ./ b', fakeUser), 'a ./ b')
+        assert.deepStrictEqual(scrubNames('a ../ b', fakeUser), 'a ../ b')
+        assert.deepStrictEqual(scrubNames('a /.. b', fakeUser), 'a /.. b')
+        assert.deepStrictEqual(scrubNames('a //..// b', fakeUser), 'a //..// b')
         assert.deepStrictEqual(scrubNames('a / b', fakeUser), 'a / b')
         assert.deepStrictEqual(scrubNames('a ~/ b', fakeUser), 'a ~/ b')
         assert.deepStrictEqual(scrubNames('a //// b', fakeUser), 'a //// b')
@@ -498,9 +712,17 @@ describe('util', function () {
             scrubNames('user: jdoe123 file: C:/Users/user1/.aws/sso/cache/abc123.json (regex: /foo/)', fakeUser),
             'user: x file: C:/Users/x/.aws/sso/cache/x.json (regex: /x/)'
         )
-        assert.deepStrictEqual(scrubNames('/Users/user1/foo.jso (?)', fakeUser), '/Users/x/x.jso (?)')
-        assert.deepStrictEqual(scrubNames('/Users/user1/foo.js (?)', fakeUser), '/Users/x/x.js (?)')
-        assert.deepStrictEqual(scrubNames('/Users/user1/foo.longextension (?)', fakeUser), '/Users/x/x (?)')
+        assert.deepStrictEqual(scrubNames('/Users/user1/foo.jso', fakeUser), '/Users/x/x.jso')
+        assert.deepStrictEqual(scrubNames('/Users/user1/foo.js', fakeUser), '/Users/x/x.js')
+        assert.deepStrictEqual(scrubNames('/Users/user1/noFileExtension', fakeUser), '/Users/x/x')
+        assert.deepStrictEqual(scrubNames('/Users/user1/minExtLength.a', fakeUser), '/Users/x/x.a')
+        assert.deepStrictEqual(scrubNames('/Users/user1/extIsNum.123456', fakeUser), '/Users/x/x.123456')
+        assert.deepStrictEqual(
+            scrubNames('/Users/user1/foo.looooooooongextension', fakeUser),
+            '/Users/x/x.looooooooongextension'
+        )
+        assert.deepStrictEqual(scrubNames('/Users/user1/multipleExts.ext1.ext2.ext3', fakeUser), '/Users/x/x.ext3')
+
         assert.deepStrictEqual(scrubNames('c:\\fooß\\bar\\baz.txt', fakeUser), 'c:/xß/x/x.txt')
         assert.deepStrictEqual(
             scrubNames('uhh c:\\path with\\ spaces \\baz.. hmm...', fakeUser),
@@ -521,5 +743,51 @@ describe('util', function () {
         assert.deepStrictEqual(scrubNames('unix ~jdoe123/.aws/config failed', fakeUser), 'unix ~x/.aws/config failed')
         assert.deepStrictEqual(scrubNames('unix ../../.aws/config failed', fakeUser), 'unix ../../.aws/config failed')
         assert.deepStrictEqual(scrubNames('unix ~/.aws/config failed', fakeUser), 'unix ~/.aws/config failed')
+    })
+})
+
+describe('errors.tryRun()', function () {
+    it('swallows error from sync fn', function () {
+        const err = new Error('err')
+        tryRun(
+            () => {
+                throw err
+            },
+            () => false
+        )
+    })
+
+    it('swallows error from async fn', async function () {
+        const err = new Error('err')
+        await tryRun(
+            async () => {
+                throw err
+            },
+            () => false
+        )
+    })
+
+    it('throws error from sync fn', function () {
+        const err = new Error('err')
+        assert.throws(() => {
+            tryRun(
+                () => {
+                    throw err
+                },
+                () => true
+            )
+        }, err)
+    })
+
+    it('throws error from async fn', async function () {
+        const err = new Error('err')
+        await assert.rejects(async () => {
+            await tryRun(
+                async () => {
+                    throw err
+                },
+                () => true
+            )
+        }, err)
     })
 })

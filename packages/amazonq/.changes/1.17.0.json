@@ -1,0 +1,18 @@
+{
+	"date": "2024-07-25",
+	"version": "1.17.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Dev and Transform introduction text formatted incorrectly"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /dev: update error message for code gen timeout and include backfill for error name"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Sign-in page may fail to render in rare circumstances."
+		}
+	]
+}

@@ -1,3 +1,29 @@
+## 3.23.0 2024-09-05
+
+- **Bug Fix** Network errors causing premature SSO logout
+- **Bug Fix** Fix SyntaxError causing premature expiration (edge case)
+
+## 3.22.0 2024-08-29
+
+- **Bug Fix** Auth: `SyntaxError` causing unexpected SSO logout
+- **Bug Fix** Auth: Users may be silently logged out due to network issues when starting the extension.
+
+## 3.21.0 2024-08-22
+
+- **Bug Fix** Various backend fixes
+
+## 3.17.0 2024-07-29
+
+- **Bug Fix** FileNotFound error causing early SSO expiration
+
+## 3.16.0 2024-07-25
+
+- **Bug Fix** AccessAnalyzer: error when running CheckNoPublicAccess with only role trust policy in template
+
+## 3.15.0 2024-07-18
+
+- **Bug Fix** Unexpected SSO expiration on Windows due to EPERM
+
 ## 3.14.0 2024-07-11
 
 - **Bug Fix** App composer generate suggestion unclickable when logged in

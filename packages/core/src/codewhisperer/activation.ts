@@ -39,7 +39,6 @@ import {
     connectWithCustomization,
     applySecurityFix,
     signoutCodeWhisperer,
-    fetchFeatureConfigsCmd,
     toggleCodeScans,
     registerToolkitApiCallback,
 } from './commands/basicCommands'
@@ -70,7 +69,8 @@ import { securityScanLanguageContext } from './util/securityScanLanguageContext'
 import { registerWebviewErrorHandler } from '../webviews/server'
 import { logAndShowError, logAndShowWebviewError } from '../shared/utilities/logAndShowUtils'
 import { openSettings } from '../shared/settings'
-import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
+import { telemetry } from '../shared/telemetry'
+import { FeatureConfigProvider } from '../shared/featureConfig'
 
 let localize: nls.LocalizeFunc
 
@@ -252,8 +252,6 @@ export async function activate(context: ExtContext): Promise<void> {
         selectCustomizationPrompt.register(),
         // notify new customizations
         notifyNewCustomizationsCmd.register(),
-        // fetch feature configs
-        fetchFeatureConfigsCmd.register(),
         /**
          * On recommendation acceptance
          */
@@ -285,34 +283,35 @@ export async function activate(context: ExtContext): Promise<void> {
             ImportAdderProvider.instance
         ),
         vscode.languages.registerHoverProvider(
-            [...CodeWhispererConstants.platformLanguageIds],
+            [...CodeWhispererConstants.securityScanLanguageIds],
             SecurityIssueHoverProvider.instance
         ),
         vscode.languages.registerCodeActionsProvider(
-            [...CodeWhispererConstants.platformLanguageIds],
+            [...CodeWhispererConstants.securityScanLanguageIds],
             SecurityIssueCodeActionProvider.instance
         ),
         vscode.commands.registerCommand('aws.amazonq.openEditorAtRange', openEditorAtRange)
     )
 
-    await auth.restore()
+    // run the auth startup code with context for telemetry
+    await telemetry.function_call.run(
+        async () => {
+            await auth.restore()
+            await auth.clearExtraConnections()
 
-    // Amazon Q may have code catalyst only credentials stored because it used to import the credentials stored on disk in the environment.
-    if (getCodeCatalystDevEnvId() !== undefined) {
-        for (const conn of await auth.auth.listConnections()) {
-            if (conn.id !== auth.conn?.id) {
-                getLogger().debug('forgetting extra amazon q connection in CoCa dev env: %O', conn)
-                await auth.auth.forgetConnection(conn)
+            if (auth.isConnectionExpired()) {
+                auth.showReauthenticatePrompt().catch((e) => {
+                    const defaulMsg = localize('AWS.generic.message.error', 'Failed to reauth:')
+                    void logAndShowError(localize, e, 'showReauthenticatePrompt', defaulMsg)
+                })
+                if (auth.isEnterpriseSsoInUse()) {
+                    await auth.notifySessionConfiguration()
+                }
             }
-        }
-    }
+        },
+        { emit: false, functionId: { name: 'activateCwCore' } }
+    )
 
-    if (auth.isConnectionExpired()) {
-        auth.showReauthenticatePrompt().catch((e) => {
-            const defaulMsg = localize('AWS.generic.message.error', 'Failed to reauth:')
-            void logAndShowError(localize, e, 'showReauthenticatePrompt', defaulMsg)
-        })
-    }
     if (auth.isValidEnterpriseSsoInUse()) {
         await notifyNewCustomizations()
     }
@@ -453,6 +452,7 @@ export async function activate(context: ExtContext): Promise<void> {
     }
 
     async function setSubscriptionsforInlineCompletion() {
+        RecommendationHandler.instance.subscribeSuggestionCommands()
         /**
          * Automated trigger
          */
@@ -591,6 +591,10 @@ export async function activate(context: ExtContext): Promise<void> {
             })
         )
     }
+
+    void FeatureConfigProvider.instance.fetchFeatureConfigs().catch((error) => {
+        getLogger().error('Failed to fetch feature configs - %s', error)
+    })
 
     await Commands.tryExecute('aws.amazonq.refreshConnectionCallback')
     container.ready()

@@ -8,7 +8,6 @@ import { VirtualFileSystem } from '../shared/virtualFilesystem'
 import type { CancellationTokenSource } from 'vscode'
 import { Messenger } from './controllers/chat/messenger/messenger'
 import { FeatureDevClient } from './client/featureDev'
-import { featureDevScheme } from './constants'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { CodeReference } from '../amazonq/webview/ui/connector'
 import { DiffTreeFileInfo } from '../amazonq/webview/ui/diffTree/types'
@@ -30,6 +29,15 @@ export enum DevPhase {
     CODEGEN = 'Codegen',
 }
 
+export enum CodeGenerationStatus {
+    COMPLETE = 'Complete',
+    PREDICT_READY = 'predict-ready',
+    IN_PROGRESS = 'InProgress',
+    PREDICT_FAILED = 'predict-failed',
+    DEBATE_FAILED = 'debate-failed',
+    FAILED = 'Failed',
+}
+
 export enum FollowUpTypes {
     GenerateCode = 'GenerateCode',
     InsertCode = 'InsertCode',
@@ -42,7 +50,7 @@ export enum FollowUpTypes {
     SendFeedback = 'SendFeedback',
 }
 
-export type SessionStatePhase = DevPhase.INIT | DevPhase.APPROACH | DevPhase.CODEGEN
+export type SessionStatePhase = DevPhase.INIT | DevPhase.CODEGEN
 
 export type CurrentWsFolders = [vscode.WorkspaceFolder, ...vscode.WorkspaceFolder[]]
 
@@ -52,7 +60,6 @@ export interface SessionState {
     readonly references?: CodeReference[]
     readonly phase?: SessionStatePhase
     readonly uploadId: string
-    approach: string
     readonly tokenSource: CancellationTokenSource
     readonly tabID: string
     interact(action: SessionStateAction): Promise<SessionStateInteraction>
@@ -96,14 +103,6 @@ export interface SessionInfo {
 
 export interface SessionStorage {
     [key: string]: SessionInfo
-}
-
-export function createUri(filePath: string, tabID?: string) {
-    return vscode.Uri.from({
-        scheme: featureDevScheme,
-        path: filePath,
-        ...(tabID ? { query: `tabID=${tabID}` } : {}),
-    })
 }
 
 export type LLMResponseType = 'EMPTY' | 'INVALID_STATE' | 'VALID'

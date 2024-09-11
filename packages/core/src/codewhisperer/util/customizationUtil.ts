@@ -4,16 +4,9 @@
  */
 
 import globals from '../../shared/extensionGlobals'
-import {
-    customLearnMoreUri,
-    newCustomizationsAvailableKey,
-    newCustomizationMessage,
-    persistedCustomizationsKey,
-    selectedCustomizationKey,
-} from '../models/constants'
+import { customLearnMoreUri, newCustomizationMessage } from '../models/constants'
 import { localize, openUrl } from '../../shared/utilities/vsCodeUtils'
 import { AuthUtil } from './authUtil'
-import { set } from './commonUtil'
 import * as vscode from 'vscode'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { DataQuickPickItem, showQuickPick } from '../../shared/ui/pickerPrompter'
@@ -25,7 +18,7 @@ import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { parse } from '@aws-sdk/util-arn-parser'
 import { Commands } from '../../shared/vscode/commands2'
 import { vsCodeState } from '../models/model'
-import { FeatureConfigProvider } from '../service/featureConfigProvider'
+import { FeatureConfigProvider } from '../../shared/featureConfig'
 
 /**
  *
@@ -107,8 +100,11 @@ export const getSelectedCustomization = (): Customization => {
         return baseCustomization
     }
 
-    const selectedCustomizationArr =
-        globals.context.globalState.get<{ [label: string]: Customization }>(selectedCustomizationKey) || {}
+    const selectedCustomizationArr = globals.globalState.tryGet<{ [label: string]: Customization }>(
+        'CODEWHISPERER_SELECTED_CUSTOMIZATION',
+        Object,
+        {}
+    )
     const result = selectedCustomizationArr[AuthUtil.instance.conn.label] || baseCustomization
 
     // A/B case
@@ -130,12 +126,15 @@ export const setSelectedCustomization = async (customization: Customization) => 
     if (!AuthUtil.instance.isValidEnterpriseSsoInUse() || !AuthUtil.instance.conn) {
         return
     }
-    const selectedCustomizationObj =
-        globals.context.globalState.get<{ [label: string]: Customization }>(selectedCustomizationKey) || {}
+    const selectedCustomizationObj = globals.globalState.tryGet<{ [label: string]: Customization }>(
+        'CODEWHISPERER_SELECTED_CUSTOMIZATION',
+        Object,
+        {}
+    )
     selectedCustomizationObj[AuthUtil.instance.conn.label] = customization
     getLogger().debug(`Selected customization ${customization.name} for ${AuthUtil.instance.conn.label}`)
 
-    await set(selectedCustomizationKey, selectedCustomizationObj, globals.context.globalState)
+    await globals.globalState.update('CODEWHISPERER_SELECTED_CUSTOMIZATION', selectedCustomizationObj)
     vsCodeState.isFreeTierLimitReached = false
     await Commands.tryExecute('aws.amazonq.refreshStatusBar')
 }
@@ -144,8 +143,11 @@ export const getPersistedCustomizations = (): Customization[] => {
     if (!AuthUtil.instance.isValidEnterpriseSsoInUse() || !AuthUtil.instance.conn) {
         return []
     }
-    const persistedCustomizationsObj =
-        globals.context.globalState.get<{ [label: string]: Customization[] }>(persistedCustomizationsKey) || {}
+    const persistedCustomizationsObj = globals.globalState.tryGet<{ [label: string]: Customization[] }>(
+        'CODEWHISPERER_PERSISTED_CUSTOMIZATIONS',
+        Object,
+        {}
+    )
     return persistedCustomizationsObj[AuthUtil.instance.conn.label] || []
 }
 
@@ -153,18 +155,21 @@ export const setPersistedCustomizations = async (customizations: Customization[]
     if (!AuthUtil.instance.isValidEnterpriseSsoInUse() || !AuthUtil.instance.conn) {
         return
     }
-    const persistedCustomizationsObj =
-        globals.context.globalState.get<{ [label: string]: Customization[] }>(persistedCustomizationsKey) || {}
+    const persistedCustomizationsObj = globals.globalState.tryGet<{ [label: string]: Customization[] }>(
+        'CODEWHISPERER_PERSISTED_CUSTOMIZATIONS',
+        Object,
+        {}
+    )
     persistedCustomizationsObj[AuthUtil.instance.conn.label] = customizations
-    await set(persistedCustomizationsKey, persistedCustomizationsObj, globals.context.globalState)
+    await globals.globalState.update('CODEWHISPERER_PERSISTED_CUSTOMIZATIONS', persistedCustomizationsObj)
 }
 
 export const getNewCustomizationsAvailable = () => {
-    return globals.context.globalState.get<number>(newCustomizationsAvailableKey) ?? 0
+    return globals.globalState.tryGet('aws.amazonq.codewhisperer.newCustomizations', Number, 0)
 }
 
 export const setNewCustomizationsAvailable = async (num: number) => {
-    await set(newCustomizationsAvailableKey, num, globals.context.globalState)
+    await globals.globalState.update('aws.amazonq.codewhisperer.newCustomizations', num)
     vsCodeState.isFreeTierLimitReached = false
 }
 

@@ -13,7 +13,7 @@ import * as localizedText from '../shared/localizedText'
 import { Credentials } from '@aws-sdk/types'
 import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
 import { Timeout } from '../shared/utilities/timeoutUtils'
-import { errorCode, isAwsError, isNetworkError, ToolkitError, UnknownError } from '../shared/errors'
+import { DiskCacheError, errorCode, isAwsError, isNetworkError, ToolkitError, UnknownError } from '../shared/errors'
 import { getCache } from './sso/cache'
 import { isNonNullable, Mutable } from '../shared/utilities/tsUtils'
 import { builderIdStartUrl, SsoToken, truncateStartUrl } from './sso/model'
@@ -61,7 +61,9 @@ import {
 } from './connection'
 import { isSageMaker, isCloud9, isAmazonQ } from '../shared/extensionUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { randomUUID } from '../common/crypto'
+import { randomUUID } from '../shared/crypto'
+import { asStringifiedStack } from '../shared/telemetry/spans'
+import { withTelemetryContext } from '../shared/telemetry/util'
 
 interface AuthService {
     /**
@@ -124,6 +126,9 @@ export type AuthType = Auth
 export type DeletedConnection = { connId: Connection['id']; storedProfile?: StoredProfile }
 type DeclaredConnection = Pick<SsoProfile, 'ssoRegion' | 'startUrl'> & { source: string }
 
+// Must be declared outside of class for use by decorator
+const authClassName = 'Auth'
+
 export class Auth implements AuthService, ConnectionManager {
     readonly #ssoCache = getCache()
     readonly #validationErrors = new Map<Connection['id'], Error>()
@@ -162,6 +167,7 @@ export class Auth implements AuthService, ConnectionManager {
         return Object.values(this._declaredConnections)
     }
 
+    @withTelemetryContext({ name: 'restorePreviousSession', class: authClassName })
     public async restorePreviousSession(): Promise<Connection | undefined> {
         const id = this.store.getCurrentProfileId()
         if (id === undefined) {
@@ -177,18 +183,13 @@ export class Auth implements AuthService, ConnectionManager {
 
     public async reauthenticate({ id }: Pick<SsoConnection, 'id'>, invalidate?: boolean): Promise<SsoConnection>
     public async reauthenticate({ id }: Pick<IamConnection, 'id'>, invalidate?: boolean): Promise<IamConnection>
+    @withTelemetryContext({ name: 'reauthenticate', class: authClassName })
     public async reauthenticate({ id }: Pick<Connection, 'id'>, invalidate?: boolean): Promise<Connection> {
         const shouldInvalidate = invalidate ?? true
         const profile = this.store.getProfileOrThrow(id)
         if (profile.type === 'sso') {
             const provider = this.getSsoTokenProvider(id, profile)
-
-            // We cannot easily set isReAuth inside the createToken() call,
-            // so we need to set it here.
-            await telemetry.aws_loginWithBrowser.run(async (span) => {
-                span.record({ isReAuth: true, credentialStartUrl: profile.startUrl })
-                await this.authenticate(id, () => provider.createToken(), shouldInvalidate)
-            })
+            await this.authenticate(id, () => provider.createToken({ isReAuth: true }), shouldInvalidate)
 
             return this.getSsoConnection(id, profile)
         } else {
@@ -201,6 +202,7 @@ export class Auth implements AuthService, ConnectionManager {
 
     public async useConnection({ id }: Pick<SsoConnection, 'id'>): Promise<SsoConnection>
     public async useConnection({ id }: Pick<IamConnection, 'id'>): Promise<IamConnection>
+    @withTelemetryContext({ name: 'useConnection', class: authClassName })
     public async useConnection({ id }: Pick<Connection, 'id'>): Promise<Connection> {
         await this.refreshConnectionState({ id })
 
@@ -217,6 +219,7 @@ export class Auth implements AuthService, ConnectionManager {
         return conn
     }
 
+    @withTelemetryContext({ name: 'logout', class: authClassName })
     public async logout(): Promise<void> {
         if (this.activeConnection === undefined) {
             return
@@ -228,6 +231,7 @@ export class Auth implements AuthService, ConnectionManager {
         this.#onDidChangeActiveConnection.fire(undefined)
     }
 
+    @withTelemetryContext({ name: 'listConnections', class: authClassName })
     public async listConnections(): Promise<Connection[]> {
         await loadIamProfilesIntoStore(this.store, this.iamProfileProvider)
 
@@ -287,6 +291,7 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     public async createConnection(profile: SsoProfile): Promise<SsoConnection>
+    @withTelemetryContext({ name: 'createConnection', class: authClassName })
     public async createConnection(profile: Profile): Promise<Connection> {
         if (profile.type === 'iam') {
             throw new Error('Creating IAM connections is not supported')
@@ -302,7 +307,7 @@ export class Auth implements AuthService, ConnectionManager {
 
         // Remove the split session logout prompt, if it exists.
         if (!isAmazonQ()) {
-            await globals.context.globalState.update(SessionSeparationPrompt.instance.dismissKey, true)
+            await globals.globalState.update('aws.toolkit.separationPromptDismissed', true)
         }
 
         try {
@@ -317,6 +322,7 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
+    @withTelemetryContext({ name: 'deleteConnection', class: authClassName })
     public async deleteConnection(connection: Pick<Connection, 'id'>): Promise<void> {
         const connId = connection.id
         const profile = this.store.getProfile(connId)
@@ -349,6 +355,7 @@ export class Auth implements AuthService, ConnectionManager {
      *
      * Forget about a connection without logging out, invalidating it, or deleting it from disk.
      */
+    @withTelemetryContext({ name: 'forgetConnection', class: authClassName })
     public async forgetConnection(connection: Pick<Connection, 'id'>): Promise<void> {
         const connId = connection.id
         const profile = this.store.getProfile(connId)
@@ -361,6 +368,7 @@ export class Auth implements AuthService, ConnectionManager {
         this.#onDidDeleteConnection.fire({ connId, storedProfile: profile })
     }
 
+    @withTelemetryContext({ name: 'clearStaleLinkedIamConnections', class: authClassName })
     private async clearStaleLinkedIamConnections() {
         // Updates our store, evicting stale IAM credential profiles if the
         // SSO they are linked to was removed.
@@ -379,6 +387,7 @@ export class Auth implements AuthService, ConnectionManager {
      *
      * Put the SSO connection in to an expired state
      */
+    @withTelemetryContext({ name: 'expireConnection', class: authClassName })
     public async expireConnection(conn: Pick<SsoConnection, 'id'>): Promise<void> {
         getLogger().info(`auth: Expiring connection ${conn.id}`)
         const profile = this.store.getProfileOrThrow(conn.id)
@@ -386,7 +395,7 @@ export class Auth implements AuthService, ConnectionManager {
             throw new ToolkitError('Auth: Cannot force expire an IAM connection')
         }
         const provider = this.getSsoTokenProvider(conn.id, profile)
-        await provider.invalidate()
+        await provider.invalidate('devModeManualExpiration')
         // updates the state of the connection
         await this.refreshConnectionState(conn)
     }
@@ -404,6 +413,7 @@ export class Auth implements AuthService, ConnectionManager {
      * Alternatively you can use the `getToken()` call on an SSO connection to do the same thing,
      * but it will additionally prompt for reauthentication if the connection is invalid.
      */
+    @withTelemetryContext({ name: 'refreshConnectionState', class: authClassName })
     public async refreshConnectionState(connection?: Pick<Connection, 'id'>): Promise<undefined> {
         if (connection === undefined) {
             return
@@ -422,6 +432,7 @@ export class Auth implements AuthService, ConnectionManager {
         profile: SsoProfile,
         invalidate?: boolean
     ): Promise<SsoConnection>
+    @withTelemetryContext({ name: 'updateConnection', class: authClassName })
     public async updateConnection(
         connection: Pick<Connection, 'id'>,
         profile: Profile,
@@ -464,6 +475,7 @@ export class Auth implements AuthService, ConnectionManager {
      *
      * @returns undefined if authentication succeeds, otherwise object with error info
      */
+    @withTelemetryContext({ name: 'authenticateData', class: authClassName })
     public async authenticateData(data: StaticProfile): Promise<StaticProfileKeyErrorMessage | undefined> {
         const tempId = await this.addTempCredential(data)
         const tempIdString = asString(tempId)
@@ -513,6 +525,7 @@ export class Auth implements AuthService, ConnectionManager {
      * For SSO, this involves an API call to clear server-side state. The call happens
      * before the local token(s) are cleared as they are needed in the request.
      */
+    @withTelemetryContext({ name: 'invalidateConnection', class: authClassName })
     private async invalidateConnection(id: Connection['id'], opt?: { skipGlobalLogout?: boolean }) {
         getLogger().info(`auth: Invalidating connection: ${id}`)
         const profile = this.store.getProfileOrThrow(id)
@@ -530,7 +543,8 @@ export class Auth implements AuthService, ConnectionManager {
 
             // XXX: never drop tokens in a dev environment, unless you are Amazon Q!
             if (getCodeCatalystDevEnvId() === undefined || isAmazonQ()) {
-                await provider.invalidate()
+                // TODO: Require invalidateConnection() to require a reason and then pass it in to the following instead
+                await provider.invalidate('explicitInvalidation')
             }
         } else if (profile.type === 'iam') {
             globals.loginManager.store.invalidateCredentials(fromString(id))
@@ -539,6 +553,7 @@ export class Auth implements AuthService, ConnectionManager {
         await this.updateConnectionState(id, 'invalid')
     }
 
+    @withTelemetryContext({ name: 'updateConnectionState', class: authClassName })
     private async updateConnectionState(id: Connection['id'], connectionState: ProfileMetadata['connectionState']) {
         getLogger().info(`auth: Updating connection state of ${id} to ${connectionState}`)
 
@@ -549,24 +564,50 @@ export class Auth implements AuthService, ConnectionManager {
 
         const oldProfile = this.store.getProfileOrThrow(id)
         if (oldProfile.metadata.connectionState === connectionState) {
+            // new state is same as old state, no need to do anything
             return oldProfile
         }
 
-        const profile = await this.store.updateMetadata(id, { connectionState })
-        if (connectionState !== 'invalid') {
-            this.#validationErrors.delete(id)
-            this.#invalidCredentialsTimeouts.get(id)?.dispose()
-        }
+        // Emit an event for when the connection changes state. This the the root of the
+        // state change. We rely on functions higher in the stack to have added their contexts
+        // so this event has useful information in the `source` field.
+        return telemetry.auth_modifyConnection.run(async (span) => {
+            // if we have an Sso session that became invalid, we will add its session duration to the event
+            const ssoSessionDuration =
+                connectionState === 'invalid' && oldProfile.type === 'sso'
+                    ? this.getSsoTokenProvider(id, oldProfile).getSessionDuration()
+                    : undefined
+            span.record({
+                action: 'updateConnectionState',
+                id,
+                connectionState,
+                source: asStringifiedStack(telemetry.getFunctionStack()),
+                credentialStartUrl: oldProfile.type === 'sso' ? oldProfile.startUrl : undefined,
+                sessionDuration: ssoSessionDuration,
+            })
 
-        if (this.#activeConnection?.id === id) {
-            this.#activeConnection.state = connectionState
-            this.#onDidChangeActiveConnection.fire(this.#activeConnection)
-        }
-        this.#onDidChangeConnectionState.fire({ id, state: connectionState })
+            const profile = await this.store.updateMetadata(id, { connectionState })
+            if (connectionState !== 'invalid') {
+                this.#validationErrors.delete(id)
+                this.#invalidCredentialsTimeouts.get(id)?.dispose()
+            }
 
-        return profile
+            if (this.#activeConnection?.id === id) {
+                this.#activeConnection.state = connectionState
+                this.#onDidChangeActiveConnection.fire(this.#activeConnection)
+            }
+            this.#onDidChangeConnectionState.fire({ id, state: connectionState })
+
+            return profile
+        })
     }
 
+    /**
+     * Updates the state of the connection based on a series of validations.
+     * Will throw for network errors encoutered during connection checks, but the state will not be
+     * invalidated for these errors.
+     */
+    @withTelemetryContext({ name: 'validateConnection', class: authClassName })
     private async validateConnection<T extends Profile>(id: Connection['id'], profile: StoredProfile<T>) {
         const runCheck = async () => {
             if (profile.type === 'sso') {
@@ -611,7 +652,7 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private async handleSsoTokenError(id: Connection['id'], err: unknown) {
-        this.throwOnNetworkError(err)
+        this.throwOnRecoverableError(err)
 
         this.#validationErrors.set(id, UnknownError.cast(err))
         getLogger().info(`auth: Handling validation error of connection: ${id}`)
@@ -747,10 +788,12 @@ export class Auth implements AuthService, ConnectionManager {
             state: profile.metadata.connectionState,
             label: profile.metadata?.label ?? this.getSsoProfileLabel(profile),
             getToken: () => this.getToken(id, provider),
+            getRegistration: () => provider.getClientRegistration(),
         }
     }
 
     private readonly authenticate = keyedDebounce(this._authenticate.bind(this))
+    @withTelemetryContext({ name: 'authenticate', class: authClassName })
     private async _authenticate<T>(id: Connection['id'], callback: () => Promise<T>, invalidate?: boolean): Promise<T> {
         const originalState = this.getConnectionState({ id }) ?? 'unauthenticated'
         await this.updateConnectionState(id, 'authenticating')
@@ -784,9 +827,10 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     private readonly getToken = keyedDebounce(this._getToken.bind(this))
+    @withTelemetryContext({ name: '_getToken', class: authClassName })
     private async _getToken(id: Connection['id'], provider: SsoAccessTokenProvider): Promise<SsoToken> {
         const token = await provider.getToken().catch((err) => {
-            this.throwOnNetworkError(err)
+            this.throwOnRecoverableError(err)
 
             this.#validationErrors.set(id, err)
         })
@@ -798,13 +842,23 @@ export class Auth implements AuthService, ConnectionManager {
      * Auth processes can fail due to reasons outside of authentication actually being expired.
      * We do not want to intepret these failures as invalid/expired auth tokens.
      *
-     * We use this to check if the given error is unanticipated. If it is we throw,
-     * expecting the caller to not change the state of the connection.
+     * We use this to check if the given error is recoverable, meaning retrying getToken at
+     * a later time could succeed. If it is recoverable, we throw, expecting the caller to not
+     * change the state of the connection.
      */
-    private throwOnNetworkError(e: unknown) {
+    private throwOnRecoverableError(e: unknown) {
         if (isNetworkError(e)) {
             throw new ToolkitError('Failed to update connection due to networking issues', {
                 cause: e,
+                code: e.code,
+            })
+        }
+
+        const possibleCacheError = DiskCacheError.instanceIf(e)
+        if (possibleCacheError instanceof DiskCacheError) {
+            throw new ToolkitError('Failed to update connection due to file system operation failures', {
+                cause: possibleCacheError,
+                code: possibleCacheError.code,
             })
         }
     }
@@ -821,6 +875,7 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
+    @withTelemetryContext({ name: 'handleInvalidCredentials', class: authClassName })
     private async handleInvalidCredentials<T>(id: Connection['id'], refresh: () => Promise<T>): Promise<T> {
         getLogger().info(`auth: Handling invalid credentials of connection: ${id}`)
         const profile = this.store.getProfile(id)
@@ -865,7 +920,9 @@ export class Auth implements AuthService, ConnectionManager {
         return this.authenticate(id, refresh)
     }
 
-    public readonly tryAutoConnect = once(async () => {
+    public readonly tryAutoConnect = once(async () => this._tryAutoConnect())
+    @withTelemetryContext({ name: 'tryAutoConnect', class: authClassName })
+    private async _tryAutoConnect() {
         if (this.activeConnection !== undefined) {
             return
         }
@@ -944,7 +1001,7 @@ export class Auth implements AuthService, ConnectionManager {
                 }
             }
         }
-    })
+    }
 
     static #instance: Auth | undefined
     public static get instance() {
@@ -1029,9 +1086,6 @@ type LoginCommand = 'aws.toolkit.auth.manageConnections' | 'aws.codecatalyst.man
  * TODO: Remove after some time.
  */
 export class SessionSeparationPrompt {
-    public readonly dismissKey = 'aws.toolkit.separationPromptDismissed'
-    private readonly loginCmdKey = 'aws.toolkit.separationPromptCommand'
-
     // Local variable handles per session displays, e.g. we forgot a CodeCatalyst connection AND
     // an Explorer only connection. We only want to display once in this case.
     // However, we don't want to set this at the global state level until a user interacts with the
@@ -1043,7 +1097,7 @@ export class SessionSeparationPrompt {
      * which is useful to redisplay the prompt after reloads in case a user misses it.
      */
     public async showAnyPreviousPrompt() {
-        const cmd = globals.context.globalState.get<string>(this.loginCmdKey)
+        const cmd = globals.globalState.tryGet('aws.toolkit.separationPromptCommand', String)
         return cmd ? await this.showForCommand(cmd as LoginCommand) : undefined
     }
 
@@ -1053,11 +1107,14 @@ export class SessionSeparationPrompt {
      * (e.g. codecatalyst sign in vs explorer)
      */
     public async showForCommand(cmd: LoginCommand) {
-        if (this.#separationPromptDisplayed || globals.context.globalState.get<boolean>(this.dismissKey)) {
+        if (
+            this.#separationPromptDisplayed ||
+            globals.globalState.get<boolean>('aws.toolkit.separationPromptDismissed')
+        ) {
             return
         }
 
-        await globals.context.globalState.update(this.loginCmdKey, cmd)
+        await globals.globalState.update('aws.toolkit.separationPromptCommand', cmd)
 
         await telemetry.toolkit_showNotification.run(async () => {
             telemetry.record({ id: 'sessionSeparation' })
@@ -1077,7 +1134,7 @@ export class SessionSeparationPrompt {
                             telemetry.record({ action: 'dismiss' })
                         }
 
-                        await globals.context.globalState.update(this.dismissKey, true)
+                        await globals.globalState.update('aws.toolkit.separationPromptDismissed', true)
                     })
                 })
         })

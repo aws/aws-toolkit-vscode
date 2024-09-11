@@ -5,21 +5,29 @@
 
 import assert from 'assert'
 import { ToolkitError } from '../../../shared/errors'
-import { TelemetrySpan, TelemetryTracer } from '../../../shared/telemetry/spans'
-import { MetricName, MetricShapes } from '../../../shared/telemetry/telemetry'
+import { asStringifiedStack, FunctionEntry, TelemetrySpan, TelemetryTracer } from '../../../shared/telemetry/spans'
+import { MetricName, MetricShapes, telemetry } from '../../../shared/telemetry/telemetry'
 import { assertTelemetry, getMetrics, installFakeClock } from '../../testUtil'
 import { selectFrom } from '../../../shared/utilities/tsUtils'
 import { getAwsServiceError } from '../errors.test'
+import { sleep } from '../../../shared'
+import { withTelemetryContext } from '../../../shared/telemetry/util'
+import { SinonSandbox } from 'sinon'
+import sinon from 'sinon'
+import { stubPerformance } from '../../utilities/performance'
 
 describe('TelemetrySpan', function () {
     let clock: ReturnType<typeof installFakeClock>
+    let sandbox: SinonSandbox
 
     beforeEach(function () {
         clock = installFakeClock()
+        sandbox = sinon.createSandbox()
     })
 
     afterEach(function () {
         clock.uninstall()
+        sandbox.restore()
     })
 
     it('removes passive and value from the metadata', function () {
@@ -68,14 +76,39 @@ describe('TelemetrySpan', function () {
             { result: 'Succeeded', duration: 100 },
         ])
     })
+
+    it('records performance', function () {
+        const { expectedUserCpuUsage, expectedSystemCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
+        const span = new TelemetrySpan('function_call', {
+            emit: true,
+        })
+        span.start()
+        clock.tick(90)
+        span.stop()
+        assertTelemetry('function_call', {
+            userCpuUsage: expectedUserCpuUsage,
+            systemCpuUsage: expectedSystemCpuUsage,
+            heapTotal: expectedHeapTotal,
+            duration: 90,
+            result: 'Succeeded',
+        })
+    })
 })
 
 describe('TelemetryTracer', function () {
     let tracer: TelemetryTracer
+    let clock: ReturnType<typeof installFakeClock> | undefined
+    let sandbox: SinonSandbox
     const metricName = 'test_metric' as MetricName
 
     beforeEach(function () {
         tracer = new TelemetryTracer()
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(function () {
+        clock?.uninstall()
+        sandbox.restore()
     })
 
     describe('record()', function () {
@@ -225,7 +258,7 @@ describe('TelemetryTracer', function () {
             assertTelemetry('aws_loginWithBrowser', {
                 result: 'Failed',
                 reason: 'InvalidRequestException',
-                reasonDesc: 'Invalid client ID provided',
+                reasonDesc: 'InvalidRequestException: Invalid client ID provided',
                 httpStatusCode: '400',
             })
             const metric = getMetrics('aws_loginWithBrowser')[0]
@@ -233,6 +266,28 @@ describe('TelemetryTracer', function () {
             assert.match(metric.awsRegion ?? '', /not-set|\w+-\w+-\d+/)
             assert.match(String(metric.duration) ?? '', /\d+/)
             assert.match(metric.requestId ?? '', /[a-z0-9-]+/)
+        })
+
+        it('records performance', function () {
+            clock = installFakeClock()
+            const { expectedUserCpuUsage, expectedSystemCpuUsage, expectedHeapTotal } = stubPerformance(sandbox)
+            tracer.run(
+                'function_call',
+                () => {
+                    clock?.tick(90)
+                },
+                {
+                    emit: true,
+                }
+            )
+
+            assertTelemetry('function_call', {
+                userCpuUsage: expectedUserCpuUsage,
+                systemCpuUsage: expectedSystemCpuUsage,
+                heapTotal: expectedHeapTotal,
+                duration: 90,
+                result: 'Succeeded',
+            })
         })
 
         describe('nested run()', function () {
@@ -285,6 +340,196 @@ describe('TelemetryTracer', function () {
                 tracer.run(metricName, () => tracer.run(nestedName, () => {}))
                 assertTelemetry(metricName, { result: 'Succeeded' })
                 assertTelemetry(nestedName, { result: 'Succeeded', parentMetric: metricName } as any)
+            })
+        })
+
+        describe(`run() with emit false`, function () {
+            it('emits by default when not set', function () {
+                telemetry.run(metricName, (span) => {
+                    span.record({ awsRegion: 'us-east-1' })
+                })
+                assertTelemetry(metricName, [{ awsRegion: 'us-east-1' }])
+            })
+
+            it('emits when set to true', function () {
+                telemetry.run(
+                    metricName,
+                    (span) => {
+                        span.record({ awsRegion: 'us-east-1' })
+                    },
+                    { emit: true }
+                )
+                assertTelemetry(metricName, [{ awsRegion: 'us-east-1' }])
+            })
+
+            it('emits nothing when set to false', function () {
+                telemetry.run(
+                    metricName,
+                    (span) => {
+                        span.record({ awsRegion: 'us-east-1' })
+                    },
+                    { emit: false }
+                )
+                assertTelemetry(metricName, [])
+            })
+        })
+
+        describe('run() with function entry', function () {
+            /**
+             * A class that uses execution context in its methods calls
+             */
+            class TestClassA1 {
+                constructor(readonly a2: TestClassA2) {}
+
+                methodA(): Promise<FunctionEntry[]> {
+                    return telemetry.function_call.run(() => this.methodB(), {
+                        functionId: { name: 'methodA', class: 'TestClassA1' },
+                    })
+                }
+
+                /**
+                 * IMPORTANT: this does not set a context, so it will not be included. But
+                 * any nested calls that set their own execution context will.
+                 */
+                methodB() {
+                    return this.a2.methodX()
+                }
+            }
+
+            /**
+             * Another class that uses execution context in its calls
+             */
+            class TestClassA2 {
+                methodX(): Promise<FunctionEntry[]> {
+                    return telemetry.function_call.run(
+                        async () => {
+                            // sleep to hand over execution to the other class
+                            await sleep(100)
+                            return this.methodY()
+                        },
+                        {
+                            functionId: { name: 'methodX', class: 'TestClassA2' },
+                        }
+                    )
+                }
+
+                methodY() {
+                    return telemetry.function_call.run(() => this.methodZ(), {
+                        functionId: { name: 'methodY', class: 'TestClassA2' },
+                    })
+                }
+
+                methodZ() {
+                    return telemetry.function_call.run(() => functionWithExecutionContext(), {
+                        functionId: { name: 'thisIsAlsoZ', class: 'TestClassA2' },
+                    })
+                }
+            }
+
+            /**
+             * Another class that uses execution context in its calls
+             */
+            class TestClassB1 {
+                @withTelemetryContext({ name: 'methodJ', class: 'TestClassB1' })
+                async methodJ(): Promise<FunctionEntry[]> {
+                    return this.methodK()
+                }
+
+                methodK() {
+                    return telemetry.function_call.run(
+                        async () => {
+                            // sleep to hand over execution to the other class
+                            await sleep(100)
+                            return this.methodL()
+                        },
+                        {
+                            functionId: { name: 'methodK', class: 'TestClassB1' },
+                        }
+                    )
+                }
+
+                methodL() {
+                    return telemetry.accessanalyzer_iamPolicyChecksCustomChecks.run(
+                        () => {
+                            return functionWithExecutionContext()
+                        },
+                        {
+                            functionId: { name: 'methodL', class: 'TestClassB1' },
+                        }
+                    )
+                }
+            }
+
+            function functionWithExecutionContext() {
+                return telemetry.function_call.run(() => telemetry.getFunctionStack(), {
+                    functionId: { name: 'functionWithExecutionContext' },
+                })
+            }
+
+            it(`returns the correct call stack when the context switches`, async function () {
+                // This test runs multiple functions that use the context asynchronously. They sleep() part way through their entire flow,
+                // which allows the other to execute. We expect the async local storage to maintain the correct context for each execution.
+                // The final nested function call in each stack returns the final stringified source stack.
+
+                const a1 = new TestClassA1(new TestClassA2())
+                const b1 = new TestClassB1()
+
+                const [resA1, resB1] = await Promise.all([a1.methodA(), b1.methodJ()])
+
+                assert.deepStrictEqual(resA1, [
+                    { name: 'methodA', class: 'TestClassA1' },
+                    { name: 'methodX', class: 'TestClassA2' },
+                    { name: 'methodY', class: 'TestClassA2' },
+                    { name: 'thisIsAlsoZ', class: 'TestClassA2' },
+                    { name: 'functionWithExecutionContext' },
+                ])
+                assert.deepStrictEqual(
+                    asStringifiedStack(resA1),
+                    'TestClassA1#methodA:TestClassA2#methodX,methodY,thisIsAlsoZ:functionWithExecutionContext'
+                )
+
+                assert.deepStrictEqual(resB1, [
+                    { name: 'methodJ', class: 'TestClassB1' },
+                    { name: 'methodK', class: 'TestClassB1' },
+                    { name: 'methodL', class: 'TestClassB1' },
+                    { name: 'functionWithExecutionContext' },
+                ])
+                assert.deepStrictEqual(
+                    asStringifiedStack(resB1),
+                    'TestClassB1#methodJ,methodK,methodL:functionWithExecutionContext'
+                )
+            })
+
+            it(`${asStringifiedStack.name}() works as expected`, function () {
+                assert.deepStrictEqual(asStringifiedStack([]), '')
+                assert.deepStrictEqual(asStringifiedStack([{ name: 'a' }]), 'a')
+                assert.deepStrictEqual(asStringifiedStack([{ name: 'a' }, { name: 'b' }]), 'a:b')
+                assert.deepStrictEqual(
+                    asStringifiedStack([{ name: 'a' }, { name: 'b' }, { name: 'c', class: 'C' }]),
+                    'a:b:C#c'
+                )
+                assert.deepStrictEqual(
+                    asStringifiedStack([
+                        { name: 'a1', class: 'A' },
+                        { name: 'a2', class: 'A' },
+                        { name: 'b1', class: 'B' },
+                        { name: 'b2', class: 'B' },
+                    ]),
+                    'A#a1,a2:B#b1,b2'
+                )
+            })
+
+            class TestEmit {
+                @withTelemetryContext({ name: 'doesNotEmit', class: 'TestEmit' })
+                doesNotEmit() {
+                    return
+                }
+            }
+
+            it(`withTelemetryContext does not emit an event on its own`, function () {
+                const inst = new TestEmit()
+                inst.doesNotEmit()
+                assertTelemetry('function_call', [])
             })
         })
     })

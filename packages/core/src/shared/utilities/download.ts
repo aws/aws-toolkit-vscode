@@ -6,10 +6,6 @@
 import path from 'path'
 import { CodeWhispererStreaming, ExportResultArchiveCommandInput } from '@amzn/codewhisperer-streaming'
 import { ToolkitError } from '../errors'
-import { CodeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { transformByQState } from '../../codewhisperer/models/model'
-import { calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
-import { telemetry } from '../telemetry/telemetry'
 import fs from '../fs/fs'
 
 /**
@@ -26,8 +22,6 @@ export async function downloadExportResultArchive(
     exportResultArchiveArgs: ExportResultArchiveCommandInput,
     toPath: string
 ) {
-    const apiStartTime = Date.now()
-    let totalDownloadBytes = 0
     const result = await cwStreamingClient.exportResultArchive(exportResultArchiveArgs)
 
     const buffer = []
@@ -41,18 +35,9 @@ export async function downloadExportResultArchive(
             const chunkData = chunk.binaryPayloadEvent
             if (chunkData.bytes) {
                 buffer.push(chunkData.bytes)
-                totalDownloadBytes += chunkData.bytes?.length
             }
         }
     }
 
     await fs.writeFile(toPath, Buffer.concat(buffer))
-    telemetry.codeTransform_logApiLatency.emit({
-        codeTransformApiNames: 'ExportResultArchive',
-        codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-        codeTransformJobId: transformByQState.getJobId(),
-        codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-        codeTransformTotalByteSize: totalDownloadBytes,
-        codeTransformRequestId: result.$metadata.requestId,
-    })
 }

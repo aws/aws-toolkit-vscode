@@ -19,7 +19,7 @@ import path from 'path'
 /**
  * This function is called when user accepts a intelliSense suggestion or an inline suggestion
  */
-export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEntry, globalStorage: vscode.Memento) {
+export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEntry) {
     RecommendationHandler.instance.cancelPaginatedRequest()
     /**
      * Format document

@@ -95,7 +95,7 @@ describe('codewhispererTracker', function () {
         })
 
         it('Should call recordCodewhispererUserModification with suggestion event', async function () {
-            await globals.context.globalState.update('CODEWHISPERER_USER_GROUP', {
+            await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
                 group: UserGroup.CrossFile,
                 version: extensionVersion,
             })
@@ -115,6 +115,8 @@ describe('codewhispererTracker', function () {
                 codewhispererLanguage: 'java',
                 credentialStartUrl: testStartUrl,
                 codewhispererUserGroup: 'CrossFile',
+                codewhispererCharactersAccepted: suggestion.originalString.length,
+                codewhispererCharactersModified: 0,
             })
         })
     })

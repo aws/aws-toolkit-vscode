@@ -26,15 +26,15 @@ export const TabTypeDataMap: Record<TabType, TabTypeData> = {
         placeholder: 'Describe your task or issue in as much detail as possible',
         welcome: `Hi, I'm the Amazon Q Developer Agent for software development.
 
-    I can generate code to implement new functionality across your workspace. We'll start by discussing an implementation plan, and then we can review and regenerate code based on your feedback.
+I can generate code to implement new functionality across your workspace. To get started, describe the task you're trying to accomplish, and I'll generate code. If you want to make changes, you can provide feedback and I'll regenerate code.
 
-    To get started, describe the task you are trying to accomplish.`,
+What would you like to work on?`,
     },
     gumby: {
         title: 'Q - Code Transformation',
         placeholder: 'Open a new tab to chat with Q',
         welcome: `Welcome to Code Transformation!
 
-    I can help you upgrade your Java 8 and 11 codebases to Java 17.`,
+I can help you upgrade your Java 8 and 11 codebases to Java 17.`,
     },
 }

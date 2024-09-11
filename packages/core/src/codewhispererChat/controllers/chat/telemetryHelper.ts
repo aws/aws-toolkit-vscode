@@ -34,6 +34,8 @@ import { isAwsError } from '../../../shared/errors'
 import { ChatMessageInteractionType } from '../../../codewhisperer/client/codewhispereruserclient'
 import { supportedLanguagesList } from '../chat/chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
+import { undefinedIfEmpty } from '../../../shared'
 
 export function logSendTelemetryEventFailure(error: any) {
     let requestId: string | undefined
@@ -258,6 +260,7 @@ export class CWCTelemetryHelper {
                         acceptedLineCount: event.cwsprChatAcceptedNumberOfLines,
                         acceptedSnippetHasReference: false,
                         hasProjectLevelContext: this.responseWithProjectContext.get(event.cwsprChatMessageId),
+                        customizationArn: undefinedIfEmpty(getSelectedCustomization().arn),
                     },
                 },
             })
@@ -321,7 +324,7 @@ export class CWCTelemetryHelper {
             cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
             credentialStartUrl: AuthUtil.instance.startUrl,
             cwsprChatHasProjectContext: triggerPayload.relevantTextDocuments
-                ? triggerPayload.relevantTextDocuments.length > 0
+                ? triggerPayload.relevantTextDocuments.length > 0 && triggerPayload.useRelevantDocuments === true
                 : false,
             cwsprChatProjectContextQueryMs: triggerPayload.projectContextQueryLatencyMs,
         })
@@ -329,7 +332,10 @@ export class CWCTelemetryHelper {
 
     public recordAddMessage(triggerPayload: TriggerPayload, message: PromptAnswer) {
         const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(message.tabID)
-
+        const hasProjectLevelContext =
+            triggerPayload.relevantTextDocuments &&
+            triggerPayload.relevantTextDocuments.length > 0 &&
+            triggerPayload.useRelevantDocuments === true
         const event: AmazonqAddMessage = {
             result: 'Succeeded',
             cwsprChatConversationId: this.getConversationId(message.tabID) ?? '',
@@ -353,12 +359,14 @@ export class CWCTelemetryHelper {
             cwsprChatConversationType: 'Chat',
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererCustomizationArn: triggerPayload.customization.arn,
-            cwsprChatHasProjectContext: triggerPayload.relevantTextDocuments
-                ? triggerPayload.relevantTextDocuments.length > 0
-                : false,
+            cwsprChatHasProjectContext: hasProjectLevelContext,
         }
 
         telemetry.amazonq_addMessage.emit(event)
+        const language = this.isProgrammingLanguageSupported(triggerPayload.fileLanguage)
+            ? { languageName: triggerPayload.fileLanguage as string }
+            : undefined
+
         codeWhispererClient
             .sendTelemetryEvent({
                 telemetryEvent: {
@@ -367,9 +375,7 @@ export class CWCTelemetryHelper {
                         messageId: event.cwsprChatMessageId,
                         userIntent: triggerPayload.userIntent,
                         hasCodeSnippet: event.cwsprChatHasCodeSnippet,
-                        programmingLanguage: this.isProgrammingLanguageSupported(triggerPayload.fileLanguage)
-                            ? { languageName: triggerPayload.fileLanguage as string }
-                            : undefined,
+                        ...(language !== undefined ? { programmingLanguage: language } : {}),
                         activeEditorTotalCharacters: event.cwsprChatActiveEditorTotalCharacters,
                         timeToFirstChunkMilliseconds: event.cwsprChatTimeToFirstChunk,
                         timeBetweenChunks: this.getResponseStreamTimeBetweenChunks(message.tabID),
@@ -377,9 +383,8 @@ export class CWCTelemetryHelper {
                         requestLength: event.cwsprChatRequestLength,
                         responseLength: event.cwsprChatResponseLength,
                         numberOfCodeBlocks: event.cwsprChatResponseCodeSnippetCount,
-                        hasProjectLevelContext: triggerPayload.relevantTextDocuments
-                            ? triggerPayload.relevantTextDocuments.length > 0
-                            : false,
+                        hasProjectLevelContext: hasProjectLevelContext,
+                        customizationArn: undefinedIfEmpty(getSelectedCustomization().arn),
                     },
                 },
             })

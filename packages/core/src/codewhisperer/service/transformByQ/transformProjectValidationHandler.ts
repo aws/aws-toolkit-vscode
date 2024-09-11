@@ -7,10 +7,6 @@ import { getLogger } from '../../../shared/logger'
 import * as CodeWhispererConstants from '../../models/constants'
 import * as vscode from 'vscode'
 import { spawnSync } from 'child_process' // Consider using ChildProcess once we finalize all spawnSync calls
-import { telemetry } from '../../../shared/telemetry/telemetry'
-import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { javapOutputToTelemetryValue } from '../../../amazonqGumby/telemetry/codeTransformTelemetry'
-import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import {
     NoJavaProjectsFoundError,
     NoMavenJavaProjectsFoundError,
@@ -99,15 +95,9 @@ async function getProjectsValidToTransform(
                     const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
                     errorReason += `-${errorCode}`
                 }
-                if (!onProjectFirstOpen) {
-                    telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-                        codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                        codeTransformPreValidationError: 'NoJavaProject',
-                        codeTransformRuntimeError: errorReason,
-                        result: MetadataResult.Fail,
-                        reason: 'CannotDetermineJavaVersion',
-                    })
-                }
+                getLogger().error(
+                    `CodeTransformation: Error in running javap command = ${errorReason}, log = ${errorLog}`
+                )
             } else {
                 const majorVersionIndex = spawnResult.stdout.indexOf('major version: ')
                 const javaVersion = spawnResult.stdout.slice(majorVersionIndex + 15, majorVersionIndex + 17).trim()
@@ -117,14 +107,6 @@ async function getProjectsValidToTransform(
                     detectedJavaVersion = JDKVersion.JDK11
                 } else {
                     detectedJavaVersion = JDKVersion.UNSUPPORTED
-                    if (!onProjectFirstOpen) {
-                        telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-                            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                            codeTransformPreValidationError: 'UnsupportedJavaVersion',
-                            result: MetadataResult.Fail,
-                            reason: javapOutputToTelemetryValue(javaVersion),
-                        })
-                    }
                 }
             }
         }
@@ -149,14 +131,6 @@ export async function validateOpenProjects(
     const javaProjects = await getJavaProjects(projects)
 
     if (javaProjects.length === 0) {
-        if (!onProjectFirstOpen) {
-            telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformPreValidationError: 'NoJavaProject',
-                result: MetadataResult.Fail,
-                reason: 'CouldNotFindJavaProject',
-            })
-        }
         throw new NoJavaProjectsFoundError()
     }
 
@@ -164,12 +138,6 @@ export async function validateOpenProjects(
     if (mavenJavaProjects.length === 0) {
         if (!onProjectFirstOpen) {
             void vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundNotification)
-            telemetry.codeTransform_isDoubleClickedToTriggerInvalidProject.emit({
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformPreValidationError: 'NonMavenProject',
-                result: MetadataResult.Fail,
-                reason: 'NoPomFileFound',
-            })
         }
         throw new NoMavenJavaProjectsFoundError()
     }

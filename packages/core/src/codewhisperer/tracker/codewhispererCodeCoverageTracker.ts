@@ -24,23 +24,6 @@ interface CodeWhispererToken {
     accepted: number
 }
 
-interface UserInputDetail {
-    count: number
-    total: number
-}
-
-interface UserInputDetails {
-    lt1: UserInputDetail
-    lt50: UserInputDetail
-    lt100: UserInputDetail
-    lt200: UserInputDetail
-    lt300: UserInputDetail
-    lt400: UserInputDetail
-    lt500: UserInputDetail
-    lt1000: UserInputDetail
-    gt1000: UserInputDetail
-}
-
 const autoClosingKeystrokeInputs = ['[]', '{}', '()', '""', "''"]
 
 /**
@@ -54,25 +37,12 @@ export class CodeWhispererCodeCoverageTracker {
     private _language: CodewhispererLanguage
     private _serviceInvocationCount: number
 
-    private _userInputDetails: UserInputDetails
-
     private constructor(language: CodewhispererLanguage) {
         this._acceptedTokens = {}
         this._totalTokens = {}
         this._startTime = 0
         this._language = language
         this._serviceInvocationCount = 0
-        this._userInputDetails = {
-            lt1: { count: 0, total: 0 },
-            lt50: { count: 0, total: 0 },
-            lt100: { count: 0, total: 0 },
-            lt200: { count: 0, total: 0 },
-            lt300: { count: 0, total: 0 },
-            lt400: { count: 0, total: 0 },
-            lt500: { count: 0, total: 0 },
-            lt1000: { count: 0, total: 0 },
-            gt1000: { count: 0, total: 0 },
-        }
     }
 
     public get serviceInvocationCount(): number {
@@ -150,7 +120,7 @@ export class CodeWhispererCodeCoverageTracker {
                 }
             })
         }
-        const percentCount = ((acceptedTokens / totalTokens) * 100).toFixed(2)
+        const percentCount = ((unmodifiedAcceptedTokens / totalTokens) * 100).toFixed(2)
         const percentage = Math.round(parseInt(percentCount))
         const selectedCustomization = getSelectedCustomization()
         if (this._serviceInvocationCount <= 0) {
@@ -160,13 +130,13 @@ export class CodeWhispererCodeCoverageTracker {
         telemetry.codewhisperer_codePercentage.emit({
             codewhispererTotalTokens: totalTokens,
             codewhispererLanguage: this._language,
-            codewhispererAcceptedTokens: acceptedTokens,
+            codewhispererAcceptedTokens: unmodifiedAcceptedTokens,
+            codewhispererSuggestedTokens: acceptedTokens,
             codewhispererPercentage: percentage ? percentage : 0,
             successCount: this._serviceInvocationCount,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
             credentialStartUrl: AuthUtil.instance.startUrl,
-            codewhispererUserInputDetails: JSON.stringify(this._userInputDetails),
         })
 
         client
@@ -237,17 +207,6 @@ export class CodeWhispererCodeCoverageTracker {
         this._acceptedTokens = {}
         this._startTime = 0
         this._serviceInvocationCount = 0
-        this._userInputDetails = {
-            lt1: { count: 0, total: 0 },
-            lt50: { count: 0, total: 0 },
-            lt100: { count: 0, total: 0 },
-            lt200: { count: 0, total: 0 },
-            lt300: { count: 0, total: 0 },
-            lt400: { count: 0, total: 0 },
-            lt500: { count: 0, total: 0 },
-            lt1000: { count: 0, total: 0 },
-            gt1000: { count: 0, total: 0 },
-        }
     }
 
     private closeTimer() {
@@ -329,14 +288,10 @@ export class CodeWhispererCodeCoverageTracker {
         if (this.isFromUserKeystroke(e)) {
             this.tryStartTimer()
             this.addTotalTokens(e.document.fileName, 1)
-            this._userInputDetails.lt1.count += 1
-            this._userInputDetails.lt1.total += 1
         } else if (this.getCharacterCountFromComplexEvent(e) !== 0) {
             this.tryStartTimer()
             const characterIncrease = this.getCharacterCountFromComplexEvent(e)
             this.addTotalTokens(e.document.fileName, characterIncrease)
-            this._userInputDetails.lt1.count += 1
-            this._userInputDetails.lt1.total += characterIncrease
         }
         // also include multi character input within 50 characters (not from CWSPR)
         else if (
@@ -351,42 +306,12 @@ export class CodeWhispererCodeCoverageTracker {
             if (multiCharInputSize < 50 && e.contentChanges[0].text.trim().length > 0) {
                 this.addTotalTokens(e.document.fileName, multiCharInputSize)
             }
-
-            // report multiple user input patterns for adjusting the threshold
-            if (multiCharInputSize < 50) {
-                this._userInputDetails.lt50.total += multiCharInputSize
-                this._userInputDetails.lt50.count += 1
-            } else if (multiCharInputSize < 100) {
-                this._userInputDetails.lt100.total += multiCharInputSize
-                this._userInputDetails.lt100.count += 1
-            } else if (multiCharInputSize < 200) {
-                this._userInputDetails.lt200.total += multiCharInputSize
-                this._userInputDetails.lt200.count += 1
-            } else if (multiCharInputSize < 300) {
-                this._userInputDetails.lt300.total += multiCharInputSize
-                this._userInputDetails.lt300.count += 1
-            } else if (multiCharInputSize < 400) {
-                this._userInputDetails.lt400.total += multiCharInputSize
-                this._userInputDetails.lt400.count += 1
-            } else if (multiCharInputSize < 500) {
-                this._userInputDetails.lt500.total += multiCharInputSize
-                this._userInputDetails.lt500.count += 1
-            } else if (multiCharInputSize < 1000) {
-                this._userInputDetails.lt1000.total += multiCharInputSize
-                this._userInputDetails.lt1000.count += 1
-            } else {
-                this._userInputDetails.gt1000.total += multiCharInputSize
-                this._userInputDetails.gt1000.count += 1
-            }
         }
     }
 
     public static readonly instances = new Map<CodewhispererLanguage, CodeWhispererCodeCoverageTracker>()
 
-    public static getTracker(
-        language: string,
-        memeto: vscode.Memento = globals.context.globalState
-    ): CodeWhispererCodeCoverageTracker | undefined {
+    public static getTracker(language: string): CodeWhispererCodeCoverageTracker | undefined {
         if (!runtimeLanguageContext.isLanguageSupported(language)) {
             return undefined
         }

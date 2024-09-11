@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { Auth } from '../../auth/auth'
-import { ToolkitError } from '../../shared/errors'
+import { ToolkitError, isNetworkError, tryRun } from '../../shared/errors'
 import { getSecondaryAuth, setScopes } from '../../auth/secondaryAuth'
 import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { AmazonQPromptSettings } from '../../shared/settings'
@@ -25,6 +25,7 @@ import {
     scopesGumby,
     isIdcSsoConnection,
     hasExactScopes,
+    getTelemetryMetadataForConn,
 } from '../../auth/connection'
 import { getLogger } from '../../shared/logger'
 import { Commands } from '../../shared/vscode/commands2'
@@ -34,6 +35,13 @@ import { indent } from '../../shared/utilities/textUtilities'
 import { showReauthenticateMessage } from '../../shared/utilities/messages'
 import { showAmazonQWalkthroughOnce } from '../../amazonq/onboardingPage/walkthrough'
 import { setContext } from '../../shared/vscode/setContext'
+import { isInDevEnv } from '../../shared/vscode/env'
+import { openUrl } from '../../shared/utilities/vsCodeUtils'
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { asStringifiedStack } from '../../shared/telemetry/spans'
+import { withTelemetryContext } from '../../shared/telemetry/util'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesCodeWhispererCore]
@@ -66,6 +74,8 @@ export const isValidAmazonQConnection = (conn?: Connection): conn is Connection 
         hasScopes(conn, amazonQScopes)
     )
 }
+
+const authClassName = 'AuthQ'
 
 export class AuthUtil {
     static #instance: AuthUtil
@@ -129,7 +139,6 @@ export class AuthUtil {
             // To check valid connection
             if (this.isValidEnterpriseSsoInUse() || (this.isBuilderIdInUse() && !this.isConnectionExpired())) {
                 // start the feature config polling job
-                await vscode.commands.executeCommand('aws.amazonq.fetchFeatureConfigs')
                 await showAmazonQWalkthroughOnce()
             }
             await this.setVscodeContextProps()
@@ -187,7 +196,8 @@ export class AuthUtil {
         return this.conn !== undefined && isBuilderIdConnection(this.conn)
     }
 
-    public async connectToAwsBuilderId() {
+    @withTelemetryContext({ name: 'connectToAwsBuilderId', class: authClassName })
+    public async connectToAwsBuilderId(): Promise<SsoConnection> {
         let conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
 
         if (!conn) {
@@ -200,10 +210,11 @@ export class AuthUtil {
             conn = await this.auth.reauthenticate(conn)
         }
 
-        return this.secondaryAuth.useNewConnection(conn)
+        return (await this.secondaryAuth.useNewConnection(conn)) as SsoConnection
     }
 
-    public async connectToEnterpriseSso(startUrl: string, region: string) {
+    @withTelemetryContext({ name: 'connectToEnterpriseSso', class: authClassName })
+    public async connectToEnterpriseSso(startUrl: string, region: string): Promise<SsoConnection> {
         let conn = (await this.auth.listConnections()).find(
             (conn): conn is SsoConnection =>
                 isSsoConnection(conn) && conn.startUrl.toLowerCase() === startUrl.toLowerCase()
@@ -219,21 +230,7 @@ export class AuthUtil {
             conn = await this.auth.reauthenticate(conn)
         }
 
-        return this.secondaryAuth.useNewConnection(conn)
-    }
-
-    /**
-     * HACK: Use the connection, but then mark it as expired.
-     * We currently only need this to handle an edge case with the transition
-     * from the old to new standalone extension. This should eventually be removed.
-     */
-    public async useConnectionButExpire(conn: Connection) {
-        await this.secondaryAuth.useNewConnection(conn)
-        if (conn.type !== 'sso') {
-            return
-        }
-        await this.auth.expireConnection(conn)
-        await this.notifyReauthenticate()
+        return (await this.secondaryAuth.useNewConnection(conn)) as SsoConnection
     }
 
     public static get instance() {
@@ -245,6 +242,7 @@ export class AuthUtil {
         return self
     }
 
+    @withTelemetryContext({ name: 'getBearerToken', class: authClassName })
     public async getBearerToken(): Promise<string> {
         await this.restore()
 
@@ -260,6 +258,7 @@ export class AuthUtil {
         return bearerToken.accessToken
     }
 
+    @withTelemetryContext({ name: 'getCredentials', class: authClassName })
     public async getCredentials() {
         await this.restore()
 
@@ -312,6 +311,7 @@ export class AuthUtil {
         AuthUtil.logIfChanged(logStr)
     }
 
+    @withTelemetryContext({ name: 'reauthenticate', class: authClassName })
     public async reauthenticate() {
         try {
             if (this.conn?.type !== 'sso') {
@@ -336,6 +336,7 @@ export class AuthUtil {
         await Commands.tryExecute('aws.amazonq.refreshStatusBar')
     }
 
+    @withTelemetryContext({ name: 'showReauthenticatePrompt', class: authClassName })
     public async showReauthenticatePrompt(isAutoTrigger?: boolean) {
         if (isAutoTrigger && this.reauthenticatePromptShown) {
             return
@@ -356,6 +357,39 @@ export class AuthUtil {
         }
     }
 
+    public async notifySessionConfiguration() {
+        const suppressId = 'amazonQSessionConfigurationMessage'
+        const settings = AmazonQPromptSettings.instance
+        const shouldShow = await settings.isPromptEnabled(suppressId)
+        if (!shouldShow) {
+            return
+        }
+
+        const message = localize(
+            'aws.amazonq.sessionConfiguration.message',
+            'Your maximum session length for Amazon Q can be extended to 90 days by your administrator. For more information, refer to How to extend the session duration for Amazon Q in the IDE in the IAM Identity Center User Guide.'
+        )
+
+        const learnMoreUrl = vscode.Uri.parse(
+            'https://docs.aws.amazon.com/singlesignon/latest/userguide/configure-user-session.html#90-day-extended-session-duration'
+        )
+        await telemetry.toolkit_showNotification.run(async () => {
+            telemetry.record({ id: 'sessionExtension' })
+            void vscode.window.showInformationMessage(message, localizedText.learnMore).then(async (resp) => {
+                await telemetry.toolkit_invokeAction.run(async () => {
+                    if (resp === localizedText.learnMore) {
+                        telemetry.record({ action: 'learnMore' })
+                        await openUrl(learnMoreUrl)
+                    } else {
+                        telemetry.record({ action: 'dismissSessionExtensionNotification' })
+                    }
+                    await settings.disablePrompt(suppressId)
+                })
+            })
+        })
+    }
+
+    @withTelemetryContext({ name: 'notifyReauthenticate', class: authClassName })
     public async notifyReauthenticate(isAutoTrigger?: boolean) {
         void this.showReauthenticatePrompt(isAutoTrigger)
         await this.setVscodeContextProps()
@@ -369,11 +403,24 @@ export class AuthUtil {
      * Asynchronously returns a snapshot of the overall auth state of CodeWhisperer + Chat features.
      * It guarantees the latest state is correct at the risk of modifying connection state.
      * If this guarantee is not required, use sync method getChatAuthStateSync()
+     *
+     * By default, network errors are ignored when determining auth state since they may be silently
+     * recoverable later.
      */
-    public async getChatAuthState(): Promise<FeatureAuthState> {
+    @withTelemetryContext({ name: 'getChatAuthState', class: authClassName })
+    public async getChatAuthState(ignoreNetErr: boolean = true): Promise<FeatureAuthState> {
         // The state of the connection may not have been properly validated
         // and the current state we see may be stale, so refresh for latest state.
-        await this.auth.refreshConnectionState(this.conn)
+        if (ignoreNetErr) {
+            await tryRun(
+                () => this.auth.refreshConnectionState(this.conn),
+                (err) => !isNetworkError(err),
+                'getChatAuthState: Cannot refresh connection state due to network error: %s'
+            )
+        } else {
+            await this.auth.refreshConnectionState(this.conn)
+        }
+
         return this.getChatAuthStateSync(this.conn)
     }
 
@@ -408,6 +455,40 @@ export class AuthUtil {
         }
 
         return state
+    }
+
+    /**
+     * Edge Case: Due to a change in behaviour/functionality, there are potential extra
+     * auth connections that the Amazon Q extension has cached. We need to remove these
+     * as they are irrelevant to the Q extension and can cause issues.
+     */
+    public async clearExtraConnections(): Promise<void> {
+        const currentQConn = this.conn
+        // Q currently only maintains 1 connection at a time, so we assume everything else is extra.
+        // IMPORTANT: In the case Q starts to manage multiple connections, this implementation will need to be updated.
+        const allOtherConnections = (await this.auth.listConnections()).filter((c) => c.id !== currentQConn?.id)
+        for (const conn of allOtherConnections) {
+            getLogger().warn(`forgetting extra amazon q connection: %O`, conn)
+            await telemetry.auth_modifyConnection.run(
+                async () => {
+                    telemetry.record({
+                        connectionState: Auth.instance.getConnectionState(conn) ?? 'undefined',
+                        source: asStringifiedStack(telemetry.getFunctionStack()),
+                        ...(await getTelemetryMetadataForConn(conn)),
+                    })
+
+                    if (isInDevEnv()) {
+                        telemetry.record({ action: 'forget' })
+                        // in a Dev Env the connection may be used by code catalyst, so we forget instead of fully deleting
+                        await this.auth.forgetConnection(conn)
+                    } else {
+                        telemetry.record({ action: 'delete' })
+                        await this.auth.deleteConnection(conn)
+                    }
+                },
+                { functionId: { name: 'clearExtraConnections', class: authClassName } }
+            )
+        }
     }
 }
 
@@ -456,6 +537,11 @@ export const AuthStates = {
      * Eg: We are currently using Builder ID, but must use Identity Center.
      */
     unsupported: 'unsupported',
+    /**
+     * The current connection exists and isn't expired,
+     * but fetching/refreshing the token resulted in a network error.
+     */
+    connectedWithNetworkError: 'connectedWithNetworkError',
 } as const
 const Features = {
     codewhispererCore: 'codewhispererCore',

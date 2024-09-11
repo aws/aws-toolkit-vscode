@@ -24,18 +24,18 @@
         "onFileSystem:s3",
         "onFileSystem:s3-readonly"
     ],
-    "main": "./dist/src/extension.js",
+    "main": "./dist/src/extensionNode.js",
     "browser": "./dist/src/extensionWebCore.js",
     "exports": {
         ".": "./dist/src/extension.js",
+        "./node": "./dist/src/extensionNode.js",
         "./web": "./dist/src/extensionWeb.js",
         "./webShared": "./dist/src/extensionWebShared.js",
-        "./extensionCommon": "./dist/src/extensionCommon.js",
-        "./common": "./dist/src/common/index.js",
         "./amazonq": "./dist/src/amazonq/index.js",
         "./codewhisperer": "./dist/src/codewhisperer/index.js",
-        "./codewhispererCommon": "./dist/src/codewhisperer/indexCommon.js",
+        "./codewhisperer/node": "./dist/src/codewhisperer/indexNode.js",
         "./shared": "./dist/src/shared/index.js",
+        "./sharedNode": "./dist/src/shared/indexNode.js",
         "./auth": "./dist/src/auth/index.js",
         "./amazonqGumby": "./dist/src/amazonqGumby/index.js",
         "./amazonqFeatureDev": "./dist/src/amazonqFeatureDev/index.js",
@@ -190,6 +190,10 @@
                             "default": false
                         },
                         "codeCatalystConnectionExpired": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "ssoCacheError": {
                             "type": "boolean",
                             "default": false
                         }
@@ -4015,11 +4019,10 @@
         }
     },
     "scripts": {
-        "postinstall": "npm run generateTelemetry && npm run generateConfigurationAttributes && npm run compile",
-        "generateConfigurationAttributes": "ts-node ./scripts/build/generateConfigurationAttributes.ts",
+        "postinstall": "npm run generateTelemetry && npm run compile",
         "clean": "ts-node ../../scripts/clean.ts dist/",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
-        "buildScripts": "npm run generateClients && npm run generatePackage && npm run copyFiles",
+        "buildScripts": "npm run generateClients && npm run generateIcons && npm run copyFiles",
         "compile": "npm run testCompile && webpack",
         "compileOnly": "tsc -p ./",
         "compileDev": "npm run compile -- --mode development",
@@ -4033,7 +4036,7 @@
         "testInteg": "npm run testCompile && c8 ts-node ./scripts/test/testInteg.ts",
         "lint": "ts-node ./scripts/lint/testLint.ts",
         "generateClients": "ts-node ./scripts/build/generateServiceClient.ts ",
-        "generatePackage": "ts-node ./scripts/build/generateIcons.ts",
+        "generateIcons": "ts-node ../../scripts/generateIcons.ts",
         "generateTelemetry": "node ../../node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts"
     },
     "scriptsComments": {
@@ -4045,7 +4048,6 @@
     },
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",
-        "@aws-toolkits/telemetry": "^1.0.216",
         "@aws/fully-qualified-names": "^2.1.4",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
@@ -4103,8 +4105,8 @@
     },
     "dependencies": {
         "@amzn/codewhisperer-streaming": "file:../../src.gen/@amzn/codewhisperer-streaming",
-        "@aws-sdk/client-cognito-identity": "3.490.0",
-        "@aws-sdk/client-lambda": "3.385.0",
+        "@aws-sdk/client-cognito-identity": "^3.637.0",
+        "@aws-sdk/client-lambda": "^3.637.0",
         "@aws-sdk/client-sso": "^3.342.0",
         "@aws-sdk/client-sso-oidc": "^3.574.0",
         "@aws-sdk/credential-provider-ini": "3.46.0",
@@ -4113,7 +4115,7 @@
         "@aws-sdk/property-provider": "3.46.0",
         "@aws-sdk/smithy-client": "^3.46.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
-        "@aws/mynah-ui": "^4.15.2",
+        "@aws/mynah-ui": "^4.15.9",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
         "@smithy/middleware-retry": "^2.3.1",
@@ -4138,9 +4140,9 @@
         "highlight.js": "^11.9.0",
         "i18n-ts": "^1.0.5",
         "immutable": "^4.3.0",
+        "jose": "5.4.1",
         "js-yaml": "^4.1.0",
         "jsonc-parser": "^3.2.0",
-        "jose": "5.4.1",
         "lodash": "^4.17.21",
         "markdown-it": "^13.0.2",
         "mime-types": "^2.1.32",

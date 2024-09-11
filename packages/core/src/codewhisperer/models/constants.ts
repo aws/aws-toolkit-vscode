@@ -134,15 +134,7 @@ export const unsupportedLanguagesCacheTTL = 10 * 60 * 60 * 1000
 
 export const unsupportedLanguagesKey = 'CODEWHISPERER_UNSUPPORTED_LANGUAGES_KEY'
 
-export const autoTriggerEnabledKey = 'CODEWHISPERER_AUTO_TRIGGER_ENABLED'
-
-export const autoScansEnabledKey = 'CODEWHISPERER_AUTO_SCANS_ENABLED'
-
 export const serviceActiveKey = 'CODEWHISPERER_SERVICE_ACTIVE'
-
-export const persistedCustomizationsKey = 'CODEWHISPERER_PERSISTED_CUSTOMIZATIONS'
-
-export const selectedCustomizationKey = 'CODEWHISPERER_SELECTED_CUSTOMIZATION'
 
 export const inlinehintKey = 'CODEWHISPERER_HINT_DISPLAYED'
 
@@ -240,7 +232,7 @@ export const artifactTypeSource = 'SourceCode'
 
 export const codeScanFindingsSchema = 'codescan/findings/1.0'
 
-export const autoScanDebounceDelaySeconds = 15
+export const autoScanDebounceDelaySeconds = 30
 
 export const codewhispererDiagnosticSourceLabel = 'Amazon Q '
 
@@ -266,6 +258,12 @@ export const securityScanLanguageIds = [
     'c',
     'cpp',
     'php',
+    'xml',
+    'toml',
+    'pip-requirements',
+    'java-properties',
+    'go.mod',
+    'go.sum',
 ] as const
 
 export type SecurityScanLanguageId = (typeof securityScanLanguageIds)[number]
@@ -328,8 +326,6 @@ export const showScannedFilesMessage = 'Show Scanned Files'
 export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
 
 export const newCustomizationMessage = 'You have access to new Amazon Q customizations.'
-
-export const newCustomizationsAvailableKey = 'aws.amazonq.codewhisperer.newCustomizations'
 
 // Start of QCT Strings
 export const uploadZipSizeLimitInBytes = 2000000000 // 2GB
@@ -410,6 +406,17 @@ export const codeTransformTroubleshootDownloadError =
 export const codeTransformPrereqDoc =
     'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html#prerequisites'
 
+export const codeTransformBillingText = (linesOfCode: number) =>
+    `<p>${linesOfCode} lines of code were submitted for transformation. If you reach the quota for lines of code included in your subscription, you will be charged $${codeTransformBillingRate} for each additional line of code. You might be charged up to $${(
+        linesOfCode * codeTransformBillingRate
+    ).toFixed(
+        2
+    )} for this transformation. To avoid being charged, stop the transformation job before it completes. For more information on pricing and quotas, see [Amazon Q Developer pricing](${linkToBillingInfo}).</p>`
+
+export const codeTransformBillingRate = 0.003
+
+export const codeTransformLocThreshold = 100000
+
 export const jobStartedChatMessage =
     'I am starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub. If I run into any issues, I might pause the transformation to get input from you on how to proceed.'
 
@@ -463,6 +470,9 @@ export const buildSucceededChatMessage = 'I was able to build your project and w
 
 export const buildSucceededNotification =
     'Amazon Q was able to build your project and will start transforming your code soon.'
+
+export const absolutePathDetectedMessage = (numPaths: number, buildFile: string, listOfPaths: string) =>
+    `I detected ${numPaths} potential absolute file path(s) in your ${buildFile} file: **${listOfPaths}**. Absolute file paths might cause issues when I build your code. Any errors will show up in the build log.`
 
 export const unsupportedJavaVersionChatMessage = `Sorry, currently I can only upgrade Java 8 or Java 11 projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
@@ -538,6 +548,9 @@ export const noPomXmlFoundNotification = `None of your open projects are support
 
 export const noJavaHomeFoundChatMessage = `Sorry, I couldn\'t locate your Java installation. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
+export const dependencyVersionsErrorMessage =
+    'I could not find any other versions of this dependency in your local Maven repository. Try transforming the dependency to make it compatible with Java 17, and then try transforming this module again.'
+
 export const errorUploadingWithExpiredUrl = `The upload error may have been caused by the expiration of the S3 pre-signed URL that was used to upload code artifacts to Q Code Transformation. The S3 pre-signed URL expires in 30 minutes. This could be caused by any delays introduced by intermediate services in your network infrastructure. Please investigate your network configuration and consider allowlisting 'amazonq-code-transformation-us-east-1-c6160f047e0.s3.amazonaws.com' to skip any scanning that might delay the upload. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootAllowS3Access}).`
 
 export const socketConnectionFailed =
@@ -575,9 +588,7 @@ export const noJavaProjectsFoundChatMessage = `Sorry, I couldn\'t find a project
 
 export const linkToDocsHome = 'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html'
 
-export const linkToPrerequisites = ''
-
-export const linkToMavenTroubleshooting = ''
+export const linkToBillingInfo = 'https://aws.amazon.com/q/developer/pricing/'
 
 export const linkToUploadZipTooLarge =
     'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#project-size-limit'
@@ -596,13 +607,16 @@ export const projectPromptChatMessage =
     'I can upgrade your JAVA_VERSION_HERE. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Transform.'
 
 export const windowsJavaHomeHelpChatMessage =
-    'To find the JDK path, run the following commands in a new IDE terminal: `cd "C:/Program Files/Java"` and then `dir`. If you see your JDK version, run `cd <version>` and then `cd` to show the path.'
+    'To find the JDK path, run the following commands in a new terminal: `cd "C:/Program Files/Java"` and then `dir`. If you see your JDK version, run `cd <version>` and then `cd` to show the path.'
 
-export const nonWindowsJava8HomeHelpChatMessage =
-    'To find the JDK path, run the following command in a new IDE terminal:  `/usr/libexec/java_home -v 1.8`'
+export const macJava8HomeHelpChatMessage =
+    'To find the JDK path, run the following command in a new terminal:  `/usr/libexec/java_home -v 1.8`'
 
-export const nonWindowsJava11HomeHelpChatMessage =
-    'To find the JDK path, run the following command in a new IDE terminal:  `/usr/libexec/java_home -v 11`'
+export const macJava11HomeHelpChatMessage =
+    'To find the JDK path, run the following command in a new terminal:  `/usr/libexec/java_home -v 11`'
+
+export const linuxJavaHomeHelpChatMessage =
+    'To find the JDK path, run the following command in a new terminal: `update-java-alternatives --list`'
 
 export const projectSizeTooLargeChatMessage = `Sorry, your project size exceeds the Amazon Q Code Transformation upload limit of 2GB. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootProjectSize}).`
 

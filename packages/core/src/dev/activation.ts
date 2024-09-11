@@ -23,6 +23,7 @@ import { getLogger } from '../shared/logger'
 import { entries } from '../shared/utilities/tsUtils'
 import { getEnvironmentSpecificMemento } from '../shared/utilities/mementos'
 import { setContext } from '../shared'
+import { telemetry } from '../shared/telemetry'
 
 interface MenuOption {
     readonly label: string
@@ -48,6 +49,7 @@ export type DevOptions = {
 }
 
 let targetContext: vscode.ExtensionContext
+let globalState: vscode.Memento
 let targetAuth: Auth
 
 /**
@@ -127,7 +129,7 @@ export class DevDocumentProvider implements vscode.TextDocumentContentProvider {
         } else if (uri.path.startsWith('/globalstate')) {
             // lol hax
             // as of November 2023, all of a memento's properties are stored as property `f` when minified
-            return JSON.stringify((targetContext.globalState as any).f, undefined, 4)
+            return JSON.stringify((globalState as any).f, undefined, 4)
         } else {
             return `unknown URI path: ${uri}`
         }
@@ -154,6 +156,8 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
         // Internal command to open dev menu for a specific context and options
         vscode.commands.registerCommand('_aws.dev.invokeMenu', (opts: DevOptions) => {
             targetContext = opts.context
+            // eslint-disable-next-line aws-toolkits/no-banned-usages
+            globalState = targetContext.globalState
             targetAuth = opts.auth
             void openMenu(
                 entries(menuOptions)
@@ -298,7 +302,7 @@ class ObjectEditor {
             case 'globalsView':
                 return showState('globalstate')
             case 'globals':
-                return this.openState(targetContext.globalState, key)
+                return this.openState(globalState, key)
             case 'secrets':
                 return this.openState(targetContext.secrets, key)
             case 'auth':
@@ -381,7 +385,7 @@ async function openStorageFromInput() {
                     return new SkipPrompter('')
                 } else if (target === 'globals') {
                     // List all globalState keys in the quickpick menu.
-                    const items = targetContext.globalState
+                    const items = globalState
                         .keys()
                         .map((key) => {
                             return {
@@ -420,10 +424,15 @@ async function deleteSsoConnections() {
 }
 
 async function expireSsoConnections() {
-    const conns = targetAuth.listConnections()
-    const ssoConns = (await conns).filter(isAnySsoConnection)
-    await Promise.all(ssoConns.map((conn) => targetAuth.expireConnection(conn)))
-    void vscode.window.showInformationMessage(`Expired: ${ssoConns.map((c) => c.startUrl).join(', ')}`)
+    return telemetry.function_call.run(
+        async () => {
+            const conns = targetAuth.listConnections()
+            const ssoConns = (await conns).filter(isAnySsoConnection)
+            await Promise.all(ssoConns.map((conn) => targetAuth.expireConnection(conn)))
+            void vscode.window.showInformationMessage(`Expired: ${ssoConns.map((c) => c.startUrl).join(', ')}`)
+        },
+        { emit: false, functionId: { name: 'expireSsoConnectionsDev' } }
+    )
 }
 
 async function showState(path: string) {

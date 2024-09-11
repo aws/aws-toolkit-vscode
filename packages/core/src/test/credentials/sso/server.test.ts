@@ -11,7 +11,7 @@ import {
     MissingCodeError,
     MissingStateError,
 } from '../../../auth/sso/server'
-import request from '../../../common/request'
+import request from '../../../shared/request'
 import { URLSearchParams } from 'url'
 import { isUserCancelledError, ToolkitError } from '../../../shared/errors'
 import { sleep } from '../../../shared/utilities/timeoutUtils'

@@ -9,11 +9,12 @@ import { ServiceException } from '@aws-sdk/smithy-client'
 import { isThrottlingError, isTransientError } from '@smithy/service-error-classification'
 import { Result } from './telemetry/telemetry'
 import { CancellationError } from './utilities/timeoutUtils'
-import { isNonNullable } from './utilities/tsUtils'
+import { hasKey, isNonNullable } from './utilities/tsUtils'
 import type * as nodefs from 'fs'
 import type * as os from 'os'
 import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
 import { driveLetterRegex } from './utilities/pathUtils'
+import { getLogger } from './logger/logger'
 
 let _username = 'unknown-user'
 let _isAutomation = false
@@ -243,7 +244,14 @@ export class ToolkitError extends Error implements ErrorInformation {
     }
 }
 
-export function getErrorMsg(err: Error | undefined): string | undefined {
+/**
+ * Derives an error message from the given error object.
+ * Depending on the Error, the property used to derive the message can vary.
+ *
+ * @param withCause Append the message(s) from the cause chain, recursively.
+ *                  The message(s) are delimited by ' | '. Eg: msg1 | causeMsg1 | causeMsg2
+ */
+export function getErrorMsg(err: Error | undefined, withCause: boolean = false): string | undefined {
     if (err === undefined) {
         return undefined
     }
@@ -273,10 +281,23 @@ export function getErrorMsg(err: Error | undefined): string | undefined {
     //      }
     const anyDesc = (err as any).error_description
     const errDesc = typeof anyDesc === 'string' ? anyDesc.trim() : ''
-    const msg = errDesc !== '' ? errDesc : err.message?.trim()
+    let msg = errDesc !== '' ? errDesc : err.message?.trim()
 
     if (typeof msg !== 'string') {
         return undefined
+    }
+
+    // append the cause's message
+    if (withCause) {
+        const errorId = getErrorId(err)
+        // - prepend id to message
+        // - If a generic error does not have the `name` field explicitly set, it returns a generic 'Error' name. So skip since it is useless.
+        if (errorId && errorId !== 'Error') {
+            msg = `${errorId}: ${msg}`
+        }
+
+        const cause = (err as any).cause
+        return `${msg}${cause ? ' | ' + getErrorMsg(cause, withCause) : ''}`
     }
 
     return msg
@@ -333,7 +354,7 @@ export function getTelemetryResult(error: unknown | undefined): Result {
  */
 export function scrubNames(s: string, username?: string) {
     let r = ''
-    const fileExtRe = /\.[^.]{1,4}$/
+    const fileExtRe = /\.[^.\/]+$/
     const slashdot = /^[~.]*[\/\\]*/
 
     /** Allowlisted filepath segments. */
@@ -375,7 +396,6 @@ export function scrubNames(s: string, username?: string) {
         let scrubbed = ''
         // Get the frontmatter ("/", "../", "~/", or "./").
         const start = word.trimStart().match(slashdot)?.[0] ?? ''
-        const fileExt = word.trimEnd().match(fileExtRe)?.[0] ?? ''
         pathSegments[0] = pathSegments[0].trimStart().replace(slashdot, '')
         for (const seg of pathSegments) {
             if (driveLetterRegex.test(seg)) {
@@ -391,6 +411,8 @@ export function scrubNames(s: string, username?: string) {
             }
         }
 
+        // includes leading '.', eg: '.json'
+        const fileExt = pathSegments[pathSegments.length - 1].match(fileExtRe) ?? ''
         r += ` ${start.replace(/\\/g, '/')}${scrubbed.replace(/^[\/\\]+/, '')}${fileExt}`
     }
 
@@ -403,11 +425,11 @@ export function scrubNames(s: string, username?: string) {
  * @param err Error object, or message text
  */
 export function getTelemetryReasonDesc(err: unknown | undefined): string | undefined {
-    const m = typeof err === 'string' ? err : getErrorMsg(err as Error) ?? ''
+    const m = typeof err === 'string' ? err : getErrorMsg(err as Error, true) ?? ''
     const msg = scrubNames(m, _username)
 
-    // Truncate to 200 chars.
-    return msg && msg.length > 0 ? msg.substring(0, 200) : undefined
+    // Truncate message as these strings can be very long.
+    return msg && msg.length > 0 ? msg.substring(0, 350) : undefined
 }
 
 export function getTelemetryReason(error: unknown | undefined): string | undefined {
@@ -552,6 +574,16 @@ export function isAwsError(error: unknown): error is AWSError & { error_descript
 
 function hasCode<T>(error: T): error is T & { code: string } {
     return typeof (error as { code?: unknown }).code === 'string'
+}
+
+/**
+ * Returns the identifier the given error.
+ * Depending on the implementation, the identifier may exist on a
+ * different property.
+ */
+export function getErrorId(error: Error): string {
+    // prioritize code over the name
+    return hasCode(error) ? error.code : error.name
 }
 
 function hasTime(error: Error): error is typeof error & { time: Date } {
@@ -768,7 +800,21 @@ export class PermissionsError extends ToolkitError {
 }
 
 export function isNetworkError(err?: unknown): err is Error & { code: string } {
-    if (isVSCodeProxyError(err)) {
+    if (!(err instanceof Error)) {
+        return false
+    }
+
+    if (
+        isVSCodeProxyError(err) ||
+        isSocketTimeoutError(err) ||
+        isEnoentError(err) ||
+        isEaccesError(err) ||
+        isEbadfError(err) ||
+        isEconnRefusedError(err) ||
+        err instanceof AwsClientResponseError ||
+        isBadResponseCode(err) ||
+        isEbusyError(err)
+    ) {
         return true
     }
 
@@ -788,7 +834,20 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
         'EHOSTUNREACH',
         'EADDRINUSE',
         'ENOBUFS', // client side memory issue during http request?
-        'EADDRNOTAVAIL', // port not available/allowed?
+        'EADDRNOTAVAIL', // port not available/allowed?,
+        'SELF_SIGNED_CERT_IN_CHAIN',
+        'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
+        'UNABLE_TO_GET_ISSUER_CERT_LOCALLY',
+        'HPE_INVALID_VERSION',
+        'DEPTH_ZERO_SELF_SIGNED_CERT',
+        'ENOTCONN',
+        'ENETDOWN',
+        'ECONNABORTED',
+        'CERT_HAS_EXPIRED',
+        'EAI_FAIL',
+        '502', // This may be irrelevant as isBadResponseCode() may be all we need
+        'InternalServerException',
+        'ERR_SSL_WRONG_VERSION_NUMBER',
     ].includes(err.code)
 }
 
@@ -798,10 +857,242 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
  *
  * Setting ID: http.proxy
  */
-function isVSCodeProxyError(err?: unknown): boolean {
-    if (!(err instanceof Error)) {
-        return false
+function isVSCodeProxyError(err: Error): boolean {
+    return isError(err, 'Error', 'Failed to establish a socket connection to proxies')
+}
+
+/**
+ * When making SSO OIDC calls, we were seeing errors in telemetry and narrowing it down brings us to:
+ * https://github.com/smithy-lang/smithy-typescript/blob/6aac850af4b5b07b3941854d21e3b0158aefcacb/packages/node-http-handler/src/set-socket-timeout.ts#L7
+ * This looks to be thrown during http requests, so we'll consider it a network error.
+ *
+ * The scenario where we are actually getting the error though might actually be a bug:
+ * https://github.com/aws/aws-sdk-js-v3/issues/6271
+ */
+function isSocketTimeoutError(err: Error): boolean {
+    return isError(err, 'TimeoutError', 'Connection timed out after')
+}
+
+/**
+ * We were seeing errors of ENOENT for the oidc FQDN (eg: oidc.us-east-1.amazonaws.com) during the SSO flow.
+ * Our assumption is that this is an intermittent error.
+ */
+function isEnoentError(err: Error): boolean {
+    return isError(err, 'ENOENT', 'getaddrinfo ENOENT')
+}
+
+function isEaccesError(err: Error): boolean {
+    return isError(err, 'EACCES', 'connect EACCES')
+}
+
+function isEbadfError(err: Error): boolean {
+    return isError(err, 'EBADF', 'connect EBADF')
+}
+
+function isEconnRefusedError(err: Error): boolean {
+    return isError(err, 'Error', 'connect ECONNREFUSED')
+}
+
+function isEbusyError(err: Error) {
+    // we were seeing errors with the message 'getaddrinfo EBUSY oidc.us-east-1.amazonaws.com'
+    return isError(err, 'EBUSY', 'getaddrinfo EBUSY')
+}
+
+/** Helper function to assert given error has the expected properties */
+export function isError(err: Error, id: string, messageIncludes: string = '') {
+    // It is not always clear if the error has the expected value in the `name` or `code` field
+    // so this checks both.
+    return (err.name === id || (err as any).code === id) && err.message.includes(messageIncludes)
+}
+
+/**
+ * These are the errors explicitly seen in telemetry. We can instead do any non-200 response code
+ * later, but this will give us better visibility in to the actual error codes we are currently getting.
+ */
+const errorResponseCodes = [302, 403, 404, 502, 503]
+
+/**
+ * Returns true if the given error is a bad response code
+ */
+function isBadResponseCode(error: Error) {
+    if (isNaN(Number(error.name))) {
+        return
+    }
+    const statusCode = parseInt(error.name, 10)
+    return errorResponseCodes.includes(statusCode)
+}
+
+/**
+ * AWS SDK clients make requests with the expected result to be JSON data.
+ * But in some cases the request may fail and result in an error HTML page being returned instead
+ * of the JSON. This will cause the client to throw a `SyntaxError` as a result
+ * of attempt to deserialize the non-JSON data.
+ *
+ * But within the `SyntaxError` instance is the real reason for the failure.
+ * This class attempts to extract the underlying issue from the SyntaxError.
+ *
+ * Example SyntaxError message before extracting the underlying issue:
+ *  - "Unexpected token '<', "<html><bod"... is not valid JSON Deserialization error: to see the raw response, inspect the hidden field {error}.$response on this object."
+ * Once we extract the real error message from the hidden field, `$response.reason`, we get messages similar to:
+ *  - "SDK Client unexpected error response: data response code: 403, data reason: Forbidden | Unexpected ..."
+ */
+export class AwsClientResponseError extends Error {
+    /** Use {@link instanceIf} to create instance. */
+    protected constructor(err: unknown) {
+        const underlyingErrorMsg = AwsClientResponseError.tryExtractReasonFromSyntaxError(err)
+
+        /**
+         * This condition should never be hit since {@link AwsClientResponseError.instanceIf}
+         * is the only way to create an instance of this class, due to the constructor not being public.
+         *
+         * The following only exists to make the type checker happy.
+         */
+        if (!(underlyingErrorMsg && err instanceof Error)) {
+            throw Error(`Cannot create AwsClientResponseError from ${JSON.stringify(err)}}`)
+        }
+
+        super(underlyingErrorMsg)
     }
 
-    return err.name === 'Error' && err.message.startsWith('Failed to establish a socket connection to proxies')
+    /**
+     * Resolves an instance of {@link AwsClientResponseError} if the given error matches certain criteria.
+     * Otherwise the original error is returned.
+     */
+    static instanceIf<T>(err: T): AwsClientResponseError | T {
+        const reason = AwsClientResponseError.tryExtractReasonFromSyntaxError(err)
+        if (reason) {
+            getLogger().debug(`Creating AwsClientResponseError from SyntaxError: %O`, err)
+            return new AwsClientResponseError(err)
+        }
+        return err
+    }
+
+    /**
+     * Returns the true underlying error message from a `SyntaxError`, if possible.
+     * Otherwise returning undefined.
+     */
+    static tryExtractReasonFromSyntaxError(err: unknown): string | undefined {
+        if (
+            !(
+                err instanceof SyntaxError &&
+                err.message.includes('inspect the hidden field {error}.$response on this object')
+            )
+        ) {
+            return undefined
+        }
+
+        // See the class docstring to explain how we know the existence of the following keys
+        if (hasKey(err, '$response') && err['$response'] !== undefined) {
+            const response = err['$response']
+            if (response) {
+                if (hasKey(response, 'reason') && response['reason'] !== undefined) {
+                    return response['reason'] as string
+                } else {
+                    // We were seeing some cases in telemetry where a syntax error made it all the way to this point
+                    // but then may have not had a 'reason'.
+                    return `No 'reason' field in '$response' | ${JSON.stringify(response)} | ${err.message}`
+                }
+            }
+        } else {
+            // We were seeing some cases in telemetry where a syntax error made it all the way to this point
+            // but then may have not had a '$response'.
+            return `No '$response' field in SyntaxError | ${err.message}`
+        }
+
+        return undefined
+    }
+}
+
+/**
+ * Represents a generalized error that happened during a disk cache operation.
+ *
+ * For example, when SSO refreshes a token a disk cache error can occur when it
+ * attempts to read/write the disk cache. These errors can be recoverable and do not
+ * imply that the SSO session is stale. So by wrapping those errors in an instance of
+ * this class it will help to distinguish them.
+ */
+export class DiskCacheError extends Error {
+    #code: string | undefined
+
+    /** Use {@link DiskCacheError.instanceIf()} to create an instance */
+    protected constructor(message: string, options?: { code?: string }) {
+        super(message)
+        this.#code = options?.code
+    }
+
+    /**
+     * We are seeing these errors in telemetry, but they have no error message attached.
+     * The best we can do is assume these are filesystem errors in the context that we see them.
+     */
+    private static fileSystemErrorsWithoutMessage = ['EACCES', 'EBADF']
+
+    /**
+     * Return an instance of {@link DiskCacheError} that consists of the properties from the
+     * given error IF certain conditions are met. Otherwise, the original error is returned.
+     *
+     * - Also returns the original error if it is already a {@link DiskCacheError}.
+     */
+    public static instanceIf<T>(err: T): DiskCacheError | T {
+        if (!(err instanceof Error) || err instanceof DiskCacheError) {
+            return err
+        }
+
+        const errorId = (err as any).code ?? err.name
+
+        if (DiskCacheError.fileSystemErrorsWithoutMessage.includes(errorId)) {
+            // The error message will probably be blank
+            const message = err.message ? err.message : 'No msg'
+            return new DiskCacheError(message, { code: errorId })
+        }
+
+        // These are errors we were seeing in telemetry
+        if (
+            isError(err, 'ENOSPC', 'no space left on device') ||
+            isError(err, 'EPERM', 'operation not permitted') ||
+            isError(err, 'EBUSY', 'resource busy or locked')
+        ) {
+            return new DiskCacheError(err.message, { code: errorId })
+        }
+
+        return err // the error does no meet the conditions to be a DiskCacheError
+    }
+
+    public get code() {
+        return this.#code
+    }
+}
+
+/**
+ * Run a function and swallow any errors that are not specified by `shouldThrow`
+ */
+export function tryRun<T>(fn: () => T, shouldThrow: (err: Error) => boolean, logMsg?: string): T | undefined
+export function tryRun<T>(
+    fn: () => Promise<T>,
+    shouldThrow: (err: Error) => boolean,
+    logMsg?: string
+): Promise<T> | undefined
+export function tryRun<T>(
+    fn: () => T | Promise<T>,
+    shouldThrow: (err: Error) => boolean,
+    logMsg?: string
+): T | Promise<T | void> | undefined {
+    // The function signature pattern will accept both async and non-async types.
+
+    const catchErr = (err: Error) => {
+        if (shouldThrow(err)) {
+            throw err
+        }
+
+        getLogger().error(logMsg ?? 'unknown caller: Error ignored: %s', err)
+    }
+
+    try {
+        const result = fn()
+        if (result instanceof Promise) {
+            return result.catch(catchErr)
+        }
+        return result
+    } catch (error: any) {
+        catchErr(error)
+    }
 }

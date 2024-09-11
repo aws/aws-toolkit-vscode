@@ -16,26 +16,25 @@ import {
     AwsConnection,
     Connection,
     hasScopes,
-    isBuilderIdConnection,
-    isIamConnection,
-    isIdcSsoConnection,
     isSsoConnection,
     scopesCodeCatalyst,
     scopesCodeWhispererChat,
     scopesSsoAccountAccess,
     SsoConnection,
+    TelemetryMetadata,
 } from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
 import { StaticProfile, StaticProfileKeyErrorMessage } from '../../../auth/credentials/types'
 import { telemetry } from '../../../shared/telemetry'
+import { AuthAddConnection } from '../../../shared/telemetry/telemetry'
 import { AuthSources } from '../util'
-import { AuthEnabledFeatures, AuthError, AuthFlowState, AuthUiClick, TelemetryMetadata, userCancelled } from './types'
-import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { AuthEnabledFeatures, AuthError, AuthFlowState, AuthUiClick, userCancelled } from './types'
 import { DevSettings } from '../../../shared/settings'
 import { AuthSSOServer } from '../../../auth/sso/server'
 import { getLogger } from '../../../shared/logger/logger'
 
 export abstract class CommonAuthWebview extends VueWebview {
+    private readonly className = 'CommonAuthWebview'
     private metricMetadata: TelemetryMetadata = {}
 
     // authSource should be set by whatever triggers the auth page flow.
@@ -128,7 +127,13 @@ export abstract class CommonAuthWebview extends VueWebview {
             }
         }
 
-        const result = await runSetup()
+        // Add context to our telemetry by adding the methodName argument to the function stack
+        const result = await telemetry.function_call.run(
+            async () => {
+                return runSetup()
+            },
+            { emit: false, functionId: { name: methodName, class: this.className } }
+        )
 
         if (postMetrics) {
             this.storeMetricMetadata(this.getResultForMetrics(result))
@@ -201,7 +206,7 @@ export abstract class CommonAuthWebview extends VueWebview {
         telemetry.auth_addConnection.emit({
             ...this.metricMetadata,
             source: this.authSource,
-        })
+        } as AuthAddConnection)
     }
 
     /**
@@ -237,33 +242,6 @@ export abstract class CommonAuthWebview extends VueWebview {
         }
 
         return metadata
-    }
-
-    /**
-     * Get metadata about the current auth for reauthentication telemetry.
-     */
-    getMetadataForExistingConn(conn = AuthUtil.instance.conn): TelemetryMetadata {
-        if (conn === undefined) {
-            return {}
-        }
-
-        if (isIdcSsoConnection(conn)) {
-            return {
-                credentialSourceId: 'iamIdentityCenter',
-                credentialStartUrl: conn?.startUrl,
-                awsRegion: conn?.ssoRegion,
-            }
-        } else if (isBuilderIdConnection(conn)) {
-            return {
-                credentialSourceId: 'awsId',
-            }
-        } else if (isIamConnection(conn)) {
-            return {
-                credentialSourceId: 'sharedCredentials',
-            }
-        }
-
-        throw new Error('getMetadataForExistingConn() called with unknown connection type')
     }
 
     /**

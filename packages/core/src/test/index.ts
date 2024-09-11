@@ -23,8 +23,9 @@ export * from './codewhisperer/testUtil'
 export * from './credentials/testUtil'
 export * from './testUtil'
 export * from './amazonqFeatureDev/utils'
+export * from './fake/mockFeatureConfigData'
 
-import request from '../common/request'
+import request from '../shared/request'
 import { stub } from 'sinon'
 
 // Returns a stubbed fetch for other tests.

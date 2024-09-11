@@ -9,23 +9,14 @@ import * as path from 'path'
 import sinon from 'sinon'
 import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import { ControllerSetup, createController, createSession, generateVirtualMemoryUri } from '../../utils'
-import {
-    CurrentWsFolders,
-    FollowUpTypes,
-    createUri,
-    NewFileInfo,
-    DeletedFileInfo,
-} from '../../../../amazonqFeatureDev/types'
+import { CurrentWsFolders, FollowUpTypes, NewFileInfo, DeletedFileInfo } from '../../../../amazonqFeatureDev/types'
 import { Session } from '../../../../amazonqFeatureDev/session/session'
 import { Prompter } from '../../../../shared/ui/prompter'
 import { assertTelemetry, toFile } from '../../../testUtil'
 import { SelectedFolderNotInWorkspaceFolderError } from '../../../../amazonqFeatureDev/errors'
-import {
-    CodeGenState,
-    PrepareCodeGenState,
-    PrepareRefinementState,
-} from '../../../../amazonqFeatureDev/session/sessionState'
+import { CodeGenState, PrepareCodeGenState } from '../../../../amazonqFeatureDev/session/sessionState'
 import { FeatureDevClient } from '../../../../amazonqFeatureDev/client/featureDev'
+import { createAmazonQUri } from '../../../../amazonq/commons/diff'
 
 let mockGetCodeGeneration: sinon.SinonStub
 describe('Controller', () => {
@@ -102,8 +93,8 @@ describe('Controller', () => {
             assert.strictEqual(
                 executedDiff.calledWith(
                     'vscode.diff',
-                    createUri('empty', tabID),
-                    createUri(path.join(uploadID, 'src', 'mynewfile.js'), tabID)
+                    createAmazonQUri('empty', tabID),
+                    createAmazonQUri(path.join(uploadID, 'src', 'mynewfile.js'), tabID)
                 ),
                 true
             )
@@ -120,7 +111,7 @@ describe('Controller', () => {
                 executedDiff.calledWith(
                     'vscode.diff',
                     vscode.Uri.file(newFileLocation),
-                    createUri(path.join(uploadID, 'mynewfile.js'), tabID)
+                    createAmazonQUri(path.join(uploadID, 'mynewfile.js'), tabID)
                 ),
                 true
             )
@@ -137,7 +128,7 @@ describe('Controller', () => {
                 executedDiff.calledWith(
                     'vscode.diff',
                     vscode.Uri.file(newFileLocation),
-                    createUri(path.join(uploadID, 'src', 'mynewfile.js'), tabID)
+                    createAmazonQUri(path.join(uploadID, 'src', 'mynewfile.js'), tabID)
                 ),
                 true
             )
@@ -156,7 +147,7 @@ describe('Controller', () => {
                 executedDiff.calledWith(
                     'vscode.diff',
                     vscode.Uri.file(newFileLocation),
-                    createUri(path.join(uploadID, 'foo', 'fi', 'mynewfile.js'), tabID)
+                    createAmazonQUri(path.join(uploadID, 'foo', 'fi', 'mynewfile.js'), tabID)
                 ),
                 true
             )
@@ -193,6 +184,7 @@ describe('Controller', () => {
                     tabID,
                     type: 'answer',
                     message: new SelectedFolderNotInWorkspaceFolderError().message,
+                    canBeVoted: true,
                 }),
                 true
             )
@@ -214,54 +206,6 @@ describe('Controller', () => {
             const modifiedSession = await modifyDefaultSourceFolder(expectedSourceRoot)
             assert.strictEqual(modifiedSession.config.workspaceRoots.length, 1)
             assert.strictEqual(modifiedSession.config.workspaceRoots[0], expectedSourceRoot)
-        })
-    })
-
-    describe('processChatItemVotedMessage', () => {
-        async function processChatItemVotedMessage(vote: 'upvote' | 'downvote') {
-            const initialState = new PrepareRefinementState(
-                {
-                    conversationId: conversationID,
-                    proxyClient: new FeatureDevClient(),
-                    workspaceRoots: [''],
-                    workspaceFolders: [controllerSetup.workspaceFolder],
-                },
-                '',
-                tabID
-            )
-            const newSession = await createSession({
-                messenger: controllerSetup.messenger,
-                sessionState: initialState,
-                conversationID,
-                tabID,
-                uploadID,
-            })
-            const getSessionStub = sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(newSession)
-            controllerSetup.emitters.processChatItemVotedMessage.fire({
-                tabID,
-                messageID: '',
-                vote,
-            })
-
-            // Wait until the controller has time to process the event
-            await waitUntil(() => {
-                return Promise.resolve(getSessionStub.callCount > 0)
-            }, {})
-        }
-
-        it('incoming upvoted message sends telemetry', async () => {
-            await processChatItemVotedMessage('upvote')
-
-            assertTelemetry('amazonq_approachThumbsUp', { amazonqConversationId: conversationID, result: 'Succeeded' })
-        })
-
-        it('incoming downvoted message sends telemetry', async () => {
-            await processChatItemVotedMessage('downvote')
-
-            assertTelemetry('amazonq_approachThumbsDown', {
-                amazonqConversationId: conversationID,
-                result: 'Succeeded',
-            })
         })
     })
 
@@ -308,17 +252,8 @@ describe('Controller', () => {
                 uploadId: uploadID,
                 workspaceFolders,
             }
-            const testApproach = 'test-approach'
 
-            const codeGenState = new CodeGenState(
-                testConfig,
-                testApproach,
-                getFilePaths(controllerSetup),
-                [],
-                [],
-                tabID,
-                0
-            )
+            const codeGenState = new CodeGenState(testConfig, getFilePaths(controllerSetup), [], [], tabID, 0)
             const newSession = await createSession({
                 messenger: controllerSetup.messenger,
                 sessionState: codeGenState,
@@ -382,7 +317,6 @@ describe('Controller', () => {
                         workspaceFolders: [controllerSetup.workspaceFolder],
                         uploadId: uploadID,
                     },
-                    '',
                     getFilePaths(controllerSetup),
                     getDeletedFiles(),
                     [],

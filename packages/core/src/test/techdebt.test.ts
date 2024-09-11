@@ -28,6 +28,12 @@ describe('tech debt', function () {
             semver.lt(minVscode, '1.75.0'),
             'remove AsyncLocalStorage polyfill used in `spans.ts` if Cloud9 is on node 14+'
         )
+
+        // see https://github.com/microsoft/vscode/issues/173861
+        assert.ok(
+            semver.lt(minVscode, '1.93.0'),
+            'keepAlive works properly in vscode 1.93+. Remove src/codewhisperer/client/agent.ts and other code related to https://github.com/aws/aws-toolkit-vscode-staging/pull/1214'
+        )
     })
 
     it('nodejs minimum version', async function () {
@@ -40,13 +46,13 @@ describe('tech debt', function () {
         )
     })
 
-    it('remove missing Amazon Q scopes edge case handling', async function () {
-        fixByDate('2024-07-30', 'Remove the edge case code from the commit that this test is a part of.')
-    })
-
     it('remove separate sessions login edge cases', async function () {
         // src/auth/auth.ts:SessionSeparationPrompt
         // forgetConnection() function and calls
-        fixByDate('2024-07-30', 'Remove the edge case code from the commit that this test is a part of.')
+
+        // Monitor telemtry to determine removal or snooze
+        // toolkit_showNotification.id = sessionSeparation
+        // auth_modifyConnection.action = deleteProfile OR auth_modifyConnection.source contains CodeCatalyst
+        fixByDate('2024-9-30', 'Remove the edge case code from the commit that this test is a part of.')
     })
 })

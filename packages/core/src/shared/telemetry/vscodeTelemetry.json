@@ -6,12 +6,6 @@
             "description": "The time it takes to generate approach response"
         },
         {
-            "name": "ec2ConnectionType",
-            "type": "string",
-            "allowedValues": ["remoteDesktop", "ssh", "scp", "ssm"],
-            "description": "Ec2 Connection Methods"
-        },
-        {
             "name": "documentFormat",
             "type": "string",
             "allowedValues": ["JSON, YAML"],
@@ -42,87 +36,6 @@
             "name": "cli",
             "type": "string",
             "description": "Installed CLI"
-        },
-        {
-            "name": "hasChatAuth",
-            "type": "boolean",
-            "description": "Whether the user has access to CodeWhisperer Chat"
-        },
-        {
-            "name": "numAttempts",
-            "type": "int",
-            "description": "Number of generations before the user accepted or rejected"
-        },
-        {
-            "name": "resourceType",
-            "type": "string",
-            "description": "CloudFormation resource type"
-        },
-        {
-            "name": "pathsScrubbed",
-            "type": "int",
-            "description": "Number of generation paths modified"
-        },
-        {
-            "name": "generateFailure",
-            "type": "string",
-            "allowedValues": ["Parse"],
-            "description": "Type of generation failure"
-        },
-        {
-            "name": "loadFileTime",
-            "type": "int",
-            "description": "Time from opening Composer to loading the file"
-        },
-        {
-            "name": "initializeTime",
-            "type": "int",
-            "description": "Time from opening Composer to Composer initialize"
-        },
-        {
-            "name": "saveFileTime",
-            "type": "int",
-            "description": "Time from opening Composer to saving the file"
-        },
-        {
-            "name": "fps",
-            "type": "int",
-            "description": "Average frames per second"
-        },
-        {
-            "name": "sourceResourceType",
-            "type": "string",
-            "description": "CloudFormation resource type of connection start"
-        },
-        {
-            "name": "destResourceType",
-            "type": "string",
-            "description": "CloudFormation resource type of connection end"
-        },
-        {
-            "name": "sourceFacetType",
-            "type": "string",
-            "description": "Resource subtype of connection start"
-        },
-        {
-            "name": "destFacetType",
-            "type": "string",
-            "description": "Resource subtype of connection end"
-        },
-        {
-            "name": "didSave",
-            "type": "boolean",
-            "description": "Whether the user saved"
-        },
-        {
-            "name": "resourceCounts",
-            "type": "string",
-            "description": "Per-resource count of each resource in an opened template"
-        },
-        {
-            "name": "totalResourceCount",
-            "type": "int",
-            "description": "Total count of resources in an opened template"
         },
         {
             "name": "cwsprChatTriggerInteraction",
@@ -333,14 +246,9 @@
             "description": "A JSON serialized string of user input details."
         },
         {
-            "name": "action",
-            "type": "string",
-            "description": "Name of an action that was taken, displayed, etc."
-        },
-        {
             "name": "authStatus",
             "type": "string",
-            "allowedValues": ["connected", "notConnected", "expired"],
+            "allowedValues": ["connected", "notConnected", "expired", "connectedWithNetworkError"],
             "description": "Status of the an auth connection."
         },
         {
@@ -364,13 +272,66 @@
             "description": "An AWS region."
         },
         {
-            "name": "saveType",
+            "name": "connectionState",
             "type": "string",
-            "allowedValues": ["MANUAL_SAVE", "AUTO_SAVE"],
-            "description": "Type of save executed"
+            "description": "A detailed state of a specific auth connection. Use `authStatus` for a higher level view of an extension's general connection."
+        },
+        {
+            "name": "userCpuUsage",
+            "type": "int",
+            "description": "Percentage of user cpu usage (user space)"
+        },
+        {
+            "name": "systemCpuUsage",
+            "type": "int",
+            "description": "Percentage of system cpu usage (kernal space)"
+        },
+        {
+            "name": "heapTotal",
+            "type": "int",
+            "description": "Memory heap usage in MB"
+        },
+        {
+            "name": "functionName",
+            "type": "string",
+            "description": "The name of the function"
+        },
+        {
+            "name": "webviewName",
+            "type": "string",
+            "description": "The name of the webview"
+        },
+        {
+            "name": "architecture",
+            "type": "string",
+            "description": "The CPU architecture"
+        },
+        {
+            "name": "totalFileSizeInMB",
+            "type": "int",
+            "description": "The total size of all files being sent to Amazon Q"
+        },
+        {
+            "name": "totalFiles",
+            "type": "int",
+            "description": "The total number of files being sent to Amazon Q"
         }
     ],
     "metrics": [
+        {
+            "name": "ide_fileSystem",
+            "description": "File System event on execution",
+            "metadata": [
+                {
+                    "type": "action",
+                    "required": true
+                },
+                {
+                    "type": "attempts",
+                    "required": false
+                }
+            ]
+        },
         {
             "name": "vscode_executeCommand",
             "description": "Emitted whenever a registered Toolkit command is executed",
@@ -620,88 +581,6 @@
         {
             "name": "sam_openConfigUi",
             "description": "Called after opening the SAM Config UI"
-        },
-        {
-            "name": "appcomposer_openTemplate",
-            "description": "Called after opening a template",
-            "metadata": [{ "type": "hasChatAuth" }]
-        },
-        {
-            "name": "appcomposer_deployClicked",
-            "description": "Called after clicking the Sync button"
-        },
-        {
-            "name": "appcomposer_deployCompleted",
-            "description": "Called after a Composer-triggered SAM Sync completes"
-        },
-        {
-            "name": "appcomposer_generateClicked",
-            "description": "Called after generating a standard resource template partial",
-            "metadata": [{ "type": "resourceType" }]
-        },
-        {
-            "name": "appcomposer_regenerateClicked",
-            "description": "Called after regenerating a standard resource template partial",
-            "metadata": [{ "type": "resourceType" }]
-        },
-        {
-            "name": "appcomposer_generateAccepted",
-            "description": "Called after accepting a generative AI suggestion",
-            "metadata": [{ "type": "resourceType" }, { "type": "numAttempts" }]
-        },
-        {
-            "name": "appcomposer_generateRejected",
-            "description": "Called after rejecting a generative AI suggestion",
-            "metadata": [{ "type": "resourceType" }, { "type": "numAttempts" }]
-        },
-        {
-            "name": "appcomposer_invalidGeneration",
-            "description": "Called after a generate failed",
-            "metadata": [{ "type": "resourceType" }, { "type": "generateFailure" }]
-        },
-        {
-            "name": "appcomposer_postProcess",
-            "description": "Called after a generate is processed",
-            "metadata": [{ "type": "resourceType" }, { "type": "pathsScrubbed" }]
-        },
-        {
-            "name": "appcomposer_customerReady",
-            "description": "Called after a customer loads into Composeer",
-            "metadata": [{ "type": "loadFileTime" }, { "type": "initializeTime" }, { "type": "saveFileTime" }]
-        },
-        {
-            "name": "appcomposer_fps",
-            "description": "Called regularly to record app performance",
-            "metadata": [{ "type": "fps" }]
-        },
-        {
-            "name": "appcomposer_addResource",
-            "description": "Called when a resource is added to the canvas",
-            "metadata": [{ "type": "resourceType" }]
-        },
-        {
-            "name": "appcomposer_addConnection",
-            "description": "Called when two resources are connected",
-            "metadata": [
-                { "type": "sourceResourceType" },
-                { "type": "sourceFacetType" },
-                { "type": "destResourceType" },
-                { "type": "destFacetType" }
-            ]
-        },
-        {
-            "name": "appcomposer_openWfs",
-            "description": "Called when Step Functions Workflow Studio is opened"
-        },
-        {
-            "name": "appcomposer_closeWfs",
-            "description": "Called when Step Functions Workflow Studio is closed",
-            "metadata": [{ "type": "didSave" }]
-        },
-        {
-            "name": "appcomposer_initializeProject",
-            "description": "Called when a project successfully loads",
-            "metadata": [{ "type": "resourceCounts" }, { "type": "totalResourceCount" }]
         },
         {
             "name": "amazonq_openChat",
@@ -1037,7 +916,9 @@
             "description": "User clicked on the thumbs up button to say that they are unsatisfied",
             "unit": "Count",
             "metadata": [
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -1049,7 +930,9 @@
             "description": "User clicked on the thumbs down button to say that they are unsatisfied",
             "unit": "Count",
             "metadata": [
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -1061,7 +944,9 @@
             "description": "User clicked on the thumbs up button, to mention that they are satisfied",
             "unit": "Count",
             "metadata": [
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -1073,7 +958,9 @@
             "description": "User clicked on the thumbs down button to say that they are unsatisfied",
             "unit": "Count",
             "metadata": [
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -1085,21 +972,26 @@
             "description": "User reviewed changes",
             "passive": true,
             "metadata": [
-                { "type": "enabled" },
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "enabled"
+                },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
                 }
             ]
         },
-
         {
             "name": "amazonq_startChat",
             "description": "Number of times the user have triggered /dev and started the chat",
             "unit": "Count",
             "metadata": [
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -1110,8 +1002,13 @@
             "name": "amazonq_endChat",
             "description": "Captures end of the conversation with amazonq /dev",
             "metadata": [
-                { "type": "amazonqConversationId" },
-                { "type": "amazonqEndOfTheConversationLatency", "required": false },
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "amazonqEndOfTheConversationLatency",
+                    "required": false
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -1122,9 +1019,15 @@
             "name": "amazonq_approachInvoke",
             "description": "Captures Approach generation process",
             "metadata": [
-                { "type": "amazonqConversationId" },
-                { "type": "amazonqGenerateApproachIteration" },
-                { "type": "amazonqGenerateApproachLatency" },
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "amazonqGenerateApproachIteration"
+                },
+                {
+                    "type": "amazonqGenerateApproachLatency"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -1135,7 +1038,10 @@
             "name": "amazonq_startConversationInvoke",
             "description": "Captures startConversation invocation process",
             "metadata": [
-                { "type": "amazonqConversationId", "required": false },
+                {
+                    "type": "amazonqConversationId",
+                    "required": false
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -1146,8 +1052,13 @@
             "name": "amazonq_createUpload",
             "description": "Captures createUploadUrl invocation process",
             "metadata": [
-                { "type": "amazonqConversationId" },
-                { "type": "amazonqRepositorySize", "required": false },
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "amazonqRepositorySize",
+                    "required": false
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -1155,231 +1066,115 @@
             ]
         },
         {
-            "name": "codewhisperer_codePercentage",
-            "description": "Percentage of user tokens against suggestions until 5 mins of time",
+            "name": "ide_editCodeFile",
+            "description": "User opened a code file with the given file extension. Client should DEDUPLICATE this metric (ideally hourly/daily). AWS-specific files should (also) emit `file_editAwsFile`.",
+            "passive": true,
             "metadata": [
                 {
-                    "type": "codewhispererAcceptedTokens"
-                },
-                {
-                    "type": "codewhispererLanguage"
-                },
-                {
-                    "type": "codewhispererPercentage"
-                },
-                {
-                    "type": "codewhispererTotalTokens"
-                },
-                {
-                    "type": "codewhispererUserInputDetails",
-                    "required": false
-                },
-                {
-                    "type": "codewhispererUserGroup"
-                },
-                {
-                    "type": "reason",
-                    "required": false
-                },
-                {
-                    "type": "successCount"
-                },
-                {
-                    "type": "codewhispererCustomizationArn",
-                    "required": false
-                },
-                {
-                    "type": "credentialStartUrl",
+                    "type": "filenameExt",
                     "required": false
                 }
-            ],
-            "passive": true
+            ]
         },
         {
-            "name": "auth_userState",
-            "description": "The state of the user's authentication.",
+            "name": "auth_modifyConnection",
+            "description": "An auth connection was modified in some way, e.g. deleted, updated",
             "metadata": [
-                {
-                    "type": "source",
-                    "required": true
-                },
-                {
-                    "type": "authStatus",
-                    "required": true
-                },
-                {
-                    "type": "authScopes",
-                    "required": false
-                },
-                {
-                    "type": "authEnabledConnections",
-                    "required": true
-                }
-            ],
-            "passive": true
-        },
-        {
-            "name": "auth_signInPageOpened",
-            "description": "When the Amazon Q sign in page is opened and focused.",
-            "metadata": [],
-            "passive": true
-        },
-        {
-            "name": "auth_signInPageClosed",
-            "description": "When the Amazon Q sign in page is closed.",
-            "metadata": [],
-            "passive": true
-        },
-        {
-            "name": "toolkit_invokeAction",
-            "description": "A user invoked an action. Source represents the notification that produced the action",
-            "metadata": [
-                {
-                    "type": "result",
-                    "required": true
-                },
-                {
-                    "type": "id",
-                    "required": true
-                },
-                {
-                    "type": "source",
-                    "required": true
-                },
-                {
-                    "type": "component",
-                    "required": true
-                },
                 {
                     "type": "action",
                     "required": true
                 },
                 {
-                    "type": "reason",
-                    "required": false
-                }
-            ]
-        },
-        {
-            "name": "aws_loginWithBrowser",
-            "description": "Called when a connection requires login using the browser",
-            "metadata": [
-                {
-                    "type": "credentialSourceId",
-                    "required": false
-                },
-                {
-                    "type": "credentialStartUrl",
-                    "required": false
-                },
-                {
-                    "type": "credentialType",
-                    "required": false
-                },
-                {
-                    "type": "isReAuth",
-                    "required": false
-                },
-                {
-                    "type": "source"
-                },
-                {
-                    "type": "result"
-                }
-            ]
-        },
-        {
-            "name": "auth_addConnection",
-            "description": "Captures the result of adding a new connection in the 'Add New Connection' workflow",
-            "metadata": [
-                {
-                    "type": "credentialSourceId",
-                    "required": false
-                },
-                {
-                    "type": "credentialStartUrl",
-                    "required": false
-                },
-                {
-                    "type": "awsRegion",
-                    "required": false
-                },
-                {
-                    "type": "isReAuth",
-                    "required": false
-                },
-                {
-                    "type": "authEnabledFeatures",
-                    "required": false
-                },
-                {
                     "type": "authScopes",
                     "required": false
                 },
                 {
-                    "type": "reason",
+                    "type": "authStatus",
                     "required": false
                 },
                 {
-                    "type": "result",
-                    "required": true
+                    "type": "connectionState",
+                    "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "sessionDuration",
+                    "required": false
                 },
                 {
                     "type": "source",
                     "required": true
-                }
-            ]
-        },
-        {
-            "name": "threatComposer_created",
-            "description": "Called after a new threat composer file is created using command pallet or New File option",
-            "metadata": [
-                {
-                    "type": "id",
-                    "required": true
-                }
-            ]
-        },
-        {
-            "name": "threatComposer_opened",
-            "description": "Called after opening a threat composer file",
-            "metadata": [
-                {
-                    "type": "id",
-                    "required": true
-                }
-            ]
-        },
-        {
-            "name": "threatComposer_fileSaved",
-            "description": "Called after a threat composer file has been saved",
-            "metadata": [
-                {
-                    "type": "id",
-                    "required": true
                 },
                 {
-                    "type": "saveType",
+                    "type": "ssoRegistrationClientId",
+                    "required": false
+                },
+                {
+                    "type": "ssoRegistrationExpiresAt",
+                    "required": false
+                },
+                {
+                    "type": "id",
+                    "required": false
+                }
+            ],
+            "passive": true
+        },
+        {
+            "name": "function_call",
+            "description": "Represents a function call. In most cases this should wrap code with a run(), then you can add context.",
+            "metadata": [
+                {
+                    "type": "userCpuUsage",
+                    "required": false
+                },
+                {
+                    "type": "systemCpuUsage",
+                    "required": false
+                },
+                {
+                    "type": "totalFiles",
+                    "required": false
+                },
+                {
+                    "type": "totalFileSizeInMB",
+                    "required": false
+                },
+                {
+                    "type": "architecture",
+                    "required": false
+                },
+                {
+                    "type": "heapTotal",
+                    "required": false
+                },
+                {
+                    "type": "functionName",
+                    "required": true
+                }
+            ],
+            "passive": true,
+            "trackPerformance": true
+        },
+        {
+            "name": "webview_load",
+            "description": "Represents a webview load event",
+            "metadata": [
+                {
+                    "type": "webviewName",
                     "required": true
                 }
             ]
         },
         {
-            "name": "threatComposer_closed",
-            "description": "Called after closing a threat composer file",
+            "name": "webview_error",
+            "description": "Represents an error that occurs in a webview",
             "metadata": [
                 {
-                    "type": "id",
-                    "required": true
-                }
-            ]
-        },
-        {
-            "name": "threatComposer_error",
-            "description": "Called after an error is thrown from the threat composer view",
-            "metadata": [
-                {
-                    "type": "id",
+                    "type": "webviewName",
                     "required": true
                 }
             ]

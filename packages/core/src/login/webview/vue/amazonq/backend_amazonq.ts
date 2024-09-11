@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { AwsConnection, Connection, isSsoConnection, SsoConnection } from '../../../../auth/connection'
+import { AwsConnection, Connection, getTelemetryMetadataForConn, isSsoConnection } from '../../../../auth/connection'
 import { AuthUtil } from '../../../../codewhisperer/util/authUtil'
 import { CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
@@ -14,7 +14,10 @@ import { getLogger } from '../../../../shared/logger'
 import { debounce } from 'lodash'
 import { AuthError, AuthFlowState, userCancelled } from '../types'
 import { builderIdStartUrl } from '../../../../auth/sso/model'
+import { ToolkitError } from '../../../../shared/errors'
+import { withTelemetryContext } from '../../../../shared/telemetry/util'
 
+const className = 'AmazonQLoginWebview'
 export class AmazonQLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.amazonq.AmazonCommonAuth'
     public static sourcePath: string = 'vue/src/login/webview/vue/amazonq/index.js'
@@ -56,7 +59,9 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                 isReAuth: false,
             })
 
-            await awsIdSignIn()
+            const conn = await awsIdSignIn()
+            this.storeMetricMetadata(await getTelemetryMetadataForConn(conn))
+
             void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS Builder ID')
         })
     }
@@ -66,13 +71,14 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         return await this.ssoSetup('startCodeWhispererEnterpriseSetup', async () => {
             this.storeMetricMetadata({
                 credentialStartUrl: startUrl,
-                awsRegion: region,
                 credentialSourceId: 'iamIdentityCenter',
                 authEnabledFeatures: 'codewhisperer',
                 isReAuth: false,
             })
 
-            await connectToEnterpriseSso(startUrl, region)
+            const conn = await connectToEnterpriseSso(startUrl, region)
+            this.storeMetricMetadata(await getTelemetryMetadataForConn(conn))
+
             void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Identity Center')
         })
     }
@@ -85,23 +91,29 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
             // Sanity checks
             if (!AuthUtil.instance.isConnected()) {
                 getLogger().error('amazon Q reauthenticate called on a non-existant connection')
+                throw new ToolkitError('Cannot reauthenticate non-existant connection.')
             }
 
-            if (!isSsoConnection(AuthUtil.instance.conn)) {
+            const conn = AuthUtil.instance.conn
+            if (!isSsoConnection(conn)) {
                 getLogger().error('amazon Q reauthenticate called, but the connection is not SSO')
+                throw new ToolkitError('Cannot reauthenticate non-SSO connection.')
             }
 
             /**
              * IMPORTANT: During this process {@link this.onActiveConnectionModified} is triggered. This
              * causes the reauth page to refresh before the user is actually done the whole reauth flow.
              */
-            this.reauthError = await this.ssoSetup('reauthenticate', async () => {
+            this.reauthError = await this.ssoSetup('reauthenticateAmazonQ', async () => {
                 this.storeMetricMetadata({
-                    authEnabledFeatures: this.getAuthEnabledFeatures(AuthUtil.instance.conn as SsoConnection),
+                    authEnabledFeatures: this.getAuthEnabledFeatures(conn),
                     isReAuth: true,
-                    ...this.getMetadataForExistingConn(),
+                    ...(await getTelemetryMetadataForConn(conn)),
                 })
                 await AuthUtil.instance.reauthenticate()
+                this.storeMetricMetadata({
+                    ...(await getTelemetryMetadataForConn(conn)),
+                })
             })
         } finally {
             this.isReauthenticating = false
@@ -146,13 +158,17 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         return this.authState
     }
 
+    @withTelemetryContext({ name: 'signout', class: className })
     override async signout(): Promise<void> {
+        const conn = AuthUtil.instance.secondaryAuth.activeConnection
+        if (!isSsoConnection(conn)) {
+            throw new ToolkitError(`Cannot signout non-SSO connection, type is: ${conn?.type}`)
+        }
+
         this.storeMetricMetadata({
-            authEnabledFeatures: this.getAuthEnabledFeatures(
-                AuthUtil.instance.secondaryAuth.activeConnection as SsoConnection
-            ),
+            authEnabledFeatures: this.getAuthEnabledFeatures(conn),
             isReAuth: true,
-            ...this.getMetadataForExistingConn(),
+            ...(await getTelemetryMetadataForConn(conn)),
             result: 'Cancelled',
         })
 
