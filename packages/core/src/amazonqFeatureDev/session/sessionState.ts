@@ -122,17 +122,21 @@ abstract class CodeGenBase {
     private pollCount = 180
     private requestDelay = 10000
     public tokenSource: vscode.CancellationTokenSource
+    public isCancellationRequested: boolean
     public phase: SessionStatePhase = DevPhase.CODEGEN
     public readonly conversationId: string
     public readonly uploadId: string
+    public readonly currentCodeGenerationId?: string
 
     constructor(
         protected config: SessionStateConfig,
         public tabID: string
     ) {
         this.tokenSource = new vscode.CancellationTokenSource()
+        this.isCancellationRequested = false
         this.conversationId = config.conversationId
         this.uploadId = config.uploadId
+        this.currentCodeGenerationId = config.currentCodeGenerationId
     }
 
     async generateCode({
@@ -156,7 +160,8 @@ abstract class CodeGenBase {
     }> {
         for (
             let pollingIteration = 0;
-            pollingIteration < this.pollCount && !this.tokenSource.token.isCancellationRequested;
+            pollingIteration < this.pollCount &&
+            (!this.isCancellationRequested || !this.tokenSource.token.isCancellationRequested);
             ++pollingIteration
         ) {
             const codegenResult = await this.config.proxyClient.getCodeGeneration(this.conversationId, codeGenerationId)
@@ -232,7 +237,7 @@ abstract class CodeGenBase {
                 }
             }
         }
-        if (!this.tokenSource.token.isCancellationRequested) {
+        if (!this.isCancellationRequested) {
             // still in progress
             const errorMessage = i18n('AWS.amazonq.featureDev.error.codeGen.timeout')
             throw new ToolkitError(errorMessage, { code: 'CodeGenTimeout' })
@@ -268,7 +273,9 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                 })
 
                 action.tokenSource?.token.onCancellationRequested(() => {
-                    if (action.tokenSource) this.tokenSource = action.tokenSource
+                    this.isCancellationRequested = true
+                    action.tokenSource?.dispose()
+                    action.tokenSource = undefined
                 })
 
                 action.telemetry.setGenerateCodeIteration(this.currentIteration)
@@ -277,10 +284,11 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                 const { codeGenerationId } = await this.config.proxyClient.startCodeGeneration(
                     this.config.conversationId,
                     this.config.uploadId,
-                    action.msg
+                    action.msg,
+                    this.config.currentCodeGenerationId
                 )
 
-                if (!this.tokenSource.token.isCancellationRequested) {
+                if (!this.isCancellationRequested) {
                     action.messenger.sendAnswer({
                         message: i18n('AWS.amazonq.featureDev.pillText.generatingCode'),
                         type: 'answer-part',
@@ -420,6 +428,7 @@ export class MockCodeGenState implements SessionState {
 export class PrepareCodeGenState implements SessionState {
     public readonly phase = DevPhase.CODEGEN
     public uploadId: string
+    public currentCodeGenerationId?: string
     public conversationId: string
     public tokenSource: vscode.CancellationTokenSource
     constructor(
@@ -435,6 +444,7 @@ export class PrepareCodeGenState implements SessionState {
     ) {
         this.tokenSource = superTokenSource || new vscode.CancellationTokenSource()
         this.uploadId = config.uploadId
+        this.currentCodeGenerationId = config.currentCodeGenerationId
         this.conversationId = config.conversationId
     }
 
@@ -450,42 +460,43 @@ export class PrepareCodeGenState implements SessionState {
         })
 
         action.messenger.sendUpdatePlaceholder(this.tabID, i18n('AWS.amazonq.featureDev.pillText.uploadingCode'))
+        if (!this.uploadId) {
+            const uploadId = await telemetry.amazonq_createUpload.run(async (span) => {
+                span.record({
+                    amazonqConversationId: this.config.conversationId,
+                    credentialStartUrl: AuthUtil.instance.startUrl,
+                })
+                const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
+                    this.config.workspaceRoots,
+                    this.config.workspaceFolders,
+                    action.telemetry,
+                    span
+                )
 
-        const uploadId = await telemetry.amazonq_createUpload.run(async (span) => {
-            span.record({
-                amazonqConversationId: this.config.conversationId,
-                credentialStartUrl: AuthUtil.instance.startUrl,
+                const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
+                    this.config.conversationId,
+                    zipFileChecksum,
+                    zipFileBuffer.length
+                )
+
+                await uploadCode(uploadUrl, zipFileBuffer, zipFileChecksum, kmsKeyArn)
+                action.messenger.sendAnswer({
+                    message: i18n('AWS.amazonq.featureDev.pillText.contextGatheringCompleted'),
+                    type: 'answer-part',
+                    tabID: this.tabID,
+                })
+
+                action.messenger.sendUpdatePlaceholder(
+                    this.tabID,
+                    i18n('AWS.amazonq.featureDev.pillText.contextGatheringCompleted')
+                )
+
+                return uploadId
             })
-            const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
-                this.config.workspaceRoots,
-                this.config.workspaceFolders,
-                action.telemetry,
-                span
-            )
-
-            const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
-                this.config.conversationId,
-                zipFileChecksum,
-                zipFileBuffer.length
-            )
-
-            await uploadCode(uploadUrl, zipFileBuffer, zipFileChecksum, kmsKeyArn)
-            action.messenger.sendAnswer({
-                message: i18n('AWS.amazonq.featureDev.pillText.contextGatheringCompleted'),
-                type: 'answer-part',
-                tabID: this.tabID,
-            })
-
-            action.messenger.sendUpdatePlaceholder(
-                this.tabID,
-                i18n('AWS.amazonq.featureDev.pillText.contextGatheringCompleted')
-            )
-
-            return uploadId
-        })
-        this.uploadId = uploadId
+            this.uploadId = uploadId
+        }
         const nextState = new CodeGenState(
-            { ...this.config, uploadId },
+            { ...this.config, uploadId: this.uploadId, currentCodeGenerationId: this.config.currentCodeGenerationId },
             this.filePaths,
             this.deletedFiles,
             this.references,

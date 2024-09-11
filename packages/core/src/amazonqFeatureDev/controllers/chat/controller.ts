@@ -351,8 +351,11 @@ export class FeatureDevController {
             const deletedFiles = session.state.deletedFiles ?? []
 
             // Only add the follow up accept/deny buttons when the tab hasn't been closed/request hasn't been cancelled
-            if (session?.state.tokenSource.token.isCancellationRequested) {
-                this.workOnNewTask(message)
+            if (session?.state?.tokenSource?.token.isCancellationRequested) {
+                session?.state.tokenSource?.dispose()
+                if (session?.state?.tokenSource) {
+                    session.state.tokenSource = undefined
+                }
                 return
             }
 
@@ -703,11 +706,9 @@ export class FeatureDevController {
             type: 'answer-part',
             tabID: message.tabID,
         })
-
-        const session = await this.sessionStorage.getSession(message.tabID)
-        session.state.tokenSource.cancel()
-
         this.workOnNewTask(message)
+        const session = await this.sessionStorage.getSession(message.tabID)
+        session.state?.tokenSource?.cancel()
     }
 
     private async tabOpened(message: any) {

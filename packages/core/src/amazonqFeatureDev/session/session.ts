@@ -109,6 +109,7 @@ export class Session {
             workspaceFolders: this.config.workspaceFolders,
             proxyClient: this.proxyClient,
             conversationId: this.conversationId,
+            currentCodeGenerationId: this.currentCodeGenerationId as string,
         }
     }
 
@@ -135,7 +136,7 @@ export class Session {
 
         if (resp.nextState) {
             // Cancel the request before moving to a new state
-            this.state.tokenSource.cancel()
+            this.state?.tokenSource?.cancel()
 
             // Move to the next state
             this._state = resp.nextState
@@ -180,6 +181,10 @@ export class Session {
             throw new Error("State should be initialized before it's read")
         }
         return this._state
+    }
+
+    get currentCodeGenerationId() {
+        return this.state.currentCodeGenerationId
     }
 
     get uploadId() {

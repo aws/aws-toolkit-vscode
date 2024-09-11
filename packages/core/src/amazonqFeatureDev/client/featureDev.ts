@@ -10,7 +10,6 @@ import { ServiceOptions } from '../../shared/awsClientBuilder'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger'
 import * as FeatureDevProxyClient from './featuredevproxyclient'
-import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 import { featureName } from '../constants'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
 import {
@@ -25,6 +24,7 @@ import { getCodewhispererConfig } from '../../codewhisperer/client/codewhisperer
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
 import { extensionVersion } from '../../shared/vscode/env'
+import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 
 // Create a client for featureDev proxy client based off of aws sdk v2
 export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClient> {
@@ -117,7 +117,12 @@ export class FeatureDevClient {
         }
     }
 
-    public async startCodeGeneration(conversationId: string, uploadId: string, message: string) {
+    public async startCodeGeneration(
+        conversationId: string,
+        uploadId: string,
+        message: string,
+        currentCodeGenerationId?: string
+    ) {
         try {
             const client = await this.getClient()
             const params = {
@@ -132,6 +137,9 @@ export class FeatureDevClient {
                     uploadId,
                     programmingLanguage: { languageName: 'javascript' },
                 },
+            } as FeatureDevProxyClient.Types.StartTaskAssistCodeGenerationRequest
+            if (currentCodeGenerationId) {
+                params.currentCodeGenerationId = currentCodeGenerationId
             }
             getLogger().debug(`Executing startTaskAssistCodeGeneration with %O`, params)
             const response = await client.startTaskAssistCodeGeneration(params).promise()

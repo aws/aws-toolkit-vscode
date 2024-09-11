@@ -60,7 +60,9 @@ export interface SessionState {
     readonly references?: CodeReference[]
     readonly phase?: SessionStatePhase
     readonly uploadId: string
-    readonly tokenSource: CancellationTokenSource
+    readonly currentCodeGenerationId?: string
+    approach: string
+    tokenSource?: CancellationTokenSource
     readonly tabID: string
     interact(action: SessionStateAction): Promise<SessionStateInteraction>
     updateWorkspaceRoot?: (workspaceRoot: string) => void
@@ -74,6 +76,7 @@ export interface SessionStateConfig {
     conversationId: string
     proxyClient: FeatureDevClient
     uploadId: string
+    currentCodeGenerationId?: string
 }
 
 export interface SessionStateAction {
