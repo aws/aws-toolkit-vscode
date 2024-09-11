@@ -8,24 +8,29 @@ import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
 import { SshKeyPair } from '../../../awsService/ec2/sshKeyPair'
+import { installFakeClock } from '../../testUtil'
+import { InstalledClock } from '@sinonjs/fake-timers'
 
 describe('SshKeyUtility', async function () {
     let temporaryDirectory: string
     let keyPath: string
     let keyPair: SshKeyPair
+    let clock: InstalledClock
 
     before(async function () {
         temporaryDirectory = await makeTemporaryToolkitFolder()
         keyPath = `${temporaryDirectory}/test-key`
-        keyPair = await SshKeyPair.getSshKeyPair(keyPath)
+        clock = installFakeClock()
     })
 
     beforeEach(async function () {
-        keyPair = await SshKeyPair.getSshKeyPair(keyPath)
+        keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
     })
 
     after(async function () {
         await tryRemoveFolder(temporaryDirectory)
+        keyPair.delete()
+        clock.uninstall()
     })
 
     it('generates key in target file', async function () {
@@ -44,12 +49,12 @@ describe('SshKeyUtility', async function () {
 
     it('does not overwrite existing keys', async function () {
         const generateStub = sinon.stub(SshKeyPair, 'generateSshKeyPair')
-        await SshKeyPair.getSshKeyPair(keyPath)
+        await SshKeyPair.getSshKeyPair(keyPath, 30000)
         sinon.assert.notCalled(generateStub)
         sinon.restore()
     })
 
-    it('deletes keys', async function () {
+    it('deletes key on delete', async function () {
         const pubKeyExistsBefore = await fs.pathExists(keyPair.getPublicKeyPath())
         const privateKeyExistsBefore = await fs.pathExists(keyPair.getPrivateKeyPath())
 
@@ -61,5 +66,18 @@ describe('SshKeyUtility', async function () {
         assert.strictEqual(pubKeyExistsBefore && privateKeyExistsBefore, true)
         assert.strictEqual(pubKeyExistsAfter && privateKeyExistsAfter, false)
         assert(keyPair.isDeleted())
+    })
+
+    it('deletes keys after timeout', async function () {
+        // Stub methods interacting with file system to avoid flaky test.
+        sinon.stub(SshKeyPair, 'generateSshKeyPair')
+        const deleteStub = sinon.stub(SshKeyPair.prototype, 'delete')
+
+        keyPair = await SshKeyPair.getSshKeyPair(keyPath, 50)
+        await clock.tickAsync(10)
+        sinon.assert.notCalled(deleteStub)
+        await clock.tickAsync(100)
+        sinon.assert.calledOnce(deleteStub)
+        sinon.restore()
     })
 })

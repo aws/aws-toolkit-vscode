@@ -139,22 +139,9 @@ describe('Ec2ConnectClient', function () {
                 instanceId: 'test-id',
                 region: 'test-region',
             }
-            const mockKeys = await SshKeyPair.getSshKeyPair('')
+            const mockKeys = await SshKeyPair.getSshKeyPair('', 0)
             await client.sendSshKeyToInstance(testSelection, mockKeys, '')
             sinon.assert.calledWith(sendCommandStub, testSelection.instanceId, 'AWS-RunShellScript')
-            sinon.restore()
-        })
-    })
-
-    describe('cleanUpState', async function () {
-        it('deletes ssh key pair after X seconds of connection estalished', async function () {
-            sinon.stub(SshKeyPair, 'generateSshKeyPair')
-            const deleteKeyPair = sinon.stub(SshKeyPair.prototype, 'delete')
-            const mockKeys = await SshKeyPair.getSshKeyPair('')
-            sinon.assert.notCalled(deleteKeyPair)
-            await client.cleanUpState(mockKeys)
-            sinon.assert.calledOnce(deleteKeyPair)
-
             sinon.restore()
         })
     })

@@ -57,10 +57,18 @@ export class SshKeyPair {
         await fs.remove(this.publicKeyPath)
         await fs.remove(this.keyPath)
 
+        if (!this.lifeTimeout.completed) {
+            this.lifeTimeout.cancel()
+        }
+
         this.deleted = true
     }
 
     public isDeleted(): boolean {
         return this.deleted
+    }
+
+    public timeAlive(): number {
+        return this.lifeTimeout.elapsedTime
     }
 }
