@@ -332,9 +332,7 @@ export class CWCTelemetryHelper {
 
     public recordAddMessage(triggerPayload: TriggerPayload, message: PromptAnswer) {
         const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(message.tabID)
-        const hasProjectLevelContext = triggerPayload.relevantTextDocuments
-            ? triggerPayload.relevantTextDocuments.length > 0 && triggerPayload.useRelevantDocuments === true
-            : false
+        const hasProjectLevelContext = triggerPayload.relevantTextDocuments &&            triggerPayload.relevantTextDocuments.length > 0 && triggerPayload.useRelevantDocuments === true            
         const event: AmazonqAddMessage = {
             result: 'Succeeded',
             cwsprChatConversationId: this.getConversationId(message.tabID) ?? '',
