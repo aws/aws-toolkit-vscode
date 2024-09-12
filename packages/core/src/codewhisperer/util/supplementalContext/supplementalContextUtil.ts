@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { fetchSupplementalContextForTest } from './utgUtils'
+import { fetchSupplementalContextForTest, isUtgSupportedLanguage } from './utgUtils'
 import { fetchSupplementalContextForSrc } from './crossFileContextUtil'
 import { isTestFile } from './codeParsingUtil'
 import * as vscode from 'vscode'
@@ -27,7 +27,8 @@ export async function fetchSupplementalContext(
         Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined
     >
 
-    if (isUtg) {
+    // if utg is not support, use crossfile context as fallback
+    if (isUtg && isUtgSupportedLanguage(editor.document.languageId)) {
         supplementalContextPromise = fetchSupplementalContextForTest(editor, cancellationToken)
     } else {
         supplementalContextPromise = fetchSupplementalContextForSrc(editor, cancellationToken)

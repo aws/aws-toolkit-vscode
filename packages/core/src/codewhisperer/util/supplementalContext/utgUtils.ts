@@ -26,7 +26,9 @@ import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem,
 
 type UtgSupportedLanguage = keyof typeof utgLanguageConfigs
 
-function isUtgSupportedLanguage(languageId: vscode.TextDocument['languageId']): languageId is UtgSupportedLanguage {
+export function isUtgSupportedLanguage(
+    languageId: vscode.TextDocument['languageId']
+): languageId is UtgSupportedLanguage {
     return languageId in utgLanguageConfigs
 }
 
