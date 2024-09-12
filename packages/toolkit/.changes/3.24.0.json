@@ -1,0 +1,10 @@
+{
+	"date": "2024-09-12",
+	"version": "3.24.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Record telemetry event when AWS Toolkits extension is uninstalled."
+		}
+	]
+}
