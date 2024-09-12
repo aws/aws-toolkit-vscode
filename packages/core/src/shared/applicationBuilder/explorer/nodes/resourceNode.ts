@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { getIcon } from '../../../icons'
+import { IconPath, getIcon } from '../../../icons'
 import { TreeNode } from '../../../treeview/resourceTreeDataProvider'
 import { ResourceTreeEntity, SamAppLocation } from '../samProject'
 import { SERVERLESS_FUNCTION_TYPE } from '../../../cloudformation/cloudformation'
@@ -64,13 +64,7 @@ export class ResourceNode implements TreeNode {
         // Set the tooltip to the URI of the SAM template
         item.tooltip = this.location.samTemplateUri.toString()
 
-        // Assign iconPath based on the type
-        if (this.type === SERVERLESS_FUNCTION_TYPE) {
-            // We could set item.iconPath = getIcon('aws-lambda-function'), but if item.iconPath is undefined,
-            // VS Code will display a default '!' icon. Currently, we're intentionally leaving icons undefined
-            // for other resources until we receive a final UX decision on their icons.
-            item.iconPath = getIcon('aws-lambda-function')
-        }
+        item.iconPath = this.getIconPath()
 
         // Set the resource URI to the SAM template URI
         item.resourceUri = this.location.samTemplateUri
@@ -81,17 +75,17 @@ export class ResourceNode implements TreeNode {
         return item
     }
 
-    // We plan on adding more resources and icons for those resource. Awaiting UX decision
-    // private getIconPath(): IconPath | undefined {
-    //     switch (this.type) {
-    //         case SERVERLESS_FUNCTION_TYPE:
-    //             return getIcon('aws-lambda-function')
-    //         case 'Api':
-    //             return getIcon('vscode-symbol-event')
-    //         default:
-    //             return undefined
-    //     }
-    // }
+    // Additional resources and corresponding icons will be added in the future.
+    // When adding support for new resources, ensure that each new resource
+    // has an appropriate mapping in place.
+    private getIconPath(): IconPath | undefined {
+        switch (this.type) {
+            case SERVERLESS_FUNCTION_TYPE:
+                return getIcon('aws-lambda-function')
+            default:
+                return getIcon('vscode-info')
+        }
+    }
 
     private getResourceId(): ResourceTypeId {
         switch (this.type) {
