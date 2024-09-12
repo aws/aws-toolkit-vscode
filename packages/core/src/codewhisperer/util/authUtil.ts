@@ -136,14 +136,12 @@ export class AuthUtil {
                 Commands.tryExecute('aws.amazonq.updateReferenceLog'),
             ])
 
-            await setContext('aws.codewhisperer.connected', this.isConnected())
+            await this.setVscodeContextProps()
 
             // To check valid connection
             if (this.isValidEnterpriseSsoInUse() || (this.isBuilderIdInUse() && !this.isConnectionExpired())) {
-                // start the feature config polling job
                 await showAmazonQWalkthroughOnce()
             }
-            await this.setVscodeContextProps()
         })
     })
 

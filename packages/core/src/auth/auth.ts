@@ -14,7 +14,7 @@ import { Credentials } from '@aws-sdk/types'
 import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { errorCode, isAwsError, isNetworkError, ToolkitError, UnknownError } from '../shared/errors'
-import { getCache } from './sso/cache'
+import { getCache, getCacheFileWatcher } from './sso/cache'
 import { isNonNullable, Mutable } from '../shared/utilities/tsUtils'
 import { builderIdStartUrl, SsoToken, truncateStartUrl } from './sso/model'
 import { SsoClient } from './sso/clients'
@@ -133,6 +133,7 @@ const authClassName = 'Auth'
 
 export class Auth implements AuthService, ConnectionManager {
     readonly #ssoCache = getCache()
+    readonly #ssoCacheWatcher = getCacheFileWatcher()
     readonly #validationErrors = new Map<Connection['id'], Error>()
     readonly #invalidCredentialsTimeouts = new Map<Connection['id'], Timeout>()
     readonly #onDidChangeActiveConnection = new vscode.EventEmitter<StatefulConnection | undefined>()
@@ -159,6 +160,10 @@ export class Auth implements AuthService, ConnectionManager {
 
     public get hasConnections() {
         return this.store.listProfiles().length !== 0
+    }
+
+    public get cacheWatcher() {
+        return this.#ssoCacheWatcher
     }
 
     /**
