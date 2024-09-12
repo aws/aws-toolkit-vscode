@@ -14,7 +14,6 @@ import {
     findParentProjectFile,
     getWorkspaceFoldersByPrefixes,
     getWorkspaceRelativePath,
-    listFilesWithinDistanceAgainstFile,
     neighborFiles,
 } from '../../../shared/utilities/workspaceUtils'
 import { getTestWorkspaceFolder } from '../../integrationTestsUtilities'
@@ -438,69 +437,6 @@ describe('getWorkspaceFoldersByPrefixes', function () {
     })
 })
 
-describe('listFilesWithinDistanceAgainstFile', function () {
-    it('return files including self within file distance', async function () {
-        const ws = await createTestWorkspaceFolder('root')
-        const rootUri = ws.uri.fsPath
-
-        const a = path.join(rootUri, 'util', 'context', 'a.java')
-        const b = path.join(rootUri, 'util', 'b.java')
-        const c = path.join(rootUri, 'util', 'service', 'c.java')
-        const d = path.join(rootUri, 'd.java')
-        const e = path.join(rootUri, 'util', 'context', 'e.java')
-        const f = path.join(rootUri, 'util', 'foo', 'bar', 'baz', 'f.java')
-
-        await toFile('a', a)
-        await toFile('b', b)
-        await toFile('c', c)
-        await toFile('d', d)
-        await toFile('e', e)
-        await toFile('f', f)
-
-        // search child dirs and distance 0 against file a
-        assert.deepStrictEqual(
-            await listFilesWithinDistanceAgainstFile(a, 0, {
-                searchChild: true,
-                workspaceFolders: [ws],
-            }),
-            new Set([a, e])
-        )
-        assert.strictEqual(getFileDistance(a, e), 0)
-
-        // search parent dirs and distance 1 against file a
-        assert.deepStrictEqual(
-            await listFilesWithinDistanceAgainstFile(a, 1, {
-                searchChild: false,
-                workspaceFolders: [ws],
-            }),
-            new Set([a, b, e])
-        )
-        assert.strictEqual(getFileDistance(a, b), 1)
-
-        // search child dirs and distance 1 against file b
-        assert.deepStrictEqual(
-            await listFilesWithinDistanceAgainstFile(b, 1, {
-                searchChild: true,
-                workspaceFolders: [ws],
-            }),
-            new Set([a, b, c, e])
-        )
-        assert.strictEqual(getFileDistance(b, a), 1)
-        assert.strictEqual(getFileDistance(b, c), 1)
-        assert.strictEqual(getFileDistance(b, e), 1)
-
-        // search parent dirs and distance 1 against file b
-        assert.deepStrictEqual(
-            await listFilesWithinDistanceAgainstFile(b, 1, {
-                searchChild: false,
-                workspaceFolders: [ws],
-            }),
-            new Set([b, d])
-        )
-        assert.strictEqual(getFileDistance(b, d), 1)
-    })
-})
-
 /**
  *     1. A: root/util/context/a.ts
  *     2. B: root/util/b.ts
@@ -547,12 +483,12 @@ describe('neighborFiles', function () {
         await toFile('e', e)
         await toFile('f', f)
 
-        const neighborOfA = await neighborFiles(a, { fileDistance: 1, workspaceFolders: [ws] })
-        const neighborOfB = await neighborFiles(b, { fileDistance: 1, workspaceFolders: [ws] })
-        const neighborOfC = await neighborFiles(c, { fileDistance: 1, workspaceFolders: [ws] })
-        const neighborOfD = await neighborFiles(d, { fileDistance: 1, workspaceFolders: [ws] })
-        const neighborOfE = await neighborFiles(e, { fileDistance: 1, workspaceFolders: [ws] })
-        const neighborOfF = await neighborFiles(f, { fileDistance: 1, workspaceFolders: [ws] })
+        const neighborOfA = await neighborFiles(a, 1, { workspaceFolders: [ws] })
+        const neighborOfB = await neighborFiles(b, 1, { workspaceFolders: [ws] })
+        const neighborOfC = await neighborFiles(c, 1, { workspaceFolders: [ws] })
+        const neighborOfD = await neighborFiles(d, 1, { workspaceFolders: [ws] })
+        const neighborOfE = await neighborFiles(e, 1, { workspaceFolders: [ws] })
+        const neighborOfF = await neighborFiles(f, 1, { workspaceFolders: [ws] })
 
         assert.deepStrictEqual(neighborOfA, new Set([b, e]))
         assert.strictEqual(getFileDistance(a, b), 1)
