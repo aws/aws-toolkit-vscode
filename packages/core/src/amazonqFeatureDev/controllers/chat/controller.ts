@@ -349,13 +349,8 @@ export class FeatureDevController {
             await session.send(message)
             const filePaths = session.state.filePaths ?? []
             const deletedFiles = session.state.deletedFiles ?? []
-
             // Only add the follow up accept/deny buttons when the tab hasn't been closed/request hasn't been cancelled
             if (session?.state?.tokenSource?.token.isCancellationRequested) {
-                session?.state.tokenSource?.dispose()
-                if (session?.state?.tokenSource) {
-                    session.state.tokenSource = undefined
-                }
                 return
             }
 
@@ -416,6 +411,14 @@ export class FeatureDevController {
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
         } finally {
             // Finish processing the event
+
+            if (session?.state?.tokenSource?.token.isCancellationRequested) {
+                session?.state.tokenSource?.dispose()
+                if (session?.state?.tokenSource) {
+                    session.state.tokenSource = undefined
+                }
+                return
+            }
             this.messenger.sendAsyncEventProgress(tabID, false, undefined)
 
             // Lock the chat input until they explicitly click one of the follow ups

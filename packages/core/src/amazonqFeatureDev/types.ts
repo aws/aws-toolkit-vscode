@@ -21,6 +21,7 @@ export type Interaction = {
 export interface SessionStateInteraction {
     nextState: SessionState | Omit<SessionState, 'uploadId'> | undefined
     interaction: Interaction
+    currentCodeGenerationId?: string
 }
 
 export enum DevPhase {
@@ -60,7 +61,7 @@ export interface SessionState {
     readonly references?: CodeReference[]
     readonly phase?: SessionStatePhase
     readonly uploadId: string
-    readonly currentCodeGenerationId?: string
+    currentCodeGenerationId?: string
     tokenSource?: CancellationTokenSource
     readonly tabID: string
     interact(action: SessionStateAction): Promise<SessionStateInteraction>

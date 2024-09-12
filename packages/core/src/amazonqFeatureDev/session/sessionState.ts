@@ -126,7 +126,7 @@ abstract class CodeGenBase {
     public phase: SessionStatePhase = DevPhase.CODEGEN
     public readonly conversationId: string
     public readonly uploadId: string
-    public readonly currentCodeGenerationId?: string
+    public currentCodeGenerationId?: string
 
     constructor(
         protected config: SessionStateConfig,
@@ -274,6 +274,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
 
                 action.tokenSource?.token.onCancellationRequested(() => {
                     this.isCancellationRequested = true
+                    if (action.tokenSource) this.tokenSource = action.tokenSource
                     action.tokenSource?.dispose()
                     action.tokenSource = undefined
                 })
@@ -285,8 +286,11 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     this.config.conversationId,
                     this.config.uploadId,
                     action.msg,
-                    this.config.currentCodeGenerationId
+                    this.currentCodeGenerationId
                 )
+
+                this.currentCodeGenerationId = codeGenerationId
+                this.config.currentCodeGenerationId = codeGenerationId
 
                 if (!this.isCancellationRequested) {
                     action.messenger.sendAnswer({
@@ -325,7 +329,8 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     this.currentIteration + 1,
                     this.codeGenerationRemainingIterationCount,
                     this.codeGenerationTotalIterationCount,
-                    this.tokenSource
+                    this.tokenSource,
+                    this.currentCodeGenerationId
                 )
                 return {
                     nextState,
@@ -428,7 +433,6 @@ export class MockCodeGenState implements SessionState {
 export class PrepareCodeGenState implements SessionState {
     public readonly phase = DevPhase.CODEGEN
     public uploadId: string
-    public currentCodeGenerationId?: string
     public conversationId: string
     public tokenSource: vscode.CancellationTokenSource
     constructor(
@@ -440,11 +444,12 @@ export class PrepareCodeGenState implements SessionState {
         private currentIteration: number,
         public codeGenerationRemainingIterationCount?: number,
         public codeGenerationTotalIterationCount?: number,
-        public superTokenSource?: vscode.CancellationTokenSource
+        public superTokenSource?: vscode.CancellationTokenSource,
+        public currentCodeGenerationId?: string
     ) {
         this.tokenSource = superTokenSource || new vscode.CancellationTokenSource()
         this.uploadId = config.uploadId
-        this.currentCodeGenerationId = config.currentCodeGenerationId
+        this.currentCodeGenerationId = currentCodeGenerationId
         this.conversationId = config.conversationId
     }
 
@@ -496,7 +501,7 @@ export class PrepareCodeGenState implements SessionState {
             this.uploadId = uploadId
         }
         const nextState = new CodeGenState(
-            { ...this.config, uploadId: this.uploadId, currentCodeGenerationId: this.config.currentCodeGenerationId },
+            { ...this.config, uploadId: this.uploadId, currentCodeGenerationId: this.currentCodeGenerationId },
             this.filePaths,
             this.deletedFiles,
             this.references,

@@ -30,7 +30,6 @@ const mockSessionStateAction = (msg?: string): SessionStateAction => {
     }
 }
 
-let mockGeneratePlan: sinon.SinonStub
 let mockGetCodeGeneration: sinon.SinonStub
 let mockExportResultArchive: sinon.SinonStub
 let mockCreateUploadUrl: sinon.SinonStub
@@ -49,7 +48,6 @@ const mockSessionStateConfig = ({
     proxyClient: {
         createConversation: () => sinon.stub(),
         createUploadUrl: () => mockCreateUploadUrl(),
-        generatePlan: () => mockGeneratePlan(),
         startCodeGeneration: () => sinon.stub(),
         getCodeGeneration: () => mockGetCodeGeneration(),
         exportResultArchive: () => mockExportResultArchive(),

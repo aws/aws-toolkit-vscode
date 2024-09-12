@@ -89,6 +89,7 @@ export class Session {
                 ...this.getSessionStateConfig(),
                 conversationId: this.conversationId,
                 uploadId: '',
+                currentCodeGenerationId: undefined,
             },
             [],
             [],
@@ -109,7 +110,6 @@ export class Session {
             workspaceFolders: this.config.workspaceFolders,
             proxyClient: this.proxyClient,
             conversationId: this.conversationId,
-            currentCodeGenerationId: this.currentCodeGenerationId as string,
         }
     }
 
