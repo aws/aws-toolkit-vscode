@@ -272,7 +272,9 @@ export async function invokeRemoteLambda(
         Source: source,
     })
 
-    await wv.show({ title: localize('AWS.invokeLambda.title', 'Invoke Lambda {0}', resource.functionName) })
+    await wv.show({
+        title: localize('AWS.invokeLambda.title', 'Invoke Lambda {0}', resource.configuration.FunctionName),
+    })
 }
 
 export async function listRemoteTestEvents(stackName: string, region: string): Promise<string[]> {
