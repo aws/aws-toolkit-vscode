@@ -45,6 +45,8 @@ import { DataQuickPickItem, createQuickPick } from '../ui/pickerPrompter'
 import { createCommonButtons } from '../ui/buttons'
 import { samDeployUrl } from '../constants'
 import { OpenTemplateParams, OpenTemplateWizard } from '../applicationBuilder/explorer/openTemplate'
+import { telemetry } from '../telemetry'
+import { Metric, AppBuilderOpenTemplate, LambdaGoToHandler } from '../telemetry/telemetry.gen'
 
 const sharedDetectSamCli = shared(detectSamCli)
 
@@ -152,45 +154,12 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
             const toggled = !settings.get('enableCodeLenses', false)
             await settings.update('enableCodeLenses', toggled)
         }),
-        Commands.register({ id: 'aws.appBuilder.openTemplate', autoconnect: false }, async (arg: TreeNode) => {
-            const templateUri = arg ? (arg.resource as SamAppLocation).samTemplateUri : await promptUserForTemplate()
-            if (!templateUri) {
-                return
-            }
-            const document = await vscode.workspace.openTextDocument(templateUri)
-            await vscode.window.showTextDocument(document)
-        }),
-        Commands.register({ id: 'aws.appBuilder.openHandler', autoconnect: false }, async (arg: ResourceNode) => {
-            const folderUri = arg.resource.workspaceFolder.uri
-            let handler: string | undefined
-            let extension = '*'
-            if (arg.resource.resource.Runtime?.includes('java')) {
-                handler = arg.resource.resource.Handler?.split('::')[0]
-                if (handler?.includes('.')) {
-                    handler = handler.split('.')[1]
-                }
-                extension = 'java'
-            } else if (arg.resource.resource.Runtime?.includes('dotnet')) {
-                handler = arg.resource.resource.Handler?.split('::')[1]
-                if (handler?.includes('.')) {
-                    handler = handler.split('.')[1]
-                }
-                extension = 'cs'
-            } else {
-                handler = arg.resource.resource.Handler?.split('.')[0]
-            }
-            const handlerFile = (
-                await vscode.workspace.findFiles(
-                    new vscode.RelativePattern(folderUri, `**/${handler}.${extension}`),
-                    new vscode.RelativePattern(folderUri, '.aws-sam')
-                )
-            )[0]
-            if (!handlerFile) {
-                throw new ToolkitError(`No handler file found with name "${handler}"`)
-            }
-            const document = await vscode.workspace.openTextDocument(handlerFile)
-            await vscode.window.showTextDocument(document)
-        }),
+        Commands.register({ id: 'aws.appBuilder.openTemplate', autoconnect: false }, async (arg: TreeNode) =>
+            telemetry.appBuilder_openTemplate.run(async (span) => await runOpenTemplate(span, arg))
+        ),
+        Commands.register({ id: 'aws.appBuilder.openHandler', autoconnect: false }, async (arg: ResourceNode) =>
+            telemetry.lambda_goToHandler.run(async (span) => await runOpenHandler(span, arg))
+        ),
         Commands.register({ id: 'aws.appBuilder.deploy', autoconnect: true }, async (arg) => {
             const params = await (await deployTypePrompt()).prompt()
             if (params === 'deploy') {
@@ -201,6 +170,54 @@ async function registerCommands(ctx: ExtContext, settings: SamCliSettings): Prom
         })
     )
 }
+
+async function runOpenTemplate(span: Metric<AppBuilderOpenTemplate>, arg: TreeNode) {
+    if (arg) {
+        span.record({ source: 'AppBuilderOpenTemplate' })
+    } else {
+        span.record({ source: 'commandPalette' })
+    }
+    const templateUri = arg ? (arg.resource as SamAppLocation).samTemplateUri : await promptUserForTemplate()
+    if (!templateUri) {
+        throw new ToolkitError('No template provided', { code: 'NoTemplateProvided' })
+    }
+    const document = await vscode.workspace.openTextDocument(templateUri)
+    await vscode.window.showTextDocument(document)
+}
+
+async function runOpenHandler(span: Metric<LambdaGoToHandler>, arg: ResourceNode) {
+    span.record({ source: 'AppBuilderOpenHandler' })
+    const folderUri = arg.resource.workspaceFolder.uri
+    let handler: string | undefined
+    let extension = '*'
+    if (arg.resource.resource.Runtime?.includes('java')) {
+        handler = arg.resource.resource.Handler?.split('::')[0]
+        if (handler?.includes('.')) {
+            handler = handler.split('.')[1]
+        }
+        extension = 'java'
+    } else if (arg.resource.resource.Runtime?.includes('dotnet')) {
+        handler = arg.resource.resource.Handler?.split('::')[1]
+        if (handler?.includes('.')) {
+            handler = handler.split('.')[1]
+        }
+        extension = 'cs'
+    } else {
+        handler = arg.resource.resource.Handler?.split('.')[0]
+    }
+    const handlerFile = (
+        await vscode.workspace.findFiles(
+            new vscode.RelativePattern(folderUri, `**/${handler}.${extension}`),
+            new vscode.RelativePattern(folderUri, '.aws-sam')
+        )
+    )[0]
+    if (!handlerFile) {
+        throw new ToolkitError(`No handler file found with name "${handler}"`, { code: 'NoHandlerFound' })
+    }
+    const document = await vscode.workspace.openTextDocument(handlerFile)
+    await vscode.window.showTextDocument(document)
+}
+
 async function promptUserForTemplate() {
     const registry = await globals.templateRegistry
     const openTemplateParams: Partial<OpenTemplateParams> = {}
