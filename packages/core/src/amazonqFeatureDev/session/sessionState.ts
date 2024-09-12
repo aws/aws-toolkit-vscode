@@ -306,6 +306,9 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                         this.tokenSource = action.tokenSource
                     }
                     this.isCancellationRequested = true
+                    if (action.tokenSource) {
+                        this.tokenSource = action.tokenSource
+                    }
                     action.tokenSource?.dispose()
                     action.tokenSource = undefined
                 })
@@ -320,6 +323,9 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     codeGenerationId,
                     this.currentCodeGenerationId
                 )
+
+                this.currentCodeGenerationId = codeGenerationId
+                this.config.currentCodeGenerationId = codeGenerationId
 
                 if (!this.isCancellationRequested) {
                     action.messenger.sendAnswer({
@@ -373,10 +379,10 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     this.currentIteration + 1,
                     this.codeGenerationRemainingIterationCount,
                     this.codeGenerationTotalIterationCount,
-                    this.currentCodeGenerationId,
                     action.uploadHistory,
                     codeGenerationId,
-                    this.tokenSource
+                    this.tokenSource,
+                    this.currentCodeGenerationId
                 )
                 return {
                     nextState,
@@ -498,10 +504,10 @@ export class PrepareCodeGenState implements SessionState {
         public currentIteration: number,
         public codeGenerationRemainingIterationCount?: number,
         public codeGenerationTotalIterationCount?: number,
-        public currentCodeGenerationId?: string,
         public uploadHistory: UploadHistory = {},
         public codeGenerationId?: string,
-        public superTokenSource?: vscode.CancellationTokenSource
+        public superTokenSource?: vscode.CancellationTokenSource,
+        public currentCodeGenerationId?: string
     ) {
         this.tokenSource = superTokenSource || new vscode.CancellationTokenSource()
         this.uploadId = config.uploadId

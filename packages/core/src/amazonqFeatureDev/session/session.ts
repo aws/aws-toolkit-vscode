@@ -109,7 +109,6 @@ export class Session {
             workspaceFolders: this.config.workspaceFolders,
             proxyClient: this.proxyClient,
             conversationId: this.conversationId,
-            currentCodeGenerationId: this.currentCodeGenerationId as string,
         }
     }
 
