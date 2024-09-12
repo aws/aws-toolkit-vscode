@@ -13,7 +13,7 @@ import * as localizedText from '../shared/localizedText'
 import { Credentials } from '@aws-sdk/types'
 import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
 import { Timeout } from '../shared/utilities/timeoutUtils'
-import { DiskCacheError, errorCode, isAwsError, isNetworkError, ToolkitError, UnknownError } from '../shared/errors'
+import { errorCode, isAwsError, isNetworkError, ToolkitError, UnknownError } from '../shared/errors'
 import { getCache } from './sso/cache'
 import { isNonNullable, Mutable } from '../shared/utilities/tsUtils'
 import { builderIdStartUrl, SsoToken, truncateStartUrl } from './sso/model'
@@ -64,6 +64,7 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { randomUUID } from '../shared/crypto'
 import { asStringifiedStack } from '../shared/telemetry/spans'
 import { withTelemetryContext } from '../shared/telemetry/util'
+import { DiskCacheError } from '../shared/utilities/cacheUtils'
 
 interface AuthService {
     /**
@@ -854,11 +855,10 @@ export class Auth implements AuthService, ConnectionManager {
             })
         }
 
-        const possibleCacheError = DiskCacheError.instanceIf(e)
-        if (possibleCacheError instanceof DiskCacheError) {
+        if (e instanceof DiskCacheError) {
             throw new ToolkitError('Failed to update connection due to file system operation failures', {
-                cause: possibleCacheError,
-                code: possibleCacheError.code,
+                cause: e,
+                code: e.code,
             })
         }
     }
