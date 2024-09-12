@@ -198,7 +198,7 @@ export class Ec2ConnectionManager {
         const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
         const keyPair = await this.configureSshKeys(selection, remoteUser)
         const hostNamePrefix = 'aws-ec2-'
-        const sshConfig = new SshConfig(ssh, hostNamePrefix, 'ec2_connect', keyPair.getPublicKeyPath())
+        const sshConfig = new SshConfig(ssh, hostNamePrefix, 'ec2_connect', keyPair.getPrivateKeyPath())
 
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
