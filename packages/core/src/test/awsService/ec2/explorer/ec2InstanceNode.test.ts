@@ -48,7 +48,10 @@ describe('ec2InstanceNode', function () {
     })
 
     it('initializes the label', async function () {
-        assert.strictEqual(testNode.label, `${getNameOfInstance(testInstance)} (${testInstance.InstanceId})`)
+        assert.strictEqual(
+            testNode.label,
+            `${getNameOfInstance(testInstance)} (${testInstance.InstanceId}) ${testInstance.status!.toUpperCase()}`
+        )
     })
 
     it('initializes the functionName', async function () {
