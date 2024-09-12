@@ -20,6 +20,8 @@ import { session } from '../util/codeWhispererSession'
 import { noSuggestions } from '../models/constants'
 import { Commands } from '../../shared/vscode/commands2'
 import { listCodeWhispererCommandsId } from '../ui/statusBarMenu'
+import { trace, traceEvents } from '../../shared/telemetry/trace'
+import { globals } from '../../shared'
 
 export class InlineCompletionService {
     private maxPage = 100
@@ -158,6 +160,9 @@ export class InlineCompletionService {
         }
         TelemetryHelper.instance.tryRecordClientComponentLatency()
 
+        traceEvents.set(trace.getTraceId(), {
+            finishedPaginatingEvents: globals.clock.Date.now(),
+        })
         return {
             result: 'Succeeded',
             errorMessage: undefined,

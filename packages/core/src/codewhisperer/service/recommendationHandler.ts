@@ -44,6 +44,7 @@ import { application } from '../util/codeWhispererApplication'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
 import path from 'path'
+import { trace, traceEvents } from '../../shared/telemetry/trace'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -406,6 +407,10 @@ export class RecommendationHandler {
                 this.reportUserDecisions(-1)
             }
         }
+
+        traceEvents.set(trace.getTraceId(), {
+            finishedGetRecommendations: globals.clock.Date.now(),
+        })
         return Promise.resolve<GetRecommendationsResponse>({
             result: invocationResult,
             errorMessage: errorMessage,

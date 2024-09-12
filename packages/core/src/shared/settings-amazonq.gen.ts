@@ -15,9 +15,7 @@ export const amazonqSettings = {
         "createCredentialsProfile": {},
         "codeWhispererNewWelcomeMessage": {},
         "codeWhispererConnectionExpired": {},
-        "amazonQWelcomePage": {},
-        "amazonQSessionConfigurationMessage": {},
-        "ssoCacheError": {}
+        "amazonQWelcomePage": {}
     },
     "amazonQ.showInlineCodeSuggestionsWithCodeReferences": {},
     "amazonQ.importRecommendationForInlineCodeSuggestions": {},

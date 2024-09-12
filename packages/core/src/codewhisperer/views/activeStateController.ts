@@ -11,6 +11,8 @@ import { subscribeOnce } from '../../shared/utilities/vsCodeUtils'
 import { Container } from '../service/serviceContainer'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { cancellableDebounce } from '../../shared/utilities/functionUtils'
+import { trace, traceEvents } from '../../shared/telemetry/trace'
+import { globals } from '../../shared'
 
 export class ActiveStateController implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
@@ -145,6 +147,10 @@ export class ActiveStateController implements vscode.Disposable {
         } else {
             await this.updateDecorations(editor, selections, RecommendationService.instance.isRunning)
         }
+
+        traceEvents.set(trace.getTraceId(), {
+            refresh: globals.clock.Date.now(),
+        })
     }
 
     async updateDecorations(editor: vscode.TextEditor, lines: LineSelection[], shouldDisplay: boolean) {
@@ -156,6 +162,15 @@ export class ActiveStateController implements vscode.Disposable {
             editor.setDecorations(this.cwLineHintDecoration, [range])
         } else {
             editor.setDecorations(this.cwLineHintDecoration, [])
+        }
+
+        traceEvents.set(trace.getTraceId(), {
+            updateDecorations: globals.clock.Date.now(),
+        })
+
+        if (trace.isActive()) {
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            console.log(traceEvents.get(trace.getTraceId()))
         }
     }
 }

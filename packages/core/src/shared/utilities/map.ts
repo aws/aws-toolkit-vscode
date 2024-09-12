@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import _ from 'lodash'
 import { getLogger } from '../logger'
 import type { KeyedCache } from './cacheUtils'
 
@@ -35,7 +36,8 @@ export abstract class NestedMap<Key, Value = { [key: string]: any }> implements 
 
     set(key: Key, data: Partial<Value>): void {
         const currentData = this.get(key)
-        this.data[this.hash(key)] = { ...currentData, ...data }
+        // deep merge the objects
+        this.data[this.hash(key)] = _.merge(currentData, data)
     }
 
     delete(key: Key, reason: string): void {
@@ -58,6 +60,23 @@ export abstract class NestedMap<Key, Value = { [key: string]: any }> implements 
      * The default value returned from {@link get}() when {@link has}() is false
      */
     protected abstract get default(): Value
+}
+
+/**
+ * An implementation of NestedMap specifically used for mapping strings to objects
+ */
+export class RecordMap<Value = { [key: string]: any }> extends NestedMap<string, Value> {
+    protected override hash(key: string): string {
+        return key
+    }
+
+    protected override get name(): string {
+        return 'RecordMap'
+    }
+
+    protected override get default(): Value {
+        return {} as Value
+    }
 }
 
 /**

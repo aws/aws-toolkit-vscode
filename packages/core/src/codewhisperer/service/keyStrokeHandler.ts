@@ -16,6 +16,8 @@ import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { ClassifierTrigger } from './classifierTrigger'
 import { extractContextForCodeWhisperer } from '../util/editorContext'
 import { RecommendationService } from './recommendationService'
+import { trace, traceEvents } from '../../shared/telemetry/trace'
+import { globals } from '../../shared'
 
 /**
  * This class is for CodeWhisperer auto trigger
@@ -164,14 +166,24 @@ export class KeyStrokeHandler {
         if (!editor) {
             return
         }
-        // RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
-        await RecommendationService.instance.generateRecommendation(
-            client,
-            editor,
-            'AutoTrigger',
-            config,
-            autoTriggerType
-        )
+
+        await trace.run(async () => {
+            traceEvents.set(trace.getTraceId(), {
+                invokeAutomatedTrigger: globals.clock.Date.now(),
+            })
+
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            console.log(`trace id: ${trace.getTraceId()}`)
+
+            // RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
+            await RecommendationService.instance.generateRecommendation(
+                client,
+                editor,
+                'AutoTrigger',
+                config,
+                autoTriggerType
+            )
+        })
     }
 }
 

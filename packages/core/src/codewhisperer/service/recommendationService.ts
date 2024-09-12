@@ -13,6 +13,8 @@ import { RecommendationHandler } from '../service/recommendationHandler'
 import { InlineCompletionService } from '../service/inlineCompletionService'
 import { ClassifierTrigger } from './classifierTrigger'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
+import { globals } from '../../shared'
+import { trace, traceEvents } from '../../shared/telemetry/trace'
 
 export interface SuggestionActionEvent {
     readonly editor: vscode.TextEditor | undefined
@@ -144,6 +146,9 @@ export class RecommendationService {
                     response: undefined,
                 })
 
+                traceEvents.set(trace.getTraceId(), {
+                    paginatingEvents: globals.clock.Date.now(),
+                })
                 response = await InlineCompletionService.instance.getPaginatedRecommendation(
                     client,
                     editor,
@@ -152,6 +157,9 @@ export class RecommendationService {
                     autoTriggerType,
                     event
                 )
+                traceEvents.set(trace.getTraceId(), {
+                    finishedPaginatingEvents: globals.clock.Date.now(),
+                })
             } finally {
                 this._isRunning = false
                 this._onSuggestionActionEvent.fire({

@@ -25,7 +25,7 @@ import {
 import { entries, NumericKeys } from '../utilities/tsUtils'
 import { PerformanceTracker } from '../performance/performance'
 
-const AsyncLocalStorage: typeof AsyncLocalStorageClass =
+export const AsyncLocalStorage: typeof AsyncLocalStorageClass =
     require('async_hooks').AsyncLocalStorage ??
     class<T> {
         readonly #store: T[] = []
