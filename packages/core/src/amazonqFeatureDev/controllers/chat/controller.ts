@@ -417,22 +417,23 @@ export class FeatureDevController {
                 if (session?.state?.tokenSource) {
                     session.state.tokenSource = undefined
                 }
-                return
-            }
-            this.messenger.sendAsyncEventProgress(tabID, false, undefined)
+                getLogger().debug('Request cancelled, skipping further processing')
+            } else {
+                this.messenger.sendAsyncEventProgress(tabID, false, undefined)
 
-            // Lock the chat input until they explicitly click one of the follow ups
-            this.messenger.sendChatInputEnabled(tabID, false)
+                // Lock the chat input until they explicitly click one of the follow ups
+                this.messenger.sendChatInputEnabled(tabID, false)
 
-            if (!this.isAmazonQVisible) {
-                const open = 'Open chat'
-                const resp = await vscode.window.showInformationMessage(
-                    i18n('AWS.amazonq.featureDev.answer.qGeneratedCode'),
-                    open
-                )
-                if (resp === open) {
-                    await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
-                    // TODO add focusing on the specific tab once that's implemented
+                if (!this.isAmazonQVisible) {
+                    const open = 'Open chat'
+                    const resp = await vscode.window.showInformationMessage(
+                        i18n('AWS.amazonq.featureDev.answer.qGeneratedCode'),
+                        open
+                    )
+                    if (resp === open) {
+                        await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
+                        // TODO add focusing on the specific tab once that's implemented
+                    }
                 }
             }
         }
