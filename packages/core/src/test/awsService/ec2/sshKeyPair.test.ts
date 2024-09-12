@@ -38,6 +38,13 @@ describe('SshKeyUtility', async function () {
         assert.notStrictEqual(contents.length, 0)
     })
 
+    it('sets key permission to read/write by owner', async function () {
+        const fileMode = (await fs.stat(keyPath)).mode
+        // Mode is in decimal, so convert to decimal with bitmask
+        // source: https://github.com/nodejs/node-v0.x-archive/issues/3045
+        assert.strictEqual(fileMode & 0o777, 0o600)
+    })
+
     it('properly names the public key', function () {
         assert.strictEqual(keyPair.getPublicKeyPath(), `${keyPath}.pub`)
     })
