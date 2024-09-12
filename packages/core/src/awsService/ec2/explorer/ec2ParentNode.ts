@@ -9,6 +9,7 @@ import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { Ec2InstanceNode } from './ec2InstanceNode'
 import { Ec2Client } from '../../../shared/clients/ec2Client'
 import { updateInPlace } from '../../../shared/utilities/collectionUtils'
+import { PollingSet } from '../../../shared/utilities/pollingSet'
 
 export const parentContextValue = 'awsEc2ParentNode'
 export type Ec2Node = Ec2InstanceNode | Ec2ParentNode
@@ -17,6 +18,7 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
     protected readonly placeHolderMessage = '[No EC2 Instances Found]'
     protected ec2InstanceNodes: Map<string, Ec2InstanceNode>
     public override readonly contextValue: string = parentContextValue
+    public readonly pollingSet: PollingSet<string> = new PollingSet(5000, this.updatePendingNodes.bind(this))
 
     public constructor(
         public override readonly regionCode: string,
@@ -48,6 +50,17 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
             (key) =>
                 new Ec2InstanceNode(this, this.ec2Client, this.regionCode, this.partitionId, ec2Instances.get(key)!)
         )
+    }
+
+    private updatePendingNodes() {
+        this.pollingSet.forEach(async (instanceId) => {
+            const childNode = this.ec2InstanceNodes.get(instanceId)!
+            await childNode.updateStatus()
+            if (!childNode.isPending()) {
+                this.pollingSet.delete(instanceId)
+                await childNode.refreshNode()
+            }
+        })
     }
 
     public async clearChildren() {
