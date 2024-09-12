@@ -8,7 +8,12 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as crossFile from 'aws-core-vscode/codewhisperer'
 import { createMockTextEditor } from 'aws-core-vscode/test'
-import { CodeWhispererUserGroupSettings, UserGroup, crossFileContextConfig } from 'aws-core-vscode/codewhisperer'
+import {
+    CodeWhispererUserGroupSettings,
+    UserGroup,
+    crossFileContextConfig,
+    neighborFiles,
+} from 'aws-core-vscode/codewhisperer'
 import {
     assertTabCount,
     closeAllEditors,
@@ -17,7 +22,7 @@ import {
     shuffleList,
     toFile,
 } from 'aws-core-vscode/test'
-import { areEqual, normalize } from 'aws-core-vscode/shared'
+import { areEqual, getFileDistance, normalize } from 'aws-core-vscode/shared'
 import * as path from 'path'
 
 const userGroupSettings = CodeWhispererUserGroupSettings.instance
@@ -272,6 +277,81 @@ describe('crossFileContextUtil', function () {
             const chunks = await crossFile.splitFileToChunks(filePath, crossFileContextConfig.numberOfLinesEachChunk)
             assert.strictEqual(chunks.length, 6)
         })
+    })
+})
+
+/**
+ *     1. A: root/util/context/a.ts
+ *     2. B: root/util/b.ts
+ *     3. C: root/util/service/c.ts
+ *     4. D: root/d.ts
+ *     5. E: root/util/context/e.ts
+ *     6. F: root/util/foo/bar/baz/f.ts
+ *
+ *   neighborfiles(A) = [B, E]
+ *   neighborfiles(B) = [A, C, D, E]
+ *   neighborfiles(C) = [B,]
+ *   neighborfiles(D) = [B,]
+ *   neighborfiles(E) = [A, B]
+ *   neighborfiles(F) = []
+ *
+ *      A B C D E F
+ *   A  x 1 2 2 0 4
+ *   B  1 x 1 1 1 3
+ *   C  2 1 x 2 2 4
+ *   D  2 1 2 x 2 4
+ *   E  0 1 2 2 x 4
+ *   F  4 3 4 4 4 x
+ */
+describe('neighborFiles', function () {
+    it('neighbor file default definition', function () {
+        assert.strictEqual(crossFileContextConfig.neighborFileDistance, 1)
+    })
+
+    it('return files with distance less than or equal to 1', async function () {
+        const ws = await createTestWorkspaceFolder('root')
+        const rootUri = ws.uri.fsPath
+
+        const a = path.join(rootUri, 'util', 'context', 'a.java')
+        const b = path.join(rootUri, 'util', 'b.java')
+        const c = path.join(rootUri, 'util', 'service', 'c.java')
+        const d = path.join(rootUri, 'd.java')
+        const e = path.join(rootUri, 'util', 'context', 'e.java')
+        const f = path.join(rootUri, 'util', 'foo', 'bar', 'baz', 'f.java')
+
+        await toFile('a', a)
+        await toFile('b', b)
+        await toFile('c', c)
+        await toFile('d', d)
+        await toFile('e', e)
+        await toFile('f', f)
+
+        const neighborOfA = await neighborFiles(a, 1, { workspaceFolders: [ws] })
+        const neighborOfB = await neighborFiles(b, 1, { workspaceFolders: [ws] })
+        const neighborOfC = await neighborFiles(c, 1, { workspaceFolders: [ws] })
+        const neighborOfD = await neighborFiles(d, 1, { workspaceFolders: [ws] })
+        const neighborOfE = await neighborFiles(e, 1, { workspaceFolders: [ws] })
+        const neighborOfF = await neighborFiles(f, 1, { workspaceFolders: [ws] })
+
+        assert.deepStrictEqual(neighborOfA, new Set([b, e]))
+        assert.strictEqual(getFileDistance(a, b), 1)
+        assert.strictEqual(getFileDistance(a, e), 0)
+
+        assert.deepStrictEqual(neighborOfB, new Set([a, c, d, e]))
+        assert.strictEqual(getFileDistance(b, c), 1)
+        assert.strictEqual(getFileDistance(b, d), 1)
+        assert.strictEqual(getFileDistance(b, e), 1)
+
+        assert.deepStrictEqual(neighborOfC, new Set([b]))
+        assert.deepStrictEqual(neighborOfD, new Set([b]))
+        assert.deepStrictEqual(neighborOfE, new Set([a, b]))
+
+        assert.deepStrictEqual(neighborOfF, new Set([]))
+        assert.strictEqual(getFileDistance(f, a), 4)
+        assert.strictEqual(getFileDistance(f, b), 3)
+        assert.strictEqual(getFileDistance(f, c), 4)
+        assert.strictEqual(getFileDistance(f, d), 4)
+        assert.strictEqual(getFileDistance(f, e), 4)
     })
 })
 

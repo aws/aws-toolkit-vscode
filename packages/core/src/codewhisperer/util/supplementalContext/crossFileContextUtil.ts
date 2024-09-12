@@ -16,6 +16,7 @@ import { getFileDistance } from '../../../shared/filesystemUtilities'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem } from '../../models/model'
+import { getWorkspaceParentDirectory } from '../../../shared/utilities/workspaceUtils'
 
 type CrossFileSupportedLanguage =
     | 'java'
@@ -247,6 +248,79 @@ export async function getCrossFileCandidates(editor: vscode.TextEditor): Promise
         .map((fileToDistance) => {
             return fileToDistance.file
         })
+}
+
+/**
+ *     1. A: root/util/context/a.ts
+ *     2. B: root/util/b.ts
+ *     3. C: root/util/service/c.ts
+ *     4. D: root/d.ts
+ *     5. E: root/util/context/e.ts
+ *     6. F: root/util/foo/bar/baz/f.ts
+ *
+ *   neighborfiles(A) = [B, E]
+ *   neighborfiles(B) = [A, C, D, E]
+ *   neighborfiles(C) = [B,]
+ *   neighborfiles(D) = [B,]
+ *   neighborfiles(E) = [A, B]
+ *   neighborfiles(F) = []
+ *
+ *      A B C D E F
+ *   A  x 1 2 2 0 4
+ *   B  1 x 1 1 1 3
+ *   C  2 1 x 2 2 4
+ *   D  2 1 2 x 2 4
+ *   E  0 1 2 2 x 4
+ *   F  4 3 4 4 4 x
+ */
+export async function neighborFiles(
+    uri: string,
+    distance: number = crossFileContextConfig.neighborFileDistance,
+    args: {
+        workspaceFolders?: readonly vscode.WorkspaceFolder[]
+    } = {
+        workspaceFolders: vscode.workspace.workspaceFolders,
+    }
+) {
+    const parentDir = getWorkspaceParentDirectory(uri, args)
+    if (!parentDir) {
+        return new Set(uri)
+    }
+
+    let d = distance
+    const res: string[] = []
+    let pendingVisit: string[] = [parentDir]
+
+    while (d >= 0 && pendingVisit.length !== 0) {
+        const toVisit: string[] = []
+        for (const dir of pendingVisit) {
+            const filesAndDirs = await fs.readdir(dir)
+
+            // neighbor files with distance of [distance - d] under directory [dir]
+            const files = filesAndDirs
+                .filter((datum) => datum[1] === vscode.FileType.File)
+                .map((datum) => datum[0])
+                .map((simpleName) => path.join(dir, simpleName))
+
+            res.push(...files)
+
+            const parentDir = getWorkspaceParentDirectory(dir, args)
+            if (parentDir) {
+                toVisit.push(parentDir)
+            }
+
+            const childDirectorysUri = filesAndDirs
+                .filter((datum) => datum[1] === vscode.FileType.Directory)
+                .map((datum) => datum[0])
+                .map((simpleName) => path.join(dir, simpleName))
+            toVisit.push(...childDirectorysUri)
+        }
+
+        pendingVisit = toVisit
+        d--
+    }
+
+    return new Set(res.filter((it) => it !== uri))
 }
 
 function throwIfCancelled(token: vscode.CancellationToken): void | never {
