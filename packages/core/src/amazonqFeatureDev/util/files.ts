@@ -116,7 +116,7 @@ export function getPathsFromZipFilePath(
         }
     }
     // otherwise the first part of the zipPath is the prefix
-    const prefix = zipFilePath.substring(0, zipFilePath.indexOf(path.sep))
+    const prefix = zipFilePath.substring(0, zipFilePath.indexOf(path.sep)) || '.'
     const workspaceFolder = workspacesByPrefix[prefix]
     if (workspaceFolder === undefined) {
         throw new ToolkitError(`Could not find workspace folder for prefix ${prefix}`)
