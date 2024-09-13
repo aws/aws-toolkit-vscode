@@ -25,10 +25,11 @@ export class SshKeyPair {
     }
 
     public static async getSshKeyPair(keyPath: string, lifetime: number) {
-        const keyExists = await fs.pathExists(keyPath)
-        if (!keyExists) {
-            await SshKeyPair.generateSshKeyPair(keyPath)
+        // Overwrite key if already exists
+        if (await fs.pathExists(keyPath)) {
+            await fs.remove(keyPath)
         }
+        await SshKeyPair.generateSshKeyPair(keyPath)
         return new SshKeyPair(keyPath, lifetime)
     }
 
