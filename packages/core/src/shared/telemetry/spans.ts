@@ -24,6 +24,7 @@ import {
 } from '../errors'
 import { entries, NumericKeys } from '../utilities/tsUtils'
 import { PerformanceTracker } from '../performance/performance'
+import { randomUUID } from '../crypto'
 
 const AsyncLocalStorage: typeof AsyncLocalStorageClass =
     require('async_hooks').AsyncLocalStorage ??
@@ -145,6 +146,7 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
         passive: true,
         requiredMetadata: [],
     }
+    private readonly spanId: string
 
     /**
      * These fields appear on the base metric instead of the 'metadata' and
@@ -166,6 +168,9 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
                 this.definition.trackPerformance && (options?.emit ?? false) // only track the performance if we are also emitting
             ),
         }
+
+        this.spanId = randomUUID()
+        this.record({ spanId: this.spanId } as any)
     }
 
     public get startTime(): Date | undefined {
@@ -261,6 +266,10 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
         }
     }
 
+    getSpanId() {
+        return this.spanId
+    }
+
     /**
      * Creates a copy of the span with an uninitialized start time.
      */
@@ -269,7 +278,9 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
     }
 }
 
-type Attributes = Partial<MetricShapes[MetricName]>
+type Attributes = Partial<MetricShapes[MetricName]> & {
+    traceId?: string
+}
 
 interface TelemetryContext {
     readonly spans: TelemetrySpan[]
@@ -365,6 +376,34 @@ export class TelemetryTracer extends TelemetryBase {
     }
 
     /**
+     * Trace represents a higher level event that you want to link with any other spans. It generates
+     * a traceId which is added to all subsequent calls, allowing you to query for all related events.
+     *
+     * Functionally, it is similiar to run. The only difference is the traceId gets added to subsequent telemetry calls.
+     *
+     * See: https://opentelemetry.io/docs/concepts/signals/traces/ to better understand the motivation behind traces
+     *
+     * @param name The name of the trace
+     * @param fn the callback function
+     */
+    private trace<T, U extends MetricName>(name: U, fn: (span: Metric<MetricShapes[U]>) => T): T {
+        return this.runRoot(() => {
+            /**
+             * Make sure we aren't starting a trace inside of a trace. traceId's have to be unique for every
+             * flow, otherwise we can't really tell what the trace belongs to
+             */
+            if (this.attributes?.traceId) {
+                throw new Error('Cannot trace an already tracing telemetry event')
+            }
+
+            this.record({
+                traceId: randomUUID(),
+            })
+            return this.run(name, fn)
+        })
+    }
+
+    /**
      * **You should use {@link run} in the majority of cases. Only use this for instrumenting extension entrypoints.**
      *
      * Executes the given function within an anonymous 'root' span which does not emit
@@ -427,6 +466,7 @@ export class TelemetryTracer extends TelemetryBase {
             record: (data) => getSpan().record(data),
             run: (fn, options?: SpanOptions) => this.run(name as MetricName, fn, options),
             increment: (data) => getSpan().increment(data),
+            trace: (fn) => this.trace(name as MetricName, fn),
         }
     }
 
@@ -437,7 +477,7 @@ export class TelemetryTracer extends TelemetryBase {
     private createSpan(name: string, options?: SpanOptions): TelemetrySpan {
         const span = new TelemetrySpan(name, options).record(this.attributes ?? {})
         if (this.activeSpan && this.activeSpan.name !== rootSpanName) {
-            return span.record({ parentMetric: this.activeSpan.name } satisfies { parentMetric: string } as any)
+            return span.record({ parentId: this.activeSpan.getSpanId() } satisfies { parentId: string } as any)
         }
 
         return span

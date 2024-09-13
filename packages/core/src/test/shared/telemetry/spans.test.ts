@@ -15,6 +15,7 @@ import { withTelemetryContext } from '../../../shared/telemetry/util'
 import { SinonSandbox } from 'sinon'
 import sinon from 'sinon'
 import { stubPerformance } from '../../utilities/performance'
+import * as crypto from '../../../shared/crypto'
 
 describe('TelemetrySpan', function () {
     let clock: ReturnType<typeof installFakeClock>
@@ -336,10 +337,12 @@ describe('TelemetryTracer', function () {
                 })
             })
 
-            it('attaches the parent event name to the child span', function () {
+            it('attaches the parent id to the child span', function () {
+                const spanId = 'a-b-c-d-e-f'
+                sandbox.stub(crypto, 'randomUUID').returns(spanId)
                 tracer.run(metricName, () => tracer.run(nestedName, () => {}))
                 assertTelemetry(metricName, { result: 'Succeeded' })
-                assertTelemetry(nestedName, { result: 'Succeeded', parentMetric: metricName } as any)
+                assertTelemetry(nestedName, { result: 'Succeeded', parentId: spanId } as any)
             })
         })
 
@@ -531,6 +534,114 @@ describe('TelemetryTracer', function () {
                 inst.doesNotEmit()
                 assertTelemetry('function_call', [])
             })
+        })
+    })
+
+    describe('trace()', function () {
+        let uuidStub: sinon.SinonStub
+        const traceId = 'foo-foo-foo-foo-foo'
+        const flowName = 'testTraceFlow'
+
+        beforeEach(() => {
+            uuidStub = sandbox.stub(crypto, 'randomUUID')
+
+            // in the first call we set the trace id in subsequent calls we get the span ids
+            uuidStub.returns(traceId)
+        })
+
+        it('one active trace at a time', function () {
+            const checkSpan = () => {
+                telemetry.trace_event.trace(() => {
+                    telemetry.trace_event.trace(() => {})
+                })
+            }
+            assert.throws(checkSpan)
+        })
+
+        it('should set trace id', function () {
+            telemetry.trace_event.trace((span) => {
+                span.record({ name: flowName })
+                assert.deepStrictEqual(telemetry.activeSpan?.getSpanId(), traceId)
+            })
+            const event = getMetrics('trace_event')
+            assert.deepStrictEqual(event[0].traceId, traceId)
+            assert.deepStrictEqual(event[0].name, 'testTraceFlow')
+        })
+
+        it('trace id is propogated to children', function () {
+            const spanIds = {
+                trace_event: {
+                    spanId: 'traceEvent',
+                    traceId,
+                    parentId: undefined,
+                },
+                amazonq_startConversation: {
+                    spanId: 'amazonq_startConversation',
+                    traceId,
+                    parentId: 'traceEvent',
+                },
+                amazonq_addMessage: {
+                    spanId: 'amazonq_addMessage',
+                    traceId,
+                    parentId: 'amazonq_startConversation',
+                },
+                vscode_executeCommand: {
+                    spanId: 'vscode_executeCommand',
+                    traceId,
+                    parentId: 'traceEvent',
+                },
+                amazonq_enterFocusConversation: {
+                    spanId: 'amazonq_enterFocusConversation',
+                    traceId,
+                    parentId: 'vscode_executeCommand',
+                },
+                amazonq_exitFocusConversation: {
+                    spanId: 'amazonq_exitFocusConversation',
+                    traceId,
+                    parentId: 'amazonq_enterFocusConversation',
+                },
+                amazonq_closeChat: {
+                    spanId: 'amazonq_closeChat',
+                    traceId,
+                    parentId: 'traceEvent',
+                },
+            }
+
+            /**
+             * randomUUID calls:
+             * The first is called on the root event that never gets emitted
+             * The second is called when generating the traceId
+             * The rest are called when generating the spanIds
+             */
+            uuidStub.onCall(1).returns(traceId)
+            let index = 2
+            for (const v of Object.values(spanIds)) {
+                uuidStub.onCall(index).returns(v.spanId)
+                index++
+            }
+
+            telemetry.trace_event.trace(() => {
+                telemetry.amazonq_startConversation.run(() => {
+                    telemetry.amazonq_addMessage.run(() => {})
+                })
+                telemetry.vscode_executeCommand.run(() => {
+                    telemetry.amazonq_enterFocusConversation.run(() => {
+                        telemetry.amazonq_exitFocusConversation.run(() => {})
+                    })
+                })
+                telemetry.amazonq_closeChat.emit({
+                    result: 'Succeeded',
+                })
+            })
+
+            const spanEntries = Object.entries(spanIds)
+            for (let x = 0; x < spanEntries.length; x++) {
+                const [metricName, { spanId, traceId, parentId }] = spanEntries[x]
+                const metric = getMetrics(metricName as keyof MetricShapes)[0] as any
+                assert.deepStrictEqual(metric.traceId, traceId)
+                assert.deepStrictEqual(metric.spanId, spanId)
+                assert.deepStrictEqual(metric.parentId, parentId)
+            }
         })
     })
 })
