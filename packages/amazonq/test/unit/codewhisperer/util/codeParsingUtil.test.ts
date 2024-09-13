@@ -5,6 +5,9 @@
 
 import { extractClasses, extractFunctions, isTestFile, utgLanguageConfigs } from 'aws-core-vscode/codewhisperer'
 import assert from 'assert'
+import { createTestWorkspaceFolder, openATextEditorWithText } from 'aws-core-vscode/test'
+
+let tempFolder: string
 
 describe('RegexValidationForPython', () => {
     it('should extract all function names from a python file content', () => {
@@ -57,6 +60,90 @@ describe('RegexValidationForJava', () => {
 })
 
 describe('isTestFile', () => {
+    beforeEach(async function () {
+        tempFolder = (await createTestWorkspaceFolder()).uri.fsPath
+    })
+
+    it('validate by file path', async function () {
+        const langs = new Map<string, string>([
+            ['java', '.java'],
+            ['python', '.py'],
+            ['typescript', '.py'],
+            ['javascript', '.js'],
+            ['typescriptreact', '.tsx'],
+            ['javascriptreact', '.jsx'],
+        ])
+        const testFilePathsWithoutExt = [
+            '/test/MyClass',
+            '/test/my_class',
+            '/tst/MyClass',
+            '/tst/my_class',
+            '/tests/MyClass',
+            '/tests/my_class',
+        ]
+
+        const srcFilePathsWithoutExt = [
+            '/src/MyClass',
+            'MyClass',
+            'foo/bar/MyClass',
+            'foo/my_class',
+            'my_class',
+            'anyFolderOtherThanTest/foo/myClass',
+        ]
+
+        for (const [languageId, ext] of langs) {
+            const testFilePaths = testFilePathsWithoutExt.map((it) => it + ext)
+            for (const testFilePath of testFilePaths) {
+                const actual = await isTestFile(testFilePath, { languageId: languageId })
+                assert.strictEqual(actual, true)
+            }
+
+            const srcFilePaths = srcFilePathsWithoutExt.map((it) => it + ext)
+            for (const srcFilePath of srcFilePaths) {
+                const actual = await isTestFile(srcFilePath, { languageId: languageId })
+                assert.strictEqual(actual, false)
+            }
+        }
+    })
+
+    async function assertIsTestFile(srcFiles: string[], tstFiles: string[], fileExt: string) {
+        for (const name of tstFiles) {
+            const file = `${name}.${fileExt}`
+            const editor = await openATextEditorWithText('', file, tempFolder, { preview: false })
+            const actual = await isTestFile(editor.document.uri.fsPath, { languageId: editor.document.languageId })
+            assert.strictEqual(actual, true)
+        }
+
+        for (const name of srcFiles) {
+            const file = `${name}.${fileExt}`
+            const editor = await openATextEditorWithText('', file, tempFolder, { preview: false })
+            const actual = await isTestFile(editor.document.uri.fsPath, { languageId: editor.document.languageId })
+            assert.strictEqual(actual, false)
+        }
+    }
+
+    it('validate by file name', async function () {
+        const camelCaseSrc = ['Foo', 'Bar', 'Baz']
+        const camelCaseTst = ['FooTest', 'BarTests']
+        await assertIsTestFile(camelCaseSrc, camelCaseTst, 'java')
+
+        const snakeCaseSrc = ['foo', 'bar']
+        const snakeCaseTst = ['test_foo', 'bar_test']
+        await assertIsTestFile(snakeCaseSrc, snakeCaseTst, 'py')
+
+        const javascriptTst = ['Foo.test', 'Bar.spec']
+        await assertIsTestFile(camelCaseSrc, javascriptTst, 'js')
+
+        const typescriptTst = javascriptTst
+        await assertIsTestFile(camelCaseSrc, typescriptTst, 'ts')
+
+        const jsxTst = javascriptTst
+        await assertIsTestFile(camelCaseSrc, jsxTst, 'jsx')
+
+        const tsxTst = javascriptTst
+        await assertIsTestFile(camelCaseSrc, tsxTst, 'tsx')
+    })
+
     it('should return true if the file name matches the test filename pattern - Java', async () => {
         const filePaths = ['/path/to/MyClassTest.java', '/path/to/TestMyClass.java', '/path/to/MyClassTests.java']
         const language = 'java'
