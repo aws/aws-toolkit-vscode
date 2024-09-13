@@ -34,6 +34,9 @@ import { ChildProcess } from '../../shared/utilities/childProcess'
 import { addTelemetryEnvVar } from '../../shared/sam/cli/samCliInvokerUtils'
 import { getSource } from '../../shared/sam/utils'
 import { telemetry } from '../../shared/telemetry'
+import { getParameters } from '../config/parameterUtils'
+import { filter } from '../../shared/utilities/collectionUtils'
+import { createInputBox } from '../../shared/ui/inputPrompter'
 
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
@@ -46,6 +49,15 @@ interface DeployParams {
     readonly bucketSource: BucketSource
     readonly bucketName: string
     readonly projectRoot: vscode.Uri
+
+    [key: string]: any
+}
+
+function createParamPromptProvider(name: string) {
+    return createInputBox({
+        title: `Specify SAM parameter value for ${name}`,
+        buttons: createCommonButtons(samDeployUrl),
+    })
 }
 
 function bucketSourcePrompter() {
@@ -121,19 +133,30 @@ enum ParamsSource {
 }
 
 class DeployWizard extends Wizard<DeployParams> {
+    registry: CloudFormationTemplateRegistry
+    state: Partial<DeployParams>
+    arg: any
     public constructor(state: Partial<DeployParams>, registry: CloudFormationTemplateRegistry, arg?: any) {
         super({ initState: state, exitPrompterProvider: createExitPrompter })
+        this.registry = registry
+        this.state = state
+        this.arg = arg
+    }
 
+    public override async init(): Promise<this> {
         const getProjectRoot = (template: TemplateItem | undefined) =>
             template ? getWorkspaceUri(template) : undefined
 
         this.form.paramsSource.bindPrompter(() => paramsSourcePrompter())
 
-        if (arg && arg.path) {
+        if (this.arg && this.arg.path) {
             // "Deploy" command was invoked on a template.yaml file.
-            const templateUri = arg as vscode.Uri
+            const templateUri = this.arg as vscode.Uri
             const templateItem = { uri: templateUri, data: {} } as TemplateItem
             this.form.template.setDefault(templateItem)
+
+            await this.addParameterPromptersIfApplicable(templateUri)
+
             this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
@@ -154,15 +177,15 @@ class DeployWizard extends Wizard<DeployParams> {
             })
             this.form.projectRoot.bindPrompter(() => workspaceFolderPrompter(), {
                 showWhen: ({ paramsSource }) => paramsSource === ParamsSource.SamConfig,
-                setDefault: (state) => getProjectRoot(state.template),
+                setDefault: (state) => getProjectRoot(templateItem),
             })
-        } else if (arg && arg.regionCode) {
+        } else if (this.arg && this.arg.regionCode) {
             // "Deploy" command was invoked on a regionNode.
-            this.form.template.bindPrompter(() => createTemplatePrompter(registry), {
+            this.form.template.bindPrompter(() => createTemplatePrompter(this.registry), {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
-            this.form.region.setDefault(() => arg.regionCode)
+            this.form.region.setDefault(() => this.arg.regionCode)
             this.form.stackName.bindPrompter(
                 ({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!)),
                 {
@@ -181,11 +204,14 @@ class DeployWizard extends Wizard<DeployParams> {
                 showWhen: ({ paramsSource }) => paramsSource === ParamsSource.SamConfig,
                 setDefault: (state) => getProjectRoot(state.template),
             })
-        } else if (arg && arg.getTreeItem().resourceUri) {
+        } else if (this.arg && this.arg.getTreeItem().resourceUri) {
             // "Deploy" command was invoked on a TreeNode on the AppBuilder.
-            const templateUri = arg.getTreeItem().resourceUri as vscode.Uri
+            const templateUri = this.arg.getTreeItem().resourceUri as vscode.Uri
             const templateItem = { uri: templateUri, data: {} } as TemplateItem
             this.form.template.setDefault(templateItem)
+
+            await this.addParameterPromptersIfApplicable(templateUri)
+
             this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
@@ -207,7 +233,7 @@ class DeployWizard extends Wizard<DeployParams> {
             this.form.projectRoot.setDefault(() => getProjectRoot(templateItem))
         } else {
             // "Deploy" command was invoked on the command palette.
-            this.form.template.bindPrompter(() => createTemplatePrompter(registry), {
+            this.form.template.bindPrompter(() => createTemplatePrompter(this.registry), {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
@@ -233,6 +259,25 @@ class DeployWizard extends Wizard<DeployParams> {
             this.form.projectRoot.bindPrompter(() => workspaceFolderPrompter(), {
                 showWhen: ({ paramsSource }) => paramsSource === ParamsSource.SamConfig,
                 setDefault: (state) => getProjectRoot(state.template),
+            })
+        }
+
+        return this
+    }
+
+    /**
+     * Parse the template for parameters and add prompters for them if applicable.
+     * @param templateUri the uri of the template
+     */
+    async addParameterPromptersIfApplicable(templateUri: vscode.Uri) {
+        const samTemplateParameters = await getParameters(templateUri)
+        if (samTemplateParameters.size > 0) {
+            const requiredParameterNames = new Set<string>(
+                filter(samTemplateParameters.keys(), (name) => samTemplateParameters.get(name)!.required)
+            )
+
+            requiredParameterNames.forEach((name) => {
+                this.form[name].bindPrompter(() => createParamPromptProvider(name))
             })
         }
     }
@@ -302,6 +347,7 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
         if (params === undefined) {
             throw new CancellationError('user')
         }
+
         const deployFlags: string[] = ['--no-confirm-changeset']
         const buildFlags: string[] = ['--cached']
 
@@ -321,6 +367,20 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
         if (params.paramsSource === ParamsSource.SpecifyAndSave) {
             deployFlags.push('--save-params')
         }
+
+        const samTemplateParameters = await getParameters(params.template.uri)
+
+        const requiredParameterNames = new Set<string>(
+            filter(samTemplateParameters.keys(), (name) => samTemplateParameters.get(name)!.required)
+        )
+
+        const paramsToSet: string[] = []
+        requiredParameterNames.forEach((name) => {
+            if (params[name]) {
+                paramsToSet.push(`ParameterKey=${name},ParameterValue=${params[name]}`)
+            }
+            deployFlags.push('--parameter-overrides', ...paramsToSet)
+        })
 
         try {
             const { path: samCliPath } = await getSamCliPathAndVersion()
