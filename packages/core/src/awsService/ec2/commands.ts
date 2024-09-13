@@ -34,14 +34,14 @@ export async function openRemoteConnection(node?: Ec2Node) {
 }
 
 export async function startInstance(node?: Ec2Node) {
-    const prompterFilter = (instance: SafeEc2Instance) => instance.LastStatus !== 'running'
+    const prompterFilter = (instance: SafeEc2Instance) => instance.LastSeenStatus !== 'running'
     const selection = await getSelection(node, prompterFilter)
     const client = new Ec2Client(selection.region)
     await client.startInstanceWithCancel(selection.instanceId)
 }
 
 export async function stopInstance(node?: Ec2Node) {
-    const prompterFilter = (instance: SafeEc2Instance) => instance.LastStatus !== 'stopped'
+    const prompterFilter = (instance: SafeEc2Instance) => instance.LastSeenStatus !== 'stopped'
     const selection = await getSelection(node, prompterFilter)
     const client = new Ec2Client(selection.region)
     await client.stopInstanceWithCancel(selection.instanceId)

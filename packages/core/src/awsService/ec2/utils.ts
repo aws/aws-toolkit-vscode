@@ -6,11 +6,11 @@
 import { SafeEc2Instance } from '../../shared/clients/ec2Client'
 
 export function getIconCode(instance: SafeEc2Instance) {
-    if (instance.LastStatus === 'running') {
+    if (instance.LastSeenStatus === 'running') {
         return 'check'
     }
 
-    if (instance.LastStatus === 'stopped') {
+    if (instance.LastSeenStatus === 'stopped') {
         return 'stop'
     }
 

@@ -35,7 +35,7 @@ describe('ec2ParentNode', function () {
         return intoCollection(
             instances.map((instance) => ({
                 InstanceId: instance.InstanceId,
-                LastStatus: instance.LastStatus,
+                LastSeenStatus: instance.LastSeenStatus,
                 Tags: [{ Key: 'Name', Value: instance.Name }],
             }))
         )
@@ -47,16 +47,16 @@ describe('ec2ParentNode', function () {
         refreshStub = sinon.stub(Ec2InstanceNode.prototype, 'refreshNode')
         clearTimerStub = sinon.stub(PollingSet.prototype, 'clearTimer')
         defaultInstances = [
-            { Name: 'firstOne', InstanceId: '0', LastStatus: 'running' },
-            { Name: 'secondOne', InstanceId: '1', LastStatus: 'running' },
+            { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'running' },
+            { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'running' },
         ]
     })
 
     beforeEach(function () {
         getInstanceStub = sinon.stub(Ec2Client.prototype, 'getInstances')
         defaultInstances = [
-            { Name: 'firstOne', InstanceId: '0', LastStatus: 'running' },
-            { Name: 'secondOne', InstanceId: '1', LastStatus: 'stopped' },
+            { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'running' },
+            { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'stopped' },
         ]
 
         getInstanceStub.callsFake(async () =>
@@ -105,12 +105,12 @@ describe('ec2ParentNode', function () {
     it('sorts child nodes', async function () {
         const sortedText = ['aa', 'ab', 'bb', 'bc', 'cc', 'cd']
         const instances = [
-            { Name: 'ab', InstanceId: '0', LastStatus: 'running' },
-            { Name: 'bb', InstanceId: '1', LastStatus: 'running' },
-            { Name: 'bc', InstanceId: '2', LastStatus: 'running' },
-            { Name: 'aa', InstanceId: '3', LastStatus: 'running' },
-            { Name: 'cc', InstanceId: '4', LastStatus: 'running' },
-            { Name: 'cd', InstanceId: '5', LastStatus: 'running' },
+            { Name: 'ab', InstanceId: '0', LastSeenStatus: 'running' },
+            { Name: 'bb', InstanceId: '1', LastSeenStatus: 'running' },
+            { Name: 'bc', InstanceId: '2', LastSeenStatus: 'running' },
+            { Name: 'aa', InstanceId: '3', LastSeenStatus: 'running' },
+            { Name: 'cc', InstanceId: '4', LastSeenStatus: 'running' },
+            { Name: 'cd', InstanceId: '5', LastSeenStatus: 'running' },
         ]
 
         getInstanceStub.resolves(mapToInstanceCollection(instances))
@@ -131,9 +131,9 @@ describe('ec2ParentNode', function () {
 
     it('is able to handle children with duplicate names', async function () {
         const instances = [
-            { Name: 'firstOne', InstanceId: '0', LastStatus: 'running' },
-            { Name: 'secondOne', InstanceId: '1', LastStatus: 'running' },
-            { Name: 'firstOne', InstanceId: '2', LastStatus: 'running' },
+            { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'running' },
+            { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'running' },
+            { Name: 'firstOne', InstanceId: '2', LastSeenStatus: 'running' },
         ]
 
         getInstanceStub.resolves(mapToInstanceCollection(instances))
@@ -145,9 +145,9 @@ describe('ec2ParentNode', function () {
 
     it('adds pending nodes to the polling nodes set', async function () {
         const instances = [
-            { Name: 'firstOne', InstanceId: '0', LastStatus: 'pending' },
-            { Name: 'secondOne', InstanceId: '1', LastStatus: 'stopped' },
-            { Name: 'thirdOne', InstanceId: '2', LastStatus: 'running' },
+            { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'pending' },
+            { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'stopped' },
+            { Name: 'thirdOne', InstanceId: '2', LastSeenStatus: 'running' },
         ]
 
         getInstanceStub.resolves(mapToInstanceCollection(instances))
@@ -160,9 +160,9 @@ describe('ec2ParentNode', function () {
     it('does not refresh explorer when timer goes off if status unchanged', async function () {
         const statusUpdateStub = sinon.stub(Ec2Client.prototype, 'getInstanceStatus').resolves('pending')
         const instances = [
-            { Name: 'firstOne', InstanceId: '0', LastStatus: 'pending' },
-            { Name: 'secondOne', InstanceId: '1', LastStatus: 'stopped' },
-            { Name: 'thirdOne', InstanceId: '2', LastStatus: 'running' },
+            { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'pending' },
+            { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'stopped' },
+            { Name: 'thirdOne', InstanceId: '2', LastSeenStatus: 'running' },
         ]
 
         getInstanceStub.resolves(mapToInstanceCollection(instances))

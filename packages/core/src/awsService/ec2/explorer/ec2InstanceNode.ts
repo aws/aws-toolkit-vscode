@@ -34,11 +34,11 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
     }
 
     public updateInstance(newInstance: SafeEc2Instance) {
-        this.setInstanceStatus(newInstance.LastStatus)
+        this.setInstanceStatus(newInstance.LastSeenStatus)
         this.label = `${this.name} (${this.InstanceId})`
         this.contextValue = this.getContext()
         this.iconPath = new vscode.ThemeIcon(getIconCode(this.instance))
-        this.tooltip = `${this.name}\n${this.InstanceId}\n${this.instance.LastStatus}\n${this.arn}`
+        this.tooltip = `${this.name}\n${this.InstanceId}\n${this.instance.LastSeenStatus}\n${this.arn}`
 
         if (this.isPending()) {
             this.parent.pollingSet.start(this.InstanceId)
@@ -51,15 +51,15 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
 
     public async updateStatus() {
         const newStatus = await this.client.getInstanceStatus(this.InstanceId)
-        this.updateInstance({ ...this.instance, LastStatus: newStatus })
+        this.updateInstance({ ...this.instance, LastSeenStatus: newStatus })
     }
 
     private getContext(): Ec2InstanceNodeContext {
-        if (this.instance.LastStatus === 'running') {
+        if (this.instance.LastSeenStatus === 'running') {
             return Ec2InstanceRunningContext
         }
 
-        if (this.instance.LastStatus === 'stopped') {
+        if (this.instance.LastSeenStatus === 'stopped') {
             return Ec2InstanceStoppedContext
         }
 
@@ -67,7 +67,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
     }
 
     public setInstanceStatus(instanceStatus: string) {
-        this.instance.LastStatus = instanceStatus
+        this.instance.LastSeenStatus = instanceStatus
     }
 
     public toSelection(): Ec2Selection {
@@ -78,7 +78,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
     }
 
     public getStatus(): EC2.InstanceStateName {
-        return this.instance.LastStatus
+        return this.instance.LastSeenStatus
     }
 
     public get name(): string {

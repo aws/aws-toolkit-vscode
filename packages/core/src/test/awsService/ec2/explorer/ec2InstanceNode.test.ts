@@ -28,7 +28,7 @@ describe('ec2InstanceNode', function () {
                     Value: 'testName',
                 },
             ],
-            LastStatus: 'running',
+            LastSeenStatus: 'running',
         }
         const testClient = new Ec2Client('')
         const testParentNode = new Ec2ParentNode(testRegion, testPartition, testClient)
@@ -70,22 +70,22 @@ describe('ec2InstanceNode', function () {
     })
 
     it('sets context value based on status', async function () {
-        const stoppedInstance = { ...testInstance, LastStatus: 'stopped' }
+        const stoppedInstance = { ...testInstance, LastSeenStatus: 'stopped' }
         testNode.updateInstance(stoppedInstance)
         assert.strictEqual(testNode.contextValue, Ec2InstanceStoppedContext)
 
-        const runningInstance = { ...testInstance, LastStatus: 'running' }
+        const runningInstance = { ...testInstance, LastSeenStatus: 'running' }
         testNode.updateInstance(runningInstance)
         assert.strictEqual(testNode.contextValue, Ec2InstanceRunningContext)
 
-        const pendingInstance = { ...testInstance, LastStatus: 'pending' }
+        const pendingInstance = { ...testInstance, LastSeenStatus: 'pending' }
         testNode.updateInstance(pendingInstance)
         assert.strictEqual(testNode.contextValue, Ec2InstancePendingContext)
     })
 
     it('updates status with new instance', async function () {
         const newStatus = 'pending'
-        const newIdInstance = { ...testInstance, InstanceId: 'testId2', LastStatus: newStatus }
+        const newIdInstance = { ...testInstance, InstanceId: 'testId2', LastSeenStatus: newStatus }
         testNode.updateInstance(newIdInstance)
         assert.strictEqual(testNode.getStatus(), newStatus)
     })

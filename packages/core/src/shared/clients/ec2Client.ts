@@ -16,7 +16,7 @@ import { ToolkitError, isAwsError } from '../errors'
 export interface SafeEc2Instance extends EC2.Instance {
     InstanceId: string
     Name?: string
-    LastStatus: EC2.InstanceStateName
+    LastSeenStatus: EC2.InstanceStateName
 }
 
 // Intermediate interface so that I can coerce EC2.Instance to SafeEc2Instnace
@@ -58,7 +58,7 @@ export class Ec2Client {
 
         return safeInstances
             .map(async (instance) => {
-                return { ...instance, LastStatus: await this.getInstanceStatus(instance.InstanceId!) }
+                return { ...instance, LastSeenStatus: await this.getInstanceStatus(instance.InstanceId!) }
             })
             .map((instance) => {
                 return instanceHasName(instance!)

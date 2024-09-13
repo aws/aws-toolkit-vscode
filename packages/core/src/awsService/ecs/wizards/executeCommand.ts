@@ -25,11 +25,11 @@ function createTaskPrompter(node: Container) {
             // TODO: get task definition name and include it in the item detail
             // The last 32 digits of the task arn is the task identifier
             const taskId = task.taskArn.substring(task.taskArn.length - 32)
-            const invalidSelection = task.lastStatus !== 'RUNNING'
+            const invalidSelection = task.LastSeenStatus !== 'RUNNING'
 
             return {
                 label: codicon`${invalidSelection ? getIcon('vscode-error') : ''}${taskId}`,
-                detail: `Status: ${task.lastStatus}  Desired status: ${task.desiredStatus}`,
+                detail: `Status: ${task.LastSeenStatus}  Desired status: ${task.desiredStatus}`,
                 description:
                     invalidSelection && task.desiredStatus === 'RUNNING'
                         ? 'Container instance starting, try again later.'
