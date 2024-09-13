@@ -101,4 +101,13 @@ export class SsmClient {
         const instanceInformation = await this.describeInstance(target)
         return instanceInformation ? instanceInformation.PingStatus! : 'Inactive'
     }
+
+    public async describeSessions(state: SSM.SessionState) {
+        const client = await this.createSdkClient()
+        const requester = async (req: SSM.DescribeSessionsRequest) => client.describeSessions(req).promise()
+
+        const response = await pageableToCollection(requester, { State: state }, 'NextToken', 'Sessions').promise()
+
+        return response
+    }
 }
