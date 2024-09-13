@@ -24,7 +24,7 @@ import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem, UtgStrategy } from '../../models/model'
 
-const UTG_SUPPORTEDLANGUAGES: vscode.TextDocument['languageId'][] = ['java', 'python'] as const
+const UTG_SUPPORTEDLANGUAGES: vscode.TextDocument['languageId'][] = ['java', 'python']
 
 type UtgSupportedLanguage = (typeof UTG_SUPPORTEDLANGUAGES)[number]
 
