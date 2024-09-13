@@ -123,10 +123,10 @@ describe('updateInstancesDetail', async function () {
     it('adds appropriate status and name field to the instance', async function () {
         const actualResult = await client.testUpdateInstancesDetail(completeInstanceList)
         const expectedResult = [
-            { InstanceId: 'running-1', name: 'name1', status: 'running', Tags: [{ Key: 'Name', Value: 'name1' }] },
-            { InstanceId: 'stopped-2', name: 'name2', status: 'stopped', Tags: [{ Key: 'Name', Value: 'name2' }] },
-            { InstanceId: 'pending-3', name: 'name3', status: 'pending', Tags: [{ Key: 'Name', Value: 'name3' }] },
-            { InstanceId: 'running-4', name: 'name4', status: 'running', Tags: [{ Key: 'Name', Value: 'name4' }] },
+            { InstanceId: 'running-1', Name: 'name1', LastStatus: 'running', Tags: [{ Key: 'Name', Value: 'name1' }] },
+            { InstanceId: 'stopped-2', Name: 'name2', LastStatus: 'stopped', Tags: [{ Key: 'Name', Value: 'name2' }] },
+            { InstanceId: 'pending-3', Name: 'name3', LastStatus: 'pending', Tags: [{ Key: 'Name', Value: 'name3' }] },
+            { InstanceId: 'running-4', Name: 'name4', LastStatus: 'running', Tags: [{ Key: 'Name', Value: 'name4' }] },
         ]
 
         assert.deepStrictEqual(actualResult, expectedResult)
@@ -136,9 +136,9 @@ describe('updateInstancesDetail', async function () {
         const actualResult = await client.testUpdateInstancesDetail(incomepleteInstanceList)
 
         const expectedResult = [
-            { InstanceId: 'running-1', status: 'running' },
-            { InstanceId: 'stopped-2', status: 'stopped', Tags: [] },
-            { InstanceId: 'pending-3', status: 'pending', name: 'name3', Tags: [{ Key: 'Name', Value: 'name3' }] },
+            { InstanceId: 'running-1', LastStatus: 'running' },
+            { InstanceId: 'stopped-2', LastStatus: 'stopped', Tags: [] },
+            { InstanceId: 'pending-3', LastStatus: 'pending', Name: 'name3', Tags: [{ Key: 'Name', Value: 'name3' }] },
         ]
 
         assert.deepStrictEqual(actualResult, expectedResult)

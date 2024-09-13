@@ -13,9 +13,16 @@ import { Timeout } from '../utilities/timeoutUtils'
 import { showMessageWithCancel } from '../utilities/messages'
 import { ToolkitError, isAwsError } from '../errors'
 
-export interface Ec2Instance extends EC2.Instance {
-    name?: string
-    status?: EC2.InstanceStateName
+export interface SafeEc2Instance extends EC2.Instance {
+    InstanceId: string
+    Name?: string
+    LastStatus: EC2.InstanceStateName
+}
+
+// Intermediate interface so that I can coerce EC2.Instance to SafeEc2Instnace
+interface SafeEc2InstanceWithoutStatus extends EC2.Instance {
+    InstanceId: string
+    Name?: string
 }
 
 export class Ec2Client {
@@ -25,7 +32,7 @@ export class Ec2Client {
         return await globals.sdkClientBuilder.createAwsService(EC2, undefined, this.regionCode)
     }
 
-    public async getInstances(filters?: EC2.Filter[]): Promise<AsyncCollection<EC2.Instance>> {
+    public async getInstances(filters?: EC2.Filter[]): Promise<AsyncCollection<SafeEc2Instance>> {
         const client = await this.createSdkClient()
 
         const requester = async (request: EC2.DescribeInstancesRequest) => client.describeInstances(request).promise()
@@ -44,14 +51,18 @@ export class Ec2Client {
     /** Updates status and name in-place for displaying to humans. */
     protected async updateInstancesDetail(
         instances: AsyncCollection<EC2.Instance>
-    ): Promise<AsyncCollection<EC2.Instance>> {
-        return instances
+    ): Promise<AsyncCollection<SafeEc2Instance>> {
+        const safeInstances: AsyncCollection<SafeEc2InstanceWithoutStatus> = instances.filter(
+            (instance) => instance.InstanceId !== undefined
+        )
+
+        return safeInstances
             .map(async (instance) => {
-                return { ...instance, status: await this.getInstanceStatus(instance.InstanceId!) }
+                return { ...instance, LastStatus: await this.getInstanceStatus(instance.InstanceId!) }
             })
             .map((instance) => {
                 return instanceHasName(instance!)
-                    ? { ...instance, name: lookupTagKey(instance!.Tags!, 'Name') }
+                    ? { ...instance, Name: lookupTagKey(instance!.Tags!, 'Name') }
                     : instance!
             })
     }

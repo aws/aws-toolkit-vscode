@@ -6,7 +6,7 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { Ec2ParentNode } from '../../../../awsService/ec2/explorer/ec2ParentNode'
-import { Ec2Client, Ec2Instance } from '../../../../shared/clients/ec2Client'
+import { Ec2Client, SafeEc2Instance } from '../../../../shared/clients/ec2Client'
 import { intoCollection } from '../../../../shared/utilities/collectionUtils'
 import {
     assertNodeListOnlyHasErrorNode,
@@ -21,7 +21,7 @@ import { PollingSet } from '../../../../shared/utilities/pollingSet'
 
 describe('ec2ParentNode', function () {
     let testNode: Ec2ParentNode
-    let defaultInstances: Ec2Instance[]
+    let defaultInstances: SafeEc2Instance[]
     let client: Ec2Client
     let getInstanceStub: sinon.SinonStub<[filters?: EC2.Filter[] | undefined], Promise<AsyncCollection<EC2.Instance>>>
     let clock: FakeTimers.InstalledClock
@@ -31,12 +31,12 @@ describe('ec2ParentNode', function () {
     const testRegion = 'testRegion'
     const testPartition = 'testPartition'
 
-    function mapToInstanceCollection(instances: Ec2Instance[]) {
+    function mapToInstanceCollection(instances: SafeEc2Instance[]) {
         return intoCollection(
             instances.map((instance) => ({
                 InstanceId: instance.InstanceId,
-                status: instance.status,
-                Tags: [{ Key: 'Name', Value: instance.name }],
+                LastStatus: instance.LastStatus,
+                Tags: [{ Key: 'Name', Value: instance.Name }],
             }))
         )
     }
@@ -47,23 +47,23 @@ describe('ec2ParentNode', function () {
         refreshStub = sinon.stub(Ec2InstanceNode.prototype, 'refreshNode')
         clearTimerStub = sinon.stub(PollingSet.prototype, 'clearTimer')
         defaultInstances = [
-            { name: 'firstOne', InstanceId: '0' },
-            { name: 'secondOne', InstanceId: '1' },
+            { Name: 'firstOne', InstanceId: '0', LastStatus: 'running' },
+            { Name: 'secondOne', InstanceId: '1', LastStatus: 'running' },
         ]
     })
 
     beforeEach(function () {
         getInstanceStub = sinon.stub(Ec2Client.prototype, 'getInstances')
         defaultInstances = [
-            { name: 'firstOne', InstanceId: '0', status: 'running' },
-            { name: 'secondOne', InstanceId: '1', status: 'stopped' },
+            { Name: 'firstOne', InstanceId: '0', LastStatus: 'running' },
+            { Name: 'secondOne', InstanceId: '1', LastStatus: 'stopped' },
         ]
 
         getInstanceStub.callsFake(async () =>
             intoCollection(
                 defaultInstances.map((instance) => ({
                     InstanceId: instance.InstanceId,
-                    Tags: [{ Key: 'Name', Value: instance.name }],
+                    Tags: [{ Key: 'Name', Value: instance.Name }],
                 }))
             )
         )
@@ -105,12 +105,12 @@ describe('ec2ParentNode', function () {
     it('sorts child nodes', async function () {
         const sortedText = ['aa', 'ab', 'bb', 'bc', 'cc', 'cd']
         const instances = [
-            { name: 'ab', InstanceId: '0', status: 'running' },
-            { name: 'bb', InstanceId: '1', status: 'running' },
-            { name: 'bc', InstanceId: '2', status: 'running' },
-            { name: 'aa', InstanceId: '3', status: 'running' },
-            { name: 'cc', InstanceId: '4', status: 'running' },
-            { name: 'cd', InstanceId: '5', status: 'running' },
+            { Name: 'ab', InstanceId: '0', LastStatus: 'running' },
+            { Name: 'bb', InstanceId: '1', LastStatus: 'running' },
+            { Name: 'bc', InstanceId: '2', LastStatus: 'running' },
+            { Name: 'aa', InstanceId: '3', LastStatus: 'running' },
+            { Name: 'cc', InstanceId: '4', LastStatus: 'running' },
+            { Name: 'cd', InstanceId: '5', LastStatus: 'running' },
         ]
 
         getInstanceStub.resolves(mapToInstanceCollection(instances))
@@ -131,9 +131,9 @@ describe('ec2ParentNode', function () {
 
     it('is able to handle children with duplicate names', async function () {
         const instances = [
-            { name: 'firstOne', InstanceId: '0', status: 'running' },
-            { name: 'secondOne', InstanceId: '1', status: 'running' },
-            { name: 'firstOne', InstanceId: '2', status: 'running' },
+            { Name: 'firstOne', InstanceId: '0', LastStatus: 'running' },
+            { Name: 'secondOne', InstanceId: '1', LastStatus: 'running' },
+            { Name: 'firstOne', InstanceId: '2', LastStatus: 'running' },
         ]
 
         getInstanceStub.resolves(mapToInstanceCollection(instances))
@@ -145,9 +145,9 @@ describe('ec2ParentNode', function () {
 
     it('adds pending nodes to the polling nodes set', async function () {
         const instances = [
-            { name: 'firstOne', InstanceId: '0', status: 'pending' },
-            { name: 'secondOne', InstanceId: '1', status: 'stopped' },
-            { name: 'thirdOne', InstanceId: '2', status: 'running' },
+            { Name: 'firstOne', InstanceId: '0', LastStatus: 'pending' },
+            { Name: 'secondOne', InstanceId: '1', LastStatus: 'stopped' },
+            { Name: 'thirdOne', InstanceId: '2', LastStatus: 'running' },
         ]
 
         getInstanceStub.resolves(mapToInstanceCollection(instances))
@@ -160,9 +160,9 @@ describe('ec2ParentNode', function () {
     it('does not refresh explorer when timer goes off if status unchanged', async function () {
         const statusUpdateStub = sinon.stub(Ec2Client.prototype, 'getInstanceStatus').resolves('pending')
         const instances = [
-            { name: 'firstOne', InstanceId: '0', status: 'pending' },
-            { name: 'secondOne', InstanceId: '1', status: 'stopped' },
-            { name: 'thirdOne', InstanceId: '2', status: 'running' },
+            { Name: 'firstOne', InstanceId: '0', LastStatus: 'pending' },
+            { Name: 'secondOne', InstanceId: '1', LastStatus: 'stopped' },
+            { Name: 'thirdOne', InstanceId: '2', LastStatus: 'running' },
         ]
 
         getInstanceStub.resolves(mapToInstanceCollection(instances))
