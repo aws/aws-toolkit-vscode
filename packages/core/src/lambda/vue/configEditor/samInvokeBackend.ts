@@ -51,14 +51,14 @@ const localize = nls.loadMessageBundle()
 type Event = {
     name: string
     region: string
-    stackName: string
+    arn: string
     event?: string
 }
 
 export interface ResourceData {
     logicalId: string
     region: string
-    stackName: string
+    arn: string
     location: string
     handler: string
     runtime: string
@@ -318,13 +318,13 @@ export class SamInvokeWebview extends VueWebview {
         return path.basename(filePath)
     }
 
-    public async listRemoteTestEvents(stackName: string, region: string): Promise<string[]> {
-        return await listRemoteTestEvents(stackName, region)
+    public async listRemoteTestEvents(functionArn: string, region: string): Promise<string[]> {
+        return await listRemoteTestEvents(functionArn, region)
     }
 
     public async createRemoteTestEvents(putEvent: Event) {
         const params: SamCliRemoteTestEventsParameters = {
-            stackName: putEvent.stackName,
+            functionArn: putEvent.arn,
             operation: TestEventsOperation.Put,
             name: putEvent.name,
             eventSample: putEvent.event,
@@ -336,7 +336,7 @@ export class SamInvokeWebview extends VueWebview {
         const params: SamCliRemoteTestEventsParameters = {
             name: getEvents.name,
             operation: TestEventsOperation.Get,
-            stackName: getEvents.stackName,
+            functionArn: getEvents.arn,
             region: getEvents.region,
         }
         return await this.remoteTestEvents(params)
@@ -477,10 +477,10 @@ export async function registerSamDebugInvokeVueCommand(context: ExtContext, para
     const webview = new WebviewPanel(context.extensionContext, context, launchConfig, {
         logicalId: resource.resource.Id ?? '',
         region: resource.region ?? '',
-        stackName: resource.stackName ?? '',
         location: resource.location.fsPath,
         handler: resource.resource.Handler!,
         runtime: resource.resource.Runtime!,
+        arn: resource.functionArn ?? '',
         source: source,
     })
     await telemetry.sam_openConfigUi.run(async (span) => {

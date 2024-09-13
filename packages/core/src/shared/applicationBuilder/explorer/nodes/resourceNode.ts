@@ -28,7 +28,8 @@ export class ResourceNode implements TreeNode {
         private readonly resourceTreeEntity: ResourceTreeEntity,
         private readonly stackName?: string,
         private readonly region?: string,
-        private readonly deployedResource?: StackResource
+        private readonly deployedResource?: StackResource,
+        private readonly functionArn?: string
     ) {}
 
     public get resource() {
@@ -39,6 +40,7 @@ export class ResourceNode implements TreeNode {
             region: this.region,
             stackName: this.stackName,
             deployedResource: this.deployedResource,
+            functionArn: this.functionArn,
         }
     }
 

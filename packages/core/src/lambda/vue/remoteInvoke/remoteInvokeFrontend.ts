@@ -47,7 +47,7 @@ export default defineComponent({
             const eventData = {
                 name: this.selectedTestEvent,
                 region: this.initialData.FunctionRegion,
-                stackName: this.initialData.FunctionStackName!,
+                arn: this.initialData.FunctionArn,
             }
             const resp = await client.getRemoteTestEvents(eventData)
             this.sampleText = JSON.stringify(JSON.parse(resp), undefined, 4)
@@ -57,17 +57,15 @@ export default defineComponent({
                 name: this.newTestEventName,
                 event: this.sampleText,
                 region: this.initialData.FunctionRegion,
-                stackName: this.initialData.FunctionStackName!,
+                arn: this.initialData.FunctionArn,
             }
             await client.createRemoteTestEvents(eventData)
             this.showNameInput = false
             this.newTestEventName = ''
-            if (this.initialData.FunctionStackName) {
-                this.initialData.TestEvents = await client.listRemoteTestEvents(
-                    this.initialData.FunctionStackName,
-                    this.initialData.FunctionRegion
-                )
-            }
+            this.initialData.TestEvents = await client.listRemoteTestEvents(
+                this.initialData.FunctionArn,
+                this.initialData.FunctionRegion
+            )
         },
         async promptForFileLocation() {
             const resp = await client.promptFile()

@@ -20,7 +20,7 @@ import {
 import { assertLogContainsBadExitInformation, BadExitCodeSamCliProcessInvoker } from './testSamCliProcessInvoker'
 
 describe('runSamCliRemoteTestEvents', () => {
-    const fakeStackName = 'stackName'
+    const fakeFunctionArn = 'arn::aws:123456'
     const fakeName = 'name'
     const fakeEventSample = '{testKey: testValue}'
     let invokeCount: number
@@ -32,7 +32,7 @@ describe('runSamCliRemoteTestEvents', () => {
     it('should call invoker with correct arguments for List operation', async () => {
         const invoker = new MockSamCliProcessInvoker((args) => {
             invokeCount++
-            assertArgsContainArgument(args, '--stack-name', fakeStackName)
+            assertArgIsPresent(args, fakeFunctionArn)
             assertArgNotPresent(args, '--file')
             assertArgNotPresent(args, '--name')
             assertArgIsPresent(args, 'remote')
@@ -41,7 +41,7 @@ describe('runSamCliRemoteTestEvents', () => {
         })
 
         const params: SamCliRemoteTestEventsParameters = {
-            stackName: fakeStackName,
+            functionArn: fakeFunctionArn,
             operation: TestEventsOperation.List,
         }
 
@@ -53,7 +53,7 @@ describe('runSamCliRemoteTestEvents', () => {
     it('should call invoker with correct arguments for Get operation with name', async () => {
         const invoker = new MockSamCliProcessInvoker((args) => {
             invokeCount++
-            assertArgsContainArgument(args, '--stack-name', fakeStackName)
+            assertArgIsPresent(args, fakeFunctionArn)
             assertArgsContainArgument(args, '--name', fakeName)
             assertArgIsPresent(args, 'remote')
             assertArgIsPresent(args, 'test-event')
@@ -62,7 +62,7 @@ describe('runSamCliRemoteTestEvents', () => {
         })
 
         const params: SamCliRemoteTestEventsParameters = {
-            stackName: fakeStackName,
+            functionArn: fakeFunctionArn,
             operation: TestEventsOperation.Get,
             name: fakeName,
         }
@@ -75,7 +75,7 @@ describe('runSamCliRemoteTestEvents', () => {
     it('should call invoker with correct arguments for Put operation with event sample', async () => {
         const invoker = new MockSamCliProcessInvoker((args) => {
             invokeCount++
-            assertArgsContainArgument(args, '--stack-name', fakeStackName)
+            assertArgIsPresent(args, fakeFunctionArn)
             assertArgsContainArgument(args, '--name', fakeName)
             assertArgNotPresent(args, 'list')
             assertArgIsPresent(args, 'remote')
@@ -85,7 +85,7 @@ describe('runSamCliRemoteTestEvents', () => {
         })
 
         const params: SamCliRemoteTestEventsParameters = {
-            stackName: fakeStackName,
+            functionArn: fakeFunctionArn,
             operation: TestEventsOperation.Put,
             eventSample: fakeEventSample,
             name: fakeName,
@@ -100,7 +100,7 @@ describe('runSamCliRemoteTestEvents', () => {
         const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
 
         const params: SamCliRemoteTestEventsParameters = {
-            stackName: fakeStackName,
+            functionArn: fakeFunctionArn,
             operation: TestEventsOperation.List,
         }
 

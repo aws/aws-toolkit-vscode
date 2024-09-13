@@ -37,7 +37,7 @@ const localize = nls.loadMessageBundle()
 type Event = {
     name: string
     region: string
-    stackName: string
+    arn: string
     event?: string
 }
 
@@ -47,7 +47,6 @@ export interface InitialData {
     FunctionRegion: string
     InputSamples: SampleRequest[]
     TestEvents?: string[]
-    FunctionStackName?: string
     Source?: string
 }
 
@@ -168,13 +167,13 @@ export class RemoteInvokeWebview extends VueWebview {
         return basename(filePath)
     }
 
-    public async listRemoteTestEvents(stackName: string, region: string): Promise<string[]> {
-        return await listRemoteTestEvents(stackName, region)
+    public async listRemoteTestEvents(arn: string, region: string): Promise<string[]> {
+        return await listRemoteTestEvents(arn, region)
     }
 
     public async createRemoteTestEvents(putEvent: Event) {
         const params: SamCliRemoteTestEventsParameters = {
-            stackName: putEvent.stackName,
+            functionArn: putEvent.arn,
             operation: TestEventsOperation.Put,
             name: putEvent.name,
             eventSample: putEvent.event,
@@ -186,7 +185,7 @@ export class RemoteInvokeWebview extends VueWebview {
         const params: SamCliRemoteTestEventsParameters = {
             name: getEvents.name,
             operation: TestEventsOperation.Get,
-            stackName: getEvents.stackName,
+            functionArn: getEvents.arn,
             region: getEvents.region,
         }
         return await this.remoteTestEvents(params)
@@ -249,17 +248,19 @@ export async function invokeRemoteLambda(
     const inputs = await getSampleLambdaPayloads()
     let resource: any = params.functionNode
     let remoteTestsEventsList: string[] = []
-    let stackName: string | undefined = undefined
     let source: string = 'AwsExplorerRemoteInvoke'
+    let functionArn: string | undefined
     if (isTreeNode(params.functionNode)) {
         resource = params.functionNode.resource as DeployedResource
-        stackName = resource.stackName
+        functionArn = resource.configuration.FunctionArn
         source = 'AppBuilderRemoteInvoke'
-        try {
-            remoteTestsEventsList = stackName ? await listRemoteTestEvents(stackName, resource.regionCode) : []
-        } catch (err) {
-            getLogger().error('InvokeLambda: Error listing remote test events:', err)
-        }
+    } else {
+        functionArn = params.functionNode.configuration.FunctionArn
+    }
+    try {
+        remoteTestsEventsList = functionArn ? await listRemoteTestEvents(functionArn, resource.regionCode) : []
+    } catch (err) {
+        getLogger().error('InvokeLambda: Error listing remote test events:', err)
     }
     const client = new DefaultLambdaClient(resource.regionCode)
     const wv = new Panel(context.extensionContext, context.outputChannel, client, {
@@ -268,7 +269,6 @@ export async function invokeRemoteLambda(
         FunctionRegion: resource.regionCode,
         InputSamples: inputs,
         TestEvents: remoteTestsEventsList,
-        FunctionStackName: stackName,
         Source: source,
     })
 
@@ -277,10 +277,10 @@ export async function invokeRemoteLambda(
     })
 }
 
-export async function listRemoteTestEvents(stackName: string, region: string): Promise<string[]> {
+export async function listRemoteTestEvents(arn: string, region: string): Promise<string[]> {
     try {
         const params: SamCliRemoteTestEventsParameters = {
-            stackName: stackName,
+            functionArn: arn,
             operation: TestEventsOperation.List,
             region: region,
         }

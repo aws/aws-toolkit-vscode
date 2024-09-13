@@ -16,7 +16,7 @@ export const TestEventsOperation = {
     Put: 'put',
 }
 export interface SamCliRemoteTestEventsParameters {
-    stackName: string
+    functionArn: string
     operation: string
     name?: string
     region?: string
@@ -28,13 +28,7 @@ export async function runSamCliRemoteTestEvents(
     remoteTestEventsParameters: SamCliRemoteTestEventsParameters,
     invoker: SamCliProcessInvoker
 ): Promise<string> {
-    const args = [
-        'remote',
-        'test-event',
-        remoteTestEventsParameters.operation,
-        '--stack-name',
-        remoteTestEventsParameters.stackName,
-    ]
+    const args = ['remote', 'test-event', remoteTestEventsParameters.operation, remoteTestEventsParameters.functionArn]
 
     if (remoteTestEventsParameters.region) {
         args.push('--region', remoteTestEventsParameters.region)

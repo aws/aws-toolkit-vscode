@@ -328,7 +328,7 @@ export default defineComponent({
                 const eventData = {
                     name: this.selectedTestEvent,
                     region: this.resourceData.region,
-                    stackName: this.resourceData.stackName,
+                    arn: this.resourceData.arn,
                 }
                 const resp = await client.getRemoteTestEvents(eventData)
                 this.payload.value = JSON.stringify(JSON.parse(resp), undefined, 4)
@@ -340,15 +340,12 @@ export default defineComponent({
                     name: this.newTestEventName,
                     event: this.payload.value,
                     region: this.resourceData.region,
-                    stackName: this.resourceData.stackName,
+                    arn: this.resourceData.arn,
                 }
                 await client.createRemoteTestEvents(eventData)
                 this.showNameInput = false
                 this.newTestEventName = ''
-                this.TestEvents = await client.listRemoteTestEvents(
-                    this.resourceData.stackName,
-                    this.resourceData.region
-                )
+                this.TestEvents = await client.listRemoteTestEvents(this.resourceData.arn, this.resourceData.region)
             }
         },
         showNameField() {
@@ -373,7 +370,7 @@ export default defineComponent({
                             this.launchConfig.lambda.runtime = this.resourceData.runtime
                         }
 
-                        client.listRemoteTestEvents(this.resourceData.stackName, this.resourceData.region).then(
+                        client.listRemoteTestEvents(this.resourceData.arn, this.resourceData.region).then(
                             (events) => {
                                 this.TestEvents = events
                             },
