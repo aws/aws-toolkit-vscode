@@ -5,6 +5,14 @@
 
 import { globals } from '..'
 
+/**
+ * A useful abstraction that does the following:
+ * - keep a set of items.
+ * - if the set is non-empty, run some action every interval seconds.
+ * - once the set empties, clear the timer
+ * @param interval the interval in seconds
+ * @param action the action to perform
+ */
 export class PollingSet<T> extends Set<T> {
     public pollTimer?: NodeJS.Timeout
 
