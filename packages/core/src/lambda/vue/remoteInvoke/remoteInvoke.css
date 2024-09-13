@@ -26,6 +26,17 @@ div {
     padding: 2px 8px;
 }
 
+.dynamic-span {
+    white-space: nowrap;
+    text-overflow: initial;
+    overflow: scroll;
+    width: 381px;
+    height: 28px;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 15.51px;
+}
+
 .form-row-event-select {
     width: 244px;
     height: 28px;

@@ -18,10 +18,7 @@
 
         <div class="form-row">
             <label>Resource ARN</label>
-            <span
-                :style="{ width: '381px', height: '28px', fontWeight: '500', fontSize: '13px', lineHeight: '15.51px' }"
-                >{{ initialData.FunctionArn }}</span
-            >
+            <span class="dynamic-span">{{ initialData.FunctionArn }}</span>
         </div>
         <div class="form-row">
             <label>Region:</label>
