@@ -366,6 +366,7 @@ export class LspController {
 
     async trySetupLsp(context: vscode.ExtensionContext) {
         if (isCloud9() || isWeb() || isAmazonInternalOs()) {
+            getLogger().warn('LspController: Skipping LSP setup. LSP is not compatible with the current environment. ')
             // do not do anything if in Cloud9 or Web mode or in AL2 (AL2 does not support node v18+)
             return
         }
