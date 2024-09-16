@@ -47,6 +47,7 @@ import { mkdir, remove } from 'fs-extra'
 import { getLogger } from '../../../../shared/logger/logger'
 import { CredentialsProvider } from '../../../../auth/providers/credentials'
 import globals from '../../../../shared/extensionGlobals'
+import { isCI } from '../../../../shared/vscode/env'
 
 /**
  * Asserts the contents of a "launch config" (the result of `makeConfig()` or
@@ -673,6 +674,16 @@ describe('SamDebugConfigurationProvider', async function () {
         })
 
         it('target=code: typescript', async function () {
+            /**
+             * When executing the test on macOS in CI the tests fail with the following error:
+             *  'Error: TypeScript compiler "tsc" not found in node_modules/ or the system
+             *
+             * See: https://github.com/aws/aws-toolkit-vscode/issues/5587
+             */
+            if (isCI() && os.platform() === 'darwin') {
+                this.skip()
+            }
+
             const appDir = pathutil.normalize(
                 path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/ts-plain-sam-app/')
             )
