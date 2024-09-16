@@ -247,20 +247,10 @@ export async function invokeRemoteLambda(
 ) {
     const inputs = await getSampleLambdaPayloads()
     let resource: any = params.functionNode
-    let remoteTestsEventsList: string[] = []
     let source: string = 'AwsExplorerRemoteInvoke'
-    let functionArn: string | undefined
     if (isTreeNode(params.functionNode)) {
         resource = params.functionNode.resource as DeployedResource
-        functionArn = resource.configuration.FunctionArn
         source = 'AppBuilderRemoteInvoke'
-    } else {
-        functionArn = params.functionNode.configuration.FunctionArn
-    }
-    try {
-        remoteTestsEventsList = functionArn ? await listRemoteTestEvents(functionArn, resource.regionCode) : []
-    } catch (err) {
-        getLogger().error('InvokeLambda: Error listing remote test events:', err)
     }
     const client = new DefaultLambdaClient(resource.regionCode)
     const wv = new Panel(context.extensionContext, context.outputChannel, client, {
@@ -268,7 +258,7 @@ export async function invokeRemoteLambda(
         FunctionArn: resource.configuration.FunctionArn ?? '',
         FunctionRegion: resource.regionCode,
         InputSamples: inputs,
-        TestEvents: remoteTestsEventsList,
+        TestEvents: [],
         Source: source,
     })
 

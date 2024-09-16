@@ -26,6 +26,12 @@ const defaultInitialData = {
 export default defineComponent({
     async created() {
         this.initialData = (await client.init()) ?? this.initialData
+        if (this.initialData.FunctionArn && this.initialData.FunctionRegion) {
+            this.initialData.TestEvents = await client.listRemoteTestEvents(
+                this.initialData.FunctionArn,
+                this.initialData.FunctionRegion
+            )
+        }
     },
 
     data(): RemoteInvokeData {
