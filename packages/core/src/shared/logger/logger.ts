@@ -25,6 +25,38 @@ export interface Logger {
     enableDebugConsole(): void
 }
 
+export abstract class baseLogger implements Logger {
+    debug(message: string | Error, ...meta: any[]): number {
+        return this.sendToLog('debug', message, meta)
+    }
+    verbose(message: string | Error, ...meta: any[]): number {
+        return this.sendToLog('verbose', message, meta)
+    }
+    info(message: string | Error, ...meta: any[]): number {
+        return this.sendToLog('info', message, meta)
+    }
+    warn(message: string | Error, ...meta: any[]): number {
+        return this.sendToLog('warn', message, meta)
+    }
+    error(message: string | Error, ...meta: any[]): number {
+        return this.sendToLog('error', message, meta)
+    }
+    log(logLevel: LogLevel, message: string | Error, ...meta: any[]): number {
+        return this.sendToLog(logLevel, message, ...meta)
+    }
+    abstract setLogLevel(logLevel: LogLevel): void
+    abstract logLevelEnabled(logLevel: LogLevel): boolean
+    abstract getLogById(logID: number, file: vscode.Uri): string | undefined
+    /** HACK: Enables logging to vscode Debug Console. */
+    abstract enableDebugConsole(): void
+
+    abstract sendToLog(
+        logLevel: 'debug' | 'verbose' | 'info' | 'warn' | 'error',
+        message: string | Error,
+        ...meta: any[]
+    ): number
+}
+
 /**
  * Log levels ordered for comparison.
  *
@@ -92,93 +124,54 @@ export function getDebugConsoleLogger(): Logger {
     return toolkitLoggers['debugConsole'] ?? new ConsoleLogger()
 }
 
-export class NullLogger implements Logger {
+export class NullLogger extends baseLogger {
     public setLogLevel(logLevel: LogLevel) {}
     public logLevelEnabled(logLevel: LogLevel): boolean {
         return false
-    }
-    public log(logLevel: LogLevel, message: string | Error, ...meta: any[]): number {
-        return 0
-    }
-    public debug(message: string | Error, ...meta: any[]): number {
-        return 0
-    }
-    public verbose(message: string | Error, ...meta: any[]): number {
-        return 0
-    }
-    public info(message: string | Error, ...meta: any[]): number {
-        return 0
-    }
-    public warn(message: string | Error, ...meta: any[]): number {
-        return 0
-    }
-    public error(message: string | Error, ...meta: any[]): number {
-        return 0
     }
     public getLogById(logID: number, file: vscode.Uri): string | undefined {
         return undefined
     }
     public enableDebugConsole(): void {}
+    override sendToLog(
+        logLevel: 'error' | 'warn' | 'info' | 'verbose' | 'debug',
+        message: string | Error,
+        ...meta: any[]
+    ): number {
+        return 0
+    }
 }
 
 /**
  * Fallback used if {@link getLogger()} is requested before logging is fully initialized.
  */
-export class ConsoleLogger implements Logger {
+export class ConsoleLogger extends baseLogger {
     public setLogLevel(logLevel: LogLevel) {}
     public logLevelEnabled(logLevel: LogLevel): boolean {
         return false
-    }
-    public log(logLevel: LogLevel, message: string | Error, ...meta: any[]): number {
-        switch (logLevel) {
-            case 'error':
-                this.error(message, ...meta)
-                return 0
-            case 'warn':
-                this.warn(message, ...meta)
-                return 0
-            case 'verbose':
-                this.verbose(message, ...meta)
-                return 0
-            case 'debug':
-                this.debug(message, ...meta)
-                return 0
-            case 'info':
-            default:
-                this.info(message, ...meta)
-                return 0
-        }
-    }
-    public debug(message: string | Error, ...meta: any[]): number {
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.debug(message, ...meta)
-        return 0
-    }
-    public verbose(message: string | Error, ...meta: any[]): number {
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.debug(message, ...meta)
-        return 0
-    }
-    public info(message: string | Error, ...meta: any[]): number {
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.info(message, ...meta)
-        return 0
-    }
-    public warn(message: string | Error, ...meta: any[]): number {
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.warn(message, ...meta)
-        return 0
-    }
-    /** Note: In nodejs this prints to `stderr` (see {@link Console.error}). */
-    public error(message: string | Error, ...meta: any[]): number {
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.error(message, ...meta)
-        return 0
     }
     public getLogById(logID: number, file: vscode.Uri): string | undefined {
         return undefined
     }
     public enableDebugConsole(): void {}
+    override sendToLog(
+        logLevel: 'error' | 'warn' | 'info' | 'verbose' | 'debug',
+        message: string | Error,
+        ...meta: any[]
+    ): number {
+        /**
+         * This is here because we pipe verbose to debug currentlly
+         * TODO: remove in the next stage
+         */
+        if (logLevel === 'verbose') {
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            console.debug(message, ...meta)
+        } else {
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            console[logLevel](message, ...meta)
+        }
+        return 0
+    }
 }
 
 export function getNullLogger(type?: 'debugConsole' | 'main'): Logger {

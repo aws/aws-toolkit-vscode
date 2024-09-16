@@ -6,7 +6,7 @@
 import { normalize } from 'path'
 import * as vscode from 'vscode'
 import winston from 'winston'
-import { Logger, LogLevel, compareLogLevel } from './logger'
+import { baseLogger, LogLevel, compareLogLevel } from './logger'
 import { OutputChannelTransport } from './outputChannelTransport'
 import { isSourceMappingAvailable } from '../vscode/env'
 import { formatError, ToolkitError, UnknownError } from '../errors'
@@ -17,13 +17,14 @@ import { isWeb } from '../extensionGlobals'
 // Need to limit how many logs are actually tracked
 // LRU cache would work well, currently it just dumps the least recently added log
 const logmapSize: number = 1000
-export class WinstonToolkitLogger implements Logger, vscode.Disposable {
+export class WinstonToolkitLogger extends baseLogger implements vscode.Disposable {
     private readonly logger: winston.Logger
     private disposed: boolean = false
     private idCounter: number = 0
     private logMap: { [logID: number]: { [filePath: string]: string } } = {}
 
     public constructor(logLevel: LogLevel) {
+        super()
         this.logger = winston.createLogger({
             format: winston.format.combine(
                 winston.format.splat(),
@@ -91,30 +92,6 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         this.logger.add(consoleLogTransport)
     }
 
-    public log(logLevel: LogLevel, message: string | Error, ...meta: any[]): number {
-        return this.writeToLogs(logLevel, message, ...meta)
-    }
-
-    public debug(message: string | Error, ...meta: any[]): number {
-        return this.writeToLogs('debug', message, ...meta)
-    }
-
-    public verbose(message: string | Error, ...meta: any[]): number {
-        return this.writeToLogs('verbose', message, ...meta)
-    }
-
-    public info(message: string | Error, ...meta: any[]): number {
-        return this.writeToLogs('info', message, ...meta)
-    }
-
-    public warn(message: string | Error, ...meta: any[]): number {
-        return this.writeToLogs('warn', message, ...meta)
-    }
-
-    public error(message: string | Error, ...meta: any[]): number {
-        return this.writeToLogs('error', message, ...meta)
-    }
-
     public dispose(): Promise<void> {
         return this.disposed
             ? Promise.resolve()
@@ -141,7 +118,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         return formatError(UnknownError.cast(err))
     }
 
-    private writeToLogs(level: LogLevel, message: string | Error, ...meta: any[]): number {
+    override sendToLog(level: LogLevel, message: string | Error, ...meta: any[]): number {
         if (this.disposed) {
             throw new Error('Cannot write to disposed logger')
         }
