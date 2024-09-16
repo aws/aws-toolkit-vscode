@@ -203,7 +203,7 @@ export function guessSrcFileName(
             }
         } catch (err) {
             if (err instanceof Error) {
-                getLogger().debug(
+                getLogger().error(
                     `codewhisperer: error while guessing source file name from file ${testFileName} and pattern ${pattern}: ${err.message}`
                 )
             }
