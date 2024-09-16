@@ -258,7 +258,7 @@ describe('TelemetryTracer', function () {
             assertTelemetry('aws_loginWithBrowser', {
                 result: 'Failed',
                 reason: 'InvalidRequestException',
-                reasonDesc: 'Invalid client ID provided',
+                reasonDesc: 'InvalidRequestException: Invalid client ID provided',
                 httpStatusCode: '400',
             })
             const metric = getMetrics('aws_loginWithBrowser')[0]

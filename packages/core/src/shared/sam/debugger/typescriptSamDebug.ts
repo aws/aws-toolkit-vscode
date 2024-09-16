@@ -161,10 +161,10 @@ async function compileTypeScript(config: SamLaunchRequestArgs): Promise<void> {
 
         try {
             const tsConfig = JSON.parse(readFileSync(tsConfigPath).toString())
-            getLogger('channel').info(`Using base TypeScript config: ${tsConfigPath}`)
+            getLogger().info(`Using base TypeScript config: ${tsConfigPath}`)
             return tsConfig
         } catch (err) {
-            getLogger('channel').error(`Unable to use TypeScript base: ${tsConfigPath}`)
+            getLogger().error(`Unable to use TypeScript base: ${tsConfigPath}`)
         }
 
         return undefined
@@ -176,7 +176,7 @@ async function compileTypeScript(config: SamLaunchRequestArgs): Promise<void> {
         loadBaseConfig(tsConfigPath) ?? loadBaseConfig(path.join(config.codeRoot, tsConfigInitialBaseFile)) ?? {}
 
     if (tsConfig.compilerOptions === undefined) {
-        getLogger('channel').info('Creating TypeScript config')
+        getLogger().info('Creating TypeScript config')
         tsConfig.compilerOptions = {
             target: 'es6',
             module: 'commonjs',
@@ -207,7 +207,7 @@ async function compileTypeScript(config: SamLaunchRequestArgs): Promise<void> {
     // resolve ts lambda handler to point into build directory relative to codeRoot
     const tsLambdaHandler = path.relative(config.codeRoot, path.join(tsBuildDir, config.invokeTarget.lambdaHandler))
     config.invokeTarget.lambdaHandler = pathutil.normalizeSeparator(tsLambdaHandler)
-    getLogger('channel').info(`Resolved compiled lambda handler to ${tsLambdaHandler}`)
+    getLogger().info(`Resolved compiled lambda handler to ${tsLambdaHandler}`)
 
     const tsc = await findTypescriptCompiler()
     if (!tsc) {
@@ -215,10 +215,10 @@ async function compileTypeScript(config: SamLaunchRequestArgs): Promise<void> {
     }
 
     try {
-        getLogger('channel').info(`Compiling TypeScript app with: "${tsc}"`)
+        getLogger().info(`Compiling TypeScript app with: "${tsc}"`)
         await new ChildProcess(tsc, ['--project', tsConfigPath]).run()
     } catch (error) {
-        getLogger('channel').error(`TypeScript compile error: ${error}`)
+        getLogger().error(`TypeScript compile error: ${error}`)
         throw Error('Failed to compile TypeScript app')
     }
 }
