@@ -20,9 +20,9 @@ import { Ec2ConnectionManager } from './model'
 
 export type Ec2ConnectionManagerMap = Map<string, Ec2ConnectionManager>
 
-export async function activate(ctx: ExtContext): Promise<void> {
-    const connectionManagers = new Map<string, Ec2ConnectionManager>()
+const connectionManagers = new Map<string, Ec2ConnectionManager>()
 
+export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
         Commands.register('aws.ec2.openTerminal', async (node?: Ec2InstanceNode) => {
             await telemetry.ec2_connectToInstance.run(async (span) => {
@@ -66,5 +66,5 @@ export async function activate(ctx: ExtContext): Promise<void> {
 }
 
 export async function deactivate(): Promise<void> {
-    // no-op
+    connectionManagers.forEach(async (manager) => await manager.closeConnections())
 }
