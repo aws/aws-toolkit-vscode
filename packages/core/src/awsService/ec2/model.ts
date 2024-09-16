@@ -35,12 +35,14 @@ export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMC
 interface Ec2RemoteEnv extends VscodeRemoteConnection {
     selection: Ec2Selection
     keyPair: SshKeyPair
+    ssmSession: SSM.StartSessionResponse
 }
 
 export class Ec2ConnectionManager {
     protected ssmClient: SsmClient
     protected ec2Client: Ec2Client
     protected iamClient: DefaultIamClient
+    protected activeEnvs: Set<SSM.SessionId>
 
     private policyDocumentationUri = vscode.Uri.parse(
         'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html'
@@ -54,6 +56,7 @@ export class Ec2ConnectionManager {
         this.ssmClient = this.createSsmSdkClient()
         this.ec2Client = this.createEc2SdkClient()
         this.iamClient = this.createIamSdkClient()
+        this.activeEnvs = new Set<SSM.SessionId>()
     }
 
     protected createSsmSdkClient(): SsmClient {
@@ -66,6 +69,12 @@ export class Ec2ConnectionManager {
 
     protected createIamSdkClient(): DefaultIamClient {
         return new DefaultIamClient(this.regionCode)
+    }
+
+    public async closeConnections(): Promise<void> {
+        this.activeEnvs.forEach(async (element) => {
+            await this.ssmClient.terminateSessionFromId(element)
+        })
     }
 
     public async getAttachedIamRole(instanceId: string): Promise<IAM.Role | undefined> {
@@ -181,6 +190,7 @@ export class Ec2ConnectionManager {
 
         try {
             await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, '/', remoteEnv.vscPath, remoteUser)
+            this.activeEnvs.add(remoteEnv.ssmSession.SessionId!)
         } catch (err) {
             this.throwGeneralConnectionError(selection, err as Error)
         }
@@ -206,8 +216,8 @@ export class Ec2ConnectionManager {
 
             throw err
         }
-        const session = await this.ssmClient.startSession(selection.instanceId, 'AWS-StartSSHSession')
-        const vars = getEc2SsmEnv(selection, ssm, session)
+        const ssmSession = await this.ssmClient.startSession(selection.instanceId, 'AWS-StartSSHSession')
+        const vars = getEc2SsmEnv(selection, ssm, ssmSession)
         const envProvider = async () => {
             return { [sshAgentSocketVariable]: await startSshAgent(), ...vars }
         }
@@ -225,6 +235,7 @@ export class Ec2ConnectionManager {
             SessionProcess,
             selection,
             keyPair,
+            ssmSession,
         }
     }
 

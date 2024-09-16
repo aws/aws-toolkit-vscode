@@ -10,6 +10,7 @@ import { Ec2Prompter, instanceFilter, Ec2Selection } from './prompter'
 import { Ec2Instance, Ec2Client } from '../../shared/clients/ec2Client'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { getLogger } from '../../shared/logger'
+import { Ec2ConnectionManagerMap } from './activation'
 
 export function refreshExplorer(node?: Ec2Node) {
     if (node) {
@@ -20,16 +21,15 @@ export function refreshExplorer(node?: Ec2Node) {
     }
 }
 
-export async function openTerminal(node?: Ec2Node) {
+export async function openTerminal(connectionManagers: Ec2ConnectionManagerMap, node?: Ec2Node) {
     const selection = await getSelection(node)
-
-    const connectionManager = new Ec2ConnectionManager(selection.region)
+    const connectionManager = await getConnectionManager(connectionManagers, selection)
     await connectionManager.attemptToOpenEc2Terminal(selection)
 }
 
-export async function openRemoteConnection(node?: Ec2Node) {
+export async function openRemoteConnection(connectionManagers: Ec2ConnectionManagerMap, node?: Ec2Node) {
     const selection = await getSelection(node)
-    const connectionManager = new Ec2ConnectionManager(selection.region)
+    const connectionManager = await getConnectionManager(connectionManagers, selection)
     await connectionManager.tryOpenRemoteConnection(selection)
 }
 
@@ -57,6 +57,19 @@ async function getSelection(node?: Ec2Node, filter?: instanceFilter): Promise<Ec
     const prompter = new Ec2Prompter(filter)
     const selection = node && node instanceof Ec2InstanceNode ? node.toSelection() : await prompter.promptUser()
     return selection
+}
+
+async function getConnectionManager(
+    connectionManagers: Ec2ConnectionManagerMap,
+    selection: Ec2Selection
+): Promise<Ec2ConnectionManager> {
+    if (connectionManagers.has(selection.region)) {
+        return connectionManagers.get(selection.region)!
+    } else {
+        const newConnectionManager = new Ec2ConnectionManager(selection.region)
+        connectionManagers.set(selection.region, newConnectionManager)
+        return newConnectionManager
+    }
 }
 
 export async function copyInstanceId(instanceId: string): Promise<void> {

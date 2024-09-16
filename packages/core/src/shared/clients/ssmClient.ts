@@ -19,6 +19,10 @@ export class SsmClient {
 
     public async terminateSession(session: SSM.Session): Promise<SSM.TerminateSessionResponse> {
         const sessionId = session.SessionId!
+        return await this.terminateSessionFromId(sessionId)
+    }
+
+    public async terminateSessionFromId(sessionId: SSM.SessionId): Promise<SSM.TerminateSessionResponse> {
         const client = await this.createSdkClient()
         const termination = await client
             .terminateSession({ SessionId: sessionId })
