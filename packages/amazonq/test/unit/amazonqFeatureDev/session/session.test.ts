@@ -61,7 +61,6 @@ describe('session', () => {
 
             const uploadID = '789'
             const tabID = '123'
-            const testApproach = 'test-approach'
             const workspaceFolders = [controllerSetup.workspaceFolder] as CurrentWsFolders
             workspaceFolderUriFsPath = controllerSetup.workspaceFolder.uri.fsPath
             uri = generateVirtualMemoryUri(uploadID, notRejectedFileName)
@@ -76,7 +75,6 @@ describe('session', () => {
 
             const codeGenState = new CodeGenState(
                 testConfig,
-                testApproach,
                 [
                     {
                         zipFilePath: notRejectedFileName,

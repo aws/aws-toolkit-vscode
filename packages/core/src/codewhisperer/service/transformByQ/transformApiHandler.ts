@@ -289,12 +289,10 @@ interface ZipCodeResult {
 
 export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePath, zipManifest }: IZipCodeParams) {
     let tempFilePath = undefined
-    let zipStartTime = undefined
     let logFilePath = undefined
     let dependenciesCopied = false
     try {
         throwIfCancelled()
-        zipStartTime = globals.clock.Date.now()
         const zip = new AdmZip()
 
         // If no modulePath is passed in, we are not uploaded the source folder
@@ -335,11 +333,6 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
                 dependencyFilesSize += (await fs.promises.stat(file)).size
             }
             getLogger().info(`CodeTransformation: dependency files size = ${dependencyFilesSize}`)
-            // TODO: remove deprecated metric once BI started using new metrics
-            telemetry.codeTransform_dependenciesCopied.emit({
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                result: MetadataResult.Pass,
-            })
             dependenciesCopied = true
         } else {
             if (zipManifest instanceof ZipManifest) {
@@ -365,11 +358,6 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
             fs.rmSync(dependenciesFolder.path, { recursive: true, force: true })
         }
     } catch (e: any) {
-        telemetry.codeTransform_logGeneralError.emit({
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            result: MetadataResult.Fail,
-            reason: 'ZipCreationFailed',
-        })
         throw Error('Failed to zip project')
     } finally {
         if (logFilePath) {
@@ -380,14 +368,6 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
     const zipSize = (await fs.promises.stat(tempFilePath)).size
 
     const exceedsLimit = zipSize > CodeWhispererConstants.uploadZipSizeLimitInBytes
-
-    // TODO: remove deprecated metric once BI started using new metrics
-    telemetry.codeTransform_jobCreateZipEndTime.emit({
-        codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-        codeTransformTotalByteSize: zipSize,
-        codeTransformRunTimeLatency: calculateTotalLatency(zipStartTime),
-        result: exceedsLimit ? MetadataResult.Fail : MetadataResult.Pass,
-    })
 
     getLogger().info(`CodeTransformation: created ZIP of size ${zipSize} at ${tempFilePath}`)
 

@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Ec2Instance } from '../../shared/clients/ec2Client'
+import { SafeEc2Instance } from '../../shared/clients/ec2Client'
 
-export function getIconCode(instance: Ec2Instance) {
-    if (instance.status === 'running') {
+export function getIconCode(instance: SafeEc2Instance) {
+    if (instance.LastSeenStatus === 'running') {
         return 'check'
     }
 
-    if (instance.status === 'stopped') {
+    if (instance.LastSeenStatus === 'stopped') {
         return 'stop'
     }
 

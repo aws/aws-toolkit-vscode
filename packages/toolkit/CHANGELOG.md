@@ -1,3 +1,7 @@
+## 3.24.0 2024-09-12
+
+- **Feature** Record telemetry event when AWS Toolkits extension is uninstalled.
+
 ## 3.23.0 2024-09-05
 
 - **Bug Fix** Network errors causing premature SSO logout
