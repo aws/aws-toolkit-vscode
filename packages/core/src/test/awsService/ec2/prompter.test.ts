@@ -4,7 +4,7 @@
  */
 import assert from 'assert'
 import { Ec2Prompter, instanceFilter } from '../../../awsService/ec2/prompter'
-import { Ec2Instance } from '../../../shared/clients/ec2Client'
+import { SafeEc2Instance } from '../../../shared/clients/ec2Client'
 import { RegionSubmenuResponse } from '../../../shared/ui/common/regionSubmenu'
 import { Ec2Selection } from '../../../awsService/ec2/prompter'
 import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
@@ -13,9 +13,9 @@ import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 
 describe('Ec2Prompter', async function () {
     class MockEc2Prompter extends Ec2Prompter {
-        public instances: Ec2Instance[] = []
+        public instances: SafeEc2Instance[] = []
 
-        public testAsQuickPickItem(testInstance: Ec2Instance) {
+        public testAsQuickPickItem(testInstance: SafeEc2Instance) {
             return Ec2Prompter.asQuickPickItem(testInstance)
         }
 
@@ -26,7 +26,7 @@ describe('Ec2Prompter', async function () {
             return this.getInstancesAsQuickPickItems(region)
         }
 
-        protected override async getInstancesFromRegion(regionCode: string): Promise<AsyncCollection<Ec2Instance>> {
+        protected override async getInstancesFromRegion(regionCode: string): Promise<AsyncCollection<SafeEc2Instance>> {
             return intoCollection(this.instances)
         }
 
@@ -52,9 +52,9 @@ describe('Ec2Prompter', async function () {
 
         it('returns QuickPickItem for named instances', function () {
             const testInstance = {
-                name: 'testName',
+                Name: 'testName',
                 InstanceId: 'testInstanceId',
-                status: 'running',
+                LastSeenStatus: 'running',
             }
 
             const result = prompter.testAsQuickPickItem(testInstance)
@@ -69,7 +69,7 @@ describe('Ec2Prompter', async function () {
         it('returns QuickPickItem for non-named instances', function () {
             const testInstance = {
                 InstanceId: 'testInstanceId',
-                status: 'running',
+                LastSeenStatus: 'running',
             }
 
             const result = prompter.testAsQuickPickItem(testInstance)
@@ -117,18 +117,18 @@ describe('Ec2Prompter', async function () {
             prompter.instances = [
                 {
                     InstanceId: '1',
-                    name: 'first',
-                    status: 'running',
+                    Name: 'first',
+                    LastSeenStatus: 'running',
                 },
                 {
                     InstanceId: '2',
-                    name: 'second',
-                    status: 'running',
+                    Name: 'second',
+                    LastSeenStatus: 'running',
                 },
                 {
                     InstanceId: '3',
-                    name: 'third',
-                    status: 'running',
+                    Name: 'third',
+                    LastSeenStatus: 'running',
                 },
             ]
             prompter.unsetFilter()

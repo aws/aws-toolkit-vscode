@@ -55,7 +55,6 @@ import { CodeTransformTelemetryState } from '../../telemetry/codeTransformTeleme
 import { getAuthType } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
 import DependencyVersions from '../../models/dependencies'
 import { getStringHash } from '../../../shared/utilities/textUtilities'
-import { getTelemetryReasonDesc } from '../../../shared/errors'
 import { getVersionData } from '../../../codewhisperer/service/transformByQ/transformMavenHandler'
 
 // These events can be interactions within the chat,
@@ -255,8 +254,6 @@ export class GumbyController {
 
     private async validateProjectsWithReplyOnError(message: any): Promise<TransformationCandidateProject[]> {
         let telemetryJavaVersion = JDKToTelemetryValue(JDKVersion.UNSUPPORTED) as CodeTransformJavaSourceVersionsAllowed
-
-        let err
         try {
             const validProjects = await telemetry.codeTransform_validateProject.run(async () => {
                 telemetry.record({
@@ -288,17 +285,6 @@ export class GumbyController {
             } else {
                 this.messenger.sendUnrecoverableErrorResponse('no-project-found', message.tabID)
             }
-            err = e
-        } finally {
-            // TODO: remove deprecated metric once BI started using new metrics
-            telemetry.codeTransform_projectDetails.emit({
-                passive: true,
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                codeTransformLocalJavaVersion: telemetryJavaVersion,
-                result: err?.code ? MetadataResult.Fail : MetadataResult.Pass,
-                reason: err?.code,
-                reasonDesc: getTelemetryReasonDesc(err),
-            })
         }
         return []
     }
@@ -390,20 +376,6 @@ export class GumbyController {
                 `CodeTransformation: using JAVA_HOME = ${transformByQState.getJavaHome()} since source JDK does not match Maven JDK`
             )
         }
-
-        const projectPath = transformByQState.getProjectPath()
-        // TODO: remove deprecated metric once BI started using new metrics
-        telemetry.codeTransform_jobStartedCompleteFromPopupDialog.emit({
-            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-            codeTransformJavaSourceVersionsAllowed: JDKToTelemetryValue(
-                transformByQState.getSourceJDKVersion()!
-            ) as CodeTransformJavaSourceVersionsAllowed,
-            codeTransformJavaTargetVersionsAllowed: JDKToTelemetryValue(
-                transformByQState.getTargetJDKVersion()
-            ) as CodeTransformJavaTargetVersionsAllowed,
-            codeTransformProjectId: projectPath === undefined ? telemetryUndefined : getStringHash(projectPath),
-            result: MetadataResult.Pass,
-        })
 
         // Pre-build project locally
         try {
