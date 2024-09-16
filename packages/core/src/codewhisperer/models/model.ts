@@ -316,6 +316,7 @@ export class ZipManifest {
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
     transformCapabilities: string[] = ['EXPLAINABILITY_V1']
+    skipTestsFlag: string = ''
 }
 
 export interface IHilZipManifestParams {
@@ -373,6 +374,8 @@ export class TransformByQState {
     private sourceJDKVersion: JDKVersion | undefined = undefined
 
     private targetJDKVersion: JDKVersion = JDKVersion.JDK17
+
+    private skipTestsFlag: string = ''
 
     private planFilePath: string = ''
     private summaryFilePath: string = ''
@@ -435,6 +438,10 @@ export class TransformByQState {
 
     public getProjectPath() {
         return this.projectPath
+    }
+
+    public getSkipTestsFlag() {
+        return this.skipTestsFlag
     }
 
     public getPreBuildLogFilePath() {
@@ -561,6 +568,10 @@ export class TransformByQState {
         this.projectPath = path
     }
 
+    public setSkipTestsFlag(flags: string) {
+        this.skipTestsFlag = flags
+    }
+
     public setStartTime(time: string) {
         this.startTime = time
     }
@@ -656,6 +667,7 @@ export class TransformByQState {
         this.jobFailureMetadata = ''
         this.payloadFilePath = ''
         this.errorLog = ''
+        this.skipTestsFlag = ''
         this.intervalId = undefined
     }
 }

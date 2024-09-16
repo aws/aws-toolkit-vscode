@@ -109,6 +109,49 @@ export class Messenger {
         this.dispatcher.sendAuthenticationUpdate(new AuthenticationUpdateMessage(gumbyEnabled, authenticatingTabIDs))
     }
 
+    public async sendSkipTestsPrompt(tabID: string) {
+        const formItems: ChatItemFormItem[] = []
+        formItems.push({
+            id: 'GumbyTransformSkipTestsForm',
+            type: 'select',
+            title: CodeWhispererConstants.skipTestsFormTitle,
+            mandatory: true,
+            options: [
+                {
+                    value: CodeWhispererConstants.doNotSkipTestsMessage,
+                    label: CodeWhispererConstants.doNotSkipTestsMessage,
+                },
+                {
+                    value: CodeWhispererConstants.skipIntegrationTestsMessage,
+                    label: CodeWhispererConstants.skipIntegrationTestsMessage,
+                },
+                {
+                    value: CodeWhispererConstants.skipAllTestsMessage,
+                    label: CodeWhispererConstants.skipAllTestsMessage,
+                },
+            ],
+        })
+
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, {
+                inProgress: true,
+                message: CodeWhispererConstants.skipTestsFormMessage,
+            })
+        )
+
+        this.dispatcher.sendChatPrompt(
+            new ChatPrompt(
+                {
+                    message: 'Q Code Transformation',
+                    formItems: formItems,
+                },
+                'TransformSkipTestsForm',
+                tabID,
+                false
+            )
+        )
+    }
+
     public async sendProjectPrompt(projects: TransformationCandidateProject[], tabID: string) {
         const projectFormOptions: { value: any; label: string }[] = []
         const detectedJavaVersions = new Array<JDKVersion | undefined>()
@@ -125,7 +168,7 @@ export class Messenger {
         formItems.push({
             id: 'GumbyTransformProjectForm',
             type: 'select',
-            title: 'Choose a project to transform',
+            title: CodeWhispererConstants.chooseProjectFormTitle,
             mandatory: true,
 
             options: projectFormOptions,
@@ -134,7 +177,7 @@ export class Messenger {
         formItems.push({
             id: 'GumbyTransformJdkFromForm',
             type: 'select',
-            title: 'Choose the source code version',
+            title: CodeWhispererConstants.chooseSourceVersionFormTitle,
             mandatory: true,
             options: [
                 {
@@ -155,7 +198,7 @@ export class Messenger {
         formItems.push({
             id: 'GumbyTransformJdkToForm',
             type: 'select',
-            title: 'Choose the target code version',
+            title: CodeWhispererConstants.chooseTargetVersionFormTitle,
             mandatory: true,
             options: [
                 {
@@ -407,7 +450,7 @@ export class Messenger {
         projectName: string,
         fromJDKVersion: JDKVersion,
         toJDKVersion: JDKVersion,
-        tabID: any
+        tabID: string
     ) {
         const message = `### Transformation details
 -------------
@@ -418,6 +461,16 @@ export class Messenger {
 | **Target JDK version** |  ${toJDKVersion}   |
     `
 
+        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
+    }
+
+    public sendSkipTestsSelectionMessage(skipTestsSelection: string, tabID: string) {
+        const message = `### Transformation details
+-------------
+| | |
+| :------------------- | -------: |
+| **Skip tests selection**             |   ${skipTestsSelection}   |
+    `
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
     }
 

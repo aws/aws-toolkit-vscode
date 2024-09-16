@@ -626,6 +626,27 @@ export const JDK8VersionNumber = '52'
 
 export const JDK11VersionNumber = '55'
 
+export const chooseProjectFormTitle = 'Choose a project to transform'
+
+export const chooseSourceVersionFormTitle = 'Choose the source code version'
+
+export const chooseTargetVersionFormTitle = 'Choose the target code version'
+
+export const skipTestsFormTitle = 'Choose to skip tests'
+
+export const skipTestsFormMessage =
+    "Amazon Q uses 'mvn verify' to build your project. You can skip running tests to reduce the build time."
+
+export const doNotSkipTestsMessage = 'Do not skip tests'
+
+export const skipIntegrationTestsMessage = 'Skip integration tests'
+
+export const skipIntegrationTestsFlag = '-DskipITs'
+
+export const skipAllTestsMessage = 'Skip all tests'
+
+export const skipAllTestsFlag = '-DskipTests'
+
 export const planTitle = 'Code Transformation plan by Amazon Q'
 
 export const planIntroductionMessage =
