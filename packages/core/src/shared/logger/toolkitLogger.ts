@@ -6,7 +6,7 @@
 import { normalize } from 'path'
 import * as vscode from 'vscode'
 import winston from 'winston'
-import { baseLogger, LogLevel, compareLogLevel } from './logger'
+import { BaseLogger, LogLevel, compareLogLevel } from './logger'
 import { OutputChannelTransport } from './outputChannelTransport'
 import { isSourceMappingAvailable } from '../vscode/env'
 import { formatError, ToolkitError, UnknownError } from '../errors'
@@ -20,7 +20,7 @@ export type LogTopic = 'Unknown' | 'Test'
 // Need to limit how many logs are actually tracked
 // LRU cache would work well, currently it just dumps the least recently added log
 const logmapSize: number = 1000
-export class WinstonToolkitLogger extends baseLogger implements vscode.Disposable {
+export class ToolkitLogger extends BaseLogger implements vscode.Disposable {
     private readonly logger: winston.Logger
     /* topic is used for header in log messages, default is 'Unknown' */
     private topic: LogTopic = 'Unknown'
