@@ -106,10 +106,7 @@ export async function startSecurityScan(
     let serviceInvocationStartTime = 0
     const codeScanTelemetryEntry: CodeScanTelemetryEntry = {
         codewhispererLanguage: editor
-            ? runtimeLanguageContext.getLanguageContext(
-                  editor.document.languageId,
-                  path.extname(editor.document.fileName)
-              ).language
+            ? runtimeLanguageContext.normalizeLanguage(editor.document.languageId).telemetryId
             : 'plaintext',
         codewhispererCodeScanSrcPayloadBytes: 0,
         codewhispererCodeScanSrcZipFileBytes: 0,

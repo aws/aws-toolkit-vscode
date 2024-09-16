@@ -5,7 +5,6 @@
 
 import {
     CodewhispererCompletionType,
-    CodewhispererLanguage,
     CodewhispererGettingStartedTask,
     CodewhispererAutomatedTriggerType,
     CodewhispererTriggerType,
@@ -13,6 +12,7 @@ import {
 import { GenerateRecommendationsRequest, ListRecommendationsRequest, Recommendation } from '../client/codewhisperer'
 import { Position } from 'vscode'
 import { CodeWhispererSupplementalContext } from '../models/model'
+import { Language, PythonLanguage } from './language/LanguageBase'
 
 class CodeWhispererSession {
     static #instance: CodeWhispererSession
@@ -27,7 +27,7 @@ class CodeWhispererSession {
         request: ListRecommendationsRequest | GenerateRecommendationsRequest
         supplementalMetadata: CodeWhispererSupplementalContext | undefined
     } = { request: {} as any, supplementalMetadata: {} as any }
-    language: CodewhispererLanguage = 'python'
+    language: Language = PythonLanguage
     taskType: CodewhispererGettingStartedTask | undefined
     triggerType: CodewhispererTriggerType = 'OnDemand'
     autoTriggerType: CodewhispererAutomatedTriggerType | undefined
@@ -82,7 +82,7 @@ class CodeWhispererSession {
         this.startPos = new Position(0, 0)
         this.startCursorOffset = 0
         this.leftContextOfCurrentLine = ''
-        this.language = 'python'
+        this.language = PythonLanguage
         this.triggerType = 'OnDemand'
         this.recommendations = []
         this.suggestionStates.clear()

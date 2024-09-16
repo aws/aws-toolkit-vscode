@@ -474,7 +474,9 @@ export async function activate(context: ExtContext): Promise<void> {
                 if (e.document !== editor.document) {
                     return
                 }
-                if (!runtimeLanguageContext.isLanguageSupported(e.document.languageId)) {
+
+                const language = runtimeLanguageContext.normalizeLanguage(editor.document.languageId)
+                if (!language.isInlineSupported()) {
                     return
                 }
 
@@ -486,7 +488,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 SecurityIssueHoverProvider.instance.handleDocumentChange(e)
                 SecurityIssueCodeActionProvider.instance.handleDocumentChange(e)
 
-                CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
+                CodeWhispererCodeCoverageTracker.getTracker(language)?.countTotalTokens(e)
 
                 /**
                  * Handle this keystroke event only when
@@ -545,14 +547,16 @@ export async function activate(context: ExtContext): Promise<void> {
                 if (e.document !== editor.document) {
                     return
                 }
-                if (!runtimeLanguageContext.isLanguageSupported(e.document.languageId)) {
+
+                const language = runtimeLanguageContext.normalizeLanguage(e.document.languageId)
+                if (!language.isInlineSupported()) {
                     return
                 }
                 /**
                  * CodeWhisperer security panel dynamic handling
                  */
                 securityPanelViewProvider.disposeSecurityPanelItem(e, editor)
-                CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
+                CodeWhispererCodeCoverageTracker.getTracker(language)?.countTotalTokens(e)
 
                 if (e.contentChanges.length === 0 || vsCodeState.isCodeWhispererEditing) {
                     return
