@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import * as fs from 'fs-extra'
 import * as crypto from 'crypto'
-import * as os from 'os'
 import { getLogger } from '../../shared/logger/logger'
 import { CurrentWsFolders, collectFilesForIndex } from '../../shared/utilities/workspaceUtils'
 import fetch from 'node-fetch'
@@ -24,6 +23,7 @@ import { globals, ToolkitError } from '../../shared'
 import { AuthUtil } from '../../codewhisperer'
 import { isWeb } from '../../shared/extensionGlobals'
 import { getUserAgent } from '../../shared/telemetry/util'
+import { isAmazonInternalOs } from '../../shared/vscode/env'
 
 function getProjectPaths() {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -364,12 +364,8 @@ export class LspController {
         }
     }
 
-    private isAmznLinux2(): boolean {
-        return os.release().includes('amzn2int') && process.platform === 'linux'
-    }
-
     async trySetupLsp(context: vscode.ExtensionContext) {
-        if (isCloud9() || isWeb() || this.isAmznLinux2()) {
+        if (isCloud9() || isWeb() || isAmazonInternalOs()) {
             // do not do anything if in Cloud9 or Web mode or in AL2 (AL2 does not support node v18+)
             return
         }
