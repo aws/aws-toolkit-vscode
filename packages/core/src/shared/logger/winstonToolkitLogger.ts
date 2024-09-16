@@ -14,11 +14,16 @@ import { SharedFileTransport } from './sharedFileTransport'
 import { ConsoleLogTransport } from './consoleLogTransport'
 import { isWeb } from '../extensionGlobals'
 
+/* define log topics */
+export type LogTopic = 'Unknown' | 'Test'
+
 // Need to limit how many logs are actually tracked
 // LRU cache would work well, currently it just dumps the least recently added log
 const logmapSize: number = 1000
 export class WinstonToolkitLogger extends baseLogger implements vscode.Disposable {
     private readonly logger: winston.Logger
+    /* topic is used for header in log messages, default is 'Unknown' */
+    private topic: LogTopic = 'Unknown'
     private disposed: boolean = false
     private idCounter: number = 0
     private logMap: { [logID: number]: { [filePath: string]: string } } = {}
@@ -103,6 +108,31 @@ export class WinstonToolkitLogger extends baseLogger implements vscode.Disposabl
               })
     }
 
+    public setTopic(topic: LogTopic = 'Unknown') {
+        this.topic = topic
+    }
+
+    /* Format the message with topic header */
+    private addTopicToMessage(message: string | Error): string | Error {
+        /*We shouldn't print unknow before current logging calls are migrated
+         * TODO: remove this once migration of current calls is completed
+         */
+        if (this.topic === 'Unknown') {
+            return message
+        }
+        const topicPrefix = `${this.topic}: `
+        if (typeof message === 'string') {
+            return topicPrefix + message
+        } else if (message instanceof Error) {
+            /* Create a new Error object to avoid modifying the original */
+            const topicError = new Error(topicPrefix + message.message)
+            topicError.name = message.name
+            topicError.stack = message.stack
+            return topicError
+        }
+        return message
+    }
+
     private mapError(level: LogLevel, err: Error): Error | string {
         // Use ToolkitError.trace even if we have source mapping (see below), because:
         // 1. it is what users will see, we want visibility into that when debugging
@@ -119,16 +149,17 @@ export class WinstonToolkitLogger extends baseLogger implements vscode.Disposabl
     }
 
     override sendToLog(level: LogLevel, message: string | Error, ...meta: any[]): number {
+        const messageWithHeader = this.addTopicToMessage(message)
         if (this.disposed) {
             throw new Error('Cannot write to disposed logger')
         }
 
         meta = meta.map((o) => (o instanceof Error ? this.mapError(level, o) : o))
 
-        if (message instanceof Error) {
-            this.logger.log(level, '%O', message, ...meta, { logID: this.idCounter })
+        if (messageWithHeader instanceof Error) {
+            this.logger.log(level, '%O', messageWithHeader, ...meta, { logID: this.idCounter })
         } else {
-            this.logger.log(level, message, ...meta, { logID: this.idCounter })
+            this.logger.log(level, messageWithHeader, ...meta, { logID: this.idCounter })
         }
 
         this.logMap[this.idCounter % logmapSize] = {}
