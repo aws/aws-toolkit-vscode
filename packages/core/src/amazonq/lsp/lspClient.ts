@@ -20,7 +20,7 @@ import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } f
 import { GetUsageRequestType, IndexRequestType, QueryRequestType, UpdateIndexRequestType, Usage } from './types'
 import { Writable } from 'stream'
 import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
-import { getLogger } from '../../shared'
+import { fs, getLogger } from '../../shared'
 
 const localize = nls.loadMessageBundle()
 
@@ -172,7 +172,8 @@ export async function activate(extensionContext: ExtensionContext) {
         initializationOptions: {
             handledSchemaProtocols: ['file', 'untitled'], // language server only loads file-URI. Fetching schemas with other protocols ('http'...) are made on the client.
             provideFormatter: false, // tell the server to not provide formatting capability and ignore the `aws.stepfunctions.asl.format.enable` setting.
-            extensionPath: extensionContext.extensionPath,
+            // this is used by LSP to determine index cache path, move to this folder so that when extension updates index is not deleted.
+            extensionPath: path.join(fs.getUserHomeDir(), '.aws', 'amazonq', 'cache'),
         },
     }
 

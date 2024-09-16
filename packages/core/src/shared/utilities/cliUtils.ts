@@ -258,7 +258,7 @@ async function installSsmCli(
     const finalPath = path.join(getToolkitLocalCliPath(), getOsCommand(awsClis['session-manager-plugin']))
     const TimedProcess = ChildProcess.extend({ timeout, rejectOnError: true, rejectOnErrorCode: true })
 
-    getLogger('channel').info(`Installing SSM CLI from ${ssmInstaller} to ${outDir}...`)
+    getLogger().info(`Installing SSM CLI from ${ssmInstaller} to ${outDir}...`)
     progress.report({ message: msgInstallingLocal })
 
     return handleError(install())
@@ -340,7 +340,7 @@ export async function getOrInstallCli(cli: AwsClis, confirm: boolean): Promise<s
 //     const awsInstaller = await downloadCliSource(AWS_CLIS.aws, tempDir)
 //     fs.chmodSync(awsInstaller, 0o700)
 
-//     getLogger('channel').info(`Installing AWS CLI from ${awsInstaller} to ${getToolkitCliDir()}...`)
+//     getLogger().info(`Installing AWS CLI from ${awsInstaller} to ${getToolkitCliDir()}...`)
 //     progress.report({ message: msgInstallingLocal })
 //     switch (process.platform) {
 //         case 'win32': {
