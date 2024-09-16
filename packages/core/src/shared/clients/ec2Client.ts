@@ -13,16 +13,13 @@ import { Timeout } from '../utilities/timeoutUtils'
 import { showMessageWithCancel } from '../utilities/messages'
 import { ToolkitError, isAwsError } from '../errors'
 
+/**
+ * A wrapper around EC2.Instance where we can safely assume InstanceId field exists.
+ */
 export interface SafeEc2Instance extends EC2.Instance {
     InstanceId: string
     Name?: string
     LastSeenStatus: EC2.InstanceStateName
-}
-
-// Intermediate interface so that I can coerce EC2.Instance to SafeEc2Instnace
-interface SafeEc2InstanceWithoutStatus extends EC2.Instance {
-    InstanceId: string
-    Name?: string
 }
 
 export class Ec2Client {
@@ -52,6 +49,12 @@ export class Ec2Client {
     protected async updateInstancesDetail(
         instances: AsyncCollection<EC2.Instance>
     ): Promise<AsyncCollection<SafeEc2Instance>> {
+        // Intermediate interface so that I can coerce EC2.Instance to SafeEc2Instnace
+        interface SafeEc2InstanceWithoutStatus extends EC2.Instance {
+            InstanceId: string
+            Name?: string
+        }
+
         const safeInstances: AsyncCollection<SafeEc2InstanceWithoutStatus> = instances.filter(
             (instance) => instance.InstanceId !== undefined
         )
