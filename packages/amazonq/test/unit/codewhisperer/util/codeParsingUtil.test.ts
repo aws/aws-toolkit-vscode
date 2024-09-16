@@ -68,7 +68,7 @@ describe('isTestFile', () => {
         const langs = new Map<string, string>([
             ['java', '.java'],
             ['python', '.py'],
-            ['typescript', '.py'],
+            ['typescript', '.ts'],
             ['javascript', '.js'],
             ['typescriptreact', '.tsx'],
             ['javascriptreact', '.jsx'],
