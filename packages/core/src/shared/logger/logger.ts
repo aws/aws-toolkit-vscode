@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { LogTopic, type ToolkitLogger } from './toolkitLogger'
 
 const toolkitLoggers: {
     main: Logger | undefined
@@ -25,7 +26,7 @@ export interface Logger {
     enableDebugConsole(): void
 }
 
-export abstract class baseLogger implements Logger {
+export abstract class BaseLogger implements Logger {
     debug(message: string | Error, ...meta: any[]): number {
         return this.sendToLog('debug', message, meta)
     }
@@ -110,21 +111,44 @@ export function compareLogLevel(l1: LogLevel, l2: LogLevel): number {
 /**
  * Gets the logger if it has been initialized
  * the logger is of `'main'` or `undefined`: Main logger; default impl: logs to log file and log output channel
+ * @param topic: topic to be appended in front of the message.
  */
-export function getLogger(): Logger {
+export function getLogger(topic?: LogTopic): Logger {
     const logger = toolkitLoggers['main']
     if (!logger) {
         return new ConsoleLogger()
     }
-
+    /**
+     * need this check so that setTopic can be recognized
+     * using instanceof would lead to dependency loop error
+     */
+    if (isToolkitLogger(logger)) {
+        logger.setTopic(topic)
+    }
     return logger
 }
 
-export function getDebugConsoleLogger(): Logger {
-    return toolkitLoggers['debugConsole'] ?? new ConsoleLogger()
+/**
+ * check if the logger is of type `ToolkitLogger` while not causing dependency loop
+ * @param logger
+ * @returns bool, true if is `ToolkitLogger`
+ */
+function isToolkitLogger(logger: Logger): logger is ToolkitLogger {
+    return 'setTopic' in logger && typeof logger.setTopic === 'function'
 }
 
-export class NullLogger extends baseLogger {
+export function getDebugConsoleLogger(topic?: LogTopic): Logger {
+    const logger = toolkitLoggers['debugConsole']
+    if (!logger) {
+        return new ConsoleLogger()
+    }
+    if (isToolkitLogger(logger)) {
+        logger.setTopic(topic)
+    }
+    return logger
+}
+
+export class NullLogger extends BaseLogger {
     public setLogLevel(logLevel: LogLevel) {}
     public logLevelEnabled(logLevel: LogLevel): boolean {
         return false
@@ -145,7 +169,7 @@ export class NullLogger extends baseLogger {
 /**
  * Fallback used if {@link getLogger()} is requested before logging is fully initialized.
  */
-export class ConsoleLogger extends baseLogger {
+export class ConsoleLogger extends BaseLogger {
     public setLogLevel(logLevel: LogLevel) {}
     public logLevelEnabled(logLevel: LogLevel): boolean {
         return false
