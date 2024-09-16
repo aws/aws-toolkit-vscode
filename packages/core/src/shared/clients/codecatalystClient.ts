@@ -668,9 +668,9 @@ class CodeCatalystClientInternal {
         }
 
         function failedStartMsg(serviceMsg?: string) {
-            const lastStatus = statuses[statuses.length - 1]?.status
+            const LastSeenStatus = statuses[statuses.length - 1]?.status
             const serviceMsg_ = serviceMsg ? `${serviceMsg}: ` : ''
-            return `Dev Environment failed to start (${lastStatus}): ${serviceMsg_}${getName()}`
+            return `Dev Environment failed to start (${LastSeenStatus}): ${serviceMsg_}${getName()}`
         }
 
         const doLog = (kind: 'debug' | 'error' | 'info', msg: string) => {
@@ -715,8 +715,8 @@ class CodeCatalystClientInternal {
                     throw new CancellationError('user')
                 }
 
-                const lastStatus = statuses[statuses.length - 1]
-                const elapsed = Date.now() - lastStatus.start
+                const LastSeenStatus = statuses[statuses.length - 1]
+                const elapsed = Date.now() - LastSeenStatus.start
                 const resp = await this.getDevEnvironment(args)
                 const serviceReason = (resp.statusReason ?? '').trim()
                 alias = resp.alias
@@ -724,7 +724,7 @@ class CodeCatalystClientInternal {
                 if (
                     startAttempts > 2 &&
                     elapsed > 10000 &&
-                    ['STOPPED', 'FAILED'].includes(lastStatus.status) &&
+                    ['STOPPED', 'FAILED'].includes(LastSeenStatus.status) &&
                     ['STOPPED', 'FAILED'].includes(resp.status)
                 ) {
                     const fails = statuses.filter((o) => o.status === 'FAILED').length
@@ -769,7 +769,7 @@ class CodeCatalystClientInternal {
                     })
                 }
 
-                if (lastStatus?.status !== resp.status) {
+                if (LastSeenStatus?.status !== resp.status) {
                     statuses.push({ status: resp.status, start: Date.now() })
                     if (resp.status !== 'RUNNING') {
                         doLog('debug', `devenv not started, waiting`)
