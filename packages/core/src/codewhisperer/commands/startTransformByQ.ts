@@ -275,7 +275,7 @@ export async function preTransformationUploadCode() {
             telemetry.record({ codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId() })
 
             const transformZipManifest = new ZipManifest()
-            // if the user chose to skip tests, add those here
+            // if the user chose to skip tests, add the flag here
             transformZipManifest.skipTestsFlag = transformByQState.getSkipTestsFlag()
             const zipCodeResult = await zipCode({
                 dependenciesFolder: transformByQState.getDependencyFolderInfo()!,
