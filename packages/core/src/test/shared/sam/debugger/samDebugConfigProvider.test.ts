@@ -675,7 +675,7 @@ describe('SamDebugConfigurationProvider', async function () {
 
         it('target=code: typescript', async function () {
             /**
-             * When executing the test suite on macOS in CI the tests fail with the following error:
+             * When executing the test on macOS in CI the tests fail with the following error:
              *  'Error: TypeScript compiler "tsc" not found in node_modules/ or the system
              *
              * See: https://github.com/aws/aws-toolkit-vscode/issues/5587
