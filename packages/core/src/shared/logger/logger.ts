@@ -7,23 +7,16 @@ import * as vscode from 'vscode'
 
 const toolkitLoggers: {
     main: Logger | undefined
-    channel: Logger | undefined
     debugConsole: Logger | undefined
-} = { main: undefined, channel: undefined, debugConsole: undefined }
+} = { main: undefined, debugConsole: undefined }
 
 export interface Logger {
-    debug(message: string, ...meta: any[]): number
-    debug(error: Error, ...meta: any[]): number
-    verbose(message: string, ...meta: any[]): number
-    verbose(error: Error, ...meta: any[]): number
-    info(message: string, ...meta: any[]): number
-    info(error: Error, ...meta: any[]): number
-    warn(message: string, ...meta: any[]): number
-    warn(error: Error, ...meta: any[]): number
-    error(message: string, ...meta: any[]): number
-    error(error: Error, ...meta: any[]): number
-    log(logLevel: LogLevel, message: string, ...meta: any[]): number
-    log(logLevel: LogLevel, error: Error, ...meta: any[]): number
+    debug(message: string | Error, ...meta: any[]): number
+    verbose(message: string | Error, ...meta: any[]): number
+    info(message: string | Error, ...meta: any[]): number
+    warn(message: string | Error, ...meta: any[]): number
+    error(message: string | Error, ...meta: any[]): number
+    log(logLevel: LogLevel, message: string | Error, ...meta: any[]): number
     setLogLevel(logLevel: LogLevel): void
     /** Returns true if the given log level is being logged.  */
     logLevelEnabled(logLevel: LogLevel): boolean
