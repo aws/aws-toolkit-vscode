@@ -72,7 +72,8 @@ export function getFileRelativePath(editor: vscode.TextEditor): string {
     // For notebook files, we want to use the programming language for each cell for the code suggestions, so change
     // the filename sent in the request to reflect that language
     if (relativePath.endsWith('.ipynb')) {
-        const fileExtension = runtimeLanguageContext.getLanguageExtensionForNotebook(editor.document.languageId)
+        const language = runtimeLanguageContext.normalizeLanguage(editor.document.languageId)
+        const fileExtension = runtimeLanguageContext.getLanguageExtensionForNotebook(language)
         if (fileExtension !== undefined) {
             const filenameWithNewExtension = relativePath.substring(0, relativePath.length - 5) + fileExtension
             return filenameWithNewExtension.substring(0, CodeWhispererConstants.filenameCharsLimit)

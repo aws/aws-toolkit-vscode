@@ -3,12 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import { getLogger } from '../../shared/logger/logger'
-import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
-import { createConstantMap, ConstantMap } from '../../shared/utilities/tsUtils'
-import * as codewhispererClient from '../client/codewhisperer'
-import * as CodeWhispererConstants from '../models/constants'
 import {
     CLanguage,
     CSharpLanguage,
@@ -154,10 +148,10 @@ export class RuntimeLanguageContext {
      * @param languageId : vscode language id or codewhisperer language name
      * @returns corresponding language extension if any, otherwise undefined
      */
-    public getLanguageExtensionForNotebook(languageId: string): string | undefined {
-        return [...this.supportedLanguageExtensionMap.entries()].find(
-            ([, language]) => language === this.normalizeLanguage(languageId)?.telemetryId
-        )?.[0]
+    public getLanguageExtensionForNotebook(language: Language): string | undefined {
+        return extensions.find((it) => {
+            return it.language === language
+        })?.exts?.[0]
     }
 
     /**
