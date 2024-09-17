@@ -129,7 +129,7 @@ export function getLogger(topic?: LogTopic): Logger {
 }
 
 /**
- * check if the logger is of type `ToolkitLogger` while not causing dependency loop
+ * check if the logger is of type `ToolkitLogger`. This avoids Circular Dependencies, but `instanceof ToolkitLogger` is preferred.
  * @param logger
  * @returns bool, true if is `ToolkitLogger`
  */
