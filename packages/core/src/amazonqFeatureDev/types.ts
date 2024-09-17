@@ -50,7 +50,7 @@ export enum FollowUpTypes {
     SendFeedback = 'SendFeedback',
 }
 
-export type SessionStatePhase = DevPhase.INIT | DevPhase.APPROACH | DevPhase.CODEGEN
+export type SessionStatePhase = DevPhase.INIT | DevPhase.CODEGEN
 
 export type CurrentWsFolders = [vscode.WorkspaceFolder, ...vscode.WorkspaceFolder[]]
 
@@ -60,7 +60,6 @@ export interface SessionState {
     readonly references?: CodeReference[]
     readonly phase?: SessionStatePhase
     readonly uploadId: string
-    approach: string
     readonly tokenSource: CancellationTokenSource
     readonly tabID: string
     interact(action: SessionStateAction): Promise<SessionStateInteraction>

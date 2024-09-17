@@ -91,7 +91,7 @@ export default defineComponent({
     },
     mixins: [saveData],
     created() {
-        client.getAllInstanceDescriptions().then((desc) => (this.descriptions = desc))
+        client.getAllInstanceDescriptions().then(desc => (this.descriptions = desc))
     },
     watch: {
         model(settings?: DevEnvironmentSettings) {

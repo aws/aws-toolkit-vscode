@@ -33,7 +33,7 @@ async function rdelete(p: string) {
     } catch {
         // Unlink should only fail if it is a non-empty directory that is NOT a symbolic link.
         // stats.isSymoblicLink() does not seem to detect symbolic links to folders?
-        const promises = (await readdir(p)).map((child) => rdelete(path.join(p, child)))
+        const promises = (await readdir(p)).map(child => rdelete(path.join(p, child)))
 
         await Promise.all(promises)
         await rmdir(p)
@@ -76,7 +76,7 @@ async function getGenerated(): Promise<string[]> {
     try {
         const data = JSON.parse(await readFile(p, 'utf-8'))
 
-        if (!Array.isArray(data) || !data.every((d) => typeof d === 'string')) {
+        if (!Array.isArray(data) || !data.every(d => typeof d === 'string')) {
             throw new Error('File manifest was not an array of strings')
         }
 

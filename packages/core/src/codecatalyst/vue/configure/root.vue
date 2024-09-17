@@ -92,17 +92,17 @@ export default defineComponent({
         // TODO(sijaden): add `busy` and then bind it to all components so they can disable things
     },
     created() {
-        client.init().then((env) => {
+        client.init().then(env => {
             this.details = env ? new DevEnvDetailsModel(env) : this.details
             this.compute = env ? new ComputeModel(env) : this.compute
         })
 
-        client.onDidChangeDevfile((data) => {
+        client.onDidChangeDevfile(data => {
             this.devfileStatus = data.status ?? this.devfileStatus
         })
 
         if (!this.definitionFilePath) {
-            client.getDevfileLocation().then((f) => (this.definitionFilePath = f))
+            client.getDevfileLocation().then(f => (this.definitionFilePath = f))
         }
     },
     methods: {
