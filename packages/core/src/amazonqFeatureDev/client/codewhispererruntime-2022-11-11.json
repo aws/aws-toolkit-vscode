@@ -439,7 +439,8 @@
                 "acceptedCharacterCount": { "shape": "Integer" },
                 "acceptedLineCount": { "shape": "Integer" },
                 "acceptedSnippetHasReference": { "shape": "Boolean" },
-                "hasProjectLevelContext": { "shape": "Boolean" }
+                "hasProjectLevelContext": { "shape": "Boolean" },
+                "userIntent": { "shape": "UserIntent" }
             }
         },
         "ChatInteractWithMessageEventInteractionTargetString": {
@@ -1564,6 +1565,7 @@
                 "conversationState": { "shape": "ConversationState" },
                 "workspaceState": { "shape": "WorkspaceState" },
                 "taskAssistPlan": { "shape": "TaskAssistPlan" },
+                "codeGenerationId": { "shape": "CodeGenerationId" },
                 "currentCodeGenerationId": { "shape": "CodeGenerationId" }
             }
         },
@@ -2107,7 +2109,8 @@
                 "CITE_SOURCES",
                 "EXPLAIN_LINE_BY_LINE",
                 "EXPLAIN_CODE_SELECTION",
-                "GENERATE_CLOUDFORMATION_TEMPLATE"
+                "GENERATE_CLOUDFORMATION_TEMPLATE",
+                "GENERATE_UNIT_TESTS"
             ]
         },
         "UserModificationEvent": {

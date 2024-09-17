@@ -281,11 +281,12 @@ export class CodeGenState extends CodeGenBase implements SessionState {
 
                 action.telemetry.setGenerateCodeIteration(this.currentIteration)
                 action.telemetry.setGenerateCodeLastInvocationTime()
-
-                const { codeGenerationId } = await this.config.proxyClient.startCodeGeneration(
+                const codeGenerationId = randomUUID()
+                await this.config.proxyClient.startCodeGeneration(
                     this.config.conversationId,
                     this.config.uploadId,
                     action.msg,
+                    codeGenerationId,
                     this.currentCodeGenerationId
                 )
 
@@ -465,41 +466,40 @@ export class PrepareCodeGenState implements SessionState {
         })
 
         action.messenger.sendUpdatePlaceholder(this.tabID, i18n('AWS.amazonq.featureDev.pillText.uploadingCode'))
-        if (!this.uploadId) {
-            const uploadId = await telemetry.amazonq_createUpload.run(async (span) => {
-                span.record({
-                    amazonqConversationId: this.config.conversationId,
-                    credentialStartUrl: AuthUtil.instance.startUrl,
-                })
-                const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
-                    this.config.workspaceRoots,
-                    this.config.workspaceFolders,
-                    action.telemetry,
-                    span
-                )
-
-                const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
-                    this.config.conversationId,
-                    zipFileChecksum,
-                    zipFileBuffer.length
-                )
-
-                await uploadCode(uploadUrl, zipFileBuffer, zipFileChecksum, kmsKeyArn)
-                action.messenger.sendAnswer({
-                    message: i18n('AWS.amazonq.featureDev.pillText.contextGatheringCompleted'),
-                    type: 'answer-part',
-                    tabID: this.tabID,
-                })
-
-                action.messenger.sendUpdatePlaceholder(
-                    this.tabID,
-                    i18n('AWS.amazonq.featureDev.pillText.contextGatheringCompleted')
-                )
-
-                return uploadId
+        const uploadId = await telemetry.amazonq_createUpload.run(async (span) => {
+            span.record({
+                amazonqConversationId: this.config.conversationId,
+                credentialStartUrl: AuthUtil.instance.startUrl,
             })
-            this.uploadId = uploadId
-        }
+            const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
+                this.config.workspaceRoots,
+                this.config.workspaceFolders,
+                action.telemetry,
+                span
+            )
+
+            const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
+                this.config.conversationId,
+                zipFileChecksum,
+                zipFileBuffer.length
+            )
+
+            await uploadCode(uploadUrl, zipFileBuffer, zipFileChecksum, kmsKeyArn)
+            action.messenger.sendAnswer({
+                message: i18n('AWS.amazonq.featureDev.pillText.contextGatheringCompleted'),
+                type: 'answer-part',
+                tabID: this.tabID,
+            })
+
+            action.messenger.sendUpdatePlaceholder(
+                this.tabID,
+                i18n('AWS.amazonq.featureDev.pillText.contextGatheringCompleted')
+            )
+
+            return uploadId
+        })
+        this.uploadId = uploadId
+
         const nextState = new CodeGenState(
             { ...this.config, uploadId: this.uploadId, currentCodeGenerationId: this.currentCodeGenerationId },
             this.filePaths,

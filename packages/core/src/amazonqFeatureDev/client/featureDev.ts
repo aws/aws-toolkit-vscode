@@ -121,11 +121,13 @@ export class FeatureDevClient {
         conversationId: string,
         uploadId: string,
         message: string,
+        codeGenerationId: string,
         currentCodeGenerationId?: string
     ) {
         try {
             const client = await this.getClient()
             const params = {
+                codeGenerationId,
                 conversationState: {
                     conversationId,
                     currentMessage: {
