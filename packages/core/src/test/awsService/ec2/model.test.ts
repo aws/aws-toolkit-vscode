@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { Ec2ConnectionManager } from '../../../awsService/ec2/model'
+import { Ec2ConnectionManager, Ec2RemoteEnv } from '../../../awsService/ec2/model'
 import { SsmClient } from '../../../shared/clients/ssmClient'
 import { Ec2Client } from '../../../shared/clients/ec2Client'
 import { Ec2Selection } from '../../../awsService/ec2/prompter'
@@ -16,6 +16,10 @@ import { DefaultIamClient } from '../../../shared/clients/iamClient'
 
 describe('Ec2ConnectClient', function () {
     let client: Ec2ConnectionManager
+    const testSelection = {
+        instanceId: 'test-id',
+        region: 'test-region',
+    }
 
     before(function () {
         client = new Ec2ConnectionManager('test-region')
@@ -135,14 +139,20 @@ describe('Ec2ConnectClient', function () {
             sinon.stub(SshKeyPair, 'generateSshKeyPair')
             sinon.stub(SshKeyPair.prototype, 'getPublicKey').resolves('test-key')
 
-            const testSelection = {
-                instanceId: 'test-id',
-                region: 'test-region',
-            }
             const mockKeys = await SshKeyPair.getSshKeyPair('', 0)
             await client.sendSshKeyToInstance(testSelection, mockKeys, '')
             sinon.assert.calledWith(sendCommandStub, testSelection.instanceId, 'AWS-RunShellScript')
             sinon.restore()
+        })
+    })
+
+    describe('openRemoteConnection', async function () {
+        it('adds the env to active env set', async function () {
+            assert.strictEqual(client.getActiveEnvs().size, 0)
+            const env: Ec2RemoteEnv = { ssmSession: { SessionId: 'sessionId' } } as Ec2RemoteEnv
+            await client.openRemoteConnection(env, 'remote-user')
+            assert.strictEqual(client.getActiveEnvs().size, 1)
+            assert(client.getActiveEnvs().has('session'))
         })
     })
 
