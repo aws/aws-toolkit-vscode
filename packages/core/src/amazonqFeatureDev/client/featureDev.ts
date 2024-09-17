@@ -135,9 +135,13 @@ export class FeatureDevClient {
         uploadId: string,
         message: string,
 <<<<<<< HEAD
+<<<<<<< HEAD
         codeGenerationId: string,
 =======
 >>>>>>> 4742b3c59 (refactor(amazonqFeatureDev): include updated rts model)
+=======
+        codeGenerationId: string,
+>>>>>>> d9c61d527 (refactor(amazonqFeatureDev): add logic for codeGenerationId)
         currentCodeGenerationId?: string
     ) {
         try {
