@@ -35,6 +35,7 @@ What would you like to work on?`,
         placeholder: 'Open a new tab to chat with Q',
         welcome: `Welcome to Code Transformation!
 
-I can help you upgrade your Java 8 and 11 codebases to Java 17.`,
+I can help you upgrade your Java 8 and 11 codebases to Java 17 ("language upgrade") & 
+I can also convert embedded SQL from Oracle to PostgreSQL ("SQL conversion"). What would you like to do?`,
     },
 }

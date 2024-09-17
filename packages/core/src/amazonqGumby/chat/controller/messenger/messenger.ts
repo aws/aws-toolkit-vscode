@@ -35,6 +35,9 @@ export type StaticTextResponseType =
     | 'start-transformation-confirmed'
     | 'job-transmitted'
     | 'end-HIL-early'
+    | 'choose-transformation-objective'
+    | 'language-upgrade-selected'
+    | 'sql-conversion-selected'
 
 export type UnrecoverableErrorType =
     | 'no-project-found'
@@ -315,15 +318,21 @@ export class Messenger {
         )
     }
 
-    public sendStaticTextResponse(type: StaticTextResponseType, tabID: string) {
+    public sendStaticTextResponse(messageType: StaticTextResponseType, itemType: ChatItemType, tabID: string) {
         let message = '...'
 
-        switch (type) {
+        switch (messageType) {
             case 'java-home-not-set':
                 message = MessengerUtils.createJavaHomePrompt()
                 break
             case 'end-HIL-early':
-                message = `I will continue transforming your code without upgrading this dependency.`
+                message = 'I will continue transforming your code without upgrading this dependency.'
+                break
+            case 'choose-transformation-objective':
+                message = 'Choose your transformation objective.'
+                break
+            case 'language-upgrade-selected':
+                message = 'Got it! I can upgrade your Java 8 or 11 project to Java 17.'
                 break
         }
 
@@ -331,7 +340,7 @@ export class Messenger {
             new ChatMessage(
                 {
                     message,
-                    messageType: 'ai-prompt',
+                    messageType: itemType,
                 },
                 tabID
             )
