@@ -70,6 +70,14 @@ export class Ec2ConnectionManager {
         return new DefaultIamClient(this.regionCode)
     }
 
+    public getActiveEnvs(): Set<SSM.SessionId> {
+        return this.activeEnvs
+    }
+
+    public addActiveEnv(sessionId: SSM.SessionId): void {
+        this.activeEnvs.add(sessionId)
+    }
+
     public async closeConnections(): Promise<void> {
         this.activeEnvs.forEach(async (element) => {
             await this.ssmClient.terminateSessionFromId(element)
@@ -191,7 +199,7 @@ export class Ec2ConnectionManager {
 
         try {
             await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, '/', remoteEnv.vscPath, remoteUser)
-            this.activeEnvs.add(remoteEnv.ssmSession.SessionId!)
+            this.addActiveEnv(remoteEnv.ssmSession.SessionId!)
         } catch (err) {
             this.throwGeneralConnectionError(selection, err as Error)
         }
