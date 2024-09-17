@@ -3,8 +3,7 @@
     "workspaces": [
         "packages/core/src/web",
         "packages/*",
-        "plugins/*",
-        "src.gen/@amzn/codewhisperer-streaming"
+        "plugins/*"
     ],
     "version": "0.0.1",
     "private": true,
@@ -21,8 +20,9 @@
     },
     "scripts": {
         "prepare": "ts-node ./scripts/prepare.ts",
-        "postinstall": "npm run buildCustomLintPlugin && npm run postinstall -ws --if-present",
+        "postinstall": "npm run buildCustomLintPlugin && npm run buildGenerated && npm run postinstall -ws --if-present",
         "buildCustomLintPlugin": "npm run build -w plugins/eslint-plugin-aws-toolkits",
+        "buildGenerated": "cd src.gen/@amzn/codewhisperer-streaming && npm i --silent",
         "compile": "npm run compile -w packages/",
         "testCompile": "npm run testCompile -w packages/ --if-present",
         "test": "npm run test -w packages/ --if-present",
