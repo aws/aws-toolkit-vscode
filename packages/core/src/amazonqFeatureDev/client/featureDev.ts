@@ -80,7 +80,12 @@ export class FeatureDevClient {
         }
     }
 
-    public async createUploadUrl(conversationId: string, contentChecksumSha256: string, contentLength: number) {
+    public async createUploadUrl(
+        conversationId: string,
+        contentChecksumSha256: string,
+        contentLength: number,
+        uploadId: string
+    ) {
         try {
             const client = await this.getClient()
             const params = {
@@ -89,6 +94,7 @@ export class FeatureDevClient {
                         conversationId,
                     },
                 },
+                uploadId,
                 contentChecksum: contentChecksumSha256,
                 contentChecksumType: 'SHA_256',
                 artifactType: 'SourceCode',
@@ -98,7 +104,7 @@ export class FeatureDevClient {
             getLogger().debug(`Executing createUploadUrl with %O`, omit(params, 'contentChecksum'))
             const response = await client.createUploadUrl(params).promise()
             getLogger().debug(`${featureName}: Created upload url: %O`, {
-                uploadId: response.uploadId,
+                uploadId: uploadId,
                 requestId: response.$response.requestId,
             })
             return response
