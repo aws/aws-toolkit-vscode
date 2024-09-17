@@ -10,7 +10,7 @@ import { copyTextCommand } from '../../awsexplorer/commands/copyText'
 import { Ec2Node } from './explorer/ec2ParentNode'
 import { openRemoteConnection, openTerminal, rebootInstance, startInstance, stopInstance } from './commands'
 import { Ec2ConnectionManager } from './model'
-import { refreshExplorer } from './utils'
+import { refreshExplorerNode } from './utils'
 
 export type Ec2ConnectionManagerMap = Map<string, Ec2ConnectionManager>
 
@@ -37,7 +37,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             await telemetry.ec2_changeState.run(async (span) => {
                 span.record({ ec2InstanceState: 'start' })
                 await startInstance(node)
-                refreshExplorer(node)
+                refreshExplorerNode(node)
             })
         }),
 
@@ -45,7 +45,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             await telemetry.ec2_changeState.run(async (span) => {
                 span.record({ ec2InstanceState: 'stop' })
                 await stopInstance(node)
-                refreshExplorer(node)
+                refreshExplorerNode(node)
             })
         }),
 
@@ -53,7 +53,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             await telemetry.ec2_changeState.run(async (span) => {
                 span.record({ ec2InstanceState: 'reboot' })
                 await rebootInstance(node)
-                refreshExplorer(node)
+                refreshExplorerNode(node)
             })
         })
     )

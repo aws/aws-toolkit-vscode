@@ -24,7 +24,7 @@ export function getIconCode(instance: SafeEc2Instance) {
     return 'loading~spin'
 }
 
-export function refreshExplorer(node?: Ec2Node) {
+export function refreshExplorerNode(node?: Ec2Node) {
     if (node) {
         const n = node instanceof Ec2InstanceNode ? node.parent : node
         n.refreshNode().catch((e) => {
