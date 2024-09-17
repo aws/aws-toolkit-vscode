@@ -465,12 +465,10 @@ export class Messenger {
     }
 
     public sendSkipTestsSelectionMessage(skipTestsSelection: string, tabID: string) {
-        const message = `### Transformation details
--------------
-| | |
-| :------------------- | -------: |
-| **Skip tests selection**             |   ${skipTestsSelection}   |
-    `
+        // just for correct grammar
+        let skipTestsText = skipTestsSelection
+        if (skipTestsText === CodeWhispererConstants.doNotSkipTestsMessage) skipTestsText = 'not skip tests'
+        const message = `Got it! Amazon Q will ${skipTestsText.toLowerCase()} when building your project.`
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
     }
 
