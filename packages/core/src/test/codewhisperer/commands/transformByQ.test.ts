@@ -219,7 +219,9 @@ describe('transformByQ', function () {
         }).then((zipCodeResult) => {
             const zip = new AdmZip(zipCodeResult.tempFilePath)
             const manifestEntry = zip.getEntry('manifest.json')
-            if (!manifestEntry) fail('manifest.json not found in the zip')
+            if (!manifestEntry) {
+                fail('manifest.json not found in the zip')
+            }
             const manifestBuffer = manifestEntry.getData()
             const manifestText = manifestBuffer.toString('utf8')
             const manifest = JSON.parse(manifestText)
