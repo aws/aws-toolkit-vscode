@@ -8,15 +8,9 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { copyTextCommand } from '../../awsexplorer/commands/copyText'
 import { Ec2Node } from './explorer/ec2ParentNode'
-import {
-    openRemoteConnection,
-    openTerminal,
-    rebootInstance,
-    startInstance,
-    stopInstance,
-    refreshExplorer,
-} from './commands'
+import { openRemoteConnection, openTerminal, rebootInstance, startInstance, stopInstance } from './commands'
 import { Ec2ConnectionManager } from './model'
+import { refreshExplorer } from './utils'
 
 export type Ec2ConnectionManagerMap = Map<string, Ec2ConnectionManager>
 
