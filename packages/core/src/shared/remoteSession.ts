@@ -8,7 +8,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { Settings } from '../shared/settings'
-import { showMessageWithCancel } from './utilities/messages'
+import { showConfirmationMessage, showMessageWithCancel } from './utilities/messages'
 import { CancellationError, Timeout } from './utilities/timeoutUtils'
 import { isExtensionInstalled, showInstallExtensionMsg } from './utilities/vsCodeUtils'
 import { VSCODE_EXTENSION_ID, vscodeExtensionMinVersion } from './extensions'
@@ -21,6 +21,9 @@ import { ChildProcess } from './utilities/childProcess'
 import { findSshPath, getVscodeCliPath } from './utilities/pathFind'
 import { IamClient } from './clients/iamClient'
 import { IAM } from 'aws-sdk'
+import { getIdeProperties } from './extensionUtilities'
+
+const policyAttachDelay = 5000
 
 export interface MissingTool {
     readonly name: 'code' | 'ssm' | 'ssh'
@@ -176,6 +179,61 @@ export async function handleMissingTool(tools: Err<MissingTool[]>) {
             details: { missing },
         })
     )
+}
+
+function getFormattedSsmActions() {
+    const formattedActions = minimumSsmActions.map((action) => `"${action}",\n`).reduce((l, r) => l + r)
+
+    return formattedActions.slice(0, formattedActions.length - 2)
+}
+
+async function addInlinePolicyWithDelay(client: IamClient, roleArn: string) {
+    const timeout = new Timeout(policyAttachDelay)
+    const message = `Adding Inline Policy to ${roleArn}`
+    await showMessageWithCancel(message, timeout)
+    await addSsmActionsToInlinePolicy(client, roleArn)
+
+    function delay(ms: number) {
+        return new Promise((resolve) => setTimeout(resolve, ms))
+    }
+
+    await delay(policyAttachDelay)
+    if (timeout.elapsedTime < policyAttachDelay) {
+        throw new CancellationError('user')
+    }
+    timeout.cancel()
+}
+
+export async function promptToAddInlinePolicy(client: IamClient, roleArn: string): Promise<boolean> {
+    const promptText = `${
+        getIdeProperties().company
+    } Toolkit will add required actions to role ${roleArn}:\n${getFormattedSsmActions()}`
+    const confirmation = await showConfirmationMessage({ prompt: promptText, confirm: 'Approve' })
+
+    if (confirmation) {
+        await addInlinePolicyWithDelay(client, roleArn)
+    }
+
+    return confirmation
+}
+
+async function addSsmActionsToInlinePolicy(client: IamClient, roleArn: string) {
+    const policyName = 'AWSVSCodeRemoteConnect'
+    const policyDocument = getSsmPolicyDocument()
+    await client.putRolePolicy(roleArn, policyName, policyDocument)
+}
+
+function getSsmPolicyDocument() {
+    return `{
+            "Version": "2012-10-17",
+            "Statement": {
+                "Effect": "Allow",
+                "Action": [
+                    ${getFormattedSsmActions()}
+                ],
+                "Resource": "*"
+                }
+            }`
 }
 
 export async function getDeniedSsmActions(client: IamClient, roleArn: string): Promise<IAM.EvaluationResult[]> {
