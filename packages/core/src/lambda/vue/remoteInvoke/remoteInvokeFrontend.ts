@@ -29,7 +29,9 @@ export default defineComponent({
         if (this.initialData.FunctionArn && this.initialData.FunctionRegion) {
             this.initialData.TestEvents = await client.listRemoteTestEvents(
                 this.initialData.FunctionArn,
-                this.initialData.FunctionRegion
+                this.initialData.FunctionRegion,
+                this.initialData.StackName!,
+                this.initialData.LogicalId!
             )
         }
     },
@@ -70,7 +72,9 @@ export default defineComponent({
             this.newTestEventName = ''
             this.initialData.TestEvents = await client.listRemoteTestEvents(
                 this.initialData.FunctionArn,
-                this.initialData.FunctionRegion
+                this.initialData.FunctionRegion,
+                this.initialData.StackName!,
+                this.initialData.LogicalId!
             )
         },
         async promptForFileLocation() {

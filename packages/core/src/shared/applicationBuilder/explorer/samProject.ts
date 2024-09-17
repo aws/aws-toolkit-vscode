@@ -41,11 +41,6 @@ export async function getStackName(workspaceFolder: vscode.WorkspaceFolder): Pro
         const stackName = await samConfig.getParam('global', 'stack_name')
         const region = await samConfig.getParam('global', 'region')
 
-        if (!stackName && !region) {
-            getLogger().debug('getStackName: Missing stack_name or region in samconfig.toml.')
-            return {}
-        }
-
         return { stackName, region }
     } catch (error) {
         getLogger().error('getStackName: Failed to retrieve stack name and region. Error: %s', error)

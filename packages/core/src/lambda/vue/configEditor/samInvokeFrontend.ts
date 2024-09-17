@@ -329,6 +329,8 @@ export default defineComponent({
                     name: this.selectedTestEvent,
                     region: this.resourceData.region,
                     arn: this.resourceData.arn,
+                    stackName: this.resourceData.stackName,
+                    logicalId: this.resourceData.logicalId,
                 }
                 const resp = await client.getRemoteTestEvents(eventData)
                 this.payload.value = JSON.stringify(JSON.parse(resp), undefined, 4)
@@ -341,11 +343,18 @@ export default defineComponent({
                     event: this.payload.value,
                     region: this.resourceData.region,
                     arn: this.resourceData.arn,
+                    stackName: this.resourceData.stackName,
+                    logicalId: this.resourceData.logicalId,
                 }
                 await client.createRemoteTestEvents(eventData)
                 this.showNameInput = false
                 this.newTestEventName = ''
-                this.TestEvents = await client.listRemoteTestEvents(this.resourceData.arn, this.resourceData.region)
+                this.TestEvents = await client.listRemoteTestEvents(
+                    this.resourceData.arn,
+                    this.resourceData.region,
+                    this.resourceData.stackName,
+                    this.resourceData.logicalId
+                )
             }
         },
         showNameField() {
@@ -370,14 +379,21 @@ export default defineComponent({
                             this.launchConfig.lambda.runtime = this.resourceData.runtime
                         }
 
-                        client.listRemoteTestEvents(this.resourceData.arn, this.resourceData.region).then(
-                            (events) => {
-                                this.TestEvents = events
-                            },
-                            (e) => {
-                                console.error('client.listRemoteTestEvents failed: %s', (e as Error).message)
-                            }
-                        )
+                        client
+                            .listRemoteTestEvents(
+                                this.resourceData.arn,
+                                this.resourceData.region,
+                                this.resourceData.stackName,
+                                this.resourceData.logicalId
+                            )
+                            .then(
+                                (events) => {
+                                    this.TestEvents = events
+                                },
+                                (e) => {
+                                    console.error('client.listRemoteTestEvents failed: %s', (e as Error).message)
+                                }
+                            )
                     }
                 },
                 (e) => {

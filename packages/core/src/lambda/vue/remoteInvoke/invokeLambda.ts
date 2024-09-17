@@ -48,6 +48,8 @@ export interface InitialData {
     InputSamples: SampleRequest[]
     TestEvents?: string[]
     Source?: string
+    StackName?: string
+    LogicalId?: string
 }
 
 export interface RemoteInvokeData {
@@ -167,8 +169,13 @@ export class RemoteInvokeWebview extends VueWebview {
         return basename(filePath)
     }
 
-    public async listRemoteTestEvents(arn: string, region: string): Promise<string[]> {
-        return await listRemoteTestEvents(arn, region)
+    public async listRemoteTestEvents(
+        arn: string,
+        region: string,
+        stackName: string,
+        logicalId: string
+    ): Promise<string[]> {
+        return await listRemoteTestEvents(arn, region, stackName, logicalId)
     }
 
     public async createRemoteTestEvents(putEvent: Event) {
@@ -248,9 +255,20 @@ export async function invokeRemoteLambda(
     const inputs = await getSampleLambdaPayloads()
     let resource: any = params.functionNode
     let source: string = 'AwsExplorerRemoteInvoke'
+    let functionArn: string | undefined
     if (isTreeNode(params.functionNode)) {
         resource = params.functionNode.resource as DeployedResource
+        functionArn = resource.configuration.FunctionArn
         source = 'AppBuilderRemoteInvoke'
+    } else {
+        functionArn = params.functionNode.configuration.FunctionArn
+    }
+    try {
+        functionArn
+            ? await listRemoteTestEvents(functionArn, resource.regionCode, resource.stackName, resource.logicalId)
+            : []
+    } catch (err) {
+        getLogger().error('InvokeLambda: Error listing remote test events:', err)
     }
     const client = new DefaultLambdaClient(resource.regionCode)
     const wv = new Panel(context.extensionContext, context.outputChannel, client, {
@@ -267,12 +285,19 @@ export async function invokeRemoteLambda(
     })
 }
 
-export async function listRemoteTestEvents(arn: string, region: string): Promise<string[]> {
+export async function listRemoteTestEvents(
+    arn: string,
+    region: string,
+    stackName: string,
+    logicalId: string
+): Promise<string[]> {
     try {
         const params: SamCliRemoteTestEventsParameters = {
             functionArn: arn,
             operation: TestEventsOperation.List,
             region: region,
+            stackName: stackName,
+            logicalId: logicalId,
         }
         const result = await runSamCliRemoteTestEvents(params, getSamCliContext().invoker)
         return result.split('\n')

@@ -53,6 +53,8 @@ type Event = {
     region: string
     arn: string
     event?: string
+    logicalId?: string
+    stackName?: string
 }
 
 export interface ResourceData {
@@ -62,6 +64,7 @@ export interface ResourceData {
     location: string
     handler: string
     runtime: string
+    stackName: string
     source: string
 }
 
@@ -318,8 +321,13 @@ export class SamInvokeWebview extends VueWebview {
         return path.basename(filePath)
     }
 
-    public async listRemoteTestEvents(functionArn: string, region: string): Promise<string[]> {
-        return await listRemoteTestEvents(functionArn, region)
+    public async listRemoteTestEvents(
+        functionArn: string,
+        region: string,
+        stackName: string,
+        logicalId: string
+    ): Promise<string[]> {
+        return await listRemoteTestEvents(functionArn, region, stackName, logicalId)
     }
 
     public async createRemoteTestEvents(putEvent: Event) {
@@ -329,6 +337,8 @@ export class SamInvokeWebview extends VueWebview {
             name: putEvent.name,
             eventSample: putEvent.event,
             region: putEvent.region,
+            stackName: putEvent.stackName,
+            logicalId: putEvent.logicalId,
         }
         return await this.remoteTestEvents(params)
     }
@@ -338,6 +348,8 @@ export class SamInvokeWebview extends VueWebview {
             operation: TestEventsOperation.Get,
             functionArn: getEvents.arn,
             region: getEvents.region,
+            stackName: getEvents.stackName,
+            logicalId: getEvents.logicalId,
         }
         return await this.remoteTestEvents(params)
     }
@@ -481,6 +493,7 @@ export async function registerSamDebugInvokeVueCommand(context: ExtContext, para
         handler: resource.resource.Handler!,
         runtime: resource.resource.Runtime!,
         arn: resource.functionArn ?? '',
+        stackName: resource.stackName ?? '',
         source: source,
     })
     await telemetry.sam_openConfigUi.run(async (span) => {

@@ -22,13 +22,20 @@ export interface SamCliRemoteTestEventsParameters {
     region?: string
     eventSample?: string
     projectRoot?: vscode.Uri
+    stackName?: string
+    logicalId?: string
 }
 
 export async function runSamCliRemoteTestEvents(
     remoteTestEventsParameters: SamCliRemoteTestEventsParameters,
     invoker: SamCliProcessInvoker
 ): Promise<string> {
-    const args = ['remote', 'test-event', remoteTestEventsParameters.operation, remoteTestEventsParameters.functionArn]
+    const args = ['remote', 'test-event', remoteTestEventsParameters.operation]
+    if (remoteTestEventsParameters.functionArn) {
+        args.push(remoteTestEventsParameters.functionArn)
+    } else if (remoteTestEventsParameters.stackName && remoteTestEventsParameters.logicalId) {
+        args.push('--stack-name', remoteTestEventsParameters.stackName, remoteTestEventsParameters.logicalId)
+    }
 
     if (remoteTestEventsParameters.region) {
         args.push('--region', remoteTestEventsParameters.region)
