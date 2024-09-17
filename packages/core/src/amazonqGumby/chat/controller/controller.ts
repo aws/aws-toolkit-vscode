@@ -184,9 +184,17 @@ export class GumbyController {
 
     private async transformInitiated(message: any) {
         // Start /transform chat flow
-        const session: Session = this.sessionStorage.getSession()
         CodeTransformTelemetryState.instance.setSessionId()
 
+        this.sessionStorage.getSession().conversationState = ConversationState.WAITING_FOR_OBJECTIVE
+        this.messenger.sendStaticTextResponse('choose-transformation-objective', 'ai-prompt', message.tabID)
+        this.messenger.sendChatInputEnabled(message.tabID, true)
+        this.messenger.sendUpdatePlaceholder(message.tabID, "Enter 'language upgrade' or 'SQL conversion'")
+    }
+
+    private async handleLanguageUpgrade(message: any) {
+        const session: Session = this.sessionStorage.getSession()
+        this.messenger.sendStaticTextResponse('language-upgrade-selected', 'prompt', message.tabID)
         try {
             await telemetry.codeTransform_initiateTransform.run(async () => {
                 const authType = await getAuthType()
@@ -194,14 +202,6 @@ export class GumbyController {
                     codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                     credentialSourceId: authType,
                 })
-
-                // check that a project is open
-                const workspaceFolders = vscode.workspace.workspaceFolders
-                if (workspaceFolders === undefined || workspaceFolders.length === 0) {
-                    this.messenger.sendUnrecoverableErrorResponse('no-project-found', message.tabID)
-                    telemetry.record({ result: MetadataResult.Fail, reason: 'no-project-found' })
-                    return
-                }
 
                 // check that the session is authenticated
                 const authState = await AuthUtil.instance.getChatAuthState()
@@ -212,8 +212,17 @@ export class GumbyController {
                     return
                 }
 
+                // check that a project is open
+                const workspaceFolders = vscode.workspace.workspaceFolders
+                if (workspaceFolders === undefined || workspaceFolders.length === 0) {
+                    this.messenger.sendUnrecoverableErrorResponse('no-project-found', message.tabID)
+                    telemetry.record({ result: MetadataResult.Fail, reason: 'no-project-found' })
+                    return
+                }
+
                 // If previous transformation was already running
                 switch (this.sessionStorage.getSession().conversationState) {
+                    // TODO: figure out if/when to set these states for SQL conversions
                     case ConversationState.JOB_SUBMITTED:
                         this.messenger.sendAsyncEventProgress(
                             message.tabID,
@@ -236,8 +245,8 @@ export class GumbyController {
                 this.messenger.sendTransformationIntroduction(message.tabID)
             })
         } catch (e: any) {
-            // if there was an issue getting the list of valid projects, the error message will be shown here
             this.messenger.sendErrorMessage(e.message, message.tabID)
+            return
         }
 
         try {
@@ -247,9 +256,14 @@ export class GumbyController {
                 await this.messenger.sendProjectPrompt(validProjects, message.tabID)
             }
         } catch (err: any) {
-            // if there was an issue getting the list of valid projects, the error message will be shown here
+            // if there was an issue showing the list of valid projects, the error message will be shown here
             this.messenger.sendErrorMessage(err.message, message.tabID)
+            return
         }
+    }
+
+    private async handleSQLConversion(message: any) {
+        this.messenger.sendStaticTextResponse('sql-conversion-selected', 'prompt', message.tabID)
     }
 
     private async validateProjectsWithReplyOnError(message: any): Promise<TransformationCandidateProject[]> {
@@ -443,7 +457,7 @@ export class GumbyController {
         } catch (err: any) {
             if (err instanceof JavaHomeNotSetError) {
                 this.sessionStorage.getSession().conversationState = ConversationState.PROMPT_JAVA_HOME
-                this.messenger.sendStaticTextResponse('java-home-not-set', message.tabID)
+                this.messenger.sendStaticTextResponse('java-home-not-set', 'ai-prompt', message.tabID)
                 this.messenger.sendChatInputEnabled(message.tabID, true)
                 this.messenger.sendUpdatePlaceholder(message.tabID, 'Enter the path to your Java installation.')
                 // const fileUri = await vscode.window.showOpenDialog({
@@ -478,7 +492,7 @@ export class GumbyController {
     }
 
     private startHILIntervention(data: { tabID: string; codeSnippet: string }) {
-        this.sessionStorage.getSession().conversationState = ConversationState.WAITING_FOR_INPUT
+        this.sessionStorage.getSession().conversationState = ConversationState.WAITING_FOR_HIL_INPUT
         this.messenger.sendHumanInTheLoopInitialMessage(data.tabID, data.codeSnippet)
     }
 
@@ -500,7 +514,6 @@ export class GumbyController {
         switch (session.conversationState) {
             case ConversationState.PROMPT_JAVA_HOME: {
                 const pathToJavaHome = extractPath(data.message)
-
                 if (pathToJavaHome) {
                     await this.prepareProjectForSubmission({
                         pathToJavaHome,
@@ -509,6 +522,23 @@ export class GumbyController {
                 } else {
                     this.messenger.sendUnrecoverableErrorResponse('invalid-java-home', data.tabID)
                 }
+                break
+            }
+
+            case ConversationState.WAITING_FOR_OBJECTIVE: {
+                const objective = data.message.trim().toLowerCase()
+                if (objective === 'language upgrade') {
+                    vscode.window.showInformationMessage('You chose language upgrade!')
+                    this.handleLanguageUpgrade(data)
+                } else if (objective === 'sql conversion') {
+                    vscode.window.showInformationMessage('You chose SQL conversion!')
+                    this.handleSQLConversion(data)
+                } else {
+                    vscode.window.showInformationMessage('You did not enter a valid objective')
+                    // keep prompting user until they enter a valid option
+                    this.transformInitiated(data)
+                }
+                break
             }
         }
     }
@@ -557,7 +587,7 @@ export class GumbyController {
             this.transformationFinished({ tabID: message.tabID, message: (err as Error).message })
         }
 
-        this.messenger.sendStaticTextResponse('end-HIL-early', message.tabID)
+        this.messenger.sendStaticTextResponse('end-HIL-early', 'ai-prompt', message.tabID)
     }
 }
 
