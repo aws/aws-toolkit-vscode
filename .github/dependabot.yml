@@ -7,8 +7,16 @@
 version: 2
 updates:
     - package-ecosystem: 'npm'
-      directory: './packages/core/' # Location of package manifests.
+      directory: './src.gen'
+      target-branch: 'master'
+      schedule:
+          interval: 'monthly'
+      ignore:
+          - dependency-name: '*' # roundabout way to ignore this entire directory, see https://github.com/dependabot/dependabot-core/issues/4364#issuecomment-2002406602
+    - package-ecosystem: 'npm'
+      directory: './' # Location of package manifests.
       target-branch: 'master' # Avoid updates to "staging".
+      versioning-strategy: 'increase'
       commit-message:
           prefix: 'deps'
       schedule:
@@ -25,7 +33,7 @@ updates:
                   - '@smithy*'
                   - 'smithy*'
     - package-ecosystem: 'github-actions'
-      directory: './packages/core/'
+      directory: './'
       target-branch: 'master' # Avoid updates to "staging".
       commit-message:
           prefix: 'deps'
