@@ -37,7 +37,7 @@ export class QuickActionGenerator {
                         ? [
                               {
                                   command: '/transform',
-                                  description: 'Transform your Java 8 or 11 Maven project to Java 17',
+                                  description: 'Transform your Java project',
                               },
                           ]
                         : []),
