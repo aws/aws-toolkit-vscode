@@ -203,6 +203,26 @@ describe('transformByQ', function () {
         assert.deepStrictEqual(actual, expected)
     })
 
+    it.only(`WHEN zip created THEN manifest.json contains -DskipTests flag`, async function () {
+        const tempFileName = `testfile-${globals.clock.Date.now()}.zip`
+        transformByQState.setProjectPath(tempDir)
+        const transformManifest = new ZipManifest()
+        transformManifest.skipTestsFlag = '-DskipTests'
+        return zipCode({
+            dependenciesFolder: {
+                path: tempDir,
+                name: tempFileName,
+            },
+            humanInTheLoopFlag: false,
+            modulePath: tempDir,
+            zipManifest: transformManifest,
+        }).then((zipCodeResult) => {
+            const zip = new AdmZip(zipCodeResult.tempFilePath)
+            const manifest = JSON.parse(zip.readAsText('manifest.json'))
+            assert.strictEqual(manifest.skipTestsFlag, '-DskipTests')
+        })
+    })
+
     it(`WHEN zip created THEN dependencies contains no .sha1 or .repositories files`, async function () {
         const m2Folders = [
             'com/groupid1/artifactid1/version1',
