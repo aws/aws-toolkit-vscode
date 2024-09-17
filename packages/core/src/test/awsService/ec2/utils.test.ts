@@ -12,108 +12,129 @@ import { Ec2ParentNode } from '../../../awsService/ec2/explorer/ec2ParentNode'
 import { Ec2Prompter, Ec2Selection } from '../../../awsService/ec2/prompter'
 import { Ec2ConnectionManagerMap } from '../../../awsService/ec2/activation'
 import { Ec2ConnectionManager } from '../../../awsService/ec2/model'
+import { DefaultAwsContext } from '../../../shared'
 
-const testInstance = {
-    InstanceId: 'testId',
-    Tags: [
-        {
-            Key: 'Name',
-            Value: 'testName',
-        },
-    ],
-    LastSeenStatus: 'running',
-}
-const testClient = new Ec2Client('')
-const testParentNode = new Ec2ParentNode('fake-region', 'testPartition', testClient)
-const testNode = new Ec2InstanceNode(testParentNode, testClient, 'testRegion', 'testPartition', testInstance)
+describe('utils', async function () {
+    let testInstance: SafeEc2Instance
+    let testParentNode: Ec2ParentNode
+    let testClient: Ec2Client
+    let testNode: Ec2InstanceNode
 
-describe('getIconCode', function () {
-    it('gives code based on status', function () {
-        const runningInstance: SafeEc2Instance = {
-            InstanceId: 'X',
+    before(function () {
+        sinon.stub(DefaultAwsContext.prototype, 'getCredentialAccountId')
+        testInstance = {
+            InstanceId: 'testId',
+            Tags: [
+                {
+                    Key: 'Name',
+                    Value: 'testName',
+                },
+            ],
             LastSeenStatus: 'running',
         }
-        const stoppedInstance: SafeEc2Instance = {
-            InstanceId: 'XX',
-            LastSeenStatus: 'stopped',
-        }
-
-        assert.strictEqual(getIconCode(runningInstance), 'pass')
-        assert.strictEqual(getIconCode(stoppedInstance), 'circle-slash')
+        testClient = new Ec2Client('')
+        testParentNode = new Ec2ParentNode('fake-region', 'testPartition', testClient)
+        testNode = new Ec2InstanceNode(testParentNode, testClient, 'testRegion', 'testPartition', testInstance)
     })
 
-    it('defaults to loading~spin', function () {
-        const pendingInstance: SafeEc2Instance = {
-            InstanceId: 'X',
-            LastSeenStatus: 'pending',
-        }
-        const stoppingInstance: SafeEc2Instance = {
-            InstanceId: 'XX',
-            LastSeenStatus: 'shutting-down',
-        }
-
-        assert.strictEqual(getIconCode(pendingInstance), 'loading~spin')
-        assert.strictEqual(getIconCode(stoppingInstance), 'loading~spin')
-    })
-})
-
-describe('refreshExplorerNode', function () {
     after(function () {
         sinon.restore()
     })
 
-    it('refreshes only parent node', function () {
-        const parentRefresh = sinon.stub(Ec2ParentNode.prototype, 'refreshNode')
-        const childRefresh = sinon.stub(Ec2InstanceNode.prototype, 'refreshNode')
+    describe('getIconCode', function () {
+        it('gives code based on status', function () {
+            const runningInstance: SafeEc2Instance = {
+                InstanceId: 'X',
+                LastSeenStatus: 'running',
+            }
+            const stoppedInstance: SafeEc2Instance = {
+                InstanceId: 'XX',
+                LastSeenStatus: 'stopped',
+            }
 
-        refreshExplorerNode(testNode)
-        sinon.assert.calledOn(parentRefresh, testParentNode)
+            assert.strictEqual(getIconCode(runningInstance), 'pass')
+            assert.strictEqual(getIconCode(stoppedInstance), 'circle-slash')
+        })
 
-        parentRefresh.resetHistory()
+        it('defaults to loading~spin', function () {
+            const pendingInstance: SafeEc2Instance = {
+                InstanceId: 'X',
+                LastSeenStatus: 'pending',
+            }
+            const stoppingInstance: SafeEc2Instance = {
+                InstanceId: 'XX',
+                LastSeenStatus: 'shutting-down',
+            }
 
-        refreshExplorerNode(testParentNode)
-        sinon.assert.calledOn(parentRefresh, testParentNode)
-
-        sinon.assert.notCalled(childRefresh)
-    })
-})
-
-describe('getSelection', async function () {
-    it('uses node when passed', async function () {
-        const prompterStub = sinon.stub(Ec2Prompter.prototype, 'promptUser')
-        const result = await getSelection(testNode)
-
-        assert.strictEqual(result, testNode.toSelection())
-        sinon.assert.notCalled(prompterStub)
-    })
-
-    it('prompts user when no node is passed', async function () {
-        const prompterStub = sinon.stub(Ec2Prompter.prototype, 'promptUser')
-        await getSelection()
-        sinon.assert.calledOnce(prompterStub)
-    })
-})
-
-describe('getConnectionManager', async function () {
-    let connectionManagers: Ec2ConnectionManagerMap
-
-    beforeEach(function () {
-        connectionManagers = new Map<string, Ec2ConnectionManager>()
+            assert.strictEqual(getIconCode(pendingInstance), 'loading~spin')
+            assert.strictEqual(getIconCode(stoppingInstance), 'loading~spin')
+        })
     })
 
-    it('only creates new connection managers once for each region ', async function () {
-        const fakeSelection: Ec2Selection = {
-            region: 'region-1',
-            instanceId: 'fake-id',
-        }
+    describe('refreshExplorerNode', function () {
+        after(function () {
+            sinon.restore()
+        })
 
-        const cm = await getConnectionManager(connectionManagers, fakeSelection)
-        assert.strictEqual(connectionManagers.size, 1)
+        it('refreshes only parent node', async function () {
+            const parentRefresh = sinon.stub(Ec2ParentNode.prototype, 'refreshNode')
+            const childRefresh = sinon.stub(Ec2InstanceNode.prototype, 'refreshNode')
 
-        cm.addActiveEnv('test-env')
+            await refreshExplorerNode(testNode)
+            sinon.assert.calledOn(parentRefresh, testParentNode)
 
-        const cm2 = await getConnectionManager(connectionManagers, fakeSelection)
+            parentRefresh.resetHistory()
 
-        assert.strictEqual(cm2.getActiveEnvs().size, 1)
+            await refreshExplorerNode(testParentNode)
+            sinon.assert.calledOn(parentRefresh, testParentNode)
+
+            sinon.assert.notCalled(childRefresh)
+
+            parentRefresh.restore()
+            childRefresh.restore()
+        })
+    })
+
+    describe('getSelection', async function () {
+        it('uses node when passed', async function () {
+            const prompterStub = sinon.stub(Ec2Prompter.prototype, 'promptUser')
+            const result = await getSelection(testNode)
+
+            assert.strictEqual(result.instanceId, testNode.toSelection().instanceId)
+            assert.strictEqual(result.region, testNode.toSelection().region)
+            sinon.assert.notCalled(prompterStub)
+            prompterStub.restore()
+        })
+
+        it('prompts user when no node is passed', async function () {
+            const prompterStub = sinon.stub(Ec2Prompter.prototype, 'promptUser')
+            await getSelection()
+            sinon.assert.calledOnce(prompterStub)
+            prompterStub.restore()
+        })
+    })
+
+    describe('getConnectionManager', async function () {
+        let connectionManagers: Ec2ConnectionManagerMap
+
+        beforeEach(function () {
+            connectionManagers = new Map<string, Ec2ConnectionManager>()
+        })
+
+        it('only creates new connection managers once for each region ', async function () {
+            const fakeSelection: Ec2Selection = {
+                region: 'region-1',
+                instanceId: 'fake-id',
+            }
+
+            const cm = await getConnectionManager(connectionManagers, fakeSelection)
+            assert.strictEqual(connectionManagers.size, 1)
+
+            cm.addActiveEnv('test-env')
+
+            const cm2 = await getConnectionManager(connectionManagers, fakeSelection)
+
+            assert.strictEqual(cm2.getActiveEnvs().size, 1)
+        })
     })
 })

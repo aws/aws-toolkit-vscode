@@ -37,7 +37,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             await telemetry.ec2_changeState.run(async (span) => {
                 span.record({ ec2InstanceState: 'start' })
                 await startInstance(node)
-                refreshExplorerNode(node)
+                await refreshExplorerNode(node)
             })
         }),
 
@@ -45,7 +45,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             await telemetry.ec2_changeState.run(async (span) => {
                 span.record({ ec2InstanceState: 'stop' })
                 await stopInstance(node)
-                refreshExplorerNode(node)
+                await refreshExplorerNode(node)
             })
         }),
 
@@ -53,7 +53,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             await telemetry.ec2_changeState.run(async (span) => {
                 span.record({ ec2InstanceState: 'reboot' })
                 await rebootInstance(node)
-                refreshExplorerNode(node)
+                await refreshExplorerNode(node)
             })
         })
     )

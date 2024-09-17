@@ -24,12 +24,14 @@ export function getIconCode(instance: SafeEc2Instance) {
     return 'loading~spin'
 }
 
-export function refreshExplorerNode(node?: Ec2Node) {
+export async function refreshExplorerNode(node?: Ec2Node) {
     if (node) {
         const n = node instanceof Ec2InstanceNode ? node.parent : node
-        n.refreshNode().catch((e) => {
+        try {
+            await n.refreshNode()
+        } catch (e) {
             getLogger().error('refreshNode failed: %s', (e as Error).message)
-        })
+        }
     }
 }
 
