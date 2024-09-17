@@ -21,14 +21,8 @@ import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { debounce } from 'lodash'
 
 /**
- *
- * This function sets up the necessary components for the feature, including event emitters,
- * messenger, and controller. It configures the chat interface and integrates with VS Code.
- *
- * @param {AmazonQAppInitContext} appContext - The context for initializing the Amazon Q app.
- *        It contains necessary information and utilities for setting up the feature,
- *        such as the VS Code extension context and AWS SDK clients.
- * @returns {void}
+ * Initializes the Amazon Q application context with necessary event emitters and controllers.
+ * @param {AmazonQAppInitContext} appContext - The context for initializing the Amazon Q application, containing required dependencies and configurations.
  */
 export function init(appContext: AmazonQAppInitContext) {
     const featureDevChatControllerEventEmitters: ChatControllerEventEmitters = {
@@ -63,13 +57,10 @@ export function init(appContext: AmazonQAppInitContext) {
      */
     const featureDevProvider = new (class implements vscode.TextDocumentContentProvider {
         /**
-         * Provides the content of a text document for the Amazon Q Feature Development functionality.
-         * This method is part of the vscode.TextDocumentContentProvider interface implementation.
-         * It retrieves the content of a document based on the provided URI, which includes a tabID parameter.
-         *
-         * @param {vscode.Uri} uri - The URI of the document to provide content for.
-         * @returns {Promise<string>} A promise that resolves to the content of the document.
-         * @throws {TabIdNotFoundError} If the tabID is not found in the URI.
+         * Retrieves the content for a text document based on its URI.
+         * @param {vscode.Uri} uri - The URI of the text document to provide content for.
+         * @returns {Promise<string>} A promise that resolves to the content of the text document.
+         * @throws {TabIdNotFoundError} If the tabID is not found in the URI's query parameters.
          */
         async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
             const params = fromQueryToParameters(uri.query)
@@ -107,9 +98,11 @@ export function init(appContext: AmazonQAppInitContext) {
     )
 
     /**
-     * A debounced function to handle authentication updates for Amazon Q Feature Development.
-     * This function checks the authentication state, updates authenticating sessions,
+     * Handles authentication updates for Amazon Q Feature Development.
+     * This debounced function checks the authentication state, updates authenticating sessions,
      * and sends authentication updates to the messenger.
+     * @function
+     * @async
      */
     const debouncedEvent = debounce(async () => {
         const authenticated = (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'

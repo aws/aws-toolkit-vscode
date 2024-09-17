@@ -3,14 +3,26 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/** Max number of times a user can attempt to retry an approach request if it fails */
+/**
+ * Maximum number of retry attempts for an approach request.
+ * @type {number}
+ */
 export const approachRetryLimit = 3
 
-/** Max number of times a user can attempt to retry a codegen request if it fails */
+/**
+ * Maximum number of retry attempts for a code generation request.
+ * @type {number}
+ */
 export const codeGenRetryLimit = 3
 
-/** The default retry limit used when the session could not be found */
+/**
+ * Default retry limit when a session is not found.
+ * @type {number}
+ */
 export const defaultRetryLimit = 0
 
-/** The max size a file that is uploaded can be (1024 KB) */
+/**
+ * Maximum size (in bytes) for an uploaded file (1024 KB).
+ * @type {number}
+ */
 export const maxFileSizeBytes = 1024000

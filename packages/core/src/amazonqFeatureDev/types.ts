@@ -13,16 +13,21 @@ import { CodeReference } from '../amazonq/webview/ui/connector'
 import { DiffTreeFileInfo } from '../amazonq/webview/ui/diffTree/types'
 
 /**
- * Represents an interaction in the chat UI.
+ * Represents an interaction in the chat UI, containing the content and response type.
+ * @typedef {Object} Interaction
+ * @property {string} [content] - The content to be sent back to the chat UI.
+ * @property {LLMResponseType} [responseType] - The type of the LLM response.
  */
 export type Interaction = {
-    // content to be sent back to the chat UI
     content?: string
     responseType?: LLMResponseType
 }
 
 /**
  * Represents the interaction between the session state and the chat UI.
+ * @interface
+ * @property {SessionState | Omit<SessionState, 'uploadId'> | undefined} nextState - The next state of the session after the interaction.
+ * @property {Interaction} interaction - The interaction details.
  */
 export interface SessionStateInteraction {
     nextState: SessionState | Omit<SessionState, 'uploadId'> | undefined
@@ -30,11 +35,15 @@ export interface SessionStateInteraction {
 }
 
 /**
- * Enum representing different phases of development.
+ * Represents different phases of development in the Amazon Q Feature Development process.
+ * @enum {string}
  */
 export enum DevPhase {
+    /** Initial phase of development */
     INIT = 'Init',
+    /** Approach planning phase */
     APPROACH = 'Approach',
+    /** Code generation phase */
     CODEGEN = 'Codegen',
 }
 

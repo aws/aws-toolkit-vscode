@@ -8,7 +8,14 @@ import { featureName } from './constants'
 import { uploadCodeError } from './userFacingText'
 import { i18n } from '../shared/i18n-helper'
 
+/**
+ * Error thrown when a conversation ID is not found.
+ * @extends {ToolkitError}
+ */
 export class ConversationIdNotFoundError extends ToolkitError {
+    /**
+     * Creates an instance of ConversationIdNotFoundError.
+     */
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.conversationIdNotFoundError'), {
             code: 'ConversationIdNotFound',
@@ -16,9 +23,16 @@ export class ConversationIdNotFoundError extends ToolkitError {
     }
 }
 
+/**
+ * Error thrown when a tab ID is not found.
+ * @extends {ToolkitError}
+ */
 export class TabIdNotFoundError extends ToolkitError {
     static errorName = 'TabIdNotFoundError'
 
+    /**
+     * Creates an instance of TabIdNotFoundError.
+     */
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.tabIdNotFoundError'), {
             code: 'TabIdNotFound',
@@ -26,7 +40,14 @@ export class TabIdNotFoundError extends ToolkitError {
     }
 }
 
+/**
+ * Error thrown when the UI panel fails to load.
+ * @extends {ToolkitError}
+ */
 export class PanelLoadError extends ToolkitError {
+    /**
+     * Creates an instance of PanelLoadError.
+     */
     constructor() {
         super(`${featureName} UI panel failed to load`, { code: 'PanelLoadFailed' })
     }
