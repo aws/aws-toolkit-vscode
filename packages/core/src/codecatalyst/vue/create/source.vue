@@ -210,7 +210,7 @@ export default defineComponent({
             }
 
             const branch = this.model.newBranch
-            if (!!branch && this.availableBranches?.find((b) => b.name === `refs/heads/${branch}`) !== undefined) {
+            if (!!branch && this.availableBranches?.find(b => b.name === `refs/heads/${branch}`) !== undefined) {
                 return 'Branch already exists'
             }
         },

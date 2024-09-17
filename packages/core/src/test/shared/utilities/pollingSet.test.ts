@@ -5,9 +5,9 @@
 
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { PollingSet } from '../../../shared/utilities/pollingSet'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import { installFakeClock } from '../../testUtil'
+import { PollingSet } from '../../../shared/utilities/pollingSet'
 
 describe('pollingSet', function () {
     let pollingSet: PollingSet<string>

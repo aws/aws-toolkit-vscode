@@ -100,7 +100,7 @@ export async function resumeCreateNewSamApp(
         reason = 'error'
 
         globals.outputChannel.show(true)
-        getLogger('channel').error(
+        getLogger().error(
             localize('AWS.samcli.initWizard.resume.error', 'Error resuming SAM Application creation. {0}', checklogs())
         )
 
@@ -235,7 +235,7 @@ export async function createNewSamApplication(
                 destinationDirectory: vscode.Uri.file(destinationDirectory),
             }
             schemaCodeDownloader = createSchemaCodeDownloaderObject(client!, globals.outputChannel)
-            getLogger('channel').info(
+            getLogger().info(
                 localize(
                     'AWS.message.info.schemas.downloadCodeBindings.start',
                     'Downloading code for schema {0}...',
@@ -333,7 +333,7 @@ export async function createNewSamApplication(
         reason = getTelemetryReason(err)
 
         globals.outputChannel.show(true)
-        getLogger('channel').error(
+        getLogger().error(
             localize('AWS.samcli.initWizard.general.error', 'Error creating new SAM Application. {0}', checklogs())
         )
 
