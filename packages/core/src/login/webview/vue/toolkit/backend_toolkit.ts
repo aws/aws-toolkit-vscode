@@ -10,9 +10,11 @@ import { CommonAuthWebview } from '../backend'
 import {
     AwsConnection,
     Connection,
+    SsoConnection,
     TelemetryMetadata,
     createSsoProfile,
     getTelemetryMetadataForConn,
+    isSsoConnection,
 } from '../../../../auth/connection'
 import { Auth } from '../../../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
@@ -143,6 +145,10 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
             }
         })
         return connections
+    }
+
+    async listSsoConnections(): Promise<SsoConnection[]> {
+        return (await Auth.instance.listConnections()).filter((conn) => isSsoConnection(conn)) as SsoConnection[]
     }
 
     override reauthenticateConnection(): Promise<undefined> {
