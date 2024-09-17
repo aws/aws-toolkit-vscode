@@ -48,7 +48,7 @@ import * as semver from 'semver'
 import * as vscode from 'vscode'
 import { registerCommands } from './commands'
 import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
-
+import { CodeActions } from './codeActions'
 export const amazonQContextPrefix = 'amazonq'
 
 /**
@@ -56,7 +56,7 @@ export const amazonQContextPrefix = 'amazonq'
  */
 export async function activateAmazonQCommon(context: vscode.ExtensionContext, isWeb: boolean) {
     initialize(context, isWeb)
-    const homeDirLogs = await fs.init(context, (homeDir) => {
+    const homeDirLogs = await fs.init(context, (homeDir: string) => {
         void messages.showViewLogsMessage(`Invalid home directory (check $HOME): "${homeDir}"`)
     })
     errors.init(fs.getUsername(), env.isAutomation())
@@ -193,6 +193,10 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
             })
         })
         .catch((err) => getLogger().error('Error collecting telemetry for auth_userState: %s', err))
+
+    vscode.languages.registerCodeActionsProvider({ scheme: 'file' }, new CodeActions(), {
+        providedCodeActionKinds: CodeActions.providedCodeActionKinds,
+    })
 }
 
 export async function deactivateCommon() {

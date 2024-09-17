@@ -358,6 +358,10 @@
                 {
                     "submenu": "amazonqEditorContextSubmenu",
                     "group": "cw_chat"
+                },
+                {
+                    "command": "aws.amazonq.codeActions",
+                    "when": "editorHasSelection && !editorReadonly && aws.codewhisperer.connected"
                 }
             ],
             "aws.amazonq.submenu.feedback": [
@@ -560,6 +564,10 @@
                 "title": "%AWS.amazonq.toggleCodeScan%",
                 "category": "%AWS.amazonq.title%",
                 "enablement": "aws.codewhisperer.connected"
+            },
+            {
+                "command": "aws.amazonq.codeActions",
+                "title": "%AWS.command.amazonq.codeActions%"
             }
         ],
         "keybindings": [
