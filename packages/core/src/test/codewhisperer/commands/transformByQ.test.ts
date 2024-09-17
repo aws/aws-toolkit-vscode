@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import assert from 'assert'
+import assert, { fail } from 'assert'
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
@@ -203,7 +203,7 @@ describe('transformByQ', function () {
         assert.deepStrictEqual(actual, expected)
     })
 
-    it.only(`WHEN zip created THEN manifest.json contains -DskipTests flag`, async function () {
+    it(`WHEN zip created THEN manifest.json contains -DskipTests flag`, async function () {
         const tempFileName = `testfile-${globals.clock.Date.now()}.zip`
         transformByQState.setProjectPath(tempDir)
         const transformManifest = new ZipManifest()
@@ -218,7 +218,11 @@ describe('transformByQ', function () {
             zipManifest: transformManifest,
         }).then((zipCodeResult) => {
             const zip = new AdmZip(zipCodeResult.tempFilePath)
-            const manifest = JSON.parse(zip.readAsText('manifest.json'))
+            const manifestEntry = zip.getEntry('manifest.json')
+            if (!manifestEntry) fail('manifest.json not found in the zip')
+            const manifestBuffer = manifestEntry.getData()
+            const manifestText = manifestBuffer.toString('utf8')
+            const manifest = JSON.parse(manifestText)
             assert.strictEqual(manifest.skipTestsFlag, '-DskipTests')
         })
     })
