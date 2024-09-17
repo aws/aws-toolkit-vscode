@@ -134,13 +134,15 @@ export class BuildWizard extends Wizard<BuildParams> {
         super({ initState: state, exitPrompterProvider: createExitPrompter })
 
         const getProjectRoot = (template: TemplateItem | undefined) =>
-            template ? getProjectRootUri(template) : undefined
+            template ? getProjectRootUri(template.uri) : undefined
 
         if (arg === undefined) {
+            // "Build" command was invoked on the command palette.
             this.form.template.bindPrompter(() => createTemplatePrompter(registry))
             this.form.paramsSource.bindPrompter(() => createParamsSourcePrompter())
             this.form.projectRoot.setDefault(({ template }) => getProjectRoot(template))
         } else {
+            // "Build" command was invoked from build icon from sidebar
             const templateUri = (arg.getTreeItem() as vscode.TreeItem).resourceUri
             const templateItem = { uri: templateUri, data: {} } as TemplateItem
             this.form.template.setDefault(templateItem)

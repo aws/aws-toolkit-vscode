@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import fs from '../fs/fs'
-import { parse, stringify } from '@iarna/toml'
+import { JsonMap, parse, stringify } from '@iarna/toml'
 import { cast, Optional } from '../utilities/typeConstructors'
 import { getLogger } from '../logger/logger'
 
@@ -21,6 +21,11 @@ export interface Environment {
 interface Command {
     readonly name: string
     readonly parameters?: Record<string, unknown>
+}
+
+enum DeployType {
+    Deploy,
+    Sync,
 }
 
 // This only handles a subset of possible user configs
@@ -77,8 +82,9 @@ export class SamConfig {
     public static async writeGlobal(uri: vscode.Uri, stackName: string, region: string) {
         const path = vscode.Uri.joinPath(uri, 'samconfig.toml')
         if (!(await fs.exists(path))) {
-            getLogger().error('No samconfig.toml found')
-            return
+            getLogger().warn('No samconfig.toml found, creating...')
+            const data = { default: { global: { parameters: { stack_name: stackName, region: region } } } }
+            return SamConfig.createNewConfigFile(path, data)
         }
         const contents = await fs.readFileAsString(path)
         const data = await parse.async(contents)
@@ -101,5 +107,54 @@ export class SamConfig {
         const contents = await fs.readFileAsString(uri)
         const config = await parseConfig(contents)
         return new this(uri, config)
+    }
+
+    public static async validateSamConfig(uri: vscode.Uri | undefined, configType: DeployType): Promise<boolean> {
+        if (!uri) {
+            return false
+        }
+
+        const path = vscode.Uri.joinPath(uri, 'samconfig.toml')
+        if (!(await fs.exists(path))) {
+            getLogger().error('No samconfig.toml found')
+            return false
+        }
+        const contents = await fs.readFileAsString(path)
+        const data = await parse.async(contents)
+        if (!data.default) {
+            return false
+        }
+
+        const deployParameters = data.default as { deploy?: { parameters?: Record<string, unknown> } }
+        const syncParameters = data.default as { sync?: { parameters?: Record<string, unknown> } }
+        const globalParameters = data.default as { global?: { parameters?: Record<string, unknown> } }
+
+        const hasRequiredGlobalParams: boolean =
+            !!globalParameters?.global?.parameters?.stack_name && !!globalParameters?.global?.parameters?.region
+        const hasRequiredDeployParameters: boolean = !!deployParameters?.deploy?.parameters?.template_file
+        const hasRequiredSyncParameters: boolean = !!syncParameters?.sync?.parameters?.template_file
+
+        switch (configType) {
+            case DeployType.Deploy:
+                return hasRequiredGlobalParams && hasRequiredDeployParameters
+            case DeployType.Sync:
+                return hasRequiredGlobalParams && hasRequiredSyncParameters
+            default:
+                getLogger().error(`Unsupported config type: ${configType}`)
+                return false
+        }
+    }
+
+    public static async validateSamDeployConfig(uri: vscode.Uri | undefined) {
+        return await this.validateSamConfig(uri, DeployType.Deploy)
+    }
+
+    public static async validateSamSyncConfig(uri: vscode.Uri | undefined) {
+        return await this.validateSamConfig(uri, DeployType.Sync)
+    }
+
+    public static async createNewConfigFile(path: string | vscode.Uri, data: JsonMap) {
+        await fs.writeFile(path, 'version = 0.1\n\n')
+        await fs.appendFile(path, stringify(data))
     }
 }

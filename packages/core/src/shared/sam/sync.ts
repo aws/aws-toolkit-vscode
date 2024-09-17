@@ -49,7 +49,7 @@ import { IamConnection } from '../../auth/connection'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
 import { promptAndUseConnection } from '../../auth/utils'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
-import { getConfigFileUri, getProjectRootUri, getSource } from './utils'
+import { getConfigFileUri, getProjectRootFoldersInWorkspace, getProjectRootUri, getSource } from './utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -77,13 +77,12 @@ enum BucketSource {
     UserProvided,
 }
 
-function workspaceFolderPrompter() {
-    const workspaceFolders = vscode.workspace.workspaceFolders
-    if (workspaceFolders === undefined) {
-        throw new ToolkitError('No Workspace folder found', { code: 'samNoWorkspaceFoldersFound' })
+function workspaceFolderPrompter(projectRootFolders: vscode.Uri[] | undefined) {
+    if (projectRootFolders === undefined) {
+        throw new ToolkitError('No Workspace folder found')
     }
-    const items = workspaceFolders?.map((workspaceFolder) => {
-        return { label: workspaceFolder.uri.path, data: workspaceFolder.uri }
+    const items = projectRootFolders?.map((workspaceFolder) => {
+        return { label: workspaceFolder.path, data: workspaceFolder }
     })
 
     return createQuickPick(items, {
@@ -163,24 +162,27 @@ async function syncFlagsPrompter(): Promise<DataQuickPickItem<string>[] | undefi
     })
 }
 
-function paramsSourcePrompter() {
+function paramsSourcePrompter(existValidSamconfig: boolean | undefined) {
     const items: DataQuickPickItem<ParamsSource>[] = [
         {
             label: 'Specify only required parameters and save as defaults',
             data: ParamsSource.SpecifyAndSave,
         },
         {
-            label: 'Use default values from samconfig',
-            data: ParamsSource.SamConfig,
-        },
-        {
-            label: 'Specify all sync parameters',
+            label: 'Specify only required parameters',
             data: ParamsSource.Flags,
         },
     ]
 
+    if (existValidSamconfig) {
+        items.push({
+            label: 'Use default values from samconfig',
+            data: ParamsSource.SamConfig,
+        })
+    }
+
     return createQuickPick(items, {
-        title: 'Specify parameters for sync',
+        title: 'Specify parameters for deploy',
         placeholder: 'Press enter to proceed with highlighted option',
         buttons: createCommonButtons(samSyncUrl),
     })
@@ -310,10 +312,14 @@ export interface TemplateItem {
     readonly data: CloudFormation.Template
 }
 
-export function createTemplatePrompter(registry: CloudFormationTemplateRegistry) {
+export function createTemplatePrompter(registry: CloudFormationTemplateRegistry, projectRoot?: vscode.Uri) {
     const folders = new Set<string>()
     const recentTemplatePath = getRecentResponse('global', 'templatePath')
-    const items = registry.items.map(({ item, path: filePath }) => {
+    const filterTemplates = projectRoot
+        ? registry.items.filter(({ path: filePath }) => !path.relative(projectRoot.fsPath, filePath).startsWith('..'))
+        : registry.items
+
+    const items = filterTemplates.map(({ item, path: filePath }) => {
         const uri = vscode.Uri.file(filePath)
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
         const label = workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, uri.fsPath) : uri.fsPath
@@ -352,15 +358,31 @@ function hasImageBasedResources(template: CloudFormation.Template) {
 }
 
 export class SyncWizard extends Wizard<SyncParams> {
+    registry: CloudFormationTemplateRegistry
     public constructor(
         state: Pick<SyncParams, 'deployType'> & Partial<SyncParams>,
         registry: CloudFormationTemplateRegistry
     ) {
         super({ initState: state, exitPrompterProvider: createExitPrompter })
+        this.registry = registry
+    }
 
-        this.form.paramsSource.bindPrompter(() => paramsSourcePrompter())
+    public override async init(): Promise<this> {
+        // Get all project root folders within the workspace for prompt options
+        const projectRootFolders = await getProjectRootFoldersInWorkspace()
 
-        this.form.template.bindPrompter(() => createTemplatePrompter(registry), {
+        // if the projectRoot is not defined in state already from prepareSyncParams, prompt user for projectRoot
+        this.form.projectRoot.bindPrompter(() => workspaceFolderPrompter(projectRootFolders), {
+            showWhen: () => projectRootFolders.length > 1,
+            setDefault: () => projectRootFolders[0],
+        })
+
+        this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
+            const existValidSamConfig: boolean | undefined = await SamConfig.validateSamSyncConfig(projectRoot)
+            return paramsSourcePrompter(existValidSamConfig)
+        })
+
+        this.form.template.bindPrompter(({ projectRoot }) => createTemplatePrompter(this.registry, projectRoot), {
             showWhen: ({ paramsSource }) =>
                 paramsSource === ParamsSource.Flags || paramsSource === ParamsSource.SpecifyAndSave,
         })
@@ -385,13 +407,7 @@ export class SyncWizard extends Wizard<SyncParams> {
             showWhen: ({ template }) => !!template && hasImageBasedResources(template.data),
         })
 
-        const getProjectRoot = (template: TemplateItem | undefined) =>
-            template ? getProjectRootUri(template) : undefined
-
-        this.form.projectRoot.bindPrompter(() => workspaceFolderPrompter(), {
-            showWhen: ({ paramsSource }) => paramsSource === ParamsSource.SamConfig,
-            setDefault: (state) => getProjectRoot(state.template),
-        })
+        return this
     }
 }
 
@@ -609,8 +625,11 @@ export async function runSamSync(args: SyncParams) {
             env: await injectCredentials(args.connection),
         }),
     })
+    const { paramsSource, stackName, region, projectRoot } = args
+    if (paramsSource !== ParamsSource.SamConfig && !!stackName && !!region) {
+        await SamConfig.writeGlobal(projectRoot, stackName, region)
+    }
     await runInTerminal(sam, 'sync')
-    await SamConfig.writeGlobal(args.projectRoot, args.stackName, args.region)
 }
 
 export const getWorkspaceUri = (template: TemplateItem) => vscode.workspace.getWorkspaceFolder(template.uri)?.uri
@@ -666,9 +685,11 @@ export async function prepareSyncParams(
     const baseParams: Partial<SyncParams> = { skipDependencyLayer: true }
 
     if (arg instanceof AWSTreeNodeBase) {
+        // "Deploy" command was invoked on a regionNode.
         return { ...baseParams, region: arg.regionCode }
     } else if (arg instanceof vscode.Uri) {
         if (arg.path.endsWith('samconfig.toml')) {
+            // "Deploy" command was invoked on a samconfig.toml file.
             const config = await SamConfig.fromUri(arg)
             const params = getSyncParamsFromConfig(config)
             const projectRoot = vscode.Uri.joinPath(config.location, '..')
@@ -687,20 +708,22 @@ export async function prepareSyncParams(
             return { ...baseParams, ...params, template, projectRoot, skipDependencyLayer }
         }
 
+        // "Deploy" command was invoked on a template.yaml file.
         const template = {
             uri: arg,
             data: await CloudFormation.load(arg.fsPath, validate),
         }
 
-        return { ...baseParams, template, projectRoot: getWorkspaceUri(template) }
+        return { ...baseParams, template, projectRoot: getProjectRootUri(template.uri) }
     } else if (arg && arg.getTreeItem()) {
+        // "Deploy" command was invoked on a TreeNode on the AppBuilder.
         const templateUri = (arg.getTreeItem() as vscode.TreeItem).resourceUri
         if (templateUri) {
             const template = {
                 uri: templateUri,
                 data: await CloudFormation.load(templateUri.fsPath, validate),
             }
-            return { ...baseParams, template, projectRoot: getWorkspaceUri(template) }
+            return { ...baseParams, template, projectRoot: getProjectRootUri(template.uri) }
         }
     }
 

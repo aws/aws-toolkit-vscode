@@ -78,21 +78,24 @@ function bucketSourcePrompter() {
     })
 }
 
-function paramsSourcePrompter() {
+function paramsSourcePrompter(existValidSamconfig: boolean | undefined) {
     const items: DataQuickPickItem<ParamsSource>[] = [
         {
             label: 'Specify only required parameters and save as defaults',
             data: ParamsSource.SpecifyAndSave,
         },
         {
-            label: 'Use default values from samconfig',
-            data: ParamsSource.SamConfig,
-        },
-        {
             label: 'Specify only required parameters',
             data: ParamsSource.Specify,
         },
     ]
+
+    if (existValidSamconfig) {
+        items.push({
+            label: 'Use default values from samconfig',
+            data: ParamsSource.SamConfig,
+        })
+    }
 
     return createQuickPick(items, {
         title: 'Specify parameters for deploy',
@@ -125,9 +128,9 @@ enum BucketSource {
     UserProvided,
 }
 enum ParamsSource {
+    SpecifyAndSave,
     Specify,
     SamConfig,
-    SpecifyAndSave,
 }
 
 class DeployWizard extends Wizard<DeployParams> {
@@ -143,19 +146,22 @@ class DeployWizard extends Wizard<DeployParams> {
 
     public override async init(): Promise<this> {
         const getProjectRoot = (template: TemplateItem | undefined) =>
-            template ? getProjectRootUri(template) : undefined
+            template ? getProjectRootUri(template.uri) : undefined
 
-        this.form.paramsSource.bindPrompter(() => paramsSourcePrompter())
         const projectRootFolders = await getProjectRootFoldersInWorkspace()
 
         if (this.arg && this.arg.path) {
             // "Deploy" command was invoked on a template.yaml file.
             const templateUri = this.arg as vscode.Uri
             const templateItem = { uri: templateUri, data: {} } as TemplateItem
-
-            this.form.template.setDefault(templateItem)
+            const projectRootFolder = getProjectRoot(templateItem)
+            const existValidSamConfig: boolean | undefined = await SamConfig.validateSamDeployConfig(projectRootFolder)
 
             await this.addParameterPromptersIfApplicable(templateUri)
+
+            this.form.template.setDefault(templateItem)
+            this.form.projectRoot.setDefault(() => projectRootFolder)
+            this.form.paramsSource.bindPrompter(() => paramsSourcePrompter(existValidSamConfig))
 
             this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
                 showWhen: ({ paramsSource }) =>
@@ -175,10 +181,17 @@ class DeployWizard extends Wizard<DeployParams> {
             this.form.bucketName.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)), {
                 showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
             })
-            this.form.projectRoot.setDefault(() => getProjectRoot(templateItem))
         } else if (this.arg && this.arg.regionCode) {
             // "Deploy" command was invoked on a regionNode.
-            this.form.template.bindPrompter(() => createTemplatePrompter(this.registry), {
+            this.form.projectRoot.bindPrompter(() => workspaceFolderPrompter(projectRootFolders), {
+                showWhen: () => projectRootFolders.length > 1,
+                setDefault: () => projectRootFolders[0],
+            })
+            this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
+                const existValidSamConfig: boolean | undefined = await SamConfig.validateSamDeployConfig(projectRoot)
+                return paramsSourcePrompter(existValidSamConfig)
+            })
+            this.form.template.bindPrompter(({ projectRoot }) => createTemplatePrompter(this.registry, projectRoot), {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
@@ -197,17 +210,17 @@ class DeployWizard extends Wizard<DeployParams> {
             this.form.bucketName.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)), {
                 showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
             })
-            this.form.projectRoot.bindPrompter(() => workspaceFolderPrompter(projectRootFolders), {
-                showWhen: ({ paramsSource }) => paramsSource === ParamsSource.SamConfig,
-                setDefault: (state) => getProjectRoot(state.template),
-            })
         } else if (this.arg && this.arg.getTreeItem().resourceUri) {
             // "Deploy" command was invoked on a TreeNode on the AppBuilder.
             const templateUri = this.arg.getTreeItem().resourceUri as vscode.Uri
             const templateItem = { uri: templateUri, data: {} } as TemplateItem
-            this.form.template.setDefault(templateItem)
+            const projectRootFolder = getProjectRoot(templateItem)
+            const existValidSamConfig: boolean | undefined = await SamConfig.validateSamDeployConfig(projectRootFolder)
 
             await this.addParameterPromptersIfApplicable(templateUri)
+
+            this.form.template.setDefault(templateItem)
+            this.form.paramsSource.bindPrompter(() => paramsSourcePrompter(existValidSamConfig))
 
             this.form.region.bindPrompter(() => createRegionPrompter().transform((r) => r.id), {
                 showWhen: ({ paramsSource }) =>
@@ -230,7 +243,15 @@ class DeployWizard extends Wizard<DeployParams> {
             this.form.projectRoot.setDefault(() => getProjectRoot(templateItem))
         } else {
             // "Deploy" command was invoked on the command palette.
-            this.form.template.bindPrompter(() => createTemplatePrompter(this.registry), {
+            this.form.projectRoot.bindPrompter(() => workspaceFolderPrompter(projectRootFolders), {
+                showWhen: () => projectRootFolders.length > 1,
+                setDefault: () => projectRootFolders[0],
+            })
+            this.form.paramsSource.bindPrompter(async ({ projectRoot }) => {
+                const existValidSamConfig: boolean | undefined = await SamConfig.validateSamDeployConfig(projectRoot)
+                return paramsSourcePrompter(existValidSamConfig)
+            })
+            this.form.template.bindPrompter(({ projectRoot }) => createTemplatePrompter(this.registry, projectRoot), {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
             })
@@ -251,11 +272,6 @@ class DeployWizard extends Wizard<DeployParams> {
             })
             this.form.bucketName.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)), {
                 showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
-            })
-
-            this.form.projectRoot.bindPrompter(() => workspaceFolderPrompter(projectRootFolders), {
-                showWhen: ({ paramsSource }) => paramsSource === ParamsSource.SamConfig,
-                setDefault: (state) => getProjectRoot(state.template),
             })
         }
 
@@ -359,25 +375,24 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
                 ? deployFlags.push('--s3-bucket', `${params.bucketName}`)
                 : deployFlags.push('--resolve-s3')
             deployFlags.push('--capabilities', 'CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM')
+            const samTemplateParameters = await getParameters(params.template.uri)
+
+            const requiredParameterNames = new Set<string>(
+                filter(samTemplateParameters.keys(), (name) => samTemplateParameters.get(name)!.required)
+            )
+
+            const paramsToSet: string[] = []
+            requiredParameterNames.forEach((name) => {
+                if (params[name]) {
+                    paramsToSet.push(`ParameterKey=${name},ParameterValue=${params[name]}`)
+                }
+                deployFlags.push('--parameter-overrides', ...paramsToSet)
+            })
         }
 
         if (params.paramsSource === ParamsSource.SpecifyAndSave) {
             deployFlags.push('--save-params')
         }
-
-        const samTemplateParameters = await getParameters(params.template.uri)
-
-        const requiredParameterNames = new Set<string>(
-            filter(samTemplateParameters.keys(), (name) => samTemplateParameters.get(name)!.required)
-        )
-
-        const paramsToSet: string[] = []
-        requiredParameterNames.forEach((name) => {
-            if (params[name]) {
-                paramsToSet.push(`ParameterKey=${name},ParameterValue=${params[name]}`)
-            }
-            deployFlags.push('--parameter-overrides', ...paramsToSet)
-        })
 
         try {
             const { path: samCliPath } = await getSamCliPathAndVersion()
@@ -404,9 +419,12 @@ export async function runDeploy(arg: any): Promise<DeployResult> {
                 throw ToolkitError.chain(error, 'Failed to build SAM template', { details: { ...buildFlags } })
             }
 
+            const { paramsSource, stackName, region, projectRoot } = params
+            if (paramsSource !== ParamsSource.SamConfig && !!stackName && !!region) {
+                await SamConfig.writeGlobal(projectRoot, stackName, region)
+            }
             //Run SAM deploy in Terminal
             await runInTerminal(deployProcess, 'deploy')
-            await SamConfig.writeGlobal(params.projectRoot, params.stackName, params.region)
         } catch (error) {
             throw ToolkitError.chain(error, 'Failed to deploy SAM template', { details: { ...deployFlags } })
         }

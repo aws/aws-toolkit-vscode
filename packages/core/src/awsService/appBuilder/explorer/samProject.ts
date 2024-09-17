@@ -7,8 +7,8 @@ import * as vscode from 'vscode'
 import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 import { SamConfig } from '../../../shared/sam/config'
 import { getLogger } from '../../../shared/logger/logger'
-import { getFiles } from './detectSamProjects'
 import { ToolkitError } from '../../../shared/errors'
+import { getConfigFileUri } from '../../../shared/sam/utils'
 
 export interface SamApp {
     location: SamAppLocation
@@ -30,15 +30,10 @@ export interface ResourceTreeEntity {
     Method?: string
 }
 
-export async function getStackName(workspaceFolder: vscode.WorkspaceFolder): Promise<any> {
+export async function getStackName(samTemplateUri: vscode.Uri): Promise<any> {
     try {
-        const configUris = await getFiles(workspaceFolder, 'samconfig.toml', `**/.aws-sam/**`)
-        if (configUris.length === 0) {
-            return {}
-        }
-
-        const samConfig = await SamConfig.fromUri(configUris[0])
-
+        const samConfigUri = await getConfigFileUri(samTemplateUri)
+        const samConfig = await SamConfig.fromUri(samConfigUri)
         const stackName = await samConfig.getParam('global', 'stack_name')
         const region = await samConfig.getParam('global', 'region')
 
