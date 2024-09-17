@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Amazon Q Scans: Replacing the loading icon in the status bar menu."
+	"description": "Security Scan: Fixed an issue where the wrong icon was used in the status bar menu."
 }
