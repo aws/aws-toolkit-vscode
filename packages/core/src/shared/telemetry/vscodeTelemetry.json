@@ -481,6 +481,16 @@
             "description": ""
         },
         {
+            "name": "stepfunctions_openWorkflowStudio",
+            "description": "Called after opening asl file in Step Functions Workflow Studio",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                }
+            ]
+        },
+        {
             "name": "vscode_activeRegions",
             "description": "Record the number of active regions at startup and when regions are added/removed",
             "unit": "Count",

@@ -30,6 +30,7 @@ import { activate as activateS3 } from './awsService/s3/activation'
 import * as filetypes from './shared/filetypes'
 import { activate as activateApiGateway } from './awsService/apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
+import { activate as activateStepFunctionsWorkflowStudio } from './stepFunctions/workflowStudio/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
 import { activate as activateDynamicResources } from './dynamicResources/activation'
 import { activate as activateEcs } from './awsService/ecs/activation'
@@ -202,6 +203,8 @@ export async function activate(context: vscode.ExtensionContext) {
         }
 
         await activateStepFunctions(context, globals.awsContext, globals.outputChannel)
+
+        await activateStepFunctionsWorkflowStudio(context)
 
         await activateRedshift(extContext)
 
