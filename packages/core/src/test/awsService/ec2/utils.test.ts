@@ -130,11 +130,11 @@ describe('utils', async function () {
             const cm = await getConnectionManager(connectionManagers, fakeSelection)
             assert.strictEqual(connectionManagers.size, 1)
 
-            cm.addActiveEnv('test-env')
+            await cm.addActiveEnv('sessionId', 'instanceId')
 
             const cm2 = await getConnectionManager(connectionManagers, fakeSelection)
 
-            assert.strictEqual(cm2.getActiveEnvs().size, 1)
+            assert.strictEqual(cm2.isConnectedTo('instanceId'), true)
         })
     })
 })

@@ -5,7 +5,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { Session } from 'aws-sdk/clients/ssm'
-import { IAM, SSM } from 'aws-sdk'
+import { EC2, IAM, SSM } from 'aws-sdk'
 import { Ec2Selection } from './prompter'
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 import { isCloud9 } from '../../shared/extensionUtilities'
@@ -28,6 +28,7 @@ import { showMessageWithCancel } from '../../shared/utilities/messages'
 import { SshConfig, sshLogFileLocation } from '../../shared/sshConfig'
 import { SshKeyPair } from './sshKeyPair'
 import globals from '../../shared/extensionGlobals'
+import { Ec2RemoteEnvManager } from './environmentManager'
 
 export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
 
@@ -41,7 +42,7 @@ export class Ec2ConnectionManager {
     protected ssmClient: SsmClient
     protected ec2Client: Ec2Client
     protected iamClient: DefaultIamClient
-    protected activeEnvs: Set<SSM.SessionId>
+    protected envManager: Ec2RemoteEnvManager
 
     private policyDocumentationUri = vscode.Uri.parse(
         'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html'
@@ -55,7 +56,7 @@ export class Ec2ConnectionManager {
         this.ssmClient = this.createSsmSdkClient()
         this.ec2Client = this.createEc2SdkClient()
         this.iamClient = this.createIamSdkClient()
-        this.activeEnvs = new Set<SSM.SessionId>()
+        this.envManager = new Ec2RemoteEnvManager(regionCode, this.ssmClient)
     }
 
     protected createSsmSdkClient(): SsmClient {
@@ -70,18 +71,16 @@ export class Ec2ConnectionManager {
         return new DefaultIamClient(this.regionCode)
     }
 
-    public getActiveEnvs(): Set<SSM.SessionId> {
-        return this.activeEnvs
-    }
-
-    public addActiveEnv(sessionId: SSM.SessionId): void {
-        this.activeEnvs.add(sessionId)
+    public async addActiveEnv(sessionId: SSM.SessionId, instanceId: EC2.InstanceId): Promise<void> {
+        await this.envManager.addEnv(instanceId, sessionId)
     }
 
     public async closeConnections(): Promise<void> {
-        this.activeEnvs.forEach(async (element) => {
-            await this.ssmClient.terminateSessionFromId(element)
-        })
+        await this.envManager.closeConnections()
+    }
+
+    public isConnectedTo(instanceId: string): boolean {
+        return this.envManager.isConnectedTo(instanceId)
     }
 
     public async getAttachedIamRole(instanceId: string): Promise<IAM.Role | undefined> {
@@ -198,15 +197,10 @@ export class Ec2ConnectionManager {
         const remoteEnv = await this.prepareEc2RemoteEnvWithProgress(selection, remoteUser)
 
         try {
-            await this.openRemoteConnection(remoteEnv, remoteUser)
+            await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, '/', remoteEnv.vscPath, remoteUser)
         } catch (err) {
             this.throwGeneralConnectionError(selection, err as Error)
         }
-    }
-
-    public async openRemoteConnection(remoteEnv: Ec2RemoteEnv, remoteUser: string): Promise<void> {
-        await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, '/', remoteEnv.vscPath, remoteUser)
-        this.addActiveEnv(remoteEnv.ssmSession.SessionId!)
     }
 
     public async prepareEc2RemoteEnvWithProgress(selection: Ec2Selection, remoteUser: string): Promise<Ec2RemoteEnv> {
@@ -231,6 +225,8 @@ export class Ec2ConnectionManager {
             throw err
         }
         const ssmSession = await this.ssmClient.startSession(selection.instanceId, 'AWS-StartSSHSession')
+        await this.envManager.addEnv(selection.instanceId, ssmSession.SessionId!)
+
         const vars = getEc2SsmEnv(selection, ssm, ssmSession)
         const envProvider = async () => {
             return { [sshAgentSocketVariable]: await startSshAgent(), ...vars }
