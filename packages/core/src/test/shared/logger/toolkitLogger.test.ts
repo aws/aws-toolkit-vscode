@@ -230,6 +230,50 @@ describe('ToolkitLogger', function () {
             assert.ok(!(await waitForMessage).includes(nonLoggedVerboseEntry), 'unexpected message in log')
         })
 
+        it('logs append topic header in message', async function () {
+            const testMessage = 'This is a test message'
+            const testMessageWithHeader = 'Test: This is a test message'
+
+            testLogger = new ToolkitLogger('info')
+            testLogger.logToOutputChannel(outputChannel, false)
+            testLogger.setTopic('Test')
+            testLogger.setLogLevel('verbose')
+            testLogger.verbose(testMessage)
+
+            const waitForMessage = waitForLoggedTextByContents(testMessageWithHeader)
+            assert.ok((await waitForMessage).includes(testMessageWithHeader), 'Expected header added')
+        })
+
+        it('unknown topic header ignored in message', async function () {
+            const testMessage = 'This is a test message'
+            const unknowntestMessage = 'Unknown: This is a test message'
+
+            testLogger = new ToolkitLogger('info')
+            testLogger.logToOutputChannel(outputChannel, false)
+            testLogger.setTopic('Unknown')
+            testLogger.setLogLevel('verbose')
+            testLogger.verbose(testMessage)
+
+            const waitForMessage = waitForLoggedTextByContents(testMessage)
+            assert.ok((await waitForMessage).includes(testMessage), 'Expected message logged')
+            assert.ok(!(await waitForMessage).includes(unknowntestMessage), 'unexpected header in log')
+        })
+
+        it('switch topic within same logger', async function () {
+            const testMessage = 'This is a test message'
+            const testMessageWithHeader = 'Test: This is a test message'
+
+            testLogger = new ToolkitLogger('info')
+            testLogger.logToOutputChannel(outputChannel, false)
+            testLogger.setTopic('Unknown')
+            testLogger.setTopic('Test')
+            testLogger.setLogLevel('verbose')
+            testLogger.verbose(testMessage)
+
+            const waitForMessage = waitForLoggedTextByContents(testMessageWithHeader)
+            assert.ok((await waitForMessage).includes(testMessageWithHeader), 'Expected header added')
+        })
+
         happyLogScenarios.forEach((scenario) => {
             it(scenario.name, async () => {
                 const message = `message for ${scenario.name}`
