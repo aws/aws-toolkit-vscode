@@ -16,6 +16,7 @@ import { RedshiftWarehouseType } from '../models/models'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'
 import { ChildNodeLoader, ChildNodePage } from '../../../awsexplorer/childNodeLoader'
+import { getLogger } from '../../../shared/logger/logger'
 
 /**
  * An AWS Explorer node representing Redshift.
@@ -88,13 +89,13 @@ export class RedshiftNode extends AWSTreeNodeBase implements LoadMoreNode {
         const childNodes: RedshiftWarehouseNode[] = []
         let newServerlessToken: string = ''
         let newProvisionedToken: string = ''
-        // provisionedToken can be undefined (first time load) or non-empty (more results available). If it's empty, we've loaded all
+        // Handle provisioned clusters
         if (compositeContinuationToken === undefined || compositeContinuationToken.provisionedToken !== '') {
             const response = await this.redshiftClient.describeProvisionedClusters(
                 compositeContinuationToken?.provisionedToken
             )
             if (response.Clusters) {
-                const provisionedNodes = response.Clusters?.map((cluster) => {
+                const provisionedNodes = response.Clusters.map((cluster) => {
                     return new RedshiftWarehouseNode(
                         this,
                         {
@@ -108,21 +109,26 @@ export class RedshiftNode extends AWSTreeNodeBase implements LoadMoreNode {
                 newProvisionedToken = response.Marker ?? ''
             }
         }
-        // serverlessToken can be undefined (first time load) or non-empty (more results available). If it's empty, we've loaded all
+        // Handle serverless workgroups
         if (compositeContinuationToken === undefined || compositeContinuationToken.serverlessToken !== '') {
-            const response = await this.redshiftClient.listServerlessWorkgroups(
-                compositeContinuationToken?.serverlessToken
-            )
-            if (response.workgroups) {
-                const serverlessNodes: RedshiftWarehouseNode[] = response.workgroups?.map((workgroup) => {
-                    return new RedshiftWarehouseNode(
-                        this,
-                        { arn: workgroup.workgroupArn, name: workgroup.workgroupName } as AWSResourceNode,
-                        RedshiftWarehouseType.SERVERLESS
-                    )
-                })
-                childNodes.push(...serverlessNodes)
-                newServerlessToken = response.nextToken ?? ''
+            try {
+                const response = await this.redshiftClient.listServerlessWorkgroups(
+                    compositeContinuationToken?.serverlessToken
+                )
+                if (response.workgroups) {
+                    const serverlessNodes = response.workgroups.map((workgroup) => {
+                        return new RedshiftWarehouseNode(
+                            this,
+                            { arn: workgroup.workgroupArn, name: workgroup.workgroupName } as AWSResourceNode,
+                            RedshiftWarehouseType.SERVERLESS
+                        )
+                    })
+                    childNodes.push(...serverlessNodes)
+                    newServerlessToken = response.nextToken ?? ''
+                }
+            } catch (error) {
+                getLogger().error("Serverless workgroup operation isn't supported or failed:", error)
+                // Continue without interrupting the provisioned cluster loading
             }
         }
         return [childNodes, newProvisionedToken, newServerlessToken]
