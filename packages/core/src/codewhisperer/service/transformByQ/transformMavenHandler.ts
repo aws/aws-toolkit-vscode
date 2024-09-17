@@ -59,28 +59,7 @@ function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: 
             getLogger().error(
                 `CodeTransformation: Error in running Maven ${argString} command ${baseCommand} = ${errorLog}`
             )
-            let errorReason = ''
-            if (spawnResult.stdout) {
-                errorReason = `Maven ${argString}: InstallationExecutionError`
-                /*
-                 * adding this check here because these mvn commands sometimes generate a lot of output.
-                 * rarely, a buffer overflow has resulted when these mvn commands are run with -X, -e flags
-                 * which are not being used here (for now), but still keeping this just in case.
-                 */
-                if (Buffer.byteLength(spawnResult.stdout, 'utf-8') > CodeWhispererConstants.maxBufferSize) {
-                    errorReason += '-BufferOverflow'
-                }
-            } else {
-                errorReason = `Maven ${argString}: InstallationSpawnError`
-            }
-            if (spawnResult.error) {
-                const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
-                errorReason += `-${errorCode}`
-            }
-
-            // Explicitly set metric as failed since no exception was caught
-            telemetry.record({ result: MetadataResult.Fail, reason: errorReason })
-
+            telemetry.record({ result: MetadataResult.Fail, reason: (spawnResult.error as any).code })
             throw new ToolkitError(`Maven ${argString} error`, { code: 'MavenExecutionError' })
         } else {
             transformByQState.appendToErrorLog(`${baseCommand} ${argString} succeeded`)
@@ -102,11 +81,12 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
         '-Dmdep.addParentPoms=true',
         '-q',
     ]
+
     let environment = process.env
-    // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
     if (transformByQState.getJavaHome() !== undefined) {
         environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
     }
+
     const spawnResult = spawnSync(baseCommand, args, {
         cwd: modulePath,
         shell: true,
@@ -119,30 +99,9 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
         errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
         errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
         transformByQState.appendToErrorLog(`${baseCommand} copy-dependencies failed: \n ${errorLog}`)
-        let errorReason = ''
-        if (spawnResult.stdout) {
-            errorReason = 'Maven Copy: CopyDependenciesExecutionError'
-            if (Buffer.byteLength(spawnResult.stdout, 'utf-8') > CodeWhispererConstants.maxBufferSize) {
-                errorReason += '-BufferOverflow'
-            }
-        } else {
-            errorReason = 'Maven Copy: CopyDependenciesSpawnError'
-        }
-        if (spawnResult.error) {
-            const errorCode = (spawnResult.error as any).code ?? 'UNKNOWN'
-            errorReason += `-${errorCode}`
-        }
         getLogger().info(
-            `CodeTransformation: Maven copy-dependencies command ${baseCommand} failed, but still continuing with transformation: ${errorReason}, log: ${errorLog}`
+            `CodeTransformation: Maven copy-dependencies command ${baseCommand} failed, but still continuing with transformation: ${errorLog}`
         )
-
-        let mavenBuildCommand = transformByQState.getMavenName()
-        // slashes not allowed in telemetry
-        if (mavenBuildCommand === './mvnw') {
-            mavenBuildCommand = 'mvnw'
-        } else if (mavenBuildCommand === '.\\mvnw.cmd') {
-            mavenBuildCommand = 'mvnw.cmd'
-        }
         throw new Error('Maven copy-deps error')
     } else {
         transformByQState.appendToErrorLog(`${baseCommand} copy-dependencies succeeded`)

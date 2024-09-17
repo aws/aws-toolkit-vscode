@@ -276,7 +276,7 @@ export async function preTransformationUploadCode() {
 
             const transformZipManifest = new ZipManifest()
             // if the user chose to skip tests, add the flag here
-            transformZipManifest.skipTestsFlag = transformByQState.getSkipTestsFlag()
+            transformZipManifest.customBuildCommand = transformByQState.getCustomBuildCommand()
             const zipCodeResult = await zipCode({
                 dependenciesFolder: transformByQState.getDependencyFolderInfo()!,
                 modulePath: transformByQState.getProjectPath(),

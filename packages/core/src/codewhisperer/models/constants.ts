@@ -639,13 +639,15 @@ export const skipTestsFormMessage =
 
 export const doNotSkipTestsMessage = 'Do not skip tests'
 
+export const doNotSkipTestsBuildCommand = 'verify'
+
 export const skipIntegrationTestsMessage = 'Skip integration tests'
 
-export const skipIntegrationTestsFlag = '-DskipITs'
+export const skipIntegrationTestsBuildCommand = 'test'
 
 export const skipAllTestsMessage = 'Skip all tests'
 
-export const skipAllTestsFlag = '-DskipTests'
+export const skipAllTestsBuildCommand = 'test-compile'
 
 export const planTitle = 'Code Transformation plan by Amazon Q'
 

@@ -343,9 +343,11 @@ export class GumbyController {
     private async handleSkipTestsSelection(message: any) {
         const skipTestsSelection = message.formSelectedValues['GumbyTransformSkipTestsForm']
         if (skipTestsSelection === CodeWhispererConstants.skipIntegrationTestsMessage) {
-            transformByQState.setSkipTestsFlag(CodeWhispererConstants.skipIntegrationTestsFlag)
+            transformByQState.setCustomBuildCommand(CodeWhispererConstants.skipIntegrationTestsBuildCommand)
         } else if (skipTestsSelection === CodeWhispererConstants.skipAllTestsMessage) {
-            transformByQState.setSkipTestsFlag(CodeWhispererConstants.skipAllTestsFlag)
+            transformByQState.setCustomBuildCommand(CodeWhispererConstants.skipAllTestsBuildCommand)
+        } else {
+            transformByQState.setCustomBuildCommand(CodeWhispererConstants.doNotSkipTestsBuildCommand)
         }
         telemetry.codeTransform_submitSelection.emit({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),

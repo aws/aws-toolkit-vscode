@@ -470,7 +470,7 @@ export class Messenger {
         if (skipTestsText === CodeWhispererConstants.doNotSkipTestsMessage) {
             skipTestsText = 'not skip tests'
         }
-        const message = `Got it! Amazon Q will ${skipTestsText.toLowerCase()} when building your project.`
+        const message = `Ok, I will ${skipTestsText.toLowerCase()} when building your project.`
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
     }
 

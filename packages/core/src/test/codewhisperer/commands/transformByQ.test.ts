@@ -207,7 +207,7 @@ describe('transformByQ', function () {
         const tempFileName = `testfile-${globals.clock.Date.now()}.zip`
         transformByQState.setProjectPath(tempDir)
         const transformManifest = new ZipManifest()
-        transformManifest.skipTestsFlag = '-DskipTests'
+        transformManifest.customBuildCommand = 'test-compile'
         return zipCode({
             dependenciesFolder: {
                 path: tempDir,
@@ -225,7 +225,7 @@ describe('transformByQ', function () {
             const manifestBuffer = manifestEntry.getData()
             const manifestText = manifestBuffer.toString('utf8')
             const manifest = JSON.parse(manifestText)
-            assert.strictEqual(manifest.skipTestsFlag, '-DskipTests')
+            assert.strictEqual(manifest.customBuildCommand, 'test-compile')
         })
     })
 
