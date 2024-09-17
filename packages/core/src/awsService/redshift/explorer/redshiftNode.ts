@@ -16,7 +16,7 @@ import { RedshiftWarehouseType } from '../models/models'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'
 import { ChildNodeLoader, ChildNodePage } from '../../../awsexplorer/childNodeLoader'
-import { getLogger } from 'aws-core-vscode/shared'
+import { getLogger } from '../../../shared/logger/logger'
 
 /**
  * An AWS Explorer node representing Redshift.
