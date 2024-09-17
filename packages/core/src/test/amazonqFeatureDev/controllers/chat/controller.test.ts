@@ -14,11 +14,7 @@ import { Session } from '../../../../amazonqFeatureDev/session/session'
 import { Prompter } from '../../../../shared/ui/prompter'
 import { assertTelemetry, toFile } from '../../../testUtil'
 import { SelectedFolderNotInWorkspaceFolderError } from '../../../../amazonqFeatureDev/errors'
-import {
-    CodeGenState,
-    PrepareCodeGenState,
-    PrepareRefinementState,
-} from '../../../../amazonqFeatureDev/session/sessionState'
+import { CodeGenState, PrepareCodeGenState } from '../../../../amazonqFeatureDev/session/sessionState'
 import { FeatureDevClient } from '../../../../amazonqFeatureDev/client/featureDev'
 import { createAmazonQUri } from '../../../../amazonq/commons/diff'
 
@@ -213,54 +209,6 @@ describe('Controller', () => {
         })
     })
 
-    describe('processChatItemVotedMessage', () => {
-        async function processChatItemVotedMessage(vote: 'upvote' | 'downvote') {
-            const initialState = new PrepareRefinementState(
-                {
-                    conversationId: conversationID,
-                    proxyClient: new FeatureDevClient(),
-                    workspaceRoots: [''],
-                    workspaceFolders: [controllerSetup.workspaceFolder],
-                },
-                '',
-                tabID
-            )
-            const newSession = await createSession({
-                messenger: controllerSetup.messenger,
-                sessionState: initialState,
-                conversationID,
-                tabID,
-                uploadID,
-            })
-            const getSessionStub = sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(newSession)
-            controllerSetup.emitters.processChatItemVotedMessage.fire({
-                tabID,
-                messageID: '',
-                vote,
-            })
-
-            // Wait until the controller has time to process the event
-            await waitUntil(() => {
-                return Promise.resolve(getSessionStub.callCount > 0)
-            }, {})
-        }
-
-        it('incoming upvoted message sends telemetry', async () => {
-            await processChatItemVotedMessage('upvote')
-
-            assertTelemetry('amazonq_approachThumbsUp', { amazonqConversationId: conversationID, result: 'Succeeded' })
-        })
-
-        it('incoming downvoted message sends telemetry', async () => {
-            await processChatItemVotedMessage('downvote')
-
-            assertTelemetry('amazonq_approachThumbsDown', {
-                amazonqConversationId: conversationID,
-                result: 'Succeeded',
-            })
-        })
-    })
-
     describe('newTask', () => {
         async function newTaskClicked() {
             const getSessionStub = sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
@@ -304,17 +252,8 @@ describe('Controller', () => {
                 uploadId: uploadID,
                 workspaceFolders,
             }
-            const testApproach = 'test-approach'
 
-            const codeGenState = new CodeGenState(
-                testConfig,
-                testApproach,
-                getFilePaths(controllerSetup),
-                [],
-                [],
-                tabID,
-                0
-            )
+            const codeGenState = new CodeGenState(testConfig, getFilePaths(controllerSetup), [], [], tabID, 0)
             const newSession = await createSession({
                 messenger: controllerSetup.messenger,
                 sessionState: codeGenState,
@@ -378,7 +317,6 @@ describe('Controller', () => {
                         workspaceFolders: [controllerSetup.workspaceFolder],
                         uploadId: uploadID,
                     },
-                    '',
                     getFilePaths(controllerSetup),
                     getDeletedFiles(),
                     [],

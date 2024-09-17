@@ -240,11 +240,11 @@ _See also [arch_develop.md](./arch_develop.md#exceptions)._
 
     -   PREFER:
         ```ts
-        things.filter((o) => o.isFoo)
+        things.filter(o => o.isFoo)
         ```
     -   INSTEAD OF:
         ```ts
-        things.filter((thing) => thing.isFoo)
+        things.filter(thing => thing.isFoo)
         ```
 
 ## User settings

@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "when connecting to ec2 instance, check for IAM role permitted actions, rather than full policies"
+}
