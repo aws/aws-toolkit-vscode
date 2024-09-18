@@ -113,22 +113,22 @@ export class ToolkitLogger extends BaseLogger implements vscode.Disposable {
     }
 
     /* Format the message with topic header */
-    private addTopicToMessage(message: string | Error): string | Error {
+    private addTopicToMessage(message: string | Error): string | object {
         /*We shouldn't print unknow before current logging calls are migrated
          * TODO: remove this once migration of current calls is completed
          */
         if (this.topic === 'unknown') {
             return message
         }
-        const topicPrefix = `${this.topic}: `
+        const topic = `${this.topic}: `
         if (typeof message === 'string') {
-            return topicPrefix + message
+            return topic + message
         } else if (message instanceof Error) {
-            /* Create a new Error object to avoid modifying the original */
-            const topicError = new Error(topicPrefix + message.message)
-            topicError.name = message.name
-            topicError.stack = message.stack
-            return topicError
+            const errorWithTopic = {
+                topic,
+                message,
+            }
+            return errorWithTopic
         }
         return message
     }
@@ -156,7 +156,7 @@ export class ToolkitLogger extends BaseLogger implements vscode.Disposable {
 
         meta = meta.map((o) => (o instanceof Error ? this.mapError(level, o) : o))
 
-        if (messageWithHeader instanceof Error) {
+        if (typeof messageWithHeader === 'object' && messageWithHeader !== null) {
             this.logger.log(level, '%O', messageWithHeader, ...meta, { logID: this.idCounter })
         } else {
             this.logger.log(level, messageWithHeader, ...meta, { logID: this.idCounter })

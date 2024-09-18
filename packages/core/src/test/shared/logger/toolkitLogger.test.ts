@@ -10,6 +10,7 @@ import * as vscode from 'vscode'
 import { ToolkitLogger } from '../../../shared/logger/toolkitLogger'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { sleep, waitUntil } from '../../../shared/utilities/timeoutUtils'
+import { ToolkitError } from '../../../shared/errors'
 
 /**
  * Disposes the logger then waits for the write streams to flush. The `expected` and `unexpected` arrays just look
@@ -232,7 +233,7 @@ describe('ToolkitLogger', function () {
 
         it('logs append topic header in message', async function () {
             const testMessage = 'This is a test message'
-            const testMessageWithHeader = 'Test: This is a test message'
+            const testMessageWithHeader = 'test: This is a test message'
 
             testLogger = new ToolkitLogger('info')
             testLogger.logToOutputChannel(outputChannel, false)
@@ -244,9 +245,23 @@ describe('ToolkitLogger', function () {
             assert.ok((await waitForMessage).includes(testMessageWithHeader), 'Expected header added')
         })
 
+        it('logs append topic header in errors', async function () {
+            const testError = new ToolkitError('root error', { code: 'something went wrong' })
+            const testErrorWithHeader = "topic: 'test: '"
+
+            testLogger = new ToolkitLogger('info')
+            testLogger.logToOutputChannel(outputChannel, false)
+            testLogger.setTopic('test')
+            testLogger.setLogLevel('verbose')
+            testLogger.verbose(testError)
+
+            const waitForMessage = waitForLoggedTextByContents(testErrorWithHeader)
+            assert.ok((await waitForMessage).includes(testErrorWithHeader), 'Expected header added')
+        })
+
         it('unknown topic header ignored in message', async function () {
             const testMessage = 'This is a test message'
-            const unknowntestMessage = 'Unknown: This is a test message'
+            const unknowntestMessage = 'unknown: This is a test message'
 
             testLogger = new ToolkitLogger('info')
             testLogger.logToOutputChannel(outputChannel, false)
@@ -261,7 +276,7 @@ describe('ToolkitLogger', function () {
 
         it('switch topic within same logger', async function () {
             const testMessage = 'This is a test message'
-            const testMessageWithHeader = 'Test: This is a test message'
+            const testMessageWithHeader = 'test: This is a test message'
 
             testLogger = new ToolkitLogger('info')
             testLogger.logToOutputChannel(outputChannel, false)
