@@ -105,7 +105,7 @@
             <div class="form-row" v-if="showNameInput">
                 <label :style="{ fontSize: '13px', fontWeight: 500 }">Sample event</label>
                 <button class="secondary-button" style="width: 140px" @click="loadSampleEvent">
-                    Load Sample Event
+                    Load sample event
                 </button>
             </div>
         </div>

@@ -15,7 +15,7 @@
                     on-change="updateConfig"
                     :style="{ width: '100%' }"
                 >
-                    <option disabled selected>create a new Config</option>
+                    <option disabled selected>Create a new config</option>
                     <option v-for="(config, index) in loadedConfigs" v-bind:value="config" :key="index">
                         {{ config.label }}
                     </option>
@@ -37,7 +37,7 @@
                     <a href="#" @click.prevent="openLaunchJson">launch.json</a>.
                 </em>
             </p>
-            <settings-panel id="config-panel" title="General Configuration" description="" :start-collapsed="false">
+            <settings-panel id="config-panel" title="General configuration" description="" :start-collapsed="false">
                 <div class="form-row">
                     <div><label>Payload:</label></div>
                     <div class="payload-options">
@@ -84,7 +84,7 @@
                 <div class="form-row" v-if="payloadOption === 'sampleEvents'">
                     <label :style="{ fontSize: '13px', fontWeight: 500 }">Sample event</label>
                     <button class="secondary-button" style="width: 140px" v-on:click.prevent="loadPayload">
-                        Select an Event</button
+                        Select an event</button
                     ><br />
                     <span class="data-view">payload from data: {{ payload }} </span>
                     <div class="input-validation" v-if="payload.errorMsg">
@@ -113,7 +113,7 @@
                                 v-model="selectedTestEvent"
                                 v-on:change="newSelection"
                             >
-                                <option disabled value="">Select an Event</option>
+                                <option disabled value="">Select an event</option>
                                 <option v-for="item in TestEvents">
                                     {{ item }}
                                 </option>
@@ -137,7 +137,7 @@
                     <div class="form-row" v-if="showNameInput">
                         <label :style="{ fontSize: '13px', fontWeight: 500 }">Sample event</label>
                         <button class="secondary-button" style="width: 140px" v-on:click.prevent="loadPayload">
-                            Select an Event</button
+                            Select an event</button
                         ><br />
                         <span class="data-view">payload from data: {{ payload }} </span>
                         <div class="input-validation" v-if="payload.errorMsg">
@@ -152,7 +152,7 @@
                     v-model="payload.value"
                 ></textarea>
                 <div class="config-item">
-                    <label for="target-type-selector">Invoke Target Type</label>
+                    <label for="target-type-selector">Invoke target type</label>
                     <select name="target-types" id="target-type-selector" v-model="launchConfig.invokeTarget.target">
                         <option v-bind:value="type.value" v-for="(type, index) in targetTypes" :key="index">
                             {{ type.name }}
@@ -161,7 +161,7 @@
                 </div>
                 <div class="target-code" v-if="launchConfig.invokeTarget.target === 'code'">
                     <div class="config-item">
-                        <label for="select-directory">Project Root</label>
+                        <label for="select-directory">Project root</label>
                         <input
                             id="select-directory"
                             type="text"
@@ -173,7 +173,7 @@
                         >
                     </div>
                     <div class="config-item">
-                        <label for="lambda-handler">Lambda Handler</label>
+                        <label for="lambda-handler">Lambda handler</label>
                         <input
                             type="text"
                             placeholder="Enter the lambda handler"
@@ -196,7 +196,7 @@
                 </div>
                 <div class="target-template" v-else-if="launchConfig.invokeTarget.target === 'template'">
                     <div class="config-item">
-                        <label for="template-path">Template Path</label>
+                        <label for="template-path">Template path</label>
                         <input
                             id="template-path-button"
                             type="text"
@@ -207,7 +207,7 @@
                         >
                     </div>
                     <div class="config-item">
-                        <label for="logicalID">Resource (Logical Id)</label>
+                        <label for="logicalID">Resource (Logical ID)</label>
                         <div class="form-row">
                             <input
                                 name="template-logical-id"
@@ -240,9 +240,9 @@
                     </div>
                 </div>
                 <div class="target-apigw" v-else-if="launchConfig.invokeTarget.target === 'api'">
-                    <button v-on:click.prevent="loadResource">Load Resource</button><br />
+                    <button v-on:click.prevent="loadResource">Load resource</button><br />
                     <div class="config-item">
-                        <label for="template-path">Template Path</label>
+                        <label for="template-path">Template path</label>
                         <input
                             id="template-path-button"
                             type="text"
@@ -253,7 +253,7 @@
                         >
                     </div>
                     <div class="config-item">
-                        <label for="logicalID">Resource (Logical Id)</label>
+                        <label for="logicalID">Resource (Logical ID)</label>
                         <input
                             name="template-logical-id"
                             id="template-logical-id"
@@ -290,7 +290,7 @@
                         ><span class="data-view">{{ launchConfig.api.httpMethod }}</span>
                     </div>
                     <div class="config-item">
-                        <label for="query-string">Query String</label>
+                        <label for="query-string">Query string</label>
                         <input
                             name="query-string"
                             id="query-string"
@@ -314,9 +314,9 @@
                         </div>
                     </div>
                 </div>
-                <div v-else>Select an Invoke Target</div>
+                <div v-else>Select an invoke target</div>
             </settings-panel>
-            <settings-panel id="more-fields-panel" title="Additional Fields" description="" start-collapsed>
+            <settings-panel id="more-fields-panel" title="Additional fields" description="" start-collapsed>
                 <h3>aws</h3>
                 <div class="config-item">
                     <label for="awsConnection">Credentials:</label>
@@ -328,7 +328,7 @@
                 </div>
                 <h3>lambda</h3>
                 <div class="config-item">
-                    <label for="">Environment Variables</label>
+                    <label for="">Environment variables</label>
                     <input
                         type="text"
                         placeholder="Enter as valid JSON"
@@ -353,7 +353,7 @@
                 </div> -->
                 <h3>sam</h3>
                 <div class="config-item">
-                    <label for="buildArguments">Build Arguments</label>
+                    <label for="buildArguments">Build arguments</label>
                     <input
                         type="text"
                         v-model="launchConfig.sam.buildArguments"
@@ -361,15 +361,15 @@
                     />
                 </div>
                 <div class="config-item">
-                    <label for="containerBuild">Container Build</label>
+                    <label for="containerBuild">Container build</label>
                     <input type="checkbox" name="containerBuild" id="containerBuild" v-model="containerBuild" />
                 </div>
                 <div class="config-item">
-                    <label for="dockerNetwork">Docker Network</label>
+                    <label for="dockerNetwork">Docker network</label>
                     <input type="text" v-model="launchConfig.sam.dockerNetwork" />
                 </div>
                 <div class="config-item">
-                    <label for="localArguments">Local Arguments</label>
+                    <label for="localArguments">Local arguments</label>
                     <input
                         type="text"
                         v-model="launchConfig.sam.localArguments"
@@ -377,7 +377,7 @@
                     />
                 </div>
                 <div class="config-item">
-                    <label for="skipNewImageCheck">Skip New Image Check</label>
+                    <label for="skipNewImageCheck">Skip new image Check</label>
                     <input
                         type="checkbox"
                         name="skipNewImageCheck"
@@ -386,7 +386,7 @@
                     />
                 </div>
                 <div class="config-item">
-                    <label for="templateParameters">Template - Parameters</label>
+                    <label for="templateParameters">Template - parameters</label>
                     <input type="text" v-model="parameters.value" :data-invalid="!!parameters.errorMsg" />
                     <div class="input-validation col2" v-if="parameters.errorMsg">
                         Error parsing JSON: {{ parameters.errorMsg }}
@@ -394,11 +394,11 @@
                 </div>
                 <h3>api</h3>
                 <div class="config-item">
-                    <label for="querystring">Query String</label>
+                    <label for="querystring">Query string</label>
                     <input type="text" v-model="launchConfig.api.querystring" />
                 </div>
                 <div class="config-item">
-                    <label for="stageVariables">Stage Variables</label>
+                    <label for="stageVariables">Stage variables</label>
                     <input
                         type="text"
                         v-model="stageVariables.value"
@@ -410,11 +410,11 @@
                     </div>
                 </div>
                 <div class="config-item">
-                    <label for="clientCerificateId">Client Certificate ID</label>
+                    <label for="clientCerificateId">Client certificate ID</label>
                     <input type="text" v-model="launchConfig.api.clientCertificateId" />
                 </div>
                 <div class="config-item">
-                    <label for="apiPayload">API Payload</label>
+                    <label for="apiPayload">API payload</label>
                     <input
                         type="text"
                         v-model="apiPayload.value"
