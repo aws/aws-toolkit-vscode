@@ -2,6 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as vscode from 'vscode'
 import { ExtContext } from '../../shared/extensions'
 import { Commands } from '../../shared/vscode/commands2'
 import { telemetry } from '../../shared/telemetry/telemetry'
@@ -17,9 +18,13 @@ import {
     refreshExplorer,
 } from './commands'
 import { getLogger } from '../../shared'
-import { Ec2Client } from '../../shared/clients/ec2Client'
+import { EC2_LOGS_SCHEME } from '../../shared/constants'
+import { Ec2LogProvider, formEc2Uri } from './ec2LogProvider'
 
 export async function activate(ctx: ExtContext): Promise<void> {
+    ctx.extensionContext.subscriptions.push(
+        vscode.workspace.registerTextDocumentContentProvider(EC2_LOGS_SCHEME, new Ec2LogProvider())
+    )
     ctx.extensionContext.subscriptions.push(
         Commands.register('aws.ec2.openTerminal', async (node?: Ec2InstanceNode) => {
             await telemetry.ec2_connectToInstance.run(async (span) => {
@@ -33,9 +38,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
         }),
         Commands.register('aws.ec2.viewLogs', async (node: Ec2InstanceNode) => {
             getLogger().info('viewLogs command run from explorer')
-            const ec2Client = new Ec2Client(node.regionCode)
-            const rsp = await ec2Client.getConsoleOutput(node.InstanceId, false)
-            getLogger().info(rsp.Output)
+            const uri = formEc2Uri(node.toSelection())
+            const doc = await vscode.workspace.openTextDocument(uri)
+            await vscode.window.showTextDocument(doc, { preview: false })
+            await vscode.languages.setTextDocumentLanguage(doc, 'log')
         }),
 
         Commands.register('aws.ec2.openRemoteConnection', async (node?: Ec2Node) => {
