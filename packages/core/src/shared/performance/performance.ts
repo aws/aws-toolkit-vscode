@@ -85,55 +85,89 @@ export class PerformanceTracker {
     }
 }
 
+interface PerformanceTestFunction<TSetup, TExecute> {
+    // anything you want setup (stubs, etc)
+    setup: () => Promise<TSetup>
+
+    // function under performance test
+    execute: (args: TSetup) => Promise<TExecute>
+
+    // anything you want to verify (assertions, etc)
+    verify: (setup: TSetup, execute: TExecute) => Promise<void> | void
+}
+
 /**
  * Generate a test suite that runs fn options.testRuns times and gets the average performance metrics of all the test runs
  */
-export function performanceTest(options: TestOptions, name: string, fn: () => Promise<void>): Mocha.Suite
-export function performanceTest(options: TestOptions, name: string, fn: () => void): Mocha.Suite
-export function performanceTest(options: TestOptions, name: string, fn: () => void | Promise<void>) {
+export function performanceTest<TSetup, TExecute>(
+    options: TestOptions,
+    name: string,
+    fn: () => PerformanceTestFunction<TSetup, TExecute>
+) {
     const testOption = options[process.platform as 'linux' | 'darwin' | 'win32']
 
-    const totalTestRuns = options.testRuns ?? 5
+    const totalTestRuns = options.testRuns ?? 10
 
-    return describe(`${name} performance tests`, async () => {
+    return describe(`${name} performance tests`, () => {
         let performanceTracker: PerformanceTracker | undefined
         const testRunMetrics: PerformanceMetrics[] = []
 
-        beforeEach(() => {
-            performanceTracker = new PerformanceTracker(name)
-            performanceTracker.start()
-        })
+        beforeEach(async () => {
+            const startCpuUsage = process.cpuUsage()
+            const userCpuUsage = startCpuUsage.user / 1000000
+            const systemCpuUsage = startCpuUsage.system / 1000000
+            getLogger().info(`Starting CPU usage for "${name}" - User: ${userCpuUsage}%, System: ${systemCpuUsage}%`)
 
-        afterEach(() => {
-            const metrics = performanceTracker?.stop()
-            if (!metrics) {
-                assert.fail('Performance metrics not found')
-            }
-            testRunMetrics.push(metrics)
+            performanceTracker = new PerformanceTracker(name)
         })
 
         for (let testRun = 1; testRun <= totalTestRuns; testRun++) {
             it(`${name} - test run ${testRun}`, async () => {
-                await fn()
+                const { setup, execute, verify } = fn()
+
+                const setupResp = await setup()
+
+                performanceTracker?.start()
+                const execResp = await execute(setupResp)
+                const metrics = performanceTracker?.stop()
+                if (!metrics) {
+                    assert.fail('Performance metrics not found')
+                }
+
+                // log these messages for now so we can better understand flakiness
+                getLogger().info(`performanceMetrics: %O`, metrics)
+                testRunMetrics.push(metrics)
+
+                await verify(setupResp, execResp)
             })
         }
 
         after(async () => {
-            const totalUserCPUUsage =
-                testRunMetrics.reduce((acc, metric) => acc + metric.userCpuUsage, 0) / testRunMetrics.length
-            const totalSystemCPUUsage =
-                testRunMetrics.reduce((acc, metric) => acc + metric.systemCpuUsage, 0) / testRunMetrics.length
-            const totalMemoryUsage =
-                testRunMetrics.reduce((acc, metric) => acc + metric.heapTotal, 0) / testRunMetrics.length
-            const totalDuration =
-                testRunMetrics.reduce((acc, metric) => acc + metric.duration, 0) / testRunMetrics.length
+            // use median since its more resistant to outliers
+            const middle = Math.floor(testRunMetrics.length / 2)
+            const medianUserCPUUsage = [...testRunMetrics].sort((a, b) => a.userCpuUsage - b.userCpuUsage)[middle]
+                .userCpuUsage
+            const medianTotalSystemCPUUsage = [...testRunMetrics].sort((a, b) => a.systemCpuUsage - b.systemCpuUsage)[
+                middle
+            ].systemCpuUsage
+            const medianTotalMemoryUsage = [...testRunMetrics].sort((a, b) => a.heapTotal - b.heapTotal)[middle]
+                .heapTotal
+            const medianTotalDuration = [...testRunMetrics].sort((a, b) => a.duration - b.duration)[middle].duration
+
+            // log these messages for now so we can better understand flakiness
+            getLogger().info('Median performance metrics: %O', {
+                userCpuUsage: medianUserCPUUsage,
+                systemCpuUsage: medianTotalSystemCPUUsage,
+                heapTotal: medianTotalMemoryUsage,
+                duration: medianTotalDuration,
+            })
 
             assertPerformanceMetrics(
                 {
-                    userCpuUsage: totalUserCPUUsage,
-                    systemCpuUsage: totalSystemCPUUsage,
-                    duration: totalDuration,
-                    heapTotal: totalMemoryUsage,
+                    userCpuUsage: medianUserCPUUsage,
+                    systemCpuUsage: medianTotalSystemCPUUsage,
+                    duration: medianTotalDuration,
+                    heapTotal: medianTotalMemoryUsage,
                 },
                 name,
                 testOption
