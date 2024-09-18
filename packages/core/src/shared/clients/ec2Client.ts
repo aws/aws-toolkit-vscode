@@ -22,6 +22,11 @@ export interface SafeEc2Instance extends EC2.Instance {
     LastSeenStatus: EC2.InstanceStateName
 }
 
+interface SafeEc2GetConsoleOutputResult extends EC2.GetConsoleOutputRequest {
+    Output: string
+    InstanceId: string
+}
+
 export class Ec2Client {
     public constructor(public readonly regionCode: string) {}
 
@@ -228,6 +233,16 @@ export class Ec2Client {
     public async getAttachedIamInstanceProfile(instanceId: string): Promise<IamInstanceProfile | undefined> {
         const association = await this.getIamInstanceProfileAssociation(instanceId)
         return association ? association.IamInstanceProfile : undefined
+    }
+
+    public async getConsoleOutput(instanceId: string, latest: boolean): Promise<SafeEc2GetConsoleOutputResult> {
+        const client = await this.createSdkClient()
+        const response = await client.getConsoleOutput({ InstanceId: instanceId, Latest: latest }).promise()
+        return {
+            ...response,
+            InstanceId: instanceId,
+            Output: response.Output ? Buffer.from(response.Output, 'base64').toString() : '',
+        }
     }
 }
 

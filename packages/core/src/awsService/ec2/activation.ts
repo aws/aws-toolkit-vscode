@@ -16,6 +16,8 @@ import {
     stopInstance,
     refreshExplorer,
 } from './commands'
+import { getLogger } from '../../shared'
+import { Ec2Client } from '../../shared/clients/ec2Client'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
@@ -28,6 +30,12 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
         Commands.register('aws.ec2.copyInstanceId', async (node: Ec2InstanceNode) => {
             await copyTextCommand(node, 'id')
+        }),
+        Commands.register('aws.ec2.viewLogs', async (node: Ec2InstanceNode) => {
+            getLogger().info('viewLogs command run from explorer')
+            const ec2Client = new Ec2Client(node.regionCode)
+            const rsp = await ec2Client.getConsoleOutput(node.InstanceId, false)
+            getLogger().info(rsp.Output)
         }),
 
         Commands.register('aws.ec2.openRemoteConnection', async (node?: Ec2Node) => {
