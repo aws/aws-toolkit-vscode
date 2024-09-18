@@ -87,6 +87,13 @@ export class RuntimeLanguageContext {
             typescriptreact: 'tsx',
             yml: 'yaml',
             yaml: 'yaml',
+            dart: 'dart',
+            lua: 'lua',
+            powershell: 'powershell',
+            r: 'r',
+            swift: 'swift',
+            systemVerilog: 'systemVerilog',
+            vue: 'vue',
         })
         this.supportedLanguageExtensionMap = createConstantMap<string, CodewhispererLanguage>({
             c: 'c',
