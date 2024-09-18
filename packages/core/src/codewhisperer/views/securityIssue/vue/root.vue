@@ -2,7 +2,7 @@
 
 <template>
     <div class="mb-16">
-        <div class="container button-container" style="justify-content: space-between">
+        <div class="container button-container" style="justify-content: space-between; top: 0">
             <h1>{{ title }} <img class="severity" :src="severityImage" :alt="severity" /></h1>
             <input v-if="isFixAvailable" class="mt-4 ml-16" type="submit" @click="applyFix" value="Fix" />
         </div>
@@ -70,7 +70,7 @@
 
     <hr />
 
-    <div class="mt-16">
+    <div class="mt-16 mb-16">
         <input type="submit" class="mr-8" @click="explainWithQ" value="Explain" />
     </div>
 </template>
