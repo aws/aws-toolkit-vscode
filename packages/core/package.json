@@ -1182,6 +1182,10 @@
                     "command": "aws.toolkit.auth.manageConnections"
                 },
                 {
+                    "command": "aws.ec2.viewLogs",
+                    "when": "aws.isDevMode"
+                },
+                {
                     "command": "aws.ec2.openRemoteConnection",
                     "when": "aws.isDevMode"
                 },
@@ -1555,6 +1559,11 @@
                     "command": "aws.ec2.copyInstanceId",
                     "when": "view == aws.explorer && viewItem =~ /^(awsEc2(Parent|Running|Stopped)Node)$/",
                     "group": "2@0"
+                },
+                {
+                    "command": "aws.ec2.viewLogs",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEc2(Pending|Running|Stopped)Node)$/",
+                    "group": "3@0"
                 },
                 {
                     "command": "aws.ecr.copyTagUri",
@@ -2235,6 +2244,17 @@
                 "command": "aws.toolkit.createIssueOnGitHub",
                 "title": "%AWS.command.createIssueOnGitHub%",
                 "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.ec2.viewLogs",
+                "title": "%AWS.command.ec2.viewLogs%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
