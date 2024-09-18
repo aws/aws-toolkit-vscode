@@ -12,6 +12,7 @@ import { PromiseResult } from 'aws-sdk/lib/request'
 import { Timeout } from '../utilities/timeoutUtils'
 import { showMessageWithCancel } from '../utilities/messages'
 import { ToolkitError, isAwsError } from '../errors'
+import { decodeBase64 } from '../utilities/textUtilities'
 
 /**
  * A wrapper around EC2.Instance where we can safely assume InstanceId field exists.
@@ -241,7 +242,7 @@ export class Ec2Client {
         return {
             ...response,
             InstanceId: instanceId,
-            Output: response.Output ? Buffer.from(response.Output, 'base64').toString() : '',
+            Output: response.Output ? decodeBase64(response.Output) : '',
         }
     }
 }
