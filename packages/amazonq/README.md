@@ -37,13 +37,13 @@ Analyze and fix security vulnerabilities in your project.
 
 ## Agent for software development
 
-Amazon Q can plan and implement new functionality across multiple files in your workspace.
+Amazon Q can implement new functionality across multiple files in your workspace.
 
 Type “/” in chat to open the quick actions menu and choose the “/dev” action.
 
 ![Agent for software development demo](https://raw.githubusercontent.com/aws/aws-toolkit-vscode/HEAD/docs/marketplace/vscode/amazonq/dev.gif)
 
-_Note - this demo has been trimmed, Amazon Q can take several minutes to generate the plan and code_
+_Note - this demo has been trimmed, Amazon Q can take several minutes to generate code_
 
 ## Agent for code transformation
 
