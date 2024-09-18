@@ -315,7 +315,7 @@ function activateSamYamlOverlays(): vscode.Disposable {
  *
  * Used for:
  * 1. showing codelenses
- * 2. "Add SAM Debug Configuration" command (TODO: remove dependency on
+ * 2. "Add Local Invoke and Debug Configuration" command (TODO: remove dependency on
  *    codelense provider (which scans the whole workspace and creates
  *    filewatchers)).
  */

@@ -386,7 +386,7 @@ export class SamInvokeWebview extends VueWebview {
             {
                 label: addCodiconToString(
                     'add',
-                    localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration')
+                    localize('AWS.command.addSamDebugConfiguration', 'Add Local Invoke and Debug Configuration')
                 ),
                 index: -1,
                 alwaysShow: true,
@@ -474,7 +474,7 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
         const webview = new WebviewPanel(context.extensionContext, context, launchConfig)
         await telemetry.sam_openConfigUi.run(async (span) => {
             await webview.show({
-                title: localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration'),
+                title: localize('AWS.command.launchConfigForm.title', 'Local Invoke and Debug Configuration'),
                 // TODO: make this only open `Beside` when executed via CodeLens
                 viewColumn: vscode.ViewColumn.Beside,
             })
@@ -499,7 +499,7 @@ export async function registerSamDebugInvokeVueCommand(context: ExtContext, para
     await telemetry.sam_openConfigUi.run(async (span) => {
         telemetry.record({ source: 'AppBuilderDebugger' }),
             await webview.show({
-                title: localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration'),
+                title: localize('AWS.command.launchConfigForm.title', 'Local Invoke and Debug Configuration'),
                 // TODO: make this only open `Beside` when executed via CodeLens
                 viewColumn: vscode.ViewColumn.Beside,
             })
