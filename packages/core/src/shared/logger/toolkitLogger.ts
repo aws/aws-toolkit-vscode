@@ -121,7 +121,6 @@ export class ToolkitLogger extends BaseLogger implements vscode.Disposable {
 
     /* Format the message with topic header */
     private addTopicToMessage(message: string | Error): string | ErrorLog {
-        const topicPrefix = `${this.topic}: `
         if (typeof message === 'string') {
             /*We shouldn't print unknow before current logging calls are migrated
              * TODO: remove this once migration of current calls is completed
@@ -129,10 +128,9 @@ export class ToolkitLogger extends BaseLogger implements vscode.Disposable {
             if (this.topic === 'unknown') {
                 return message
             }
-            return topicPrefix + message
+            return `${this.topic}: ` + message
         } else if (message instanceof Error) {
-            const topic = topicPrefix.split(':', 1)[0]
-            return new ErrorLog(topic, message)
+            return new ErrorLog(this.topic, message)
         }
         return message
     }
