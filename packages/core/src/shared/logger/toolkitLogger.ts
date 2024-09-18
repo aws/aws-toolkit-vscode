@@ -15,7 +15,7 @@ import { ConsoleLogTransport } from './consoleLogTransport'
 import { isWeb } from '../extensionGlobals'
 
 /* define log topics */
-export type LogTopic = 'Unknown' | 'Test'
+export type LogTopic = 'unknown' | 'test'
 
 // Need to limit how many logs are actually tracked
 // LRU cache would work well, currently it just dumps the least recently added log
@@ -23,7 +23,7 @@ const logmapSize: number = 1000
 export class ToolkitLogger extends BaseLogger implements vscode.Disposable {
     private readonly logger: winston.Logger
     /* topic is used for header in log messages, default is 'Unknown' */
-    private topic: LogTopic = 'Unknown'
+    private topic: LogTopic = 'unknown'
     private disposed: boolean = false
     private idCounter: number = 0
     private logMap: { [logID: number]: { [filePath: string]: string } } = {}
@@ -108,7 +108,7 @@ export class ToolkitLogger extends BaseLogger implements vscode.Disposable {
               })
     }
 
-    public setTopic(topic: LogTopic = 'Unknown') {
+    public setTopic(topic: LogTopic = 'unknown') {
         this.topic = topic
     }
 
@@ -117,7 +117,7 @@ export class ToolkitLogger extends BaseLogger implements vscode.Disposable {
         /*We shouldn't print unknow before current logging calls are migrated
          * TODO: remove this once migration of current calls is completed
          */
-        if (this.topic === 'Unknown') {
+        if (this.topic === 'unknown') {
             return message
         }
         const topicPrefix = `${this.topic}: `

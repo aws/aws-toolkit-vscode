@@ -236,7 +236,7 @@ describe('ToolkitLogger', function () {
 
             testLogger = new ToolkitLogger('info')
             testLogger.logToOutputChannel(outputChannel, false)
-            testLogger.setTopic('Test')
+            testLogger.setTopic('test')
             testLogger.setLogLevel('verbose')
             testLogger.verbose(testMessage)
 
@@ -250,7 +250,7 @@ describe('ToolkitLogger', function () {
 
             testLogger = new ToolkitLogger('info')
             testLogger.logToOutputChannel(outputChannel, false)
-            testLogger.setTopic('Unknown')
+            testLogger.setTopic('unknown')
             testLogger.setLogLevel('verbose')
             testLogger.verbose(testMessage)
 
@@ -265,8 +265,8 @@ describe('ToolkitLogger', function () {
 
             testLogger = new ToolkitLogger('info')
             testLogger.logToOutputChannel(outputChannel, false)
-            testLogger.setTopic('Unknown')
-            testLogger.setTopic('Test')
+            testLogger.setTopic('unknown')
+            testLogger.setTopic('test')
             testLogger.setLogLevel('verbose')
             testLogger.verbose(testMessage)
 
