@@ -1,0 +1,23 @@
+<%- include('../includes/head.ejs') %>
+  </head>
+  <body>
+    <%- include('../includes/navigation.ejs') %>
+    <main>
+      <div class="uk-section">
+        <div class="uk-container uk-container-medium">
+          <form id="shipment-address-form" action="/shipment" method="POST" novalidate>
+            <div class="uk-grid" uk-grid>
+              <div class="uk-width-1-1">
+                <h3 class="uk-text-center ui-card-title">Shipment Address</h3>
+              </div>
+              <div class="uk-width-1-1 uk-margin"></div>
+              <%- include('../includes/shipment.ejs') %>  
+              <div class="uk-width-1-1@s uk-text-center">
+                <button class="uk-button uk-button-primary uk-text-capitalize" type="submit" data-action="submit">Update</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+    <%- include('../includes/end.ejs') %>

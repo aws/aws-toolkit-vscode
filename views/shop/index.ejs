@@ -1,0 +1,18 @@
+<%- include('../includes/head.ejs') %>
+  <link rel="stylesheet" href="/css/homepage.css">
+  <link rel="stylesheet" href="/css/product.css">
+</head>
+
+<body>
+  <%- include('../includes/navigation.ejs') %>
+  <div class="uk-background-cover uk-height-large uk-panel uk-flex uk-flex-middle" style="background-image: url(images/background.jpg);">
+    <div class="banner" >
+      <span class="banner-head">Sale</span><br />
+      <span class="banner-text">30% on Popular Products!</span>
+    </div>
+    
+  </div>
+  <main>
+    <%- include('../includes/product-list.ejs') %>
+  </main>
+<%- include('../includes/end.ejs') %>

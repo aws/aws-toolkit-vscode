@@ -1,0 +1,13 @@
+.banner {
+  margin-left: 150px;
+}
+.banner-head {
+  font-weight: 700;
+  font-size: 100px;
+  color: #000;
+}
+.banner-text {
+  font-weight: 700;
+  font-size: 26px;
+  color: #000;
+}

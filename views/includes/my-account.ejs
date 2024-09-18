@@ -1,0 +1,23 @@
+<div class="uk-grid" uk-grid>
+  <div class="uk-width-1-1">
+    <div class="action-bar">
+      <div>
+        <h3>Account</h3>
+      </div>
+      <div>
+        <a href="/reset-password" class="uk-button uk-button-default uk-text-capitalize">
+          <span uk-icon="icon: pencil; ratio: 1.1"></span>
+          Reset Password
+        </a>
+      </div>
+    </div>
+  </div>
+  <div class="uk-width-1-2@s" style="margin-top: 0px;">
+    <div class="ui-text-field">Email</div>
+    <input name="email" id="email" class="ui-input uk-input uk-form-medium" type="text" value="<%= account.email %>" disabled>
+  </div>
+  <div class="uk-width-1-2@s" style="margin-top: 0px;">
+    <div class="ui-text-field">Password</div>
+    <input name="password" id="password" class="ui-input uk-input uk-form-medium" type="password" value="**********" disabled>
+  </div>
+</div>

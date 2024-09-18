@@ -1,0 +1,64 @@
+* {
+  /* (overflow-wrap is an alias word-wrap) default is normal, in which case lines may only break at a space between words. break-word is needed to prevent text from overflowing container in the case of very long words being used. */
+  overflow-wrap: break-word;
+}
+
+.product-form {
+  width: 20rem;
+  max-width: 90%;
+  margin: auto;
+  display: block;
+}
+
+.product-item {
+  width: 20rem;
+  max-width: 95%;
+  margin: 7px;
+}
+
+.product__title {
+  padding: 1rem;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 27px;
+  text-align: center;
+}
+
+.product__price {
+  font-size: 30px;
+}
+
+.product__description {
+  text-align: center;
+  color: #000;
+}
+
+@media screen and (min-width: 992px) {
+  .product-item {
+    width: 20%;
+  }
+}
+
+.tool-bar {
+  width: 80%;
+  justify-content: right;
+}
+
+.product-action-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 20px 20px 0px 0px;
+}
+
+.action-bar {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+}
+
+.action-bar-title {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  width: 90%;
+}

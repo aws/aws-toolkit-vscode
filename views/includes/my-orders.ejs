@@ -1,0 +1,34 @@
+<div class="uk-grid" style="margin-top: 75px;" uk-grid>
+  <div class="uk-width-1-1">
+    <h3>My Orders</h3>
+  </div>
+  <div class="uk-width-1-1@s" style="margin-top: 0px;">
+    <table class="uk-table ui-table uk-table-justify uk-table-divider">
+      <thead>
+        <tr>
+          <th class="uk-width-small">Date</th>
+          <th class="uk-width-large">Order Id</th>
+          <th>Products</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (orders.length <= 0) { %>
+          <tr colspan="3">
+            <td>No orders found</td>
+          </tr>
+        <% } %>
+        <% orders.forEach(order => { %>
+          <tr>
+            <td><%= order.date %></td>
+            <td><%= order.id %></td>
+            <td>
+              <% order.products.forEach(p => { %>
+                <li><%= p.product.title %> (<%= p.quantity %>)</li>
+              <% }); %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>

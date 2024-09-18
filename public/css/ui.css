@@ -1,0 +1,34 @@
+.ui-card-title {
+  font-weight: 600;
+  font-size: 30px;
+  line-height: 38px;
+  color: #000;
+  text-decoration: underline;
+  text-decoration-color: #FFC058;
+  text-underline-offset: 10px;
+}
+.ui-text-field {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 18px;
+  color: #000000;
+}
+.ui-navbar-container {
+  background-color: #353535;
+  height: 70px;
+}
+
+.ui-navbar-menu-item {
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 25px;
+  color: #FFFFFF;
+}
+.ui-icon svg {
+  color:#fff;
+  stroke: #fff;
+}
+.ui-icon svg > * {
+  fill: #fff;
+  stroke: #fff;
+}

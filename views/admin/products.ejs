@@ -1,0 +1,53 @@
+<%- include('../includes/head.ejs') %>
+  <link rel="stylesheet" href="/css/product.css">
+  </head>
+
+  <body>
+    <%- include('../includes/navigation.ejs') %>
+
+      <main>
+        <div class="grid tool-bar">
+          <a href="/admin/add-product" class="uk-button uk-button-primary uk-text-capitalize">
+            <span uk-icon="icon: plus" class="uk-icon ui-icon"></span>
+            New Product
+          </a>
+        </div>
+        <% if (prods.length > 0) { %>
+          <div class="grid">
+            <% for (let product of prods) { %>
+              <article class="card product-item">
+                <div class="product-action-bar">
+                  <input type="hidden" value="<%= product.id %>" name="productId">
+                  <span uk-icon="icon: trash" uk-tooltip="title: Delete product" onclick="deleteProduct(this)"></span>
+                </div>
+                <header class="card__header">
+                  <h1 class="product__title">
+                    <%= product.title %>
+                  </h1>
+                </header>
+                <div class="card__image">
+                  <img src="<%= product.imageUrl %>" alt="<%= product.title %>">
+                </div>
+                <div>
+                  <div class="card__content">
+                    
+                    </h2>
+                    <p class="product__description">
+                      <%= product.description %>
+                    </p>
+                  </div>
+                  <div class="card__actions">
+                    <h2 class="product__price">$<%= (product.price).toLocaleString('en-US') %></h2>
+                    <a href="/admin/edit-product/<%= product.id %>?edit=true" class="uk-button uk-button-primary uk-text-capitalize">Edit</a>
+                  </div>
+                </div>
+              </article>
+              <% } %>
+          </div>
+          <%- include('../includes/pagination.ejs', {currentPage, nextPage, previousPage, lastPage, hasNextPage, hasPreviousPage}) %>
+          <% } else { %>
+            <h1>No products found</h1>
+            <% } %>
+      </main>
+      <%- include('../includes/end.ejs') %>
+      <script src="/js/admin.js"></script>

@@ -1,0 +1,42 @@
+<%- include('../includes/head.ejs') %>
+  </head>
+<script>
+  function onSubmit(token) {
+    document.getElementById("login-form").submit();
+  }
+</script>
+<body>
+  <%- include('../includes/navigation.ejs') %>
+  <div class="uk-section uk-flex uk-flex-middle uk-animation-fade" uk-height-viewport>
+    <div class="uk-container">
+      <% if (errorMessage) { %>
+        <div class="uk-alert-danger" uk-alert>
+          <a class="uk-alert-close" uk-close></a>
+          <p><%= errorMessage %></p>
+        </div>
+      <% } %>
+      <div class="uk-grid-margin uk-grid uk-grid-stack" uk-grid>
+        <div class="uk-margin uk-width-large uk-margin-auto uk-card uk-card-default uk-card-body">
+          <h3 class="uk-text-center ui-card-title">Login</h3>
+          <form id="login-form" action="/login" method="POST" novalidate>
+            <div class="uk-margin">
+              <div class="ui-text-field">Email</div>
+              <input name="email" id="email" class="ui-input uk-input uk-form-medium" type="text" value="<%= oldInput.email %>">
+            </div>
+            <div class="uk-margin">
+              <div class="ui-text-field">Password</div>
+              <input name="password" id="password" class="ui-input uk-input uk-form-medium" type="password" value="<%= oldInput.password %>">
+              <div class="uk-margin-small uk-text-default uk-text-right">
+                <a class="uk-link-text-primary" href="/reset-password">Forgot password?</a>
+              </div>
+            </div>
+            <div class="uk-margin uk-text-center">
+              <button class="g-recaptcha uk-button uk-button-primary uk-text-capitalize" type="submit" data-sitekey="<%= recaptchaSiteKey %>" data-callback="onSubmit" data-action="submit">Login</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+ 
+  <%- include('../includes/end.ejs') %>

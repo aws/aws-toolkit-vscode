@@ -1,0 +1,87 @@
+<div class="backdrop"></div>
+<header class="main-header">
+  <button id="side-menu-toggle">Menu</button>
+  <nav class="main-header__nav">
+    <ul class="main-header__item-list">
+      <li class="main-header__item main-header__title">
+        <a class="<%= path === '/' ? 'active' : '' %>" href="/">My Webshop</a>
+      </li>
+      <% if (isAuthenticated) { %>
+        <% if (isAdmin) { %>
+          <li class="main-header__item">
+            <a class="<%= path === '/admin/products' ? 'active' : '' %>" href="/admin/products">Manage Products
+            </a>
+          </li>
+        <% } %>
+      <% } %>
+    </ul>
+    <ul class="main-header__item-list">
+      <li class="main-header__item">
+        <a class="<%= path === '/about' ? 'active' : '' %>" href="/about">About</a>
+      </li>
+      <li class="main-header__item">
+        <a class="<%= path === '/contact' ? 'active' : '' %>" href="/contact">Contact</a>
+      </li>
+      <% if (!isAuthenticated) { %>
+        <li class="main-header__item">
+          <a class="<%= path === '/signup' ? 'active' : '' %>" href="/signup">Sign Up</a>
+        </li>
+        <li class="main-header__item">
+          <a class="<%= path === '/login' ? 'active' : '' %>" href="/login">Log In</a>
+        </li>
+      <% } else { %>
+        <li class="main-header__item">
+          <a class="<%= path === '/mypage' ? 'active' : '' %>" href="/mypage">My Page</a>
+        </li>
+        <li class="main-header__item">
+          <form action="/logout" method="post">
+            <a>
+              <button type="submit" class="logout">Logout</button>
+            </a>
+          </form>
+        </li>
+        <li>
+          <a href="/cart">
+            <span class="uk-icon ui-icon" uk-tooltip="title: View cart items" uk-icon="icon: cart"></span>
+          </a>
+        </li>
+      <% } %>
+    </ul>
+  </nav>
+</header>
+
+<nav class="mobile-nav">
+  <ul class="mobile-nav__item-list">
+    <li class="mobile-nav__item">
+      <a class="<%= path === '/' ? 'active' : '' %>" href="/">Home</a>
+    </li>
+    <% if (isAuthenticated) { %>
+      <li class="mobile-nav__item">
+        <a class="<%= path === '/cart' ? 'active' : '' %>" href="/cart">Cart</a>
+      </li>
+      <% if (isAdmin) { %>
+        <li class="mobile-nav__item">
+          <a class="<%= path === '/admin/products' ? 'active' : '' %>" href="/admin/products">Manage Products
+          </a>
+        </li>
+      <% } %>
+    <% } %>
+    <% if (!isAuthenticated) { %>
+      <li class="mobile-nav__item">
+        <a class="<%= path === '/login' ? 'active' : '' %>" href="/login">Login</a>
+      </li>
+      <li class="mobile-nav__item">
+        <a class="<%= path === '/signup' ? 'active' : '' %>" href="/signup">Sign Up</a>
+      </li>
+    <% } else { %>
+      <li class="mobile-nav__item">
+        <a class="<%= path === '/mypage' ? 'active' : '' %>" href="/mypage">My Page</a>
+      </li>
+      <li class="mobile-nav__item">
+        <form action="/logout" method="post">
+          <button type="submit">Logout</button>
+        </form>
+      </li>
+    <% } %>
+  </ul>
+</nav>

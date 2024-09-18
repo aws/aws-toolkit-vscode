@@ -1,0 +1,47 @@
+<div class="uk-grid" style="margin-top: 75px;" uk-grid>
+  <div class="uk-width-1-1">
+    <div class="action-bar">
+      <div>
+        <h3>Shipment Address</h3>
+      </div>
+      <div>
+        <a href="/shipment" class="uk-button uk-button-default uk-text-capitalize">
+          <span uk-icon="icon: pencil; ratio: 1.1"></span>
+          Edit
+        </a>
+      </div>
+    </div>
+  </div>
+  <div class="uk-width-1-2@s" style="margin-top: 0px;">
+    <div class="ui-text-field">First Name</div>
+    <input name="firstname" id="firstname" class="ui-input uk-input uk-form-medium" type="text" value="<%= shipmentAddress.firstname %>" disabled>
+  </div>
+  <div class="uk-width-1-2@s" style="margin-top: 0px;">
+    <div class="ui-text-field">Last Name</div>
+    <input name="lastname" id="lastname" class="ui-input uk-input uk-form-medium" type="text" value="<%= shipmentAddress.lastname %>" disabled>
+  </div>
+  <div class="uk-width-1-2@s">
+    <div class="ui-text-field">Phone / Mobile</div>
+    <input name="phone" id="phone" class="ui-input uk-input uk-form-medium" type="number" value="<%= shipmentAddress.phone %>" disabled>
+  </div>
+  <div class="uk-width-1-1@s">
+    <div class="ui-text-field">Address</div>
+    <input name="address" id="address" class="ui-input uk-input uk-form-medium" type="text" value="<%= shipmentAddress.address %>" disabled>
+  </div>
+  <div class="uk-width-1-2@s">
+    <div class="ui-text-field">Zip / Postal Code</div>
+    <input name="postalcode" id="postalcode" class="ui-input uk-input uk-form-medium" type="text" value="<%= shipmentAddress.postalcode %>" disabled>
+  </div>
+  <div class="uk-width-1-2@s">
+    <div class="ui-text-field">City</div>
+    <input name="city" id="city" class="ui-input uk-input uk-form-medium" type="text" value="<%= shipmentAddress.city %>" disabled>
+  </div>
+  <div class="uk-width-1-2@s">
+    <div class="ui-text-field">State</div>
+    <input name="state" id="state" class="ui-input uk-input uk-form-medium" type="text" value="<%= shipmentAddress.state %>" disabled>
+  </div>
+  <div class="uk-width-1-2@s">
+    <div class="ui-text-field">Country</div>
+    <input name="country" id="country" class="ui-input uk-input uk-form-medium" type="text" value="<%= shipmentAddress.country %>" disabled>
+  </div>
+</div>

@@ -1,0 +1,81 @@
+<%- include('../includes/head.ejs') %>
+  <link rel="stylesheet" href="/css/product.css">
+  <script src="https://cdn.ckeditor.com/ckeditor5/35.4.0/classic/ckeditor.js"></script>
+  </head>
+  <script>
+    function loadCKEditor() {
+      ClassicEditor
+        .create(document.querySelector('#editor'), {
+          simpleUpload: {
+            uploadUrl: '/upload-image',
+          },
+          ckfinder: {
+            uploadUrl: '/admin/upload-image',
+          }
+        })
+        .then((editor) => {
+          window.ckeditor = editor;
+        })
+        .catch( error => {
+          console.error( error );
+        } );
+    }
+  </script>
+  <body onload="loadCKEditor()">
+    <%- include('../includes/navigation.ejs') %>
+      <main>
+        <div class="uk-section">
+          <div class="uk-container uk-container-medium">
+            <% if (errorMessage) { %>
+              <div class="uk-alert-danger" uk-alert>
+                <a class="uk-alert-close" uk-close></a>
+                <%= errorMessage %>
+              </div>
+            <% } %>
+            <form action="/admin/<% if (editing) { %>edit-product<% } else { %>add-product<% } %>" method="POST" enctype="multipart/form-data">
+              <div class="uk-grid" uk-grid>
+                <div class="uk-width-1-1">
+                  <div class="action-bar">
+                    <div class="action-bar-title">
+                      <h3 class="uk-text-center ui-card-title"><% if (editing) { %>Update Product<% } else { %>Add Product<% } %></h3>
+                    </div>
+                    <div>
+                      <div>
+                        <button class="uk-button uk-button-primary uk-text-capitalize" type="submit">
+                          <% if (editing) { %>Update<% } else { %>Save<% } %>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="uk-width-1-1 uk-margin">
+                  <div class="ui-text-field">Title</div>
+                  <input name="title" id="title" class="ui-input uk-input uk-form-medium" type="text" value="<% if (editing || hasError) { %><%= product.title %><% } %>">
+                </div>
+                <div class="uk-width-1-1 uk-margin">
+                  <div uk-form-custom="target: true" class="uk-width-1">
+                      <div class="ui-text-field">Image</div>
+                      <input type="file" name="image" id="image">
+                      <input class="uk-input uk-form-width-medium uk-width-1" type="text" placeholder="Select file" aria-label="Custom controls" disabled>
+                  </div>
+                </div>
+                <div class="uk-width-1-1 uk-margin">
+                  <div class="ui-text-field">Price</div>
+                  <input name="price" id="price" class="ui-input uk-input uk-form-medium" type="number" value="<% if (editing || hasError) { %><%= product.price %><% } %>" step="0.01">
+                </div>
+                <div class="uk-width-1-1 uk-margin">
+                  <div class="ui-text-field">Description</div>
+                  <input name="description" id="description" class="ui-input uk-input uk-form-medium" type="text"  value="<% if (editing || hasError) { %><%= product.description %><% } %>">
+                </div>
+                <div class="uk-width-1-1 uk-margin">
+                  <div class="ui-text-field">Additional details</div>
+                  <textarea name="details" id="editor"><% if (editing || hasError) { %><%= product.details %><% } %></textarea>
+                </div>
+                <% if (editing) { %>
+                  <input type="hidden" value="<%= product.id %>" name="productId">
+                <% } %>
+            </div>
+          </form>
+        </div>
+      </main>
+      <%- include('../includes/end.ejs') %>

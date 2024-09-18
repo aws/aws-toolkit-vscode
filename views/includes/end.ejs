@@ -1,0 +1,13 @@
+<script src="/js/main.js"></script>
+<script>
+  if ('<%= process.env.NODE_ENV %>' === 'development') {
+    const script = document.createElement('script');
+    script.src = `${location.protocol}//${location.host.split(':')[0]}:${location.port || 443}/livereload.js?snipver=1`;
+    script.type = "text/javascript";
+    script.async = false;
+    document.getElementsByTagName('body')[0].appendChild(script);
+  }
+</script>
+</body>
+
+</html>

@@ -1,0 +1,51 @@
+/*
+ * Primary
+ */
+ .uk-button-primary {
+  background-color: #000;
+  border-radius: 20px;
+  font-size: 16px;
+  color: #FFF;
+}
+/* Hover */
+.uk-button-primary:hover {
+  background-color: #000;
+  color: #FFF;
+}
+/* OnClick + Active */
+.uk-button-primary:active,
+.uk-button-primary.uk-active {
+  background-color: #000;
+  color: #FFF;
+}
+.uk-button-default {
+  border-radius: 20px;
+  font-size: 16px;
+  color: #000;
+}
+
+.uk-textarea,
+.uk-input {
+  border: none;
+  border-bottom: solid #1e1e1e 1px;
+}
+.uk-textarea:focus,
+.uk-input:focus {
+  border-bottom: solid #000 2px;
+}
+.uk-input:disabled {
+  background-color: #FFF;
+  color: #999;
+  border-color: #E5E5E5;
+}
+
+.uk-icon {
+  color: #000;
+}
+.ui-table th {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 18px;
+  text-transform: capitalize;
+  color: #000;
+}

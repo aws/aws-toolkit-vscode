@@ -1,0 +1,34 @@
+<% if (prods.length> 0) { %>
+  <div class="grid">
+    <% for (let product of prods) { %>
+      <article class="card product-item uk-button" onclick="location.href='/products/<%= product.id %>'">
+        <header class="card__header">
+          <h1 class="product__title">
+            <%= product.title %>
+          </h1>
+        </header>
+        <div class="card__image">
+          <img src="<%= product.imageUrl %>" alt="<%= product.title %>">
+        </div>
+        <div>
+          <div class="card__content">
+            
+            </h2>
+            <p class="product__description">
+              <%= product.description %>
+            </p>
+          </div>
+          <div class="card__actions">
+            <h2 class="product__price">$<%= (product.price).toLocaleString('en-US') %></h2>
+            <a href="/products/<%= product.id %>" class="uk-button uk-button-primary uk-text-capitalize">Show</a>
+          </div>
+        </div>
+      </article>
+      <% } %>
+  </div>
+  
+  <%- include('../includes/pagination.ejs', {currentPage, nextPage, previousPage, lastPage, hasNextPage,
+    hasPreviousPage}) %>
+    <% } else { %>
+      <h1>No products found</h1>
+      <% } %>

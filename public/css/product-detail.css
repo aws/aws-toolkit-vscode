@@ -1,0 +1,22 @@
+.product-title {
+  font-weight: 600;
+  font-size: 40px;
+}
+.product-description {
+  font-weight: 400;
+  font-size: 20px;
+  color: #000;
+}
+.product-panel {
+  display: flex;
+  flex-direction: column;
+}
+.product-panel-images {
+  display: flex;
+  justify-content: center;
+}
+.product-panel-actions {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
