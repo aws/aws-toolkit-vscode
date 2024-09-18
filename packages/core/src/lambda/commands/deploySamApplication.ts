@@ -10,7 +10,6 @@ import {
     createStackPrompter,
     createTemplatePrompter,
     getSamCliPathAndVersion,
-    getWorkspaceUri,
     injectCredentials,
     runInTerminal,
 } from '../../shared/sam/sync'
@@ -32,7 +31,7 @@ import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ChildProcess } from '../../shared/utilities/childProcess'
 import { addTelemetryEnvVar } from '../../shared/sam/cli/samCliInvokerUtils'
-import { getSource } from '../../shared/sam/utils'
+import { getProjectRootFoldersInWorkspace, getProjectRootUri, getSource } from '../../shared/sam/utils'
 import { telemetry } from '../../shared/telemetry'
 import { getParameters } from '../config/parameterUtils'
 import { filter } from '../../shared/utilities/collectionUtils'
@@ -102,13 +101,12 @@ function paramsSourcePrompter() {
     })
 }
 
-function workspaceFolderPrompter() {
-    const workspaceFolders = vscode.workspace.workspaceFolders
-    if (workspaceFolders === undefined) {
+function workspaceFolderPrompter(projectRootFolders: vscode.Uri[] | undefined) {
+    if (projectRootFolders === undefined) {
         throw new ToolkitError('No Workspace folder found')
     }
-    const items = workspaceFolders?.map((workspaceFolder) => {
-        return { label: workspaceFolder.uri.path, data: workspaceFolder.uri }
+    const items = projectRootFolders?.map((workspaceFolder) => {
+        return { label: workspaceFolder.path, data: workspaceFolder }
     })
 
     return createQuickPick(items, {
@@ -145,14 +143,16 @@ class DeployWizard extends Wizard<DeployParams> {
 
     public override async init(): Promise<this> {
         const getProjectRoot = (template: TemplateItem | undefined) =>
-            template ? getWorkspaceUri(template) : undefined
+            template ? getProjectRootUri(template) : undefined
 
         this.form.paramsSource.bindPrompter(() => paramsSourcePrompter())
+        const projectRootFolders = await getProjectRootFoldersInWorkspace()
 
         if (this.arg && this.arg.path) {
             // "Deploy" command was invoked on a template.yaml file.
             const templateUri = this.arg as vscode.Uri
             const templateItem = { uri: templateUri, data: {} } as TemplateItem
+
             this.form.template.setDefault(templateItem)
 
             await this.addParameterPromptersIfApplicable(templateUri)
@@ -175,10 +175,7 @@ class DeployWizard extends Wizard<DeployParams> {
             this.form.bucketName.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)), {
                 showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
             })
-            this.form.projectRoot.bindPrompter(() => workspaceFolderPrompter(), {
-                showWhen: ({ paramsSource }) => paramsSource === ParamsSource.SamConfig,
-                setDefault: (state) => getProjectRoot(templateItem),
-            })
+            this.form.projectRoot.setDefault(() => getProjectRoot(templateItem))
         } else if (this.arg && this.arg.regionCode) {
             // "Deploy" command was invoked on a regionNode.
             this.form.template.bindPrompter(() => createTemplatePrompter(this.registry), {
@@ -200,7 +197,7 @@ class DeployWizard extends Wizard<DeployParams> {
             this.form.bucketName.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)), {
                 showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
             })
-            this.form.projectRoot.bindPrompter(() => workspaceFolderPrompter(), {
+            this.form.projectRoot.bindPrompter(() => workspaceFolderPrompter(projectRootFolders), {
                 showWhen: ({ paramsSource }) => paramsSource === ParamsSource.SamConfig,
                 setDefault: (state) => getProjectRoot(state.template),
             })
@@ -256,7 +253,7 @@ class DeployWizard extends Wizard<DeployParams> {
                 showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
             })
 
-            this.form.projectRoot.bindPrompter(() => workspaceFolderPrompter(), {
+            this.form.projectRoot.bindPrompter(() => workspaceFolderPrompter(projectRootFolders), {
                 showWhen: ({ paramsSource }) => paramsSource === ParamsSource.SamConfig,
                 setDefault: (state) => getProjectRoot(state.template),
             })

@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { TemplateItem, createTemplatePrompter, getSamCliPathAndVersion, getWorkspaceUri, runInTerminal } from './sync'
+import { TemplateItem, createTemplatePrompter, getSamCliPathAndVersion, runInTerminal } from './sync'
 import { Commands } from '../vscode/commands2'
 import { ChildProcess } from '../utilities/childProcess'
 import { addTelemetryEnvVar } from './cli/samCliInvokerUtils'
@@ -19,7 +19,7 @@ import { ToolkitError } from '../errors'
 import globals from '../extensionGlobals'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
 import { Metric, SamBuild, telemetry } from '../telemetry/telemetry'
-import { getConfigFileUri, isDotnetRuntime } from './utils'
+import { getConfigFileUri, getProjectRootUri, isDotnetRuntime } from './utils'
 
 export interface BuildParams {
     readonly template: TemplateItem
@@ -134,7 +134,7 @@ export class BuildWizard extends Wizard<BuildParams> {
         super({ initState: state, exitPrompterProvider: createExitPrompter })
 
         const getProjectRoot = (template: TemplateItem | undefined) =>
-            template ? getWorkspaceUri(template) : undefined
+            template ? getProjectRootUri(template) : undefined
 
         if (arg === undefined) {
             this.form.template.bindPrompter(() => createTemplatePrompter(registry))

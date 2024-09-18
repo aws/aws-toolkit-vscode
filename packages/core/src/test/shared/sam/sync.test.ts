@@ -60,14 +60,16 @@ describe('SyncWizard', async function () {
         tester.ecrRepoUri.assertDoesNotShow()
     })
 
-    it("uses the template's workspace as the project root is not set", async function () {
+    it("uses the template's workspace subfolder as the project root is not set", async function () {
         const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri
         assert.ok(workspaceUri)
+        const rootFolderUri = vscode.Uri.joinPath(workspaceUri, 'my')
+        assert.ok(rootFolderUri)
 
-        const templateUri = vscode.Uri.joinPath(workspaceUri, 'my', 'template.yaml')
+        const templateUri = vscode.Uri.joinPath(rootFolderUri, 'template.yaml')
         const template = { uri: templateUri, data: createBaseTemplate() }
         const tester = await createTester({ template })
-        tester.projectRoot.assertValue(workspaceUri)
+        tester.projectRoot.path.assertValue(rootFolderUri.path)
     })
 })
 

@@ -10,6 +10,7 @@ import { FileSystem } from '../fs/fs'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { TreeNode, isTreeNode } from '../treeview/resourceTreeDataProvider'
 import * as CloudFormation from '../cloudformation/cloudformation'
+import { TemplateItem } from './sync'
 
 /**
  * @description Finds the samconfig.toml file under the provided project folder
@@ -28,6 +29,37 @@ export async function getConfigFileUri(projectRoot: vscode.Uri) {
     } else {
         throw new ToolkitError(`No samconfig.toml file found in ${projectRoot.fsPath}`, { code: 'samNoConfigFound' })
     }
+}
+
+/**
+ * @description determines the root directory of the project given uri of the template file
+ * @param template The template item with uri information
+ * @returns The URI of the root project folder (may differ from workspace)
+ * */
+export const getProjectRootUri = (template: TemplateItem) => vscode.Uri.file(path.dirname(template.uri.path))
+
+/**
+ * @description Retrieves the root folders of all SAM template files (template.yaml or template.yml)
+ *              in the current workspace.
+ * @returns A Promise that resolves to an array of vscode.Uri objects, each representing a project root folder.
+ *          If no workspace folders are open, it returns an empty array.
+ * @remarks
+ * - The function excludes searching in 'node_modules' and '.aws-sam' directories.
+ * - It considers the parent directory of each template file as a project root.
+ */
+export async function getProjectRootFoldersInWorkspace(): Promise<vscode.Uri[]> {
+    if (!vscode.workspace.workspaceFolders) {
+        return []
+    }
+    const templateFiles = await vscode.workspace.findFiles('**/template.{yaml,yml}', '**/{node_modules,.aws-sam}/**')
+    const projectRootFolders = []
+
+    for (const templateFile of templateFiles) {
+        const rootFolder = vscode.Uri.parse(path.dirname(templateFile.fsPath))
+        projectRootFolders.push(rootFolder)
+    }
+
+    return projectRootFolders
 }
 
 export function getSource(arg: vscode.Uri | AWSTreeNodeBase | TreeNode | undefined): string | undefined {

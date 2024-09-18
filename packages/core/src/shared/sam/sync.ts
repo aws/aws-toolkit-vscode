@@ -49,7 +49,7 @@ import { IamConnection } from '../../auth/connection'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
 import { promptAndUseConnection } from '../../auth/utils'
 import { TreeNode } from '../treeview/resourceTreeDataProvider'
-import { getConfigFileUri, getSource } from './utils'
+import { getConfigFileUri, getProjectRootUri, getSource } from './utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -386,7 +386,7 @@ export class SyncWizard extends Wizard<SyncParams> {
         })
 
         const getProjectRoot = (template: TemplateItem | undefined) =>
-            template ? getWorkspaceUri(template) : undefined
+            template ? getProjectRootUri(template) : undefined
 
         this.form.projectRoot.bindPrompter(() => workspaceFolderPrompter(), {
             showWhen: ({ paramsSource }) => paramsSource === ParamsSource.SamConfig,

@@ -41,6 +41,6 @@ describe('BuildWizard', async function () {
         const templateUri = vscode.Uri.joinPath(workspaceFolder.uri, 'template.yaml')
         const template = { uri: templateUri, data: createBaseTemplate() }
         const tester = await createTester({ template })
-        tester.projectRoot.assertValue(workspaceFolder.uri)
+        tester.projectRoot.path.assertValue(workspaceFolder.uri.path)
     })
 })
