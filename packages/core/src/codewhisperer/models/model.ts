@@ -259,7 +259,7 @@ export class CodeScanState {
             case CodeScanStatus.Running:
                 return getIcon('vscode-stop-circle')
             case CodeScanStatus.Cancelling:
-                return getIcon('vscode-icons:loading~spin')
+                return getIcon('vscode-loading~spin')
         }
     }
 }
