@@ -5,9 +5,10 @@
 
 import assert from 'assert'
 import { resetCodeWhispererGlobalVariables } from 'aws-core-vscode/test'
-import { runtimeLanguageContext, RuntimeLanguageContext, PlatformLanguageId } from 'aws-core-vscode/codewhisperer'
+import { RuntimeLanguageContext, PlatformLanguageId } from 'aws-core-vscode/codewhisperer'
 import * as codewhispererClient from 'aws-core-vscode/codewhisperer'
 import { CodewhispererLanguage } from 'aws-core-vscode/shared'
+import { PlaintextLanguage } from '../../../../../core/dist/src/codewhisperer/util/language/LanguageBase'
 
 describe('runtimeLanguageContext', function () {
     const languageContext = new RuntimeLanguageContext()
@@ -51,44 +52,8 @@ describe('runtimeLanguageContext', function () {
             const expected = tuple[1]
 
             it(`should ${expected ? '' : 'not'} support ${languageId}`, function () {
-                const actual = languageContext.isLanguageSupported(languageId)
+                const actual = languageContext.isInlineCompletionSupport(languageId)
                 assert.strictEqual(actual, expected)
-            })
-        })
-    })
-
-    describe('test getLanguageContext', function () {
-        const cases = [
-            ['java', 'java'],
-            ['python', 'python'],
-            ['javascript', 'javascript'],
-            ['typescript', 'typescript'],
-            ['javascriptreact', 'jsx'],
-            ['typescriptreact', 'tsx'],
-            ['csharp', 'csharp'],
-            ['c', 'c'],
-            ['cpp', 'cpp'],
-            ['go', 'go'],
-            ['kotlin', 'kotlin'],
-            ['php', 'php'],
-            ['ruby', 'ruby'],
-            ['rust', 'rust'],
-            ['scala', 'scala'],
-            ['shellscript', 'shell'],
-            ['sql', 'sql'],
-            ['plaintext', 'plaintext'],
-            ['html', 'plaintext'],
-            ['r', 'plaintext'],
-            ['vb', 'plaintext'],
-            [undefined, 'plaintext'],
-        ]
-
-        cases.forEach((tuple) => {
-            const vscLanguageId = tuple[0]
-            const expectedCwsprLanguageId = tuple[1]
-            it(`given vscLanguage ${vscLanguageId} should return ${expectedCwsprLanguageId}`, function () {
-                const result = runtimeLanguageContext.getLanguageContext(vscLanguageId)
-                assert.strictEqual(result.language as string, expectedCwsprLanguageId)
             })
         })
     })
@@ -156,8 +121,7 @@ describe('runtimeLanguageContext', function () {
             })
         }
 
-        const arbitraryIds: [string | undefined, CodewhispererLanguage | undefined][] = [
-            [undefined, undefined],
+        const arbitraryIds: [string, CodewhispererLanguage | undefined][] = [
             ['r', undefined],
             ['fooo', undefined],
             ['bar', undefined],
@@ -165,38 +129,8 @@ describe('runtimeLanguageContext', function () {
 
         for (const [arbitraryId, _] of arbitraryIds) {
             it(`should return undefined if languageId is undefined or not neither is type of codewhispererLanguageId or platformLanguageId - ${arbitraryId}`, function () {
-                const actual = languageContext.normalizeLanguage(undefined)
-                assert.strictEqual(actual, undefined)
-            })
-        }
-    })
-
-    describe('toRuntimeLanguage', function () {
-        const codewhispererLanguageIds: CodewhispererLanguage[][] = [
-            ['c', 'c'],
-            ['cpp', 'cpp'],
-            ['csharp', 'csharp'],
-            ['go', 'go'],
-            ['java', 'java'],
-            ['javascript', 'javascript'],
-            ['jsx', 'javascript'],
-            ['kotlin', 'kotlin'],
-            ['php', 'php'],
-            ['plaintext', 'plaintext'],
-            ['python', 'python'],
-            ['ruby', 'ruby'],
-            ['rust', 'rust'],
-            ['scala', 'scala'],
-            ['shell', 'shell'],
-            ['sql', 'sql'],
-            ['tsx', 'typescript'],
-            ['typescript', 'typescript'],
-        ]
-
-        for (const [inputCwsprLanguageId, expectedCwsprLanguageId] of codewhispererLanguageIds) {
-            it(`should return ${expectedCwsprLanguageId} if input codewhispererLanguageId is - ${inputCwsprLanguageId}`, function () {
-                const actual = languageContext.toRuntimeLanguage(inputCwsprLanguageId)
-                assert.strictEqual(actual, expectedCwsprLanguageId)
+                const actual = languageContext.normalizeLanguage(arbitraryId)
+                assert.strictEqual(actual, PlaintextLanguage)
             })
         }
     })

@@ -25,10 +25,7 @@ export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEn
      * Format document
      */
     if (acceptanceEntry.editor) {
-        const languageContext = runtimeLanguageContext.getLanguageContext(
-            acceptanceEntry.editor.document.languageId,
-            path.extname(acceptanceEntry.editor.document.fileName)
-        )
+        const language = runtimeLanguageContext.normalizeLanguage(acceptanceEntry.editor.document.languageId)
         const start = acceptanceEntry.range.start
         const end = isCloud9() ? acceptanceEntry.editor.selection.active : acceptanceEntry.range.end
 
@@ -64,10 +61,10 @@ export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEn
             index: acceptanceEntry.acceptIndex,
             triggerType: acceptanceEntry.triggerType,
             completionType: acceptanceEntry.completionType,
-            language: languageContext.language,
+            language: language.telemetryId,
         })
         const insertedCoderange = new vscode.Range(start, end)
-        CodeWhispererCodeCoverageTracker.getTracker(languageContext.language)?.countAcceptedTokens(
+        CodeWhispererCodeCoverageTracker.getTracker(language)?.countAcceptedTokens(
             insertedCoderange,
             acceptanceEntry.editor.document.getText(insertedCoderange),
             acceptanceEntry.editor.document.fileName

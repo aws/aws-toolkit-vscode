@@ -10,7 +10,7 @@ import { Recommendation } from '../client/codewhisperer'
 import { LicenseUtil } from '../util/licenseUtil'
 import { RecommendationHandler } from './recommendationHandler'
 import { session } from '../util/codeWhispererSession'
-import path from 'path'
+
 /**
  * completion provider for intelliSense popup
  */
@@ -42,10 +42,7 @@ export function getCompletionItem(
     completionItem.preselect = true
     completionItem.sortText = String(recommendationIndex + 1).padStart(10, '0')
     completionItem.range = new vscode.Range(start, position)
-    const languageContext = runtimeLanguageContext.getLanguageContext(
-        document.languageId,
-        path.extname(document.fileName)
-    )
+    const language = runtimeLanguageContext.normalizeLanguage(document.languageId)
     let references: typeof recommendationDetail.references
     if (recommendationDetail.references !== undefined && recommendationDetail.references.length > 0) {
         references = recommendationDetail.references
@@ -65,7 +62,7 @@ export function getCompletionItem(
             session.sessionId,
             session.triggerType,
             session.getCompletionType(recommendationIndex),
-            languageContext.language,
+            language.telemetryId,
             references,
         ],
     }

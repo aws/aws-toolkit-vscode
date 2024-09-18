@@ -211,7 +211,7 @@ export class ZipUtil {
 
     protected incrementCountForLanguage(uri: vscode.Uri, languageCount: Map<CodewhispererLanguage, number>) {
         const fileExtension = path.extname(uri.fsPath).slice(1)
-        const language = runtimeLanguageContext.getLanguageFromFileExtension(fileExtension)
+        const language = runtimeLanguageContext.getLanguageFromFileExtension(fileExtension)?.telemetryId
         if (language && language !== 'plaintext') {
             languageCount.set(language, (languageCount.get(language) || 0) + 1)
         }

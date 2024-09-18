@@ -17,6 +17,7 @@ import { selectFrom } from '../../shared/utilities/tsUtils'
 import { checkLeftContextKeywordsForJsonAndYaml } from './commonUtil'
 import { CodeWhispererSupplementalContext } from '../models/model'
 import { getOptOutPreference } from '../../shared/telemetry/util'
+import { PlaintextLanguage } from './language/LanguageBase'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -38,15 +39,14 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
             document.positionAt(offset + CodeWhispererConstants.charactersLimit)
         )
     )
-    let languageName = 'plaintext'
+    let language = PlaintextLanguage
     if (!checkLeftContextKeywordsForJsonAndYaml(caretLeftFileContext, editor.document.languageId)) {
-        languageName =
-            runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? editor.document.languageId
+        language = runtimeLanguageContext.normalizeLanguage(editor.document.languageId)
     }
     return {
         filename: getFileRelativePath(editor),
         programmingLanguage: {
-            languageName: languageName,
+            languageName: language.runtimeLanguageId,
         },
         leftFileContent: caretLeftFileContext,
         rightFileContent: caretRightFileContext,
@@ -72,7 +72,8 @@ export function getFileRelativePath(editor: vscode.TextEditor): string {
     // For notebook files, we want to use the programming language for each cell for the code suggestions, so change
     // the filename sent in the request to reflect that language
     if (relativePath.endsWith('.ipynb')) {
-        const fileExtension = runtimeLanguageContext.getLanguageExtensionForNotebook(editor.document.languageId)
+        const language = runtimeLanguageContext.normalizeLanguage(editor.document.languageId)
+        const fileExtension = runtimeLanguageContext.getLanguageExtensionForNotebook(language)
         if (fileExtension !== undefined) {
             const filenameWithNewExtension = relativePath.substring(0, relativePath.length - 5) + fileExtension
             return filenameWithNewExtension.substring(0, CodeWhispererConstants.filenameCharsLimit)
@@ -153,7 +154,7 @@ export function validateRequest(
         req.fileContext.programmingLanguage.languageName !== undefined &&
         req.fileContext.programmingLanguage.languageName.length >= 1 &&
         req.fileContext.programmingLanguage.languageName.length <= 128 &&
-        (runtimeLanguageContext.isLanguageSupported(req.fileContext.programmingLanguage.languageName) ||
+        (runtimeLanguageContext.isInlineCompletionSupport(req.fileContext.programmingLanguage.languageName) ||
             runtimeLanguageContext.isFileFormatSupported(
                 req.fileContext.filename.substring(req.fileContext.filename.lastIndexOf('.') + 1)
             ))
