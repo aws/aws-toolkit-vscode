@@ -6,7 +6,7 @@ name: Notifications
 on:
     # `pull_request_target` (as opposed to `pull_request`) gives permissions to comment on PRs.
     pull_request_target:
-        branches: [master, feature/*, staging]
+        branches: [master, feature/*, staging, jpinkney-aws/disable-private-notifications]
         # Default = opened + synchronize + reopened.
         # We also want "edited" so that changelog notifications runs when PR title is updated.
         # https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#pull_request
@@ -34,10 +34,10 @@ jobs:
             - uses: actions/setup-node@v4
               with:
                   node-version: '20'
-            - name: Check for tests
+            - name: Notify
               uses: actions/github-script@v7
               with:
                   script: |
                       const notify = require('.github/workflows/notify.js')
                       await notify({github, context})
-              if: github.event_name == 'pull_request_target'
+        if: github.event_name == 'pull_request_target' && github.event.repository.name == 'aws-toolkit-vscode'
