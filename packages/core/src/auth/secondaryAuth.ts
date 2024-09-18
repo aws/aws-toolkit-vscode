@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import { getLogger } from '../shared/logger'
 import { cast, Optional } from '../shared/utilities/typeConstructors'
 import { Auth } from './auth'
-import { once, onceChanged } from '../shared/utilities/functionUtils'
+import { onceChanged } from '../shared/utilities/functionUtils'
 import { isNonNullable } from '../shared/utilities/tsUtils'
 import { ToolIdStateKey } from '../shared/globalState'
 import { Connection, getTelemetryMetadataForConn, SsoConnection, StatefulConnection } from './connection'
@@ -147,6 +147,40 @@ export class SecondaryAuth<T extends Connection = Connection> {
                 await this.clearSavedConnection()
             }
         })
+
+        const refreshConn = (event: string) => {
+            getLogger().debug(`secondaryAuth: detected ${event} event in sso cache, refreshing auth.`)
+            globals.clock.setTimeout(
+                telemetry.function_call.run(
+                    () => async () => {
+                        if (this.#savedConnection?.id === this.getStateConnectionId()) {
+                            // Someone updated our cache but the global state doesn't indicate anything new, so do nothing.
+                            // (it could have been us that updated the cache)
+                            getLogger().debug(
+                                `secondaryAuth: cache event did not update global state, no refresh is needed.`
+                            )
+                            return
+                        }
+                        await this.auth.restorePreviousSession()
+                        await this.restoreConnection(true)
+                    },
+                    {
+                        emit: false,
+                        functionId: { name: 'cacheWatchCallback', class: secondaryAuthClassName },
+                    }
+                ),
+                /**
+                 * The connection is first created and stored on disk, then it is stored in global state.
+                 * This creates a race condition for the callback, who listens to the disk event but
+                 * depends on the global state to make a connection decision. The time is arbitrary.
+                 *
+                 * TODO: fix this race condition.
+                 */
+                3000
+            )
+        }
+        this.auth.cacheWatcher.onDidCreate(() => refreshConn('create'))
+        this.auth.cacheWatcher.onDidDelete(() => refreshConn('delete'))
     }
 
     public get activeConnection(): T | undefined {
@@ -250,11 +284,17 @@ export class SecondaryAuth<T extends Connection = Connection> {
         return await addScopes(conn, extraScopes, this.auth)
     }
 
+    private hasRunRestoreConnection = false
+
     // Used to lazily restore persisted connections.
     // Kind of clunky. We need an async module loader layer to make things ergonomic.
-    public readonly restoreConnection: typeof this._restoreConnection = once(async () => this._restoreConnection())
     @withTelemetryContext({ name: 'restoreConnection', class: secondaryAuthClassName })
-    private async _restoreConnection(): Promise<T | undefined> {
+    public async restoreConnection(force: boolean = false): Promise<T | undefined> {
+        if (!force && (this.activeConnection !== undefined || this.hasRunRestoreConnection)) {
+            return
+        }
+        this.hasRunRestoreConnection = true
+
         try {
             return await telemetry.auth_modifyConnection.run(async (span) => {
                 span.record({
@@ -289,7 +329,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
         // TODO: fix this
         // eslint-disable-next-line aws-toolkits/no-banned-usages
         const globalState = globals.context.globalState
-        const id = cast(globalState.get(this.key), Optional(String))
+        const id = this.getStateConnectionId()
         if (id === undefined) {
             return
         }
@@ -334,6 +374,10 @@ export class SecondaryAuth<T extends Connection = Connection> {
             }
             return conn
         }
+    }
+
+    private getStateConnectionId() {
+        return cast(globals.globalState.get(this.key), Optional(String))
     }
 }
 
