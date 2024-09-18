@@ -9,10 +9,16 @@
         <div class="form-row" style="justify-content: space-between; height: 28px">
             <div><button class="primary-button" v-on:click="sendInput">Remote Invoke</button></div>
             <div>
-                <select class="form-row-select" v-model="selectedFunction">
-                    <option disabled value="">Select a Function</option>
-                    <option value="selectedFunction" selected>{{ initialData.FunctionName }}</option>
-                </select>
+                <span
+                    :style="{
+                        width: '381px',
+                        height: '16px',
+                        fontWeight: '500',
+                        fontSize: '13px',
+                        lineHeight: '15.51px',
+                    }"
+                    >Function Name: {{ initialData.FunctionName }}</span
+                >
             </div>
         </div>
 
