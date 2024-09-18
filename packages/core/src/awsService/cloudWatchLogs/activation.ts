@@ -107,7 +107,7 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
                               logGroupPrefix + node.resource.configuration.FunctionName,
                       }
                     : undefined
-                const source: string = logGroupInfo ? 'AppBuilderSearchLogs' : 'CommandPalette'
+                const source: string = logGroupInfo ? 'AppBuilderSearchLogs' : 'CommandPaletteSearchLogs'
                 await searchLogGroup(registry, source, logGroupInfo)
             } catch (err) {
                 getLogger().error('Failed to search logs: %s', err)
