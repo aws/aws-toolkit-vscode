@@ -346,60 +346,49 @@ export class TelemetryTracer extends TelemetryBase {
      * reverted after the execution completes.
      */
     public run<T, U extends MetricName>(name: U, fn: (span: Metric<MetricShapes[U]>) => T, options?: SpanOptions): T {
-        const span = this.createSpan(name, options).start()
-        const frame = this.switchContext(span)
-
-        try {
-            //
-            // TODO: Since updating to `@types/node@16`, typescript flags this code with error:
-            //
-            //      Error: npm ERR! src/shared/telemetry/spans.ts(255,57): error TS2345: Argument of type
-            //      'TelemetrySpan<MetricBase>' is not assignable to parameter of type 'Metric<MetricShapes[U]>'.
-            //
-            const result = this.#context.run(frame, fn, span as any)
-
-            if (result instanceof Promise) {
-                return result
-                    .then((v) => (span.stop(), v))
-                    .catch((e) => {
-                        span.stop(e)
-                        throw e
-                    }) as unknown as T
-            }
-
-            span.stop()
-            return result
-        } catch (e) {
-            span.stop(e)
-            throw e
-        }
-    }
-
-    /**
-     * Trace represents a higher level event that you want to link with any other spans. It generates
-     * a traceId which is added to all subsequent calls, allowing you to query for all related events.
-     *
-     * Functionally, it is similiar to run. The only difference is the traceId gets added to subsequent telemetry calls.
-     *
-     * See: https://opentelemetry.io/docs/concepts/signals/traces/ to better understand the motivation behind traces
-     *
-     * @param name The name of the trace
-     * @param fn the callback function
-     */
-    private trace<T, U extends MetricName>(name: U, fn: (span: Metric<MetricShapes[U]>) => T): T {
-        return this.runRoot(() => {
+        const initTraceId = (callback: () => T): T => {
             /**
-             * Make sure we aren't starting a trace inside of a trace. traceId's have to be unique for every
-             * flow, otherwise we can't really tell what the trace belongs to
+             * Generate a new traceId if one doesn't exist.
+             * This ensures the traceId is created before the span,
+             * allowing it to propagate to all child telemetry metrics.
              */
-            if (this.attributes?.traceId) {
-                throw new Error('Cannot trace an already tracing telemetry event')
+            if (!this.attributes?.traceId) {
+                return this.runRoot(() => {
+                    this.record({ traceId: randomUUID() })
+                    return callback()
+                })
             }
+            return callback()
+        }
 
-            this.record({
-                traceId: randomUUID(),
-            })
-            return this.run(name, fn)
+        return initTraceId(() => {
+            const span = this.createSpan(name, options).start()
+            const frame = this.switchContext(span)
+
+            try {
+                //
+                // TODO: Since updating to `@types/node@16`, typescript flags this code with error:
+                //
+                //      Error: npm ERR! src/shared/telemetry/spans.ts(255,57): error TS2345: Argument of type
+                //      'TelemetrySpan<MetricBase>' is not assignable to parameter of type 'Metric<MetricShapes[U]>'.
+                //
+                const result = this.#context.run(frame, fn, span as any)
+
+                if (result instanceof Promise) {
+                    return result
+                        .then((v) => (span.stop(), v))
+                        .catch((e) => {
+                            span.stop(e)
+                            throw e
+                        }) as unknown as T
+                }
+
+                span.stop()
+                return result
+            } catch (e) {
+                span.stop(e)
+                throw e
+            }
         })
     }
 
@@ -466,7 +455,6 @@ export class TelemetryTracer extends TelemetryBase {
             record: (data) => getSpan().record(data),
             run: (fn, options?: SpanOptions) => this.run(name as MetricName, fn, options),
             increment: (data) => getSpan().increment(data),
-            trace: (fn) => this.trace(name as MetricName, fn),
         }
     }
 
@@ -477,7 +465,7 @@ export class TelemetryTracer extends TelemetryBase {
     private createSpan(name: string, options?: SpanOptions): TelemetrySpan {
         const span = new TelemetrySpan(name, options).record(this.attributes ?? {})
         if (this.activeSpan && this.activeSpan.name !== rootSpanName) {
-            return span.record({ parentId: this.activeSpan.getSpanId() } satisfies { parentId: string } as any)
+            return span.record({ parentId: this.activeSpan.getSpanId() })
         }
 
         return span
