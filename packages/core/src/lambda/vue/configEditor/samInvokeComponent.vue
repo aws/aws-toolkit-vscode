@@ -6,7 +6,7 @@
 <template>
     <div class="container">
         <form class="invoke-lambda-form">
-            <h1>SAM invoke and debug configuration</h1>
+            <h1>Local Invoke and Debug Configuration</h1>
             <div class="header-buttons" id="invoke-button-container">
                 <button class="primary-button" :style="{ width: '20%' }" v-on:click.prevent="launch">Invoke</button>
                 <select
