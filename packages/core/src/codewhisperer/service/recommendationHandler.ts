@@ -221,10 +221,6 @@ export class RecommendationHandler {
                     'Invalid Request : ',
                     JSON.stringify(request, undefined, EditorContext.getTabSize())
                 )
-                const languageName = request.fileContext.programmingLanguage.languageName
-                if (!runtimeLanguageContext.isLanguageSupported(languageName)) {
-                    errorMessage = `${languageName} is currently not supported by Amazon Q inline suggestions`
-                }
                 return Promise.resolve<GetRecommendationsResponse>({
                     result: invocationResult,
                     errorMessage: errorMessage,
