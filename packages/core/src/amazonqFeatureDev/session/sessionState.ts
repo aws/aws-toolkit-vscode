@@ -82,9 +82,10 @@ function registerNewFiles(
                       Object.values(workspaceFolderPrefixes).find((val) => val.index === 0)?.name ?? ''
                   ]
         if (folder === undefined) {
-            telemetry.amazonq_wsOrphanedDocuments.emit({
+            telemetry.amazonq_trackScenarioCountUsage.emit({
                 amazonqConversationId: conversationId,
                 credentialStartUrl: AuthUtil.instance.startUrl,
+                scenarioType: 'wsOrphanedDocuments',
             })
             getLogger().error(`No workspace folder found for file: ${zipFilePath} and prefix: ${prefix}`)
             continue

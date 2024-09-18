@@ -356,6 +356,12 @@
             "name": "amazonqMessageDisplayedMs",
             "type": "int",
             "description": "Duration between the partner teams code receiving the message and when the message was finally displayed in ms"
+        },
+        {
+            "name": "scenarioType",
+            "type": "string",
+            "allowedValues": ["wsOrphanedDocuments"],
+            "description": "Scenarios to count in telemetry"
         }
     ],
     "metrics": [
@@ -994,16 +1000,21 @@
             ]
         },
         {
-            "name": "amazonq_wsOrphanedDocuments",
-            "description": "LLM generated orphaned documents for workspace scenario. This is useful to track how many times this is reached.",
+            "name": "amazonq_trackScenarioCountUsage",
+            "description": "Count how many times a scenario is reached.",
             "unit": "Count",
             "metadata": [
                 {
-                    "type": "amazonqConversationId"
+                    "type": "amazonqConversationId",
+                    "required": true
                 },
                 {
                     "type": "credentialStartUrl",
                     "required": false
+                },
+                {
+                    "type": "scenarioType",
+                    "required": true
                 }
             ]
         },
