@@ -170,6 +170,7 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
         }
 
         this.metricId = randomUUID()
+        // forced to cast to any since apparently even though <T extends MetricBase>, Partial<T> doesn't guarentee that metricId is available
         this.record({ metricId: this.metricId } as any)
     }
 
@@ -278,9 +279,7 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
     }
 }
 
-type Attributes = Partial<MetricShapes[MetricName]> & {
-    traceId?: string
-}
+type Attributes = Partial<MetricShapes[MetricName]>
 
 interface TelemetryContext {
     readonly spans: TelemetrySpan[]
