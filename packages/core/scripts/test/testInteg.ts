@@ -5,5 +5,11 @@
 
 import { runToolkitTests } from './launchTestUtilities'
 void (async () => {
-    await runToolkitTests('integration', 'dist/src/testInteg/index.js')
+    const relativeEntrypoint = process.argv[2]
+    if (!relativeEntrypoint) {
+        throw new Error('Relative entrypoint is required')
+    }
+
+    const relativeWorkspaceFolder = process.argv[3]
+    await runToolkitTests('integration', relativeEntrypoint, relativeWorkspaceFolder)
 })()

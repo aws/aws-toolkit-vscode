@@ -2,30 +2,12 @@
     "name": "aws-core-vscode",
     "description": "Core library used AWS IDE extensions for VSCode.",
     "version": "1.0.0",
-    "extensionKind": [
-        "workspace"
-    ],
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "engines": {
         "npm": "^10.1.0",
         "vscode": "^1.68.0"
     },
-    "activationEvents": [
-        "onStartupFinished",
-        "onUri",
-        "onDebugResolve:aws-sam",
-        "onDebugInitialConfigurations",
-        "onLanguage:javascript",
-        "onLanguage:java",
-        "onLanguage:python",
-        "onLanguage:csharp",
-        "onLanguage:yaml",
-        "onFileSystem:s3",
-        "onFileSystem:s3-readonly"
-    ],
-    "main": "./dist/src/extensionNode.js",
-    "browser": "./dist/src/extensionWebCore.js",
     "exports": {
         ".": "./dist/src/extension.js",
         "./node": "./dist/src/extensionNode.js",
@@ -41,7 +23,6 @@
         "./amazonqFeatureDev": "./dist/src/amazonqFeatureDev/index.js",
         "./codewhispererChat": "./dist/src/codewhispererChat/index.js",
         "./test": "./dist/src/test/index.js",
-        "./testInteg": "./dist/src/testInteg/index.js",
         "./login": "./dist/src/login/webview/index.js",
         "./utils": "./dist/src/shared/utilities/index.js",
         "./feedback": "./dist/src/feedback/index.js",
@@ -4064,10 +4045,6 @@
         "serveVue": "webpack serve --config-name vue --mode development",
         "watch": "npm run testCompile -- -- --watch",
         "testCompile": "npm run clean && npm run buildScripts && npm run compileOnly",
-        "test": "npm run testCompile && c8 ts-node ./scripts/test/test.ts dist/src/test/index.js",
-        "testWeb": "npm run compileDev && c8 ts-node ./scripts/test/testWeb.ts",
-        "testE2E": "npm run testCompile && c8 ts-node ./scripts/test/testE2E.ts dist/src/testE2E/index.js",
-        "testInteg": "npm run testCompile && c8 ts-node ./scripts/test/testInteg.ts",
         "lint": "ts-node ./scripts/lint/testLint.ts",
         "generateClients": "ts-node ./scripts/build/generateServiceClient.ts ",
         "generateIcons": "ts-node ../../scripts/generateIcons.ts",

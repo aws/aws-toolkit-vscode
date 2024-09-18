@@ -8,7 +8,6 @@ import * as path from 'path'
 import Mocha from 'mocha'
 import { glob } from 'glob'
 import * as fs from 'fs-extra'
-import { VSCODE_EXTENSION_ID } from '../shared/utilities'
 
 // Set explicit timezone to ensure that tests run locally do not use the user's actual timezone, otherwise
 // the test can pass on one persons machine but not anothers.
@@ -20,9 +19,9 @@ process.env.TZ = 'US/Pacific'
  * @param initTests List of relative paths to test files containing root hooks: https://mochajs.org/#available-root-hooks
  */
 export async function runTests(
-    testFolder: string,
+    testFolder: string | string[],
+    extensionId: string,
     initTests: string[] = [],
-    extensionId: string = VSCODE_EXTENSION_ID.awstoolkitcore,
     testFiles?: string[]
 ): Promise<void> {
     if (!process.env['AWS_TOOLKIT_AUTOMATION']) {
@@ -59,12 +58,7 @@ export async function runTests(
          * lower case module ids (since the tests live inside of core itself)
          */
         const [drive, ...rest] = abs.split(':')
-        return rest.length === 0
-            ? abs
-            : [
-                  extensionId === VSCODE_EXTENSION_ID.awstoolkitcore ? drive.toLowerCase() : drive.toUpperCase(),
-                  ...rest,
-              ].join(':')
+        return rest.length === 0 ? abs : [drive.toUpperCase(), ...rest].join(':')
     }
 
     const root = getRoot()
@@ -139,7 +133,15 @@ export async function runTests(
             console.log('No test coverage found')
         }
     }
-    const files = testFiles ?? (await glob(testFilePath ?? `**/${testFolder}/**/**.test.js`, { cwd: dist }))
+
+    let files: string[] = []
+    if (testFiles) {
+        files = testFiles
+    } else {
+        for (const f of Array.isArray(testFolder) ? testFolder : [testFolder]) {
+            files = [...files, ...(await glob(testFilePath ?? `**/${f}/**/**.test.js`, { cwd: dist }))]
+        }
+    }
 
     await runMocha(files)
     await writeCoverage()

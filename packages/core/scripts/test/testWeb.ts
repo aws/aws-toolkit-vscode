@@ -5,5 +5,11 @@
 
 import { runToolkitTests } from './launchTestUtilities'
 void (async () => {
-    await runToolkitTests('web', 'dist/src/testWeb/testRunnerWebCore.js')
+    const relativeEntrypoint = process.argv[2]
+    if (!relativeEntrypoint) {
+        throw new Error('Relative entrypoint is required')
+    }
+
+    const relativeWorkspaceFolder = process.argv[3]
+    await runToolkitTests('web', relativeEntrypoint, relativeWorkspaceFolder)
 })()
