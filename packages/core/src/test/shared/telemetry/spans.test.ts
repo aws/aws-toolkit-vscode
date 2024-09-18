@@ -356,7 +356,7 @@ describe('TelemetryTracer', function () {
             it('should set trace id', function () {
                 telemetry.trace_event.run((span) => {
                     span.record({ name: flowName })
-                    assert.deepStrictEqual(telemetry.activeSpan?.getSpanId(), testId)
+                    assert.deepStrictEqual(telemetry.activeSpan?.getMetricId(), testId)
                 })
                 const event = getMetrics('trace_event')
                 assert.deepStrictEqual(event[0].traceId, testId)
@@ -364,39 +364,39 @@ describe('TelemetryTracer', function () {
             })
 
             it('trace id is propogated to children', function () {
-                const spanIds = {
+                const metricsIds = {
                     trace_event: {
-                        spanId: 'traceEvent',
+                        metricId: 'traceEvent',
                         traceId: testId,
                         parentId: undefined,
                     },
                     amazonq_startConversation: {
-                        spanId: 'amazonq_startConversation',
+                        metricId: 'amazonq_startConversation',
                         traceId: testId,
                         parentId: 'traceEvent',
                     },
                     amazonq_addMessage: {
-                        spanId: 'amazonq_addMessage',
+                        metricId: 'amazonq_addMessage',
                         traceId: testId,
                         parentId: 'amazonq_startConversation',
                     },
                     vscode_executeCommand: {
-                        spanId: 'vscode_executeCommand',
+                        metricId: 'vscode_executeCommand',
                         traceId: testId,
                         parentId: 'traceEvent',
                     },
                     amazonq_enterFocusConversation: {
-                        spanId: 'amazonq_enterFocusConversation',
+                        metricId: 'amazonq_enterFocusConversation',
                         traceId: testId,
                         parentId: 'vscode_executeCommand',
                     },
                     amazonq_exitFocusConversation: {
-                        spanId: 'amazonq_exitFocusConversation',
+                        metricId: 'amazonq_exitFocusConversation',
                         traceId: testId,
                         parentId: 'amazonq_enterFocusConversation',
                     },
                     amazonq_closeChat: {
-                        spanId: 'amazonq_closeChat',
+                        metricId: 'amazonq_closeChat',
                         traceId: testId,
                         parentId: 'traceEvent',
                     },
@@ -410,8 +410,8 @@ describe('TelemetryTracer', function () {
                  */
                 uuidStub.onCall(1).returns(testId)
                 let index = 2
-                for (const v of Object.values(spanIds)) {
-                    uuidStub.onCall(index).returns(v.spanId)
+                for (const v of Object.values(metricsIds)) {
+                    uuidStub.onCall(index).returns(v.metricId)
                     index++
                 }
 
@@ -429,12 +429,12 @@ describe('TelemetryTracer', function () {
                     })
                 })
 
-                const spanEntries = Object.entries(spanIds)
+                const spanEntries = Object.entries(metricsIds)
                 for (let x = 0; x < spanEntries.length; x++) {
-                    const [metricName, { spanId, traceId, parentId }] = spanEntries[x]
+                    const [metricName, { metricId, traceId, parentId }] = spanEntries[x]
                     const metric = getMetrics(metricName as keyof MetricShapes)[0] as any
                     assert.deepStrictEqual(metric.traceId, traceId)
-                    assert.deepStrictEqual(metric.spanId, spanId)
+                    assert.deepStrictEqual(metric.metricId, metricId)
                     assert.deepStrictEqual(metric.parentId, parentId)
                 }
             })

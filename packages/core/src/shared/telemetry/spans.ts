@@ -146,7 +146,7 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
         passive: true,
         requiredMetadata: [],
     }
-    private readonly spanId: string
+    private readonly metricId: string
 
     /**
      * These fields appear on the base metric instead of the 'metadata' and
@@ -169,8 +169,8 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
             ),
         }
 
-        this.spanId = randomUUID()
-        this.record({ spanId: this.spanId } as any)
+        this.metricId = randomUUID()
+        this.record({ metricId: this.metricId } as any)
     }
 
     public get startTime(): Date | undefined {
@@ -266,8 +266,8 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
         }
     }
 
-    getSpanId() {
-        return this.spanId
+    getMetricId() {
+        return this.metricId
     }
 
     /**
@@ -465,7 +465,7 @@ export class TelemetryTracer extends TelemetryBase {
     private createSpan(name: string, options?: SpanOptions): TelemetrySpan {
         const span = new TelemetrySpan(name, options).record(this.attributes ?? {})
         if (this.activeSpan && this.activeSpan.name !== rootSpanName) {
-            return span.record({ parentId: this.activeSpan.getSpanId() })
+            return span.record({ parentId: this.activeSpan.getMetricId() })
         }
 
         return span
