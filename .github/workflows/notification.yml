@@ -23,6 +23,7 @@ concurrency:
 
 jobs:
     notify:
+        if: ${{ github.event_name == 'pull_request_target' && github.repository == 'aws/aws-toolkit-vscode' }}
         runs-on: ubuntu-latest
         permissions:
             pull-requests: write
@@ -40,4 +41,3 @@ jobs:
                   script: |
                       const notify = require('.github/workflows/notify.js')
                       await notify({github, context})
-              if: github.event_name == 'pull_request_target'
