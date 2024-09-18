@@ -13,8 +13,6 @@ import { RecommendationHandler } from '../service/recommendationHandler'
 import { InlineCompletionService } from '../service/inlineCompletionService'
 import { ClassifierTrigger } from './classifierTrigger'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
-import { runtimeLanguageContext } from '..'
-import { showTimedMessage } from '../../shared/utilities/messages'
 
 export interface SuggestionActionEvent {
     readonly editor: vscode.TextEditor | undefined
@@ -67,14 +65,6 @@ export class RecommendationService {
         event?: vscode.TextDocumentChangeEvent
     ) {
         if (this._isRunning) {
-            return
-        }
-
-        if (!runtimeLanguageContext.isLanguageSupported(editor.document.languageId)) {
-            if (triggerType === 'OnDemand') {
-                const errorMessage = `${editor.document.languageId} is currently not supported by Amazon Q inline `
-                void showTimedMessage(errorMessage, 2000)
-            }
             return
         }
 
