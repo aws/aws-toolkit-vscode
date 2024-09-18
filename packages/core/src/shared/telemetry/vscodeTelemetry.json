@@ -994,6 +994,20 @@
             ]
         },
         {
+            "name": "amazonq_wsOrphanedDocuments",
+            "description": "LLM generated orphaned documents for workspace scenario. This is useful to track how many times this is reached.",
+            "unit": "Count",
+            "metadata": [
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
             "name": "amazonq_approachThumbsUp",
             "description": "User clicked on the thumbs up button, to mention that they are satisfied",
             "unit": "Count",

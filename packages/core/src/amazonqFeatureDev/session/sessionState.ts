@@ -61,7 +61,8 @@ function registerNewFiles(
     fs: VirtualFileSystem,
     newFileContents: NewFileZipContents[],
     uploadId: string,
-    workspaceFolders: CurrentWsFolders
+    workspaceFolders: CurrentWsFolders,
+    conversationId: string
 ): NewFileInfo[] {
     const result: NewFileInfo[] = []
     const workspaceFolderPrefixes = getWorkspaceFoldersByPrefixes(workspaceFolders)
@@ -81,6 +82,10 @@ function registerNewFiles(
                       Object.values(workspaceFolderPrefixes).find((val) => val.index === 0)?.name ?? ''
                   ]
         if (folder === undefined) {
+            telemetry.amazonq_wsOrphanedDocuments.emit({
+                amazonqConversationId: conversationId,
+                credentialStartUrl: AuthUtil.instance.startUrl,
+            })
             getLogger().error(`No workspace folder found for file: ${zipFilePath} and prefix: ${prefix}`)
             continue
         }
@@ -174,7 +179,13 @@ abstract class CodeGenBase {
                 case CodeGenerationStatus.COMPLETE: {
                     const { newFileContents, deletedFiles, references } =
                         await this.config.proxyClient.exportResultArchive(this.conversationId)
-                    const newFileInfo = registerNewFiles(fs, newFileContents, this.uploadId, workspaceFolders)
+                    const newFileInfo = registerNewFiles(
+                        fs,
+                        newFileContents,
+                        this.uploadId,
+                        workspaceFolders,
+                        this.conversationId
+                    )
                     telemetry.setNumberOfFilesGenerated(newFileInfo.length)
 
                     return {
@@ -378,7 +389,13 @@ export class MockCodeGenState implements SessionState {
                 zipFilePath: f.zipFilePath,
                 fileContent: f.fileContent,
             }))
-            this.filePaths = registerNewFiles(action.fs, newFileContents, this.uploadId, this.config.workspaceFolders)
+            this.filePaths = registerNewFiles(
+                action.fs,
+                newFileContents,
+                this.uploadId,
+                this.config.workspaceFolders,
+                this.conversationId
+            )
             this.deletedFiles = [
                 {
                     zipFilePath: 'src/this-file-should-be-deleted.ts',
