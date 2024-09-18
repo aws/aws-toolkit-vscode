@@ -17,6 +17,13 @@ import { isWeb } from '../extensionGlobals'
 /* define log topics */
 export type LogTopic = 'unknown' | 'test'
 
+class ErrorLog {
+    constructor(
+        public topic: string,
+        public error: Error
+    ) {}
+}
+
 // Need to limit how many logs are actually tracked
 // LRU cache would work well, currently it just dumps the least recently added log
 const logmapSize: number = 1000
@@ -113,22 +120,19 @@ export class ToolkitLogger extends BaseLogger implements vscode.Disposable {
     }
 
     /* Format the message with topic header */
-    private addTopicToMessage(message: string | Error): string | object {
-        /*We shouldn't print unknow before current logging calls are migrated
-         * TODO: remove this once migration of current calls is completed
-         */
-        if (this.topic === 'unknown') {
-            return message
-        }
-        const topic = `${this.topic}: `
+    private addTopicToMessage(message: string | Error): string | ErrorLog {
+        const topicPrefix = `${this.topic}: `
         if (typeof message === 'string') {
-            return topic + message
-        } else if (message instanceof Error) {
-            const errorWithTopic = {
-                topic,
-                message,
+            /*We shouldn't print unknow before current logging calls are migrated
+             * TODO: remove this once migration of current calls is completed
+             */
+            if (this.topic === 'unknown') {
+                return message
             }
-            return errorWithTopic
+            return topicPrefix + message
+        } else if (message instanceof Error) {
+            const topic = topicPrefix.split(':', 1)[0]
+            return new ErrorLog(topic, message)
         }
         return message
     }
@@ -149,17 +153,17 @@ export class ToolkitLogger extends BaseLogger implements vscode.Disposable {
     }
 
     override sendToLog(level: LogLevel, message: string | Error, ...meta: any[]): number {
-        const messageWithHeader = this.addTopicToMessage(message)
+        const messageWithTopic = this.addTopicToMessage(message)
         if (this.disposed) {
             throw new Error('Cannot write to disposed logger')
         }
 
         meta = meta.map((o) => (o instanceof Error ? this.mapError(level, o) : o))
 
-        if (typeof messageWithHeader === 'object' && messageWithHeader !== null) {
-            this.logger.log(level, '%O', messageWithHeader, ...meta, { logID: this.idCounter })
+        if (messageWithTopic instanceof ErrorLog) {
+            this.logger.log(level, '%O', messageWithTopic, ...meta, { logID: this.idCounter })
         } else {
-            this.logger.log(level, messageWithHeader, ...meta, { logID: this.idCounter })
+            this.logger.log(level, messageWithTopic, ...meta, { logID: this.idCounter })
         }
 
         this.logMap[this.idCounter % logmapSize] = {}

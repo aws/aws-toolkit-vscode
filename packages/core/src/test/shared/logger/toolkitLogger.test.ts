@@ -247,7 +247,7 @@ describe('ToolkitLogger', function () {
 
         it('logs append topic header in errors', async function () {
             const testError = new ToolkitError('root error', { code: 'something went wrong' })
-            const testErrorWithHeader = "topic: 'test: '"
+            const testErrorWithHeader = "topic: 'test'"
 
             testLogger = new ToolkitLogger('info')
             testLogger.logToOutputChannel(outputChannel, false)
