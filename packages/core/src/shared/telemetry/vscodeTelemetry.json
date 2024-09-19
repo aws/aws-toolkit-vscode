@@ -315,6 +315,11 @@
             "name": "totalFiles",
             "type": "int",
             "description": "The total number of files being sent to Amazon Q"
+        },
+        {
+            "name": "traceId",
+            "type": "string",
+            "description": "The unique identifier of a trace"
         }
     ],
     "metrics": [
@@ -1175,6 +1180,21 @@
             "metadata": [
                 {
                     "type": "webviewName",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "trace_event",
+            "description": "Represents the root trace spanning multiple operations",
+            "passive": true,
+            "metadata": [
+                {
+                    "type": "traceId",
+                    "required": true
+                },
+                {
+                    "type": "name",
                     "required": true
                 }
             ]
