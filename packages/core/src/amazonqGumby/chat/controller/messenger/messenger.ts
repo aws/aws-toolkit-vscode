@@ -467,7 +467,7 @@ export class Messenger {
             skipTestsText = 'not skip unit tests'
         }
         const message = `Ok, I will ${skipTestsText.toLowerCase()} when building your project.`
-        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
+        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'ai-prompt' }, tabID))
     }
 
     public sendHumanInTheLoopInitialMessage(tabID: string, codeSnippet: string) {
