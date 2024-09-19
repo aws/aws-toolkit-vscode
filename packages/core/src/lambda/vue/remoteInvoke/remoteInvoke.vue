@@ -7,7 +7,7 @@
     <div class="Icontainer">
         <div><h1>Remote invoke configuration</h1></div>
         <div class="form-row" style="justify-content: space-between; height: 28px">
-            <div><button class="primary-button" v-on:click="sendInput">Remote Invoke</button></div>
+            <div><button class="button-theme-primary" v-on:click="sendInput">Remote Invoke</button></div>
             <div>
                 <span
                     :style="{
@@ -76,14 +76,16 @@
         </div>
         <div class="form-row" v-if="payload === 'sampleEvents'">
             <label :style="{ fontSize: '13px', fontWeight: 500 }">Sample event</label>
-            <button class="secondary-button" style="width: 140px" @click="loadSampleEvent">Load Sample Event</button>
+            <button class="button-theme-secondary" style="width: 50%" @click="loadSampleEvent">
+                Load Sample Event
+            </button>
         </div>
         <div v-if="payload === 'localFile'" class="form-row">
             <div><label>File</label></div>
             <div>
                 <input type="file" id="file" @change="onFileChange" style="display: none" ref="fileInput" />
-                <button @click="promptForFileLocation" class="secondary-button">Choose file</button>
-                <button @click="reloadFile" class="secondary-button">Reload</button>
+                <button @click="promptForFileLocation" class="button-theme-secondary">Choose file</button>&nbsp;
+                <button @click="reloadFile" class="button-theme-secondary">Reload</button>
                 &nbsp; {{ selectedFile || 'No file selected' }}
             </div>
         </div>
@@ -99,8 +101,8 @@
                     </select>
                 </div>
                 <div style="margin-left: 105px">
-                    <button @click="showNameField" class="secondary-button">Create</button>
-                    <button @click="saveEvent" class="secondary-button">Save</button>
+                    <button @click="showNameField" class="button-theme-secondary">Create</button>&nbsp;
+                    <button @click="saveEvent" class="button-theme-secondary">Save</button>
                 </div>
             </div>
             <div class="form-row" v-if="showNameInput">
@@ -110,8 +112,8 @@
             <br />
             <div class="form-row" v-if="showNameInput">
                 <label :style="{ fontSize: '13px', fontWeight: 500 }">Sample event</label>
-                <button class="secondary-button" style="width: 140px" @click="loadSampleEvent">
-                    Load sample event
+                <button class="button-theme-secondary" style="width: 140px" @click="loadSampleEvent">
+                    Load Sample Event
                 </button>
             </div>
         </div>

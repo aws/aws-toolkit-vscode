@@ -64,24 +64,9 @@ select,
 }
 
 textarea {
-    width: 100%;
-    height: 200px;
-}
-
-button {
-    background: #007acc;
-    color: #fff;
-    border: none;
-    padding: 10px;
-    cursor: pointer;
-    margin-right: 10px;
-}
-button:last-child {
-    margin-right: 0;
-}
-
-button {
-    margin-right: 10px;
+    color: var(--vscode-settings-textInputForeground);
+    background: var(--vscode-settings-textInputBackground);
+    border: 1px solid var(--vscode-settings-textInputBorder);
 }
 
 .payload-options-button {
@@ -94,28 +79,29 @@ button {
     margin-bottom: 10px;
 }
 
-.primary-button {
-    background: #007acc;
-    color: #fff;
-    border: none;
-    padding: 8px 16px;
-    cursor: pointer;
-    font-size: 1em;
-    margin-right: 10px;
+.button-theme-primary {
+    color: var(--vscode-button-foreground);
+    background: var(--vscode-button-background);
+    border: 1px solid var(--vscode-button-border);
+    padding: 8px 12px;
 }
-
-.secondary-button {
-    background: #007acc;
-    color: #fff;
-    border: none;
-    padding: 5px 10px;
+.button-theme-primary:hover:not(:disabled) {
+    background: var(--vscode-button-hoverBackground);
     cursor: pointer;
-    font-size: 0.9em;
-    margin-right: 10px;
 }
-
-button:last-child {
-    margin-right: 0;
+.button-theme-secondary {
+    color: var(--vscode-button-secondaryForeground);
+    background: var(--vscode-button-secondaryBackground);
+    border: 1px solid var(--vscode-button-border);
+    min-width: auto;
+    width: auto;
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    line-height: 1;
+}
+.button-theme-secondary:hover:not(:disabled) {
+    background: var(--vscode-button-secondaryHoverBackground);
+    cursor: pointer;
 }
 
 .payload-options-buttons {
