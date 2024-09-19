@@ -16,10 +16,10 @@ import {
     startInstance,
     stopInstance,
     refreshExplorer,
+    openLogDocument,
 } from './commands'
-import { getLogger } from '../../shared'
 import { EC2_LOGS_SCHEME } from '../../shared/constants'
-import { Ec2LogDocumentProvider, formEc2Uri } from './ec2LogDocumentProvider'
+import { Ec2LogDocumentProvider } from './ec2LogDocumentProvider'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
@@ -37,11 +37,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             await copyTextCommand(node, 'id')
         }),
         Commands.register('aws.ec2.viewLogs', async (node: Ec2InstanceNode) => {
-            getLogger().info('viewLogs command run from explorer')
-            const uri = formEc2Uri(node.toSelection())
-            const doc = await vscode.workspace.openTextDocument(uri)
-            await vscode.window.showTextDocument(doc, { preview: false })
-            await vscode.languages.setTextDocumentLanguage(doc, 'log')
+            await openLogDocument(node)
         }),
 
         Commands.register('aws.ec2.openRemoteConnection', async (node?: Ec2Node) => {

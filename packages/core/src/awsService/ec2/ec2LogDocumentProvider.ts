@@ -9,21 +9,20 @@ import { EC2_LOGS_SCHEME } from '../../shared/constants'
 import { UriSchema } from '../../shared/utilities/uriUtils'
 
 export class Ec2LogDocumentProvider implements vscode.TextDocumentContentProvider {
-    private Ec2LogSchema: UriSchema<Ec2Selection>
-    public constructor() {
-        this.Ec2LogSchema = new UriSchema<Ec2Selection>(parseEc2Uri, formEc2Uri)
-    }
+    public constructor() {}
 
     public async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
-        if (!this.Ec2LogSchema.isValid(uri)) {
+        if (!ec2LogSchema.isValid(uri)) {
             throw new Error(`Invalid EC2 Logs URI: ${uri.toString()}`)
         }
-        const ec2Selection = parseEc2Uri(uri)
+        const ec2Selection = ec2LogSchema.parse(uri)
         const ec2Client = new Ec2Client(ec2Selection.region)
         const consoleOutput = await ec2Client.getConsoleOutput(ec2Selection.instanceId, false)
         return consoleOutput.Output
     }
 }
+
+export const ec2LogSchema = new UriSchema<Ec2Selection>(parseEc2Uri, formEc2Uri)
 
 function parseEc2Uri(uri: vscode.Uri): Ec2Selection {
     const parts = uri.path.split(':')
@@ -38,6 +37,6 @@ function parseEc2Uri(uri: vscode.Uri): Ec2Selection {
     }
 }
 
-export function formEc2Uri(selection: Ec2Selection): vscode.Uri {
+function formEc2Uri(selection: Ec2Selection): vscode.Uri {
     return vscode.Uri.parse(`${EC2_LOGS_SCHEME}:${selection.region}:${selection.instanceId}`)
 }
