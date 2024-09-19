@@ -498,6 +498,20 @@ export const absolutePathDetectedMessage = (numPaths: number, buildFile: string,
 
 export const unsupportedJavaVersionChatMessage = `Sorry, currently I can only upgrade Java 8 or Java 11 projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
+export const unsupportedDatabaseChatMessage = `Sorry, currently I can only convert SQL built on Oracle. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
+
+export const invalidMetadataFileNoRulesJson =
+    "Sorry, your metadata ZIP appears to be invalid; it does not contain an 'sct-rules.json' file."
+
+export const invalidMetadataFileUnsupportedSourceVendor = (vendor: string) =>
+    `Sorry, your metadata ZIP appears to be invalid; the source vendor is '${vendor}', but only Oracle is supported.`
+
+export const invalidMetadataFileUnsupportedTargetVendor = (vendor: string) =>
+    `Sorry, your metadata ZIP appears to be invalid; the target vendor is '${vendor}', but only Amazon Aurora PostgreSQL and Amazon RDS for PostgreSQL are supported.`
+
+export const invalidMetadataFileUnknownIssueParsing =
+    'Sorry, I had an issue parsing the metadata ZIP you provided; please make sure it is valid'
+
 export const failedToStartJobChatMessage =
     "Sorry, I couldn't begin the transformation. Please try starting the transformation again."
 
