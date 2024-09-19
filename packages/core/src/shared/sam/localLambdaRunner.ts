@@ -125,7 +125,7 @@ async function buildLambdaHandler(
 ): Promise<string> {
     const processInvoker = new DefaultSamCliProcessInvoker(settings)
 
-    getLogger('channel').info(localize('AWS.output.building.sam.application', 'Building SAM application...'))
+    getLogger().info(localize('AWS.output.building.sam.application', 'Building SAM application...'))
     const samBuildOutputFolder = path.join(config.baseBuildDir!, 'output')
 
     const samCliArgs: SamCliBuildInvocationArguments = {
@@ -167,7 +167,7 @@ async function buildLambdaHandler(
             throw ToolkitError.chain(err, msg, { code: 'BuildFailure' })
         }
     }
-    getLogger('channel').info(localize('AWS.output.building.sam.application.complete', 'Build complete.'))
+    getLogger().info(localize('AWS.output.building.sam.application.complete', 'Build complete.'))
 
     return path.join(samBuildOutputFolder, 'template.yaml')
 }
@@ -178,7 +178,7 @@ async function invokeLambdaHandler(
     config: SamLaunchRequestArgs,
     settings: SamCliSettings
 ): Promise<ChildProcess> {
-    getLogger('channel').info(localize('AWS.output.starting.sam.app.locally', 'Starting SAM application locally'))
+    getLogger().info(localize('AWS.output.starting.sam.app.locally', 'Starting SAM application locally'))
     getLogger().debug(`localLambdaRunner.invokeLambdaFunction: ${config.name}`)
 
     const debugPort = !config.noDebug ? config.debugPort?.toString() : undefined
@@ -285,11 +285,9 @@ export async function runLambdaFunction(
         const msg =
             (config.invokeTarget.target === 'api' ? `API "${config.api?.path}", ` : '') +
             `Lambda "${config.handlerName}"`
-        getLogger('channel').info(localize('AWS.output.sam.local.startDebug', 'Preparing to debug locally: {0}', msg))
+        getLogger().info(localize('AWS.output.sam.local.startDebug', 'Preparing to debug locally: {0}', msg))
     } else {
-        getLogger('channel').info(
-            localize('AWS.output.sam.local.startRun', 'Preparing to run locally: {0}', config.handlerName)
-        )
+        getLogger().info(localize('AWS.output.sam.local.startRun', 'Preparing to run locally: {0}', config.handlerName))
     }
 
     const envVars = {
@@ -338,9 +336,7 @@ export async function runLambdaFunction(
 
     async function attach() {
         if (config.onWillAttachDebugger) {
-            getLogger('channel').info(
-                localize('AWS.output.sam.local.waiting', 'Waiting for SAM application to start...')
-            )
+            getLogger().info(localize('AWS.output.sam.local.waiting', 'Waiting for SAM application to start...'))
             await config.onWillAttachDebugger(config.debugPort!, timer)
         }
         // HACK: remove non-serializable properties before attaching.
@@ -353,12 +349,11 @@ export async function runLambdaFunction(
             debugConfig: config,
             retryDelayMillis: attachDebuggerRetryDelayMillis,
         })
-
-        await showDebugConsole()
     }
 
     try {
         await attach()
+        await showOutputChannel(ctx)
     } finally {
         vscode.Disposable.from(timer, terminationListener).dispose()
     }
@@ -425,7 +420,7 @@ async function requestLocalApi(
         // TODO: api?.stageVariables,
     }
 
-    getLogger('channel').info(localize('AWS.sam.localApi.request', 'Sending request to local API: {0}', uri))
+    getLogger().info(localize('AWS.sam.localApi.request', 'Sending request to local API: {0}', uri))
 
     await got(uri, reqOpts).catch((err: RequestError) => {
         if (err.code === 'ETIMEDOUT') {
@@ -470,7 +465,7 @@ export async function attachDebugger({
         )}`
     )
 
-    getLogger('channel').info(localize('AWS.output.sam.local.attaching', 'Attaching debugger to SAM application...'))
+    getLogger().info(localize('AWS.output.sam.local.attaching', 'Attaching debugger to SAM application...'))
 
     // The Python extension will silently fail, so it's ok for us to automatically retry
     // Users still will not be able to stop debugging without clicking stop a bunch, but
@@ -497,7 +492,7 @@ export async function attachDebugger({
         }
     }
 
-    getLogger('channel').info(localize('AWS.output.sam.local.attach.success', 'Debugger attached'))
+    getLogger().info(localize('AWS.output.sam.local.attach.success', 'Debugger attached'))
     getLogger().verbose(
         `SAM: debug session: "${vscode.debug.activeDebugSession?.name}" / ${vscode.debug.activeDebugSession?.id}`
     )
@@ -518,13 +513,11 @@ export async function waitForPort(port: number, timeout: Timeout, isDebugPort: b
     } catch (err) {
         getLogger().warn(`Timeout after ${time} ms: port was not used: ${port}`)
         if (isDebugPort) {
-            getLogger('channel').warn(
+            getLogger().warn(
                 localize('AWS.samcli.local.invoke.portUnavailable', 'Failed to use debugger port: {0}', port.toString())
             )
         } else {
-            getLogger('channel').warn(
-                localize('AWS.apig.portUnavailable', 'Failed to use API port: {0}', port.toString())
-            )
+            getLogger().warn(localize('AWS.apig.portUnavailable', 'Failed to use API port: {0}', port.toString()))
         }
     }
 }
@@ -544,16 +537,14 @@ export function shouldAppendRelativePathToFuncHandler(runtime: string): boolean 
 }
 
 /**
- * Brings the Debug Console in focus.
- * If the OutputChannel is showing, focus does not consistently switch over to the debug console, so we're
- * helping make this happen.
+ * Brings the Output Channel in focus.
  */
-async function showDebugConsole(): Promise<void> {
+async function showOutputChannel(ctx: ExtContext): Promise<void> {
     try {
-        await vscode.commands.executeCommand('workbench.debug.action.toggleRepl')
+        ctx.outputChannel.show(true)
     } catch (err) {
         // in case the vs code command changes or misbehaves, swallow error
-        getLogger().verbose('Unable to switch to the Debug Console: %O', err as Error)
+        getLogger().verbose('Unable to focus output channel: %O', err as Error)
     }
 }
 

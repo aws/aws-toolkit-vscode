@@ -109,13 +109,6 @@ export class ZipFileError extends ToolkitError {
     }
 }
 
-export class PlanIterationLimitError extends ToolkitError {
-    static errorName = 'PlanIterationLimitError'
-    constructor() {
-        super(i18n('AWS.amazonq.featureDev.error.planIterationLimitError'), { code: PlanIterationLimitError.errorName })
-    }
-}
-
 export class CodeIterationLimitError extends ToolkitError {
     static errorName = 'CodeIterationLimitError'
     constructor() {

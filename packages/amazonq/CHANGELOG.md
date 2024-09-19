@@ -1,3 +1,30 @@
+## 1.26.0 2024-09-19
+
+- **Bug Fix** Security Scan: Fixed an issue where the wrong icon was used in the status bar menu.
+- **Bug Fix** Disable Amazon Q LSP in AL2
+- **Bug Fix** Amazon Q Chat: Fix shifted chat contents when closing and opening chat panel back
+- **Bug Fix** Security Scan: Minor styling improvements in the security issue webview panel
+- **Bug Fix** Amazon Q Chat: Fix tooltip remaining on screen when closing and opening chat panel back
+- **Bug Fix** Auth: Login state not updating across multiple VS Code windows.
+- **Feature** Support @workspace queries for specific files like `@workspace what does test.ts do? `. 
+
+## 1.25.0 2024-09-12
+
+- **Bug Fix** Amazon Q Chat: Fixed inline code blocks are not vertically aligned with texts
+- **Feature** Record telemetry event when Amazon Q extension is uninstalled.
+- **Feature** Improve workspace indexing by only index files that are changed since last indexing
+- **Removal** Amazon Q Feature dev: Remove approach generation flow
+
+## 1.24.0 2024-09-05
+
+- **Bug Fix** Network errors causing premature SSO logout
+- **Bug Fix** Fix SyntaxError causing premature expiration (edge case)
+- **Bug Fix** Amazon Q Code Transformation: show instructions for finding JDK path on Linux
+- **Bug Fix** UI: 'Start using Amazon Q' may display even if the user is signed in.
+- **Bug Fix** Add getFeature and isEnabled utility methods to FeatureConfigProvider
+- **Feature** Amazon Q /dev: include in progress state agent in code generation
+- **Feature** Reduce workspace CPU indexing time by 50%
+
 ## 1.23.0 2024-08-29
 
 - **Bug Fix** Fix bug when undo inline suggestion causes command not found

@@ -11,4 +11,14 @@ export const mockFeatureConfigsData: FeatureEvaluation[] = [
         variation: 'TREATMENT',
         value: { stringValue: 'testValue' },
     },
+    {
+        feature: 'featureA',
+        variation: 'CONTROL',
+        value: { stringValue: 'testValue' },
+    },
+    {
+        feature: 'featureB',
+        variation: 'TREATMENT',
+        value: { stringValue: 'testValue' },
+    },
 ]

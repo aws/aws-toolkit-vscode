@@ -6,7 +6,7 @@
 import { normalize } from 'path'
 import * as vscode from 'vscode'
 import winston from 'winston'
-import { Logger, LogLevel, compareLogLevel } from './logger'
+import { BaseLogger, LogLevel, compareLogLevel } from './logger'
 import { OutputChannelTransport } from './outputChannelTransport'
 import { isSourceMappingAvailable } from '../vscode/env'
 import { formatError, ToolkitError, UnknownError } from '../errors'
@@ -14,16 +14,29 @@ import { SharedFileTransport } from './sharedFileTransport'
 import { ConsoleLogTransport } from './consoleLogTransport'
 import { isWeb } from '../extensionGlobals'
 
+/* define log topics */
+export type LogTopic = 'unknown' | 'test'
+
+class ErrorLog {
+    constructor(
+        public topic: string,
+        public error: Error
+    ) {}
+}
+
 // Need to limit how many logs are actually tracked
 // LRU cache would work well, currently it just dumps the least recently added log
 const logmapSize: number = 1000
-export class WinstonToolkitLogger implements Logger, vscode.Disposable {
+export class ToolkitLogger extends BaseLogger implements vscode.Disposable {
     private readonly logger: winston.Logger
+    /* topic is used for header in log messages, default is 'Unknown' */
+    private topic: LogTopic = 'unknown'
     private disposed: boolean = false
     private idCounter: number = 0
     private logMap: { [logID: number]: { [filePath: string]: string } } = {}
 
     public constructor(logLevel: LogLevel) {
+        super()
         this.logger = winston.createLogger({
             format: winston.format.combine(
                 winston.format.splat(),
@@ -44,7 +57,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     }
 
     public enableDebugConsole(): void {
-        this.logToDebugConsole()
+        this.logToConsole()
     }
 
     public setLogLevel(logLevel: LogLevel) {
@@ -74,7 +87,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         this.logger.add(fileTransport)
     }
 
-    public logToOutputChannel(outputChannel: vscode.OutputChannel, stripAnsi: boolean): void {
+    public logToOutputChannel(outputChannel: vscode.OutputChannel, stripAnsi: boolean = false): void {
         const outputChannelTransport: winston.transport = new OutputChannelTransport({
             outputChannel,
             stripAnsi,
@@ -84,45 +97,11 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         this.logger.add(outputChannelTransport)
     }
 
-    public logToDebugConsole(): void {
-        const debugConsoleTransport = new OutputChannelTransport({
-            name: 'DebugConsole',
-            outputChannel: vscode.debug.activeDebugConsole,
-        })
-        const debugConsoleUri: vscode.Uri = vscode.Uri.parse('console://debug')
-        debugConsoleTransport.on('logged', (obj: any) => this.parseLogObject(debugConsoleUri, obj))
-        this.logger.add(debugConsoleTransport)
-    }
-
     public logToConsole(): void {
         const consoleLogTransport: winston.transport = new ConsoleLogTransport({})
         const logConsoleUri: vscode.Uri = vscode.Uri.parse('console://log')
         consoleLogTransport.on('logged', (obj: any) => this.parseLogObject(logConsoleUri, obj))
         this.logger.add(consoleLogTransport)
-    }
-
-    public log(logLevel: LogLevel, message: string | Error, ...meta: any[]): number {
-        return this.writeToLogs(logLevel, message, ...meta)
-    }
-
-    public debug(message: string | Error, ...meta: any[]): number {
-        return this.writeToLogs('debug', message, ...meta)
-    }
-
-    public verbose(message: string | Error, ...meta: any[]): number {
-        return this.writeToLogs('verbose', message, ...meta)
-    }
-
-    public info(message: string | Error, ...meta: any[]): number {
-        return this.writeToLogs('info', message, ...meta)
-    }
-
-    public warn(message: string | Error, ...meta: any[]): number {
-        return this.writeToLogs('warn', message, ...meta)
-    }
-
-    public error(message: string | Error, ...meta: any[]): number {
-        return this.writeToLogs('error', message, ...meta)
     }
 
     public dispose(): Promise<void> {
@@ -134,6 +113,26 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
                   this.logger.once('finish', resolve)
                   this.logger.end()
               })
+    }
+
+    public setTopic(topic: LogTopic = 'unknown') {
+        this.topic = topic
+    }
+
+    /* Format the message with topic header */
+    private addTopicToMessage(message: string | Error): string | ErrorLog {
+        if (typeof message === 'string') {
+            /*We shouldn't print unknow before current logging calls are migrated
+             * TODO: remove this once migration of current calls is completed
+             */
+            if (this.topic === 'unknown') {
+                return message
+            }
+            return `${this.topic}: ` + message
+        } else if (message instanceof Error) {
+            return new ErrorLog(this.topic, message)
+        }
+        return message
     }
 
     private mapError(level: LogLevel, err: Error): Error | string {
@@ -151,17 +150,18 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         return formatError(UnknownError.cast(err))
     }
 
-    private writeToLogs(level: LogLevel, message: string | Error, ...meta: any[]): number {
+    override sendToLog(level: LogLevel, message: string | Error, ...meta: any[]): number {
+        const messageWithTopic = this.addTopicToMessage(message)
         if (this.disposed) {
             throw new Error('Cannot write to disposed logger')
         }
 
         meta = meta.map((o) => (o instanceof Error ? this.mapError(level, o) : o))
 
-        if (message instanceof Error) {
-            this.logger.log(level, '%O', message, ...meta, { logID: this.idCounter })
+        if (messageWithTopic instanceof ErrorLog) {
+            this.logger.log(level, '%O', messageWithTopic, ...meta, { logID: this.idCounter })
         } else {
-            this.logger.log(level, message, ...meta, { logID: this.idCounter })
+            this.logger.log(level, messageWithTopic, ...meta, { logID: this.idCounter })
         }
 
         this.logMap[this.idCounter % logmapSize] = {}
