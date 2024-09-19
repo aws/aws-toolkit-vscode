@@ -587,6 +587,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: actual.debugPort,
                 preLaunchTask: undefined,
                 protocol: 'inspector',
+                region: 'us-west-2',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 continueOnAttach: true,
@@ -754,6 +755,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: actual.debugPort,
                 preLaunchTask: undefined,
                 protocol: 'inspector',
+                region: 'us-west-2',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 continueOnAttach: true,
@@ -911,6 +913,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: actual.debugPort,
                 preLaunchTask: undefined,
                 protocol: 'inspector',
+                region: 'us-west-2',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 continueOnAttach: true,
@@ -1043,6 +1046,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: actual.debugPort,
                 preLaunchTask: undefined,
                 protocol: 'inspector',
+                region: 'us-west-2',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 continueOnAttach: true,
@@ -1177,6 +1181,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: actual.debugPort,
                 preLaunchTask: undefined,
                 protocol: 'inspector',
+                region: 'us-west-2',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 continueOnAttach: true,
@@ -1250,6 +1255,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: undefined,
+                region: 'us-west-2',
             }
 
             const expectedDebug = {
@@ -1352,6 +1358,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: undefined,
+                region: 'us-west-2',
             }
 
             const expectedDebug = {
@@ -1461,6 +1468,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
+                region: 'us-west-2',
             }
 
             const expectedDebug = {
@@ -1563,6 +1571,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
+                region: 'us-west-2',
             }
 
             const expectedDebug = {
@@ -1658,6 +1667,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: undefined,
+                region: 'us-west-2',
 
                 //
                 // Csharp-related fields
@@ -1824,6 +1834,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 architecture: 'x86_64',
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 mountWith: 'write',
+                region: 'us-west-2',
 
                 //
                 // Csharp-related fields
@@ -1981,6 +1992,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
                 architecture: undefined,
+                region: 'us-west-2',
 
                 //
                 // Csharp-related fields
@@ -2149,6 +2161,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 redirectOutput: false,
                 parameterOverrides: undefined,
                 architecture: undefined,
+                region: 'us-west-2',
 
                 //
                 // Python-related fields
@@ -2293,6 +2306,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 redirectOutput: false,
                 parameterOverrides: undefined,
                 architecture: undefined,
+                region: 'us-west-2',
 
                 //
                 // Python-related fields
@@ -2420,6 +2434,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: actual.debugPort,
                 redirectOutput: false,
                 architecture: undefined,
+                region: 'us-west-2',
 
                 //
                 // Python-related fields
@@ -2509,6 +2524,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: actual.debugPort,
                 redirectOutput: false,
                 architecture: undefined,
+                region: 'us-west-2',
 
                 //
                 // Python-related fields
@@ -2684,6 +2700,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: undefined,
+                region: 'us-west-2',
 
                 //
                 // Python-ikpdb fields
@@ -2788,6 +2805,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
                 architecture: undefined,
+                region: 'us-west-2',
 
                 //
                 // Python-ikpdb fields
@@ -2932,6 +2950,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
+                region: 'us-west-2',
 
                 //
                 // Node-related fields
@@ -3012,6 +3031,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: undefined,
+                region: 'us-west-2',
 
                 //
                 // Go-related fields
