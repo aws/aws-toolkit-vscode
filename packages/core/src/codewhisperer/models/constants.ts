@@ -635,7 +635,7 @@ export const chooseTargetVersionFormTitle = 'Choose the target code version'
 export const skipUnitTestsFormTitle = 'Choose to skip unit tests'
 
 export const skipUnitTestsFormMessage =
-    'I will build your app using `mvn test` by default. If you would like to skip running unit tests, I will use `mvn test-compile`.'
+    'I will build your project using `mvn test` by default. If you would like to skip running unit tests, I will use `mvn test-compile`.'
 
 export const doNotSkipUnitTestsMessage = 'Do not skip unit tests'
 
