@@ -7,12 +7,12 @@ import { Ec2Selection } from './prompter'
 import { Ec2Client } from '../../shared/clients/ec2Client'
 import { EC2_LOGS_SCHEME } from '../../shared/constants'
 
-export class Ec2LogProvider implements vscode.TextDocumentContentProvider {
+export class Ec2LogDocumentProvider implements vscode.TextDocumentContentProvider {
     public constructor() {}
 
     public async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
         if (!isEc2Uri(uri)) {
-            throw new Error(`Invalid EC2 Logs URI: ${uri}`)
+            throw new Error(`Invalid EC2 Logs URI: ${uri.toString()}`)
         }
         const ec2Selection = parseEc2Uri(uri)
         const ec2Client = new Ec2Client(ec2Selection.region)
@@ -38,7 +38,6 @@ export function formEc2Uri(selection: Ec2Selection): vscode.Uri {
     return vscode.Uri.parse(`${EC2_LOGS_SCHEME}:${selection.region}:${selection.instanceId}`)
 }
 
-/** True if given URI is a valid Ec2 Logs Uri */
 function isEc2Uri(uri: vscode.Uri): boolean {
     try {
         parseEc2Uri(uri)

@@ -19,11 +19,11 @@ import {
 } from './commands'
 import { getLogger } from '../../shared'
 import { EC2_LOGS_SCHEME } from '../../shared/constants'
-import { Ec2LogProvider, formEc2Uri } from './ec2LogProvider'
+import { Ec2LogDocumentProvider, formEc2Uri } from './ec2LogDocumentProvider'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
-        vscode.workspace.registerTextDocumentContentProvider(EC2_LOGS_SCHEME, new Ec2LogProvider())
+        vscode.workspace.registerTextDocumentContentProvider(EC2_LOGS_SCHEME, new Ec2LogDocumentProvider())
     )
     ctx.extensionContext.subscriptions.push(
         Commands.register('aws.ec2.openTerminal', async (node?: Ec2InstanceNode) => {
