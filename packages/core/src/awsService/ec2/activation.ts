@@ -36,7 +36,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         Commands.register('aws.ec2.copyInstanceId', async (node: Ec2InstanceNode) => {
             await copyTextCommand(node, 'id')
         }),
-        Commands.register('aws.ec2.viewLogs', async (node: Ec2InstanceNode) => {
+        Commands.register('aws.ec2.viewLogs', async (node?: Ec2InstanceNode) => {
             await openLogDocument(node)
         }),
 

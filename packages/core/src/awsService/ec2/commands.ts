@@ -64,8 +64,8 @@ export async function copyInstanceId(instanceId: string): Promise<void> {
     await copyToClipboard(instanceId, 'Id')
 }
 
-export async function openLogDocument(node: Ec2InstanceNode): Promise<void> {
-    const uri = ec2LogSchema.form(node.toSelection())
+export async function openLogDocument(node?: Ec2InstanceNode): Promise<void> {
+    const uri = ec2LogSchema.form(await getSelection(node))
     const doc = await vscode.workspace.openTextDocument(uri)
     await vscode.window.showTextDocument(doc, { preview: false })
     await vscode.languages.setTextDocumentLanguage(doc, 'log')
