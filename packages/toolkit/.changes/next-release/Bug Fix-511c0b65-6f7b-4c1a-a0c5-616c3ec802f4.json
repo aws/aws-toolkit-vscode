@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Login state not updating across multiple VS Code windows."
+}
