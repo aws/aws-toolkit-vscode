@@ -17,7 +17,7 @@ import { checkBuildSystem } from './transformFileHandler'
 export async function getOpenProjects(): Promise<TransformationCandidateProject[]> {
     const folders = vscode.workspace.workspaceFolders
 
-    if (folders === undefined) {
+    if (folders === undefined || folders.length === 0) {
         throw new NoOpenProjectsError()
     }
 
@@ -32,7 +32,7 @@ export async function getOpenProjects(): Promise<TransformationCandidateProject[
     return openProjects
 }
 
-async function getJavaProjects(projects: TransformationCandidateProject[]) {
+export async function getJavaProjects(projects: TransformationCandidateProject[]) {
     const javaProjects = []
     for (const project of projects) {
         const projectPath = project.path
@@ -44,6 +44,9 @@ async function getJavaProjects(projects: TransformationCandidateProject[]) {
         if (javaFiles.length > 0) {
             javaProjects.push(project)
         }
+    }
+    if (javaProjects.length === 0) {
+        throw new NoJavaProjectsFoundError()
     }
     return javaProjects
 }
@@ -59,13 +62,14 @@ async function getMavenJavaProjects(javaProjects: TransformationCandidateProject
         }
     }
 
+    if (mavenJavaProjects.length === 0) {
+        throw new NoMavenJavaProjectsFoundError()
+    }
+
     return mavenJavaProjects
 }
 
-async function getProjectsValidToTransform(
-    mavenJavaProjects: TransformationCandidateProject[],
-    onProjectFirstOpen: boolean = true
-) {
+async function getProjectsValidToTransform(mavenJavaProjects: TransformationCandidateProject[]) {
     const projectsValidToTransform: TransformationCandidateProject[] = []
     for (const project of mavenJavaProjects) {
         let detectedJavaVersion = undefined
@@ -124,26 +128,13 @@ async function getProjectsValidToTransform(
  * As long as the project contains a .java file and a pom.xml file, the project is still considered valid for transformation,
  * and we allow the user to specify the Java version.
  */
-export async function validateOpenProjects(
-    projects: TransformationCandidateProject[],
-    onProjectFirstOpen: boolean = true
-) {
+export async function validateOpenProjects(projects: TransformationCandidateProject[]) {
     const javaProjects = await getJavaProjects(projects)
 
-    if (javaProjects.length === 0) {
-        throw new NoJavaProjectsFoundError()
-    }
-
     const mavenJavaProjects = await getMavenJavaProjects(javaProjects)
-    if (mavenJavaProjects.length === 0) {
-        if (!onProjectFirstOpen) {
-            void vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundNotification)
-        }
-        throw new NoMavenJavaProjectsFoundError()
-    }
 
     // These projects we know must contain a pom.xml and a .java file
-    const projectsValidToTransform = await getProjectsValidToTransform(mavenJavaProjects, onProjectFirstOpen)
+    const projectsValidToTransform = await getProjectsValidToTransform(mavenJavaProjects)
 
     return projectsValidToTransform
 }
