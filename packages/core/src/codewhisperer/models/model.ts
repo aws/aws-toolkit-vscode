@@ -305,8 +305,8 @@ export enum JDKVersion {
 
 export enum DB {
     ORACLE = 'Oracle',
-    AMAZON_RDS = 'Amazon RDS',
-    AMAZON_AURORA = 'Amazon Aurora',
+    AMAZON_RDS = 'Amazon RDS for PostgreSQL',
+    AMAZON_AURORA = 'Amazon Aurora PostgreSQL',
     OTHER = 'Other',
 }
 
