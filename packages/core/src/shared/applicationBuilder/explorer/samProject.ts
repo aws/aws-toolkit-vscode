@@ -8,6 +8,7 @@ import * as CloudFormation from '../../cloudformation/cloudformation'
 import { SamConfig } from '../../sam/config'
 import { getLogger } from '../../logger/logger'
 import { getFiles } from './detectSamProjects'
+import { ToolkitError } from '../../errors'
 
 export interface SamApp {
     location: SamAppLocation
@@ -50,15 +51,23 @@ export async function getStackName(workspaceFolder: vscode.WorkspaceFolder): Pro
 
 export async function getApp(location: SamAppLocation): Promise<SamApp> {
     const samTemplate = await CloudFormation.tryLoad(location.samTemplateUri)
-    const templateResources = getResourceEntity(samTemplate.template)
-    const apiEventResources: ResourceTreeEntity[] = []
-    for (const resource of templateResources) {
-        if (resource.Events) {
-            apiEventResources.push(...resource.Events)
-        }
+    if (!samTemplate.template) {
+        throw new ToolkitError(`Template at ${location.samTemplateUri.fsPath} is not valid`)
     }
+    const templateResources = getResourceEntity(samTemplate.template)
+    const eventToShow: string[] = ['Api', 'HttpApi']
+    const resourceIds: string[] = templateResources.map((resource) => {
+        return resource.Id
+    })
 
-    const resourceTree = [...templateResources, ...apiEventResources]
+    const resourceTree = [
+        ...templateResources,
+        ...templateResources.flatMap((resource) => {
+            return (resource.Events ?? []).filter((event) => {
+                return event.Type in eventToShow && !(event.Id in resourceIds)
+            })
+        }),
+    ]
 
     return { location, resourceTree }
 }
@@ -66,13 +75,13 @@ export async function getApp(location: SamAppLocation): Promise<SamApp> {
 function getResourceEntity(template: any): ResourceTreeEntity[] {
     const resourceTree: ResourceTreeEntity[] = []
 
-    for (const [logicalId, resource] of Object.entries(template?.Resources) as [string, any][]) {
+    for (const [logicalId, resource] of Object.entries(template?.Resources ?? []) as [string, any][]) {
         const resourceEntity: ResourceTreeEntity = {
             Id: logicalId,
             Type: resource.Type,
             Runtime: resource.Properties?.Runtime ?? template?.Globals?.Function?.Runtime,
             Handler: resource.Properties ? resource.Properties.Handler : undefined,
-            Events: resource.Properties.Events ? getEvents(resource.Properties.Events) : undefined,
+            Events: resource.Properties?.Events ? getEvents(resource.Properties.Events) : undefined,
         }
         resourceTree.push(resourceEntity)
     }
