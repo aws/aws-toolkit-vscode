@@ -182,7 +182,6 @@ export class Ec2ConnectionManager {
 
         try {
             await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, '/', remoteEnv.vscPath, remoteUser)
-            // await this.cleanUpState(remoteEnv.keyPair)
         } catch (err) {
             this.throwGeneralConnectionError(selection, err as Error)
         }
