@@ -2,12 +2,30 @@
     "name": "aws-core-vscode",
     "description": "Core library used AWS IDE extensions for VSCode.",
     "version": "1.0.0",
+    "extensionKind": [
+        "workspace"
+    ],
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "engines": {
         "npm": "^10.1.0",
         "vscode": "^1.68.0"
     },
+    "activationEvents": [
+        "onStartupFinished",
+        "onUri",
+        "onDebugResolve:aws-sam",
+        "onDebugInitialConfigurations",
+        "onLanguage:javascript",
+        "onLanguage:java",
+        "onLanguage:python",
+        "onLanguage:csharp",
+        "onLanguage:yaml",
+        "onFileSystem:s3",
+        "onFileSystem:s3-readonly"
+    ],
+    "main": "./dist/src/extensionNode.js",
+    "browser": "./dist/src/extensionWebCore.js",
     "exports": {
         ".": "./dist/src/extension.js",
         "./node": "./dist/src/extensionNode.js",
