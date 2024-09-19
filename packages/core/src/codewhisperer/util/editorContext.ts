@@ -153,7 +153,7 @@ export function validateRequest(
         req.fileContext.programmingLanguage.languageName !== undefined &&
         req.fileContext.programmingLanguage.languageName.length >= 1 &&
         req.fileContext.programmingLanguage.languageName.length <= 128 &&
-        (runtimeLanguageContext.isLanguageSupported(req.fileContext.programmingLanguage.languageName) ||
+        (runtimeLanguageContext.isInlineCompletionSupported(req.fileContext.programmingLanguage.languageName) ||
             runtimeLanguageContext.isFileFormatSupported(
                 req.fileContext.filename.substring(req.fileContext.filename.lastIndexOf('.') + 1)
             ))
