@@ -14,7 +14,7 @@ You can use /dev to:
 - Fix a bug in your project
 - Generate a README for a file, folder, or project
 
-To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
+To learn more, visit the _[Amazon Q Developer User Guide](${userGuideURL})_.
 `
 
 export const uploadCodeError = `I'm sorry, I couldn’t upload your workspace artifacts to Amazon S3 to help you with this task. You might need to allow access to the S3 bucket. For more information, see the [Amazon Q documentation](${manageAccessGuideURL}) or contact your network or organization administrator.`

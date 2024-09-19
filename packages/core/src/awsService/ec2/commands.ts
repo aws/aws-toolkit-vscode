@@ -7,7 +7,7 @@ import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { Ec2Node } from './explorer/ec2ParentNode'
 import { Ec2ConnectionManager } from './model'
 import { Ec2Prompter, instanceFilter, Ec2Selection } from './prompter'
-import { Ec2Instance, Ec2Client } from '../../shared/clients/ec2Client'
+import { SafeEc2Instance, Ec2Client } from '../../shared/clients/ec2Client'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { getLogger } from '../../shared/logger'
 
@@ -34,14 +34,14 @@ export async function openRemoteConnection(node?: Ec2Node) {
 }
 
 export async function startInstance(node?: Ec2Node) {
-    const prompterFilter = (instance: Ec2Instance) => instance.status !== 'running'
+    const prompterFilter = (instance: SafeEc2Instance) => instance.LastSeenStatus !== 'running'
     const selection = await getSelection(node, prompterFilter)
     const client = new Ec2Client(selection.region)
     await client.startInstanceWithCancel(selection.instanceId)
 }
 
 export async function stopInstance(node?: Ec2Node) {
-    const prompterFilter = (instance: Ec2Instance) => instance.status !== 'stopped'
+    const prompterFilter = (instance: SafeEc2Instance) => instance.LastSeenStatus !== 'stopped'
     const selection = await getSelection(node, prompterFilter)
     const client = new Ec2Client(selection.region)
     await client.stopInstanceWithCancel(selection.instanceId)

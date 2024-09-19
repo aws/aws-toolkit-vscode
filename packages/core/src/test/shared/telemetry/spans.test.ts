@@ -15,6 +15,7 @@ import { withTelemetryContext } from '../../../shared/telemetry/util'
 import { SinonSandbox } from 'sinon'
 import sinon from 'sinon'
 import { stubPerformance } from '../../utilities/performance'
+import * as crypto from '../../../shared/crypto'
 
 describe('TelemetrySpan', function () {
     let clock: ReturnType<typeof installFakeClock>
@@ -258,7 +259,7 @@ describe('TelemetryTracer', function () {
             assertTelemetry('aws_loginWithBrowser', {
                 result: 'Failed',
                 reason: 'InvalidRequestException',
-                reasonDesc: 'Invalid client ID provided',
+                reasonDesc: 'InvalidRequestException: Invalid client ID provided',
                 httpStatusCode: '400',
             })
             const metric = getMetrics('aws_loginWithBrowser')[0]
@@ -291,7 +292,17 @@ describe('TelemetryTracer', function () {
         })
 
         describe('nested run()', function () {
+            let uuidStub: sinon.SinonStub
             const nestedName = 'nested_metric' as MetricName
+            const testId = 'foo-foo-foo-foo-foo'
+            const flowName = 'testTraceFlow'
+
+            beforeEach(() => {
+                uuidStub = sandbox.stub(crypto, 'randomUUID')
+
+                // in the first call we set the trace id in subsequent calls we get the span ids
+                uuidStub.returns(testId)
+            })
 
             it('can record metadata in nested spans', function () {
                 tracer.run(metricName, (span1) => {
@@ -310,18 +321,18 @@ describe('TelemetryTracer', function () {
             it('removes spans when exiting an execution context', function () {
                 tracer.run(metricName, () => {
                     tracer.run(nestedName, () => {
-                        assert.strictEqual(tracer.spans.length, 2)
+                        assert.strictEqual(tracer.spans.length, 3)
                     })
 
-                    assert.strictEqual(tracer.spans.length, 1)
+                    assert.strictEqual(tracer.spans.length, 2)
                 })
             })
 
             it('adds spans during a nested execution, closing them when after', function () {
                 tracer.run(metricName, () => {
-                    tracer.run(nestedName, () => assert.strictEqual(tracer.spans.length, 2))
-                    tracer.run(nestedName, () => assert.strictEqual(tracer.spans.length, 2))
-                    assert.strictEqual(tracer.spans.length, 1)
+                    tracer.run(nestedName, () => assert.strictEqual(tracer.spans.length, 3))
+                    tracer.run(nestedName, () => assert.strictEqual(tracer.spans.length, 3))
+                    assert.strictEqual(tracer.spans.length, 2)
                 })
 
                 assert.strictEqual(tracer.spans.length, 0)
@@ -330,16 +341,102 @@ describe('TelemetryTracer', function () {
             it('supports nesting the same event name', function () {
                 tracer.run(metricName, () => {
                     tracer.run(metricName, () => {
-                        assert.strictEqual(tracer.spans.length, 2)
-                        assert.ok(tracer.spans.every((s) => s.name === metricName))
+                        assert.strictEqual(tracer.spans.length, 3)
+                        assert.ok(tracer.spans.filter((m) => m.name !== 'root').every((s) => s.name === metricName))
                     })
                 })
             })
 
-            it('attaches the parent event name to the child span', function () {
+            it('attaches the parent id to the child span', function () {
                 tracer.run(metricName, () => tracer.run(nestedName, () => {}))
                 assertTelemetry(metricName, { result: 'Succeeded' })
-                assertTelemetry(nestedName, { result: 'Succeeded', parentMetric: metricName } as any)
+                assertTelemetry(nestedName, { result: 'Succeeded', parentId: testId } as any)
+            })
+
+            it('should set trace id', function () {
+                telemetry.trace_event.run((span) => {
+                    span.record({ name: flowName })
+                    assert.deepStrictEqual(telemetry.activeSpan?.getMetricId(), testId)
+                })
+                const event = getMetrics('trace_event')
+                assert.deepStrictEqual(event[0].traceId, testId)
+                assert.deepStrictEqual(event[0].name, 'testTraceFlow')
+            })
+
+            it('trace id is propogated to children', function () {
+                const metricsIds = {
+                    trace_event: {
+                        metricId: 'traceEvent',
+                        traceId: testId,
+                        parentId: undefined,
+                    },
+                    amazonq_startConversation: {
+                        metricId: 'amazonq_startConversation',
+                        traceId: testId,
+                        parentId: 'traceEvent',
+                    },
+                    amazonq_addMessage: {
+                        metricId: 'amazonq_addMessage',
+                        traceId: testId,
+                        parentId: 'amazonq_startConversation',
+                    },
+                    vscode_executeCommand: {
+                        metricId: 'vscode_executeCommand',
+                        traceId: testId,
+                        parentId: 'traceEvent',
+                    },
+                    amazonq_enterFocusConversation: {
+                        metricId: 'amazonq_enterFocusConversation',
+                        traceId: testId,
+                        parentId: 'vscode_executeCommand',
+                    },
+                    amazonq_exitFocusConversation: {
+                        metricId: 'amazonq_exitFocusConversation',
+                        traceId: testId,
+                        parentId: 'amazonq_enterFocusConversation',
+                    },
+                    amazonq_closeChat: {
+                        metricId: 'amazonq_closeChat',
+                        traceId: testId,
+                        parentId: 'traceEvent',
+                    },
+                }
+
+                /**
+                 * randomUUID calls:
+                 * The first is called on the root event that never gets emitted
+                 * The second is called when generating the traceId
+                 * The rest are called when generating the spanIds
+                 */
+                uuidStub.onCall(1).returns(testId)
+                let index = 2
+                for (const v of Object.values(metricsIds)) {
+                    uuidStub.onCall(index).returns(v.metricId)
+                    index++
+                }
+
+                telemetry.trace_event.run(() => {
+                    telemetry.amazonq_startConversation.run(() => {
+                        telemetry.amazonq_addMessage.run(() => {})
+                    })
+                    telemetry.vscode_executeCommand.run(() => {
+                        telemetry.amazonq_enterFocusConversation.run(() => {
+                            telemetry.amazonq_exitFocusConversation.run(() => {})
+                        })
+                    })
+                    telemetry.amazonq_closeChat.emit({
+                        result: 'Succeeded',
+                    })
+                })
+
+                const spanEntries = Object.entries(metricsIds)
+                for (let x = 0; x < spanEntries.length; x++) {
+                    const [metricName, { metricId, traceId, parentId }] = spanEntries[x]
+                    const metric = getMetrics(metricName as keyof MetricShapes)[0] as any
+                    assert.deepStrictEqual(metric.traceId, traceId)
+                    assert.deepStrictEqual(metric.metricId, metricId)
+                    assert.deepStrictEqual(metric.parentId, parentId)
+                }
             })
         })
 

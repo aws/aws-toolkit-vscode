@@ -24,11 +24,11 @@ export const TabTypeDataMap: Record<TabType, TabTypeData> = {
     featuredev: {
         title: 'Q - Dev',
         placeholder: 'Describe your task or issue in as much detail as possible',
-        welcome: `Hi, I'm the Amazon Q Developer Agent for software development.
+        welcome: `Hi! I'm the Amazon Q Developer Agent for software development. 
+        
+I can generate code to implement new functionality across your workspace. To get started, describe the task you're trying to accomplish, and I'll generate code to implement it. If you want to make changes to the code, you can tell me what to improve and I'll generate new code based on your feedback. 
 
-I can generate code to implement new functionality across your workspace. We'll start by discussing an implementation plan, and then we can review and regenerate code based on your feedback.
-
-To get started, describe the task you are trying to accomplish.`,
+What would you like to work on?`,
     },
     gumby: {
         title: 'Q - Code Transformation',

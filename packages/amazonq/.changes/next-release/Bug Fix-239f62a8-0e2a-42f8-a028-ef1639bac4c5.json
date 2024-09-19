@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Security Scan: Fixed an issue where the wrong icon was used in the status bar menu."
+}

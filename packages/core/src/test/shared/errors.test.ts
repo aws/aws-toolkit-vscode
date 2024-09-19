@@ -19,6 +19,7 @@ import {
     ToolkitError,
     tryRun,
     UnknownError,
+    getErrorId,
 } from '../../shared/errors'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { UnauthorizedException } from '@aws-sdk/client-sso'
@@ -26,6 +27,7 @@ import { AWSError } from 'aws-sdk'
 import { AccessDeniedException } from '@aws-sdk/client-sso-oidc'
 import { OidcClient } from '../../auth/sso/clients'
 import { SamCliError } from '../../shared/sam/cli/samCliInvokerUtils'
+import { DiskCacheError } from '../../shared/utilities/cacheUtils'
 
 class TestAwsError extends Error implements AWSError {
     constructor(
@@ -256,7 +258,7 @@ describe('ToolkitError', function () {
         it('maintains the prototype chain with a constructor', function () {
             const OopsieError = class extends ToolkitError.named('OopsieError') {
                 public constructor() {
-                    super('oopsies')
+                    super('oopsies', { code: 'OopsieErrorCode' })
                 }
             }
 
@@ -265,6 +267,7 @@ describe('ToolkitError', function () {
             assert.ok(error instanceof OopsieError)
             assert.strictEqual(error.cause, undefined)
             assert.strictEqual(error.message, 'oopsies')
+            assert.strictEqual(error.code, 'OopsieErrorCode')
         })
 
         it('maintains the prototype chain without a constructor', function () {
@@ -280,6 +283,15 @@ describe('ToolkitError', function () {
             assert.strictEqual(error.name, 'MyError')
             assert.strictEqual(error.fault, 'foo')
             assert.strictEqual(error.cause?.message, 'oops')
+        })
+    })
+
+    describe(`${DiskCacheError.name}`, function () {
+        it(`subclasses ${ToolkitError.named.name}()`, function () {
+            const dce = new DiskCacheError('foo')
+            assert.strictEqual(dce instanceof ToolkitError, true)
+            assert.strictEqual(dce.code, 'DiskCacheError')
+            assert.strictEqual(dce.name, 'DiskCacheError')
         })
     })
 })
@@ -446,6 +458,22 @@ describe('util', function () {
         )
     })
 
+    it('getErrorId', function () {
+        let error = new Error()
+        assert.deepStrictEqual(getErrorId(error), 'Error')
+
+        error = new Error()
+        error.name = 'MyError'
+        assert.deepStrictEqual(getErrorId(error), 'MyError')
+
+        error = new ToolkitError('', { code: 'MyCode' })
+        assert.deepStrictEqual(getErrorId(error), 'MyCode')
+
+        // `code` takes priority over `name`
+        error = new ToolkitError('', { code: 'MyCode', name: 'MyError' })
+        assert.deepStrictEqual(getErrorId(error), 'MyCode')
+    })
+
     it('getErrorMsg()', function () {
         assert.deepStrictEqual(
             getErrorMsg(
@@ -464,27 +492,43 @@ describe('util', function () {
         assert.deepStrictEqual(getErrorMsg(awsErr), 'aws error desc 1')
 
         // Arg withCause=true
-        awsErr = new TestAwsError('ValidationException', 'aws validation msg 1', new Date())
         let toolkitError = new ToolkitError('ToolkitError Message')
         assert.deepStrictEqual(getErrorMsg(toolkitError, true), 'ToolkitError Message')
 
+        awsErr = new TestAwsError('ValidationException', 'aws validation msg 1', new Date())
         toolkitError = new ToolkitError('ToolkitError Message', { cause: awsErr })
-        assert.deepStrictEqual(getErrorMsg(toolkitError, true), `ToolkitError Message | aws validation msg 1`)
+        assert.deepStrictEqual(
+            getErrorMsg(toolkitError, true),
+            `ToolkitError Message | ValidationException: aws validation msg 1`
+        )
 
-        const nestedNestedToolkitError = new ToolkitError('C')
-        const nestedToolkitError = new ToolkitError('B', { cause: nestedNestedToolkitError })
-        toolkitError = new ToolkitError('A', { cause: nestedToolkitError })
-        assert.deepStrictEqual(getErrorMsg(toolkitError, true), `A | B | C`)
+        const nestedNestedToolkitError = new Error('C')
+        nestedNestedToolkitError.name = 'NameC'
+        const nestedToolkitError = new ToolkitError('B', { cause: nestedNestedToolkitError, code: 'CodeB' })
+        toolkitError = new ToolkitError('A', { cause: nestedToolkitError, code: 'CodeA' })
+        assert.deepStrictEqual(getErrorMsg(toolkitError, true), `CodeA: A | CodeB: B | NameC: C`)
+
+        // Arg withCause=true excludes the generic 'Error' id
+        const errorWithGenericName = new Error('A') // note this does not set a value for `name`, by default it is 'Error'
+        assert.deepStrictEqual(getErrorMsg(errorWithGenericName, true), `A`)
+        errorWithGenericName.name = 'NameA' // now we set a `name`
+        assert.deepStrictEqual(getErrorMsg(errorWithGenericName, true), `NameA: A`)
     })
 
     it('getTelemetryReasonDesc()', () => {
         const err = new Error('Cause Message a/b/c/d.txt')
-        const toolkitError = new ToolkitError('ToolkitError Message', { cause: err })
-        assert.deepStrictEqual(getTelemetryReasonDesc(toolkitError), 'ToolkitError Message | Cause Message x/x/x/x.txt')
+        const toolkitError = new ToolkitError('ToolkitError Message', { cause: err, code: 'CodeA' })
+        assert.deepStrictEqual(
+            getTelemetryReasonDesc(toolkitError),
+            'CodeA: ToolkitError Message | Cause Message x/x/x/x.txt'
+        )
     })
 
     function makeSyntaxErrorWithSdkClientError() {
-        const syntaxError: Error = new SyntaxError('The SyntaxError message')
+        // The following error messages are not arbitrary, changing them can break functionality
+        const syntaxError: Error = new SyntaxError(
+            'Unexpected token \'<\', "<html><bod"... is not valid JSON Deserialization error: to see the raw response, inspect the hidden field {error}.$response on this object.'
+        )
         // Under the hood of a SyntaxError may be a hidden field with the real reason for the failure
         ;(syntaxError as any)['$response'] = { reason: 'SDK Client unexpected error response: data response code: 500' }
         return syntaxError
@@ -512,20 +556,76 @@ describe('util', function () {
         const err = new Error('getaddrinfo ENOENT oidc.us-east-1.amazonaws.com')
         ;(err as any).code = 'ENOENT'
         assert.deepStrictEqual(isNetworkError(err), true, 'Did not indicate ENOENT error as network error')
+
+        const ebusyErr = new Error('getaddrinfo EBUSY oidc.us-east-1.amazonaws.com')
+        ;(ebusyErr as any).code = 'EBUSY'
+        assert.deepStrictEqual(isNetworkError(ebusyErr), true, 'Did not indicate EBUSY error as network error')
+
+        // Response code errors
+        let reponseCodeErr = new Error()
+        reponseCodeErr.name = '502'
+        assert.deepStrictEqual(isNetworkError(reponseCodeErr), true, 'Did not indicate 502 error as network error')
+        reponseCodeErr = new Error()
+        reponseCodeErr.name = '200'
+        assert.deepStrictEqual(
+            isNetworkError(reponseCodeErr),
+            false,
+            'Incorrectly indicated 200 error as network error'
+        )
     })
 
-    it('AwsClientResponseError', function () {
-        const syntaxError = makeSyntaxErrorWithSdkClientError()
+    describe('AwsClientResponseError', function () {
+        it('handles the happy path cases', function () {
+            const syntaxError = makeSyntaxErrorWithSdkClientError()
 
-        assert.deepStrictEqual(
-            AwsClientResponseError.tryExtractReasonFromSyntaxError(syntaxError),
-            'SDK Client unexpected error response: data response code: 500'
-        )
-        const responseError = AwsClientResponseError.instanceIf(syntaxError)
-        assert(!(responseError instanceof SyntaxError))
-        assert(responseError instanceof Error)
-        assert(responseError instanceof AwsClientResponseError)
-        assert(responseError.message === 'SDK Client unexpected error response: data response code: 500')
+            assert.deepStrictEqual(
+                AwsClientResponseError.tryExtractReasonFromSyntaxError(syntaxError),
+                'SDK Client unexpected error response: data response code: 500'
+            )
+            const responseError = AwsClientResponseError.instanceIf(syntaxError)
+            assert(!(responseError instanceof SyntaxError))
+            assert(responseError instanceof Error)
+            assert(responseError instanceof AwsClientResponseError)
+            assert(responseError.message === 'SDK Client unexpected error response: data response code: 500')
+        })
+
+        it('gracefully handles a SyntaxError with missing fields', function () {
+            let syntaxError = makeSyntaxErrorWithSdkClientError()
+
+            // No message about a '$response' field existing
+            syntaxError.message = 'This does not mention a "$response" field existing'
+            assert(!(AwsClientResponseError.instanceIf(syntaxError) instanceof AwsClientResponseError))
+            assert.equal(syntaxError, AwsClientResponseError.instanceIf(syntaxError))
+
+            // No '$response' field in SyntaxError
+            syntaxError = makeSyntaxErrorWithSdkClientError()
+            delete (syntaxError as any)['$response']
+            assertIsAwsClientResponseError(syntaxError, `No '$response' field in SyntaxError | ${syntaxError.message}`)
+            syntaxError = makeSyntaxErrorWithSdkClientError()
+            ;(syntaxError as any)['$response'] = undefined
+            assertIsAwsClientResponseError(syntaxError, `No '$response' field in SyntaxError | ${syntaxError.message}`)
+
+            // No 'reason' in '$response'
+            syntaxError = makeSyntaxErrorWithSdkClientError()
+            let response = (syntaxError as any)['$response']
+            delete response['reason']
+            assertIsAwsClientResponseError(
+                syntaxError,
+                `No 'reason' field in '$response' | ${JSON.stringify(response)} | ${syntaxError.message}`
+            )
+            syntaxError = makeSyntaxErrorWithSdkClientError()
+            response = (syntaxError as any)['$response']
+            response['reason'] = undefined
+            assertIsAwsClientResponseError(
+                syntaxError,
+                `No 'reason' field in '$response' | ${JSON.stringify(response)} | ${syntaxError.message}`
+            )
+
+            function assertIsAwsClientResponseError(e: Error, expectedMessage: string) {
+                assert.deepStrictEqual(AwsClientResponseError.tryExtractReasonFromSyntaxError(e), expectedMessage)
+                assert(AwsClientResponseError.instanceIf(e) instanceof AwsClientResponseError)
+            }
+        })
     })
 
     it('scrubNames()', async function () {

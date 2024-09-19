@@ -31,6 +31,7 @@ export function createMockChatEmitters(): ChatControllerEventEmitters {
         followUpClicked: new vscode.EventEmitter<any>(),
         openDiff: new vscode.EventEmitter<any>(),
         processChatItemVotedMessage: new vscode.EventEmitter<any>(),
+        processChatItemFeedbackMessage: new vscode.EventEmitter<any>(),
         stopResponse: new vscode.EventEmitter<any>(),
         tabOpened: new vscode.EventEmitter<any>(),
         tabClosed: new vscode.EventEmitter<any>(),

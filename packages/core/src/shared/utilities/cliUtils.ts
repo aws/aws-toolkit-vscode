@@ -431,7 +431,7 @@ async function installSsmCli(
     const finalPath = path.join(getToolkitLocalCliPath(), cmd[0])
     const TimedProcess = ChildProcess.extend({ timeout, rejectOnError: true, rejectOnErrorCode: true })
 
-    getLogger('channel').info(`Installing SSM CLI from ${ssmInstaller} to ${outDir}...`)
+    getLogger().info(`Installing SSM CLI from ${ssmInstaller} to ${outDir}...`)
     progress.report({ message: msgInstallingLocal })
 
     return handleError(install())
@@ -514,7 +514,7 @@ async function installGui(
     async function install() {
         const guiInstaller = await downloadCliSource(awsClis[cli], tempDir, timeout)
         progress.report({ message: msgInstallingLocal })
-        getLogger('channel').info(`Installing ${cli} from ${guiInstaller}...`)
+        getLogger().info(`Installing ${cli} from ${guiInstaller}...`)
 
         if (!guiInstaller) {
             throw new InvalidPlatformError(`Platform ${process.platform} is not supported for CLI autoinstallation.`)
@@ -572,7 +572,7 @@ export async function showCliFoundPopup(cli: string, path: string) {
 //     const awsInstaller = await downloadCliSource(AWS_CLIS.aws, tempDir)
 //     fs.chmodSync(awsInstaller, 0o700)
 
-//     getLogger('channel').info(`Installing AWS CLI from ${awsInstaller} to ${getToolkitCliDir()}...`)
+//     getLogger().info(`Installing AWS CLI from ${awsInstaller} to ${getToolkitCliDir()}...`)
 //     progress.report({ message: msgInstallingLocal })
 //     switch (process.platform) {
 //         case 'win32': {
