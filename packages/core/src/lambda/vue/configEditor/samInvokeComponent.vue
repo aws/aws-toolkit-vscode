@@ -8,7 +8,9 @@
         <form class="invoke-lambda-form">
             <h1>Local Invoke and Debug Configuration</h1>
             <div class="header-buttons" id="invoke-button-container">
-                <button class="primary-button" :style="{ width: '20%' }" v-on:click.prevent="launch">Invoke</button>
+                <button class="button-theme-primary" :style="{ width: '20%' }" v-on:click.prevent="launch">
+                    Invoke
+                </button>
                 <select
                     name="selectedConfig"
                     v-model="selectedConfig"
@@ -20,9 +22,9 @@
                         {{ config.label }}
                     </option>
                 </select>
-                <button class="secondary-button" :style="{ width: '10%' }" v-on:click.prevent="save">Save</button>
-                <button class="secondary-button" :style="{ width: '10%' }" v-on:click.prevent="reset">Reset</button>
-                <button class="secondary-button" :style="{ width: '10%' }" v-on:click.prevent="create">Create</button>
+                <button class="button-theme-secondary" v-on:click.prevent="save">Save</button>
+                <button class="button-theme-secondary" v-on:click.prevent="reset">Reset</button>
+                <button class="button-theme-secondary" v-on:click.prevent="create">Create</button>
                 <div v-if="newConfigName">
                     <span class="unsaved">
                         {{ savedStatus }}
@@ -83,8 +85,8 @@
                 </div>
                 <div class="form-row" v-if="payloadOption === 'sampleEvents'">
                     <label :style="{ fontSize: '13px', fontWeight: 500 }">Sample event</label>
-                    <button class="secondary-button" style="width: 140px" v-on:click.prevent="loadPayload">
-                        Select an event</button
+                    <button class="button-theme-secondary" style="width: 140px" v-on:click.prevent="loadPayload">
+                        Select an Event</button
                     ><br />
                     <span class="data-view">payload from data: {{ payload }} </span>
                     <div class="input-validation" v-if="payload.errorMsg">
@@ -95,8 +97,10 @@
                     <div><label>File</label></div>
                     <div>
                         <input type="file" id="file" @change="onFileChange" style="display: none" ref="fileInput" />
-                        <button v-on:click.prevent="promptForFileLocation" class="secondary-button">Choose file</button>
-                        <button v-on:click.prevent="reloadFile" class="secondary-button">Reload</button>
+                        <button v-on:click.prevent="promptForFileLocation" class="button-theme-secondary">
+                            Choose file</button
+                        >&nbsp;
+                        <button v-on:click.prevent="reloadFile" class="button-theme-secondary">Reload</button>
                         &nbsp; {{ selectedFile || 'No file selected' }}
                         <span class="data-view">payload from data: {{ payload }} </span>
                         <div class="input-validation" v-if="payload.errorMsg">
@@ -120,8 +124,9 @@
                             </select>
                         </div>
                         <div style="margin-left: 105px">
-                            <button v-on:click.prevent="showNameField" class="secondary-button">Create</button>
-                            <button v-on:click.prevent="saveEvent" class="secondary-button">Save</button>
+                            <button v-on:click.prevent="showNameField" class="button-theme-secondary">Create</button
+                            >&nbsp;
+                            <button v-on:click.prevent="saveEvent" class="button-theme-secondary">Save</button>
                         </div>
                     </div>
                     <div class="form-row" v-if="showNameInput">
@@ -136,8 +141,8 @@
                     <br />
                     <div class="form-row" v-if="showNameInput">
                         <label :style="{ fontSize: '13px', fontWeight: 500 }">Sample event</label>
-                        <button class="secondary-button" style="width: 140px" v-on:click.prevent="loadPayload">
-                            Select an event</button
+                        <button class="button-theme-secondary" style="width: 140px" v-on:click.prevent="loadPayload">
+                            Select an Event</button
                         ><br />
                         <span class="data-view">payload from data: {{ payload }} </span>
                         <div class="input-validation" v-if="payload.errorMsg">
@@ -209,23 +214,24 @@
                     <div class="config-item">
                         <label for="logicalID">Resource (Logical ID)</label>
                         <div class="form-row">
-                            <input
-                                name="template-logical-id"
-                                :style="{ width: '190%' }"
-                                id="template-logical-id"
-                                type="text"
-                                placeholder="Enter a resource"
-                                v-model="launchConfig.invokeTarget.logicalId"
-                            /><button
-                                class="margin-bottom-16"
-                                :style="{ width: '45%', height: '100%', padding: '2px 2px', marginLeft: '60%' }"
-                                v-on:click.prevent="loadResource"
-                            >
-                                Select Resource
-                            </button>
-                            <span class="data-view">
-                                Logical Id from data: {{ launchConfig.invokeTarget.logicalId }}</span
-                            >
+                            <div>
+                                <input
+                                    name="template-logical-id"
+                                    id="template-logical-id"
+                                    type="text"
+                                    placeholder="Enter a resource"
+                                    v-model="launchConfig.invokeTarget.logicalId"
+                                    class="form-control"
+                                />
+                            </div>
+                            <div style="margin-left: 105px">
+                                <button class="button-theme-secondary" v-on:click.prevent="loadResource">
+                                    Select Resource
+                                </button>
+                                <span class="data-view">
+                                    Logical Id from data: {{ launchConfig.invokeTarget.logicalId }}</span
+                                >
+                            </div>
                         </div>
                     </div>
                     <div class="config-item">
