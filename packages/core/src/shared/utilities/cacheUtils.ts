@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { dirname } from 'path'
-import { ToolkitError, isFileNotFoundError } from '../errors'
+import { ErrorInformation, ToolkitError, isFileNotFoundError } from '../errors'
 import fs from '../../shared/fs/fs'
 import { isWeb } from '../extensionGlobals'
 import type { MapSync } from './map'
@@ -121,10 +121,7 @@ export function createDiskCache<V, K>(
                     return
                 }
                 log(`read failed ${error}`, key)
-                throw ToolkitError.chain(error, `Failed to read from "${target}"`, {
-                    code: 'FSReadFailed',
-                    details: { key },
-                })
+                throw createDiskCacheError(error, 'LOAD', target, key)
             }
         },
         save: async (key, data) => {
@@ -142,10 +139,7 @@ export function createDiskCache<V, K>(
                     await fs.writeFile(target, JSON.stringify(data), { mode: 0o600, atomic: true })
                 }
             } catch (error) {
-                throw ToolkitError.chain(error, `Failed to save "${target}"`, {
-                    code: 'FSWriteFailed',
-                    details: { key },
-                })
+                throw createDiskCacheError(error, 'SAVE', target, key)
             }
 
             log('saved', key)
@@ -160,14 +154,33 @@ export function createDiskCache<V, K>(
                     return log('file not found', key)
                 }
 
-                throw ToolkitError.chain(error, `Failed to delete "${target}"`, {
-                    code: 'FSDeleteFailed',
-                    details: { key },
-                })
+                throw createDiskCacheError(error, 'CLEAR', target, key)
             }
 
             log(`deleted (reason: ${reason})`, key)
         },
+    }
+
+    /** Helper to make a disk cache error */
+    function createDiskCacheError(error: unknown, operation: 'LOAD' | 'SAVE' | 'CLEAR', target: string, key: K) {
+        return DiskCacheError.chain(error, `${operation} failed for '${target}'`, {
+            details: { key },
+        })
+    }
+}
+
+/**
+ * Represents a generalized error that happened during a disk cache operation.
+ *
+ * For example, when SSO refreshes a token a disk cache error can occur when it
+ * attempts to read/write the disk cache. These errors can be recoverable and do not
+ * imply that the SSO session is stale. So by creating a context specific instance it
+ * will help to distinguish them when we need to decide if the SSO session is actually
+ * stale.
+ */
+export class DiskCacheError extends ToolkitError.named('DiskCacheError') {
+    public constructor(message: string, info?: Omit<ErrorInformation, 'code'>) {
+        super(message, { ...info, code: 'DiskCacheError' })
     }
 }
 

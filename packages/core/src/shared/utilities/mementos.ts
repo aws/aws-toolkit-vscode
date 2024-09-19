@@ -29,7 +29,14 @@ export function partition(memento: vscode.Memento, key: string): vscode.Memento 
     }
 }
 
-/** Avoids sharing globalState with remote vscode instances. */
+/**
+ * Resolves the appropriate memento/state for the current runtime environment.
+ *
+ * Why?
+ * - In remote instances where we ssh in to them, we do not always want to share
+ *   with the local globalState. We want certain functionality to be isolated to
+ *   the remote instance.
+ */
 export function getEnvironmentSpecificMemento(): vscode.Memento {
     if (!vscode.env.remoteName) {
         // local compute: no further partitioning

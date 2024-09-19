@@ -269,6 +269,14 @@
                         "amazonQWelcomePage": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "amazonQSessionConfigurationMessage": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "ssoCacheError": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false
@@ -1545,7 +1553,7 @@
                 },
                 {
                     "command": "aws.ec2.copyInstanceId",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsEc2(Parent|Running|Stopped)Node)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEc2(Running|Stopped|Pending)Node)$/",
                     "group": "2@0"
                 },
                 {
@@ -4115,7 +4123,7 @@
         "@aws-sdk/property-provider": "3.46.0",
         "@aws-sdk/smithy-client": "^3.46.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
-        "@aws/mynah-ui": "^4.15.8",
+        "@aws/mynah-ui": "^4.15.11",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
         "@smithy/middleware-retry": "^2.3.1",

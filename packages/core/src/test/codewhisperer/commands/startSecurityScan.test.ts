@@ -385,7 +385,7 @@ describe('startSecurityScan', function () {
             codewhispererCodeScanScope: 'PROJECT',
             result: 'Failed',
             reason: 'CodeScanJobFailedError',
-            reasonDesc: 'Security scan failed.',
+            reasonDesc: 'CodeScanJobFailedError: Security scan failed.',
             passive: false,
         } as unknown as CodewhispererSecurityScan)
     })
@@ -413,7 +413,7 @@ describe('startSecurityScan', function () {
             codewhispererCodeScanScope: 'PROJECT',
             result: 'Failed',
             reason: 'ThrottlingException',
-            reasonDesc: 'Maximum project scan count reached for this month.',
+            reasonDesc: 'ThrottlingException: Maximum project scan count reached for this month.',
             passive: false,
         } as unknown as CodewhispererSecurityScan)
     })
@@ -444,7 +444,7 @@ describe('startSecurityScan', function () {
             codewhispererCodeScanScope: 'FILE',
             result: 'Failed',
             reason: 'ThrottlingException',
-            reasonDesc: 'Maximum auto-scans count reached for this month.',
+            reasonDesc: 'ThrottlingException: Maximum auto-scans count reached for this month.',
             passive: true,
         } as unknown as CodewhispererSecurityScan)
     })
@@ -487,28 +487,40 @@ describe('startSecurityScanPerformanceTest', function () {
         })
     }
 
-    performanceTest({}, 'Should calculate cpu and memory usage for file scans', async function () {
-        getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
-        const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
-        const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
-
-        await model.CodeScansState.instance.setScansEnabled(true)
-
-        await startSecurityScan.startSecurityScan(
-            mockSecurityPanelViewProvider,
-            editor,
-            createClient(),
-            extensionContext,
-            CodeAnalysisScope.FILE
-        )
-
-        assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
-        assert.ok(securityScanRenderSpy.calledOnce)
-        const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
-        assert.strictEqual(warnings.length, 0)
-        assertTelemetry('codewhisperer_securityScan', {
-            codewhispererCodeScanScope: 'FILE',
-            passive: true,
-        })
+    performanceTest({}, 'Should calculate cpu and memory usage for file scans', function () {
+        return {
+            setup: async () => {
+                getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
+                const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
+                const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
+                await model.CodeScansState.instance.setScansEnabled(true)
+                return { commandSpy, securityScanRenderSpy }
+            },
+            execute: async () => {
+                await startSecurityScan.startSecurityScan(
+                    mockSecurityPanelViewProvider,
+                    editor,
+                    createClient(),
+                    extensionContext,
+                    CodeAnalysisScope.FILE
+                )
+            },
+            verify: ({
+                commandSpy,
+                securityScanRenderSpy,
+            }: {
+                commandSpy: sinon.SinonSpy
+                securityScanRenderSpy: sinon.SinonSpy
+            }) => {
+                assert.ok(commandSpy.neverCalledWith('workbench.action.problems.focus'))
+                assert.ok(securityScanRenderSpy.calledOnce)
+                const warnings = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Warning)
+                assert.strictEqual(warnings.length, 0)
+                assertTelemetry('codewhisperer_securityScan', {
+                    codewhispererCodeScanScope: 'FILE',
+                    passive: true,
+                })
+            },
+        }
     })
 })

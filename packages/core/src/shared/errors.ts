@@ -256,14 +256,9 @@ export class ToolkitError extends Error implements ErrorInformation {
  * @param withCause Append the message(s) from the cause chain, recursively.
  *                  The message(s) are delimited by ' | '. Eg: msg1 | causeMsg1 | causeMsg2
  */
-export function getErrorMsg(err: Error | undefined, withCause = false): string | undefined {
+export function getErrorMsg(err: Error | undefined, withCause: boolean = false): string | undefined {
     if (err === undefined) {
         return undefined
-    }
-
-    const cause = (err as any).cause
-    if (withCause && cause) {
-        return `${err.message}${cause ? ' | ' + getErrorMsg(cause, true) : ''}`
     }
 
     // Non-standard SDK fields added by the OIDC service, to conform to the OAuth spec
@@ -291,10 +286,23 @@ export function getErrorMsg(err: Error | undefined, withCause = false): string |
     //      }
     const anyDesc = (err as any).error_description
     const errDesc = typeof anyDesc === 'string' ? anyDesc.trim() : ''
-    const msg = errDesc !== '' ? errDesc : err.message?.trim()
+    let msg = errDesc !== '' ? errDesc : err.message?.trim()
 
     if (typeof msg !== 'string') {
         return undefined
+    }
+
+    // append the cause's message
+    if (withCause) {
+        const errorId = getErrorId(err)
+        // - prepend id to message
+        // - If a generic error does not have the `name` field explicitly set, it returns a generic 'Error' name. So skip since it is useless.
+        if (errorId && errorId !== 'Error') {
+            msg = `${errorId}: ${msg}`
+        }
+
+        const cause = (err as any).cause
+        return `${msg}${cause ? ' | ' + getErrorMsg(cause, withCause) : ''}`
     }
 
     return msg
@@ -425,8 +433,8 @@ export function getTelemetryReasonDesc(err: unknown | undefined): string | undef
     const m = typeof err === 'string' ? err : getErrorMsg(err as Error, true) ?? ''
     const msg = scrubNames(m, _username)
 
-    // Truncate to 200 chars.
-    return msg && msg.length > 0 ? msg.substring(0, 200) : undefined
+    // Truncate message as these strings can be very long.
+    return msg && msg.length > 0 ? msg.substring(0, 350) : undefined
 }
 
 export function getTelemetryReason(error: unknown | undefined): string | undefined {
@@ -571,6 +579,16 @@ export function isAwsError(error: unknown): error is AWSError & { error_descript
 
 function hasCode<T>(error: T): error is T & { code: string } {
     return typeof (error as { code?: unknown }).code === 'string'
+}
+
+/**
+ * Returns the identifier the given error.
+ * Depending on the implementation, the identifier may exist on a
+ * different property.
+ */
+export function getErrorId(error: Error): string {
+    // prioritize code over the name
+    return hasCode(error) ? error.code : error.name
 }
 
 function hasTime(error: Error): error is typeof error & { time: Date } {
@@ -834,6 +852,7 @@ export function isNetworkError(err?: unknown): err is Error & { code: string } {
         'EAI_FAIL',
         '502', // This may be irrelevant as isBadResponseCode() may be all we need
         'InternalServerException',
+        'ERR_SSL_WRONG_VERSION_NUMBER',
     ].includes(err.code)
 }
 
@@ -895,7 +914,7 @@ export function isError(err: Error, id: string, messageIncludes: string = '') {
  * These are the errors explicitly seen in telemetry. We can instead do any non-200 response code
  * later, but this will give us better visibility in to the actual error codes we are currently getting.
  */
-const errorResponseCodes = [302, 403, 502]
+const errorResponseCodes = [302, 403, 404, 502, 503]
 
 /**
  * Returns true if the given error is a bad response code
@@ -986,65 +1005,6 @@ export class AwsClientResponseError extends Error {
         }
 
         return undefined
-    }
-}
-
-/**
- * Represents a generalized error that happened during a disk cache operation.
- *
- * For example, when SSO refreshes a token a disk cache error can occur when it
- * attempts to read/write the disk cache. These errors can be recoverable and do not
- * imply that the SSO session is stale. So by wrapping those errors in an instance of
- * this class it will help to distinguish them.
- */
-export class DiskCacheError extends Error {
-    #code: string | undefined
-
-    /** Use {@link DiskCacheError.instanceIf()} to create an instance */
-    protected constructor(message: string, options?: { code?: string }) {
-        super(message)
-        this.#code = options?.code
-    }
-
-    /**
-     * We are seeing these errors in telemetry, but they have no error message attached.
-     * The best we can do is assume these are filesystem errors in the context that we see them.
-     */
-    private static fileSystemErrorsWithoutMessage = ['EACCES', 'EBADF']
-
-    /**
-     * Return an instance of {@link DiskCacheError} that consists of the properties from the
-     * given error IF certain conditions are met. Otherwise, the original error is returned.
-     *
-     * - Also returns the original error if it is already a {@link DiskCacheError}.
-     */
-    public static instanceIf<T>(err: T): DiskCacheError | T {
-        if (!(err instanceof Error) || err instanceof DiskCacheError) {
-            return err
-        }
-
-        const errorId = (err as any).code ?? err.name
-
-        if (DiskCacheError.fileSystemErrorsWithoutMessage.includes(errorId)) {
-            // The error message will probably be blank
-            const message = err.message ? err.message : 'No msg'
-            return new DiskCacheError(message, { code: errorId })
-        }
-
-        // These are errors we were seeing in telemetry
-        if (
-            isError(err, 'ENOSPC', 'no space left on device') ||
-            isError(err, 'EPERM', 'operation not permitted') ||
-            isError(err, 'EBUSY', 'resource busy or locked')
-        ) {
-            return new DiskCacheError(err.message, { code: errorId })
-        }
-
-        return err // the error does no meet the conditions to be a DiskCacheError
-    }
-
-    public get code() {
-        return this.#code
     }
 }
 

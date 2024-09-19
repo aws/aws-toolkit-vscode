@@ -55,10 +55,4 @@ describe('tech debt', function () {
         // auth_modifyConnection.action = deleteProfile OR auth_modifyConnection.source contains CodeCatalyst
         fixByDate('2024-9-30', 'Remove the edge case code from the commit that this test is a part of.')
     })
-
-    it('remove deprecated code transform metrics', async function () {
-        // Remove all metrics commented with "TODO: remove deprecated metric once BI started using new metrics"
-        // in amazonqGumby.
-        fixByDate('2024-09-30', 'Remove code transform deprecated metrics.')
-    })
 })

@@ -4,9 +4,8 @@
  */
 import assert from 'assert'
 import { Ec2Prompter, instanceFilter } from '../../../awsService/ec2/prompter'
-import { Ec2Instance } from '../../../shared/clients/ec2Client'
+import { SafeEc2Instance } from '../../../shared/clients/ec2Client'
 import { RegionSubmenuResponse } from '../../../shared/ui/common/regionSubmenu'
-import { getIconCode } from '../../../awsService/ec2/utils'
 import { Ec2Selection } from '../../../awsService/ec2/prompter'
 import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
@@ -14,9 +13,9 @@ import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 
 describe('Ec2Prompter', async function () {
     class MockEc2Prompter extends Ec2Prompter {
-        public instances: Ec2Instance[] = []
+        public instances: SafeEc2Instance[] = []
 
-        public testAsQuickPickItem(testInstance: Ec2Instance) {
+        public testAsQuickPickItem(testInstance: SafeEc2Instance) {
             return Ec2Prompter.asQuickPickItem(testInstance)
         }
 
@@ -27,7 +26,7 @@ describe('Ec2Prompter', async function () {
             return this.getInstancesAsQuickPickItems(region)
         }
 
-        protected override async getInstancesFromRegion(regionCode: string): Promise<AsyncCollection<Ec2Instance>> {
+        protected override async getInstancesFromRegion(regionCode: string): Promise<AsyncCollection<SafeEc2Instance>> {
             return intoCollection(this.instances)
         }
 
@@ -53,13 +52,14 @@ describe('Ec2Prompter', async function () {
 
         it('returns QuickPickItem for named instances', function () {
             const testInstance = {
-                name: 'testName',
+                Name: 'testName',
                 InstanceId: 'testInstanceId',
+                LastSeenStatus: 'running',
             }
 
             const result = prompter.testAsQuickPickItem(testInstance)
             const expected = {
-                label: `$(${getIconCode(testInstance)}) \t ${testInstance.name}`,
+                label: Ec2Prompter.getLabel(testInstance),
                 detail: testInstance.InstanceId,
                 data: testInstance.InstanceId,
             }
@@ -69,11 +69,12 @@ describe('Ec2Prompter', async function () {
         it('returns QuickPickItem for non-named instances', function () {
             const testInstance = {
                 InstanceId: 'testInstanceId',
+                LastSeenStatus: 'running',
             }
 
             const result = prompter.testAsQuickPickItem(testInstance)
             const expected = {
-                label: `$(${getIconCode(testInstance)}) \t (no name)`,
+                label: Ec2Prompter.getLabel(testInstance),
                 detail: testInstance.InstanceId,
                 data: testInstance.InstanceId,
             }
@@ -116,15 +117,18 @@ describe('Ec2Prompter', async function () {
             prompter.instances = [
                 {
                     InstanceId: '1',
-                    name: 'first',
+                    Name: 'first',
+                    LastSeenStatus: 'running',
                 },
                 {
                     InstanceId: '2',
-                    name: 'second',
+                    Name: 'second',
+                    LastSeenStatus: 'running',
                 },
                 {
                     InstanceId: '3',
-                    name: 'third',
+                    Name: 'third',
+                    LastSeenStatus: 'running',
                 },
             ]
             prompter.unsetFilter()
@@ -139,17 +143,17 @@ describe('Ec2Prompter', async function () {
         it('returns items mapped to QuickPick items without filter', async function () {
             const expected = [
                 {
-                    label: `$(${getIconCode(prompter.instances[0])}) \t ${prompter.instances[0].name!}`,
+                    label: Ec2Prompter.getLabel(prompter.instances[0]),
                     detail: prompter.instances[0].InstanceId!,
                     data: prompter.instances[0].InstanceId!,
                 },
                 {
-                    label: `$(${getIconCode(prompter.instances[1])}) \t ${prompter.instances[1].name!}`,
+                    label: Ec2Prompter.getLabel(prompter.instances[1]),
                     detail: prompter.instances[1].InstanceId!,
                     data: prompter.instances[1].InstanceId!,
                 },
                 {
-                    label: `$(${getIconCode(prompter.instances[2])}) \t ${prompter.instances[2].name!}`,
+                    label: Ec2Prompter.getLabel(prompter.instances[2]),
                     detail: prompter.instances[2].InstanceId!,
                     data: prompter.instances[2].InstanceId!,
                 },
@@ -164,12 +168,12 @@ describe('Ec2Prompter', async function () {
 
             const expected = [
                 {
-                    label: `$(${getIconCode(prompter.instances[0])}) \t ${prompter.instances[0].name!}`,
+                    label: Ec2Prompter.getLabel(prompter.instances[0]),
                     detail: prompter.instances[0].InstanceId!,
                     data: prompter.instances[0].InstanceId!,
                 },
                 {
-                    label: `$(${getIconCode(prompter.instances[2])}) \t ${prompter.instances[2].name!}`,
+                    label: Ec2Prompter.getLabel(prompter.instances[2]),
                     detail: prompter.instances[2].InstanceId!,
                     data: prompter.instances[2].InstanceId!,
                 },

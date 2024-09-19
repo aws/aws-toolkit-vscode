@@ -39,7 +39,7 @@ import { getMachineId, isAutomation } from './shared/vscode/env'
 import { registerCommandErrorHandler } from './shared/vscode/commands2'
 import { registerWebviewErrorHandler } from './webviews/server'
 import { showQuickStartWebview } from './shared/extensionStartup'
-import { ExtContext } from './shared/extensions'
+import { ExtContext, VSCODE_EXTENSION_ID } from './shared/extensions'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import { UriHandler } from './shared/vscode/uriHandler'
 import { disableAwsSdkWarning } from './shared/awsClientBuilder'
@@ -55,7 +55,7 @@ import { registerCommands } from './commands'
 // In web mode everything must be in a single file, so things like the endpoints file will not be available.
 // The following imports the endpoints file, which causes webpack to bundle it in the final output file
 import endpoints from '../resources/endpoints.json'
-import { getLogger } from './shared'
+import { getLogger, setupUninstallHandler } from './shared'
 import { showViewLogsMessage } from './shared/utilities/messages'
 
 disableAwsSdkWarning()
@@ -153,6 +153,9 @@ export async function activateCommon(
             telemetry.aws_help.emit()
         })
     )
+
+    // Handle AWS Toolkit un-installation.
+    setupUninstallHandler(VSCODE_EXTENSION_ID.awstoolkit, context)
 
     // auth
     await initializeAuth(globals.loginManager)
