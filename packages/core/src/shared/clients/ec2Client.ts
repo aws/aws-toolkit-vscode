@@ -61,7 +61,7 @@ export class Ec2Client {
 
         return safeInstances
             .map(async (instance) => {
-                return { ...instance, LastSeenStatus: await this.getInstanceStatus(instance.InstanceId!) }
+                return { ...instance, LastSeenStatus: await this.getInstanceStatus(instance.InstanceId) }
             })
             .map((instance) => {
                 return instanceHasName(instance!)
