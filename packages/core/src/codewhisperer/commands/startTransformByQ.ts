@@ -15,9 +15,9 @@ import {
     JDKVersion,
     jobPlanProgress,
     FolderInfo,
-    TransformationCandidateProject,
     ZipManifest,
     TransformByQStatus,
+    DB,
 } from '../models/model'
 import { convertDateToTimestamp } from '../../shared/utilities/textUtilities'
 import {
@@ -37,7 +37,11 @@ import {
     uploadPayload,
     zipCode,
 } from '../service/transformByQ/transformApiHandler'
-import { getOpenProjects, validateOpenProjects } from '../service/transformByQ/transformProjectValidationHandler'
+import {
+    getJavaProjects,
+    getOpenProjects,
+    validateOpenProjects,
+} from '../service/transformByQ/transformProjectValidationHandler'
 import {
     getVersionData,
     prepareProjectDependencies,
@@ -81,7 +85,7 @@ function getFeedbackCommentData() {
     return s
 }
 
-export async function processTransformFormInput(
+export async function processLanguageUpgradeTransformFormInput(
     pathToProject: string,
     fromJDKVersion: JDKVersion,
     toJDKVersion: JDKVersion
@@ -90,6 +94,13 @@ export async function processTransformFormInput(
     transformByQState.setProjectPath(pathToProject)
     transformByQState.setSourceJDKVersion(fromJDKVersion)
     transformByQState.setTargetJDKVersion(toJDKVersion)
+}
+
+export async function processSQLConversionTransformFormInput(pathToProject: string, fromDB: DB, toDB: DB) {
+    transformByQState.setProjectName(path.basename(pathToProject))
+    transformByQState.setProjectPath(pathToProject)
+    transformByQState.setSourceDB(fromDB)
+    transformByQState.setTargetDB(toDB)
 }
 
 export async function setMaven() {
@@ -663,9 +674,16 @@ export async function finalizeTransformationJob(status: string) {
     jobPlanProgress['transformCode'] = StepProgress.Succeeded
 }
 
-export async function getValidCandidateProjects(): Promise<TransformationCandidateProject[]> {
+export async function getValidLanguageUpgradeCandidateProjects() {
     const openProjects = await getOpenProjects()
-    return validateOpenProjects(openProjects)
+    const javaMavenProjects = await validateOpenProjects(openProjects)
+    return javaMavenProjects
+}
+
+export async function getValidSQLConversionCandidateProjects() {
+    const openProjects = await getOpenProjects()
+    const javaProjects = await getJavaProjects(openProjects)
+    return javaProjects
 }
 
 export async function setTransformationToRunningState() {

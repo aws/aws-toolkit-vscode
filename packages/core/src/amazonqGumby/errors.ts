@@ -12,6 +12,12 @@ export class JavaHomeNotSetError extends ToolkitError {
     }
 }
 
+export class NoAuthError extends ToolkitError {
+    constructor() {
+        super('Not authenticated', { code: 'AuthFailed' })
+    }
+}
+
 export class NoOpenProjectsError extends ToolkitError {
     constructor() {
         super('No Java projects found since no projects are open', { code: 'NoOpenProjects' })

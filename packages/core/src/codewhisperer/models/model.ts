@@ -303,6 +303,13 @@ export enum JDKVersion {
     UNSUPPORTED = 'UNSUPPORTED',
 }
 
+export enum DB {
+    ORACLE = 'Oracle',
+    AMAZON_RDS = 'Amazon RDS',
+    AMAZON_AURORA = 'Amazon Aurora',
+    OTHER = 'Other',
+}
+
 export enum BuildSystem {
     Maven = 'Maven',
     Gradle = 'Gradle',
@@ -376,6 +383,12 @@ export class TransformByQState {
     private targetJDKVersion: JDKVersion = JDKVersion.JDK17
 
     private customBuildCommand: string = ''
+
+    private sourceDB: DB | undefined = undefined
+
+    private targetDB: DB | undefined = undefined
+
+    private metadataPathSQL: string = ''
 
     private planFilePath: string = ''
     private summaryFilePath: string = ''
@@ -462,6 +475,18 @@ export class TransformByQState {
 
     public getTargetJDKVersion() {
         return this.targetJDKVersion
+    }
+
+    public getSourceDB() {
+        return this.sourceDB
+    }
+
+    public getTargetDB() {
+        return this.targetDB
+    }
+
+    public getMetadataPathSQL() {
+        return this.metadataPathSQL
     }
 
     public getStatus() {
@@ -586,6 +611,18 @@ export class TransformByQState {
 
     public setTargetJDKVersion(version: JDKVersion) {
         this.targetJDKVersion = version
+    }
+
+    public setSourceDB(db: DB) {
+        this.sourceDB = db
+    }
+
+    public setTargetDB(db: DB) {
+        this.targetDB = db
+    }
+
+    public setMetadataPathSQL(path: string) {
+        this.metadataPathSQL = path
     }
 
     public setPlanFilePath(filePath: string) {

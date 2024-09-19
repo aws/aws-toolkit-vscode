@@ -9,7 +9,12 @@
  */
 
 import { AuthFollowUpType, AuthMessageDataMap } from '../../../../amazonq/auth/model'
-import { JDKVersion, TransformationCandidateProject, transformByQState } from '../../../../codewhisperer/models/model'
+import {
+    DB,
+    JDKVersion,
+    TransformationCandidateProject,
+    transformByQState,
+} from '../../../../codewhisperer/models/model'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import * as CodeWhispererConstants from '../../../../codewhisperer/models/constants'
 import {
@@ -48,6 +53,7 @@ export type UnrecoverableErrorType =
     | 'unsupported-source-jdk-version'
     | 'upload-to-s3-failed'
     | 'job-start-failed'
+    | 'unsupported-source-db-version'
 
 export enum GumbyNamedMessages {
     COMPILATION_PROGRESS_MESSAGE = 'gumbyProjectCompilationMessage',
@@ -151,7 +157,7 @@ export class Messenger {
         )
     }
 
-    public async sendProjectPrompt(projects: TransformationCandidateProject[], tabID: string) {
+    public async sendLanguageUpgradeProjectPrompt(projects: TransformationCandidateProject[], tabID: string) {
         const projectFormOptions: { value: any; label: string }[] = []
         const detectedJavaVersions = new Array<JDKVersion | undefined>()
 
@@ -165,7 +171,7 @@ export class Messenger {
 
         const formItems: ChatItemFormItem[] = []
         formItems.push({
-            id: 'GumbyTransformProjectForm',
+            id: 'GumbyTransformLanguageUpgradeProjectForm',
             type: 'select',
             title: CodeWhispererConstants.chooseProjectFormTitle,
             mandatory: true,
@@ -181,11 +187,11 @@ export class Messenger {
             options: [
                 {
                     value: JDKVersion.JDK8,
-                    label: JDKVersion.JDK8.toString(),
+                    label: JDKVersion.JDK8,
                 },
                 {
                     value: JDKVersion.JDK11,
-                    label: JDKVersion.JDK11.toString(),
+                    label: JDKVersion.JDK11,
                 },
                 {
                     value: JDKVersion.UNSUPPORTED,
@@ -210,7 +216,7 @@ export class Messenger {
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, {
                 inProgress: true,
-                message: MessengerUtils.createTransformationConfirmationPrompt(detectedJavaVersions),
+                message: MessengerUtils.createLanguageUpgradeTransformationConfirmationPrompt(detectedJavaVersions),
             })
         )
 
@@ -227,7 +233,88 @@ export class Messenger {
                     message: 'Q Code Transformation',
                     formItems: formItems,
                 },
-                'TransformForm',
+                'LanguageUpgradeTransformForm',
+                tabID,
+                false
+            )
+        )
+    }
+
+    public async sendSQLConversionProjectPrompt(projects: TransformationCandidateProject[], tabID: string) {
+        const projectFormOptions: { value: any; label: string }[] = []
+
+        projects.forEach((candidateProject) => {
+            projectFormOptions.push({
+                value: candidateProject.path,
+                label: candidateProject.name,
+            })
+        })
+
+        const formItems: ChatItemFormItem[] = []
+        formItems.push({
+            id: 'GumbyTransformSQLConversionProjectForm',
+            type: 'select',
+            title: 'Choose a project to transform',
+            mandatory: true,
+
+            options: projectFormOptions,
+        })
+
+        formItems.push({
+            id: 'GumbyTransformDBFromForm',
+            type: 'select',
+            title: 'Choose the source database',
+            mandatory: true,
+            options: [
+                {
+                    value: 'Oracle',
+                    label: 'Oracle',
+                },
+                {
+                    value: 'Other',
+                    label: 'Other',
+                },
+            ],
+        })
+
+        formItems.push({
+            id: 'GumbyTransformDBToForm',
+            type: 'select',
+            title: 'Choose the target database',
+            mandatory: true,
+            options: [
+                {
+                    value: 'Amazon RDS for PostgreSQL',
+                    label: 'Amazon RDS for PostgreSQL',
+                },
+                {
+                    value: 'Amazon Aurora PostgreSQL',
+                    label: 'Amazon Aurora PostgreSQL',
+                },
+            ],
+        })
+
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, {
+                inProgress: true,
+                message: 'I can convert your embedded SQL, but I need some more info from you first.',
+            })
+        )
+
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, {
+                inProgress: false,
+                message: undefined,
+            })
+        )
+
+        this.dispatcher.sendChatPrompt(
+            new ChatPrompt(
+                {
+                    message: 'Q Code Transformation',
+                    formItems: formItems,
+                },
+                'SQLConversionTransformForm',
                 tabID,
                 false
             )
@@ -318,7 +405,7 @@ export class Messenger {
         )
     }
 
-    public sendStaticTextResponse(messageType: StaticTextResponseType, itemType: ChatItemType, tabID: string) {
+    public sendStaticTextResponse(messageType: StaticTextResponseType, tabID: string) {
         let message = '...'
 
         switch (messageType) {
@@ -331,16 +418,13 @@ export class Messenger {
             case 'choose-transformation-objective':
                 message = 'Choose your transformation objective.'
                 break
-            case 'language-upgrade-selected':
-                message = 'Got it! I can upgrade your Java 8 or 11 project to Java 17.'
-                break
         }
 
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
                     message,
-                    messageType: itemType,
+                    messageType: 'ai-prompt',
                 },
                 tabID
             )
@@ -374,6 +458,9 @@ export class Messenger {
                 break
             case 'unsupported-source-jdk-version':
                 message = CodeWhispererConstants.unsupportedJavaVersionChatMessage
+                break
+            case 'unsupported-source-db-version':
+                message = CodeWhispererConstants.unsupportedDatabaseChatMessage
                 break
         }
 
@@ -451,7 +538,7 @@ export class Messenger {
         )
     }
 
-    public sendProjectSelectionMessage(
+    public sendLanguageUpgradeProjectSelectionMessage(
         projectName: string,
         fromJDKVersion: JDKVersion,
         toJDKVersion: JDKVersion,
@@ -466,6 +553,18 @@ export class Messenger {
 | **Target JDK version** |  ${toJDKVersion}   |
     `
 
+        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
+    }
+
+    public sendSQLConversionProjectSelectionMessage(projectName: string, fromDB: DB, toDB: DB, tabID: string) {
+        const message = `### Transformation details
+-------------
+| | |
+| :------------------- | -------: |
+| **Project**             |   ${projectName}   |
+| **Source DB** |  ${fromDB}   |
+| **Target DB** |  ${toDB}   |
+    `
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
     }
 
