@@ -47,6 +47,7 @@ interface SamInvokeVueData {
     loadedConfigs: LaunchConfigPickItem[] | undefined
     selectedConfig: LaunchConfigPickItem
     payloadOption: string
+    buildChoice: boolean
     selectedFile: string
     selectedFilePath: string
     selectedTestEvent: string
@@ -164,6 +165,7 @@ export default defineComponent({
             selectedFile: '',
             selectedFilePath: '',
             resourceData: undefined,
+            buildChoice: true,
         }
     },
     methods: {
