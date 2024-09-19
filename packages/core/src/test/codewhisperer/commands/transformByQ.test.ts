@@ -203,7 +203,7 @@ describe('transformByQ', function () {
         assert.deepStrictEqual(actual, expected)
     })
 
-    it(`WHEN zip created THEN manifest.json contains -DskipTests flag`, async function () {
+    it(`WHEN zip created THEN manifest.json contains test-compile custom build command`, async function () {
         const tempFileName = `testfile-${globals.clock.Date.now()}.zip`
         transformByQState.setProjectPath(tempDir)
         const transformManifest = new ZipManifest()

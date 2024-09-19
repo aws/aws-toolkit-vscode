@@ -632,22 +632,18 @@ export const chooseSourceVersionFormTitle = 'Choose the source code version'
 
 export const chooseTargetVersionFormTitle = 'Choose the target code version'
 
-export const skipTestsFormTitle = 'Choose to skip tests'
+export const skipUnitTestsFormTitle = 'Choose to skip unit tests'
 
-export const skipTestsFormMessage =
-    "Amazon Q uses 'mvn verify' to build your project. You can skip running tests to reduce the build time."
+export const skipUnitTestsFormMessage =
+    'I will build your app using `mvn test` by default. If you would like to skip running unit tests to reduce build time, I will use `mvn test-compile`.'
 
-export const doNotSkipTestsMessage = 'Do not skip tests'
+export const doNotSkipUnitTestsMessage = 'Do not skip unit tests'
 
-export const doNotSkipTestsBuildCommand = 'verify'
+export const doNotSkipUnitTestsBuildCommand = 'test'
 
-export const skipIntegrationTestsMessage = 'Skip integration tests'
+export const skipUnitTestsMessage = 'Skip unit tests'
 
-export const skipIntegrationTestsBuildCommand = 'test'
-
-export const skipAllTestsMessage = 'Skip all tests'
-
-export const skipAllTestsBuildCommand = 'test-compile'
+export const skipUnitTestsBuildCommand = 'test-compile'
 
 export const planTitle = 'Code Transformation plan by Amazon Q'
 

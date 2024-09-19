@@ -114,20 +114,16 @@ export class Messenger {
         formItems.push({
             id: 'GumbyTransformSkipTestsForm',
             type: 'select',
-            title: CodeWhispererConstants.skipTestsFormTitle,
+            title: CodeWhispererConstants.skipUnitTestsFormTitle,
             mandatory: true,
             options: [
                 {
-                    value: CodeWhispererConstants.doNotSkipTestsMessage,
-                    label: CodeWhispererConstants.doNotSkipTestsMessage,
+                    value: CodeWhispererConstants.doNotSkipUnitTestsMessage,
+                    label: CodeWhispererConstants.doNotSkipUnitTestsMessage,
                 },
                 {
-                    value: CodeWhispererConstants.skipIntegrationTestsMessage,
-                    label: CodeWhispererConstants.skipIntegrationTestsMessage,
-                },
-                {
-                    value: CodeWhispererConstants.skipAllTestsMessage,
-                    label: CodeWhispererConstants.skipAllTestsMessage,
+                    value: CodeWhispererConstants.skipUnitTestsMessage,
+                    label: CodeWhispererConstants.skipUnitTestsMessage,
                 },
             ],
         })
@@ -135,7 +131,7 @@ export class Messenger {
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, {
                 inProgress: true,
-                message: CodeWhispererConstants.skipTestsFormMessage,
+                message: CodeWhispererConstants.skipUnitTestsFormMessage,
             })
         )
 
@@ -467,8 +463,8 @@ export class Messenger {
     public sendSkipTestsSelectionMessage(skipTestsSelection: string, tabID: string) {
         // just for correct grammar
         let skipTestsText = skipTestsSelection
-        if (skipTestsText === CodeWhispererConstants.doNotSkipTestsMessage) {
-            skipTestsText = 'not skip tests'
+        if (skipTestsText === CodeWhispererConstants.doNotSkipUnitTestsMessage) {
+            skipTestsText = 'not skip unit tests'
         }
         const message = `Ok, I will ${skipTestsText.toLowerCase()} when building your project.`
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
