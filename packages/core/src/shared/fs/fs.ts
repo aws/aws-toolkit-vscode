@@ -88,7 +88,7 @@ export class FileSystem {
 
     /** Creates the directory as well as missing parent directories. */
     async mkdir(path: Uri | string): Promise<void> {
-        const uri = this.#toUri(path)
+        const uri = this.toUri(path)
         const errHandler = createPermissionsErrorHandler(this.isWeb, vscode.Uri.joinPath(uri, '..'), '*wx')
 
         // Certain URIs are not supported with vscode.workspace.fs in Cloud9
@@ -105,7 +105,7 @@ export class FileSystem {
 
     // TODO: rename to readFileBytes()?
     async readFile(path: Uri | string): Promise<Uint8Array> {
-        const uri = this.#toUri(path)
+        const uri = this.toUri(path)
         const errHandler = createPermissionsErrorHandler(this.isWeb, uri, 'r**')
 
         if (isCloud9()) {
@@ -117,7 +117,7 @@ export class FileSystem {
 
     // TODO: rename to readFile()?
     async readFileAsString(path: Uri | string, decoder: TextDecoder = FileSystem.#decoder): Promise<string> {
-        const uri = this.#toUri(path)
+        const uri = this.toUri(path)
         const bytes = await this.readFile(uri)
         return decoder.decode(bytes)
     }
@@ -127,7 +127,7 @@ export class FileSystem {
      * so we must do it ourselves (this implementation is inefficient).
      */
     async appendFile(path: Uri | string, content: Uint8Array | string): Promise<void> {
-        path = this.#toUri(path)
+        path = this.toUri(path)
 
         const currentContent: Uint8Array = (await this.existsFile(path)) ? await this.readFile(path) : new Uint8Array(0)
         const currentLength = currentContent.length
@@ -146,7 +146,7 @@ export class FileSystem {
         if (path === undefined || path === '') {
             return false
         }
-        const uri = this.#toUri(path)
+        const uri = this.toUri(path)
         if (uri.fsPath === undefined || uri.fsPath === '') {
             return false
         }
@@ -212,7 +212,7 @@ export class FileSystem {
         data: string | Uint8Array,
         opts?: WriteFileOptions & { atomic?: boolean }
     ): Promise<void> {
-        const uri = this.#toUri(path)
+        const uri = this.toUri(path)
         const errHandler = createPermissionsErrorHandler(this.isWeb, uri, '*w*')
         const content = this.#toBytes(data)
 
@@ -249,7 +249,7 @@ export class FileSystem {
             // 3. Finally, do a regular file write, but may result in invalid file content
             //
             // For telemetry, we will only report failures as to not overload with succeed events.
-            const tempFile = this.#toUri(`${uri.fsPath}.${crypto.randomBytes(8).toString('hex')}.tmp`)
+            const tempFile = this.toUri(`${uri.fsPath}.${crypto.randomBytes(8).toString('hex')}.tmp`)
             try {
                 await write(tempFile)
                 await fs.rename(tempFile, uri)
@@ -290,8 +290,8 @@ export class FileSystem {
     }
 
     async rename(oldPath: vscode.Uri | string, newPath: vscode.Uri | string) {
-        const oldUri = this.#toUri(oldPath)
-        const newUri = this.#toUri(newPath)
+        const oldUri = this.toUri(oldPath)
+        const newUri = this.toUri(newPath)
         const errHandler = createPermissionsErrorHandler(this.isWeb, oldUri, 'rw*')
 
         if (isCloud9()) {
@@ -352,7 +352,7 @@ export class FileSystem {
      * The stat of the file,  throws if the file does not exist or on any other error.
      */
     async stat(uri: vscode.Uri | string): Promise<vscode.FileStat> {
-        const path = this.#toUri(uri)
+        const path = this.toUri(uri)
         return await vfs.stat(path)
     }
 
@@ -370,7 +370,7 @@ export class FileSystem {
     async delete(fileOrDir: string | vscode.Uri, opt_?: { recursive?: boolean; force?: boolean }): Promise<void> {
         const opt = { ...opt_, recursive: !!opt_?.recursive }
         opt.force = opt.force === false ? opt.force : !!(opt.force || opt.recursive)
-        const uri = this.#toUri(fileOrDir)
+        const uri = this.toUri(fileOrDir)
         const parent = vscode.Uri.joinPath(uri, '..')
         const errHandler = createPermissionsErrorHandler(this.isWeb, parent, '*wx')
 
@@ -427,7 +427,7 @@ export class FileSystem {
     }
 
     async readdir(uri: vscode.Uri | string): Promise<[string, vscode.FileType][]> {
-        const path = this.#toUri(uri)
+        const path = this.toUri(uri)
 
         // readdir is not a supported vscode API in Cloud9
         if (isCloud9()) {
@@ -441,8 +441,8 @@ export class FileSystem {
     }
 
     async copy(source: vscode.Uri | string, target: vscode.Uri | string): Promise<void> {
-        const sourcePath = this.#toUri(source)
-        const targetPath = this.#toUri(target)
+        const sourcePath = this.toUri(source)
+        const targetPath = this.toUri(target)
         return await vfs.copy(sourcePath, targetPath, { overwrite: true })
     }
 
@@ -454,7 +454,7 @@ export class FileSystem {
     async checkPerms(file: string | vscode.Uri, perms: PermissionsTriplet): Promise<void> {
         // TODO: implement checkExactPerms() by checking the file mode.
         // public static async checkExactPerms(file: string | vscode.Uri, perms: `${PermissionsTriplet}${PermissionsTriplet}${PermissionsTriplet}`)
-        const uri = this.#toUri(file)
+        const uri = this.toUri(file)
         const errHandler = createPermissionsErrorHandler(this.isWeb, uri, perms)
         const flags = Array.from(perms) as (keyof typeof this.modeMap)[]
         const mode = flags.reduce((m, f) => m | this.modeMap[f], nodeConstants.F_OK)
@@ -640,7 +640,7 @@ export class FileSystem {
      * @param path The file path for which to retrieve metadata.
      * @return The Uri about the file.
      */
-    #toUri(path: string | vscode.Uri): vscode.Uri {
+    toUri(path: string | vscode.Uri): vscode.Uri {
         if (path instanceof vscode.Uri) {
             return path
         }

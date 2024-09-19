@@ -7,9 +7,8 @@ import assert from 'assert'
 import vscode from 'vscode'
 import * as path from 'path'
 import * as utils from 'util'
-import { existsSync, mkdirSync, promises as nodefs, readFileSync, rmSync } from 'fs'
+import { existsSync, mkdirSync, promises as nodefs, readFileSync } from 'fs'
 import nodeFs from 'fs'
-import { FakeExtensionContext } from '../../fakeExtensionContext'
 import fs, { FileSystem } from '../../../shared/fs/fs'
 import * as os from 'os'
 import { isMinVscode, isWin } from '../../../shared/vscode/env'
@@ -21,29 +20,27 @@ import * as testutil from '../../testUtil'
 import globals from '../../../shared/extensionGlobals'
 import { driveLetterRegex } from '../../../shared/utilities/pathUtils'
 import { IdeFileSystem } from '../../../shared/telemetry/telemetry.gen'
+import { TestFolder } from '../../testUtil'
 
 describe('FileSystem', function () {
-    let fakeContext: vscode.ExtensionContext
     let sandbox: Sinon.SinonSandbox
+    let testFolder: TestFolder
 
     before(async function () {
-        fakeContext = await FakeExtensionContext.create()
         sandbox = Sinon.createSandbox()
-        await deleteTestRoot() // incase a previous test run failed to clean
     })
 
     beforeEach(async function () {
-        await mkTestRoot()
+        testFolder = await TestFolder.create()
     })
 
     afterEach(async function () {
-        await deleteTestRoot()
         sandbox.restore()
     })
 
     describe('readFileAsString()', function () {
         it('reads a file', async function () {
-            const path = await makeFile('test.txt', 'hello world')
+            const path = await testFolder.write('test.txt', 'hello world')
             const pathAsUri = vscode.Uri.file(path)
 
             assert.strictEqual(await fs.readFileAsString(path), 'hello world')
@@ -57,7 +54,7 @@ describe('FileSystem', function () {
             }
 
             const fileName = 'test.txt'
-            const path = await makeFile(fileName, 'hello world', { mode: 0o000 })
+            const path = await testFolder.write(fileName, 'hello world', { mode: 0o000 })
 
             await assert.rejects(fs.readFileAsString(path), (err) => {
                 assert(err instanceof PermissionsError)
@@ -73,14 +70,14 @@ describe('FileSystem', function () {
 
         opts.forEach((opt) => {
             it(`writes a file (atomic: ${opt.atomic})`, async function () {
-                const filePath = createTestPath('myFileName')
+                const filePath = testFolder.pathFrom('myFileName')
                 await fs.writeFile(filePath, 'MyContent', opt)
                 assert.strictEqual(readFileSync(filePath, 'utf-8'), 'MyContent')
             })
         })
 
         it('writes a file with encoded text', async function () {
-            const filePath = createTestPath('myFileName')
+            const filePath = testFolder.pathFrom('myFileName')
             const text = 'hello'
             const content = new TextEncoder().encode(text)
 
@@ -90,7 +87,7 @@ describe('FileSystem', function () {
         })
 
         it('makes dirs if missing', async function () {
-            const filePath = createTestPath('dirA/dirB/myFileName.txt')
+            const filePath = testFolder.pathFrom('dirA/dirB/myFileName.txt')
             await fs.writeFile(filePath, 'MyContent')
             assert.strictEqual(readFileSync(filePath, 'utf-8'), 'MyContent')
         })
@@ -110,7 +107,7 @@ describe('FileSystem', function () {
                 if (throws.node) {
                     sandbox.stub(nodeFs.promises, 'rename').throws(new Error('Test Error Message Node'))
                 }
-                const filePath = createTestPath('myFileName')
+                const filePath = testFolder.pathFrom('myFileName')
 
                 await fs.writeFile(filePath, 'MyContent', { atomic: true })
 
@@ -149,7 +146,7 @@ describe('FileSystem', function () {
             }
 
             const fileName = 'test.txt'
-            const filePath = await makeFile(fileName, 'hello world', { mode: 0o000 })
+            const filePath = await testFolder.write(fileName, 'hello world', { mode: 0o000 })
 
             await assert.rejects(fs.writeFile(filePath, 'MyContent'), (err) => {
                 assert(err instanceof PermissionsError)
@@ -162,13 +159,13 @@ describe('FileSystem', function () {
 
     describe('appendFile()', function () {
         it('appends to a file', async function () {
-            const filePath = await makeFile('test.txt', 'LINE-1-TEXT')
+            const filePath = await testFolder.write('test.txt', 'LINE-1-TEXT')
             await fs.appendFile(filePath, '\nLINE-2-TEXT')
             assert.strictEqual(readFileSync(filePath, 'utf-8'), 'LINE-1-TEXT\nLINE-2-TEXT')
         })
 
         it('creates new file if it does not exist', async function () {
-            const filePath = createTestPath('thisDoesNotExist.txt')
+            const filePath = testFolder.pathFrom('thisDoesNotExist.txt')
             await fs.appendFile(filePath, 'i am nikolas')
             assert.strictEqual(readFileSync(filePath, 'utf-8'), 'i am nikolas')
         })
@@ -176,43 +173,43 @@ describe('FileSystem', function () {
 
     describe('existsFile()', function () {
         it('true for existing file', async function () {
-            const file = await makeFile('test.txt')
+            const file = await testFolder.write('test.txt')
             assert.strictEqual(await fs.existsFile(file), true)
         })
 
         it('false for non-existent file', async function () {
-            const nonExistantFile = createTestPath('thisDoesNotExist.txt')
+            const nonExistantFile = testFolder.pathFrom('thisDoesNotExist.txt')
             assert.strictEqual(await fs.existsFile(nonExistantFile), false)
         })
 
         it('false for existing directory', async function () {
-            const dir = mkTestDir('thisIsDirectory')
+            const dir = await testFolder.mkdir('thisIsDirectory')
             assert.strictEqual(await fs.existsFile(dir), false)
         })
     })
 
     describe('existsDir()', function () {
         it('true for existing directory', async function () {
-            const dir = mkTestDir('myDir')
+            const dir = await testFolder.mkdir('myDir')
             assert.strictEqual(await fs.existsDir(dir), true)
         })
 
         it('false for non-existent directory', async function () {
-            const noFile = createTestPath('non-existent')
+            const noFile = testFolder.pathFrom('non-existent')
             assert.strictEqual(await fs.existsDir(noFile), false)
         })
     })
 
     describe('exists()', function () {
         it('true for existing file/directory', async function () {
-            const dir = mkTestDir('myDir')
-            const file = await makeFile('test.txt')
+            const dir = await testFolder.mkdir('myDir')
+            const file = await testFolder.write('test.txt')
             assert.strictEqual(await fs.exists(dir), true)
             assert.strictEqual(await fs.exists(file), true)
         })
 
         it('false for non-existent file/directory', async function () {
-            const noFile = createTestPath('non-existent')
+            const noFile = testFolder.pathFrom('non-existent')
             assert.strictEqual(await fs.exists(noFile), false)
         })
     })
@@ -222,7 +219,7 @@ describe('FileSystem', function () {
 
         paths.forEach(async function (p) {
             it(`creates folder: '${p}'`, async function () {
-                const dirPath = createTestPath(p)
+                const dirPath = testFolder.pathFrom(p)
                 await fs.mkdir(dirPath)
                 assert(existsSync(dirPath))
             })
@@ -231,7 +228,7 @@ describe('FileSystem', function () {
         paths.forEach(async function (p) {
             it(`creates folder but uses the "fs" module if in Cloud9: '${p}'`, async function () {
                 sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
-                const dirPath = createTestPath(p)
+                const dirPath = testFolder.pathFrom(p)
                 const mkdirSpy = sandbox.spy(nodefs, 'mkdir')
 
                 await fs.mkdir(dirPath)
@@ -240,18 +237,26 @@ describe('FileSystem', function () {
                 assert.deepStrictEqual(mkdirSpy.args[0], [dirPath, { recursive: true }])
             })
         })
+
+        it('does NOT throw if dir already exists', async function () {
+            // We do not always want this behavior, but it seems that this is how the vsc implementation
+            // does it. Look at the Node FS implementation instead as that throws if the dir already exists.
+            const dirPath = testFolder.pathFrom('a')
+            await fs.mkdir(dirPath)
+            await fs.mkdir(dirPath)
+        })
     })
 
     describe('readdir()', function () {
         it('lists files in a directory', async function () {
-            await makeFile('a.txt')
-            await makeFile('b.txt')
-            await makeFile('c.txt')
-            mkdirSync(createTestPath('dirA'))
-            mkdirSync(createTestPath('dirB'))
-            mkdirSync(createTestPath('dirC'))
+            await testFolder.write('a.txt')
+            await testFolder.write('b.txt')
+            await testFolder.write('c.txt')
+            mkdirSync(testFolder.pathFrom('dirA'))
+            mkdirSync(testFolder.pathFrom('dirB'))
+            mkdirSync(testFolder.pathFrom('dirC'))
 
-            const files = await fs.readdir(testRootPath())
+            const files = await fs.readdir(testFolder.path)
             assert.deepStrictEqual(
                 sorted(files),
                 sorted([
@@ -266,7 +271,7 @@ describe('FileSystem', function () {
         })
 
         it('empty list if no files in directory', async function () {
-            const files = await fs.readdir(testRootPath())
+            const files = await fs.readdir(testFolder.path)
             assert.deepStrictEqual(files, [])
         })
 
@@ -278,14 +283,14 @@ describe('FileSystem', function () {
             sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
             const readdirSpy = sandbox.spy(nodefs, 'readdir')
 
-            await makeFile('a.txt')
-            await makeFile('b.txt')
-            await makeFile('c.txt')
-            mkdirSync(createTestPath('dirA'))
-            mkdirSync(createTestPath('dirB'))
-            mkdirSync(createTestPath('dirC'))
+            await testFolder.write('a.txt')
+            await testFolder.write('b.txt')
+            await testFolder.write('c.txt')
+            mkdirSync(testFolder.pathFrom('dirA'))
+            mkdirSync(testFolder.pathFrom('dirB'))
+            mkdirSync(testFolder.pathFrom('dirC'))
 
-            const files = await fs.readdir(testRootPath())
+            const files = await fs.readdir(testFolder.path)
             assert.deepStrictEqual(
                 sorted(files),
                 sorted([
@@ -303,11 +308,11 @@ describe('FileSystem', function () {
 
     describe('copy()', function () {
         it('copies files and folders from one dir to another', async function () {
-            const targetDir = mkTestDir('targetDir')
-            await makeFile('targetDir/a.txt', 'I am A')
-            await makeFile('targetDir/dirB/b.txt', 'I am B')
+            const targetDir = await testFolder.mkdir('targetDir')
+            await testFolder.write('targetDir/a.txt', 'I am A')
+            await testFolder.write('targetDir/dirB/b.txt', 'I am B')
 
-            const destDir = path.join(testRootPath(), 'destDir')
+            const destDir = path.join(testFolder.path, 'destDir')
             await fs.copy(targetDir, destDir)
 
             assert.strictEqual(await fs.readFileAsString(path.join(destDir, 'a.txt')), 'I am A')
@@ -317,14 +322,14 @@ describe('FileSystem', function () {
 
     describe('delete()', function () {
         it('deletes file', async function () {
-            const f = await makeFile('test.txt', 'hello world')
+            const f = await testFolder.write('test.txt', 'hello world')
             assert(existsSync(f))
             await fs.delete(f)
             assert(!existsSync(f))
         })
 
         it('fails to delete non-empty directory with recursive:false (the default)', async function () {
-            const dir = mkTestDir()
+            const dir = await testFolder.mkdir()
             const f = path.join(dir, 'testfile.txt')
             await testutil.toFile('some content', f)
             assert(existsSync(dir))
@@ -333,20 +338,20 @@ describe('FileSystem', function () {
         })
 
         it('deletes directory with recursive:true', async function () {
-            const dir = mkTestDir()
+            const dir = await testFolder.mkdir()
             await fs.delete(dir, { recursive: true })
             assert(!existsSync(dir))
         })
 
         it('no error if file not found (but parent exists)', async function () {
-            const dir = mkTestDir()
+            const dir = await testFolder.mkdir()
             const f = path.join(dir, 'missingfile.txt')
             assert(!existsSync(f))
             await fs.delete(f)
         })
 
         it('error if file *and* its parent dir not found', async function () {
-            const dir = mkTestDir()
+            const dir = await testFolder.mkdir()
             const f = path.join(dir, 'missingdir/missingfile.txt')
             assert(!existsSync(f))
             await assert.rejects(() => fs.delete(f))
@@ -356,7 +361,7 @@ describe('FileSystem', function () {
             sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
             const rmdirSpy = sandbox.spy(nodefs, 'rm')
             // Folder with subfolders
-            const dirPath = mkTestDir('a/b/deleteMe')
+            const dirPath = await testFolder.mkdir('a/b/deleteMe')
             mkdirSync(dirPath, { recursive: true })
 
             await fs.delete(dirPath, { recursive: true })
@@ -368,21 +373,21 @@ describe('FileSystem', function () {
 
     describe('stat()', function () {
         it('gets stat of a file', async function () {
-            const filePath = await makeFile('test.txt', 'hello world')
+            const filePath = await testFolder.write('test.txt', 'hello world')
             const stat = await fs.stat(filePath)
             assert(stat)
             assert.strictEqual(stat.type, vscode.FileType.File)
         })
 
         it('throws if no file exists', async function () {
-            const filePath = createTestPath('thisDoesNotExist.txt')
+            const filePath = testFolder.pathFrom('thisDoesNotExist.txt')
             await assert.rejects(() => fs.stat(filePath))
         })
     })
 
     describe('rename()', async () => {
         it('renames a file', async () => {
-            const oldPath = await makeFile('oldFile.txt', 'hello world')
+            const oldPath = await testFolder.write('oldFile.txt', 'hello world')
             const newPath = path.join(path.dirname(oldPath), 'newFile.txt')
 
             await fs.rename(oldPath, newPath)
@@ -393,7 +398,7 @@ describe('FileSystem', function () {
         })
 
         it('renames a folder', async () => {
-            const oldPath = mkTestDir('test')
+            const oldPath = await testFolder.mkdir('test')
             await fs.writeFile(path.join(oldPath, 'file.txt'), 'test text')
             const newPath = path.join(path.dirname(oldPath), 'newName')
 
@@ -405,8 +410,8 @@ describe('FileSystem', function () {
         })
 
         it('overwrites if destination exists', async () => {
-            const oldPath = await makeFile('oldFile.txt', 'hello world')
-            const newPath = await makeFile('newFile.txt', 'some content')
+            const oldPath = await testFolder.write('oldFile.txt', 'hello world')
+            const newPath = await testFolder.write('newFile.txt', 'some content')
 
             await fs.rename(oldPath, newPath)
 
@@ -417,8 +422,8 @@ describe('FileSystem', function () {
         it('throws if source does not exist', async () => {
             const clock = testutil.installFakeClock()
             try {
-                const oldPath = createTestPath('oldFile.txt')
-                const newPath = createTestPath('newFile.txt')
+                const oldPath = testFolder.pathFrom('oldFile.txt')
+                const newPath = testFolder.pathFrom('newFile.txt')
 
                 const result = fs.rename(oldPath, newPath)
                 await clock.tickAsync(FileSystem.renameTimeoutOpts.timeout)
@@ -436,8 +441,8 @@ describe('FileSystem', function () {
         })
 
         it('source file does not exist at first, but eventually appears', async () => {
-            const oldPath = createTestPath('oldFile.txt')
-            const newPath = createTestPath('newFile.txt')
+            const oldPath = testFolder.pathFrom('oldFile.txt')
+            const newPath = testFolder.pathFrom('newFile.txt')
 
             const result = fs.rename(oldPath, newPath)
             // this file is created after the first "exists" check fails, the following check should pass
@@ -724,40 +729,5 @@ describe('FileSystem', function () {
                 })
             })
         })
-    }
-
-    async function makeFile(relativePath: string, content?: string, options?: { mode?: number }): Promise<string> {
-        const filePath = path.join(testRootPath(), relativePath)
-
-        await testutil.toFile(content ?? '', filePath)
-
-        if (options?.mode !== undefined) {
-            await nodefs.chmod(filePath, options.mode)
-        }
-
-        return filePath
-    }
-
-    function mkTestDir(relativeDirPath?: string) {
-        const dir = createTestPath(relativeDirPath ?? 'testDir')
-        mkdirSync(dir, { recursive: true })
-        assert(existsSync(dir))
-        return dir
-    }
-
-    function createTestPath(relativePath: string): string {
-        return path.join(testRootPath(), relativePath)
-    }
-
-    function testRootPath() {
-        return path.join(fakeContext.globalStorageUri.fsPath, 'fsTestDir')
-    }
-
-    async function mkTestRoot() {
-        return mkdirSync(testRootPath())
-    }
-
-    async function deleteTestRoot() {
-        rmSync(testRootPath(), { recursive: true, force: true })
     }
 })
