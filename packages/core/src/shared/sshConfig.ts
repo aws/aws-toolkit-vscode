@@ -178,6 +178,8 @@ Host ${this.configHostName}
     AddKeysToAgent yes
     StrictHostKeyChecking accept-new
     ProxyCommand ${proxyCommand}
+    IdentitiesOnly yes
+    IdentityAgent none
     `
     }
 
