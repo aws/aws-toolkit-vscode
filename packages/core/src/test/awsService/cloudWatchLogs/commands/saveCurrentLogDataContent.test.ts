@@ -8,7 +8,6 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 
-import { createURIFromArgs } from '../../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
 import { saveCurrentLogDataContent } from '../../../../awsService/cloudWatchLogs/commands/saveCurrentLogDataContent'
 import { fileExists, makeTemporaryToolkitFolder, readFileAsString } from '../../../../shared/filesystemUtilities'
 import { getTestWindow } from '../../../shared/vscode/window'
@@ -19,6 +18,7 @@ import {
     LogDataRegistry,
 } from '../../../../awsService/cloudWatchLogs/registry/logDataRegistry'
 import { assertTextEditorContains } from '../../../testUtil'
+import { cwlUriSchema } from '../../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
 
 async function testFilterLogEvents(
     logGroupInfo: CloudWatchLogsGroupInfo,
@@ -55,7 +55,7 @@ describe('saveCurrentLogDataContent', async function () {
             regionName: 'r',
             streamName: 's',
         }
-        const uri = createURIFromArgs(logGroupInfo, {})
+        const uri = cwlUriSchema.form({ logGroupInfo: logGroupInfo, parameters: {} })
         LogDataRegistry.instance.registerInitialLog(uri, testFilterLogEvents)
         await LogDataRegistry.instance.fetchNextLogEvents(uri)
         await vscode.window.showTextDocument(uri)

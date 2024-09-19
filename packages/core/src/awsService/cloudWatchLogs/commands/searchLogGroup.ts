@@ -16,7 +16,7 @@ import {
 } from '../registry/logDataRegistry'
 import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import { isValidResponse, isWizardControl, Wizard, WIZARD_RETRY } from '../../../shared/wizards/wizard'
-import { createURIFromArgs, msgKey, parseCloudWatchLogsUri, recordTelemetryFilter } from '../cloudWatchLogsUtils'
+import { cwlUriSchema, msgKey, recordTelemetryFilter } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { getLogger } from '../../../shared/logger'
@@ -78,7 +78,7 @@ export async function prepareDocument(uri: vscode.Uri, logData: CloudWatchLogsDa
             localize(
                 'AWS.cwl.searchLogGroup.errorRetrievingLogs',
                 'Failed to get logs for {0}',
-                parseCloudWatchLogsUri(uri).logGroupInfo.groupName
+                cwlUriSchema.parse(uri).logGroupInfo.groupName
             )
         )
     }
@@ -105,7 +105,7 @@ export async function searchLogGroup(
         }
 
         const userResponse = handleWizardResponse(response, registry)
-        const uri = createURIFromArgs(userResponse.logGroupInfo, userResponse.parameters)
+        const uri = cwlUriSchema.form({ logGroupInfo: userResponse.logGroupInfo, parameters: userResponse.parameters })
         await prepareDocument(uri, userResponse, registry)
     })
 }

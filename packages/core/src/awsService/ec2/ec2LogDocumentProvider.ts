@@ -6,12 +6,16 @@ import * as vscode from 'vscode'
 import { Ec2Selection } from './prompter'
 import { Ec2Client } from '../../shared/clients/ec2Client'
 import { EC2_LOGS_SCHEME } from '../../shared/constants'
+import { UriSchema } from '../../shared/utilities/uriUtils'
 
 export class Ec2LogDocumentProvider implements vscode.TextDocumentContentProvider {
-    public constructor() {}
+    private Ec2LogSchema: UriSchema<Ec2Selection>
+    public constructor() {
+        this.Ec2LogSchema = new UriSchema<Ec2Selection>(parseEc2Uri, formEc2Uri)
+    }
 
     public async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
-        if (!isEc2Uri(uri)) {
+        if (!this.Ec2LogSchema.isValid(uri)) {
             throw new Error(`Invalid EC2 Logs URI: ${uri.toString()}`)
         }
         const ec2Selection = parseEc2Uri(uri)
@@ -36,13 +40,4 @@ function parseEc2Uri(uri: vscode.Uri): Ec2Selection {
 
 export function formEc2Uri(selection: Ec2Selection): vscode.Uri {
     return vscode.Uri.parse(`${EC2_LOGS_SCHEME}:${selection.region}:${selection.instanceId}`)
-}
-
-function isEc2Uri(uri: vscode.Uri): boolean {
-    try {
-        parseEc2Uri(uri)
-        return true
-    } catch {
-        return false
-    }
 }
