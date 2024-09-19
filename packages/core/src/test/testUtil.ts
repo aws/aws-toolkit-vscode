@@ -76,6 +76,8 @@ export function getWorkspaceFolder(dir: string): vscode.WorkspaceFolder {
  */
 export class TestFolder {
     protected constructor(private readonly rootFolder: string) {}
+
+    /** Creates a folder that deletes itself once all tests are done running. */
     static async create() {
         const rootFolder = (await createTestWorkspaceFolder()).uri.fsPath
         return new TestFolder(rootFolder)

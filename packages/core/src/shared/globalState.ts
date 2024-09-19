@@ -58,6 +58,7 @@ type globalKey =
     | 'isExtensionFirstUse'
     | 'lastExtensionVersion'
     | 'lastSelectedRegion'
+    | 'lastOsStartTime'
     | 'recentCredentials'
     // List of regions enabled in AWS Explorer.
     | 'region'
