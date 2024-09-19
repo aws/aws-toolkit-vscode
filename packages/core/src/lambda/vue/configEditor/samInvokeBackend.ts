@@ -43,7 +43,6 @@ import {
     runSamCliRemoteTestEvents,
 } from '../../../shared/sam/cli/samCliRemoteTestEvent'
 import { getSamCliContext } from '../../../shared/sam/cli/samCliContext'
-import { listRemoteTestEvents } from '../remoteInvoke/invokeLambda'
 import { ResourceNode } from '../../../shared/applicationBuilder/explorer/nodes/resourceNode'
 
 const localize = nls.loadMessageBundle()
@@ -321,13 +320,15 @@ export class SamInvokeWebview extends VueWebview {
         return path.basename(filePath)
     }
 
-    public async listRemoteTestEvents(
-        functionArn: string,
-        region: string,
-        stackName: string,
-        logicalId: string
-    ): Promise<string[]> {
-        return await listRemoteTestEvents(functionArn, region, stackName, logicalId)
+    public async listRemoteTestEvents(region: string, stackName: string, logicalId: string): Promise<string[]> {
+        const params: SamCliRemoteTestEventsParameters = {
+            stackName: stackName,
+            region: region,
+            operation: TestEventsOperation.List,
+            logicalId: logicalId,
+        }
+        const result = await this.remoteTestEvents(params)
+        return result.split('\n')
     }
 
     public async createRemoteTestEvents(putEvent: Event) {

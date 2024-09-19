@@ -16,8 +16,8 @@ export const TestEventsOperation = {
     Put: 'put',
 }
 export interface SamCliRemoteTestEventsParameters {
-    functionArn: string
     operation: string
+    functionArn?: string
     name?: string
     region?: string
     eventSample?: string

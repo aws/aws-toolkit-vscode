@@ -29,9 +29,7 @@ export default defineComponent({
         if (this.initialData.FunctionArn && this.initialData.FunctionRegion) {
             this.initialData.TestEvents = await client.listRemoteTestEvents(
                 this.initialData.FunctionArn,
-                this.initialData.FunctionRegion,
-                this.initialData.StackName!,
-                this.initialData.LogicalId!
+                this.initialData.FunctionRegion
             )
         }
     },
@@ -72,27 +70,14 @@ export default defineComponent({
             this.newTestEventName = ''
             this.initialData.TestEvents = await client.listRemoteTestEvents(
                 this.initialData.FunctionArn,
-                this.initialData.FunctionRegion,
-                this.initialData.StackName!,
-                this.initialData.LogicalId!
+                this.initialData.FunctionRegion
             )
         },
         async promptForFileLocation() {
             const resp = await client.promptFile()
             if (resp) {
-                this.sampleText = resp.sample
                 this.selectedFile = resp.selectedFile
                 this.selectedFilePath = resp.selectedFilePath
-            }
-        },
-        async reloadFile() {
-            if (this.selectedFile) {
-                const resp = await client.reloadFile(this.selectedFilePath)
-                if (resp) {
-                    this.sampleText = resp.sample
-                    this.selectedFile = resp.selectedFile
-                    this.selectedFilePath = resp.selectedFilePath
-                }
             }
         },
         onFileChange(event: Event) {
@@ -118,7 +103,14 @@ export default defineComponent({
         },
 
         async sendInput() {
-            await client.invokeLambda(this.sampleText, this.initialData.Source)
+            let event = this.sampleText
+            if (this.selectedFile && !this.sampleText) {
+                const resp = await client.loadFile(this.selectedFilePath)
+                if (resp) {
+                    event = resp.sample
+                }
+            }
+            await client.invokeLambda(event, this.initialData.Source)
         },
 
         loadSampleEvent() {

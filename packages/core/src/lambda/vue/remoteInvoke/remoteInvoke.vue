@@ -84,8 +84,7 @@
             <div><label>File</label></div>
             <div>
                 <input type="file" id="file" @change="onFileChange" style="display: none" ref="fileInput" />
-                <button @click="promptForFileLocation" class="button-theme-secondary">Choose file</button>&nbsp;
-                <button @click="reloadFile" class="button-theme-secondary">Reload</button>
+                <button @click="promptForFileLocation" class="secondary-button">Choose file</button>
                 &nbsp; {{ selectedFile || 'No file selected' }}
             </div>
         </div>

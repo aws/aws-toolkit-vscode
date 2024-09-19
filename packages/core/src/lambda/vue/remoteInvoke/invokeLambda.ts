@@ -142,7 +142,7 @@ export class RemoteInvokeWebview extends VueWebview {
         }
     }
 
-    public async reloadFile(fileLocations: string) {
+    public async loadFile(fileLocations: string) {
         return await this.readFile(fileLocations)
     }
 
@@ -169,13 +169,14 @@ export class RemoteInvokeWebview extends VueWebview {
         return basename(filePath)
     }
 
-    public async listRemoteTestEvents(
-        arn: string,
-        region: string,
-        stackName: string,
-        logicalId: string
-    ): Promise<string[]> {
-        return await listRemoteTestEvents(arn, region, stackName, logicalId)
+    public async listRemoteTestEvents(functionArn: string, region: string): Promise<string[]> {
+        const params: SamCliRemoteTestEventsParameters = {
+            functionArn: functionArn,
+            operation: TestEventsOperation.List,
+            region: region,
+        }
+        const result = await this.remoteTestEvents(params)
+        return result.split('\n')
     }
 
     public async createRemoteTestEvents(putEvent: Event) {
@@ -264,9 +265,7 @@ export async function invokeRemoteLambda(
         functionArn = params.functionNode.configuration.FunctionArn
     }
     try {
-        functionArn
-            ? await listRemoteTestEvents(functionArn, resource.regionCode, resource.stackName, resource.logicalId)
-            : []
+        functionArn ? await listRemoteTestEvents(functionArn, resource.regionCode) : []
     } catch (err) {
         getLogger().error('InvokeLambda: Error listing remote test events:', err)
     }
@@ -285,19 +284,12 @@ export async function invokeRemoteLambda(
     })
 }
 
-export async function listRemoteTestEvents(
-    arn: string,
-    region: string,
-    stackName: string,
-    logicalId: string
-): Promise<string[]> {
+export async function listRemoteTestEvents(arn: string, region: string): Promise<string[]> {
     try {
         const params: SamCliRemoteTestEventsParameters = {
             functionArn: arn,
             operation: TestEventsOperation.List,
             region: region,
-            stackName: stackName,
-            logicalId: logicalId,
         }
         const result = await runSamCliRemoteTestEvents(params, getSamCliContext().invoker)
         return result.split('\n')

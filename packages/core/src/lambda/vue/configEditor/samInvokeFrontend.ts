@@ -310,7 +310,6 @@ export default defineComponent({
         async promptForFileLocation() {
             const resp = await client.promptFile()
             if (resp) {
-                this.payload.value = JSON.stringify(JSON.parse(resp.sample), undefined, 4)
                 this.selectedFile = resp.selectedFile
                 this.selectedFilePath = resp.selectedFilePath
             }
@@ -319,7 +318,6 @@ export default defineComponent({
             if (this.selectedFile) {
                 const resp = await client.readFile(this.selectedFilePath)
                 if (resp) {
-                    this.payload.value = JSON.stringify(JSON.parse(resp.sample), undefined, 4)
                     this.selectedFile = resp.selectedFile
                     this.selectedFilePath = resp.selectedFilePath
                 }
@@ -352,7 +350,6 @@ export default defineComponent({
                 this.showNameInput = false
                 this.newTestEventName = ''
                 this.TestEvents = await client.listRemoteTestEvents(
-                    this.resourceData.arn,
                     this.resourceData.region,
                     this.resourceData.stackName,
                     this.resourceData.logicalId
@@ -383,7 +380,6 @@ export default defineComponent({
 
                         client
                             .listRemoteTestEvents(
-                                this.resourceData.arn,
                                 this.resourceData.region,
                                 this.resourceData.stackName,
                                 this.resourceData.logicalId
