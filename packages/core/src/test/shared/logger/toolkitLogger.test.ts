@@ -7,9 +7,10 @@ import assert from 'assert'
 import * as fs from 'fs'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
 import * as vscode from 'vscode'
-import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogger'
+import { ToolkitLogger } from '../../../shared/logger/toolkitLogger'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { sleep, waitUntil } from '../../../shared/utilities/timeoutUtils'
+import { ToolkitError } from '../../../shared/errors'
 
 /**
  * Disposes the logger then waits for the write streams to flush. The `expected` and `unexpected` arrays just look
@@ -17,7 +18,7 @@ import { sleep, waitUntil } from '../../../shared/utilities/timeoutUtils'
  * were found.
  */
 async function checkFile(
-    logger: WinstonToolkitLogger,
+    logger: ToolkitLogger,
     logPath: vscode.Uri,
     expected: string[],
     unexpected: string[] = []
@@ -54,7 +55,7 @@ async function checkFile(
     return logger.dispose().then(() => check)
 }
 
-describe('WinstonToolkitLogger', function () {
+describe('ToolkitLogger', function () {
     let tempFolder: string
 
     before(async function () {
@@ -66,7 +67,7 @@ describe('WinstonToolkitLogger', function () {
     })
 
     it('logLevelEnabled()', function () {
-        const logger = new WinstonToolkitLogger('info')
+        const logger = new ToolkitLogger('info')
         // winston complains if we don't log to something
         logger.logToOutputChannel(new MockOutputChannel(), false)
 
@@ -92,11 +93,11 @@ describe('WinstonToolkitLogger', function () {
     })
 
     it('creates an object', function () {
-        assert.notStrictEqual(new WinstonToolkitLogger('info'), undefined)
+        assert.notStrictEqual(new ToolkitLogger('info'), undefined)
     })
 
     it('throws when logging to a disposed object', async function () {
-        const logger = new WinstonToolkitLogger('info')
+        const logger = new ToolkitLogger('info')
         await logger.dispose()
 
         assert.throws(() => logger.info('This should not log'))
@@ -105,31 +106,31 @@ describe('WinstonToolkitLogger', function () {
     const happyLogScenarios = [
         {
             name: 'logs debug',
-            logMessage: (logger: WinstonToolkitLogger, message: string) => {
+            logMessage: (logger: ToolkitLogger, message: string) => {
                 logger.debug(message)
             },
         },
         {
             name: 'logs verbose',
-            logMessage: (logger: WinstonToolkitLogger, message: string) => {
+            logMessage: (logger: ToolkitLogger, message: string) => {
                 logger.verbose(message)
             },
         },
         {
             name: 'logs info',
-            logMessage: (logger: WinstonToolkitLogger, message: string) => {
+            logMessage: (logger: ToolkitLogger, message: string) => {
                 logger.info(message)
             },
         },
         {
             name: 'logs warn',
-            logMessage: (logger: WinstonToolkitLogger, message: string) => {
+            logMessage: (logger: ToolkitLogger, message: string) => {
                 logger.warn(message)
             },
         },
         {
             name: 'logs error',
-            logMessage: (logger: WinstonToolkitLogger, message: string) => {
+            logMessage: (logger: ToolkitLogger, message: string) => {
                 logger.error(message)
             },
         },
@@ -138,7 +139,7 @@ describe('WinstonToolkitLogger', function () {
     describe('logs to a file', async function () {
         let tempLogPath: vscode.Uri
         let tempFileCounter = 0
-        let testLogger: WinstonToolkitLogger | undefined
+        let testLogger: ToolkitLogger | undefined
 
         beforeEach(async function () {
             tempLogPath = vscode.Uri.joinPath(vscode.Uri.file(tempFolder), `temp-${++tempFileCounter}.log`)
@@ -148,7 +149,7 @@ describe('WinstonToolkitLogger', function () {
             const debugMessage = 'debug message'
             const errorMessage = 'error message'
 
-            testLogger = new WinstonToolkitLogger('error')
+            testLogger = new ToolkitLogger('error')
             testLogger.logToFile(tempLogPath)
 
             testLogger.debug(debugMessage)
@@ -161,7 +162,7 @@ describe('WinstonToolkitLogger', function () {
             const nonLoggedVerboseEntry = 'verbose entry should not be logged'
             const loggedVerboseEntry = 'verbose entry should be logged'
 
-            testLogger = new WinstonToolkitLogger('info')
+            testLogger = new ToolkitLogger('info')
             testLogger.logToFile(tempLogPath)
 
             testLogger.verbose(nonLoggedVerboseEntry)
@@ -174,7 +175,7 @@ describe('WinstonToolkitLogger', function () {
         happyLogScenarios.forEach((scenario) => {
             it(scenario.name, async () => {
                 const message = `message for ${scenario.name}`
-                testLogger = new WinstonToolkitLogger('debug')
+                testLogger = new ToolkitLogger('debug')
                 testLogger.logToFile(tempLogPath)
 
                 scenario.logMessage(testLogger, message)
@@ -185,7 +186,7 @@ describe('WinstonToolkitLogger', function () {
     })
 
     describe('logs to an OutputChannel', async function () {
-        let testLogger: WinstonToolkitLogger | undefined
+        let testLogger: ToolkitLogger | undefined
         let outputChannel: MockOutputChannel
 
         beforeEach(async function () {
@@ -203,7 +204,7 @@ describe('WinstonToolkitLogger', function () {
             const debugMessage = 'debug message'
             const errorMessage = 'error message'
 
-            testLogger = new WinstonToolkitLogger('error')
+            testLogger = new ToolkitLogger('error')
             testLogger.logToOutputChannel(outputChannel, false)
 
             const waitForMessage = waitForLoggedTextByCount(1)
@@ -218,7 +219,7 @@ describe('WinstonToolkitLogger', function () {
             const nonLoggedVerboseEntry = 'verbose entry should not be logged'
             const loggedVerboseEntry = 'verbose entry should be logged'
 
-            testLogger = new WinstonToolkitLogger('info')
+            testLogger = new ToolkitLogger('info')
             testLogger.logToOutputChannel(outputChannel, false)
 
             testLogger.verbose(nonLoggedVerboseEntry)
@@ -230,10 +231,68 @@ describe('WinstonToolkitLogger', function () {
             assert.ok(!(await waitForMessage).includes(nonLoggedVerboseEntry), 'unexpected message in log')
         })
 
+        it('logs append topic header in message', async function () {
+            const testMessage = 'This is a test message'
+            const testMessageWithHeader = 'test: This is a test message'
+
+            testLogger = new ToolkitLogger('info')
+            testLogger.logToOutputChannel(outputChannel, false)
+            testLogger.setTopic('test')
+            testLogger.setLogLevel('verbose')
+            testLogger.verbose(testMessage)
+
+            const waitForMessage = waitForLoggedTextByContents(testMessageWithHeader)
+            assert.ok((await waitForMessage).includes(testMessageWithHeader), 'Expected header added')
+        })
+
+        it('logs append topic header in errors', async function () {
+            const testError = new ToolkitError('root error', { code: 'something went wrong' })
+            const testErrorWithHeader = "topic: 'test'"
+
+            testLogger = new ToolkitLogger('info')
+            testLogger.logToOutputChannel(outputChannel, false)
+            testLogger.setTopic('test')
+            testLogger.setLogLevel('verbose')
+            testLogger.verbose(testError)
+
+            const waitForMessage = waitForLoggedTextByContents(testErrorWithHeader)
+            assert.ok((await waitForMessage).includes(testErrorWithHeader), 'Expected header added')
+        })
+
+        it('unknown topic header ignored in message', async function () {
+            const testMessage = 'This is a test message'
+            const unknowntestMessage = 'unknown: This is a test message'
+
+            testLogger = new ToolkitLogger('info')
+            testLogger.logToOutputChannel(outputChannel, false)
+            testLogger.setTopic('unknown')
+            testLogger.setLogLevel('verbose')
+            testLogger.verbose(testMessage)
+
+            const waitForMessage = waitForLoggedTextByContents(testMessage)
+            assert.ok((await waitForMessage).includes(testMessage), 'Expected message logged')
+            assert.ok(!(await waitForMessage).includes(unknowntestMessage), 'unexpected header in log')
+        })
+
+        it('switch topic within same logger', async function () {
+            const testMessage = 'This is a test message'
+            const testMessageWithHeader = 'test: This is a test message'
+
+            testLogger = new ToolkitLogger('info')
+            testLogger.logToOutputChannel(outputChannel, false)
+            testLogger.setTopic('unknown')
+            testLogger.setTopic('test')
+            testLogger.setLogLevel('verbose')
+            testLogger.verbose(testMessage)
+
+            const waitForMessage = waitForLoggedTextByContents(testMessageWithHeader)
+            assert.ok((await waitForMessage).includes(testMessageWithHeader), 'Expected header added')
+        })
+
         happyLogScenarios.forEach((scenario) => {
             it(scenario.name, async () => {
                 const message = `message for ${scenario.name}`
-                testLogger = new WinstonToolkitLogger('debug')
+                testLogger = new ToolkitLogger('debug')
                 testLogger.logToOutputChannel(outputChannel, false)
 
                 const waitForMessage = waitForLoggedTextByCount(1)
@@ -283,10 +342,10 @@ describe('WinstonToolkitLogger', function () {
     describe('log tracking', function () {
         let tempLogPath: vscode.Uri
         let tempFileCounter: number = 0
-        let testLogger: WinstonToolkitLogger
+        let testLogger: ToolkitLogger
 
         beforeEach(async function () {
-            testLogger = new WinstonToolkitLogger('info')
+            testLogger = new ToolkitLogger('info')
             tempLogPath = vscode.Uri.joinPath(vscode.Uri.file(tempFolder), `temp-tracker-${tempFileCounter++}.log`)
             testLogger.logToFile(tempLogPath)
         })
