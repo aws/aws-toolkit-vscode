@@ -7,18 +7,18 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../../logger'
+import { getLogger } from '../../../../shared/logger'
 import { ResourceTreeEntity, SamAppLocation, getApp, getStackName } from '../samProject'
 import { ResourceNode, generateResourceNodes } from './resourceNode'
 import { generateStackNode } from './deployedStack'
-import { TreeNode } from '../../../treeview/resourceTreeDataProvider'
-import { createPlaceholderItem } from '../../../treeview/utils'
-import { getIcon } from '../../../icons'
-import { getSamCliContext } from '../../../sam/cli/samCliContext'
-import { SamCliListResourcesParameters } from '../../../sam/cli/samCliListResources'
+import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
+import { createPlaceholderItem } from '../../../../shared/treeview/utils'
+import { getIcon } from '../../../../shared/icons'
+import { getSamCliContext } from '../../../../shared/sam/cli/samCliContext'
+import { SamCliListResourcesParameters } from '../../../../shared/sam/cli/samCliListResources'
 import { getDeployedResources, StackResource } from '../../../../lambda/commands/listSamResources'
 import * as path from 'path'
-import fs from '../../../fs/fs'
+import fs from '../../../../shared/fs/fs'
 
 export class AppNode implements TreeNode {
     public readonly id = this.location.samTemplateUri.toString()

@@ -16,7 +16,7 @@ import { TimeFilterResponse, TimeFilterSubmenu } from '../../../../awsService/cl
 import { createQuickPickPrompterTester, QuickPickPrompterTester } from '../../../shared/ui/testUtils'
 import { getTestWindow } from '../../../shared/vscode/window'
 import { createWizardTester } from '../../../shared/wizards/wizardTestUtils'
-import { DeployedLambdaNode, DeployedResource } from '../../../../shared/applicationBuilder/explorer/nodes/deployedNode'
+import { DeployedLambdaNode, DeployedResource } from '../../../../awsService/appBuilder/explorer/nodes/deployedNode'
 
 describe('searchLogGroup', async function () {
     describe('Wizard', async function () {

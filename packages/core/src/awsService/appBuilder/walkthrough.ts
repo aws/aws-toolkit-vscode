@@ -5,26 +5,26 @@
 
 import * as semver from 'semver'
 import * as vscode from 'vscode'
-import globals from '../extensionGlobals'
-import { getLogger } from '../logger'
+import globals from '../../shared/extensionGlobals'
+import { getLogger } from '../../shared/logger'
 
-import { Wizard } from '../wizards/wizard'
-import { createQuickPick } from '../ui/pickerPrompter'
-import { createCommonButtons } from '../ui/buttons'
+import { Wizard } from '../../shared/wizards/wizard'
+import { createQuickPick } from '../../shared/ui/pickerPrompter'
+import { createCommonButtons } from '../../shared/ui/buttons'
 import * as nls from 'vscode-nls'
-import { ToolkitError } from '../errors'
-import { SkipPrompter } from '../ui/common/skipPrompter'
-import { createSingleFileDialog } from '../ui/common/openDialog'
-import { fs } from '../fs/fs'
+import { ToolkitError } from '../../shared/errors'
+import { SkipPrompter } from '../../shared/ui/common/skipPrompter'
+import { createSingleFileDialog } from '../../shared/ui/common/openDialog'
+import { fs } from '../../shared/fs/fs'
 import path from 'path'
-import { telemetry } from '../telemetry'
+import { telemetry } from '../../shared/telemetry'
 
-import { minSamCliVersionForAppBuilderSupport } from '../sam/cli/samCliValidator'
-import { SamCliInfoInvocation } from '../sam/cli/samCliInfo'
-import { openUrl } from '../utilities/vsCodeUtils'
-import { getOrInstallCli, awsClis, AwsClis } from '../utilities/cliUtils'
-import { getPattern } from '../utilities/downloadPatterns'
-import { addFolderToWorkspace } from '../utilities/workspaceUtils'
+import { minSamCliVersionForAppBuilderSupport } from '../../shared/sam/cli/samCliValidator'
+import { SamCliInfoInvocation } from '../../shared/sam/cli/samCliInfo'
+import { openUrl } from '../../shared/utilities/vsCodeUtils'
+import { getOrInstallCli, awsClis, AwsClis } from '../../shared/utilities/cliUtils'
+import { getPattern } from '../../shared/utilities/downloadPatterns'
+import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
 
 const localize = nls.loadMessageBundle()
 const serverlessLandUrl = 'https://serverlessland.com/'
@@ -222,12 +222,6 @@ async function openProjectInWorkspace(projectUri: vscode.Uri): Promise<void> {
         await globals.globalState.update(templateToOpenAppComposer, [templateUri.fsPath])
     }
 
-    // Open Readme if exist
-    if (await fs.exists(vscode.Uri.joinPath(projectUri, 'README.md'))) {
-        await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')
-        await vscode.commands.executeCommand('markdown.showPreviewToSide', vscode.Uri.joinPath(projectUri, 'README.md'))
-    }
-
     // if extension is reloaded here, this function will never return (killed)
     await addFolderToWorkspace({ uri: projectUri, name: path.basename(projectUri.fsPath) }, true)
 
@@ -236,6 +230,12 @@ async function openProjectInWorkspace(projectUri: vscode.Uri): Promise<void> {
         // extension not reloaded, set to false
         await globals.globalState.update(templateToOpenAppComposer, undefined)
         await vscode.commands.executeCommand('aws.openInApplicationComposer', templateUri)
+    }
+
+    // Open Readme if exist
+    if (await fs.exists(vscode.Uri.joinPath(projectUri, 'README.md'))) {
+        await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')
+        await vscode.commands.executeCommand('markdown.showPreviewToSide', vscode.Uri.joinPath(projectUri, 'README.md'))
     }
 }
 

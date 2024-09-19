@@ -15,8 +15,8 @@ import { registerSamDebugInvokeVueCommand, registerSamInvokeVueCommand } from '.
 import { Commands } from '../shared/vscode/commands2'
 import { DefaultLambdaClient } from '../shared/clients/lambdaClient'
 import { copyLambdaUrl } from './commands/copyLambdaUrl'
-import type { DeployedLambdaNode } from '../shared/applicationBuilder/explorer/nodes/deployedNode'
-import { ResourceNode } from '../shared/applicationBuilder/explorer/nodes/resourceNode'
+import type { DeployedLambdaNode } from '../awsService/appBuilder/explorer/nodes/deployedNode'
+import { ResourceNode } from '../awsService/appBuilder/explorer/nodes/resourceNode'
 
 /**
  * Activates Lambda components.

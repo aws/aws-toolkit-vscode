@@ -4,9 +4,9 @@
  */
 import * as vscode from 'vscode'
 import { getStackName, SamAppLocation } from '../samProject'
-import { TreeNode } from '../../../treeview/resourceTreeDataProvider'
-import { getLogger } from '../../../logger/logger'
-import { getIcon } from '../../../icons'
+import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
+import { getLogger } from '../../../../shared/logger/logger'
+import { getIcon } from '../../../../shared/icons'
 
 export class StackNameNode implements TreeNode {
     public readonly id = this.stackName

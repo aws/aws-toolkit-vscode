@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { SamAppLocation } from './samProject'
-import { getLogger } from '../../logger/logger'
+import { getLogger } from '../../../shared/logger/logger'
 
 export async function detectSamProjects(): Promise<SamAppLocation[]> {
     const workspaceFolders = vscode.workspace.workspaceFolders

@@ -43,7 +43,7 @@ import {
     runSamCliRemoteTestEvents,
 } from '../../../shared/sam/cli/samCliRemoteTestEvent'
 import { getSamCliContext } from '../../../shared/sam/cli/samCliContext'
-import { ResourceNode } from '../../../shared/applicationBuilder/explorer/nodes/resourceNode'
+import { ResourceNode } from '../../../awsService/appBuilder/explorer/nodes/resourceNode'
 
 const localize = nls.loadMessageBundle()
 

@@ -4,14 +4,14 @@
  */
 
 import * as vscode from 'vscode'
-import { getIcon } from '../../../icons'
-import { TreeNode } from '../../../treeview/resourceTreeDataProvider'
-import { createPlaceholderItem } from '../../../treeview/utils'
+import { getIcon } from '../../../../shared/icons'
+import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
+import { createPlaceholderItem } from '../../../../shared/treeview/utils'
 import { localize } from 'vscode-nls'
-import { getLogger } from '../../../logger/logger'
-import { ToolkitError } from '../../..'
+import { getLogger } from '../../../../shared/logger/logger'
+import { ToolkitError } from '../../../../shared'
 import { FunctionConfiguration } from '@aws-sdk/client-lambda'
-import { DefaultLambdaClient } from '../../../clients/lambdaClient'
+import { DefaultLambdaClient } from '../../../../shared/clients/lambdaClient'
 
 export interface DeployedResource {
     stackName: string

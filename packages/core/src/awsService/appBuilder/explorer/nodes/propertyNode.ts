@@ -4,8 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { getIcon } from '../../../icons'
-import { TreeNode } from '../../../treeview/resourceTreeDataProvider'
+import { getIcon } from '../../../../shared/icons'
+import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
 
 export class PropertyNode implements TreeNode {
     public readonly id = this.key

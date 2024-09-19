@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { globals } from '../../../shared'
-import { AppNode } from '../../../shared/applicationBuilder/explorer/nodes/appNode'
+import { AppNode } from '../../../awsService/appBuilder/explorer/nodes/appNode'
 import { BuildParams, BuildWizard } from '../../../shared/sam/build'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { createWizardTester } from '../wizards/wizardTestUtils'

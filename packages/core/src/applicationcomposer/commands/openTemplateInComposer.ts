@@ -9,7 +9,7 @@ import vscode from 'vscode'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
 import { isTreeNode, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
-import { SamAppLocation } from '../../shared/applicationBuilder/explorer/samProject'
+import { SamAppLocation } from '../../awsService/appBuilder/explorer/samProject'
 import { getAmazonqApi } from '../../amazonq/extApi'
 
 export const openTemplateInComposerCommand = Commands.declare(

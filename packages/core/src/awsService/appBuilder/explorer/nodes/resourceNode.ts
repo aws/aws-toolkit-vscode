@@ -4,10 +4,10 @@
  */
 
 import * as vscode from 'vscode'
-import { IconPath, getIcon } from '../../../icons'
-import { TreeNode } from '../../../treeview/resourceTreeDataProvider'
+import { IconPath, getIcon } from '../../../../shared/icons'
+import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
 import { ResourceTreeEntity, SamAppLocation } from '../samProject'
-import { SERVERLESS_FUNCTION_TYPE } from '../../../cloudformation/cloudformation'
+import { SERVERLESS_FUNCTION_TYPE } from '../../../../shared/cloudformation/cloudformation'
 import { generatePropertyNodes } from './propertyNode'
 import { generateDeployedLocalNode } from './deployedNode'
 import { StackResource } from '../../../../lambda/commands/listSamResources'

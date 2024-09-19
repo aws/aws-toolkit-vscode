@@ -4,15 +4,15 @@
  */
 
 import * as vscode from 'vscode'
-import { debugNewSamAppUrl } from '../../../constants'
-import { telemetry } from '../../../telemetry/telemetry'
-import { ResourceTreeDataProvider, TreeNode } from '../../../treeview/resourceTreeDataProvider'
-import { createPlaceholderItem } from '../../../treeview/utils'
-import { localize, openUrl } from '../../../utilities/vsCodeUtils'
-import { Commands } from '../../../vscode/commands2'
+import { debugNewSamAppUrl } from '../../../../shared/constants'
+import { telemetry } from '../../../../shared/telemetry/telemetry'
+import { ResourceTreeDataProvider, TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
+import { createPlaceholderItem } from '../../../../shared/treeview/utils'
+import { localize, openUrl } from '../../../../shared/utilities/vsCodeUtils'
+import { Commands } from '../../../../shared/vscode/commands2'
 import { AppNode } from './appNode'
 import { detectSamProjects } from '../detectSamProjects'
-import globals from '../../../extensionGlobals'
+import globals from '../../../../shared/extensionGlobals'
 
 export async function getAppNodes(): Promise<TreeNode[]> {
     // no active workspace, show buttons in welcomeview
@@ -24,7 +24,6 @@ export async function getAppNodes(): Promise<TreeNode[]> {
 
     if (appsFound.length === 0) {
         return [
-            new WalkthroughNode(),
             createPlaceholderItem(
                 localize('AWS.appBuilder.explorerNode.noApps', '[No IaC templates found in Workspaces]')
             ),
@@ -34,11 +33,7 @@ export async function getAppNodes(): Promise<TreeNode[]> {
     const nodesToReturn: TreeNode[] = appsFound
         .map((appLocation) => new AppNode(appLocation))
         .sort((a, b) => a.label.localeCompare(b.label) ?? 0)
-    const walkthroughCompleted = globals.globalState.get('aws.toolkit.lambda.walkthroughCompleted')
-    // show walkthrough node if walkthrough not completed yet
-    if (!walkthroughCompleted) {
-        nodesToReturn.unshift(new WalkthroughNode())
-    }
+
     return nodesToReturn
 }
 
@@ -103,8 +98,18 @@ export class AppBuilderRootNode implements TreeNode {
         return this._refreshAppBuilderForFileExplorer
     }
 
-    public getChildren() {
-        return getAppNodes()
+    public async getChildren() {
+        const nodesToReturn = await getAppNodes()
+        if (nodesToReturn.length === 0) {
+            return []
+        }
+
+        const walkthroughCompleted = globals.globalState.get('aws.toolkit.lambda.walkthroughCompleted')
+        // show walkthrough node if walkthrough not completed yet
+        if (!walkthroughCompleted) {
+            nodesToReturn.unshift(new WalkthroughNode())
+        }
+        return nodesToReturn
     }
 
     public refresh(): void {

@@ -27,7 +27,7 @@ import {
     TestEventsOperation,
 } from '../../../shared/sam/cli/samCliRemoteTestEvent'
 import { getSamCliContext } from '../../../shared/sam/cli/samCliContext'
-import { type DeployedResource } from '../../../shared/applicationBuilder/explorer/nodes/deployedNode'
+import { type DeployedResource } from '../../../awsService/appBuilder/explorer/nodes/deployedNode'
 import { isTreeNode, type TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { ToolkitError } from '../../../shared'
 import { basename } from 'path'

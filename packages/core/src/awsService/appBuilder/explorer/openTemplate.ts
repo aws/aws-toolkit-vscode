@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CloudFormationTemplateRegistry } from '../../fs/templateRegistry'
-import { createTemplatePrompter, TemplateItem } from '../../sam/sync'
-import { createExitPrompter } from '../../ui/common/exitPrompter'
-import { Wizard } from '../../wizards/wizard'
+import { CloudFormationTemplateRegistry } from '../../../shared/fs/templateRegistry'
+import { createTemplatePrompter, TemplateItem } from '../../../shared/sam/sync'
+import { createExitPrompter } from '../../../shared/ui/common/exitPrompter'
+import { Wizard } from '../../../shared/wizards/wizard'
 
 export interface OpenTemplateParams {
     readonly template: TemplateItem

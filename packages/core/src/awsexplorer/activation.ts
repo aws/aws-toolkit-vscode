@@ -13,7 +13,7 @@ import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { AWSResourceNode } from '../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
-import { Commands, VsCodeCommandArg } from '../shared/vscode/commands2'
+import { Commands } from '../shared/vscode/commands2'
 import { downloadStateMachineDefinition } from '../stepFunctions/commands/downloadStateMachineDefinition'
 import { executeStateMachine } from '../stepFunctions/vue/executeStateMachine/executeStateMachine'
 import { StateMachineNode } from '../stepFunctions/explorer/stepFunctionsNodes'
@@ -32,12 +32,6 @@ import { activateViewsShared, registerToolView } from './activationShared'
 import { isExtensionInstalled } from '../shared/utilities'
 import { CommonAuthViewProvider } from '../login/webview'
 import { setContext } from '../shared'
-import { AppBuilderRootNode } from '../shared/applicationBuilder/explorer/nodes/rootNode'
-import {
-    initWalkthroughProjectCommand,
-    walkthroughContextString,
-    getOrInstallCliWrapper,
-} from '../shared/applicationBuilder/walkthrough'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -69,13 +63,7 @@ export async function activate(args: {
     })
     globals.context.subscriptions.push(view)
 
-    // recover context variables from global state when activate
-    const walkthroughSelected = globals.globalState.get<string>(walkthroughContextString)
-    if (walkthroughSelected !== undefined) {
-        await setContext(walkthroughContextString, walkthroughSelected)
-    }
     await registerAwsExplorerCommands(args.context, awsExplorer, args.toolkitOutputChannel)
-    await registerAppBuilderCommands(args.context)
 
     telemetry.vscode_activeRegions.emit({ value: args.regionProvider.getExplorerRegions().length })
 
@@ -133,23 +121,10 @@ export async function activate(args: {
             refreshCommands: [refreshAmazonQ, refreshAmazonQRootNode],
         })
     }
-    const appBuilderNode: ToolView[] = [
-        {
-            nodes: [AppBuilderRootNode.instance],
-            view: 'aws.appBuilder',
-            refreshCommands: [AppBuilderRootNode.instance.refreshAppBuilderExplorer],
-        },
-        {
-            nodes: [AppBuilderRootNode.instance],
-            view: 'aws.appBuilderForFileExplorer',
-            refreshCommands: [AppBuilderRootNode.instance.refreshAppBuilderForFileExplorer],
-        },
-    ]
 
     const viewNodes: ToolView[] = [
         ...amazonQViewNode,
         ...codecatalystViewNode,
-        ...appBuilderNode,
         { nodes: [CdkRootNode.instance], view: 'aws.cdk', refreshCommands: [CdkRootNode.instance.refreshCdkExplorer] },
     ]
     for (const viewNode of viewNodes) {
@@ -228,58 +203,5 @@ async function registerAwsExplorerCommands(
             awsExplorer.refresh(element)
         }),
         loadMoreChildrenCommand.register(awsExplorer)
-    )
-}
-
-async function setWalkthrough(walkthroughSelected: string = 'S3'): Promise<void> {
-    await setContext(walkthroughContextString, walkthroughSelected)
-    await globals.globalState.update(walkthroughContextString, walkthroughSelected)
-}
-
-/**
- *
- * @param context VScode Context
- */
-async function registerAppBuilderCommands(context: ExtContext): Promise<void> {
-    const source = 'AppBuilderWalkthrough'
-    context.extensionContext.subscriptions.push(
-        Commands.register('aws.toolkit.installSAMCLI', async () => {
-            await getOrInstallCliWrapper('sam-cli', source)
-        }),
-        Commands.register('aws.toolkit.installAWSCLI', async () => {
-            await getOrInstallCliWrapper('aws-cli', source)
-        }),
-        Commands.register('aws.toolkit.installDocker', async () => {
-            await getOrInstallCliWrapper('docker', source)
-        }),
-        Commands.register('aws.toolkit.lambda.setWalkthroughToAPI', async () => {
-            await setWalkthrough('API')
-        }),
-        Commands.register('aws.toolkit.lambda.setWalkthroughToS3', async () => {
-            await setWalkthrough('S3')
-        }),
-        Commands.register('aws.toolkit.lambda.setWalkthroughToVisual', async () => {
-            await setWalkthrough('Visual')
-        }),
-        Commands.register('aws.toolkit.lambda.setWalkthroughToCustomTemplate', async () => {
-            await setWalkthrough('CustomTemplate')
-        }),
-        Commands.register('aws.toolkit.lambda.initializeWalkthroughProject', async (): Promise<void> => {
-            await telemetry.appBuilder_selectWalkthroughTemplate.run(async () => await initWalkthroughProjectCommand())
-            await globals.globalState.update('aws.toolkit.lambda.walkthroughCompleted', true)
-        }),
-        Commands.register('aws.toolkit.lambda.walkthrough.credential', async (): Promise<void> => {
-            await vscode.commands.executeCommand('aws.toolkit.auth.manageConnections', source)
-        }),
-        Commands.register(
-            { id: `aws.toolkit.lambda.openWalkthrough`, compositeKey: { 1: 'source' } },
-            async (_: VsCodeCommandArg, source?: string) => {
-                telemetry.appBuilder_startWalkthrough.emit({ source: source })
-                await vscode.commands.executeCommand(
-                    'workbench.action.openWalkthrough',
-                    'amazonwebservices.aws-toolkit-vscode#aws.toolkit.lambda.walkthrough'
-                )
-            }
-        )
     )
 }
