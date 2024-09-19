@@ -233,7 +233,11 @@ describe('AuthUtil', async function () {
         // Switch to unsupported connection
         const cwAuthUpdatedConnection = captureEventOnce(authUtil.secondaryAuth.onDidChangeActiveConnection)
         await auth.useConnection(unsupportedConn)
+        // This is triggered when the main Auth connection is switched
         await cwAuthUpdatedConnection
+        // This is triggered by registerAuthListener() when it saves the previous active connection as a fallback.
+        // TODO in a refactor see if we can simplify multiple multiple triggers on the same event.
+        await captureEventOnce(authUtil.secondaryAuth.onDidChangeActiveConnection)
 
         // Is using the fallback connection
         assert.ok(authUtil.isConnected())

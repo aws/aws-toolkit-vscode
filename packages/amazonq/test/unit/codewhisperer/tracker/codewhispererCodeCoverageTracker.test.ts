@@ -29,8 +29,12 @@ describe('codewhispererCodecoverageTracker', function () {
 
         it('unsupported language', function () {
             assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('vb'), undefined)
-            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('r'), undefined)
             assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('ipynb'), undefined)
+            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('r'), undefined)
+            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('dart'), undefined)
+            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('swift'), undefined)
+            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('lua'), undefined)
+            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('powershell'), undefined)
         })
 
         it('supported language', function () {

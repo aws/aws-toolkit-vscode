@@ -9,7 +9,7 @@ import vscode from 'vscode'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { Logger } from '../../../shared/logger'
 import { makeLogger } from '../../../shared/logger/activation'
-import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogger'
+import { ToolkitLogger } from '../../../shared/logger/toolkitLogger'
 
 describe('makeLogger', function () {
     let tempFolder: string
@@ -22,7 +22,7 @@ describe('makeLogger', function () {
     })
 
     after(async function () {
-        if (testLogger && testLogger instanceof WinstonToolkitLogger) {
+        if (testLogger && testLogger instanceof ToolkitLogger) {
             await testLogger.dispose()
         }
 
@@ -32,6 +32,6 @@ describe('makeLogger', function () {
 
     it('creates a logger object', function () {
         assert.notStrictEqual(testLogger, undefined)
-        assert.ok(testLogger instanceof WinstonToolkitLogger)
+        assert.ok(testLogger instanceof ToolkitLogger)
     })
 })

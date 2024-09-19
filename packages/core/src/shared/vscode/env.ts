@@ -105,7 +105,7 @@ export function isRemoteWorkspace(): boolean {
  * Example: `5.10.220-188.869.amzn2int.x86_64`
  */
 export function isAmazonInternalOs() {
-    return os.release().includes('amzn2int')
+    return os.release().includes('amzn2int') && process.platform === 'linux'
 }
 
 /**
