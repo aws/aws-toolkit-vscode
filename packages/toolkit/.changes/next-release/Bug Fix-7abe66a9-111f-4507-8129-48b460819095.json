@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Redshift: updated the list clusters and workgroups for regions which do not have serverless APIs"
-}
