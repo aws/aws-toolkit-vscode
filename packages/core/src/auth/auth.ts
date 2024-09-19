@@ -1022,9 +1022,20 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
+    /**
+     * Auth uses its own state, separate from the default {@link globalState}
+     * that is normally used throughout the codebase.
+     *
+     * IMPORTANT: Anything involving auth should ONLY use this state since the state
+     * can vary on certain conditions. So if you see something explicitly using
+     * globalState verify if it should actually be using that.
+     */
+    public getStateMemento: () => vscode.Memento = () => Auth._getStateMemento()
+    private static _getStateMemento = once(() => getEnvironmentSpecificMemento())
+
     static #instance: Auth | undefined
     public static get instance() {
-        return (this.#instance ??= new Auth(new ProfileStore(getEnvironmentSpecificMemento())))
+        return (this.#instance ??= new Auth(new ProfileStore(Auth._getStateMemento())))
     }
 
     private getSsoProfileLabel(profile: SsoProfile) {
