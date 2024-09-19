@@ -235,7 +235,25 @@ export class RuntimeLanguageContext {
      */
     public isLanguageSupported(languageId: string): boolean {
         const lang = this.normalizeLanguage(languageId)
-        return lang !== undefined && this.normalizeLanguage(languageId) !== 'plaintext'
+        switch (lang) {
+            case undefined:
+                return false
+
+            case 'plaintext':
+                return false
+
+            case 'dart':
+            case 'lua':
+            case 'powershell':
+            case 'r':
+            case 'swift':
+            case 'vue':
+            case 'systemVerilog':
+                return false
+
+            default:
+                return true
+        }
     }
     /**
      *
