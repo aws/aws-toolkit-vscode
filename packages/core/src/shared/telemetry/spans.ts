@@ -24,6 +24,7 @@ import {
 } from '../errors'
 import { entries, NumericKeys } from '../utilities/tsUtils'
 import { PerformanceTracker } from '../performance/performance'
+import { randomUUID } from '../crypto'
 
 const AsyncLocalStorage: typeof AsyncLocalStorageClass =
     require('async_hooks').AsyncLocalStorage ??
@@ -145,6 +146,7 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
         passive: true,
         requiredMetadata: [],
     }
+    private readonly metricId: string
 
     /**
      * These fields appear on the base metric instead of the 'metadata' and
@@ -166,6 +168,10 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
                 this.definition.trackPerformance && (options?.emit ?? false) // only track the performance if we are also emitting
             ),
         }
+
+        this.metricId = randomUUID()
+        // forced to cast to any since apparently even though <T extends MetricBase>, Partial<T> doesn't guarentee that metricId is available
+        this.record({ metricId: this.metricId } as any)
     }
 
     public get startTime(): Date | undefined {
@@ -261,6 +267,10 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> {
         }
     }
 
+    getMetricId() {
+        return this.metricId
+    }
+
     /**
      * Creates a copy of the span with an uninitialized start time.
      */
@@ -335,33 +345,50 @@ export class TelemetryTracer extends TelemetryBase {
      * reverted after the execution completes.
      */
     public run<T, U extends MetricName>(name: U, fn: (span: Metric<MetricShapes[U]>) => T, options?: SpanOptions): T {
-        const span = this.createSpan(name, options).start()
-        const frame = this.switchContext(span)
-
-        try {
-            //
-            // TODO: Since updating to `@types/node@16`, typescript flags this code with error:
-            //
-            //      Error: npm ERR! src/shared/telemetry/spans.ts(255,57): error TS2345: Argument of type
-            //      'TelemetrySpan<MetricBase>' is not assignable to parameter of type 'Metric<MetricShapes[U]>'.
-            //
-            const result = this.#context.run(frame, fn, span as any)
-
-            if (result instanceof Promise) {
-                return result
-                    .then((v) => (span.stop(), v))
-                    .catch((e) => {
-                        span.stop(e)
-                        throw e
-                    }) as unknown as T
+        const initTraceId = (callback: () => T): T => {
+            /**
+             * Generate a new traceId if one doesn't exist.
+             * This ensures the traceId is created before the span,
+             * allowing it to propagate to all child telemetry metrics.
+             */
+            if (!this.attributes?.traceId) {
+                return this.runRoot(() => {
+                    this.record({ traceId: randomUUID() })
+                    return callback()
+                })
             }
-
-            span.stop()
-            return result
-        } catch (e) {
-            span.stop(e)
-            throw e
+            return callback()
         }
+
+        return initTraceId(() => {
+            const span = this.createSpan(name, options).start()
+            const frame = this.switchContext(span)
+
+            try {
+                //
+                // TODO: Since updating to `@types/node@16`, typescript flags this code with error:
+                //
+                //      Error: npm ERR! src/shared/telemetry/spans.ts(255,57): error TS2345: Argument of type
+                //      'TelemetrySpan<MetricBase>' is not assignable to parameter of type 'Metric<MetricShapes[U]>'.
+                //
+                const result = this.#context.run(frame, fn, span as any)
+
+                if (result instanceof Promise) {
+                    return result
+                        .then((v) => (span.stop(), v))
+                        .catch((e) => {
+                            span.stop(e)
+                            throw e
+                        }) as unknown as T
+                }
+
+                span.stop()
+                return result
+            } catch (e) {
+                span.stop(e)
+                throw e
+            }
+        })
     }
 
     /**
@@ -437,7 +464,7 @@ export class TelemetryTracer extends TelemetryBase {
     private createSpan(name: string, options?: SpanOptions): TelemetrySpan {
         const span = new TelemetrySpan(name, options).record(this.attributes ?? {})
         if (this.activeSpan && this.activeSpan.name !== rootSpanName) {
-            return span.record({ parentMetric: this.activeSpan.name } satisfies { parentMetric: string } as any)
+            return span.record({ parentId: this.activeSpan.getMetricId() })
         }
 
         return span
