@@ -474,7 +474,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 if (e.document !== editor.document) {
                     return
                 }
-                if (!runtimeLanguageContext.isLanguageSupported(e.document.languageId)) {
+                if (!runtimeLanguageContext.isInlineCompletionSupported(e.document.languageId)) {
                     return
                 }
 
@@ -545,7 +545,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 if (e.document !== editor.document) {
                     return
                 }
-                if (!runtimeLanguageContext.isLanguageSupported(e.document.languageId)) {
+                if (!runtimeLanguageContext.isInlineCompletionSupported(e.document.languageId)) {
                     return
                 }
                 /**

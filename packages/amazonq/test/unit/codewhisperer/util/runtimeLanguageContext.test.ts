@@ -57,7 +57,7 @@ describe('runtimeLanguageContext', function () {
             const expected = tuple[1]
 
             it(`should ${expected ? '' : 'not'} support ${languageId}`, function () {
-                const actual = languageContext.isLanguageSupported(languageId)
+                const actual = languageContext.isInlineCompletionSupported(languageId)
                 assert.strictEqual(actual, expected)
             })
         })

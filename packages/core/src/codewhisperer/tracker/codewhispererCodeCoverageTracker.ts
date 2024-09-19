@@ -278,7 +278,10 @@ export class CodeWhispererCodeCoverageTracker {
         // ignore no contentChanges. ignore contentChanges from other plugins (formatters)
         // only include contentChanges from user keystroke input(one character input).
         // Also ignore deletion events due to a known issue of tracking deleted CodeWhiperer tokens.
-        if (!runtimeLanguageContext.isLanguageSupported(e.document.languageId) || vsCodeState.isCodeWhispererEditing) {
+        if (
+            !runtimeLanguageContext.isInlineCompletionSupported(e.document.languageId) ||
+            vsCodeState.isCodeWhispererEditing
+        ) {
             return
         }
         // a user keystroke input can be
@@ -312,7 +315,7 @@ export class CodeWhispererCodeCoverageTracker {
     public static readonly instances = new Map<CodewhispererLanguage, CodeWhispererCodeCoverageTracker>()
 
     public static getTracker(language: string): CodeWhispererCodeCoverageTracker | undefined {
-        if (!runtimeLanguageContext.isLanguageSupported(language)) {
+        if (!runtimeLanguageContext.isInlineCompletionSupported(language)) {
             return undefined
         }
         const cwsprLanguage = runtimeLanguageContext.normalizeLanguage(language)
