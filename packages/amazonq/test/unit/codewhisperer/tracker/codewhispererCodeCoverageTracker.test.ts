@@ -30,6 +30,11 @@ describe('codewhispererCodecoverageTracker', function () {
         it('unsupported language', function () {
             assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('vb'), undefined)
             assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('ipynb'), undefined)
+            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('r'), undefined)
+            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('dart'), undefined)
+            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('swift'), undefined)
+            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('lua'), undefined)
+            assert.strictEqual(CodeWhispererCodeCoverageTracker.getTracker('powershell'), undefined)
         })
 
         it('supported language', function () {
@@ -40,7 +45,6 @@ describe('codewhispererCodecoverageTracker', function () {
             assert.notStrictEqual(CodeWhispererCodeCoverageTracker.getTracker('cpp'), undefined)
             assert.notStrictEqual(CodeWhispererCodeCoverageTracker.getTracker('ruby'), undefined)
             assert.notStrictEqual(CodeWhispererCodeCoverageTracker.getTracker('go'), undefined)
-            assert.notStrictEqual(CodeWhispererCodeCoverageTracker.getTracker('r'), undefined)
         })
 
         it('supported language and should return singleton object per language', function () {
