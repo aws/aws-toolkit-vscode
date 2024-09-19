@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as crypto from 'crypto'
 import * as path from 'path'
 import { getLogger } from '../../shared/logger/logger'
@@ -13,6 +14,7 @@ import { hasProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { SsoToken, ClientRegistration } from './model'
 import { DevSettings } from '../../shared/settings'
 import { onceChanged } from '../../shared/utilities/functionUtils'
+import globals from '../../shared/extensionGlobals'
 
 interface RegistrationKey {
     readonly startUrl: string
@@ -40,6 +42,12 @@ export function getCache(directory = getCacheDir()): SsoCache {
         token: getTokenCache(directory),
         registration: getRegistrationCache(directory),
     }
+}
+
+export function getCacheFileWatcher(directory = getCacheDir()) {
+    const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(directory, '*.json'))
+    globals.context.subscriptions.push(watcher)
+    return watcher
 }
 
 export function getRegistrationCache(directory = getCacheDir()): KeyedCache<ClientRegistration, RegistrationKey> {

@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Support @workspace queries for specific files like `@workspace what does test.ts do? `. "
+}

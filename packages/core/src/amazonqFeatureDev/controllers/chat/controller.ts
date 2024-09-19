@@ -397,8 +397,8 @@ export class FeatureDevController {
                     tabID: tabID,
                     message:
                         remainingIterations === 0
-                            ? 'Would you like me to add this code to your files?'
-                            : `Would you like me to add this code to your project, or provide feedback for new code? You have ${remainingIterations} out of ${totalIterations} code iterations remaining.`,
+                            ? 'Would you like me to add this code to your project?'
+                            : `Would you like me to add this code to your project, or provide feedback for new code? You have ${remainingIterations} out of ${totalIterations} code generations left.`,
                 })
             }
 
@@ -474,8 +474,6 @@ export class FeatureDevController {
                 ],
             })
 
-            // Ensure that chat input is enabled so that they can provide additional iterations if they choose
-            this.messenger.sendChatInputEnabled(message.tabID, true)
             this.messenger.sendUpdatePlaceholder(
                 message.tabID,
                 i18n('AWS.amazonq.featureDev.placeholder.additionalImprovements')
@@ -749,7 +747,12 @@ export class FeatureDevController {
 
     private async newTask(message: any) {
         // Old session for the tab is ending, delete it so we can create a new one for the message id
-        await this.closeSession(message)
+        const session = await this.sessionStorage.getSession(message.tabID)
+        telemetry.amazonq_endChat.emit({
+            amazonqConversationId: session.conversationId,
+            amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
+            result: 'Succeeded',
+        })
         this.sessionStorage.deleteSession(message.tabID)
 
         // Re-run the opening flow, where we check auth + create a session
