@@ -267,12 +267,12 @@ export class Messenger {
             mandatory: true,
             options: [
                 {
-                    value: 'Oracle',
-                    label: 'Oracle',
+                    value: DB.ORACLE,
+                    label: DB.ORACLE,
                 },
                 {
-                    value: 'Other',
-                    label: 'Other',
+                    value: DB.OTHER,
+                    label: DB.OTHER,
                 },
             ],
         })
@@ -284,12 +284,12 @@ export class Messenger {
             mandatory: true,
             options: [
                 {
-                    value: 'Amazon RDS for PostgreSQL',
-                    label: 'Amazon RDS for PostgreSQL',
+                    value: DB.AMAZON_RDS,
+                    label: DB.AMAZON_RDS,
                 },
                 {
-                    value: 'Amazon Aurora PostgreSQL',
-                    label: 'Amazon Aurora PostgreSQL',
+                    value: DB.AMAZON_AURORA,
+                    label: DB.AMAZON_AURORA,
                 },
             ],
         })
