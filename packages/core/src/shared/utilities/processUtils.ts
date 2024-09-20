@@ -7,6 +7,7 @@ import * as proc from 'child_process'
 import * as crossSpawn from 'cross-spawn'
 import * as logger from '../logger'
 import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
+import { isWeb } from '../extensionGlobals'
 
 interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
@@ -364,4 +365,18 @@ export class ChildProcess {
         const pid = this.pid() > 0 ? `PID ${this.pid()}:` : '(not started)'
         return `${pid} [${this.#command} ${noparams ? '...' : this.#args.join(' ')}]`
     }
+}
+
+/**
+ * Returns a sorted list of all PIDs currently running
+ */
+export async function getPids(): Promise<number[]> {
+    if (isWeb()) {
+        throw new Error('getPids() is not supported in web mode')
+    }
+    // Note: This is an ESM module, which is why we cannot import it the standard way
+    // Note: This module is explicitly excluded in the web mode webpack since this breaks the bundling.
+    const psList = (await import('ps-list')).default
+    const pids = (await psList()).map((p) => p.pid)
+    return pids.sort((a, b) => a - b)
 }
