@@ -18,6 +18,7 @@ export enum ButtonActions {
     CANCEL_TRANSFORMATION_FORM = 'gumbyTransformFormCancel', // shared between Language Upgrade & SQL Conversion
     CONFIRM_SKIP_TESTS_FORM = 'gumbyTransformSkipTestsFormConfirm',
     CANCEL_SKIP_TESTS_FORM = 'gumbyTransformSkipTestsFormCancel',
+    SELECT_SQL_CONVERSION_METADATA_FILE = 'gumbySQLConversionMetadataTransformFormConfirm',
     CONFIRM_DEPENDENCY_FORM = 'gumbyTransformDependencyFormConfirm',
     CANCEL_DEPENDENCY_FORM = 'gumbyTransformDependencyFormCancel',
     CONFIRM_JAVA_HOME_FORM = 'gumbyJavaHomeFormConfirm',

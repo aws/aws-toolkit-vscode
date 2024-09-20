@@ -304,10 +304,10 @@ export enum JDKVersion {
 }
 
 export enum DB {
-    ORACLE = 'Oracle',
-    AMAZON_RDS = 'Amazon RDS for PostgreSQL',
-    AMAZON_AURORA = 'Amazon Aurora PostgreSQL',
-    OTHER = 'Other',
+    ORACLE = 'ORACLE',
+    RDS_POSTGRESQL = 'RDS_POSTGRESQL', // TO-DO: these should all match what source/target vendor look like in sct-rules.json
+    AURORA_POSTGRESQL = 'AURORA_POSTGRESQL',
+    OTHER = 'OTHER',
 }
 
 export enum BuildSystem {
@@ -324,6 +324,7 @@ export class ZipManifest {
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
     transformCapabilities: string[] = ['EXPLAINABILITY_V1']
     customBuildCommand: string = 'clean test'
+    sqlMetadataPath: string | undefined = undefined
 }
 
 export interface IHilZipManifestParams {
@@ -703,6 +704,7 @@ export class TransformByQState {
         this.jobFailureErrorChatMessage = undefined
         this.jobFailureMetadata = ''
         this.payloadFilePath = ''
+        this.metadataPathSQL = ''
         this.errorLog = ''
         this.customBuildCommand = ''
         this.intervalId = undefined

@@ -268,11 +268,11 @@ export class Messenger {
             options: [
                 {
                     value: DB.ORACLE,
-                    label: DB.ORACLE,
+                    label: CodeWhispererConstants.oracleVendor,
                 },
                 {
                     value: DB.OTHER,
-                    label: DB.OTHER,
+                    label: CodeWhispererConstants.otherVendor,
                 },
             ],
         })
@@ -284,12 +284,12 @@ export class Messenger {
             mandatory: true,
             options: [
                 {
-                    value: DB.AMAZON_RDS,
-                    label: DB.AMAZON_RDS,
+                    value: DB.RDS_POSTGRESQL,
+                    label: CodeWhispererConstants.rdsTargetVendor,
                 },
                 {
-                    value: DB.AMAZON_AURORA,
-                    label: DB.AMAZON_AURORA,
+                    value: DB.AURORA_POSTGRESQL,
+                    label: CodeWhispererConstants.auroraTargetVendor,
                 },
             ],
         })
@@ -714,6 +714,28 @@ ${codeSnippet}
                     message,
                     messageType: 'ai-prompt',
                     messageId,
+                    buttons,
+                },
+                tabID
+            )
+        )
+    }
+
+    public sendSelectSQLMetadataFileMessage(tabID: string) {
+        const message = 'Please select your metadata ZIP file.'
+        const buttons: ChatItemButton[] = []
+
+        buttons.push({
+            keepCardAfterClick: true,
+            text: 'Select metadata file',
+            id: ButtonActions.SELECT_SQL_CONVERSION_METADATA_FILE,
+        })
+
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message,
+                    messageType: 'ai-prompt',
                     buttons,
                 },
                 tabID

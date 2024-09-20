@@ -214,7 +214,7 @@ describe('transformByQ', function () {
                 name: tempFileName,
             },
             humanInTheLoopFlag: false,
-            modulePath: tempDir,
+            projectPath: tempDir,
             zipManifest: transformManifest,
         }).then((zipCodeResult) => {
             const zip = new AdmZip(zipCodeResult.tempFilePath)
@@ -270,7 +270,7 @@ describe('transformByQ', function () {
                 name: tempFileName,
             },
             humanInTheLoopFlag: false,
-            modulePath: tempDir,
+            projectPath: tempDir,
             zipManifest: new ZipManifest(),
         }).then((zipCodeResult) => {
             const zip = new AdmZip(zipCodeResult.tempFilePath)

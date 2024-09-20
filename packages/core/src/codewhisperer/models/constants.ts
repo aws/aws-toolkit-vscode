@@ -504,13 +504,24 @@ export const invalidMetadataFileNoRulesJson =
     "Sorry, your metadata ZIP appears to be invalid; it does not contain an 'sct-rules.json' file."
 
 export const invalidMetadataFileUnsupportedSourceVendor = (vendor: string) =>
-    `Sorry, your metadata ZIP appears to be invalid; the source vendor is '${vendor}', but only Oracle is supported.`
+    `Sorry, your metadata ZIP appears to be invalid; the source vendor is '${vendor}', but only 'Oracle' is supported.`
 
 export const invalidMetadataFileUnsupportedTargetVendor = (vendor: string) =>
-    `Sorry, your metadata ZIP appears to be invalid; the target vendor is '${vendor}', but only Amazon Aurora PostgreSQL and Amazon RDS for PostgreSQL are supported.`
+    `Sorry, your metadata ZIP appears to be invalid; the target vendor is '${vendor}', but only 'Amazon Aurora PostgreSQL' and 'Amazon RDS for PostgreSQL' are supported.`
+
+export const invalidMetadataFileTargetVendorMismatch = (foundVendor: string, selectedVendor: string) =>
+    `Sorry, your metadata ZIP appears to be invalid; the target vendor is '${foundVendor}', but you previously selected a target vendor of '${selectedVendor}'.`
 
 export const invalidMetadataFileUnknownIssueParsing =
-    'Sorry, I had an issue parsing the metadata ZIP you provided; please make sure it is valid'
+    'Sorry, I had an issue parsing the metadata ZIP you provided; please make sure it is valid.'
+
+export const oracleVendor = 'Oracle'
+
+export const otherVendor = 'Other'
+
+export const auroraTargetVendor = 'Amazon Aurora PostgreSQL'
+
+export const rdsTargetVendor = 'Amazon RDS for PostgreSQL'
 
 export const failedToStartJobChatMessage =
     "Sorry, I couldn't begin the transformation. Please try starting the transformation again."
