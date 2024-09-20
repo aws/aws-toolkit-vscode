@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { fs } from '../../shared'
+import { chmod } from 'fs-extra'
 import { ToolkitError } from '../../shared/errors'
 import { ChildProcess } from '../../shared/utilities/childProcess'
 import { Timeout } from '../../shared/utilities/timeoutUtils'
@@ -39,7 +40,7 @@ export class SshKeyPair {
         if (result.exitCode !== 0) {
             throw new ToolkitError('ec2: Failed to generate ssh key', { details: { stdout: result.stdout } })
         }
-        await fs.chmod(keyPath, 0o600)
+        await chmod(keyPath, 0o600)
     }
 
     public getPublicKeyPath(): string {
