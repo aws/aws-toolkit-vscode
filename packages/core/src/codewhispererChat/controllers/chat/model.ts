@@ -70,6 +70,7 @@ export type ChatPromptCommandType =
 export interface PromptMessage {
     message: string | undefined
     messageId: string
+    traceId?: string
     command: ChatPromptCommandType | undefined
     userIntent: UserIntent | undefined
     tabID: string
@@ -143,6 +144,7 @@ export interface TriggerPayload {
     readonly customization: Customization
     relevantTextDocuments?: RelevantTextDocument[]
     useRelevantDocuments?: boolean
+    traceId?: string
 }
 
 export interface InsertedCode {
