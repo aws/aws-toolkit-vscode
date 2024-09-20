@@ -274,6 +274,51 @@ export async function parseBuildFile() {
     return undefined
 }
 
+export async function validateSQLMetadataFile(sctRulesData: any, message: any) {
+    try {
+        const sctRules = JSON.parse(sctRulesData)
+        const sourceDB = sctRules['rules'][0]['locator']['sourceVendor'] as string
+        const targetDB = sctRules['rules'][0]['locator']['targetVendor'] as string
+        if (sourceDB.toUpperCase() !== DB.ORACLE) {
+            transformByQState
+                .getChatControllers()
+                ?.transformationFinished.fire({
+                    message: CodeWhispererConstants.invalidMetadataFileUnsupportedSourceVendor(sourceDB),
+                    tabID: message.tabID,
+                })
+            return false
+        } else if (targetDB.toUpperCase() !== DB.AURORA_POSTGRESQL && targetDB.toUpperCase() !== DB.RDS_POSTGRESQL) {
+            transformByQState
+                .getChatControllers()
+                ?.transformationFinished.fire({
+                    message: CodeWhispererConstants.invalidMetadataFileUnsupportedTargetVendor(targetDB),
+                    tabID: message.tabID,
+                })
+            return false
+        } else if (targetDB.toUpperCase() !== transformByQState.getTargetDB()) {
+            transformByQState
+                .getChatControllers()
+                ?.transformationFinished.fire({
+                    message: CodeWhispererConstants.invalidMetadataFileTargetVendorMismatch(
+                        targetDB,
+                        transformByQState.getTargetDB()!
+                    ),
+                    tabID: message.tabID,
+                })
+            return false
+        }
+    } catch (e: any) {
+        transformByQState
+            .getChatControllers()
+            ?.transformationFinished.fire({
+                message: CodeWhispererConstants.invalidMetadataFileUnknownIssueParsing,
+                tabID: message.tabID,
+            })
+        return false
+    }
+    return true
+}
+
 export async function preTransformationUploadCode() {
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
 

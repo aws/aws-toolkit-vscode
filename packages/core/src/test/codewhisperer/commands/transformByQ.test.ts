@@ -7,8 +7,12 @@ import assert, { fail } from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
-import { parseBuildFile, stopTransformByQ } from '../../../codewhisperer/commands/startTransformByQ'
+import { DB, transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
+import {
+    parseBuildFile,
+    stopTransformByQ,
+    validateSQLMetadataFile,
+} from '../../../codewhisperer/commands/startTransformByQ'
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
@@ -340,5 +344,81 @@ describe('transformByQ', function () {
             'I detected 1 potential absolute file path(s) in your pom.xml file: **system/**. Absolute file paths might cause issues when I build your code. Any errors will show up in the build log.'
         const warningMessage = await parseBuildFile()
         assert.strictEqual(expectedWarning, warningMessage)
+    })
+
+    it(`WHEN validateMetadataFile on sct-rules.json with supported source DB and supported target DB THEN passes validation`, async function () {
+        const sampleRules = {
+            rules: [
+                {
+                    name: 'Mapping rule',
+                    ruleId: '1',
+                    locator: {
+                        sourceVendor: 'ORACLE',
+                        targetVendor: 'AURORA_POSTGRESQL',
+                    },
+                },
+            ],
+        }
+        const sampleRulesString = JSON.stringify(sampleRules)
+        transformByQState.setTargetDB(DB.AURORA_POSTGRESQL)
+        const isValidMetadata = await validateSQLMetadataFile(sampleRulesString, { tabID: 'abc123' })
+        assert.strictEqual(isValidMetadata, true)
+    })
+
+    it(`WHEN validateMetadataFile on sct-rules.json with unsupported source DB and supported target DB THEN fails validation`, async function () {
+        const sampleRules = {
+            rules: [
+                {
+                    name: 'Mapping rule',
+                    ruleId: '1',
+                    locator: {
+                        sourceVendor: 'NOT_ORACLE',
+                        targetVendor: 'AURORA_POSTGRESQL',
+                    },
+                },
+            ],
+        }
+        const sampleRulesString = JSON.stringify(sampleRules)
+        transformByQState.setTargetDB(DB.AURORA_POSTGRESQL)
+        const isValidMetadata = await validateSQLMetadataFile(sampleRulesString, { tabID: 'abc123' })
+        assert.strictEqual(isValidMetadata, false)
+    })
+
+    it(`WHEN validateMetadataFile on sct-rules.json with supported source DB and unsupported target DB THEN fails validation`, async function () {
+        const sampleRules = {
+            rules: [
+                {
+                    name: 'Mapping rule',
+                    ruleId: '1',
+                    locator: {
+                        sourceVendor: 'ORACLE',
+                        targetVendor: 'NOT_AURORA_POSTGRESQL',
+                    },
+                },
+            ],
+        }
+        const sampleRulesString = JSON.stringify(sampleRules)
+        transformByQState.setTargetDB(DB.AURORA_POSTGRESQL) // even though this is set to something valid, validation should fail
+        const isValidMetadata = await validateSQLMetadataFile(sampleRulesString, { tabID: 'abc123' })
+        assert.strictEqual(isValidMetadata, false)
+    })
+
+    it(`WHEN validateMetadataFile on sct-rules.json with supported source DB and supported target DB, but user selected a different target DB in chat form, THEN fails validation`, async function () {
+        const sampleRules = {
+            rules: [
+                {
+                    name: 'Mapping rule',
+                    ruleId: '1',
+                    locator: {
+                        sourceVendor: 'ORACLE',
+                        targetVendor: 'AURORA_POSTGRESQL',
+                    },
+                },
+            ],
+        }
+        const sampleRulesString = JSON.stringify(sampleRules)
+        transformByQState.setTargetDB(DB.RDS_POSTGRESQL) // different from 'AURORA_POSTGRESQL' above, so should fail validation
+        const isValidMetadata = await validateSQLMetadataFile(sampleRulesString, { tabID: 'abc123' })
+        assert.strictEqual(isValidMetadata, false)
     })
 })

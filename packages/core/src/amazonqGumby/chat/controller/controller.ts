@@ -32,6 +32,7 @@ import {
     validateCanCompileProject,
     setMaven,
     getValidSQLConversionCandidateProjects,
+    validateSQLMetadataFile,
 } from '../../../codewhisperer/commands/startTransformByQ'
 import { DB, JDKVersion, transformByQState } from '../../../codewhisperer/models/model'
 import {
@@ -216,7 +217,6 @@ export class GumbyController {
 
             // if previous transformation was already running
             switch (this.sessionStorage.getSession().conversationState) {
-                // TODO: figure out if/when to set these states for SQL conversions
                 case ConversationState.JOB_SUBMITTED:
                     this.messenger.sendAsyncEventProgress(
                         message.tabID,
@@ -335,7 +335,10 @@ export class GumbyController {
                     userChoice: 'Cancel',
                     result: MetadataResult.Pass,
                 })
-                this.messenger.sendJobFinishedMessage(message.tabID, CodeWhispererConstants.jobCancelledChatMessage)
+                this.transformationFinished({
+                    message: CodeWhispererConstants.jobCancelledChatMessage,
+                    tabID: message.tabID,
+                })
                 break
             case ButtonActions.CONFIRM_SKIP_TESTS_FORM:
                 await this.handleSkipTestsSelection(message)
@@ -529,46 +532,6 @@ export class GumbyController {
         await this.prepareLanguageUpgradeProjectForSubmission(message)
     }
 
-    private async validateMetadataFile(sctRulesData: any, message: any) {
-        try {
-            const sctRules = JSON.parse(sctRulesData)
-            const sourceDB = sctRules['rules'][0]['locator']['sourceVendor'] as string
-            const targetDB = sctRules['rules'][0]['locator']['targetVendor'] as string
-            if (sourceDB.toUpperCase() !== DB.ORACLE) {
-                this.messenger.sendJobFinishedMessage(
-                    message.tabID,
-                    CodeWhispererConstants.invalidMetadataFileUnsupportedSourceVendor(sourceDB)
-                )
-                return false
-            } else if (
-                targetDB.toUpperCase() !== DB.AURORA_POSTGRESQL &&
-                targetDB.toUpperCase() !== DB.RDS_POSTGRESQL
-            ) {
-                this.messenger.sendJobFinishedMessage(
-                    message.tabID,
-                    CodeWhispererConstants.invalidMetadataFileUnsupportedTargetVendor(targetDB)
-                )
-                return false
-            } else if (targetDB.toUpperCase() !== transformByQState.getTargetDB()) {
-                this.messenger.sendJobFinishedMessage(
-                    message.tabID,
-                    CodeWhispererConstants.invalidMetadataFileTargetVendorMismatch(
-                        targetDB,
-                        transformByQState.getTargetDB()!
-                    )
-                )
-                return false
-            }
-        } catch (e: any) {
-            this.messenger.sendJobFinishedMessage(
-                message.tabID,
-                CodeWhispererConstants.invalidMetadataFileUnknownIssueParsing
-            )
-            return false
-        }
-        return true
-    }
-
     private async processMetadataFile(message: any) {
         const fileUri = await vscode.window.showOpenDialog({
             canSelectMany: false, // Allow only one file to be selected
@@ -577,7 +540,10 @@ export class GumbyController {
 
         if (!fileUri || fileUri.length === 0) {
             // User canceled the dialog
-            this.messenger.sendJobFinishedMessage(message.tabID, CodeWhispererConstants.jobCancelledChatMessage)
+            this.transformationFinished({
+                message: CodeWhispererConstants.jobCancelledChatMessage,
+                tabID: message.tabID,
+            })
             return
         }
 
@@ -588,12 +554,15 @@ export class GumbyController {
         const pathToRules = zipEntries.find((entry) => entry.name === 'sct-rules.json')?.entryName
 
         if (!pathToRules) {
-            this.messenger.sendJobFinishedMessage(message.tabID, CodeWhispererConstants.invalidMetadataFileNoRulesJson)
+            this.transformationFinished({
+                message: CodeWhispererConstants.invalidMetadataFileNoRulesJson,
+                tabID: message.tabID,
+            })
             return
         }
 
         const sctRulesData = nodefs.readFileSync(path.join(pathToZip, pathToRules), 'utf8')
-        const isValidSctRulesData = await this.validateMetadataFile(sctRulesData, message)
+        const isValidSctRulesData = await validateSQLMetadataFile(sctRulesData, message)
         if (!isValidSctRulesData) {
             return
         }
