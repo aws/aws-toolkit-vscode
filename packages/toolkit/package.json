@@ -72,7 +72,6 @@
         "test": "npm run testCompile && c8 --allowExternal ts-node ../core/scripts/test/launchTest.ts unit dist/test/unit/index.js ../core/dist/src/testFixtures/workspaceFolder",
         "testE2E": "npm run testCompile && c8 --allowExternal ts-node ../core/scripts/test/launchTest.ts e2e dist/test/e2e/index.js ../core/dist/src/testFixtures/workspaceFolder",
         "testInteg": "npm run testCompile && c8 --allowExternal ts-node ../core/scripts/test/launchTest.ts integration dist/test/integ/index.js ../core/dist/src/testFixtures/workspaceFolder",
-        "testWeb": "npm run compileDev && c8 --allowExternal ts-node ../core/scripts/test/launchTest.ts web dist/test/web/index.js ../core/dist/src/testFixtures/workspaceFolder",
         "package": "ts-node ../../scripts/package.ts",
         "lint": "true",
         "createRelease": "ts-node ../../scripts/createRelease.ts",

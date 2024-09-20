@@ -81,7 +81,12 @@ export async function runTests(
 
     const dist = path.resolve(root, 'dist')
     const testFile = process.env['TEST_FILE']?.replace('.ts', '.js')
-    const testFilePath = testFile ? path.resolve(dist, testFile) : undefined
+    let testFilePath: string | undefined
+    if (testFile?.includes('../core/')) {
+        testFilePath = path.resolve(root, testFile.replace('../core/', '../core/dist/'))
+    } else {
+        testFilePath = testFile ? path.resolve(dist, testFile) : undefined
+    }
 
     if (testFile && testFiles) {
         throw new Error('Individual file and list of files given to run tests on. One must be chosen.')

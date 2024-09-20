@@ -114,7 +114,7 @@
                 "AWS_TOOLKIT_AUTOMATION": "local"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
-            "preLaunchTask": "build",
+            "preLaunchTask": "extensionInit",
             "presentation": {
                 "group": "6_IntegrationTests",
                 "order": 1
@@ -136,7 +136,7 @@
                 "AWS_TOOLKIT_AUTOMATION": "local"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
-            "preLaunchTask": "build",
+            "preLaunchTask": "extensionInit",
             "presentation": {
                 "group": "5_IntegrationTestsCurrentFile",
                 "order": 1
