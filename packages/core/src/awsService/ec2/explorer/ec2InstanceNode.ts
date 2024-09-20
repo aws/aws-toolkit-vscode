@@ -35,7 +35,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
 
     public updateInstance(newInstance: SafeEc2Instance) {
         this.setInstanceStatus(newInstance.LastSeenStatus)
-        this.label = `${this.name} (${this.InstanceId})`
+        this.label = `${this.name} (${this.InstanceId}) ${this.instance.LastSeenStatus.toUpperCase()}`
         this.contextValue = this.getContext()
         this.iconPath = new vscode.ThemeIcon(getIconCode(this.instance))
         this.tooltip = `${this.name}\n${this.InstanceId}\n${this.instance.LastSeenStatus}\n${this.arn}`

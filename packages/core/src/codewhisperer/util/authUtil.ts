@@ -26,9 +26,10 @@ import {
     isIdcSsoConnection,
     hasExactScopes,
     getTelemetryMetadataForConn,
+    ProfileNotFoundError,
 } from '../../auth/connection'
 import { getLogger } from '../../shared/logger'
-import { Commands } from '../../shared/vscode/commands2'
+import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { vsCodeState } from '../models/model'
 import { onceChanged, once } from '../../shared/utilities/functionUtils'
 import { indent } from '../../shared/utilities/textUtilities'
@@ -42,6 +43,7 @@ const localize = nls.loadMessageBundle()
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { asStringifiedStack } from '../../shared/telemetry/spans'
 import { withTelemetryContext } from '../../shared/telemetry/util'
+import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesCodeWhispererCore]
@@ -134,14 +136,12 @@ export class AuthUtil {
                 Commands.tryExecute('aws.amazonq.updateReferenceLog'),
             ])
 
-            await setContext('aws.codewhisperer.connected', this.isConnected())
+            await this.setVscodeContextProps()
 
             // To check valid connection
             if (this.isValidEnterpriseSsoInUse() || (this.isBuilderIdInUse() && !this.isConnectionExpired())) {
-                // start the feature config polling job
                 await showAmazonQWalkthroughOnce()
             }
-            await this.setVscodeContextProps()
         })
     })
 
@@ -254,8 +254,16 @@ export class AuthUtil {
             throw new ToolkitError('Connection is not an SSO connection', { code: 'BadConnectionType' })
         }
 
-        const bearerToken = await this.conn.getToken()
-        return bearerToken.accessToken
+        try {
+            const bearerToken = await this.conn.getToken()
+            return bearerToken.accessToken
+        } catch (err) {
+            if (err instanceof ProfileNotFoundError) {
+                // Expected that connection would be deleted by conn.getToken()
+                void focusAmazonQPanel.execute(placeholder, 'profileNotFoundSignout')
+            }
+            throw err
+        }
     }
 
     @withTelemetryContext({ name: 'getCredentials', class: authClassName })

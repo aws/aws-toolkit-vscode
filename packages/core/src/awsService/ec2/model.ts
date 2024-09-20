@@ -12,13 +12,19 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { ToolkitError } from '../../shared/errors'
 import { SsmClient } from '../../shared/clients/ssmClient'
 import { Ec2Client } from '../../shared/clients/ec2Client'
-import { VscodeRemoteConnection, ensureDependencies, openRemoteTerminal } from '../../shared/remoteSession'
+import {
+    VscodeRemoteConnection,
+    ensureDependencies,
+    getDeniedSsmActions,
+    openRemoteTerminal,
+    promptToAddInlinePolicy,
+} from '../../shared/remoteSession'
 import { DefaultIamClient } from '../../shared/clients/iamClient'
 import { ErrorInformation } from '../../shared/errors'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../../shared/extensions/ssh'
 import { createBoundProcess } from '../../codecatalyst/model'
 import { getLogger } from '../../shared/logger/logger'
-import { Timeout } from '../../shared/utilities/timeoutUtils'
+import { CancellationError, Timeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
 import { SshConfig, sshLogFileLocation } from '../../shared/sshConfig'
 import { SshKeyPair } from './sshKeyPair'
@@ -28,6 +34,7 @@ export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMC
 
 interface Ec2RemoteEnv extends VscodeRemoteConnection {
     selection: Ec2Selection
+    keyPair: SshKeyPair
 }
 
 export class Ec2ConnectionManager {
@@ -69,13 +76,10 @@ export class Ec2ConnectionManager {
         }
     }
 
-    public async hasProperPolicies(IamRoleArn: string): Promise<boolean> {
-        const attachedPolicies = (await this.iamClient.listAttachedRolePolicies(IamRoleArn)).map(
-            (policy) => policy.PolicyName!
-        )
-        const requiredPolicies = ['AmazonSSMManagedInstanceCore', 'AmazonSSMManagedEC2InstanceDefaultPolicy']
+    public async hasProperPermissions(IamRoleArn: string): Promise<boolean> {
+        const deniedActions = await getDeniedSsmActions(this.iamClient, IamRoleArn)
 
-        return requiredPolicies.length !== 0 && requiredPolicies.every((policy) => attachedPolicies.includes(policy))
+        return deniedActions.length === 0
     }
 
     public async isInstanceRunning(instanceId: string): Promise<boolean> {
@@ -102,19 +106,20 @@ export class Ec2ConnectionManager {
 
         if (!IamRole) {
             const message = `No IAM role attached to instance: ${selection.instanceId}`
-            this.throwConnectionError(message, selection, { code: 'EC2SSMPermission' })
-        }
-
-        const hasProperPolicies = await this.hasProperPolicies(IamRole!.Arn)
-
-        if (!hasProperPolicies) {
-            const message = `Ensure an IAM role with the required policies is attached to the instance. Found attached role: ${
-                IamRole!.Arn
-            }`
             this.throwConnectionError(message, selection, {
                 code: 'EC2SSMPermission',
                 documentationUri: this.policyDocumentationUri,
             })
+        }
+
+        const hasPermission = await this.hasProperPermissions(IamRole!.Arn)
+
+        if (!hasPermission) {
+            const policiesAdded = await promptToAddInlinePolicy(this.iamClient, IamRole!.Arn!)
+
+            if (!policiesAdded) {
+                throw new CancellationError('user')
+            }
         }
     }
 
@@ -190,9 +195,9 @@ export class Ec2ConnectionManager {
     public async prepareEc2RemoteEnv(selection: Ec2Selection, remoteUser: string): Promise<Ec2RemoteEnv> {
         const logger = this.configureRemoteConnectionLogger(selection.instanceId)
         const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
-        const keyPath = await this.configureSshKeys(selection, remoteUser)
+        const keyPair = await this.configureSshKeys(selection, remoteUser)
         const hostNamePrefix = 'aws-ec2-'
-        const sshConfig = new SshConfig(ssh, hostNamePrefix, 'ec2_connect', keyPath)
+        const sshConfig = new SshConfig(ssh, hostNamePrefix, 'ec2_connect', keyPair.getPrivateKeyPath())
 
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
@@ -219,6 +224,7 @@ export class Ec2ConnectionManager {
             vscPath: vsc,
             SessionProcess,
             selection,
+            keyPair,
         }
     }
 
@@ -228,11 +234,11 @@ export class Ec2ConnectionManager {
         return logger
     }
 
-    public async configureSshKeys(selection: Ec2Selection, remoteUser: string): Promise<string> {
+    public async configureSshKeys(selection: Ec2Selection, remoteUser: string): Promise<SshKeyPair> {
         const keyPath = path.join(globals.context.globalStorageUri.fsPath, `aws-ec2-key`)
-        const keyPair = await SshKeyPair.getSshKeyPair(keyPath)
+        const keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
         await this.sendSshKeyToInstance(selection, keyPair, remoteUser)
-        return keyPath
+        return keyPair
     }
 
     public async sendSshKeyToInstance(

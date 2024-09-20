@@ -20,10 +20,14 @@ export interface Ec2Selection {
 export class Ec2Prompter {
     public constructor(protected filter?: instanceFilter) {}
 
-    protected static asQuickPickItem(instance: SafeEc2Instance): DataQuickPickItem<string> {
+    public static getLabel(instance: SafeEc2Instance) {
         const icon = `$(${getIconCode(instance)})`
+        return `${instance.Name ?? '(no name)'} \t ${icon} ${instance.LastSeenStatus.toUpperCase()}`
+    }
+
+    protected static asQuickPickItem(instance: SafeEc2Instance): DataQuickPickItem<string> {
         return {
-            label: `${icon} \t ${instance.Name ?? '(no name)'}`,
+            label: Ec2Prompter.getLabel(instance),
             detail: instance.InstanceId,
             data: instance.InstanceId,
         }

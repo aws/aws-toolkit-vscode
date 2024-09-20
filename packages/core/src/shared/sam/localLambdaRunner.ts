@@ -347,12 +347,11 @@ export async function runLambdaFunction(
             debugConfig: config,
             retryDelayMillis: attachDebuggerRetryDelayMillis,
         })
-
-        await showDebugConsole()
     }
 
     try {
         await attach()
+        await showOutputChannel(ctx)
     } finally {
         vscode.Disposable.from(timer, terminationListener).dispose()
     }
@@ -536,16 +535,14 @@ export function shouldAppendRelativePathToFuncHandler(runtime: string): boolean 
 }
 
 /**
- * Brings the Debug Console in focus.
- * If the OutputChannel is showing, focus does not consistently switch over to the debug console, so we're
- * helping make this happen.
+ * Brings the Output Channel in focus.
  */
-async function showDebugConsole(): Promise<void> {
+async function showOutputChannel(ctx: ExtContext): Promise<void> {
     try {
-        await vscode.commands.executeCommand('workbench.debug.action.toggleRepl')
+        ctx.outputChannel.show(true)
     } catch (err) {
         // in case the vs code command changes or misbehaves, swallow error
-        getLogger().verbose('Unable to switch to the Debug Console: %O', err as Error)
+        getLogger().verbose('Unable to focus output channel: %O', err as Error)
     }
 }
 

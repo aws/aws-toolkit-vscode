@@ -170,7 +170,8 @@ export class SshConfig {
     private getBaseSSHConfig(proxyCommand: string): string {
         // "AddKeysToAgent" will automatically add keys used on the server to the local agent. If not set, then `ssh-add`
         // must be done locally. It's mostly a convenience thing; private keys are _not_ shared with the server.
-
+        // "IdentitiesOnly yes" forces agent to only use provided identity file.
+        // More details: https://www.ssh.com/academy/ssh/config
         return `
 # Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
 Host ${this.configHostName}
@@ -178,6 +179,7 @@ Host ${this.configHostName}
     AddKeysToAgent yes
     StrictHostKeyChecking accept-new
     ProxyCommand ${proxyCommand}
+    IdentitiesOnly yes
     `
     }
 

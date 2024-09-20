@@ -83,6 +83,7 @@ describe('env', function () {
     }
 
     it('isAmazonInternalOS', function () {
+        sandbox.stub(process, 'platform').value('linux')
         const versionStub = stubOsVersion('5.10.220-188.869.amzn2int.x86_64')
         assert.strictEqual(isAmazonInternalOS(), true)
 
@@ -91,6 +92,7 @@ describe('env', function () {
     })
 
     it('isCloudDesktop', async function () {
+        sandbox.stub(process, 'platform').value('linux')
         stubOsVersion('5.10.220-188.869.amzn2int.x86_64')
 
         const runStub = sandbox.stub(ChildProcess.prototype, 'run').resolves({ exitCode: 0 } as any)
@@ -102,6 +104,7 @@ describe('env', function () {
 
     describe('getComputeEnvType', async function () {
         it('cloudDesktop', async function () {
+            sandbox.stub(process, 'platform').value('linux')
             sandbox.stub(vscode.env, 'remoteName').value('ssh-remote')
             stubOsVersion('5.10.220-188.869.amzn2int.x86_64')
             sandbox.stub(ChildProcess.prototype, 'run').resolves({ exitCode: 0 } as any)
@@ -110,6 +113,7 @@ describe('env', function () {
         })
 
         it('ec2-internal', async function () {
+            sandbox.stub(process, 'platform').value('linux')
             sandbox.stub(vscode.env, 'remoteName').value('ssh-remote')
             stubOsVersion('5.10.220-188.869.amzn2int.x86_64')
             sandbox.stub(ChildProcess.prototype, 'run').resolves({ exitCode: 1 } as any)
@@ -118,6 +122,7 @@ describe('env', function () {
         })
 
         it('ec2', async function () {
+            sandbox.stub(process, 'platform').value('linux')
             sandbox.stub(vscode.env, 'remoteName').value('ssh-remote')
             stubOsVersion('5.10.220-188.869.NOT_INTERNAL.x86_64')
 
