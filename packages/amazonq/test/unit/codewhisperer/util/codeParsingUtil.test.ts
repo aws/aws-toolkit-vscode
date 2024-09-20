@@ -3,9 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { extractClasses, extractFunctions, isTestFile, utgLanguageConfigs } from 'aws-core-vscode/codewhisperer'
+import {
+    PlatformLanguageId,
+    extractClasses,
+    extractFunctions,
+    isTestFile,
+    utgLanguageConfigs,
+} from 'aws-core-vscode/codewhisperer'
 import assert from 'assert'
-import { createTestWorkspaceFolder, openATextEditorWithText } from 'aws-core-vscode/test'
+import { createMockTextEditor, createTestWorkspaceFolder } from 'aws-core-vscode/test'
 
 let tempFolder: string
 
@@ -106,42 +112,48 @@ describe('isTestFile', () => {
         }
     })
 
-    async function assertIsTestFile(srcFiles: string[], tstFiles: string[], fileExt: string) {
-        for (const name of tstFiles) {
-            const file = `${name}.${fileExt}`
-            const editor = await openATextEditorWithText('', file, tempFolder, { preview: false })
-            const actual = await isTestFile(editor.document.uri.fsPath, { languageId: editor.document.languageId })
-            assert.strictEqual(actual, true)
-        }
-
-        for (const name of srcFiles) {
-            const file = `${name}.${fileExt}`
-            const editor = await openATextEditorWithText('', file, tempFolder, { preview: false })
-            const actual = await isTestFile(editor.document.uri.fsPath, { languageId: editor.document.languageId })
-            assert.strictEqual(actual, false)
+    async function assertIsTestFile(
+        filePaths: string[],
+        config: { languageId: PlatformLanguageId },
+        expected: boolean
+    ) {
+        for (const filePath of filePaths) {
+            const editor = createMockTextEditor('', filePath, config.languageId)
+            const actual = await isTestFile(editor.document.uri.fsPath, { languageId: config.languageId })
+            assert.strictEqual(actual, expected)
         }
     }
 
     it('validate by file name', async function () {
-        const camelCaseSrc = ['Foo', 'Bar', 'Baz']
-        const camelCaseTst = ['FooTest', 'BarTests']
-        await assertIsTestFile(camelCaseSrc, camelCaseTst, 'java')
+        const camelCaseSrc = ['Foo.java', 'Bar.java', 'Baz.java']
+        await assertIsTestFile(camelCaseSrc, { languageId: 'java' }, false)
 
-        const snakeCaseSrc = ['foo', 'bar']
-        const snakeCaseTst = ['test_foo', 'bar_test']
-        await assertIsTestFile(snakeCaseSrc, snakeCaseTst, 'py')
+        const camelCaseTst = ['FooTest.java', 'BarTests.java']
+        await assertIsTestFile(camelCaseTst, { languageId: 'java' }, true)
 
-        const javascriptTst = ['Foo.test', 'Bar.spec']
-        await assertIsTestFile(camelCaseSrc, javascriptTst, 'js')
+        const snakeCaseSrc = ['foo.py', 'bar.py']
+        await assertIsTestFile(snakeCaseSrc, { languageId: 'python' }, false)
 
-        const typescriptTst = javascriptTst
-        await assertIsTestFile(camelCaseSrc, typescriptTst, 'ts')
+        const snakeCaseTst = ['test_foo.py', 'bar_test.py']
+        await assertIsTestFile(snakeCaseTst, { languageId: 'python' }, true)
 
-        const jsxTst = javascriptTst
-        await assertIsTestFile(camelCaseSrc, jsxTst, 'jsx')
+        const javascriptSrc = ['Foo.js', 'bar.js']
+        await assertIsTestFile(javascriptSrc, { languageId: 'javascript' }, false)
 
-        const tsxTst = javascriptTst
-        await assertIsTestFile(camelCaseSrc, tsxTst, 'tsx')
+        const javascriptTst = ['Foo.test.js', 'Bar.spec.js']
+        await assertIsTestFile(javascriptTst, { languageId: 'javascript' }, true)
+
+        const typescriptSrc = ['Foo.ts', 'bar.ts']
+        await assertIsTestFile(typescriptSrc, { languageId: 'typescript' }, false)
+
+        const typescriptTst = ['Foo.test.ts', 'Bar.spec.ts']
+        await assertIsTestFile(typescriptTst, { languageId: 'typescript' }, true)
+
+        const jsxSrc = ['Foo.jsx', 'Bar.jsx']
+        await assertIsTestFile(jsxSrc, { languageId: 'javascriptreact' }, false)
+
+        const jsxTst = ['Foo.test.jsx', 'Bar.spec.jsx']
+        await assertIsTestFile(jsxTst, { languageId: 'javascriptreact' }, true)
     })
 
     it('should return true if the file name matches the test filename pattern - Java', async () => {
