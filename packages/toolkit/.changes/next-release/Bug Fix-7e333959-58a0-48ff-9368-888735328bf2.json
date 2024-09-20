@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "EC2 connect: remote connection will no longer fail with 'too many authentication attempt'"
+}
