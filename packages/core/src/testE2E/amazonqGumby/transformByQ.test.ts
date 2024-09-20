@@ -39,7 +39,7 @@ describe('transformByQ', async function () {
                 path: tempFilePath,
                 name: tempFileName,
             },
-            modulePath: tempDir,
+            projectPath: tempDir,
             zipManifest: new ZipManifest(),
         })
         zippedCodePath = zipCodeResult.tempFilePath

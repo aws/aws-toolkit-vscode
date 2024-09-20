@@ -346,6 +346,9 @@ export class GumbyController {
             case ButtonActions.CONFIRM_SQL_CONVERSION_TRANSFORMATION_FORM:
                 await this.handleUserSQLConversionProjectSelection(message)
                 break
+            case ButtonActions.SELECT_SQL_CONVERSION_METADATA_FILE:
+                await this.processMetadataFile(message)
+                break
             case ButtonActions.VIEW_TRANSFORMATION_HUB:
                 await vscode.commands.executeCommand(GumbyCommands.FOCUS_TRANSFORMATION_HUB, CancelActionPositions.Chat)
                 this.messenger.sendJobSubmittedMessage(message.tabID)
@@ -436,8 +439,8 @@ export class GumbyController {
     private async handleUserSQLConversionProjectSelection(message: any) {
         await telemetry.codeTransform_submitSelection.run(async () => {
             const pathToProject: string = message.formSelectedValues['GumbyTransformSQLConversionProjectForm']
-            const toDB: DB = message.formSelectedValues['GumbyTransformDBToForm']
             const fromDB: DB = message.formSelectedValues['GumbyTransformDBFromForm']
+            const toDB: DB = message.formSelectedValues['GumbyTransformDBToForm']
 
             telemetry.record({
                 codeTransformProjectId: pathToProject === undefined ? telemetryUndefined : getStringHash(pathToProject),
@@ -457,7 +460,7 @@ export class GumbyController {
             }
 
             await processSQLConversionTransformFormInput(pathToProject, fromDB, toDB)
-            await this.getMetadataFile(message)
+            this.messenger.sendSelectSQLMetadataFileMessage(message.tabID)
         })
     }
 
@@ -526,7 +529,47 @@ export class GumbyController {
         await this.prepareLanguageUpgradeProjectForSubmission(message)
     }
 
-    private async getMetadataFile(message: any | undefined = undefined) {
+    private async validateMetadataFile(sctRulesData: any, message: any) {
+        try {
+            const sctRules = JSON.parse(sctRulesData)
+            const sourceDB = sctRules['rules'][0]['locator']['sourceVendor'] as string
+            const targetDB = sctRules['rules'][0]['locator']['targetVendor'] as string
+            if (sourceDB.toUpperCase() !== DB.ORACLE) {
+                this.messenger.sendJobFinishedMessage(
+                    message.tabID,
+                    CodeWhispererConstants.invalidMetadataFileUnsupportedSourceVendor(sourceDB)
+                )
+                return false
+            } else if (
+                targetDB.toUpperCase() !== DB.AURORA_POSTGRESQL &&
+                targetDB.toUpperCase() !== DB.RDS_POSTGRESQL
+            ) {
+                this.messenger.sendJobFinishedMessage(
+                    message.tabID,
+                    CodeWhispererConstants.invalidMetadataFileUnsupportedTargetVendor(targetDB)
+                )
+                return false
+            } else if (targetDB.toUpperCase() !== transformByQState.getTargetDB()) {
+                this.messenger.sendJobFinishedMessage(
+                    message.tabID,
+                    CodeWhispererConstants.invalidMetadataFileTargetVendorMismatch(
+                        targetDB,
+                        transformByQState.getTargetDB()!
+                    )
+                )
+                return false
+            }
+        } catch (e: any) {
+            this.messenger.sendJobFinishedMessage(
+                message.tabID,
+                CodeWhispererConstants.invalidMetadataFileUnknownIssueParsing
+            )
+            return false
+        }
+        return true
+    }
+
+    private async processMetadataFile(message: any) {
         const fileUri = await vscode.window.showOpenDialog({
             canSelectMany: false, // Allow only one file to be selected
             openLabel: 'Select', // Label for the open button
@@ -550,33 +593,12 @@ export class GumbyController {
         }
 
         const sctRulesData = nodefs.readFileSync(path.join(pathToZip, pathToRules), 'utf8')
-        try {
-            const sctRules = JSON.parse(sctRulesData)
-            const sourceDB = sctRules['rules'][0]['locator']['sourceVendor'] as string
-            const targetDB = sctRules['rules'][0]['locator']['targetVendor'] as string
-            if (sourceDB.toUpperCase() !== 'ORACLE') {
-                this.messenger.sendJobFinishedMessage(
-                    message.tabID,
-                    CodeWhispererConstants.invalidMetadataFileUnsupportedSourceVendor(sourceDB)
-                )
-                return
-            } else if (targetDB.toUpperCase() !== 'AURORA_POSTGRESQL') {
-                // TO-DO: or !== 'AMAZON_RDS' or something like that
-                this.messenger.sendJobFinishedMessage(
-                    message.tabID,
-                    CodeWhispererConstants.invalidMetadataFileUnsupportedTargetVendor(targetDB)
-                )
-                return
-            }
-        } catch (e: any) {
-            this.messenger.sendJobFinishedMessage(
-                message.tabID,
-                CodeWhispererConstants.invalidMetadataFileUnknownIssueParsing
-            )
+        const isValidSctRulesData = await this.validateMetadataFile(sctRulesData, message)
+        if (!isValidSctRulesData) {
             return
         }
 
-        transformByQState.setMetadataPathSQL(pathToZip)
+        transformByQState.setMetadataPathSQL(fileUri[0].fsPath)
 
         this.messenger.sendAsyncEventProgress(
             message.tabID,
@@ -586,7 +608,7 @@ export class GumbyController {
         )
         this.messenger.sendJobSubmittedMessage(message.tabID)
         this.sessionStorage.getSession().conversationState = ConversationState.JOB_SUBMITTED
-        // await startTransformByQ()
+        await startTransformByQ()
     }
 
     private transformationFinished(data: { message: string | undefined; tabID: string }) {
