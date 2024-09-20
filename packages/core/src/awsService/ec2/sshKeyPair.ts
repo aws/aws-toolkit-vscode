@@ -9,7 +9,7 @@ import { tryRun } from '../../shared/utilities/pathFind'
 import { Timeout } from '../../shared/utilities/timeoutUtils'
 import { findAsync } from '../../shared/utilities/collectionUtils'
 
-type sshKeyType = 'rsa' | 'ed25519' | 'fake'
+type sshKeyType = 'rsa' | 'ed25519'
 
 export class SshKeyPair {
     private publicKeyPath: string
