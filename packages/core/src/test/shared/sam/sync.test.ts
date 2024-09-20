@@ -24,20 +24,19 @@ describe('SyncWizard', async function () {
 
     it('shows steps in correct order', async function () {
         const tester = await createTester()
-        tester.paramsSource.assertShowFirst()
-        const tester2 = await createTester({ paramsSource: ParamsSource.SpecifyAndSave })
+        tester.projectRoot.assertShowFirst()
+        tester.paramsSource.assertShowSecond()
+
+        const workspaceUri = vscode.workspace.workspaceFolders?.[0]?.uri || vscode.Uri.file('/')
+        const rootFolderUri = vscode.Uri.joinPath(workspaceUri, 'my')
+        const tester2 = await createTester({
+            paramsSource: ParamsSource.SpecifyAndSave,
+            projectRoot: rootFolderUri,
+        })
         tester2.template.assertShowFirst()
         tester2.region.assertShowSecond()
         tester2.stackName.assertShowThird()
         tester2.bucketName.assertShow(4)
-    })
-
-    it('shows steps when user chooses to specify the params', async function () {
-        const tester = await createTester({ paramsSource: ParamsSource.SpecifyAndSave })
-        tester.template.assertShowFirst()
-        tester.region.assertShowSecond()
-        tester.stackName.assertShowThird()
-        tester.bucketName.assertShow(4)
     })
 
     it('skips prompts if user chooses samconfig file as params source', async function () {
@@ -68,7 +67,7 @@ describe('SyncWizard', async function () {
 
         const templateUri = vscode.Uri.joinPath(rootFolderUri, 'template.yaml')
         const template = { uri: templateUri, data: createBaseTemplate() }
-        const tester = await createTester({ template })
+        const tester = await createTester({ template, projectRoot: rootFolderUri })
         tester.projectRoot.path.assertValue(rootFolderUri.path)
     })
 })
