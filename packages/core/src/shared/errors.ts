@@ -140,23 +140,28 @@ export class ToolkitError extends Error implements ErrorInformation {
      * sensitive information and should be limited in technical detail.
      */
     public override readonly message: string
-    public readonly code = this.info.code
-    public readonly details = this.info.details
+    public readonly code: string | undefined
+    public readonly details: Record<string, unknown> | undefined
 
     /**
      * We guard against mutation to stop a developer from creating a circular chain of errors.
      * The alternative is to truncate errors to an arbitrary depth though that doesn't address
      * why the error chain is deep.
      */
-    readonly #cause = this.info.cause
-    readonly #name = this.info.name ?? super.name
+    readonly #cause: Error | undefined
+    readonly #name: string
+    readonly #documentationUri: any
+    readonly #cancelled: boolean | undefined
 
-    public constructor(
-        message: string,
-        protected readonly info: ErrorInformation = {}
-    ) {
+    public constructor(message: string, info: ErrorInformation = {}) {
         super(message)
         this.message = message
+        this.code = info.code
+        this.details = info.details
+        this.#cause = info.cause
+        this.#name = info.name ?? super.name
+        this.#cancelled = info.cancelled
+        this.#documentationUri = info.documentationUri
     }
 
     /**
@@ -180,14 +185,14 @@ export class ToolkitError extends Error implements ErrorInformation {
      * assignment on construction or by finding a 'cancelled' error within its causal chain.
      */
     public get cancelled(): boolean {
-        return this.info.cancelled ?? isUserCancelledError(this.cause)
+        return this.#cancelled ?? isUserCancelledError(this.cause)
     }
 
     /**
      * The associated documentation, if it exists. Otherwise undefined.
      */
     public get documentationUri(): vscode.Uri | undefined {
-        return this.info.documentationUri
+        return this.#documentationUri
     }
 
     /**

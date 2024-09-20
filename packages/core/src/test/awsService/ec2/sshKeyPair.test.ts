@@ -8,6 +8,7 @@ import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
 import { SshKeyPair } from '../../../awsService/ec2/sshKeyPair'
+import { ChildProcess } from '../../../shared/utilities/childProcess'
 
 describe('SshKeyUtility', async function () {
     let temporaryDirectory: string
@@ -28,6 +29,13 @@ describe('SshKeyUtility', async function () {
         it('generates key in target file', async function () {
             const contents = await fs.readFile(keyPath, 'utf-8')
             assert.notStrictEqual(contents.length, 0)
+        })
+
+        it('uses ed25519 algorithm to generate the keys', async function () {
+            const process = new ChildProcess(`ssh-keygen`, ['-vvv', '-l', '-f', keyPath])
+            const result = await process.run()
+            // Check private key header for algorithm name
+            assert.strictEqual(result.stdout.includes('[ED25519 256]'), true)
         })
     })
 

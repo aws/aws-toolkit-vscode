@@ -11,6 +11,9 @@ import { SafeEc2Instance, Ec2Client } from '../../shared/clients/ec2Client'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { getLogger } from '../../shared/logger'
 import { ec2LogSchema } from './ec2LogDocumentProvider'
+import { getAwsConsoleUrl } from '../../shared/awsConsole'
+import { showRegionPrompter } from '../../auth/utils'
+import { openUrl } from '../../shared/utilities/vsCodeUtils'
 
 export function refreshExplorer(node?: Ec2Node) {
     if (node) {
@@ -52,6 +55,12 @@ export async function rebootInstance(node?: Ec2Node) {
     const selection = await getSelection(node)
     const client = new Ec2Client(selection.region)
     await client.rebootInstanceWithCancel(selection.instanceId)
+}
+
+export async function linkToLaunchInstance(node?: Ec2Node) {
+    const region = node ? node.regionCode : (await showRegionPrompter('Select Region', '')).id
+    const url = getAwsConsoleUrl('ec2-launch', region)
+    await openUrl(url)
 }
 
 async function getSelection(node?: Ec2Node, filter?: instanceFilter): Promise<Ec2Selection> {

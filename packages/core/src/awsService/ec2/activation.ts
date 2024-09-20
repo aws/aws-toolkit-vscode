@@ -17,6 +17,7 @@ import {
     stopInstance,
     refreshExplorer,
     openLogDocument,
+    linkToLaunchInstance,
 } from './commands'
 import { EC2_LOGS_SCHEME } from '../../shared/constants'
 import { Ec2LogDocumentProvider } from './ec2LogDocumentProvider'
@@ -65,6 +66,12 @@ export async function activate(ctx: ExtContext): Promise<void> {
                 span.record({ ec2InstanceState: 'reboot' })
                 await rebootInstance(node)
                 refreshExplorer(node)
+            })
+        }),
+
+        Commands.register('aws.ec2.linkToLaunch', async (node?: Ec2Node) => {
+            await telemetry.ec2_launchInstance.run(async (span) => {
+                await linkToLaunchInstance(node)
             })
         })
     )
