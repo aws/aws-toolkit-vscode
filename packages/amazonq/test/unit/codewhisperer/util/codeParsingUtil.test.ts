@@ -11,9 +11,7 @@ import {
     utgLanguageConfigs,
 } from 'aws-core-vscode/codewhisperer'
 import assert from 'assert'
-import { createMockDocument, createTestWorkspaceFolder } from 'aws-core-vscode/test'
-
-let tempFolder: string
+import { createMockDocument } from 'aws-core-vscode/test'
 
 describe('RegexValidationForPython', () => {
     it('should extract all function names from a python file content', () => {
@@ -66,10 +64,6 @@ describe('RegexValidationForJava', () => {
 })
 
 describe('isTestFile', () => {
-    beforeEach(async function () {
-        tempFolder = (await createTestWorkspaceFolder()).uri.fsPath
-    })
-
     it('validate by file path', async function () {
         const langs = new Map<string, string>([
             ['java', '.java'],
