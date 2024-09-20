@@ -52,7 +52,7 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
         super()
     }
 
-    private refresh(prompter: QuickPickPrompter<T | typeof switchRegion>): void {
+    public refresh(prompter: QuickPickPrompter<T | typeof switchRegion>): void {
         // This method cannot be async due to onClick() specifications. Thus we are forced to use .then, .catch as workaround.
         const activeBefore = prompter.quickPick.activeItems
         prompter
