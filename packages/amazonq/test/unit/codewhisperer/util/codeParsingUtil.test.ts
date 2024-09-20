@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import {
     PlatformLanguageId,
     extractClasses,
@@ -10,8 +11,9 @@ import {
     isTestFile,
     utgLanguageConfigs,
 } from 'aws-core-vscode/codewhisperer'
+import * as path from 'path'
 import assert from 'assert'
-import { createMockDocument } from 'aws-core-vscode/test'
+import { createTestWorkspaceFolder, toFile } from 'aws-core-vscode/test'
 
 describe('RegexValidationForPython', () => {
     it('should extract all function names from a python file content', () => {
@@ -64,6 +66,11 @@ describe('RegexValidationForJava', () => {
 })
 
 describe('isTestFile', () => {
+    let testWsFolder: string
+    beforeEach(async function () {
+        testWsFolder = (await createTestWorkspaceFolder()).uri.fsPath
+    })
+
     it('validate by file path', async function () {
         const langs = new Map<string, string>([
             ['java', '.java'],
@@ -107,12 +114,14 @@ describe('isTestFile', () => {
     })
 
     async function assertIsTestFile(
-        filePaths: string[],
+        fileNames: string[],
         config: { languageId: PlatformLanguageId },
         expected: boolean
     ) {
-        for (const filePath of filePaths) {
-            const document = createMockDocument('', filePath, config.languageId)
+        for (const fileName of fileNames) {
+            const p = path.join(testWsFolder, fileName)
+            await toFile('', p)
+            const document = await vscode.workspace.openTextDocument(p)
             const actual = await isTestFile(document.uri.fsPath, { languageId: config.languageId })
             assert.strictEqual(actual, expected)
         }
