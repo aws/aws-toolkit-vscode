@@ -53,6 +53,7 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
     }
 
     private refresh(prompter: QuickPickPrompter<T | typeof switchRegion>): void {
+        // This method cannot be async due to onClick() specifications. Thus we are forced to use .then, .catch as workaround.
         const activeBefore = prompter.quickPick.activeItems
         prompter
             .clearAndLoadItems(this.itemsProvider(this.currentRegion))
@@ -70,7 +71,7 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
         const items = this.itemsProvider(this.currentRegion)
         const prompter = createQuickPick<T | typeof switchRegion>(items, {
             ...this.dataOptions,
-            buttons: [refreshButton],
+            buttons: [...(this.dataOptions?.buttons ?? []), refreshButton],
         } as ExtendedQuickPickOptions<T | typeof switchRegion>)
 
         prompter.quickPick.items = [...this.defaultItems, ...prompter.quickPick.items]
