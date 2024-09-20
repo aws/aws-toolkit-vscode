@@ -44,7 +44,7 @@ describe('Ec2ConnectClient', function () {
 
     describe('hasProperPermissions', async function () {
         it('throws error when sdk throws error', async function () {
-            sinon.stub(DefaultIamClient.prototype, 'listAttachedRolePolicies').throws(new ToolkitError('error'))
+            sinon.stub(DefaultIamClient.prototype, 'simulatePrincipalPolicy').throws(new ToolkitError('error'))
 
             try {
                 await client.hasProperPermissions('')
