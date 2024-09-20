@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import { SamAppLocation } from './samProject'
 import { getLogger } from '../../../shared/logger/logger'
+import { getProjectRootUri } from '../../../shared/sam/utils'
 
 export async function detectSamProjects(): Promise<SamAppLocation[]> {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -31,7 +32,11 @@ async function detectSamProjectsFromWorkspaceFolder(
     const result: SamAppLocation[] = []
     const samTemplateFiles = await getFiles(workspaceFolder, '**/template.{yml,yaml}', '**/.aws-sam/**')
     for (const samTemplateFile of samTemplateFiles) {
-        const project = { samTemplateUri: samTemplateFile, workspaceFolder: workspaceFolder }
+        const project = {
+            samTemplateUri: samTemplateFile,
+            workspaceFolder: workspaceFolder,
+            projectRoot: getProjectRootUri(samTemplateFile),
+        }
         result.push(project)
     }
     return result

@@ -21,7 +21,7 @@ export class StackNameNode implements TreeNode {
 
     public async getChildren(): Promise<TreeNode[]> {
         try {
-            const { stackName, region } = await getStackName(this.location.samTemplateUri)
+            const { stackName, region } = await getStackName(this.location.projectRoot)
             this.stackName = stackName || this.stackName
             this.region = region || this.region
             return [stackName, region]

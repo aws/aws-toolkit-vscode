@@ -18,6 +18,7 @@ export interface SamApp {
 export interface SamAppLocation {
     samTemplateUri: vscode.Uri
     workspaceFolder: vscode.WorkspaceFolder
+    projectRoot: vscode.Uri
 }
 
 export interface ResourceTreeEntity {
@@ -30,9 +31,9 @@ export interface ResourceTreeEntity {
     Method?: string
 }
 
-export async function getStackName(samTemplateUri: vscode.Uri): Promise<any> {
+export async function getStackName(projectRoot: vscode.Uri): Promise<any> {
     try {
-        const samConfigUri = await getConfigFileUri(samTemplateUri)
+        const samConfigUri = await getConfigFileUri(projectRoot)
         const samConfig = await SamConfig.fromUri(samConfigUri)
         const stackName = await samConfig.getParam('global', 'stack_name')
         const region = await samConfig.getParam('global', 'region')

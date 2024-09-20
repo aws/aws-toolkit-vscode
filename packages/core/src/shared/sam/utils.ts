@@ -9,7 +9,7 @@ import path from 'path'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { TreeNode, isTreeNode } from '../treeview/resourceTreeDataProvider'
 import * as CloudFormation from '../cloudformation/cloudformation'
-import { getLogger } from '../logger'
+import fs from '../fs/fs'
 
 /**
  * @description Finds the samconfig.toml file under the provided project folder
@@ -18,12 +18,11 @@ import { getLogger } from '../logger'
  */
 export async function getConfigFileUri(projectRoot: vscode.Uri): Promise<vscode.Uri> {
     const samConfigFilename = 'samconfig.toml'
-    try {
-        return await getFile(projectRoot, samConfigFilename)
-    } catch (error) {
-        throw new ToolkitError(`Encountered error when retriving samconfig.toml in ${projectRoot.fsPath}`, {
-            code: 'samNoConfigFound',
-        })
+    const samConfigPath = path.join(projectRoot.path, samConfigFilename)
+    if (await fs.exists(samConfigPath)) {
+        return vscode.Uri.file(samConfigPath)
+    } else {
+        throw new ToolkitError(`No samconfig.toml file found in ${projectRoot.fsPath}`, { code: 'samNoConfigFound' })
     }
 }
 
@@ -33,33 +32,17 @@ export async function getConfigFileUri(projectRoot: vscode.Uri): Promise<vscode.
  * @returns The URI of the template.yaml file
  */
 export async function getTemplateFileUri(projectRoot: vscode.Uri) {
-    const templateFile = 'template.{yaml,yml}'
-    try {
-        return await getFile(projectRoot, templateFile)
-    } catch (error) {
-        throw new ToolkitError(`Encountered error when retriving template file found in ${projectRoot.fsPath}`, {
-            code: 'samTemplateFileIssue',
-        })
+    const templateNames = ['template.yaml', 'template.yml']
+    for (const templateName of templateNames) {
+        const templatePath = path.join(projectRoot.path, templateName)
+        if (await fs.exists(templatePath)) {
+            return vscode.Uri.file(templatePath)
+        }
     }
-}
-/**
- * @description Searches for a file matching a specified pattern within a given project root directory.
- * @param projectRoot - The URI of the root directory to start the search from.
- * @param filenamePattern - A glob pattern to match filenames against.
- * @returns A Promise that a single of URI despite potential multiple the matching files.
- */
-export async function getFile(projectRoot: vscode.Uri, filenamePattern: string) {
-    const relativePattern = new vscode.RelativePattern(projectRoot, filenamePattern)
-    const files = await vscode.workspace.findFiles(relativePattern)
-    if (files.length < 1) {
-        getLogger().error(`getFile: Cannot find ${filenamePattern} in ${projectRoot}`)
-        throw new ToolkitError(`No ${filenamePattern} found in in ${projectRoot.fsPath}`, {
-            code: 'noFileFound',
-        })
-    } else if (files.length > 1) {
-        getLogger().warn(`getFile: Multiple match for  ${filenamePattern} in the ${projectRoot}`)
-    }
-    return files[0]
+
+    throw new ToolkitError(`No template.ysml or template.yml found in ${projectRoot.fsPath}`, {
+        code: 'samNoTemplateFound',
+    })
 }
 
 /**

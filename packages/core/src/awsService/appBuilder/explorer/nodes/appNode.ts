@@ -19,7 +19,6 @@ import { SamCliListResourcesParameters } from '../../../../shared/sam/cli/samCli
 import { getDeployedResources, StackResource } from '../../../../lambda/commands/listSamResources'
 import * as path from 'path'
 import fs from '../../../../shared/fs/fs'
-import { getProjectRootUri } from '../../../../shared/sam/utils'
 
 export class AppNode implements TreeNode {
     public readonly id = this.location.samTemplateUri.toString()
@@ -36,15 +35,14 @@ export class AppNode implements TreeNode {
         try {
             const successfulApp = await getApp(this.location)
             const templateResources: ResourceTreeEntity[] = successfulApp.resourceTree
-            const projectRoot = getProjectRootUri(this.location.samTemplateUri)
-            const { stackName, region } = await getStackName(projectRoot)
+            const { stackName, region } = await getStackName(this.location.projectRoot)
             this.stackName = stackName
 
             const listStackResourcesArguments: SamCliListResourcesParameters = {
                 stackName: this.stackName,
                 templateFile: this.location.samTemplateUri.fsPath,
                 region: region,
-                projectRoot: projectRoot,
+                projectRoot: this.location.projectRoot,
             }
 
             const deployedResources: StackResource[] | undefined = this.stackName
