@@ -1190,6 +1190,10 @@
                     "when": "aws.isDevMode"
                 },
                 {
+                    "command": "aws.ec2.linkToLaunch",
+                    "when": "aws.isDevMode"
+                },
+                {
                     "command": "aws.ec2.startInstance",
                     "when": "aws.isDevMode"
                 },
@@ -1410,6 +1414,16 @@
                     "command": "aws.ec2.openTerminal",
                     "group": "inline@1",
                     "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/"
+                },
+                {
+                    "command": "aws.ec2.linkToLaunch",
+                    "group": "0@1",
+                    "when": "viewItem =~ /^(awsEc2ParentNode)$/"
+                },
+                {
+                    "command": "aws.ec2.linkToLaunch",
+                    "group": "inline@1",
+                    "when": "viewItem =~ /^(awsEc2ParentNode)$/"
                 },
                 {
                     "command": "aws.ec2.openRemoteConnection",
@@ -2245,6 +2259,18 @@
                 "command": "aws.ec2.openTerminal",
                 "title": "%AWS.command.ec2.openTerminal%",
                 "icon": "$(terminal-view-icon)",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.ec2.linkToLaunch",
+                "title": "%AWS.command.ec2.linkToLaunch%",
+                "icon": "$(add)",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
