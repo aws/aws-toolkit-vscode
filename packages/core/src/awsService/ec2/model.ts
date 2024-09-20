@@ -17,13 +17,14 @@ import {
     ensureDependencies,
     getDeniedSsmActions,
     openRemoteTerminal,
+    promptToAddInlinePolicy,
 } from '../../shared/remoteSession'
 import { DefaultIamClient } from '../../shared/clients/iamClient'
 import { ErrorInformation } from '../../shared/errors'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../../shared/extensions/ssh'
 import { createBoundProcess } from '../../codecatalyst/model'
 import { getLogger } from '../../shared/logger/logger'
-import { Timeout } from '../../shared/utilities/timeoutUtils'
+import { CancellationError, Timeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
 import { SshConfig, sshLogFileLocation } from '../../shared/sshConfig'
 import { SshKeyPair } from './sshKeyPair'
@@ -113,13 +114,11 @@ export class Ec2ConnectionManager {
         const hasPermission = await this.hasProperPermissions(IamRole!.Arn)
 
         if (!hasPermission) {
-            const message = `Ensure an IAM role with the required policies is attached to the instance. Found attached role: ${
-                IamRole!.Arn
-            }`
-            this.throwConnectionError(message, selection, {
-                code: 'EC2SSMPermission',
-                documentationUri: this.policyDocumentationUri,
-            })
+            const policiesAdded = await promptToAddInlinePolicy(this.iamClient, IamRole!.Arn!)
+
+            if (!policiesAdded) {
+                throw new CancellationError('user')
+            }
         }
     }
 
