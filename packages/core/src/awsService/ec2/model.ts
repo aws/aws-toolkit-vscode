@@ -34,6 +34,7 @@ export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMC
 
 interface Ec2RemoteEnv extends VscodeRemoteConnection {
     selection: Ec2Selection
+    keyPair: SshKeyPair
 }
 
 export class Ec2ConnectionManager {
@@ -194,9 +195,9 @@ export class Ec2ConnectionManager {
     public async prepareEc2RemoteEnv(selection: Ec2Selection, remoteUser: string): Promise<Ec2RemoteEnv> {
         const logger = this.configureRemoteConnectionLogger(selection.instanceId)
         const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
-        const keyPath = await this.configureSshKeys(selection, remoteUser)
+        const keyPair = await this.configureSshKeys(selection, remoteUser)
         const hostNamePrefix = 'aws-ec2-'
-        const sshConfig = new SshConfig(ssh, hostNamePrefix, 'ec2_connect', keyPath)
+        const sshConfig = new SshConfig(ssh, hostNamePrefix, 'ec2_connect', keyPair.getPrivateKeyPath())
 
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
@@ -223,6 +224,7 @@ export class Ec2ConnectionManager {
             vscPath: vsc,
             SessionProcess,
             selection,
+            keyPair,
         }
     }
 
@@ -232,11 +234,11 @@ export class Ec2ConnectionManager {
         return logger
     }
 
-    public async configureSshKeys(selection: Ec2Selection, remoteUser: string): Promise<string> {
+    public async configureSshKeys(selection: Ec2Selection, remoteUser: string): Promise<SshKeyPair> {
         const keyPath = path.join(globals.context.globalStorageUri.fsPath, `aws-ec2-key`)
-        const keyPair = await SshKeyPair.getSshKeyPair(keyPath)
+        const keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
         await this.sendSshKeyToInstance(selection, keyPair, remoteUser)
-        return keyPath
+        return keyPair
     }
 
     public async sendSshKeyToInstance(
