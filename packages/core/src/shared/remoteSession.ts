@@ -187,6 +187,13 @@ function getFormattedSsmActions() {
     return formattedActions.slice(0, formattedActions.length - 2)
 }
 
+/**
+ * Shows a progress message for adding inline policy to the role, then adds the policy.
+ * Importantly, it keeps the progress bar up for `policyAttachDelay` additional ms to allow permissions to propagate.
+ * If user cancels, it throws a CancellationError and stops the process from subsequently opening a connection.
+ * @param client IamClient to be use to add the permissions.
+ * @param roleArn Arn of the role the inline policy should be added to.
+ */
 async function addInlinePolicyWithDelay(client: IamClient, roleArn: string) {
     const timeout = new Timeout(policyAttachDelay)
     const message = `Adding Inline Policy to ${roleArn}`
