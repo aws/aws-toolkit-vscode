@@ -15,6 +15,7 @@ import {
     startInstance,
     stopInstance,
     refreshExplorer,
+    linkToLaunchInstance,
 } from './commands'
 
 export async function activate(ctx: ExtContext): Promise<void> {
@@ -55,6 +56,12 @@ export async function activate(ctx: ExtContext): Promise<void> {
                 span.record({ ec2InstanceState: 'reboot' })
                 await rebootInstance(node)
                 refreshExplorer(node)
+            })
+        }),
+
+        Commands.register('aws.ec2.linkToLaunch', async (node?: Ec2Node) => {
+            await telemetry.ec2_launchInstance.run(async (span) => {
+                await linkToLaunchInstance(node)
             })
         })
     )
