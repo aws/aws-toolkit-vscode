@@ -39,7 +39,6 @@ export class SshKeyPair {
         if (result.exitCode !== 0) {
             throw new ToolkitError('ec2: Failed to generate ssh key', { details: { stdout: result.stdout } })
         }
-        //await fs.chmod(keyPath, 0o600)
     }
 
     public getPublicKeyPath(): string {

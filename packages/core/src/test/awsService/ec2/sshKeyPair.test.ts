@@ -42,6 +42,13 @@ describe('SshKeyUtility', async function () {
         assert.notStrictEqual(contents.length, 0)
     })
 
+    it('generates unique key each time', async function () {
+        const beforeContent = await vscode.workspace.fs.readFile(vscode.Uri.file(keyPath))
+        keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
+        const afterContent = await vscode.workspace.fs.readFile(vscode.Uri.file(keyPath))
+        assert.notStrictEqual(beforeContent, afterContent)
+    })
+
     it('sets key permission to read/write by owner', async function () {
         const fileMode = (await fs.stat(keyPath)).mode
         // Mode is in decimal, so convert to decimal with bitmask
