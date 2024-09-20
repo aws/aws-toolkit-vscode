@@ -2,33 +2,53 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import * as vscode from 'vscode'
 import assert from 'assert'
-import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
-import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
+import * as path from 'path'
 import { SshKeyPair } from '../../../awsService/ec2/sshKeyPair'
+import { createTestWorkspaceFolder, installFakeClock } from '../../testUtil'
+import { InstalledClock } from '@sinonjs/fake-timers'
 import { ChildProcess } from '../../../shared/utilities/childProcess'
+import { fs } from '../../../shared'
 
 describe('SshKeyUtility', async function () {
     let temporaryDirectory: string
     let keyPath: string
     let keyPair: SshKeyPair
+    let clock: InstalledClock
 
     before(async function () {
-        temporaryDirectory = await makeTemporaryToolkitFolder()
-        keyPath = `${temporaryDirectory}/test-key`
-        keyPair = await SshKeyPair.getSshKeyPair(keyPath)
+        temporaryDirectory = (await createTestWorkspaceFolder()).uri.fsPath
+        keyPath = path.join(temporaryDirectory, 'testKeyPair')
+        clock = installFakeClock()
+    })
+
+    beforeEach(async function () {
+        keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
+    })
+
+    afterEach(async function () {
+        await keyPair.delete()
     })
 
     after(async function () {
-        await tryRemoveFolder(temporaryDirectory)
+        await keyPair.delete()
+        clock.uninstall()
+        sinon.restore()
     })
 
     describe('generateSshKeys', async function () {
         it('generates key in target file', async function () {
-            const contents = await fs.readFile(keyPath, 'utf-8')
+            const contents = await vscode.workspace.fs.readFile(vscode.Uri.file(keyPath))
             assert.notStrictEqual(contents.length, 0)
+        })
+
+        it('generates unique key each time', async function () {
+            const beforeContent = await vscode.workspace.fs.readFile(vscode.Uri.file(keyPath))
+            keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
+            const afterContent = await vscode.workspace.fs.readFile(vscode.Uri.file(keyPath))
+            assert.notStrictEqual(beforeContent, afterContent)
         })
 
         it('uses ed25519 algorithm to generate the keys', async function () {
@@ -48,10 +68,42 @@ describe('SshKeyUtility', async function () {
         assert.notStrictEqual(key.length, 0)
     })
 
-    it('does not overwrite existing keys', async function () {
-        const generateStub = sinon.stub(SshKeyPair, 'generateSshKeyPair')
-        await SshKeyPair.getSshKeyPair(keyPath)
-        sinon.assert.notCalled(generateStub)
+    it('does overwrite existing keys on get call', async function () {
+        const generateStub = sinon.spy(SshKeyPair, 'generateSshKeyPair')
+        const keyBefore = await vscode.workspace.fs.readFile(vscode.Uri.file(keyPath))
+        keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
+
+        const keyAfter = await vscode.workspace.fs.readFile(vscode.Uri.file(keyPath))
+        sinon.assert.calledOnce(generateStub)
+
+        assert.notStrictEqual(keyBefore, keyAfter)
+        sinon.restore()
+    })
+
+    it('deletes key on delete', async function () {
+        const pubKeyExistsBefore = await fs.existsFile(keyPair.getPublicKeyPath())
+        const privateKeyExistsBefore = await fs.existsFile(keyPair.getPrivateKeyPath())
+
+        await keyPair.delete()
+
+        const pubKeyExistsAfter = await fs.existsFile(keyPair.getPublicKeyPath())
+        const privateKeyExistsAfter = await fs.existsFile(keyPair.getPrivateKeyPath())
+
+        assert.strictEqual(pubKeyExistsBefore && privateKeyExistsBefore, true)
+        assert.strictEqual(pubKeyExistsAfter && privateKeyExistsAfter, false)
+        assert(keyPair.isDeleted())
+    })
+
+    it('deletes keys after timeout', async function () {
+        // Stub methods interacting with file system to avoid flaky test.
+        sinon.stub(SshKeyPair, 'generateSshKeyPair')
+        const deleteStub = sinon.stub(SshKeyPair.prototype, 'delete')
+
+        keyPair = await SshKeyPair.getSshKeyPair(keyPath, 50)
+        await clock.tickAsync(10)
+        sinon.assert.notCalled(deleteStub)
+        await clock.tickAsync(100)
+        sinon.assert.calledOnce(deleteStub)
         sinon.restore()
     })
 })
