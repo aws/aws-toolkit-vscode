@@ -343,6 +343,13 @@ export class TelemetryTracer extends TelemetryBase {
      *
      * All changes made to {@link attributes} (via {@link record}) during the execution are
      * reverted after the execution completes.
+     *
+     * This method automatically handles traceId generation and propagation:
+     * - If no traceId exists in the current context, a new one is generated.
+     * - The traceId is attached to all telemetry events created within this span.
+     * - Child spans created within this execution will inherit the same traceId.
+     *
+     * See docs/telemetry.md
      */
     public run<T, U extends MetricName>(name: U, fn: (span: Metric<MetricShapes[U]>) => T, options?: SpanOptions): T {
         const initTraceId = (callback: () => T): T => {
