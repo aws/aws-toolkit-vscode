@@ -31,11 +31,21 @@ describe('SshKeyUtility', async function () {
             assert.notStrictEqual(contents.length, 0)
         })
 
-        it('uses ed25519 algorithm to generate the keys', async function () {
+        it('defaults to ed25519 key type', async function () {
             const process = new ChildProcess(`ssh-keygen`, ['-vvv', '-l', '-f', keyPath])
             const result = await process.run()
             // Check private key header for algorithm name
             assert.strictEqual(result.stdout.includes('[ED25519 256]'), true)
+        })
+
+        it('uses rsa if ed25519 not available', async function () {
+            const stub = sinon.stub(SshKeyPair, 'isEd25519Supported').resolves(false)
+            keyPair = await SshKeyPair.getSshKeyPair(keyPath)
+            const process = new ChildProcess(`ssh-keygen`, ['-vvv', '-l', '-f', keyPath])
+            const result = await process.run()
+            // Check private key header for algorithm name
+            assert.strictEqual(result.stdout.includes('[RSA 256]'), true)
+            stub.restore()
         })
     })
 
