@@ -11,7 +11,7 @@ import {
     utgLanguageConfigs,
 } from 'aws-core-vscode/codewhisperer'
 import assert from 'assert'
-import { createMockTextEditor, createTestWorkspaceFolder } from 'aws-core-vscode/test'
+import { createMockDocument, createTestWorkspaceFolder } from 'aws-core-vscode/test'
 
 let tempFolder: string
 
@@ -118,8 +118,8 @@ describe('isTestFile', () => {
         expected: boolean
     ) {
         for (const filePath of filePaths) {
-            const editor = createMockTextEditor('', filePath, config.languageId)
-            const actual = await isTestFile(editor.document.uri.fsPath, { languageId: config.languageId })
+            const document = createMockDocument('', filePath, config.languageId)
+            const actual = await isTestFile(document.uri.fsPath, { languageId: config.languageId })
             assert.strictEqual(actual, expected)
         }
     }
