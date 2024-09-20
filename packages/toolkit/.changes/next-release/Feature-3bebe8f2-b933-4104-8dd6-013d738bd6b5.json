@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "use ed25519 to generate ec2 ssh key pair"
+	"description": "EC2 connect: use ed25519 to generate ec2 ssh key pair"
 }
