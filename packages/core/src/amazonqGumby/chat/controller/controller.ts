@@ -414,7 +414,7 @@ export class GumbyController {
                     toJDKVersion
                 ) as CodeTransformJavaTargetVersionsAllowed,
                 codeTransformProjectId: pathToProject === undefined ? telemetryUndefined : getStringHash(pathToProject),
-                userChoice: 'Confirm',
+                userChoice: 'Confirm-Language-Upgrade',
             })
 
             const projectName = path.basename(pathToProject)
@@ -447,7 +447,7 @@ export class GumbyController {
 
             telemetry.record({
                 codeTransformProjectId: pathToProject === undefined ? telemetryUndefined : getStringHash(pathToProject),
-                userChoice: 'Confirm',
+                userChoice: 'Confirm-SQL-Conversion',
             })
 
             const projectName = path.basename(pathToProject)
