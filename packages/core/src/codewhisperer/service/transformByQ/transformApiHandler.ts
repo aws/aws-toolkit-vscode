@@ -275,9 +275,9 @@ export function createZipManifest({ hilZipParams }: IZipManifestParams) {
 }
 
 interface IZipCodeParams {
-    dependenciesFolder: FolderInfo
+    dependenciesFolder?: FolderInfo
     humanInTheLoopFlag?: boolean
-    modulePath?: string
+    projectPath?: string
     zipManifest: ZipManifest | HilZipManifest
 }
 
@@ -287,7 +287,7 @@ interface ZipCodeResult {
     fileSize: number
 }
 
-export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePath, zipManifest }: IZipCodeParams) {
+export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, projectPath, zipManifest }: IZipCodeParams) {
     let tempFilePath = undefined
     let logFilePath = undefined
     let dependenciesCopied = false
@@ -295,17 +295,17 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
         throwIfCancelled()
         const zip = new AdmZip()
 
-        // If no modulePath is passed in, we are not uploaded the source folder
-        // NOTE: We only upload dependencies for human in the loop work
-        if (modulePath) {
-            const sourceFiles = getFilesRecursively(modulePath, false)
+        // if no project Path is passed in, we are not uploaded the source folder
+        // we only upload dependencies for human in the loop work
+        if (projectPath) {
+            const sourceFiles = getFilesRecursively(projectPath, false)
             let sourceFilesSize = 0
             for (const file of sourceFiles) {
                 if (nodefs.statSync(file).isDirectory()) {
                     getLogger().info('CodeTransformation: Skipping directory, likely a symlink')
                     continue
                 }
-                const relativePath = path.relative(modulePath, file)
+                const relativePath = path.relative(projectPath, file)
                 const paddedPath = path.join('sources', relativePath)
                 zip.addLocalFile(file, path.dirname(paddedPath))
                 sourceFilesSize += (await nodefs.promises.stat(file)).size
@@ -313,14 +313,25 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
             getLogger().info(`CodeTransformation: source code files size = ${sourceFilesSize}`)
         }
 
+        if (transformByQState.getMetadataPathSQL()) {
+            // user is doing a SQL conversion
+            zip.addLocalFile(transformByQState.getMetadataPathSQL())
+            // must be true here, since only other option is HilZipManifest (not used for SQL conversions)
+            if (zipManifest instanceof ZipManifest) {
+                zipManifest.sqlMetadataPath = path.basename(transformByQState.getMetadataPathSQL())
+            }
+            const sqlMetadataSize = (await nodefs.promises.stat(transformByQState.getMetadataPathSQL())).size
+            getLogger().info(`CodeTransformation: SQL metadata file size = ${sqlMetadataSize}`)
+        }
+
         throwIfCancelled()
 
         let dependencyFiles: string[] = []
-        if (await fs.exists(dependenciesFolder.path)) {
+        if (dependenciesFolder && await fs.exists(dependenciesFolder.path)) {
             dependencyFiles = getFilesRecursively(dependenciesFolder.path, true)
         }
 
-        if (dependencyFiles.length > 0) {
+        if (dependenciesFolder && dependencyFiles.length > 0) {
             let dependencyFilesSize = 0
             for (const file of dependencyFiles) {
                 if (isExcludedDependencyFile(file)) {
@@ -354,7 +365,7 @@ export async function zipCode({ dependenciesFolder, humanInTheLoopFlag, modulePa
 
         tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
         await fs.writeFile(tempFilePath, zip.toBuffer())
-        if (await fs.exists(dependenciesFolder.path)) {
+        if (dependenciesFolder && await fs.exists(dependenciesFolder.path)) {
             await fs.delete(dependenciesFolder.path, { recursive: true, force: true })
         }
     } catch (e: any) {

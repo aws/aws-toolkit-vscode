@@ -331,7 +331,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 activeStepId === 0
             )
             const buildMarkup =
-                activeStepId >= 1
+                activeStepId >= 1 && !transformByQState.getMetadataPathSQL() // for SQL conversions, don't show buildCode step
                     ? simpleStep(
                           this.getProgressIconMarkup(jobPlanProgress['buildCode']),
                           CodeWhispererConstants.buildCodeStepMessage,

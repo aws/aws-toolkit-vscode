@@ -289,8 +289,9 @@ export async function preTransformationUploadCode() {
             // if the user chose to skip unit tests, add the custom build command here
             transformZipManifest.customBuildCommand = transformByQState.getCustomBuildCommand()
             const zipCodeResult = await zipCode({
-                dependenciesFolder: transformByQState.getDependencyFolderInfo()!,
-                modulePath: transformByQState.getProjectPath(),
+                // dependenciesFolder will be undefined for SQL conversions since we don't compileProject
+                dependenciesFolder: transformByQState.getDependencyFolderInfo(),
+                projectPath: transformByQState.getProjectPath(),
                 zipManifest: transformZipManifest,
             })
 
@@ -735,20 +736,23 @@ export async function postTransformationJob() {
     const durationInMs = calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime())
     const resultStatusMessage = transformByQState.getStatus()
 
-    const versionInfo = await getVersionData()
-    const mavenVersionInfoMessage = `${versionInfo[0]} (${transformByQState.getMavenName()})`
-    const javaVersionInfoMessage = `${versionInfo[1]} (${transformByQState.getMavenName()})`
+    if (!transformByQState.getMetadataPathSQL()) {
+        // the below is only applicable when user is doing a Java 8/11 language upgrade
+        const versionInfo = await getVersionData()
+        const mavenVersionInfoMessage = `${versionInfo[0]} (${transformByQState.getMavenName()})`
+        const javaVersionInfoMessage = `${versionInfo[1]} (${transformByQState.getMavenName()})`
 
-    // Note: IntelliJ implementation of ResultStatusMessage includes additional metadata such as jobId.
-    telemetry.codeTransform_totalRunTime.emit({
-        buildSystemVersion: mavenVersionInfoMessage,
-        codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-        codeTransformResultStatusMessage: resultStatusMessage,
-        codeTransformRunTimeLatency: durationInMs,
-        codeTransformLocalJavaVersion: javaVersionInfoMessage,
-        result: resultStatusMessage === TransformByQStatus.Succeeded ? MetadataResult.Pass : MetadataResult.Fail,
-        reason: resultStatusMessage,
-    })
+        // Note: IntelliJ implementation of ResultStatusMessage includes additional metadata such as jobId.
+        telemetry.codeTransform_totalRunTime.emit({
+            buildSystemVersion: mavenVersionInfoMessage,
+            codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformResultStatusMessage: resultStatusMessage,
+            codeTransformRunTimeLatency: durationInMs,
+            codeTransformLocalJavaVersion: javaVersionInfoMessage,
+            result: resultStatusMessage === TransformByQStatus.Succeeded ? MetadataResult.Pass : MetadataResult.Fail,
+            reason: resultStatusMessage,
+        })
+    }
 
     if (transformByQState.isSucceeded()) {
         void vscode.window.showInformationMessage(CodeWhispererConstants.jobCompletedNotification)
@@ -770,7 +774,7 @@ export async function postTransformationJob() {
     }
 
     if (transformByQState.getPayloadFilePath() !== '') {
-        fs.rmSync(transformByQState.getPayloadFilePath(), { recursive: true, force: true }) // delete ZIP if it exists
+        // fs.rmSync(transformByQState.getPayloadFilePath(), { recursive: true, force: true }) // delete ZIP if it exists
     }
 }
 
