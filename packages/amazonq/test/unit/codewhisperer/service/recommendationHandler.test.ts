@@ -24,7 +24,6 @@ import {
     resetCodeWhispererGlobalVariables,
 } from 'aws-core-vscode/test'
 // import * as supplementalContextUtil from 'aws-core-vscode/codewhisperer'
-import { globals, extensionVersion } from 'aws-core-vscode/shared'
 
 describe('recommendationHandler', function () {
     const config: ConfigurationEntry = {

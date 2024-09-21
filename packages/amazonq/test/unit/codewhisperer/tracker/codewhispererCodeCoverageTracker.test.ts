@@ -8,7 +8,7 @@ import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { CodeWhispererCodeCoverageTracker, vsCodeState, TelemetryHelper, AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { createMockDocument, createMockTextEditor, resetCodeWhispererGlobalVariables } from 'aws-core-vscode/test'
-import { globals, extensionVersion } from 'aws-core-vscode/shared'
+import { globals } from 'aws-core-vscode/shared'
 import { assertTelemetryCurried } from 'aws-core-vscode/test'
 
 describe('codewhispererCodecoverageTracker', function () {
