@@ -13,7 +13,6 @@ import {
     session,
     CodeWhispererTracker,
     RecommendationHandler,
-    CodeWhispererUserGroupSettings,
     AuthUtil,
 } from 'aws-core-vscode/codewhisperer'
 import { resetCodeWhispererGlobalVariables, createMockTextEditor } from 'aws-core-vscode/test'
@@ -31,7 +30,6 @@ describe('onAcceptance', function () {
         afterEach(function () {
             sinon.restore()
             session.reset()
-            CodeWhispererUserGroupSettings.instance.reset()
         })
 
         it('Should enqueue an event object to tracker', async function () {
@@ -117,7 +115,6 @@ describe('onAcceptance', function () {
                 codewhispererCompletionType: 'Line',
                 codewhispererLanguage: 'python',
                 credentialStartUrl: testStartUrl,
-                codewhispererUserGroup: 'Control',
             })
         })
     })

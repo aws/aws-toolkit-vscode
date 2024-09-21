@@ -10,13 +10,11 @@ import {
     ReferenceInlineProvider,
     session,
     AuthUtil,
-    CodeWhispererUserGroupSettings,
     DefaultCodeWhispererClient,
     RecommendationsList,
     ConfigurationEntry,
     RecommendationHandler,
     CodeWhispererCodeCoverageTracker,
-    UserGroup,
     supplementalContextUtil,
 } from 'aws-core-vscode/codewhisperer'
 import {
@@ -55,7 +53,6 @@ describe('recommendationHandler', function () {
 
         afterEach(function () {
             sinon.restore()
-            CodeWhispererUserGroupSettings.instance.reset()
         })
 
         it('should assign correct recommendations given input', async function () {
@@ -110,11 +107,6 @@ describe('recommendationHandler', function () {
         })
 
         it('should call telemetry function that records a CodeWhisperer service invocation', async function () {
-            await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
-                group: UserGroup.CrossFile,
-                version: extensionVersion,
-            })
-
             const mockServerResult = {
                 recommendations: [{ content: "print('Hello World!')" }, { content: '' }],
                 $response: {
@@ -157,16 +149,10 @@ describe('recommendationHandler', function () {
                 codewhispererSupplementalContextTimeout: false,
                 codewhispererSupplementalContextLatency: 0,
                 codewhispererSupplementalContextLength: 100,
-                codewhispererUserGroup: 'CrossFile',
             })
         })
 
         it('should call telemetry function that records a Empty userDecision event', async function () {
-            await globals.globalState.update('CODEWHISPERER_USER_GROUP', {
-                group: UserGroup.CrossFile,
-                version: extensionVersion,
-            })
-
             const mockServerResult = {
                 recommendations: [],
                 nextToken: '',
@@ -198,7 +184,6 @@ describe('recommendationHandler', function () {
                 codewhispererCompletionType: 'Line',
                 codewhispererLanguage: 'python',
                 credentialStartUrl: testStartUrl,
-                codewhispererUserGroup: 'CrossFile',
             })
         })
     })
