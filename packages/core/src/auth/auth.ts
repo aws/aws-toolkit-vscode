@@ -59,6 +59,7 @@ import {
     AwsConnection,
     scopesCodeWhispererCore,
     ProfileNotFoundError,
+    isSsoConnection,
 } from './connection'
 import { isSageMaker, isCloud9, isAmazonQ } from '../shared/extensionUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
@@ -164,6 +165,26 @@ export class Auth implements AuthService, ConnectionManager {
 
     public get cacheWatcher() {
         return this.#ssoCacheWatcher
+    }
+
+    public get startUrl(): string | undefined {
+        // Reformat the url to remove any trailing '/' and `#`
+        // e.g. https://view.awsapps.com/start/# will become https://view.awsapps.com/start
+        return isSsoConnection(this.activeConnection)
+            ? this.reformatStartUrl(this.activeConnection.startUrl)
+            : undefined
+    }
+
+    public isConnected(): boolean {
+        return this.activeConnection !== undefined
+    }
+
+    public reformatStartUrl(startUrl: string | undefined) {
+        return !startUrl ? undefined : startUrl.replace(/[\/#]+$/g, '')
+    }
+
+    public isInternalAmazonUser(): boolean {
+        return this.isConnected() && this.startUrl === 'https://amzn.awsapps.com/start'
     }
 
     /**

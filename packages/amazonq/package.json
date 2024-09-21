@@ -350,7 +350,7 @@
                     "group": "cw_chat@4"
                 },
                 {
-                    "command": "aws.amazonq.testCode",
+                    "command": "aws.amazonq.generateUnitTests",
                     "group": "cw_chat@5",
                     "when": "aws.codewhisperer.connected && aws.isInternalUser"
                 },
@@ -429,8 +429,8 @@
                 "enablement": "aws.codewhisperer.connected"
             },
             {
-                "command": "aws.amazonq.testCode",
-                "title": "%AWS.command.amazonq.testCode%",
+                "command": "aws.amazonq.generateUnitTests",
+                "title": "%AWS.command.amazonq.generateUnitTests%",
                 "category": "%AWS.amazonq.title%",
                 "enablement": "aws.codewhisperer.connected && aws.isInternalUser"
             },
@@ -611,7 +611,7 @@
                 "linux": "meta+alt+q"
             },
             {
-                "command": "aws.amazonq.testCode",
+                "command": "aws.amazonq.generateUnitTests",
                 "key": "win+alt+t",
                 "mac": "cmd+alt+t",
                 "linux": "meta+alt+t",

@@ -94,10 +94,10 @@ export function registerCommands(controllerPublishers: ChatControllerMessagePubl
             })
         })
     })
-    Commands.register('aws.amazonq.testCode', async (data) => {
-        return focusAmazonQPanel.execute(placeholder, 'amazonq.testCode').then(() => {
+    Commands.register('aws.amazonq.generateUnitTests', async (data) => {
+        return focusAmazonQPanel.execute(placeholder, 'amazonq.generateUnitTests').then(() => {
             controllerPublishers.processContextMenuCommand.publish({
-                type: 'aws.amazonq.testCode',
+                type: 'aws.amazonq.generateUnitTests',
                 triggerType: getCommandTriggerType(data),
             })
         })
@@ -110,7 +110,7 @@ export type EditorContextBaseCommandType =
     | 'aws.amazonq.fixCode'
     | 'aws.amazonq.optimizeCode'
     | 'aws.amazonq.sendToPrompt'
-    | 'aws.amazonq.testCode'
+    | 'aws.amazonq.generateUnitTests'
 
 export type CodeScanIssueCommandType = 'aws.amazonq.explainIssue'
 
