@@ -348,6 +348,7 @@ export class TelemetryTracer extends TelemetryBase {
      * - If no traceId exists in the current context, a new one is generated.
      * - The traceId is attached to all telemetry events created within this span.
      * - Child spans created within this execution will inherit the same traceId.
+     * - Related concepts: https://opentelemetry.io/docs/concepts/signals/traces/
      *
      * See docs/telemetry.md
      */
