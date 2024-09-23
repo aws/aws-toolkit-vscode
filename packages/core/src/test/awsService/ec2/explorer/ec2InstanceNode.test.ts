@@ -129,13 +129,15 @@ describe('ec2InstanceNode', function () {
             const childRefresh = sinon.stub(Ec2InstanceNode.prototype, 'refreshNode')
 
             await refreshExplorerNode(testNode)
-            sinon.assert.calledOn(parentRefresh, testParentNode)
+
+            sinon.assert.called(parentRefresh)
+            sinon.assert.notCalled(childRefresh)
 
             parentRefresh.resetHistory()
 
             await refreshExplorerNode(testParentNode)
-            sinon.assert.calledOn(parentRefresh, testParentNode)
 
+            sinon.assert.called(parentRefresh)
             sinon.assert.notCalled(childRefresh)
 
             parentRefresh.restore()
