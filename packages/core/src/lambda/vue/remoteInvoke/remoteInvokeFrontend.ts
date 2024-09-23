@@ -68,6 +68,7 @@ export default defineComponent({
             await client.createRemoteTestEvents(eventData)
             this.showNameInput = false
             this.newTestEventName = ''
+            this.selectedTestEvent = eventData.name
             this.initialData.TestEvents = await client.listRemoteTestEvents(
                 this.initialData.FunctionArn,
                 this.initialData.FunctionRegion
