@@ -39,6 +39,13 @@ For connecting a new VSCode _terminal_, remote connect works like this:
 1. Toolkit [builds a session-manager-plugin command](https://github.com/aws/aws-toolkit-vscode/blob/c77fc076fd0ed837d077bc0318716b711a2854c8/packages/core/src/ecs/util.ts#L92-L104) and [passes it to a new VSCode Terminal](https://github.com/aws/aws-toolkit-vscode/blob/c77fc076fd0ed837d077bc0318716b711a2854c8/packages/core/src/ecs/commands.ts#L141-L147).
 1. VSCode displays the terminal, so the user can enter shell commands on the remote machine.
 
+For EC2 specifically, there are a few additional steps:
+
+1. If connecting to EC2 instance via remote window, the toolkit generates temporary SSH keys (30 second lifetime), with the public key sent to the remote instance.
+    - Key type is ed25519 if supported, or RSA otherwise.
+1. If insufficient permissions are detected on the attached IAM role, toolkit will prompt to add an inline policy with the necessary actions.
+1. If SSM sessions remain open after closing the window/terminal, the toolkit will terminate them on-shutdown, or when starting another session to the same instance.
+
 ### Implementation of remote connect
 
 These modules show how to use and extend the "remote connect" functionality:
@@ -47,19 +54,3 @@ These modules show how to use and extend the "remote connect" functionality:
 -   CodeCatalyst: [openDevEnv()](https://github.com/aws/aws-toolkit-vscode/blob/c77fc076fd0ed837d077bc0318716b711a2854c8/packages/core/src/codecatalyst/model.ts#L252)
 -   EC2: [openSessionInTerminal()](https://github.com/aws/aws-toolkit-vscode/blob/c77fc076fd0ed837d077bc0318716b711a2854c8/packages/core/src/ec2/model.ts#L147)
 -   ECS: [openTaskInTerminal()](https://github.com/aws/aws-toolkit-vscode/blob/c77fc076fd0ed837d077bc0318716b711a2854c8/packages/core/src/ecs/commands.ts#L133)
-
-### EC2 Remote Connect Details
-
-The toolkit provides two options for connecting with EC2 instances: remote terminals and remote windows. Both connections are done via SSM, but the remote window involves an SSH tunnel over SSM. To establish the tunnel, there a few steps the toolkit automates the following:
-
--   Update the `.ssh/config` file locally to leverage a connect script [resources/ec2_connect](https://github.com/aws/aws-toolkit-vscode/blob/master/packages/core/resources/ec2_connect) via proxy command.
--   Generate a temporary set of SSH Keys, sending the public key to the remote instance.
--   Use the SSM connection to tunnel an SSH connection that we can then pass through VSCode to open a remote window.
-
-Some additional technical details:
-
--   The keys are generated via ed25519 if supported, otherwise RSA. The keys have a lifetime of 30 seconds.
--   If insufficient actions exist on the attached IAM role, a prompt will pop-up asking to add an inline-policy.
--   The toolkit maintains the invariant that each instance can be associated with a single active SSM session. All active sessions created through the toolkit are terminated on close.
-
-For more information, refer to the implementation in [ec2](https://github.com/aws/aws-toolkit-vscode/tree/master/packages/core/src/awsService/ec2)
