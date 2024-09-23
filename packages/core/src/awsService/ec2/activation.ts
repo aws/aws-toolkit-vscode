@@ -5,11 +5,10 @@
 import { ExtContext } from '../../shared/extensions'
 import { Commands } from '../../shared/vscode/commands2'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
+import { Ec2InstanceNode, refreshExplorerNode } from './explorer/ec2InstanceNode'
 import { copyTextCommand } from '../../awsexplorer/commands/copyText'
 import { Ec2Node } from './explorer/ec2ParentNode'
 import { Ec2ConnectionManager } from './model'
-import { refreshExplorerNode } from './utils'
 
 export type Ec2ConnectionManagerMap = Map<string, Ec2ConnectionManager>
 
