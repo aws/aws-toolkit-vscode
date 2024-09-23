@@ -507,12 +507,16 @@ async function promptInstallYamlPlugin(disposables: vscode.Disposable[]) {
 async function deployTypePrompt() {
     const items: DataQuickPickItem<string>[] = [
         {
-            label: 'Deploy',
-            data: 'deploy',
-        },
-        {
             label: 'Sync',
             data: 'sync',
+            detail: 'Speed up your development and testing experience in the AWS Cloud. With the --watch parameter, sync will build, deploy and watch for local changes',
+            description: 'Development environments',
+        },
+        {
+            label: 'Deploy',
+            data: 'deploy',
+            detail: 'Deploys your template through CloudFormation',
+            description: 'Production environments',
         },
     ]
 
