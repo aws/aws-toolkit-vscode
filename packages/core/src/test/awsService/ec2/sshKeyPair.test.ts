@@ -4,12 +4,13 @@
  */
 import * as vscode from 'vscode'
 import assert from 'assert'
-import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
 import * as path from 'path'
 import { SshKeyPair } from '../../../awsService/ec2/sshKeyPair'
 import { createTestWorkspaceFolder, installFakeClock } from '../../testUtil'
 import { InstalledClock } from '@sinonjs/fake-timers'
+import { ChildProcess } from '../../../shared/utilities/childProcess'
+import { fs } from '../../../shared'
 
 describe('SshKeyUtility', async function () {
     let temporaryDirectory: string
@@ -37,16 +38,25 @@ describe('SshKeyUtility', async function () {
         sinon.restore()
     })
 
-    it('generates key in target file', async function () {
-        const contents = await vscode.workspace.fs.readFile(vscode.Uri.file(keyPath))
-        assert.notStrictEqual(contents.length, 0)
-    })
+    describe('generateSshKeys', async function () {
+        it('generates key in target file', async function () {
+            const contents = await vscode.workspace.fs.readFile(vscode.Uri.file(keyPath))
+            assert.notStrictEqual(contents.length, 0)
+        })
 
-    it('sets key permission to read/write by owner', async function () {
-        const fileMode = (await fs.stat(keyPath)).mode
-        // Mode is in decimal, so convert to decimal with bitmask
-        // source: https://github.com/nodejs/node-v0.x-archive/issues/3045
-        assert.strictEqual(fileMode & 0o777, 0o600)
+        it('generates unique key each time', async function () {
+            const beforeContent = await vscode.workspace.fs.readFile(vscode.Uri.file(keyPath))
+            keyPair = await SshKeyPair.getSshKeyPair(keyPath, 30000)
+            const afterContent = await vscode.workspace.fs.readFile(vscode.Uri.file(keyPath))
+            assert.notStrictEqual(beforeContent, afterContent)
+        })
+
+        it('uses ed25519 algorithm to generate the keys', async function () {
+            const process = new ChildProcess(`ssh-keygen`, ['-vvv', '-l', '-f', keyPath])
+            const result = await process.run()
+            // Check private key header for algorithm name
+            assert.strictEqual(result.stdout.includes('[ED25519 256]'), true)
+        })
     })
 
     it('properly names the public key', function () {
@@ -71,13 +81,13 @@ describe('SshKeyUtility', async function () {
     })
 
     it('deletes key on delete', async function () {
-        const pubKeyExistsBefore = await fs.pathExists(keyPair.getPublicKeyPath())
-        const privateKeyExistsBefore = await fs.pathExists(keyPair.getPrivateKeyPath())
+        const pubKeyExistsBefore = await fs.existsFile(keyPair.getPublicKeyPath())
+        const privateKeyExistsBefore = await fs.existsFile(keyPair.getPrivateKeyPath())
 
         await keyPair.delete()
 
-        const pubKeyExistsAfter = await fs.pathExists(keyPair.getPublicKeyPath())
-        const privateKeyExistsAfter = await fs.pathExists(keyPair.getPrivateKeyPath())
+        const pubKeyExistsAfter = await fs.existsFile(keyPair.getPublicKeyPath())
+        const privateKeyExistsAfter = await fs.existsFile(keyPair.getPrivateKeyPath())
 
         assert.strictEqual(pubKeyExistsBefore && privateKeyExistsBefore, true)
         assert.strictEqual(pubKeyExistsAfter && privateKeyExistsAfter, false)

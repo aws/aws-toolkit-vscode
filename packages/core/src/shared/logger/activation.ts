@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { Logger, LogLevel, getLogger } from '.'
 import { fromVscodeLogLevel, setLogger } from './logger'
-import { WinstonToolkitLogger } from './winstonToolkitLogger'
+import { ToolkitLogger } from './toolkitLogger'
 import { Settings } from '../settings'
 import { Logging } from './commands'
 import { resolvePath } from '../utilities/pathUtils'
@@ -79,7 +79,7 @@ export function makeLogger(opts: {
     outputChannels?: vscode.OutputChannel[]
     useConsoleLog?: boolean
 }): Logger {
-    const logger = new WinstonToolkitLogger(opts.logLevel)
+    const logger = new ToolkitLogger(opts.logLevel)
     // debug console can show ANSI colors, output channels can not
     for (const logPath of opts.logPaths ?? []) {
         logger.logToFile(logPath)

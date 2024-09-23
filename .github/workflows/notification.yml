@@ -23,21 +23,24 @@ concurrency:
 
 jobs:
     notify:
+        if: github.repository == 'aws/aws-toolkit-vscode'
         runs-on: ubuntu-latest
         permissions:
             pull-requests: write
             issues: read
         steps:
             - uses: actions/checkout@v4
+              if: github.event_name == 'pull_request_target'
               with:
                   fetch-depth: 20
             - uses: actions/setup-node@v4
+              if: github.event_name == 'pull_request_target'
               with:
                   node-version: '20'
             - name: Check for tests
               uses: actions/github-script@v7
+              if: github.event_name == 'pull_request_target'
               with:
                   script: |
                       const notify = require('.github/workflows/notify.js')
                       await notify({github, context})
-              if: github.event_name == 'pull_request_target'

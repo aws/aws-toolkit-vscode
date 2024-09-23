@@ -87,6 +87,13 @@ export class RuntimeLanguageContext {
             typescriptreact: 'tsx',
             yml: 'yaml',
             yaml: 'yaml',
+            dart: 'dart',
+            lua: 'lua',
+            powershell: 'powershell',
+            r: 'r',
+            swift: 'swift',
+            systemVerilog: 'systemVerilog',
+            vue: 'vue',
         })
         this.supportedLanguageExtensionMap = createConstantMap<string, CodewhispererLanguage>({
             c: 'c',
@@ -170,6 +177,17 @@ export class RuntimeLanguageContext {
             json: 'json',
             yaml: 'yaml',
             yml: 'yaml',
+            sv: 'systemVerilog',
+            svh: 'systemVerilog',
+            vh: 'systemVerilog',
+            dart: 'dart',
+            lua: 'lua',
+            wlua: 'lua',
+            swift: 'swift',
+            vue: 'vue',
+            ps1: 'powershell',
+            psm1: 'powershell',
+            r: 'r',
             // Add more mappings if needed
         }
 
@@ -217,7 +235,25 @@ export class RuntimeLanguageContext {
      */
     public isLanguageSupported(languageId: string): boolean {
         const lang = this.normalizeLanguage(languageId)
-        return lang !== undefined && this.normalizeLanguage(languageId) !== 'plaintext'
+        switch (lang) {
+            case undefined:
+                return false
+
+            case 'plaintext':
+                return false
+
+            case 'dart':
+            case 'lua':
+            case 'powershell':
+            case 'r':
+            case 'swift':
+            case 'vue':
+            case 'systemVerilog':
+                return false
+
+            default:
+                return true
+        }
     }
     /**
      *
