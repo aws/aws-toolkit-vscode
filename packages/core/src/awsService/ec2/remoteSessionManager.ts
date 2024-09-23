@@ -6,7 +6,7 @@
 import { EC2, SSM } from 'aws-sdk'
 import { SsmClient } from '../../shared/clients/ssmClient'
 
-export class Ec2RemoteEnvManager {
+export class Ec2RemoteSessionManager {
     private activeEnvs: Map<EC2.InstanceId, SSM.SessionId>
 
     public constructor(

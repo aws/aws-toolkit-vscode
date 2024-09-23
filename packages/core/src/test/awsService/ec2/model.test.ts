@@ -16,10 +16,6 @@ import { DefaultIamClient } from '../../../shared/clients/iamClient'
 
 describe('Ec2ConnectClient', function () {
     let client: Ec2ConnectionManager
-    const testSelection = {
-        instanceId: 'test-id',
-        region: 'test-region',
-    }
 
     before(function () {
         client = new Ec2ConnectionManager('test-region')

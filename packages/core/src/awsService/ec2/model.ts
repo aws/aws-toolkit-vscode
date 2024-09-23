@@ -26,10 +26,11 @@ import { createBoundProcess } from '../../codecatalyst/model'
 import { getLogger } from '../../shared/logger/logger'
 import { CancellationError, Timeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
-import { SshConfig, sshLogFileLocation } from '../../shared/sshConfig'
+import { SshConfig } from '../../shared/sshConfig'
 import { SshKeyPair } from './sshKeyPair'
 import globals from '../../shared/extensionGlobals'
-import { Ec2RemoteEnvManager } from './environmentManager'
+import { Ec2RemoteSessionManager } from './remoteSessionManager'
+import { getEc2SsmEnv } from './utils'
 
 export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
 
@@ -43,7 +44,7 @@ export class Ec2ConnectionManager {
     protected ssmClient: SsmClient
     protected ec2Client: Ec2Client
     protected iamClient: DefaultIamClient
-    protected envManager: Ec2RemoteEnvManager
+    protected envManager: Ec2RemoteSessionManager
 
     private policyDocumentationUri = vscode.Uri.parse(
         'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html'
@@ -57,7 +58,7 @@ export class Ec2ConnectionManager {
         this.ssmClient = this.createSsmSdkClient()
         this.ec2Client = this.createEc2SdkClient()
         this.iamClient = this.createIamSdkClient()
-        this.envManager = new Ec2RemoteEnvManager(regionCode, this.ssmClient)
+        this.envManager = new Ec2RemoteSessionManager(regionCode, this.ssmClient)
     }
 
     protected createSsmSdkClient(): SsmClient {
@@ -289,18 +290,4 @@ export class Ec2ConnectionManager {
 
         throw new ToolkitError(`Unrecognized OS name ${osName} on instance ${instanceId}`, { code: 'UnknownEc2OS' })
     }
-}
-
-function getEc2SsmEnv(selection: Ec2Selection, ssmPath: string, session: SSM.StartSessionResponse): NodeJS.ProcessEnv {
-    return Object.assign(
-        {
-            AWS_REGION: selection.region,
-            AWS_SSM_CLI: ssmPath,
-            LOG_FILE_LOCATION: sshLogFileLocation('ec2', selection.instanceId),
-            STREAM_URL: session.StreamUrl,
-            SESSION_ID: session.SessionId,
-            TOKEN: session.TokenValue,
-        },
-        process.env
-    )
 }
