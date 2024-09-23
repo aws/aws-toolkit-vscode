@@ -5,6 +5,7 @@
 import vscode from 'vscode'
 import os from 'os'
 import { promises as nodefs, constants as nodeConstants, WriteFileOptions } from 'fs'
+import { chmod } from 'fs/promises'
 import { isCloud9 } from '../extensionUtilities'
 import _path from 'path'
 import {
@@ -354,6 +355,20 @@ export class FileSystem {
     async stat(uri: vscode.Uri | string): Promise<vscode.FileStat> {
         const path = this.#toUri(uri)
         return await vfs.stat(path)
+    }
+
+    /**
+     * Change permissions on file.
+     * @param uri file whose permissions should be set.
+     * @param mode new permissions in octal notation.
+     * More info: https://nodejs.org/api/fs.html#fspromiseschmodpath-mode
+     * Examples: https://www.geeksforgeeks.org/node-js-fspromises-chmod-method/
+     */
+    async chmod(uri: vscode.Uri | string, mode: number): Promise<void> {
+        if (!this.isWeb) {
+            const path = this.#toUri(uri)
+            await chmod(path.fsPath, mode)
+        }
     }
 
     /**
