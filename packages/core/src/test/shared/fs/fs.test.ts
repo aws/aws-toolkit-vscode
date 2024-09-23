@@ -382,7 +382,7 @@ describe('FileSystem', function () {
     })
 
     describe('chmod()', async function () {
-        it('changes permissions when not on web', async function () {
+        it('changes permissions when not on web, otherwise does not throw', async function () {
             const filePath = await makeFile('test.txt', 'hello world', { mode: 0o777 })
             await fs.chmod(filePath, 0o644)
             if (!globals.isWeb) {
