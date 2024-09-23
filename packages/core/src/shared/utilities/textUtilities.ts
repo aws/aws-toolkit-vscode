@@ -395,3 +395,7 @@ export function undefinedIfEmpty(str: string | undefined): string | undefined {
 
     return undefined
 }
+
+export function decodeBase64(base64Str: string): string {
+    return Buffer.from(base64Str, 'base64').toString()
+}

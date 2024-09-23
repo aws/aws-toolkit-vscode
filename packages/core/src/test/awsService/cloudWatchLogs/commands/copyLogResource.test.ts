@@ -5,8 +5,8 @@
 
 import assert from 'assert'
 import * as vscode from 'vscode'
-import { createURIFromArgs } from '../../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
 import { copyLogResource } from '../../../../awsService/cloudWatchLogs/commands/copyLogResource'
+import { cwlUriSchema } from '../../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
 
 describe('copyLogResource', async function () {
     beforeEach(async function () {
@@ -23,7 +23,7 @@ describe('copyLogResource', async function () {
             regionName: 'region',
             streamName: 'stream',
         }
-        const uri = createURIFromArgs(logGroupWithStream, {})
+        const uri = cwlUriSchema.form({ logGroupInfo: logGroupWithStream, parameters: {} })
 
         await copyLogResource(uri)
 
@@ -35,7 +35,7 @@ describe('copyLogResource', async function () {
             groupName: 'group2',
             regionName: 'region2',
         }
-        const uri = createURIFromArgs(logGroup, {})
+        const uri = cwlUriSchema.form({ logGroupInfo: logGroup, parameters: {} })
 
         await copyLogResource(uri)
 
