@@ -104,11 +104,16 @@ export default defineComponent({
         },
 
         async sendInput() {
-            let event = this.sampleText
-            if (this.selectedFile && !this.sampleText) {
-                const resp = await client.loadFile(this.selectedFilePath)
-                if (resp) {
-                    event = resp.sample
+            let event = ''
+
+            if (this.payload === 'sampleEvents' || this.payload === 'savedEvents') {
+                event = this.sampleText
+            } else if (this.payload === 'localFile') {
+                if (this.selectedFile && this.selectedFilePath) {
+                    const resp = await client.loadFile(this.selectedFilePath)
+                    if (resp) {
+                        event = resp.sample
+                    }
                 }
             }
             await client.invokeLambda(event, this.initialData.Source)
